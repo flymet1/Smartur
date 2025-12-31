@@ -17,7 +17,8 @@ export const activities = pgTable("activities", {
   defaultTimes: text("default_times").default("[]"), // JSON array of time strings like ["09:00", "14:00"]
   defaultCapacity: integer("default_capacity").default(10), // Default available slots per time slot
   confirmationMessage: text("confirmation_message").default("Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."),
-  reservationLink: text("reservation_link"), // External reservation page URL
+  reservationLink: text("reservation_link"), // External reservation page URL (Turkish)
+  reservationLinkEn: text("reservation_link_en"), // External reservation page URL (English)
   agencyPhone: text("agency_phone"),
   adminPhone: text("admin_phone"),
   sendNotificationToAgency: boolean("send_notification_to_agency").default(true),

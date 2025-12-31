@@ -165,6 +165,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [reservationLink, setReservationLink] = useState(
     activity ? (activity as any).reservationLink || "" : ""
   );
+  const [reservationLinkEn, setReservationLinkEn] = useState(
+    activity ? (activity as any).reservationLinkEn || "" : ""
+  );
   
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
@@ -218,6 +221,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       sendNotificationToAdmin: sendNotificationToAdmin,
       notificationMessageTemplate: notificationMessage,
       reservationLink: reservationLink || null,
+      reservationLinkEn: reservationLinkEn || null,
       active: true,
     };
 
@@ -341,7 +345,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reservationLink">Rezervasyon Linki</Label>
+                  <Label htmlFor="reservationLink">(Türkçe) Rezervasyon Linki</Label>
                   <Input 
                     id="reservationLink"
                     type="url"
@@ -350,7 +354,19 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     placeholder="https://example.com/rezervasyon"
                     data-testid="input-reservation-link"
                   />
-                  <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği harici sayfa linki</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reservationLinkEn">(İngilizce) Rezervasyon Linki</Label>
+                  <Input 
+                    id="reservationLinkEn"
+                    type="url"
+                    value={reservationLinkEn}
+                    onChange={(e) => setReservationLinkEn(e.target.value)}
+                    placeholder="https://example.com/reservation"
+                    data-testid="input-reservation-link-en"
+                  />
+                  <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği harici sayfa linkleri</p>
                 </div>
 
                 <div className="space-y-2">
