@@ -2,12 +2,14 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff } from "lucide-react";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -22,6 +24,19 @@ export default function Settings() {
     "Sen bir TURİZM RESERVASYONLARI DANIŞMANI'sın. Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. Kibar, samimi ve profesyonel ol. Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol."
   );
   const [customerSupportEmail, setCustomerSupportEmail] = useState("");
+  const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [isRefreshingQR, setIsRefreshingQR] = useState(false);
+
+  const handleRefreshQR = () => {
+    setIsRefreshingQR(true);
+    setTimeout(() => {
+      setIsRefreshingQR(false);
+      toast({
+        title: "QR Kod Yenilendi",
+        description: "Yeni QR kodu telefonunuzla tarayabilirsiniz."
+      });
+    }, 1500);
+  };
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -162,11 +177,135 @@ export default function Settings() {
               <CardTitle>WhatsApp Bot Ayarları</CardTitle>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="bot" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="bot">Bot Ayarları</TabsTrigger>
-                  <TabsTrigger value="support">Müşteri Destek</TabsTrigger>
+              <Tabs defaultValue="connection" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="connection" data-testid="tab-whatsapp-connection">
+                    <Smartphone className="w-4 h-4 mr-2" />
+                    Bağlantı
+                  </TabsTrigger>
+                  <TabsTrigger value="bot" data-testid="tab-whatsapp-bot">Bot Ayarları</TabsTrigger>
+                  <TabsTrigger value="support" data-testid="tab-whatsapp-support">Destek</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="connection" className="space-y-6 mt-4">
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    <div className="flex-1 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full ${whatsappConnected ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
+                          {whatsappConnected ? (
+                            <Wifi className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          ) : (
+                            <WifiOff className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">Bağlantı Durumu</p>
+                          <Badge variant={whatsappConnected ? "default" : "secondary"} className="mt-1">
+                            {whatsappConnected ? "Bağlı" : "Bağlı Değil"}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="bg-muted/50 p-4 rounded-lg border">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <QrCode className="w-5 h-5 text-muted-foreground" />
+                            <span className="font-medium">QR Kod ile Bağlan</span>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={handleRefreshQR}
+                            disabled={isRefreshingQR}
+                            data-testid="button-refresh-qr"
+                          >
+                            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshingQR ? 'animate-spin' : ''}`} />
+                            Yenile
+                          </Button>
+                        </div>
+                        
+                        <div className="bg-white dark:bg-zinc-900 p-4 rounded-lg border flex items-center justify-center min-h-[200px]">
+                          {isRefreshingQR ? (
+                            <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                              <RefreshCw className="w-8 h-8 animate-spin" />
+                              <span className="text-sm">QR kod yükleniyor...</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-muted-foreground/30">
+                                <QrCode className="w-24 h-24 text-muted-foreground/50" />
+                              </div>
+                              <p className="text-xs text-muted-foreground text-center">
+                                QR kod burada görünecek
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 space-y-4">
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-2">
+                              WhatsApp Botunu Nasıl Aktif Edersiniz?
+                            </h4>
+                            <ol className="space-y-3 text-sm text-blue-800 dark:text-blue-300">
+                              <li className="flex items-start gap-2">
+                                <div className="w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300">1</span>
+                                </div>
+                                <span>Telefonunuzda <strong>WhatsApp Business</strong> uygulamasını açın</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <div className="w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300">2</span>
+                                </div>
+                                <span><strong>Ayarlar &gt; Bağlı Cihazlar</strong> menüsüne gidin</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <div className="w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300">3</span>
+                                </div>
+                                <span><strong>"Cihaz Bağla"</strong> butonuna dokunun</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <div className="w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300">4</span>
+                                </div>
+                                <span>Soldaki <strong>QR kodu</strong> telefonunuzla tarayın</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <div className="w-5 h-5 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center shrink-0 mt-0.5">
+                                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300">5</span>
+                                </div>
+                                <span>Bağlantı kurulduğunda durum <strong>"Bağlı"</strong> olarak değişecek</span>
+                              </li>
+                            </ol>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <Circle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                          <div>
+                            <h4 className="font-medium text-amber-900 dark:text-amber-200 mb-1">
+                              Önemli Notlar
+                            </h4>
+                            <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-300">
+                              <li>Telefonunuzun internete bağlı olduğundan emin olun</li>
+                              <li>QR kod 60 saniye geçerlidir, süre dolarsa yenileyin</li>
+                              <li>Bağlantı koptuğunda bot otomatik mesaj gönderemez</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
 
                 <TabsContent value="bot" className="space-y-6 mt-4">
                   <div className="flex items-center justify-between">
