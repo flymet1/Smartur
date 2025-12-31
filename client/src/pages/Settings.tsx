@@ -7,8 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
   const [reminderHours, setReminderHours] = useState(24);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderMessage, setReminderMessage] = useState(
@@ -20,6 +23,48 @@ export default function Settings() {
   );
   const [customerSupportEmail, setCustomerSupportEmail] = useState("");
 
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      // Save all settings
+      await Promise.all([
+        fetch("/api/settings/customerSupportEmail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: customerSupportEmail })
+        }),
+        fetch("/api/settings/botPrompt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: botPrompt })
+        }),
+        fetch("/api/settings/reminderHours", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: String(reminderHours) })
+        }),
+        fetch("/api/settings/reminderMessage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: reminderMessage })
+        })
+      ]);
+      
+      toast({ 
+        title: "Başarılı", 
+        description: "Ayarlar kaydedildi." 
+      });
+    } catch (err) {
+      toast({ 
+        title: "Hata", 
+        description: "Ayarlar kaydedilemedi.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
@@ -27,6 +72,14 @@ export default function Settings() {
         <div>
           <h1 className="text-3xl font-bold font-display">Ayarlar</h1>
           <p className="text-muted-foreground mt-1">Sistem yapılandırması</p>
+          <Button 
+            onClick={handleSaveSettings} 
+            disabled={isSaving}
+            size="lg"
+            className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all"
+          >
+            {isSaving ? "Kaydediliyor..." : "Tüm Ayarları Kaydet"}
+          </Button>
         </div>
 
         <div className="space-y-6">
