@@ -447,6 +447,17 @@ export async function registerRoutes(
           const priceTl = isTL ? Math.round(itemTotal) : 0;
           const priceUsd = !isTL ? Math.round(itemTotal) : 0;
           
+          // Extract order financial details for finance module
+          const orderSubtotal = Math.round(parseFloat(order.subtotal || item.subtotal || '0'));
+          const orderTotal = Math.round(parseFloat(order.total || item.total || '0'));
+          // Calculate tax from tax_lines or as total - subtotal
+          let orderTax = 0;
+          if (order.tax_lines && Array.isArray(order.tax_lines)) {
+            orderTax = Math.round(order.tax_lines.reduce((sum: number, tax: any) => sum + parseFloat(tax.tax_total || '0'), 0));
+          } else {
+            orderTax = Math.max(0, orderTotal - orderSubtotal);
+          }
+          
           await storage.createReservation({
             activityId: matchedActivity.id,
             customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Müşteri',
@@ -460,7 +471,10 @@ export async function registerRoutes(
             currency,
             status: 'confirmed',
             source: 'web',
-            externalId: String(order.id)
+            externalId: String(order.id),
+            orderSubtotal,
+            orderTotal,
+            orderTax
           });
           
           console.log(`Created reservation for activity: ${matchedActivity.name} from order: ${order.id}`);
