@@ -120,6 +120,33 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       desc += `, Süre: ${a.durationMinutes} dk)`;
       if (a.reservationLink) desc += `\n  TR Rezervasyon Linki: ${a.reservationLink}`;
       if (a.reservationLinkEn) desc += `\n  EN Reservation Link: ${a.reservationLinkEn}`;
+      
+      // Transfer bilgisi
+      if (a.hasFreeHotelTransfer) {
+        desc += `\n  Ücretsiz Otel Transferi: EVET`;
+        try {
+          const zones = JSON.parse(a.transferZones || '[]');
+          if (zones.length > 0) {
+            desc += ` (Bölgeler: ${zones.join(', ')})`;
+          }
+        } catch {}
+      } else {
+        desc += `\n  Ücretsiz Otel Transferi: HAYIR`;
+      }
+      
+      // Ekstralar bilgisi
+      try {
+        const extras = JSON.parse(a.extras || '[]');
+        if (extras.length > 0) {
+          desc += `\n  Ekstra Hizmetler:`;
+          for (const extra of extras) {
+            desc += `\n    * ${extra.name}: ${extra.priceTl} TL`;
+            if (extra.priceUsd) desc += ` / $${extra.priceUsd}`;
+            if (extra.description) desc += ` (${extra.description})`;
+          }
+        }
+      } catch {}
+      
       return desc;
     })
     .join("\n") || "";
@@ -194,7 +221,9 @@ ${reservationContext}
 3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
 4. Karmaşık konularda veya şikayetlerde "Bu konuyu yetkili arkadaşımıza iletiyorum" de.
 5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
-6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.`;
+6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.`;
 
   // If Replit AI Integration is available, use it
   if (ai) {
