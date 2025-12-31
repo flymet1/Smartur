@@ -162,6 +162,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [priceUsd, setPriceUsd] = useState(
     activity ? (activity as any).priceUsd || 0 : 0
   );
+  const [reservationLink, setReservationLink] = useState(
+    activity ? (activity as any).reservationLink || "" : ""
+  );
   
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
@@ -214,6 +217,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       sendNotificationToAgency: sendNotificationToAgency,
       sendNotificationToAdmin: sendNotificationToAdmin,
       notificationMessageTemplate: notificationMessage,
+      reservationLink: reservationLink || null,
       active: true,
     };
 
@@ -334,6 +338,19 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     defaultValue={activity?.description || ""} 
                     placeholder="Tur hakkında kısa bilgi..." 
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reservationLink">Rezervasyon Linki</Label>
+                  <Input 
+                    id="reservationLink"
+                    type="url"
+                    value={reservationLink}
+                    onChange={(e) => setReservationLink(e.target.value)}
+                    placeholder="https://example.com/rezervasyon"
+                    data-testid="input-reservation-link"
+                  />
+                  <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği harici sayfa linki</p>
                 </div>
 
                 <div className="space-y-2">
