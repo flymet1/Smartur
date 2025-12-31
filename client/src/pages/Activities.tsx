@@ -244,17 +244,17 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{isEditing ? 'Aktiviteyi Düzenle' : 'Yeni Aktivite Ekle'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <Tabs defaultValue="general" className="w-full flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <Tabs defaultValue="general" className="w-full flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
               <TabsTrigger value="general">Genel Bilgiler</TabsTrigger>
               <TabsTrigger value="notifications">Bildirim Ayarları</TabsTrigger>
             </TabsList>
-            <div className="flex-1 overflow-y-auto py-4 px-1">
+            <div className="flex-1 overflow-y-auto py-4 px-1 min-h-0">
               <TabsContent value="general" className="space-y-4 mt-0">
                 <div className="space-y-2">
                   <Label htmlFor="name">Aktivite Adı</Label>
@@ -427,7 +427,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
             </div>
           </Tabs>
 
-          <DialogFooter className="pt-4 border-t mt-auto">
+          <DialogFooter className="pt-4 border-t flex-shrink-0">
             <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
               {createMutation.isPending || updateMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>
