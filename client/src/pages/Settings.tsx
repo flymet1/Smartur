@@ -4,24 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 
 export default function Settings() {
-  const [reminderMinutes, setReminderMinutes] = useState(1440); // 24 hours * 60 minutes
+  const [reminderHours, setReminderHours] = useState(24);
   const [reminderEnabled, setReminderEnabled] = useState(true);
-
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    
-    if (hours > 0 && mins > 0) {
-      return `${hours} saat ${mins} dakika`;
-    } else if (hours > 0) {
-      return `${hours} saat`;
-    } else {
-      return `${mins} dakika`;
-    }
-  };
+  const [reminderMessage, setReminderMessage] = useState(
+    "Merhaba {isim}! Rezervasyonunuz için hatırlatma:\n\n{aktiviteler}\nTarih: {tarih}\n\nSizi görmek için sabırsızlanıyoruz!"
+  );
 
   return (
     <div className="flex min-h-screen bg-muted/20">
@@ -49,8 +40,8 @@ export default function Settings() {
               <div className="border-t pt-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="space-y-0.5">
-                    <Label>Hatırlatma Mesajı</Label>
-                    <p className="text-sm text-muted-foreground">Aktiviteye belirtilen süre kala hatırlatma gönder</p>
+                    <Label>Otomatik Hatırlatma</Label>
+                    <p className="text-sm text-muted-foreground">Aktiviteye belirtilen süre kala WhatsApp hatırlatma gönder</p>
                   </div>
                   <Switch 
                     checked={reminderEnabled} 
@@ -59,28 +50,48 @@ export default function Settings() {
                 </div>
                 
                 {reminderEnabled && (
-                  <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
+                  <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
                     <div className="space-y-2">
-                      <Label htmlFor="reminderMinutes">Kaç dakika kala hatırlatma yapılsın?</Label>
+                      <Label htmlFor="reminderHours">Kaç saat kala hatırlatma yapılsın?</Label>
                       <div className="flex gap-2 items-end">
-                        <div className="flex-1">
-                          <Input 
-                            id="reminderMinutes"
-                            type="number" 
-                            min="1"
-                            value={reminderMinutes}
-                            onChange={(e) => setReminderMinutes(Math.max(1, Number(e.target.value)))}
-                            placeholder="Dakika cinsinden girin..."
-                          />
-                        </div>
+                        <Input 
+                          id="reminderHours"
+                          type="number" 
+                          min="1"
+                          max="72"
+                          value={reminderHours}
+                          onChange={(e) => setReminderHours(Math.max(1, Math.min(72, Number(e.target.value))))}
+                          placeholder="Saat cinsinden girin..."
+                          className="flex-1"
+                        />
                         <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                          = {formatTime(reminderMinutes)}
+                          saat
                         </div>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        1-72 saat arasında ayarlayın (Varsayılan: 24 saat)
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Örnek: 1440 = 24 saat, 60 = 1 saat, 30 = 30 dakika
-                    </p>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="reminderMessage">Hatırlatma Mesajı</Label>
+                      <Textarea 
+                        id="reminderMessage"
+                        value={reminderMessage}
+                        onChange={(e) => setReminderMessage(e.target.value)}
+                        placeholder="Hatırlatma mesajınızı yazın..."
+                        className="min-h-[120px]"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Desteklenen değişkenler:
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
+                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
+                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktiviteler{'}'}</code> - Aktivite adları</div>
+                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saatler{'}'}</code> - Aktivite saatleri</div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
