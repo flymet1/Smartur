@@ -894,7 +894,24 @@ export async function registerRoutes(
   app.post("/api/finance/dispatches", async (req, res) => {
     try {
       const { agencyId, activityId, dispatchDate, dispatchTime, guestCount, unitPayoutTl, notes } = req.body;
-      const totalPayoutTl = (guestCount || 0) * (unitPayoutTl || 0);
+      
+      if (!agencyId || !dispatchDate) {
+        return res.status(400).json({ error: "agencyId ve dispatchDate zorunlu" });
+      }
+      
+      let finalUnitPayoutTl = unitPayoutTl || 0;
+      let rateId: number | null = null;
+      
+      const activeRate = await storage.getActiveRateForDispatch(agencyId, activityId || null, dispatchDate);
+      if (activeRate) {
+        finalUnitPayoutTl = activeRate.unitPayoutTl || 0;
+        rateId = activeRate.id;
+      } else if (!unitPayoutTl) {
+        const agency = await storage.getAgency(agencyId);
+        finalUnitPayoutTl = agency?.defaultPayoutPerGuest || 0;
+      }
+      
+      const totalPayoutTl = (guestCount || 0) * finalUnitPayoutTl;
       
       const dispatch = await storage.createSupplierDispatch({
         agencyId,
@@ -902,8 +919,9 @@ export async function registerRoutes(
         dispatchDate,
         dispatchTime,
         guestCount: guestCount || 0,
-        unitPayoutTl: unitPayoutTl || 0,
+        unitPayoutTl: finalUnitPayoutTl,
         totalPayoutTl,
+        rateId,
         notes
       });
       res.json(dispatch);
@@ -965,6 +983,17 @@ export async function registerRoutes(
   app.post("/api/finance/rates", async (req, res) => {
     try {
       const { agencyId, activityId, validFrom, validTo, unitPayoutTl, notes } = req.body;
+      
+      if (!agencyId || !validFrom || unitPayoutTl === undefined) {
+        return res.status(400).json({ error: "agencyId, validFrom ve unitPayoutTl zorunlu" });
+      }
+      if (unitPayoutTl < 0) {
+        return res.status(400).json({ error: "unitPayoutTl negatif olamaz" });
+      }
+      if (validTo && validTo < validFrom) {
+        return res.status(400).json({ error: "validTo, validFrom'dan once olamaz" });
+      }
+      
       const rate = await storage.createAgencyActivityRate({
         agencyId,
         activityId: activityId || null,
@@ -984,6 +1013,15 @@ export async function registerRoutes(
   app.patch("/api/finance/rates/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const { unitPayoutTl, validFrom, validTo } = req.body;
+      
+      if (unitPayoutTl !== undefined && unitPayoutTl < 0) {
+        return res.status(400).json({ error: "unitPayoutTl negatif olamaz" });
+      }
+      if (validTo && validFrom && validTo < validFrom) {
+        return res.status(400).json({ error: "validTo, validFrom'dan once olamaz" });
+      }
+      
       const rate = await storage.updateAgencyActivityRate(id, req.body);
       res.json(rate);
     } catch (err) {

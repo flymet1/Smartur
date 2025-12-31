@@ -36,7 +36,7 @@ import {
   CreditCard,
   Calendar
 } from "lucide-react";
-import type { Agency, AgencyPayout, SupplierDispatch, Activity } from "@shared/schema";
+import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate } from "@shared/schema";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Clock } from "lucide-react";
@@ -58,7 +58,9 @@ export default function Finance() {
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
+  const [rateDialogOpen, setRateDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Agency | null>(null);
+  const [editingRate, setEditingRate] = useState<AgencyActivityRate | null>(null);
   
   const [supplierForm, setSupplierForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
   const [payoutForm, setPayoutForm] = useState({
@@ -80,6 +82,14 @@ export default function Finance() {
     dispatchDate: new Date().toISOString().split('T')[0],
     dispatchTime: '10:00',
     guestCount: 1,
+    unitPayoutTl: 0,
+    notes: ''
+  });
+  const [rateForm, setRateForm] = useState({
+    agencyId: 0,
+    activityId: 0,
+    validFrom: new Date().toISOString().split('T')[0],
+    validTo: '',
     unitPayoutTl: 0,
     notes: ''
   });
@@ -115,6 +125,11 @@ export default function Finance() {
   // Aktiviteler
   const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities']
+  });
+
+  // Tarifeler
+  const { data: rates = [] } = useQuery<AgencyActivityRate[]>({
+    queryKey: ['/api/finance/rates']
   });
 
   // Tarih aralığına göre filtrelenmiş ödemeler (dönem kesişimi)
@@ -249,6 +264,42 @@ export default function Finance() {
     }
   });
 
+  const createRateMutation = useMutation({
+    mutationFn: async (data: typeof rateForm) => apiRequest('POST', '/api/finance/rates', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/rates'] });
+      setRateDialogOpen(false);
+      setEditingRate(null);
+      setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, notes: '' });
+      toast({ title: "Tarife kaydedildi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Tarife kaydedilemedi", variant: "destructive" });
+    }
+  });
+
+  const updateRateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<typeof rateForm> }) => 
+      apiRequest('PATCH', `/api/finance/rates/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/rates'] });
+      setRateDialogOpen(false);
+      setEditingRate(null);
+      toast({ title: "Tarife guncellendi" });
+    }
+  });
+
+  const deleteRateMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/rates/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/rates'] });
+      toast({ title: "Tarife silindi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Tarife silinemedi", variant: "destructive" });
+    }
+  });
+
   const handleSupplierSubmit = () => {
     if (editingSupplier) {
       updateSupplierMutation.mutate({ id: editingSupplier.id, data: supplierForm });
@@ -277,6 +328,18 @@ export default function Finance() {
       return;
     }
     createDispatchMutation.mutate(dispatchForm);
+  };
+
+  const handleRateSubmit = () => {
+    if (!rateForm.agencyId) {
+      toast({ title: "Hata", description: "Tedarikci secin", variant: "destructive" });
+      return;
+    }
+    if (editingRate) {
+      updateRateMutation.mutate({ id: editingRate.id, data: rateForm });
+    } else {
+      createRateMutation.mutate(rateForm);
+    }
   };
 
   if (suppliersLoading || payoutsLoading) {
@@ -370,6 +433,10 @@ export default function Finance() {
             <TabsTrigger value="payouts" className="h-10 px-6 text-base gap-2" data-testid="tab-payouts">
               <CreditCard className="h-5 w-5" />
               Odemeler
+            </TabsTrigger>
+            <TabsTrigger value="rates" className="h-10 px-6 text-base gap-2" data-testid="tab-rates">
+              <Clock className="h-5 w-5" />
+              Tarifeler
             </TabsTrigger>
           </TabsList>
 
@@ -636,6 +703,86 @@ export default function Finance() {
                   {filteredPayouts.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       Bu donemde odeme kaydi bulunamadi
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="rates" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Donemsel Tarifeler</h3>
+              <Button onClick={() => { 
+                setEditingRate(null);
+                setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, notes: '' });
+                setRateDialogOpen(true);
+              }} data-testid="button-add-rate">
+                <Plus className="h-4 w-4 mr-2" />
+                Tarife Ekle
+              </Button>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Tarife Listesi</CardTitle>
+                <CardDescription>
+                  Tedarikci firmalar icin donem bazli kisi basi odeme tarifeleri. Gonderim kaydederken bu tarifeler otomatik uygulanir.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {rates.map(rate => {
+                    const supplier = suppliers.find(s => s.id === rate.agencyId);
+                    const activity = activities.find(a => a.id === rate.activityId);
+                    return (
+                      <div key={rate.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`card-rate-${rate.id}`}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold">{supplier?.name || 'Bilinmeyen'}</span>
+                            {activity && <Badge variant="outline">{activity.name}</Badge>}
+                            {!activity && <Badge variant="secondary">Genel</Badge>}
+                            {!rate.isActive && <Badge variant="destructive">Pasif</Badge>}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                            <Calendar className="h-4 w-4" />
+                            {rate.validFrom} - {rate.validTo || 'Suresiz'}
+                          </div>
+                          {rate.notes && <p className="text-sm text-muted-foreground mt-1">{rate.notes}</p>}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-orange-600" data-testid={`text-rate-amount-${rate.id}`}>
+                              {formatMoney(rate.unitPayoutTl || 0)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">kisi basi</div>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => {
+                              setEditingRate(rate);
+                              setRateForm({
+                                agencyId: rate.agencyId,
+                                activityId: rate.activityId || 0,
+                                validFrom: rate.validFrom,
+                                validTo: rate.validTo || '',
+                                unitPayoutTl: rate.unitPayoutTl || 0,
+                                notes: rate.notes || ''
+                              });
+                              setRateDialogOpen(true);
+                            }} data-testid={`button-edit-rate-${rate.id}`}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteRateMutation.mutate(rate.id)} data-testid={`button-delete-rate-${rate.id}`}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {rates.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Henuz tarife tanimlanmamis
                     </div>
                   )}
                 </div>
@@ -971,6 +1118,100 @@ export default function Finance() {
                 onClick={handleDispatchSubmit}
                 disabled={createDispatchMutation.isPending}
                 data-testid="button-save-dispatch"
+              >
+                Kaydet
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Tarife Dialog */}
+        <Dialog open={rateDialogOpen} onOpenChange={setRateDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingRate ? 'Tarife Duzenle' : 'Yeni Tarife'}</DialogTitle>
+              <DialogDescription>Tedarikci firma icin donemsel odeme tarifesi tanimlayin</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Tedarikci</Label>
+                <Select 
+                  value={rateForm.agencyId ? String(rateForm.agencyId) : ""} 
+                  onValueChange={v => setRateForm(f => ({ ...f, agencyId: parseInt(v) }))}
+                >
+                  <SelectTrigger data-testid="select-rate-supplier">
+                    <SelectValue placeholder="Tedarikci secin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map(s => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Aktivite (Opsiyonel - bos birakilirsa genel tarife)</Label>
+                <Select 
+                  value={rateForm.activityId ? String(rateForm.activityId) : "0"} 
+                  onValueChange={v => setRateForm(f => ({ ...f, activityId: parseInt(v) || 0 }))}
+                >
+                  <SelectTrigger data-testid="select-rate-activity">
+                    <SelectValue placeholder="Genel tarife" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Genel (Tum aktiviteler)</SelectItem>
+                    {activities.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Gecerlilik Baslangici</Label>
+                  <Input 
+                    type="date"
+                    value={rateForm.validFrom}
+                    onChange={e => setRateForm(f => ({ ...f, validFrom: e.target.value }))}
+                    data-testid="input-rate-from"
+                  />
+                </div>
+                <div>
+                  <Label>Gecerlilik Bitisi (Opsiyonel)</Label>
+                  <Input 
+                    type="date"
+                    value={rateForm.validTo}
+                    onChange={e => setRateForm(f => ({ ...f, validTo: e.target.value }))}
+                    data-testid="input-rate-to"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Kisi Basi Odeme (TL)</Label>
+                <Input 
+                  type="number"
+                  min="0"
+                  value={rateForm.unitPayoutTl}
+                  onChange={e => setRateForm(f => ({ ...f, unitPayoutTl: parseInt(e.target.value) || 0 }))}
+                  data-testid="input-rate-amount"
+                />
+              </div>
+              <div>
+                <Label>Notlar</Label>
+                <Textarea 
+                  value={rateForm.notes}
+                  onChange={e => setRateForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Ek bilgiler..."
+                  data-testid="input-rate-notes"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRateDialogOpen(false)} data-testid="button-cancel-rate">Iptal</Button>
+              <Button 
+                onClick={handleRateSubmit}
+                disabled={createRateMutation.isPending || updateRateMutation.isPending}
+                data-testid="button-save-rate"
               >
                 Kaydet
               </Button>
