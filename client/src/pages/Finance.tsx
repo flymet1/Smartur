@@ -103,7 +103,7 @@ export default function Finance() {
   const [settlementForm, setSettlementForm] = useState({ 
     periodStart: startDate, 
     periodEnd: endDate, 
-    vatRatePct: 20 
+    extrasTl: 0 
   });
   const [payoutForm, setPayoutForm] = useState({
     agencyId: 0,
@@ -212,7 +212,7 @@ export default function Finance() {
   });
 
   const generateSettlementMutation = useMutation({
-    mutationFn: async (data: { agencyId: number; periodStart: string; periodEnd: string; vatRatePct: number }) =>
+    mutationFn: async (data: { agencyId: number; periodStart: string; periodEnd: string; extrasTl: number }) =>
       apiRequest('POST', '/api/finance/settlements/generate', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/settlements'] });
@@ -843,7 +843,7 @@ export default function Finance() {
             setSettlementForm({
               periodStart: startDate,
               periodEnd: endDate,
-              vatRatePct: 20
+              extrasTl: 0
             });
           }
         }}>
@@ -888,13 +888,15 @@ export default function Finance() {
                 />
               </div>
               <div>
-                <Label>KDV Orani (%)</Label>
+                <Label>Ekstralar (TL)</Label>
                 <Input 
                   type="number"
-                  value={settlementForm.vatRatePct}
-                  onChange={e => setSettlementForm(f => ({ ...f, vatRatePct: parseInt(e.target.value) || 20 }))}
-                  data-testid="input-settlement-vat"
+                  value={settlementForm.extrasTl}
+                  onChange={e => setSettlementForm(f => ({ ...f, extrasTl: parseInt(e.target.value) || 0 }))}
+                  placeholder="0"
+                  data-testid="input-settlement-extras"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Manuel eklenen ekstra tutar (toplama eklenir)</p>
               </div>
             </div>
             <DialogFooter>
@@ -906,7 +908,7 @@ export default function Finance() {
                       agencyId: selectedAgencyForSettlement,
                       periodStart: settlementForm.periodStart,
                       periodEnd: settlementForm.periodEnd,
-                      vatRatePct: settlementForm.vatRatePct
+                      extrasTl: settlementForm.extrasTl
                     });
                   }
                 }}

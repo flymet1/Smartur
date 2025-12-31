@@ -928,7 +928,7 @@ export async function registerRoutes(
   // Generate settlement from unpaid reservations
   app.post("/api/finance/settlements/generate", async (req, res) => {
     try {
-      const { agencyId, periodStart, periodEnd, vatRatePct } = req.body;
+      const { agencyId, periodStart, periodEnd, extrasTl } = req.body;
       
       // Get unpaid reservations for this agency
       const unpaidReservations = await storage.getUnpaidReservations(agencyId, periodStart);
@@ -950,8 +950,8 @@ export async function registerRoutes(
       }
       
       const payoutTl = totalGuests * (agency.defaultPayoutPerGuest || 0);
-      const vatAmount = Math.round(grossSalesTl * (vatRatePct || 20) / 100);
-      const profitTl = grossSalesTl - payoutTl - vatAmount;
+      const extras = extrasTl || 0;
+      const profitTl = grossSalesTl - payoutTl - extras;
       
       // Create settlement
       const settlement = await storage.createSettlement({
@@ -963,10 +963,11 @@ export async function registerRoutes(
         grossSalesTl,
         grossSalesUsd,
         payoutTl,
-        vatRatePct: vatRatePct || 20,
-        vatAmountTl: vatAmount,
+        extrasTl: extras,
+        vatRatePct: 0,
+        vatAmountTl: 0,
         profitTl,
-        remainingTl: payoutTl
+        remainingTl: payoutTl + extras
       });
       
       // Create entries and mark reservations
