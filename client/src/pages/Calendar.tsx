@@ -207,6 +207,10 @@ function AddCapacityDialog() {
   const { data: activities } = useActivities();
   const createMutation = useCreateCapacity();
   const { toast } = useToast();
+  const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
+
+  const selectedActivity = activities?.find(a => a.id === selectedActivityId);
+  const defaultCapacity = selectedActivity ? (selectedActivity as any).defaultCapacity || 10 : 10;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -217,7 +221,7 @@ function AddCapacityDialog() {
         activityId: Number(formData.get("activityId")),
         date: formData.get("date") as string,
         time: formData.get("time") as string,
-        totalSlots: Number(formData.get("totalSlots")),
+        totalSlots: Number(formData.get("totalSlots")) || defaultCapacity,
       });
       toast({ title: "Başarılı", description: "Slot başarıyla eklendi." });
       setOpen(false);
@@ -225,6 +229,21 @@ function AddCapacityDialog() {
       toast({ title: "Hata", description: "Slot eklenirken hata oluştu.", variant: "destructive" });
     }
   };
+
+  // Generate 30-minute intervals (00:00 to 23:30)
+  const generateTimeOptions = () => {
+    const times = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const h = String(hour).padStart(2, '0');
+        const m = String(minute).padStart(2, '0');
+        times.push(`${h}:${m}`);
+      }
+    }
+    return times;
+  };
+
+  const timeOptions = generateTimeOptions();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -240,7 +259,11 @@ function AddCapacityDialog() {
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Aktivite</Label>
-            <Select name="activityId" required>
+            <Select 
+              name="activityId" 
+              required
+              onValueChange={(val) => setSelectedActivityId(Number(val))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Aktivite seçin" />
               </SelectTrigger>
@@ -252,20 +275,36 @@ function AddCapacityDialog() {
             </Select>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tarih</Label>
-              <Input name="date" type="date" required />
-            </div>
-            <div className="space-y-2">
-              <Label>Saat</Label>
-              <Input name="time" type="time" required />
-            </div>
+          <div className="space-y-2">
+            <Label>Tarih</Label>
+            <Input name="date" type="date" required />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Saat (30 dakikalık aralıklar)</Label>
+            <Select name="time" required>
+              <SelectTrigger>
+                <SelectValue placeholder="Saat seçin" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {timeOptions.map((time) => (
+                  <SelectItem key={time} value={time}>{time}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label>Toplam Kapasite (Kişi)</Label>
-            <Input name="totalSlots" type="number" required min="1" placeholder="Örn: 20" />
+            <Input 
+              name="totalSlots" 
+              type="number" 
+              placeholder={`Varsayılan: ${defaultCapacity}`}
+              defaultValue={defaultCapacity}
+            />
+            <p className="text-xs text-muted-foreground">
+              Boş bırakırsanız aktivitenin varsayılan müsaitliği ({defaultCapacity}) kullanılır
+            </p>
           </div>
 
           <DialogFooter>

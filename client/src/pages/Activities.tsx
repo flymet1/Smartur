@@ -129,6 +129,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     }
     return [];
   });
+  const [defaultCapacity, setDefaultCapacity] = useState(
+    activity ? (activity as any).defaultCapacity || 10 : 10
+  );
   
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
@@ -166,6 +169,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       durationMinutes: Number(formData.get("durationMinutes")),
       dailyFrequency: Number(frequency),
       defaultTimes: JSON.stringify(times),
+      defaultCapacity: Number(defaultCapacity),
       confirmationMessage: formData.get("confirmationMessage") as string,
       active: true,
     };
@@ -260,6 +264,19 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
               defaultValue={activity?.description || ""} 
               placeholder="Tur hakkında kısa bilgi..." 
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="defaultCapacity">Varsayılan Müsaitlik (Her Saat Için)</Label>
+            <Input 
+              id="defaultCapacity" 
+              type="number" 
+              min="1"
+              value={defaultCapacity}
+              onChange={(e) => setDefaultCapacity(Math.max(1, Number(e.target.value)))}
+              placeholder="10"
+            />
+            <p className="text-xs text-muted-foreground">Her zaman dilimi için kaç kişi rezervasyon yapabilir</p>
           </div>
 
           <div className="space-y-2">
