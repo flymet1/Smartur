@@ -132,6 +132,9 @@ export default function Finance() {
       setAgencyDialogOpen(false);
       setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
       toast({ title: "Acenta eklendi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Acenta eklenemedi", variant: "destructive" });
     }
   });
 
