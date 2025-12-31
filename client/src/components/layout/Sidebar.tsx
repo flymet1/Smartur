@@ -6,7 +6,8 @@ import {
   Activity, 
   Settings,
   MessageCircle,
-  Menu
+  Menu,
+  Calculator
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/calendar", label: "Takvim & Kapasite", icon: Calendar },
   { href: "/reservations", label: "Rezervasyonlar", icon: Ticket },
   { href: "/activities", label: "Aktiviteler", icon: Activity },
+  { href: "/finance", label: "Finans & Acentalar", icon: Calculator },
   { href: "/bot-test", label: "Bot Test", icon: MessageCircle },
   { href: "/messages", label: "Mesaj Geçmişi", icon: MessageCircle },
   { href: "/settings", label: "Ayarlar", icon: Settings },

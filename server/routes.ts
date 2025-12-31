@@ -442,21 +442,21 @@ export async function registerRoutes(
           const bookingTime = order.meta_data?.find((m: any) => m.key === 'booking_time')?.value 
             || '10:00';
           
-          // Calculate prices
-          const itemTotal = parseFloat(item.total) || 0;
-          const priceTl = isTL ? Math.round(itemTotal) : 0;
-          const priceUsd = !isTL ? Math.round(itemTotal) : 0;
+          // Calculate prices for reservation
+          const itemTotalPrice = parseFloat(item.total) || 0;
+          const priceTl = isTL ? Math.round(itemTotalPrice) : 0;
+          const priceUsd = !isTL ? Math.round(itemTotalPrice) : 0;
           
           // Extract order financial details for finance module
-          const orderSubtotal = Math.round(parseFloat(order.subtotal || item.subtotal || '0'));
-          const orderTotal = Math.round(parseFloat(order.total || item.total || '0'));
-          // Calculate tax from tax_lines or as total - subtotal
-          let orderTax = 0;
-          if (order.tax_lines && Array.isArray(order.tax_lines)) {
-            orderTax = Math.round(order.tax_lines.reduce((sum: number, tax: any) => sum + parseFloat(tax.tax_total || '0'), 0));
-          } else {
-            orderTax = Math.max(0, orderTotal - orderSubtotal);
-          }
+          // Use item-level data for multi-line orders: subtotal (pre-tax), total (after tax), total_tax
+          const itemSubtotal = Math.round(parseFloat(item.subtotal || '0'));
+          const itemTotalWithTax = Math.round(parseFloat(item.total || '0'));
+          const itemTax = Math.round(parseFloat(item.total_tax || item.subtotal_tax || '0'));
+          
+          // Store per-item financial data (more accurate than order-level for multi-line)
+          const orderSubtotal = itemSubtotal;
+          const orderTotal = itemTotalWithTax + itemTax;
+          const orderTax = itemTax;
           
           await storage.createReservation({
             activityId: matchedActivity.id,
