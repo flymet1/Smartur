@@ -169,6 +169,31 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     activity ? (activity as any).reservationLinkEn || "" : ""
   );
   
+  // Transfer ve Ekstralar
+  const [hasFreeHotelTransfer, setHasFreeHotelTransfer] = useState(
+    activity ? (activity as any).hasFreeHotelTransfer === true : false
+  );
+  const [transferZones, setTransferZones] = useState(() => {
+    if (activity && (activity as any).transferZones) {
+      try {
+        return JSON.parse((activity as any).transferZones).join(', ');
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [extras, setExtras] = useState<Array<{name: string; priceTl: number; priceUsd: number; description: string}>>(() => {
+    if (activity && (activity as any).extras) {
+      try {
+        return JSON.parse((activity as any).extras);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
   const { toast } = useToast();
@@ -204,6 +229,12 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       .map((a: string) => a.trim())
       .filter((a: string) => a.length > 0);
     
+    // Parse transfer zones from comma-separated string
+    const zonesArray = transferZones
+      .split(',')
+      .map((z: string) => z.trim())
+      .filter((z: string) => z.length > 0);
+    
     const data = {
       name: formData.get("name") as string,
       nameAliases: JSON.stringify(aliasesArray),
@@ -223,6 +254,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       reservationLink: reservationLink || null,
       reservationLinkEn: reservationLinkEn || null,
       active: true,
+      hasFreeHotelTransfer: hasFreeHotelTransfer,
+      transferZones: JSON.stringify(zonesArray),
+      extras: JSON.stringify(extras),
     };
 
     try {
@@ -258,9 +292,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <Tabs defaultValue="general" className="w-full flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-              <TabsTrigger value="general">Genel Bilgiler</TabsTrigger>
-              <TabsTrigger value="notifications">Bildirim Ayarları</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+              <TabsTrigger value="general">Genel</TabsTrigger>
+              <TabsTrigger value="extras">Transfer & Ekstra</TabsTrigger>
+              <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
             </TabsList>
             <div className="flex-1 overflow-y-auto py-4 px-1 min-h-0">
               <TabsContent value="general" className="space-y-4 mt-0">
@@ -395,10 +430,131 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 </div>
               </TabsContent>
 
+              <TabsContent value="extras" className="space-y-4 mt-0">
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-base">Ucretsiz Otel Transferi</Label>
+                      <p className="text-xs text-muted-foreground">Aktivite icin ucretsiz transfer sunuluyor mu?</p>
+                    </div>
+                    <Switch 
+                      checked={hasFreeHotelTransfer}
+                      onCheckedChange={setHasFreeHotelTransfer}
+                      data-testid="switch-free-transfer"
+                    />
+                  </div>
+                  
+                  {hasFreeHotelTransfer && (
+                    <div className="space-y-2 pt-2 border-t">
+                      <Label>Transfer Bolgeleri</Label>
+                      <Textarea 
+                        value={transferZones}
+                        onChange={(e) => setTransferZones(e.target.value)}
+                        placeholder="Oludeniz, Fethiye Merkez, Hisaronu, Ovacik, Calis"
+                        className="min-h-[60px]"
+                        data-testid="input-transfer-zones"
+                      />
+                      <p className="text-xs text-muted-foreground">Virgule ayirarak bolgeleri girin. Bot bu verileri kullanabilir.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-base">Ekstralar</Label>
+                      <p className="text-xs text-muted-foreground">Ek hizmetler ve fiyatlari (Bot bu verilere erisebilir)</p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setExtras([...extras, { name: '', priceTl: 0, priceUsd: 0, description: '' }])}
+                      data-testid="button-add-extra"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Ekle
+                    </Button>
+                  </div>
+                  
+                  {extras.length > 0 && (
+                    <div className="space-y-3 pt-2 border-t">
+                      {extras.map((extra, idx) => (
+                        <div key={idx} className="flex gap-2 items-start">
+                          <div className="flex-1 space-y-2">
+                            <Input
+                              placeholder="Ekstra adi (ornek: 10 dk ekstra ucus)"
+                              value={extra.name}
+                              onChange={(e) => {
+                                const newExtras = [...extras];
+                                newExtras[idx].name = e.target.value;
+                                setExtras(newExtras);
+                              }}
+                              data-testid={`input-extra-name-${idx}`}
+                            />
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                placeholder="TL"
+                                value={extra.priceTl || ''}
+                                onChange={(e) => {
+                                  const newExtras = [...extras];
+                                  newExtras[idx].priceTl = Number(e.target.value) || 0;
+                                  setExtras(newExtras);
+                                }}
+                                className="w-24"
+                                data-testid={`input-extra-priceTl-${idx}`}
+                              />
+                              <Input
+                                type="number"
+                                placeholder="USD"
+                                value={extra.priceUsd || ''}
+                                onChange={(e) => {
+                                  const newExtras = [...extras];
+                                  newExtras[idx].priceUsd = Number(e.target.value) || 0;
+                                  setExtras(newExtras);
+                                }}
+                                className="w-24"
+                                data-testid={`input-extra-priceUsd-${idx}`}
+                              />
+                              <Input
+                                placeholder="Aciklama (opsiyonel)"
+                                value={extra.description}
+                                onChange={(e) => {
+                                  const newExtras = [...extras];
+                                  newExtras[idx].description = e.target.value;
+                                  setExtras(newExtras);
+                                }}
+                                className="flex-1"
+                                data-testid={`input-extra-desc-${idx}`}
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setExtras(extras.filter((_, i) => i !== idx))}
+                            data-testid={`button-remove-extra-${idx}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {extras.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Henuz ekstra eklenmedi. "Ekle" butonuna tiklayarak ekstra hizmet ekleyebilirsiniz.
+                    </p>
+                  )}
+                </div>
+              </TabsContent>
+
               <TabsContent value="notifications" className="space-y-4 mt-0">
                 <div className="space-y-2">
-                  <Label>Telefon Bildirim Ayarları</Label>
-                  <p className="text-sm text-muted-foreground">Yeni rezervasyon yapıldığında kime SMS gönderilecek?</p>
+                  <Label>Telefon Bildirim Ayarlari</Label>
+                  <p className="text-sm text-muted-foreground">Yeni rezervasyon yapildiginda kime SMS gonderilecek?</p>
                 </div>
 
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">

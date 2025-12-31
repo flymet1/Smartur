@@ -25,6 +25,10 @@ export const activities = pgTable("activities", {
   sendNotificationToAdmin: boolean("send_notification_to_admin").default(true),
   notificationMessageTemplate: text("notification_message_template").default("Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kisiSayisi}"),
   active: boolean("active").default(true),
+  // Transfer ve Ekstralar
+  hasFreeHotelTransfer: boolean("has_free_hotel_transfer").default(false),
+  transferZones: text("transfer_zones").default("[]"), // JSON array of zone names ["Ölüdeniz", "Fethiye Merkez", "Hisarönü"]
+  extras: text("extras").default("[]"), // JSON array of {name, priceTl, priceUsd, description}
 });
 
 export const capacity = pgTable("capacity", {
