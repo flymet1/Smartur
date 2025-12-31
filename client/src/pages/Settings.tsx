@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 
 export default function Settings() {
@@ -12,6 +13,11 @@ export default function Settings() {
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderMessage, setReminderMessage] = useState(
     "Merhaba {isim}! Rezervasyonunuz için hatırlatma:\n\n{aktiviteler}\nTarih: {tarih}\n\nSizi görmek için sabırsızlanıyoruz!"
+  );
+  const [botEnabled, setBotEnabled] = useState(true);
+  const [botLanguage, setBotLanguage] = useState("tr");
+  const [botPrompt, setBotPrompt] = useState(
+    "Sen bir TURİZM RESERVASYONLARI DANIŞMANI'sın. Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. Kibar, samimi ve profesyonel ol. Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol."
   );
 
   return (
@@ -95,6 +101,73 @@ export default function Settings() {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>WhatsApp Bot Ayarları</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>WhatsApp Botunu Etkinleştir</Label>
+                  <p className="text-sm text-muted-foreground">Müşterilerle otomatik konuşmalar için bot'u aç/kapat</p>
+                </div>
+                <Switch 
+                  checked={botEnabled} 
+                  onCheckedChange={setBotEnabled}
+                />
+              </div>
+
+              {botEnabled && (
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <div className="space-y-2">
+                    <Label htmlFor="botLanguage">Bot Dili</Label>
+                    <Select value={botLanguage} onValueChange={setBotLanguage}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tr">Türkçe</SelectItem>
+                        <SelectItem value="en">İngilizce</SelectItem>
+                        <SelectItem value="es">İspanyolca</SelectItem>
+                        <SelectItem value="de">Almanca</SelectItem>
+                        <SelectItem value="fr">Fransızca</SelectItem>
+                        <SelectItem value="it">İtalyanca</SelectItem>
+                        <SelectItem value="pt">Portekizce</SelectItem>
+                        <SelectItem value="ru">Rusça</SelectItem>
+                        <SelectItem value="ar">Arapça</SelectItem>
+                        <SelectItem value="ja">Japonca</SelectItem>
+                        <SelectItem value="zh">Çince</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Botun müşterilerle konuşacağı dili seçin
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="botPrompt">Bot Sistemi Prompt'u</Label>
+                    <Textarea 
+                      id="botPrompt"
+                      value={botPrompt}
+                      onChange={(e) => setBotPrompt(e.target.value)}
+                      placeholder="Bot'un nasıl davranacağını tanımlayan talimatleri yazın..."
+                      className="min-h-[150px]"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Bu prompt'u değiştirerek bot'un kişiliğini ve davranışını özelleştirebilirsiniz. Bot bu talimatlara uyarak müşterilerle konuşacak.
+                    </p>
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <p className="text-xs text-blue-900 dark:text-blue-200">
+                      <strong>💡 İpucu:</strong> Prompt'unuzda müşterilerle samimi olmalarını, kibar olmalarını, hızlı cevap vermelerini ve rezervasyon yapmalarına yardımcı olmalarını belirtin.
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
