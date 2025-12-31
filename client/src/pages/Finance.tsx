@@ -36,9 +36,10 @@ import {
   CreditCard,
   Calendar
 } from "lucide-react";
-import type { Agency, AgencyPayout } from "@shared/schema";
+import type { Agency, AgencyPayout, SupplierDispatch, Activity } from "@shared/schema";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
+import { Send, Clock } from "lucide-react";
 
 const formatMoney = (amount: number) => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
@@ -56,6 +57,7 @@ export default function Finance() {
   
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
+  const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Agency | null>(null);
   
   const [supplierForm, setSupplierForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
@@ -72,6 +74,15 @@ export default function Finance() {
     notes: '',
     status: 'paid'
   });
+  const [dispatchForm, setDispatchForm] = useState({
+    agencyId: 0,
+    activityId: 0,
+    dispatchDate: new Date().toISOString().split('T')[0],
+    dispatchTime: '10:00',
+    guestCount: 1,
+    unitPayoutTl: 0,
+    notes: ''
+  });
 
   // Tedarikçiler (Suppliers)
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery<Agency[]>({
@@ -83,12 +94,28 @@ export default function Finance() {
     queryKey: ['/api/finance/payouts']
   });
 
+  // Gönderimler (Dispatches)
+  const { data: dispatches = [] } = useQuery<SupplierDispatch[]>({
+    queryKey: ['/api/finance/dispatches']
+  });
+
+  // Aktiviteler
+  const { data: activities = [] } = useQuery<Activity[]>({
+    queryKey: ['/api/activities']
+  });
+
   // Tarih aralığına göre filtrelenmiş ödemeler (dönem kesişimi)
   const filteredPayouts = payouts.filter(p => {
     // Dönem kesişimi: ödeme dönemi seçili tarih aralığıyla örtüşüyorsa dahil et
     if (p.periodEnd && p.periodEnd < startDate) return false;
     if (p.periodStart && p.periodStart > endDate) return false;
     return true;
+  });
+
+  // Tarih aralığına göre filtrelenmiş gönderimler
+  const filteredDispatches = dispatches.filter(d => {
+    if (!d.dispatchDate) return false;
+    return d.dispatchDate >= startDate && d.dispatchDate <= endDate;
   });
 
   // Özet hesaplamalar
@@ -177,6 +204,38 @@ export default function Finance() {
     }
   });
 
+  const createDispatchMutation = useMutation({
+    mutationFn: async (data: typeof dispatchForm) => apiRequest('POST', '/api/finance/dispatches', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      setDispatchDialogOpen(false);
+      setDispatchForm({
+        agencyId: 0,
+        activityId: 0,
+        dispatchDate: new Date().toISOString().split('T')[0],
+        dispatchTime: '10:00',
+        guestCount: 1,
+        unitPayoutTl: 0,
+        notes: ''
+      });
+      toast({ title: "Gonderim kaydedildi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Gonderim kaydedilemedi", variant: "destructive" });
+    }
+  });
+
+  const deleteDispatchMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/dispatches/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      toast({ title: "Gonderim silindi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Gonderim silinemedi", variant: "destructive" });
+    }
+  });
+
   const handleSupplierSubmit = () => {
     if (editingSupplier) {
       updateSupplierMutation.mutate({ id: editingSupplier.id, data: supplierForm });
@@ -197,6 +256,14 @@ export default function Finance() {
       vatAmountTl: vatAmount,
       totalAmountTl: totalAmount
     } as any);
+  };
+
+  const handleDispatchSubmit = () => {
+    if (!dispatchForm.agencyId) {
+      toast({ title: "Hata", description: "Tedarikci secin", variant: "destructive" });
+      return;
+    }
+    createDispatchMutation.mutate(dispatchForm);
   };
 
   if (suppliersLoading || payoutsLoading) {
@@ -283,6 +350,10 @@ export default function Finance() {
               <Building2 className="h-5 w-5" />
               Tedarikciler
             </TabsTrigger>
+            <TabsTrigger value="dispatches" className="h-10 px-6 text-base gap-2" data-testid="tab-dispatches">
+              <Send className="h-5 w-5" />
+              Gonderimler
+            </TabsTrigger>
             <TabsTrigger value="payouts" className="h-10 px-6 text-base gap-2" data-testid="tab-payouts">
               <CreditCard className="h-5 w-5" />
               Odemeler
@@ -361,6 +432,83 @@ export default function Finance() {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="dispatches" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Gunluk Gonderimler</h3>
+              <Button onClick={() => {
+                setDispatchForm({
+                  agencyId: 0,
+                  activityId: 0,
+                  dispatchDate: new Date().toISOString().split('T')[0],
+                  dispatchTime: '10:00',
+                  guestCount: 1,
+                  unitPayoutTl: 0,
+                  notes: ''
+                });
+                setDispatchDialogOpen(true);
+              }} data-testid="button-add-dispatch">
+                <Plus className="h-4 w-4 mr-2" />
+                Gonderim Ekle
+              </Button>
+            </div>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="space-y-3">
+                  {filteredDispatches.map(dispatch => {
+                    const supplier = suppliers.find(s => s.id === dispatch.agencyId);
+                    const activity = activities.find(a => a.id === dispatch.activityId);
+                    return (
+                      <div key={dispatch.id} className="flex flex-wrap items-center justify-between gap-4 p-3 border rounded-lg" data-testid={`row-dispatch-${dispatch.id}`}>
+                        <div className="flex-1 min-w-[200px]">
+                          <div className="font-medium flex items-center gap-2">
+                            <Send className="h-4 w-4" />
+                            {supplier?.name || 'Bilinmeyen Tedarikci'}
+                          </div>
+                          <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Clock className="h-3 w-3" />
+                            {dispatch.dispatchDate} {dispatch.dispatchTime}
+                            {activity && ` - ${activity.name}`}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Misafir:</span>
+                            <span className="ml-1 font-medium">{dispatch.guestCount} kisi</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Birim:</span>
+                            <span className="ml-1 font-medium">{formatMoney(dispatch.unitPayoutTl || 0)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Toplam:</span>
+                            <span className="ml-1 font-medium text-orange-600">{formatMoney(dispatch.totalPayoutTl || 0)}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              if (confirm('Bu gonderim kaydini silmek istediginize emin misiniz?')) {
+                                deleteDispatchMutation.mutate(dispatch.id);
+                              }
+                            }}
+                            data-testid={`button-delete-dispatch-${dispatch.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {filteredDispatches.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Bu donemde gonderim kaydi bulunamadi
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="payouts" className="space-y-4">
@@ -650,6 +798,126 @@ export default function Finance() {
                 onClick={handlePayoutSubmit}
                 disabled={createPayoutMutation.isPending}
                 data-testid="button-save-payout"
+              >
+                Kaydet
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Gonderim Dialog */}
+        <Dialog open={dispatchDialogOpen} onOpenChange={setDispatchDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Gonderim Kaydi Ekle</DialogTitle>
+              <DialogDescription>Tedarikci firmaya gonderilen misafirleri kaydedin</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Tedarikci</Label>
+                <Select 
+                  value={dispatchForm.agencyId ? String(dispatchForm.agencyId) : ""} 
+                  onValueChange={v => {
+                    const supplierId = parseInt(v);
+                    const supplier = suppliers.find(s => s.id === supplierId);
+                    setDispatchForm(f => ({ 
+                      ...f, 
+                      agencyId: supplierId,
+                      unitPayoutTl: supplier?.defaultPayoutPerGuest || f.unitPayoutTl
+                    }));
+                  }}
+                >
+                  <SelectTrigger data-testid="select-dispatch-supplier">
+                    <SelectValue placeholder="Tedarikci secin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map(s => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Aktivite (Opsiyonel)</Label>
+                <Select 
+                  value={dispatchForm.activityId ? String(dispatchForm.activityId) : ""} 
+                  onValueChange={v => setDispatchForm(f => ({ ...f, activityId: parseInt(v) || 0 }))}
+                >
+                  <SelectTrigger data-testid="select-dispatch-activity">
+                    <SelectValue placeholder="Aktivite secin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activities.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tarih</Label>
+                  <Input 
+                    type="date"
+                    value={dispatchForm.dispatchDate}
+                    onChange={e => setDispatchForm(f => ({ ...f, dispatchDate: e.target.value }))}
+                    data-testid="input-dispatch-date"
+                  />
+                </div>
+                <div>
+                  <Label>Saat</Label>
+                  <Input 
+                    type="time"
+                    value={dispatchForm.dispatchTime}
+                    onChange={e => setDispatchForm(f => ({ ...f, dispatchTime: e.target.value }))}
+                    data-testid="input-dispatch-time"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Misafir Sayisi</Label>
+                  <Input 
+                    type="number"
+                    min="1"
+                    value={dispatchForm.guestCount}
+                    onChange={e => setDispatchForm(f => ({ ...f, guestCount: parseInt(e.target.value) || 1 }))}
+                    data-testid="input-dispatch-guests"
+                  />
+                </div>
+                <div>
+                  <Label>Kisi Basi (TL)</Label>
+                  <Input 
+                    type="number"
+                    value={dispatchForm.unitPayoutTl}
+                    onChange={e => setDispatchForm(f => ({ ...f, unitPayoutTl: parseInt(e.target.value) || 0 }))}
+                    data-testid="input-dispatch-unit"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Notlar</Label>
+                <Textarea 
+                  value={dispatchForm.notes}
+                  onChange={e => setDispatchForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Ek bilgiler..."
+                  data-testid="input-dispatch-notes"
+                />
+              </div>
+              {dispatchForm.guestCount > 0 && dispatchForm.unitPayoutTl > 0 && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span>Toplam Odeme:</span>
+                    <span className="font-bold text-orange-600">{formatMoney(dispatchForm.guestCount * dispatchForm.unitPayoutTl)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDispatchDialogOpen(false)} data-testid="button-cancel-dispatch">Iptal</Button>
+              <Button 
+                onClick={handleDispatchSubmit}
+                disabled={createDispatchMutation.isPending}
+                data-testid="button-save-dispatch"
               >
                 Kaydet
               </Button>
