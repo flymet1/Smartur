@@ -96,7 +96,7 @@ export const blacklist = pgTable("blacklist", {
 
 // === FINANCE TABLES ===
 
-// Acentalar
+// Tedarikçiler (Suppliers) - Aktivite sağlayıcı firmalar (örn: UP Firma, Dalış Şirketi)
 export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
