@@ -95,7 +95,7 @@ export default function Finance() {
   const [selectedSettlement, setSelectedSettlement] = useState<Settlement | null>(null);
   
   const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
-  const [costForm, setCostForm] = useState({ activityId: 0, month: selectedMonth, fixedCost: 0, variableCostPerGuest: 0 });
+  const [costForm, setCostForm] = useState({ activityId: 0, monthStart: selectedMonth, monthEnd: selectedMonth, fixedCost: 0, variableCostPerGuest: 0 });
   const [paymentForm, setPaymentForm] = useState({ amountTl: 0, method: 'cash', reference: '', notes: '' });
   const [settlementForm, setSettlementForm] = useState({ 
     periodStart: startDate, 
@@ -166,7 +166,7 @@ export default function Finance() {
   const saveCostMutation = useMutation({
     mutationFn: async (data: typeof costForm) => {
       console.log('Saving cost:', data);
-      return apiRequest('POST', '/api/finance/costs', data);
+      return apiRequest('POST', '/api/finance/costs/bulk', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/costs'] });
@@ -386,7 +386,8 @@ export default function Finance() {
                             onClick={() => {
                               setCostForm({
                                 activityId: activity.id,
-                                month: selectedMonth,
+                                monthStart: selectedMonth,
+                                monthEnd: selectedMonth,
                                 fixedCost: cost?.fixedCost || 0,
                                 variableCostPerGuest: cost?.variableCostPerGuest || 0
                               });
@@ -619,7 +620,7 @@ export default function Finance() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Maliyet Duzenle</DialogTitle>
-              <DialogDescription>Secili donem icin maliyet</DialogDescription>
+              <DialogDescription>Tarih araligi icin maliyet tanimlayin</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -638,8 +639,28 @@ export default function Finance() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Baslangic Ayi</Label>
+                  <Input 
+                    type="month"
+                    value={costForm.monthStart} 
+                    onChange={e => setCostForm(f => ({ ...f, monthStart: e.target.value }))}
+                    data-testid="input-cost-month-start"
+                  />
+                </div>
+                <div>
+                  <Label>Bitis Ayi</Label>
+                  <Input 
+                    type="month"
+                    value={costForm.monthEnd} 
+                    onChange={e => setCostForm(f => ({ ...f, monthEnd: e.target.value }))}
+                    data-testid="input-cost-month-end"
+                  />
+                </div>
+              </div>
               <div>
-                <Label>Sabit Maliyet (TL)</Label>
+                <Label>Sabit Maliyet (TL/ay)</Label>
                 <Input 
                   type="number"
                   value={costForm.fixedCost} 
@@ -660,7 +681,7 @@ export default function Finance() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setCostDialogOpen(false)}>Iptal</Button>
               <Button 
-                onClick={() => saveCostMutation.mutate({ ...costForm, month: selectedMonth })}
+                onClick={() => saveCostMutation.mutate(costForm)}
                 disabled={saveCostMutation.isPending || !costForm.activityId}
                 data-testid="button-save-cost"
               >

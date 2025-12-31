@@ -783,6 +783,44 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/finance/costs/bulk", async (req, res) => {
+    try {
+      const { activityId, monthStart, monthEnd, fixedCost, variableCostPerGuest } = req.body;
+      
+      const startParts = monthStart.split('-').map(Number);
+      const endParts = monthEnd.split('-').map(Number);
+      
+      let startYear = startParts[0];
+      let startMonth = startParts[1];
+      const endYear = endParts[0];
+      const endMonth = endParts[1];
+      
+      const results = [];
+      
+      while (startYear < endYear || (startYear === endYear && startMonth <= endMonth)) {
+        const month = `${startYear}-${String(startMonth).padStart(2, '0')}`;
+        const cost = await storage.upsertActivityCost({
+          activityId,
+          month,
+          fixedCost,
+          variableCostPerGuest
+        });
+        results.push(cost);
+        
+        startMonth++;
+        if (startMonth > 12) {
+          startMonth = 1;
+          startYear++;
+        }
+      }
+      
+      res.json({ message: `${results.length} ay icin maliyet kaydedildi`, costs: results });
+    } catch (err) {
+      console.error('Bulk cost error:', err);
+      res.status(400).json({ error: "Toplu maliyet kaydedilemedi" });
+    }
+  });
+
   // === Finance - Settlements ===
   app.get("/api/finance/settlements", async (req, res) => {
     try {
