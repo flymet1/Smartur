@@ -68,9 +68,10 @@ const TURKISH_HOLIDAYS: { date: string; name: string }[] = [
 // Build date context for the AI
 function buildDateContext(): string {
   const now = new Date();
-  // Use Turkey timezone
-  const turkeyOffset = 3 * 60; // UTC+3
-  const localNow = new Date(now.getTime() + (turkeyOffset + now.getTimezoneOffset()) * 60000);
+  // Convert to Turkey timezone (UTC+3) correctly
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const turkeyTime = utcTime + (3 * 60 * 60000); // Add 3 hours for Turkey
+  const localNow = new Date(turkeyTime);
   
   const formatDate = (d: Date) => d.toISOString().split('T')[0];
   const formatReadable = (d: Date) => `${d.getDate()} ${TURKISH_MONTHS[d.getMonth()]} ${d.getFullYear()} ${TURKISH_DAYS[d.getDay()]}`;
