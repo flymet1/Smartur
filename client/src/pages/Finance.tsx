@@ -617,7 +617,10 @@ export default function Finance() {
             <div className="space-y-4">
               <div>
                 <Label>Aktivite</Label>
-                <Select value={String(costForm.activityId)} onValueChange={v => setCostForm(f => ({ ...f, activityId: parseInt(v) }))}>
+                <Select 
+                  value={costForm.activityId ? String(costForm.activityId) : ""} 
+                  onValueChange={v => setCostForm(f => ({ ...f, activityId: parseInt(v) }))}
+                >
                   <SelectTrigger data-testid="select-cost-activity">
                     <SelectValue placeholder="Aktivite secin" />
                   </SelectTrigger>
