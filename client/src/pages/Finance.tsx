@@ -494,7 +494,23 @@ export default function Finance() {
           </TabsContent>
 
           <TabsContent value="settlements" className="space-y-4">
-            <h3 className="text-lg font-semibold">Hesaplasma Gecmisi</h3>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <h3 className="text-lg font-semibold">Hesaplasma Gecmisi</h3>
+              <Button 
+                onClick={() => {
+                  if (agencies.length === 0) {
+                    toast({ title: "Uyari", description: "Once bir acenta eklemelisiniz", variant: "destructive" });
+                    return;
+                  }
+                  setSelectedAgencyForSettlement(agencies[0].id);
+                  setSettlementDialogOpen(true);
+                }}
+                data-testid="button-add-settlement"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Yeni Hesaplasma
+              </Button>
+            </div>
             <Card>
               <CardContent className="pt-4">
                 <div className="space-y-3">
@@ -704,9 +720,25 @@ export default function Finance() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Hesaplasma Olustur</DialogTitle>
-              <DialogDescription>Secili acenta icin yeni hesaplasma donemi olusturun</DialogDescription>
+              <DialogDescription>Acenta icin yeni hesaplasma donemi olusturun</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label>Acenta</Label>
+                <Select 
+                  value={selectedAgencyForSettlement ? String(selectedAgencyForSettlement) : ""} 
+                  onValueChange={v => setSelectedAgencyForSettlement(parseInt(v))}
+                >
+                  <SelectTrigger data-testid="select-settlement-agency">
+                    <SelectValue placeholder="Acenta secin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agencies.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Donem Baslangici</Label>
                 <Input 
