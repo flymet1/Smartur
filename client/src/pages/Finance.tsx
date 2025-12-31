@@ -132,7 +132,7 @@ export default function Finance() {
   });
 
   const createAgencyMutation = useMutation({
-    mutationFn: async (data: typeof agencyForm) => apiRequest('/api/finance/agencies', 'POST', data),
+    mutationFn: async (data: typeof agencyForm) => apiRequest('POST', '/api/finance/agencies', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       setAgencyDialogOpen(false);
@@ -146,7 +146,7 @@ export default function Finance() {
 
   const updateAgencyMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: typeof agencyForm }) => 
-      apiRequest(`/api/finance/agencies/${id}`, 'PATCH', data),
+      apiRequest('PATCH', `/api/finance/agencies/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       setAgencyDialogOpen(false);
@@ -156,7 +156,7 @@ export default function Finance() {
   });
 
   const deleteAgencyMutation = useMutation({
-    mutationFn: async (id: number) => apiRequest(`/api/finance/agencies/${id}`, 'DELETE'),
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/agencies/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       toast({ title: "Acenta silindi" });
@@ -164,18 +164,25 @@ export default function Finance() {
   });
 
   const saveCostMutation = useMutation({
-    mutationFn: async (data: typeof costForm) => apiRequest('/api/finance/costs', 'POST', data),
+    mutationFn: async (data: typeof costForm) => {
+      console.log('Saving cost:', data);
+      return apiRequest('POST', '/api/finance/costs', data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/costs'] });
       queryClient.invalidateQueries({ queryKey: ['/api/finance/overview'] });
       setCostDialogOpen(false);
       toast({ title: "Maliyet kaydedildi" });
+    },
+    onError: (error: any) => {
+      console.error('Cost save error:', error);
+      toast({ title: "Hata", description: error?.message || "Maliyet kaydedilemedi", variant: "destructive" });
     }
   });
 
   const generateSettlementMutation = useMutation({
     mutationFn: async (data: { agencyId: number; periodStart: string; periodEnd: string; vatRatePct: number }) =>
-      apiRequest('/api/finance/settlements/generate', 'POST', data),
+      apiRequest('POST', '/api/finance/settlements/generate', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/settlements'] });
       queryClient.invalidateQueries({ queryKey: ['/api/finance/overview'] });
@@ -186,7 +193,7 @@ export default function Finance() {
 
   const createPaymentMutation = useMutation({
     mutationFn: async (data: { settlementId: number; amountTl: number; method: string; reference: string; notes: string }) =>
-      apiRequest('/api/finance/payments', 'POST', data),
+      apiRequest('POST', '/api/finance/payments', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/settlements'] });
       queryClient.invalidateQueries({ queryKey: ['/api/finance/overview'] });
