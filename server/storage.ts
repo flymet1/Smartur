@@ -680,6 +680,10 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
+  async deleteActivityCost(id: number): Promise<void> {
+    await db.delete(activityCosts).where(eq(activityCosts.id, id));
+  }
+
   // Finance - Settlements
   async getSettlements(agencyId?: number): Promise<Settlement[]> {
     if (agencyId) {

@@ -7,11 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X } from "lucide-react";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -30,6 +30,67 @@ export default function Settings() {
   const [isRefreshingQR, setIsRefreshingQR] = useState(false);
   const [newBlacklistPhone, setNewBlacklistPhone] = useState("");
   const [newBlacklistReason, setNewBlacklistReason] = useState("");
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: sidebarLogoSetting, refetch: refetchLogo } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'sidebarLogo'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/sidebarLogo');
+      return res.json();
+    },
+  });
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Hata", description: "Lutfen bir gorsel dosyasi secin.", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Hata", description: "Dosya boyutu 2MB'dan kucuk olmali.", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string;
+        await fetch('/api/settings/sidebarLogo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: base64 })
+        });
+        await refetchLogo();
+        queryClient.invalidateQueries({ queryKey: ['/api/settings', 'sidebarLogo'] });
+        toast({ title: "Basarili", description: "Logo yuklendi." });
+        setIsUploadingLogo(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      toast({ title: "Hata", description: "Logo yuklenemedi.", variant: "destructive" });
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    try {
+      await fetch('/api/settings/sidebarLogo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: null })
+      });
+      await refetchLogo();
+      queryClient.invalidateQueries({ queryKey: ['/api/settings', 'sidebarLogo'] });
+      toast({ title: "Basarili", description: "Logo kaldirildi." });
+    } catch (err) {
+      toast({ title: "Hata", description: "Logo kaldirilamadi.", variant: "destructive" });
+    }
+  };
 
   interface BlacklistEntry {
     id: number;
@@ -142,6 +203,80 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="h-5 w-5" />
+                Sidebar Logosu
+              </CardTitle>
+              <CardDescription>
+                Sol menude gorunecek firmanizin logosunu yukleyin
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <input
+                type="file"
+                accept="image/*"
+                ref={logoInputRef}
+                onChange={handleLogoUpload}
+                className="hidden"
+                data-testid="input-logo-upload"
+              />
+              
+              {sidebarLogoSetting?.value ? (
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <img 
+                      src={sidebarLogoSetting.value} 
+                      alt="Logo" 
+                      className="h-16 w-auto border rounded-md p-2 bg-muted/30"
+                      data-testid="img-logo-preview"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                      data-testid="button-change-logo"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Degistir
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={handleRemoveLogo}
+                      className="text-destructive"
+                      data-testid="button-remove-logo"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Kaldir
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  className="border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => logoInputRef.current?.click()}
+                  data-testid="dropzone-logo"
+                >
+                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <div className="text-center">
+                    <p className="font-medium">Logo yuklemek icin tiklayin</p>
+                    <p className="text-sm text-muted-foreground">PNG, JPG (max 2MB)</p>
+                  </div>
+                </div>
+              )}
+              
+              {isUploadingLogo && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Yukleniyor...
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Otomasyon Ayarları</CardTitle>

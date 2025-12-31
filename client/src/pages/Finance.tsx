@@ -199,6 +199,18 @@ export default function Finance() {
     }
   });
 
+  const deleteCostMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/costs/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/costs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/overview'] });
+      toast({ title: "Maliyet silindi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Maliyet silinemedi", variant: "destructive" });
+    }
+  });
+
   const generateSettlementMutation = useMutation({
     mutationFn: async (data: { agencyId: number; periodStart: string; periodEnd: string; vatRatePct: number }) =>
       apiRequest('POST', '/api/finance/settlements/generate', data),
@@ -424,7 +436,7 @@ export default function Finance() {
                         <div className="flex-1 min-w-[200px]">
                           <div className="font-medium">{activity.name}</div>
                         </div>
-                        <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex flex-wrap items-center gap-4 text-sm">
                           <div>
                             <span className="text-muted-foreground">Sabit:</span>
                             <span className="ml-1 font-medium">{formatMoney(cost?.fixedCost || 0)}</span>
@@ -433,23 +445,39 @@ export default function Finance() {
                             <span className="text-muted-foreground">Kisi basi:</span>
                             <span className="ml-1 font-medium">{formatMoney(cost?.variableCostPerGuest || 0)}</span>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setCostForm({
-                                activityId: activity.id,
-                                monthStart: selectedMonth,
-                                monthEnd: selectedMonth,
-                                fixedCost: cost?.fixedCost || 0,
-                                variableCostPerGuest: cost?.variableCostPerGuest || 0
-                              });
-                              setCostDialogOpen(true);
-                            }}
-                            data-testid={`button-edit-cost-${activity.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setCostForm({
+                                  activityId: activity.id,
+                                  monthStart: selectedMonth,
+                                  monthEnd: selectedMonth,
+                                  fixedCost: cost?.fixedCost || 0,
+                                  variableCostPerGuest: cost?.variableCostPerGuest || 0
+                                });
+                                setCostDialogOpen(true);
+                              }}
+                              data-testid={`button-edit-cost-${activity.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            {cost && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm(`${activity.name} icin ${selectedMonth} maliyetini silmek istediginize emin misiniz?`)) {
+                                    deleteCostMutation.mutate(cost.id);
+                                  }
+                                }}
+                                data-testid={`button-delete-cost-${activity.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );

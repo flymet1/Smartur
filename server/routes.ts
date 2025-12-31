@@ -821,6 +821,16 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/finance/costs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteActivityCost(id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: "Maliyet silinemedi" });
+    }
+  });
+
   // === Finance - Agency Payouts ===
   app.get("/api/finance/payouts", async (req, res) => {
     try {

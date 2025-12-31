@@ -9,10 +9,10 @@ import {
   Menu,
   Calculator
 } from "lucide-react";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
   { href: "/", label: "Genel Bakış", icon: LayoutDashboard },
@@ -28,11 +28,26 @@ const navItems = [
 export function Sidebar() {
   const [location] = useLocation();
 
+  const { data: logoSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'sidebarLogo'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/sidebarLogo');
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
+  const logoUrl = logoSetting?.value;
+
   return (
     <>
       {/* Mobile Menu */}
-      <div className="md:hidden p-4 border-b flex items-center justify-between bg-white">
-        <div className="font-display font-bold text-xl text-primary">Operasyon.AI</div>
+      <div className="md:hidden p-4 border-b flex items-center justify-between bg-white dark:bg-card">
+        {logoUrl ? (
+          <img src={logoUrl} alt="Logo" className="h-8 w-auto" data-testid="img-sidebar-logo-mobile" />
+        ) : (
+          <div className="font-display font-bold text-xl text-primary">Operasyon</div>
+        )}
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -62,12 +77,16 @@ export function Sidebar() {
       {/* Desktop Sidebar */}
       <div className="hidden md:flex flex-col w-64 border-r bg-card h-screen fixed left-0 top-0">
         <div className="p-6">
-          <div className="font-display font-bold text-2xl text-primary flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <Activity className="h-5 w-5" />
-            </span>
-            Operasyon
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="h-10 w-auto" data-testid="img-sidebar-logo" />
+          ) : (
+            <div className="font-display font-bold text-2xl text-primary flex items-center gap-2">
+              <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <Activity className="h-5 w-5" />
+              </span>
+              Operasyon
+            </div>
+          )}
         </div>
 
         <div className="flex-1 px-4 py-4 space-y-1">
