@@ -4,14 +4,60 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema } from "@shared/schema";
-// import { generateContent } from "./gemini"; // Mocking this for now or assuming implementation
 
-// Mock AI function for now
+let genAI: any = null;
+try {
+  const mod = require("@google/genai");
+  if (mod.GoogleGenerativeAI) {
+    genAI = new mod.GoogleGenerativeAI(process.env.GOOGLE_AI_KEY || "");
+  }
+} catch (err) {
+  console.warn("Gemini API not available, falling back to mock responses");
+}
+
+// AI function using Gemini API with activity descriptions
 async function generateAIResponse(history: any[], context: any) {
-  // In a real implementation, this would call Google Gemini API
-  // const model = getGeminiModel();
-  // const result = await model.generateContent(...)
-  return "Merhaba! Rezervasyon talebiniz için teşekkürler. Lütfen tarih ve saat belirtin.";
+  // Build activity descriptions for context
+  const activityDescriptions = context.activities
+    ?.map((a: any) => `- ${a.name}: ${a.description || "Açıklama yok"}`)
+    .join("\n") || "";
+  
+  // If Gemini is available, use it; otherwise use mock
+  if (genAI) {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      // System prompt with activity information
+      const systemPrompt = `Sen bir TURİZM REZERVASYONLARI DANIŞMANI'sın. 
+Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. 
+Kibar, samimi ve profesyonel ol. 
+Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol.
+
+Mevcut Aktiviteler:
+${activityDescriptions}
+
+Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.`;
+
+      // Convert message history to Gemini format
+      const contents = history.map((msg: any) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.content }]
+      }));
+
+      const result = await model.generateContent({
+        contents,
+        systemInstruction: systemPrompt
+      });
+
+      const responseText = result.response.text();
+      return responseText || "Merhaba! Nasıl yardımcı olabilirim?";
+    } catch (error) {
+      console.error("Gemini API error:", error);
+    }
+  }
+
+  // Mock response with activity information
+  return `Merhaba! Bizim aktivitelerimiz şunlardır:\n\n${activityDescriptions}\n\nBunlardan hangisine ilgi duyuyorsunuz?`;
 }
 
 export async function registerRoutes(
