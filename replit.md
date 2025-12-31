@@ -11,6 +11,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Rezervasyonlar**: Web ve WhatsApp üzerinden gelen rezervasyonların yönetimi.
 - **WhatsApp Entegrasyonu**: Twilio Webhook yapısı ile (mock) mesajlaşma ve AI yanıtları.
 - **Raporlama**: Basit istatistikler.
+- **Finans & Acenta Yönetimi**: Aktivite maliyetleri, KDV hesaplaması, acenta ödemeleri ve hesaplaşma takibi.
 
 ## Teknoloji Yığını
 - **Frontend**: React, Shadcn/UI, Tailwind CSS, Recharts.
@@ -18,4 +19,5 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **AI**: Google Gemini 1.5 Flash (Replit AI Integration).
 
 ## Son Değişiklikler
+- 31.12.2025: Finans & Acenta Yönetimi modülü eklendi (maliyet takibi, KDV hesaplaması, hesaplaşma sistemi).
 - 31.12.2025: Proje başlatıldı, temel altyapı kuruldu.
