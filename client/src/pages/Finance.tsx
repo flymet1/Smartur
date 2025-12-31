@@ -29,17 +29,19 @@ import {
   TrendingUp, 
   Users, 
   DollarSign, 
-  Building2, 
   Plus, 
   Trash2, 
   Edit,
   CreditCard,
-  Calendar
+  Calendar,
+  Umbrella,
+  UserCheck,
+  TableProperties,
+  Send
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate } from "@shared/schema";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Clock } from "lucide-react";
 
 const formatMoney = (amount: number) => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
@@ -91,6 +93,8 @@ export default function Finance() {
     validFrom: new Date().toISOString().split('T')[0],
     validTo: '',
     unitPayoutTl: 0,
+    unitPayoutUsd: 0,
+    currency: 'TRY',
     notes: ''
   });
 
@@ -270,11 +274,11 @@ export default function Finance() {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/rates'] });
       setRateDialogOpen(false);
       setEditingRate(null);
-      setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, notes: '' });
-      toast({ title: "Tarife kaydedildi" });
+      setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, unitPayoutUsd: 0, currency: 'TRY', notes: '' });
+      toast({ title: "Fiyat kaydedildi" });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Tarife kaydedilemedi", variant: "destructive" });
+      toast({ title: "Hata", description: "Fiyat kaydedilemedi", variant: "destructive" });
     }
   });
 
@@ -390,12 +394,12 @@ export default function Finance() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Tedarikci</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Toplam Acenta</CardTitle>
+              <Umbrella className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="text-supplier-count">{suppliers.length}</div>
-              <p className="text-xs text-muted-foreground">Aktif tedarikci firma</p>
+              <p className="text-xs text-muted-foreground">Aktif acenta firma</p>
             </CardContent>
           </Card>
           <Card>
@@ -415,41 +419,41 @@ export default function Finance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600" data-testid="text-total-paid">{formatMoney(totalPaid)}</div>
-              <p className="text-xs text-muted-foreground">Tedarikçilere odenen</p>
+              <p className="text-xs text-muted-foreground">Acentalara odenen</p>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="suppliers" className="space-y-4">
-          <TabsList className="h-12 p-1">
-            <TabsTrigger value="suppliers" className="h-10 px-6 text-base gap-2" data-testid="tab-suppliers">
-              <Building2 className="h-5 w-5" />
-              Tedarikciler
+          <TabsList className="h-14 p-1.5 gap-1">
+            <TabsTrigger value="suppliers" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-suppliers">
+              <Umbrella className="h-5 w-5" />
+              Acentalar
             </TabsTrigger>
-            <TabsTrigger value="dispatches" className="h-10 px-6 text-base gap-2" data-testid="tab-dispatches">
-              <Send className="h-5 w-5" />
-              Gonderimler
+            <TabsTrigger value="dispatches" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-dispatches">
+              <UserCheck className="h-5 w-5" />
+              Gonderilen Musteri
             </TabsTrigger>
-            <TabsTrigger value="payouts" className="h-10 px-6 text-base gap-2" data-testid="tab-payouts">
+            <TabsTrigger value="payouts" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-payouts">
               <CreditCard className="h-5 w-5" />
               Odemeler
             </TabsTrigger>
-            <TabsTrigger value="rates" className="h-10 px-6 text-base gap-2" data-testid="tab-rates">
-              <Clock className="h-5 w-5" />
-              Tarifeler
+            <TabsTrigger value="rates" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-rates">
+              <TableProperties className="h-5 w-5" />
+              Fiyat Tablosu
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="suppliers" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Tedarikci Firmalari</h3>
+              <h3 className="text-lg font-semibold">Acenta Firmalari</h3>
               <Button onClick={() => { 
                 setEditingSupplier(null); 
                 setSupplierForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' }); 
                 setSupplierDialogOpen(true); 
               }} data-testid="button-add-supplier">
                 <Plus className="h-4 w-4 mr-2" />
-                Tedarikci Ekle
+                Acenta Ekle
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -458,7 +462,7 @@ export default function Finance() {
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Building2 className="h-5 w-5" />
+                        <Umbrella className="h-5 w-5" />
                         {supplier.name}
                       </CardTitle>
                       <div className="flex gap-1">
@@ -543,7 +547,7 @@ export default function Finance() {
                     <Card key={summary.agencyId} data-testid={`card-summary-${summary.agencyId}`}>
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center gap-2">
-                          <Building2 className="h-4 w-4" />
+                          <Umbrella className="h-4 w-4" />
                           {summary.agencyName}
                         </CardTitle>
                       </CardHeader>
@@ -584,10 +588,10 @@ export default function Finance() {
                         <div className="flex-1 min-w-[200px]">
                           <div className="font-medium flex items-center gap-2">
                             <Send className="h-4 w-4" />
-                            {supplier?.name || 'Bilinmeyen Tedarikci'}
+                            {supplier?.name || 'Bilinmeyen Acenta'}
                           </div>
                           <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Clock className="h-3 w-3" />
+                            <Calendar className="h-3 w-3" />
                             {dispatch.dispatchDate} {dispatch.dispatchTime}
                             {activity && ` - ${activity.name}`}
                           </div>
@@ -663,8 +667,8 @@ export default function Finance() {
                       <div key={payout.id} className="flex flex-wrap items-center justify-between gap-4 p-3 border rounded-lg" data-testid={`row-payout-${payout.id}`}>
                         <div className="flex-1 min-w-[200px]">
                           <div className="font-medium flex items-center gap-2">
-                            <Building2 className="h-4 w-4" />
-                            {supplier?.name || 'Bilinmeyen Tedarikci'}
+                            <Umbrella className="h-4 w-4" />
+                            {supplier?.name || 'Bilinmeyen Acenta'}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {payout.periodStart} - {payout.periodEnd}
@@ -712,22 +716,22 @@ export default function Finance() {
 
           <TabsContent value="rates" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Donemsel Tarifeler</h3>
+              <h3 className="text-lg font-semibold">Fiyat Tablosu</h3>
               <Button onClick={() => { 
                 setEditingRate(null);
-                setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, notes: '' });
+                setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, unitPayoutUsd: 0, currency: 'TRY', notes: '' });
                 setRateDialogOpen(true);
               }} data-testid="button-add-rate">
                 <Plus className="h-4 w-4 mr-2" />
-                Tarife Ekle
+                Fiyat Ekle
               </Button>
             </div>
             
             <Card>
               <CardHeader>
-                <CardTitle>Tarife Listesi</CardTitle>
+                <CardTitle>Acenta Fiyat Listesi</CardTitle>
                 <CardDescription>
-                  Tedarikci firmalar icin donem bazli kisi basi odeme tarifeleri. Gonderim kaydederken bu tarifeler otomatik uygulanir.
+                  Acenta firmalar icin donem bazli kisi basi odeme fiyatlari. Musteri gonderiminde bu fiyatlar otomatik uygulanir.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -735,13 +739,18 @@ export default function Finance() {
                   {rates.map(rate => {
                     const supplier = suppliers.find(s => s.id === rate.agencyId);
                     const activity = activities.find(a => a.id === rate.activityId);
+                    const isTry = (rate.currency || 'TRY') === 'TRY';
+                    const displayAmount = isTry ? (rate.unitPayoutTl || 0) : (rate.unitPayoutUsd || 0);
+                    const currencySymbol = isTry ? 'TL' : 'USD';
                     return (
                       <div key={rate.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`card-rate-${rate.id}`}>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
+                            <Umbrella className="h-4 w-4" />
                             <span className="font-semibold">{supplier?.name || 'Bilinmeyen'}</span>
                             {activity && <Badge variant="outline">{activity.name}</Badge>}
                             {!activity && <Badge variant="secondary">Genel</Badge>}
+                            <Badge variant={isTry ? "default" : "secondary"}>{currencySymbol}</Badge>
                             {!rate.isActive && <Badge variant="destructive">Pasif</Badge>}
                           </div>
                           <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
@@ -753,7 +762,7 @@ export default function Finance() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <div className="text-lg font-bold text-orange-600" data-testid={`text-rate-amount-${rate.id}`}>
-                              {formatMoney(rate.unitPayoutTl || 0)}
+                              {displayAmount.toLocaleString('tr-TR')} {currencySymbol}
                             </div>
                             <div className="text-xs text-muted-foreground">kisi basi</div>
                           </div>
@@ -766,6 +775,8 @@ export default function Finance() {
                                 validFrom: rate.validFrom,
                                 validTo: rate.validTo || '',
                                 unitPayoutTl: rate.unitPayoutTl || 0,
+                                unitPayoutUsd: rate.unitPayoutUsd || 0,
+                                currency: rate.currency || 'TRY',
                                 notes: rate.notes || ''
                               });
                               setRateDialogOpen(true);
@@ -782,7 +793,7 @@ export default function Finance() {
                   })}
                   {rates.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      Henuz tarife tanimlanmamis
+                      Henuz fiyat tanimlanmamis
                     </div>
                   )}
                 </div>
@@ -1125,22 +1136,22 @@ export default function Finance() {
           </DialogContent>
         </Dialog>
 
-        {/* Tarife Dialog */}
+        {/* Fiyat Dialog */}
         <Dialog open={rateDialogOpen} onOpenChange={setRateDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>{editingRate ? 'Tarife Duzenle' : 'Yeni Tarife'}</DialogTitle>
-              <DialogDescription>Tedarikci firma icin donemsel odeme tarifesi tanimlayin</DialogDescription>
+              <DialogTitle>{editingRate ? 'Fiyat Duzenle' : 'Yeni Fiyat'}</DialogTitle>
+              <DialogDescription>Acenta firma icin donemsel odeme fiyati tanimlayin</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Tedarikci</Label>
+                <Label>Acenta</Label>
                 <Select 
                   value={rateForm.agencyId ? String(rateForm.agencyId) : ""} 
                   onValueChange={v => setRateForm(f => ({ ...f, agencyId: parseInt(v) }))}
                 >
                   <SelectTrigger data-testid="select-rate-supplier">
-                    <SelectValue placeholder="Tedarikci secin" />
+                    <SelectValue placeholder="Acenta secin" />
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map(s => (
@@ -1150,13 +1161,13 @@ export default function Finance() {
                 </Select>
               </div>
               <div>
-                <Label>Aktivite (Opsiyonel - bos birakilirsa genel tarife)</Label>
+                <Label>Aktivite (Opsiyonel - bos birakilirsa genel fiyat)</Label>
                 <Select 
                   value={rateForm.activityId ? String(rateForm.activityId) : "0"} 
                   onValueChange={v => setRateForm(f => ({ ...f, activityId: parseInt(v) || 0 }))}
                 >
                   <SelectTrigger data-testid="select-rate-activity">
-                    <SelectValue placeholder="Genel tarife" />
+                    <SelectValue placeholder="Genel fiyat" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">Genel (Tum aktiviteler)</SelectItem>
@@ -1187,12 +1198,34 @@ export default function Finance() {
                 </div>
               </div>
               <div>
-                <Label>Kisi Basi Odeme (TL)</Label>
+                <Label>Para Birimi</Label>
+                <Select 
+                  value={rateForm.currency} 
+                  onValueChange={v => setRateForm(f => ({ ...f, currency: v }))}
+                >
+                  <SelectTrigger data-testid="select-rate-currency">
+                    <SelectValue placeholder="Para birimi secin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TRY">TL (Turk Lirasi)</SelectItem>
+                    <SelectItem value="USD">USD (Amerikan Dolari)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Kisi Basi Odeme ({rateForm.currency === 'TRY' ? 'TL' : 'USD'})</Label>
                 <Input 
                   type="number"
                   min="0"
-                  value={rateForm.unitPayoutTl}
-                  onChange={e => setRateForm(f => ({ ...f, unitPayoutTl: parseInt(e.target.value) || 0 }))}
+                  value={rateForm.currency === 'TRY' ? rateForm.unitPayoutTl : rateForm.unitPayoutUsd}
+                  onChange={e => {
+                    const val = parseInt(e.target.value) || 0;
+                    if (rateForm.currency === 'TRY') {
+                      setRateForm(f => ({ ...f, unitPayoutTl: val }));
+                    } else {
+                      setRateForm(f => ({ ...f, unitPayoutUsd: val }));
+                    }
+                  }}
                   data-testid="input-rate-amount"
                 />
               </div>

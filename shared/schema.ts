@@ -214,6 +214,8 @@ export const agencyActivityRates = pgTable("agency_activity_rates", {
   validFrom: text("valid_from").notNull(), // YYYY-MM-DD başlangıç tarihi
   validTo: text("valid_to"), // YYYY-MM-DD bitiş tarihi (null = süresiz)
   unitPayoutTl: integer("unit_payout_tl").notNull(), // Kişi başı ödeme tutarı
+  unitPayoutUsd: integer("unit_payout_usd"), // USD kişi başı ödeme (opsiyonel)
+  currency: text("currency").default("TRY").notNull(), // TRY veya USD
   notes: text("notes"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

@@ -982,13 +982,21 @@ export async function registerRoutes(
 
   app.post("/api/finance/rates", async (req, res) => {
     try {
-      const { agencyId, activityId, validFrom, validTo, unitPayoutTl, notes } = req.body;
+      const { agencyId, activityId, validFrom, validTo, unitPayoutTl, unitPayoutUsd, currency, notes } = req.body;
       
-      if (!agencyId || !validFrom || unitPayoutTl === undefined) {
-        return res.status(400).json({ error: "agencyId, validFrom ve unitPayoutTl zorunlu" });
+      if (!agencyId || !validFrom) {
+        return res.status(400).json({ error: "agencyId ve validFrom zorunlu" });
       }
-      if (unitPayoutTl < 0) {
+      
+      const currencyVal = currency || 'TRY';
+      const payoutTl = unitPayoutTl || 0;
+      const payoutUsd = unitPayoutUsd || 0;
+      
+      if (currencyVal === 'TRY' && payoutTl < 0) {
         return res.status(400).json({ error: "unitPayoutTl negatif olamaz" });
+      }
+      if (currencyVal === 'USD' && payoutUsd < 0) {
+        return res.status(400).json({ error: "unitPayoutUsd negatif olamaz" });
       }
       if (validTo && validTo < validFrom) {
         return res.status(400).json({ error: "validTo, validFrom'dan once olamaz" });
@@ -999,7 +1007,9 @@ export async function registerRoutes(
         activityId: activityId || null,
         validFrom,
         validTo: validTo || null,
-        unitPayoutTl,
+        unitPayoutTl: payoutTl,
+        unitPayoutUsd: payoutUsd,
+        currency: currencyVal,
         notes,
         isActive: true
       });
