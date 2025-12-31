@@ -200,8 +200,22 @@ export const supplierDispatches = pgTable("supplier_dispatches", {
   guestCount: integer("guest_count").default(0).notNull(),
   unitPayoutTl: integer("unit_payout_tl").default(0), // Kişi başı ödeme
   totalPayoutTl: integer("total_payout_tl").default(0), // Toplam = guestCount * unitPayoutTl
+  rateId: integer("rate_id"), // Hangi tarife kullanıldı
   payoutId: integer("payout_id").references(() => agencyPayouts.id), // Hangi ödemeye bağlı (null = ödenmemiş)
   notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Tedarikçi Ödeme Tarifeleri (Dönemsel ücretler)
+export const agencyActivityRates = pgTable("agency_activity_rates", {
+  id: serial("id").primaryKey(),
+  agencyId: integer("agency_id").references(() => agencies.id).notNull(),
+  activityId: integer("activity_id").references(() => activities.id),
+  validFrom: text("valid_from").notNull(), // YYYY-MM-DD başlangıç tarihi
+  validTo: text("valid_to"), // YYYY-MM-DD bitiş tarihi (null = süresiz)
+  unitPayoutTl: integer("unit_payout_tl").notNull(), // Kişi başı ödeme tutarı
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -283,3 +297,7 @@ export type InsertAgencyPayout = z.infer<typeof insertAgencyPayoutSchema>;
 export const insertSupplierDispatchSchema = createInsertSchema(supplierDispatches).omit({ id: true, createdAt: true });
 export type SupplierDispatch = typeof supplierDispatches.$inferSelect;
 export type InsertSupplierDispatch = z.infer<typeof insertSupplierDispatchSchema>;
+
+export const insertAgencyActivityRateSchema = createInsertSchema(agencyActivityRates).omit({ id: true, createdAt: true });
+export type AgencyActivityRate = typeof agencyActivityRates.$inferSelect;
+export type InsertAgencyActivityRate = z.infer<typeof insertAgencyActivityRateSchema>;

@@ -15,6 +15,7 @@ import {
   payments,
   agencyPayouts,
   supplierDispatches,
+  agencyActivityRates,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -45,6 +46,8 @@ import {
   type InsertAgencyPayout,
   type SupplierDispatch,
   type InsertSupplierDispatch,
+  type AgencyActivityRate,
+  type InsertAgencyActivityRate,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -125,6 +128,14 @@ export interface IStorage {
   createSupplierDispatch(dispatch: InsertSupplierDispatch): Promise<SupplierDispatch>;
   updateSupplierDispatch(id: number, dispatch: Partial<InsertSupplierDispatch>): Promise<SupplierDispatch>;
   deleteSupplierDispatch(id: number): Promise<void>;
+  
+  // Finance - Agency Activity Rates (Dönemsel Tarifeler)
+  getAgencyActivityRates(agencyId?: number): Promise<AgencyActivityRate[]>;
+  createAgencyActivityRate(rate: InsertAgencyActivityRate): Promise<AgencyActivityRate>;
+  updateAgencyActivityRate(id: number, rate: Partial<InsertAgencyActivityRate>): Promise<AgencyActivityRate>;
+  deleteAgencyActivityRate(id: number): Promise<void>;
+  getActiveRateForDispatch(agencyId: number, activityId: number | null, date: string): Promise<AgencyActivityRate | null>;
+  
   getSupplierDispatchSummary(startDate?: string, endDate?: string): Promise<{
     agencyId: number;
     agencyName: string;
@@ -865,6 +876,57 @@ export class DatabaseStorage implements IStorage {
     }
     
     return Object.values(summaryMap).filter(s => s.totalGuests > 0 || s.totalPaidTl > 0);
+  }
+
+  // Finance - Agency Activity Rates (Dönemsel Tarifeler)
+  async getAgencyActivityRates(agencyId?: number): Promise<AgencyActivityRate[]> {
+    if (agencyId) {
+      return await db.select().from(agencyActivityRates).where(eq(agencyActivityRates.agencyId, agencyId)).orderBy(desc(agencyActivityRates.validFrom));
+    }
+    return await db.select().from(agencyActivityRates).orderBy(desc(agencyActivityRates.validFrom));
+  }
+
+  async createAgencyActivityRate(rate: InsertAgencyActivityRate): Promise<AgencyActivityRate> {
+    const [created] = await db.insert(agencyActivityRates).values(rate).returning();
+    return created;
+  }
+
+  async updateAgencyActivityRate(id: number, rate: Partial<InsertAgencyActivityRate>): Promise<AgencyActivityRate> {
+    const [updated] = await db.update(agencyActivityRates).set(rate).where(eq(agencyActivityRates.id, id)).returning();
+    return updated;
+  }
+
+  async deleteAgencyActivityRate(id: number): Promise<void> {
+    await db.delete(agencyActivityRates).where(eq(agencyActivityRates.id, id));
+  }
+
+  async getActiveRateForDispatch(agencyId: number, activityId: number | null, date: string): Promise<AgencyActivityRate | null> {
+    const allRates = await db.select().from(agencyActivityRates)
+      .where(and(
+        eq(agencyActivityRates.agencyId, agencyId),
+        eq(agencyActivityRates.isActive, true)
+      ));
+    
+    const matchingRates = allRates.filter(rate => {
+      if (activityId && rate.activityId && rate.activityId !== activityId) return false;
+      if (rate.validFrom > date) return false;
+      if (rate.validTo && rate.validTo < date) return false;
+      return true;
+    });
+    
+    if (matchingRates.length === 0) return null;
+    
+    const activitySpecific = matchingRates.filter(r => r.activityId === activityId);
+    if (activitySpecific.length > 0) {
+      return activitySpecific.sort((a, b) => b.validFrom.localeCompare(a.validFrom))[0];
+    }
+    
+    const generalRates = matchingRates.filter(r => !r.activityId);
+    if (generalRates.length > 0) {
+      return generalRates.sort((a, b) => b.validFrom.localeCompare(a.validFrom))[0];
+    }
+    
+    return matchingRates.sort((a, b) => b.validFrom.localeCompare(a.validFrom))[0];
   }
 
   // Finance - Overview

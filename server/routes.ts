@@ -951,6 +951,72 @@ export async function registerRoutes(
     }
   });
 
+  // === Finance - Agency Activity Rates (Dönemsel Tarifeler) ===
+  app.get("/api/finance/rates", async (req, res) => {
+    try {
+      const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : undefined;
+      const rates = await storage.getAgencyActivityRates(agencyId);
+      res.json(rates);
+    } catch (err) {
+      res.status(500).json({ error: "Tarifeler alınamadı" });
+    }
+  });
+
+  app.post("/api/finance/rates", async (req, res) => {
+    try {
+      const { agencyId, activityId, validFrom, validTo, unitPayoutTl, notes } = req.body;
+      const rate = await storage.createAgencyActivityRate({
+        agencyId,
+        activityId: activityId || null,
+        validFrom,
+        validTo: validTo || null,
+        unitPayoutTl,
+        notes,
+        isActive: true
+      });
+      res.json(rate);
+    } catch (err) {
+      console.error('Rate error:', err);
+      res.status(400).json({ error: "Tarife kaydedilemedi" });
+    }
+  });
+
+  app.patch("/api/finance/rates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const rate = await storage.updateAgencyActivityRate(id, req.body);
+      res.json(rate);
+    } catch (err) {
+      res.status(400).json({ error: "Tarife güncellenemedi" });
+    }
+  });
+
+  app.delete("/api/finance/rates/:id", async (req, res) => {
+    try {
+      await storage.deleteAgencyActivityRate(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: "Tarife silinemedi" });
+    }
+  });
+
+  app.get("/api/finance/rates/active", async (req, res) => {
+    try {
+      const agencyId = parseInt(req.query.agencyId as string);
+      const activityId = req.query.activityId ? parseInt(req.query.activityId as string) : null;
+      const date = req.query.date as string;
+      
+      if (!agencyId || !date) {
+        return res.status(400).json({ error: "agencyId ve date gerekli" });
+      }
+      
+      const rate = await storage.getActiveRateForDispatch(agencyId, activityId, date);
+      res.json(rate);
+    } catch (err) {
+      res.status(500).json({ error: "Aktif tarife alınamadı" });
+    }
+  });
+
   // === Finance - Settlements ===
   app.get("/api/finance/settlements", async (req, res) => {
     try {
