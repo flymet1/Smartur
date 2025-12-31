@@ -194,6 +194,26 @@ export async function registerRoutes(
     }
   });
 
+  // === Settings ===
+  app.get("/api/settings/:key", async (req, res) => {
+    try {
+      const value = await storage.getSetting(req.params.key);
+      res.json({ key: req.params.key, value });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar alınamadı" });
+    }
+  });
+
+  app.post("/api/settings/:key", async (req, res) => {
+    try {
+      const { value } = req.body;
+      const result = await storage.setSetting(req.params.key, value);
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: "Ayar kaydedilemedi" });
+    }
+  });
+
   return httpServer;
 }
 

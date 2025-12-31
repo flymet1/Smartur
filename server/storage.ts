@@ -4,6 +4,7 @@ import {
   capacity,
   reservations,
   messages,
+  settings,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -12,6 +13,8 @@ import {
   type InsertReservation,
   type Message,
   type InsertMessage,
+  type Settings,
+  type InsertSettings,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 
@@ -36,6 +39,10 @@ export interface IStorage {
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
   getMessages(phone: string, limit?: number): Promise<Message[]>;
+
+  // Settings
+  getSetting(key: string): Promise<string | undefined>;
+  setSetting(key: string, value: string): Promise<Settings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -124,13 +131,34 @@ export class DatabaseStorage implements IStorage {
     return msg;
   }
 
-  async getMessages(phone: string, limit = 5): Promise<Message[]> {
+  async getMessages(phone: string, limit: number = 5): Promise<Message[]> {
     return await db
       .select()
       .from(messages)
       .where(eq(messages.phone, phone))
       .orderBy(desc(messages.timestamp))
       .limit(limit);
+  }
+
+  // Settings
+  async getSetting(key: string): Promise<string | undefined> {
+    const [result] = await db.select().from(settings).where(eq(settings.key, key));
+    return result?.value;
+  }
+
+  async setSetting(key: string, value: string): Promise<Settings> {
+    const existing = await db.select().from(settings).where(eq(settings.key, key));
+    if (existing.length > 0) {
+      const [updated] = await db
+        .update(settings)
+        .set({ value })
+        .where(eq(settings.key, key))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(settings).values({ key, value }).returning();
+      return created;
+    }
   }
 }
 

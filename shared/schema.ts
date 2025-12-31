@@ -15,6 +15,11 @@ export const activities = pgTable("activities", {
   defaultTimes: text("default_times").default("[]"), // JSON array of time strings like ["09:00", "14:00"]
   defaultCapacity: integer("default_capacity").default(10), // Default available slots per time slot
   confirmationMessage: text("confirmation_message").default("Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."),
+  agencyPhone: text("agency_phone"),
+  adminPhone: text("admin_phone"),
+  sendNotificationToAgency: boolean("send_notification_to_agency").default(true),
+  sendNotificationToAdmin: boolean("send_notification_to_admin").default(true),
+  notificationMessageTemplate: text("notification_message_template").default("Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kisiSayisi}"),
   active: boolean("active").default(true),
 });
 
@@ -50,6 +55,12 @@ export const messages = pgTable("messages", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+export const settings = pgTable("settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+});
+
 // === RELATIONS ===
 export const capacityRelations = relations(capacity, ({ one }) => ({
   activity: one(activities, {
@@ -83,3 +94,7 @@ export type InsertReservation = z.infer<typeof insertReservationSchema>;
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type Settings = typeof settings.$inferSelect;
+export const insertSettingsSchema = createInsertSchema(settings).omit({ id: true });
+export type InsertSettings = z.infer<typeof insertSettingsSchema>;

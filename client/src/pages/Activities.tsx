@@ -13,10 +13,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { Activity } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
@@ -132,6 +134,21 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [defaultCapacity, setDefaultCapacity] = useState(
     activity ? (activity as any).defaultCapacity || 10 : 10
   );
+  const [agencyPhone, setAgencyPhone] = useState(
+    activity ? (activity as any).agencyPhone || "" : ""
+  );
+  const [adminPhone, setAdminPhone] = useState(
+    activity ? (activity as any).adminPhone || "" : ""
+  );
+  const [sendNotificationToAgency, setSendNotificationToAgency] = useState(
+    activity ? (activity as any).sendNotificationToAgency !== false : true
+  );
+  const [sendNotificationToAdmin, setSendNotificationToAdmin] = useState(
+    activity ? (activity as any).sendNotificationToAdmin !== false : true
+  );
+  const [notificationMessage, setNotificationMessage] = useState(
+    activity ? (activity as any).notificationMessageTemplate || "Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kisiSayisi}" : "Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kisiSayisi}"
+  );
   
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
@@ -171,6 +188,11 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       defaultTimes: JSON.stringify(times),
       defaultCapacity: Number(defaultCapacity),
       confirmationMessage: formData.get("confirmationMessage") as string,
+      agencyPhone: agencyPhone || null,
+      adminPhone: adminPhone || null,
+      sendNotificationToAgency: sendNotificationToAgency,
+      sendNotificationToAdmin: sendNotificationToAdmin,
+      notificationMessageTemplate: notificationMessage,
       active: true,
     };
 
@@ -201,97 +223,170 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Aktiviteyi Düzenle' : 'Yeni Aktivite Ekle'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4 overflow-y-auto flex-1">
-          <div className="space-y-2">
-            <Label htmlFor="name">Aktivite Adı</Label>
-            <Input id="name" name="name" defaultValue={activity?.name} required placeholder="Örn: ATV Safari" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">Fiyat (TL)</Label>
-              <Input id="price" name="price" type="number" defaultValue={activity?.price} required />
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <Tabs defaultValue="general" className="w-full flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="general">Genel Bilgiler</TabsTrigger>
+              <TabsTrigger value="notifications">Bildirim Ayarları</TabsTrigger>
+            </TabsList>
+            <div className="flex-1 overflow-y-auto py-4 px-1">
+              <TabsContent value="general" className="space-y-4 mt-0">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Aktivite Adı</Label>
+                  <Input id="name" name="name" defaultValue={activity?.name} required placeholder="Örn: ATV Safari" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Fiyat (TL)</Label>
+                    <Input id="price" name="price" type="number" defaultValue={activity?.price} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="durationMinutes">Süre (Dakika)</Label>
+                    <Input id="durationMinutes" name="durationMinutes" type="number" defaultValue={activity?.durationMinutes} required />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Günde Kaç Defa?</Label>
+                  <div className="flex gap-2">
+                    {["1", "3", "5"].map((freq) => (
+                      <button
+                        key={freq}
+                        type="button"
+                        onClick={() => handleFrequencyChange(freq as "1" | "3" | "5")}
+                        className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
+                          frequency === freq
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted border-border hover:bg-muted/80"
+                        }`}
+                      >
+                        {freq}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Saatler</Label>
+                  <div className="space-y-2">
+                    {times.map((time, idx) => (
+                      <Input
+                        key={idx}
+                        type="time"
+                        value={time}
+                        onChange={(e) => handleTimeChange(idx, e.target.value)}
+                        placeholder="HH:mm"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Açıklama</Label>
+                  <Textarea 
+                    id="description" 
+                    name="description" 
+                    defaultValue={activity?.description || ""} 
+                    placeholder="Tur hakkında kısa bilgi..." 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="defaultCapacity">Varsayılan Müsaitlik (Her Saat Için)</Label>
+                  <Input 
+                    id="defaultCapacity" 
+                    type="number" 
+                    min="1"
+                    value={defaultCapacity}
+                    onChange={(e) => setDefaultCapacity(Math.max(1, Number(e.target.value)))}
+                    placeholder="10"
+                  />
+                  <p className="text-xs text-muted-foreground">Her zaman dilimi için kaç kişi rezervasyon yapabilir</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmationMessage">Rezervasyon Onay Mesajı</Label>
+                  <Textarea 
+                    id="confirmationMessage" 
+                    name="confirmationMessage" 
+                    defaultValue={(activity as any)?.confirmationMessage || "Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."} 
+                    placeholder="Rezervasyon onayı için özel mesaj..."
+                    className="min-h-[80px]"
+                  />
+                  <p className="text-xs text-muted-foreground">Kullanılabilir etiketler: {'{'}isim{'}'}, {'{'}tarih{'}'}, {'{'}saat{'}'}, {'{'}aktivite{'}'}</p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="notifications" className="space-y-4 mt-0">
+                <div className="space-y-2">
+                  <Label>Telefon Bildirim Ayarları</Label>
+                  <p className="text-sm text-muted-foreground">Yeni rezervasyon yapıldığında kime SMS gönderilecek?</p>
+                </div>
+
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1.5 flex-1">
+                      <Label htmlFor="agencyPhone" className="text-base">Acenta Telefon Numarası</Label>
+                      <Input 
+                        id="agencyPhone"
+                        type="tel"
+                        value={agencyPhone}
+                        onChange={(e) => setAgencyPhone(e.target.value)}
+                        placeholder="+90 xxx xxx xx xx"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 pt-6">
+                      <Switch 
+                        checked={sendNotificationToAgency}
+                        onCheckedChange={setSendNotificationToAgency}
+                        data-testid="toggle-agency-notification"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1.5 flex-1">
+                      <Label htmlFor="adminPhone" className="text-base">Admin Telefon Numarası</Label>
+                      <Input 
+                        id="adminPhone"
+                        type="tel"
+                        value={adminPhone}
+                        onChange={(e) => setAdminPhone(e.target.value)}
+                        placeholder="+90 xxx xxx xx xx"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 pt-6">
+                      <Switch 
+                        checked={sendNotificationToAdmin}
+                        onCheckedChange={setSendNotificationToAdmin}
+                        data-testid="toggle-admin-notification"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notificationMessage">Bildirim Mesajı Şablonu</Label>
+                  <Textarea 
+                    id="notificationMessage"
+                    value={notificationMessage}
+                    onChange={(e) => setNotificationMessage(e.target.value)}
+                    placeholder="Bildirim mesajı..."
+                    className="min-h-[150px]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Desteklenen değişkenler:</strong> {'{'}isim{'}'} - Müşteri adı, {'{'}telefonunuz{'}'} - Müşteri telefonu, {'{'}emailiniz{'}'} - Müşteri eposta, {'{'}tarih{'}'} - Rezervasyon tarihi, {'{'}saat{'}'} - Rezervasyon saati, {'{'}aktivite{'}'} - Aktivite adı, {'{'}kisiSayisi{'}'} - Kişi sayısı
+                  </p>
+                </div>
+              </TabsContent>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="durationMinutes">Süre (Dakika)</Label>
-              <Input id="durationMinutes" name="durationMinutes" type="number" defaultValue={activity?.durationMinutes} required />
-            </div>
-          </div>
+          </Tabs>
 
-          <div className="space-y-2">
-            <Label>Günde Kaç Defa?</Label>
-            <div className="flex gap-2">
-              {["1", "3", "5"].map((freq) => (
-                <button
-                  key={freq}
-                  type="button"
-                  onClick={() => handleFrequencyChange(freq as "1" | "3" | "5")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
-                    frequency === freq
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-muted border-border hover:bg-muted/80"
-                  }`}
-                >
-                  {freq}x
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Saatler</Label>
-            <div className="space-y-2">
-              {times.map((time, idx) => (
-                <Input
-                  key={idx}
-                  type="time"
-                  value={time}
-                  onChange={(e) => handleTimeChange(idx, e.target.value)}
-                  placeholder="HH:mm"
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Açıklama</Label>
-            <Textarea 
-              id="description" 
-              name="description" 
-              defaultValue={activity?.description || ""} 
-              placeholder="Tur hakkında kısa bilgi..." 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="defaultCapacity">Varsayılan Müsaitlik (Her Saat Için)</Label>
-            <Input 
-              id="defaultCapacity" 
-              type="number" 
-              min="1"
-              value={defaultCapacity}
-              onChange={(e) => setDefaultCapacity(Math.max(1, Number(e.target.value)))}
-              placeholder="10"
-            />
-            <p className="text-xs text-muted-foreground">Her zaman dilimi için kaç kişi rezervasyon yapabilir</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmationMessage">Rezervasyon Onay Mesajı</Label>
-            <Textarea 
-              id="confirmationMessage" 
-              name="confirmationMessage" 
-              defaultValue={(activity as any)?.confirmationMessage || "Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."} 
-              placeholder="Rezervasyon onayı için özel mesaj..."
-              className="min-h-[80px]"
-            />
-            <p className="text-xs text-muted-foreground">Kullanılabilir etiketler: {'{'}isim{'}'}, {'{'}tarih{'}'}, {'{'}saat{'}'}, {'{'}aktivite{'}'}</p>
-          </div>
-
-          <DialogFooter>
+          <DialogFooter className="pt-4 border-t mt-auto">
             <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
               {createMutation.isPending || updateMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
             </Button>

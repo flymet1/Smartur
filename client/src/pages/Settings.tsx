@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 
 export default function Settings() {
@@ -17,6 +18,7 @@ export default function Settings() {
   const [botPrompt, setBotPrompt] = useState(
     "Sen bir TURİZM RESERVASYONLARI DANIŞMANI'sın. Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. Kibar, samimi ve profesyonel ol. Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol."
   );
+  const [customerSupportEmail, setCustomerSupportEmail] = useState("");
 
   return (
     <div className="flex min-h-screen bg-muted/20">
@@ -106,41 +108,66 @@ export default function Settings() {
             <CardHeader>
               <CardTitle>WhatsApp Bot Ayarları</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>WhatsApp Botunu Etkinleştir</Label>
-                  <p className="text-sm text-muted-foreground">Müşterilerle otomatik konuşmalar için bot'u aç/kapat</p>
-                </div>
-                <Switch 
-                  checked={botEnabled} 
-                  onCheckedChange={setBotEnabled}
-                />
-              </div>
+            <CardContent>
+              <Tabs defaultValue="bot" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="bot">Bot Ayarları</TabsTrigger>
+                  <TabsTrigger value="support">Müşteri Destek</TabsTrigger>
+                </TabsList>
 
-              {botEnabled && (
-                <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                <TabsContent value="bot" className="space-y-6 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>WhatsApp Botunu Etkinleştir</Label>
+                      <p className="text-sm text-muted-foreground">Müşterilerle otomatik konuşmalar için bot'u aç/kapat</p>
+                    </div>
+                    <Switch 
+                      checked={botEnabled} 
+                      onCheckedChange={setBotEnabled}
+                    />
+                  </div>
+
+                  {botEnabled && (
+                    <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                      <div className="space-y-2">
+                        <Label htmlFor="botPrompt">Bot Sistemi Prompt'u</Label>
+                        <Textarea 
+                          id="botPrompt"
+                          value={botPrompt}
+                          onChange={(e) => setBotPrompt(e.target.value)}
+                          placeholder="Bot'un nasıl davranacağını tanımlayan talimatleri yazın..."
+                          className="min-h-[150px]"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Bu prompt'u değiştirerek bot'un kişiliğini ve davranışını özelleştirebilirsiniz. Bot bu talimatlara uyarak müşterilerle konuşacak.
+                        </p>
+                      </div>
+
+                      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                        <p className="text-xs text-blue-900 dark:text-blue-200">
+                          <strong>💡 İpucu:</strong> Prompt'unuzda müşterilerle samimi olmalarını, kibar olmalarını, hızlı cevap vermelerini ve rezervasyon yapmalarına yardımcı olmalarını belirtin.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="support" className="space-y-6 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="botPrompt">Bot Sistemi Prompt'u</Label>
-                    <Textarea 
-                      id="botPrompt"
-                      value={botPrompt}
-                      onChange={(e) => setBotPrompt(e.target.value)}
-                      placeholder="Bot'un nasıl davranacağını tanımlayan talimatleri yazın..."
-                      className="min-h-[150px]"
+                    <Label htmlFor="customerSupportEmail">Müşteri Destek E-posta Adresi</Label>
+                    <Input 
+                      id="customerSupportEmail"
+                      type="email"
+                      value={customerSupportEmail}
+                      onChange={(e) => setCustomerSupportEmail(e.target.value)}
+                      placeholder="destek@example.com"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Bu prompt'u değiştirerek bot'un kişiliğini ve davranışını özelleştirebilirsiniz. Bot bu talimatlara uyarak müşterilerle konuşacak.
+                      Müşteri destek talebinin gelmesi gereken e-posta adresi. Bot çözemediği sorular için bu adrese bildirim gönderilecek.
                     </p>
                   </div>
-
-                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                    <p className="text-xs text-blue-900 dark:text-blue-200">
-                      <strong>💡 İpucu:</strong> Prompt'unuzda müşterilerle samimi olmalarını, kibar olmalarını, hızlı cevap vermelerini ve rezervasyon yapmalarına yardımcı olmalarını belirtin.
-                    </p>
-                  </div>
-                </div>
-              )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
