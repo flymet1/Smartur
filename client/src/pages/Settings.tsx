@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 
 export default function Settings() {
@@ -15,7 +14,6 @@ export default function Settings() {
     "Merhaba {isim}! Rezervasyonunuz için hatırlatma:\n\n{aktiviteler}\nTarih: {tarih}\n\nSizi görmek için sabırsızlanıyoruz!"
   );
   const [botEnabled, setBotEnabled] = useState(true);
-  const [botLanguage, setBotLanguage] = useState("tr");
   const [botPrompt, setBotPrompt] = useState(
     "Sen bir TURİZM RESERVASYONLARI DANIŞMANI'sın. Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. Kibar, samimi ve profesyonel ol. Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol."
   );
@@ -122,31 +120,6 @@ export default function Settings() {
 
               {botEnabled && (
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
-                  <div className="space-y-2">
-                    <Label htmlFor="botLanguage">Bot Dili</Label>
-                    <Select value={botLanguage} onValueChange={setBotLanguage}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="tr">Türkçe</SelectItem>
-                        <SelectItem value="en">İngilizce</SelectItem>
-                        <SelectItem value="es">İspanyolca</SelectItem>
-                        <SelectItem value="de">Almanca</SelectItem>
-                        <SelectItem value="fr">Fransızca</SelectItem>
-                        <SelectItem value="it">İtalyanca</SelectItem>
-                        <SelectItem value="pt">Portekizce</SelectItem>
-                        <SelectItem value="ru">Rusça</SelectItem>
-                        <SelectItem value="ar">Arapça</SelectItem>
-                        <SelectItem value="ja">Japonca</SelectItem>
-                        <SelectItem value="zh">Çince</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Botun müşterilerle konuşacağı dili seçin
-                    </p>
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="botPrompt">Bot Sistemi Prompt'u</Label>
                     <Textarea 
