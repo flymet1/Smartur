@@ -278,9 +278,15 @@ export default function Finance() {
         </div>
 
         <Tabs defaultValue="suppliers" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="suppliers" data-testid="tab-suppliers">Tedarikciler</TabsTrigger>
-            <TabsTrigger value="payouts" data-testid="tab-payouts">Odemeler</TabsTrigger>
+          <TabsList className="h-12 p-1">
+            <TabsTrigger value="suppliers" className="h-10 px-6 text-base gap-2" data-testid="tab-suppliers">
+              <Building2 className="h-5 w-5" />
+              Tedarikciler
+            </TabsTrigger>
+            <TabsTrigger value="payouts" className="h-10 px-6 text-base gap-2" data-testid="tab-payouts">
+              <CreditCard className="h-5 w-5" />
+              Odemeler
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="suppliers" className="space-y-4">

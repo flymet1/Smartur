@@ -9,14 +9,23 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import type { Reservation } from "@shared/schema";
+import type { Reservation, Activity } from "@shared/schema";
 import { MessageSquare, Globe, User } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface ReservationTableProps {
   reservations: Reservation[];
 }
 
 export function ReservationTable({ reservations }: ReservationTableProps) {
+  const { data: activities = [] } = useQuery<Activity[]>({
+    queryKey: ['/api/activities']
+  });
+
+  const getActivityName = (activityId: number | null) => {
+    if (!activityId) return "Bilinmiyor";
+    return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
+  };
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
@@ -69,7 +78,7 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
                   <div className="text-xs text-muted-foreground">{res.customerPhone}</div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-medium">Aktivite #{res.activityId}</div>
+                  <div className="font-medium">{getActivityName(res.activityId)}</div>
                   <div className="text-xs text-muted-foreground">
                     {format(new Date(res.date), "d MMMM yyyy", { locale: tr })} • {res.time}
                   </div>
