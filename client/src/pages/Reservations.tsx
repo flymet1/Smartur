@@ -4,7 +4,8 @@ import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { ReservationCalendar } from "@/components/reservations/ReservationCalendar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import {
   Dialog,
@@ -28,6 +29,133 @@ export default function Reservations() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name">("date-desc");
+  const { toast } = useToast();
+
+  // Export to CSV
+  const exportToCSV = () => {
+    if (!filteredReservations.length) {
+      toast({ title: "Hata", description: "Dışa aktarılacak veri yok.", variant: "destructive" });
+      return;
+    }
+    
+    const headers = ["ID", "Müşteri", "Telefon", "E-posta", "Aktivite", "Tarih", "Saat", "Kişi", "TL", "USD", "Durum", "Kaynak"];
+    const getActivityName = (activityId: number | null) => activities?.find(a => a.id === activityId)?.name || "Bilinmiyor";
+    const getStatusText = (status: string | null) => {
+      if (status === "confirmed") return "Onaylı";
+      if (status === "pending") return "Beklemede";
+      if (status === "cancelled") return "İptal";
+      return status || "";
+    };
+    
+    const rows = filteredReservations.map(r => [
+      r.id,
+      r.customerName,
+      r.customerPhone,
+      r.customerEmail || "",
+      getActivityName(r.activityId),
+      r.date,
+      r.time,
+      r.quantity,
+      r.priceTl || 0,
+      r.priceUsd || 0,
+      getStatusText(r.status),
+      r.source === "web" ? "Web" : r.source === "whatsapp" ? "WhatsApp" : "Manuel"
+    ]);
+    
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `rezervasyonlar_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Başarılı", description: "CSV dosyası indirildi." });
+  };
+
+  // Export to PDF (simple HTML-based)
+  const exportToPDF = () => {
+    if (!filteredReservations.length) {
+      toast({ title: "Hata", description: "Dışa aktarılacak veri yok.", variant: "destructive" });
+      return;
+    }
+    
+    const getActivityName = (activityId: number | null) => activities?.find(a => a.id === activityId)?.name || "Bilinmiyor";
+    const getStatusText = (status: string | null) => {
+      if (status === "confirmed") return "Onaylı";
+      if (status === "pending") return "Beklemede";
+      if (status === "cancelled") return "İptal";
+      return status || "";
+    };
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({ title: "Hata", description: "Pop-up engelleyici aktif olabilir.", variant: "destructive" });
+      return;
+    }
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Rezervasyonlar - ${new Date().toLocaleDateString("tr-TR")}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { text-align: center; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f4f4f4; font-weight: bold; }
+          tr:nth-child(even) { background-color: #fafafa; }
+          .confirmed { color: green; }
+          .pending { color: orange; }
+          .cancelled { color: red; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>Rezervasyon Listesi</h1>
+        <p>Tarih: ${new Date().toLocaleDateString("tr-TR")} - Toplam: ${filteredReservations.length} rezervasyon</p>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Müşteri</th>
+              <th>Telefon</th>
+              <th>Aktivite</th>
+              <th>Tarih</th>
+              <th>Saat</th>
+              <th>Kişi</th>
+              <th>Tutar</th>
+              <th>Durum</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredReservations.map(r => `
+              <tr>
+                <td>${r.id}</td>
+                <td>${r.customerName}</td>
+                <td>${r.customerPhone}</td>
+                <td>${getActivityName(r.activityId)}</td>
+                <td>${r.date}</td>
+                <td>${r.time}</td>
+                <td>${r.quantity}</td>
+                <td>${r.priceTl ? r.priceTl + " TL" : ""}${r.priceUsd ? " / $" + r.priceUsd : ""}</td>
+                <td class="${r.status}">${getStatusText(r.status)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 250);
+    toast({ title: "Başarılı", description: "PDF için yazdırma penceresi açıldı." });
+  };
 
   // Filter ve sort
   const filteredReservations = (reservations || [])
@@ -55,7 +183,27 @@ export default function Reservations() {
             <h1 className="text-3xl font-bold font-display">Rezervasyonlar</h1>
             <p className="text-muted-foreground mt-1">Tüm rezervasyonları görüntüleyin ve yönetin</p>
           </div>
-          <NewReservationDialog />
+          <div className="flex gap-2 flex-wrap">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" data-testid="button-export">
+                  <Download className="h-4 w-4 mr-2" />
+                  Dışa Aktar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={exportToCSV} data-testid="button-export-csv">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  CSV / Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportToPDF} data-testid="button-export-pdf">
+                  <FileText className="h-4 w-4 mr-2" />
+                  PDF / Yazdır
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <NewReservationDialog />
+          </div>
         </div>
 
         {/* Arama Barı */}
