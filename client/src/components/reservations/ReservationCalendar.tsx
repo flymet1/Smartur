@@ -2,9 +2,10 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useState } from "react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import type { Reservation } from "@shared/schema";
+import type { Reservation, Activity } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
 
 interface ReservationCalendarProps {
   reservations: Reservation[];
@@ -12,6 +13,15 @@ interface ReservationCalendarProps {
 
 export function ReservationCalendar({ reservations }: ReservationCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  
+  const { data: activities = [] } = useQuery<Activity[]>({
+    queryKey: ['/api/activities']
+  });
+
+  const getActivityName = (activityId: number | null) => {
+    if (!activityId) return "Bilinmiyor";
+    return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
+  };
   const formattedDate = selectedDate ? format(selectedDate, "yyyy-MM-dd") : undefined;
 
   const getReservationsForDate = (date: string) => 
@@ -90,7 +100,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                     <span className="text-muted-foreground">
                       {res.time} • {res.quantity} Kişi
                     </span>
-                    <span className="font-medium">Aktivite #{res.activityId}</span>
+                    <span className="font-medium">{getActivityName(res.activityId)}</span>
                   </div>
                 </div>
               ))
