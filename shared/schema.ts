@@ -39,6 +39,7 @@ export const capacity = pgTable("capacity", {
 export const reservations = pgTable("reservations", {
   id: serial("id").primaryKey(),
   activityId: integer("activity_id").references(() => activities.id),
+  agencyId: integer("agency_id"), // Hangi acentadan geldi (opsiyonel)
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone").notNull(),
   customerEmail: text("customer_email"),
@@ -51,6 +52,10 @@ export const reservations = pgTable("reservations", {
   status: text("status").default("pending"), // pending, confirmed, cancelled
   source: text("source").default("whatsapp"), // whatsapp, web (woocommerce), manual
   externalId: text("external_id"), // WooCommerce Order ID
+  orderSubtotal: integer("order_subtotal").default(0), // WooCommerce subtotal
+  orderTotal: integer("order_total").default(0), // WooCommerce total
+  orderTax: integer("order_tax").default(0), // WooCommerce tax amount
+  settlementId: integer("settlement_id"), // Hangi hesaplaşmaya dahil edildi
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -83,6 +88,82 @@ export const blacklist = pgTable("blacklist", {
   phone: text("phone").notNull().unique(),
   reason: text("reason"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === FINANCE TABLES ===
+
+// Acentalar
+export const agencies = pgTable("agencies", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  contactInfo: text("contact_info"),
+  defaultPayoutPerGuest: integer("default_payout_per_guest").default(0), // Kişi başı ödeme (TL)
+  notes: text("notes"),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Aktivite bazlı acenta ödeme koşulları
+export const agencyActivityTerms = pgTable("agency_activity_terms", {
+  id: serial("id").primaryKey(),
+  agencyId: integer("agency_id").references(() => agencies.id).notNull(),
+  activityId: integer("activity_id").references(() => activities.id).notNull(),
+  payoutPerGuest: integer("payout_per_guest").default(0), // Kişi başı ödeme (TL)
+  effectiveMonth: text("effective_month"), // YYYY-MM formatında, null ise her zaman geçerli
+});
+
+// Aktivite maliyetleri (aylık)
+export const activityCosts = pgTable("activity_costs", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").references(() => activities.id).notNull(),
+  month: text("month").notNull(), // YYYY-MM
+  fixedCost: integer("fixed_cost").default(0), // Sabit maliyet (TL)
+  variableCostPerGuest: integer("variable_cost_per_guest").default(0), // Kişi başı değişken maliyet
+  notes: text("notes"),
+});
+
+// Hesaplaşma dönemleri
+export const settlements = pgTable("settlements", {
+  id: serial("id").primaryKey(),
+  agencyId: integer("agency_id").references(() => agencies.id).notNull(),
+  periodStart: text("period_start").notNull(), // YYYY-MM-DD
+  periodEnd: text("period_end").notNull(), // YYYY-MM-DD
+  status: text("status").default("draft"), // draft, approved, paid
+  totalGuests: integer("total_guests").default(0),
+  grossSalesTl: integer("gross_sales_tl").default(0),
+  grossSalesUsd: integer("gross_sales_usd").default(0),
+  totalCostTl: integer("total_cost_tl").default(0),
+  payoutTl: integer("payout_tl").default(0), // Acentaya ödenecek
+  payoutUsd: integer("payout_usd").default(0),
+  vatRatePct: integer("vat_rate_pct").default(20), // KDV oranı
+  vatAmountTl: integer("vat_amount_tl").default(0),
+  profitTl: integer("profit_tl").default(0), // Kar = Gelir - Maliyet - Acenta ödemesi - KDV
+  paidAmountTl: integer("paid_amount_tl").default(0), // Ödenen miktar
+  remainingTl: integer("remaining_tl").default(0), // Kalan borç
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Hesaplaşma detayları (rezervasyon bazlı)
+export const settlementEntries = pgTable("settlement_entries", {
+  id: serial("id").primaryKey(),
+  settlementId: integer("settlement_id").references(() => settlements.id).notNull(),
+  reservationId: integer("reservation_id").references(() => reservations.id),
+  activityId: integer("activity_id").references(() => activities.id),
+  guestCount: integer("guest_count").default(0),
+  revenueTl: integer("revenue_tl").default(0),
+  costTl: integer("cost_tl").default(0),
+  payoutTl: integer("payout_tl").default(0),
+});
+
+// Ödemeler
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  settlementId: integer("settlement_id").references(() => settlements.id).notNull(),
+  amountTl: integer("amount_tl").notNull(),
+  method: text("method"), // cash, bank, etc.
+  reference: text("reference"),
+  notes: text("notes"),
+  paidAt: timestamp("paid_at").defaultNow(),
 });
 
 // === RELATIONS ===
@@ -130,3 +211,28 @@ export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 export type Blacklist = typeof blacklist.$inferSelect;
 export const insertBlacklistSchema = createInsertSchema(blacklist).omit({ id: true, createdAt: true });
 export type InsertBlacklist = z.infer<typeof insertBlacklistSchema>;
+
+// === FINANCE SCHEMAS & TYPES ===
+export const insertAgencySchema = createInsertSchema(agencies).omit({ id: true, createdAt: true });
+export type Agency = typeof agencies.$inferSelect;
+export type InsertAgency = z.infer<typeof insertAgencySchema>;
+
+export const insertAgencyActivityTermsSchema = createInsertSchema(agencyActivityTerms).omit({ id: true });
+export type AgencyActivityTerms = typeof agencyActivityTerms.$inferSelect;
+export type InsertAgencyActivityTerms = z.infer<typeof insertAgencyActivityTermsSchema>;
+
+export const insertActivityCostSchema = createInsertSchema(activityCosts).omit({ id: true });
+export type ActivityCost = typeof activityCosts.$inferSelect;
+export type InsertActivityCost = z.infer<typeof insertActivityCostSchema>;
+
+export const insertSettlementSchema = createInsertSchema(settlements).omit({ id: true, createdAt: true });
+export type Settlement = typeof settlements.$inferSelect;
+export type InsertSettlement = z.infer<typeof insertSettlementSchema>;
+
+export const insertSettlementEntrySchema = createInsertSchema(settlementEntries).omit({ id: true });
+export type SettlementEntry = typeof settlementEntries.$inferSelect;
+export type InsertSettlementEntry = z.infer<typeof insertSettlementEntrySchema>;
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, paidAt: true });
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
