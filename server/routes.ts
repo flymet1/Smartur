@@ -895,8 +895,12 @@ export async function registerRoutes(
   // === Finance - Overview ===
   app.get("/api/finance/overview", async (req, res) => {
     try {
-      const month = req.query.month as string || new Date().toISOString().slice(0, 7);
-      const overview = await storage.getFinanceOverview(month);
+      const now = new Date();
+      const defaultStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+      const defaultEnd = now.toISOString().split('T')[0];
+      const startDate = req.query.startDate as string || defaultStart;
+      const endDate = req.query.endDate as string || defaultEnd;
+      const overview = await storage.getFinanceOverview(startDate, endDate);
       res.json(overview);
     } catch (err) {
       res.status(500).json({ error: "Finans özeti alınamadı" });

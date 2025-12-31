@@ -109,7 +109,7 @@ export interface IStorage {
   createPayment(payment: InsertPayment): Promise<Payment>;
 
   // Finance - Overview
-  getFinanceOverview(month: string): Promise<any>;
+  getFinanceOverview(startDate: string, endDate: string): Promise<any>;
   getUnpaidReservations(agencyId: number, sinceDate?: string): Promise<Reservation[]>;
   updateReservationSettlement(reservationId: number, settlementId: number): Promise<void>;
   updateReservationAgency(reservationId: number, agencyId: number): Promise<void>;
@@ -723,9 +723,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Finance - Overview
-  async getFinanceOverview(month: string): Promise<any> {
+  async getFinanceOverview(startDate: string, endDate: string): Promise<any> {
     const allReservations = await db.select().from(reservations);
     const allActivities = await db.select().from(activities);
+    const month = startDate.slice(0, 7);
     const allCosts = await db.select().from(activityCosts).where(eq(activityCosts.month, month));
     const allAgencies = await db.select().from(agencies);
     const allSettlements = await db.select().from(settlements);
@@ -734,8 +735,11 @@ export class DatabaseStorage implements IStorage {
     const vatRateSetting = await this.getSetting('vatRate');
     const vatRate = vatRateSetting ? parseInt(vatRateSetting) : 20;
     
-    // Filter reservations for the month
-    const monthReservations = allReservations.filter(r => r.date?.startsWith(month));
+    // Filter reservations for the date range
+    const dateRangeReservations = allReservations.filter(r => {
+      if (!r.date) return false;
+      return r.date >= startDate && r.date <= endDate;
+    });
     
     // Calculate totals per activity
     const activityStats: Record<number, {
@@ -750,7 +754,7 @@ export class DatabaseStorage implements IStorage {
       vatTl: number;
     }> = {};
     
-    for (const res of monthReservations) {
+    for (const res of dateRangeReservations) {
       const actId = res.activityId || 0;
       if (!activityStats[actId]) {
         const activity = allActivities.find(a => a.id === actId);
@@ -797,7 +801,7 @@ export class DatabaseStorage implements IStorage {
     }> = {};
     
     for (const agency of allAgencies) {
-      const agencyReservations = monthReservations.filter(r => r.agencyId === agency.id);
+      const agencyReservations = dateRangeReservations.filter(r => r.agencyId === agency.id);
       const guestCount = agencyReservations.reduce((sum, r) => sum + r.quantity, 0);
       const payoutTl = guestCount * (agency.defaultPayoutPerGuest || 0);
       
@@ -824,7 +828,7 @@ export class DatabaseStorage implements IStorage {
     const totalProfitTl = totalRevenueTl - totalCostTl - totalVatTl - totalPayoutTl;
     
     return {
-      month,
+      period: { startDate, endDate },
       vatRate,
       totals: {
         revenueTl: totalRevenueTl,
@@ -833,8 +837,8 @@ export class DatabaseStorage implements IStorage {
         vatTl: totalVatTl,
         payoutTl: totalPayoutTl,
         profitTl: totalProfitTl,
-        reservationCount: monthReservations.length,
-        guestCount: monthReservations.reduce((sum, r) => sum + r.quantity, 0)
+        reservationCount: dateRangeReservations.length,
+        guestCount: dateRangeReservations.reduce((sum, r) => sum + r.quantity, 0)
       },
       activityStats: Object.values(activityStats),
       agencyPayouts: Object.values(agencyPayouts)

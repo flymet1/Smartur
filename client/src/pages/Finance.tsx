@@ -36,12 +36,14 @@ import {
   Edit,
   Receipt,
   CreditCard,
-  PiggyBank
+  PiggyBank,
+  Calendar
 } from "lucide-react";
 import type { Agency, Activity, ActivityCost, Settlement } from "@shared/schema";
+import { format } from "date-fns";
 
 interface FinanceOverview {
-  month: string;
+  period: { startDate: string; endDate: string };
   vatRate: number;
   totals: {
     revenueTl: number;
@@ -76,10 +78,14 @@ interface FinanceOverview {
 
 export default function Finance() {
   const { toast } = useToast();
-  const [selectedMonth, setSelectedMonth] = useState(() => {
+  const [startDate, setStartDate] = useState(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   });
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+  const selectedMonth = startDate.slice(0, 7);
   const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
   const [costDialogOpen, setCostDialogOpen] = useState(false);
   const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
@@ -92,15 +98,15 @@ export default function Finance() {
   const [costForm, setCostForm] = useState({ activityId: 0, month: selectedMonth, fixedCost: 0, variableCostPerGuest: 0 });
   const [paymentForm, setPaymentForm] = useState({ amountTl: 0, method: 'cash', reference: '', notes: '' });
   const [settlementForm, setSettlementForm] = useState({ 
-    periodStart: `${selectedMonth}-01`, 
-    periodEnd: new Date().toISOString().split('T')[0], 
+    periodStart: startDate, 
+    periodEnd: endDate, 
     vatRatePct: 20 
   });
 
   const { data: overview, isLoading: overviewLoading } = useQuery<FinanceOverview>({
-    queryKey: ['/api/finance/overview', selectedMonth],
+    queryKey: ['/api/finance/overview', startDate, endDate],
     queryFn: async () => {
-      const res = await fetch(`/api/finance/overview?month=${selectedMonth}`);
+      const res = await fetch(`/api/finance/overview?startDate=${startDate}&endDate=${endDate}`);
       return res.json();
     }
   });
@@ -114,7 +120,7 @@ export default function Finance() {
   });
 
   const { data: costs = [] } = useQuery<ActivityCost[]>({
-    queryKey: ['/api/finance/costs', selectedMonth],
+    queryKey: ['/api/finance/costs', startDate, endDate],
     queryFn: async () => {
       const res = await fetch(`/api/finance/costs?month=${selectedMonth}`);
       return res.json();
@@ -194,13 +200,6 @@ export default function Finance() {
     return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
   };
 
-  const months = [];
-  for (let i = 0; i < 12; i++) {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-  }
-
   if (overviewLoading || agenciesLoading) {
     return (
       <div className="flex min-h-screen bg-muted/20">
@@ -224,16 +223,26 @@ export default function Finance() {
             <h1 className="text-3xl font-bold" data-testid="text-page-title">Finans & Acenta Yonetimi</h1>
             <p className="text-muted-foreground">Kar analizi, maliyetler ve acenta hesaplasmalari</p>
           </div>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-40" data-testid="select-month">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map(m => (
-                <SelectItem key={m} value={m}>{m}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="date" 
+                value={startDate} 
+                onChange={e => setStartDate(e.target.value)}
+                className="w-36"
+                data-testid="input-start-date"
+              />
+            </div>
+            <span className="text-muted-foreground">-</span>
+            <Input 
+              type="date" 
+              value={endDate} 
+              onChange={e => setEndDate(e.target.value)}
+              className="w-36"
+              data-testid="input-end-date"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -293,7 +302,7 @@ export default function Finance() {
             <Card>
               <CardHeader>
                 <CardTitle>Aktivite Bazli Gelir/Gider Analizi</CardTitle>
-                <CardDescription>{selectedMonth} donemi</CardDescription>
+                <CardDescription>{startDate} - {endDate} donemi</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -603,7 +612,7 @@ export default function Finance() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Maliyet Duzenle</DialogTitle>
-              <DialogDescription>{selectedMonth} donemi icin maliyet</DialogDescription>
+              <DialogDescription>Secili donem icin maliyet</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -655,8 +664,8 @@ export default function Finance() {
           setSettlementDialogOpen(open);
           if (open) {
             setSettlementForm({
-              periodStart: `${selectedMonth}-01`,
-              periodEnd: new Date().toISOString().split('T')[0],
+              periodStart: startDate,
+              periodEnd: endDate,
               vatRatePct: 20
             });
           }
