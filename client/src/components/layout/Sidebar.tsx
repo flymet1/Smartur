@@ -18,6 +18,7 @@ const navItems = [
   { href: "/calendar", label: "Takvim & Kapasite", icon: Calendar },
   { href: "/reservations", label: "Rezervasyonlar", icon: Ticket },
   { href: "/activities", label: "Aktiviteler", icon: Activity },
+  { href: "/bot-test", label: "Bot Test", icon: MessageCircle },
   { href: "/messages", label: "Mesaj Geçmişi", icon: MessageCircle },
   { href: "/settings", label: "Ayarlar", icon: Settings },
 ];

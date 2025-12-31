@@ -116,11 +116,44 @@ function ActivityCard({ activity, onDelete }: { activity: Activity; onDelete: ()
 
 function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [frequency, setFrequency] = useState<"1" | "3" | "5">(
+    activity ? String((activity as any).dailyFrequency || 1) as "1" | "3" | "5" : "1"
+  );
+  const [times, setTimes] = useState<string[]>(() => {
+    if (activity && (activity as any).defaultTimes) {
+      try {
+        return JSON.parse((activity as any).defaultTimes);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
   const { toast } = useToast();
 
   const isEditing = !!activity;
+
+  const getDefaultTimes = (freq: "1" | "3" | "5") => {
+    const freqNum = Number(freq);
+    if (freqNum === 1) return ["09:00"];
+    if (freqNum === 3) return ["09:00", "13:00", "17:00"];
+    if (freqNum === 5) return ["08:00", "10:00", "13:00", "16:00", "18:00"];
+    return [];
+  };
+
+  const handleFrequencyChange = (newFreq: "1" | "3" | "5") => {
+    setFrequency(newFreq);
+    setTimes(getDefaultTimes(newFreq));
+  };
+
+  const handleTimeChange = (index: number, value: string) => {
+    const newTimes = [...times];
+    newTimes[index] = value;
+    setTimes(newTimes);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -131,6 +164,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       description: formData.get("description") as string,
       price: Number(formData.get("price")),
       durationMinutes: Number(formData.get("durationMinutes")),
+      dailyFrequency: Number(frequency),
+      defaultTimes: JSON.stringify(times),
       active: true,
     };
 
@@ -180,6 +215,42 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
               <Input id="durationMinutes" name="durationMinutes" type="number" defaultValue={activity?.durationMinutes} required />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Günde Kaç Defa?</Label>
+            <div className="flex gap-2">
+              {["1", "3", "5"].map((freq) => (
+                <button
+                  key={freq}
+                  type="button"
+                  onClick={() => handleFrequencyChange(freq as "1" | "3" | "5")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
+                    frequency === freq
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted border-border hover:bg-muted/80"
+                  }`}
+                >
+                  {freq}x
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Saatler</Label>
+            <div className="space-y-2">
+              {times.map((time, idx) => (
+                <Input
+                  key={idx}
+                  type="time"
+                  value={time}
+                  onChange={(e) => handleTimeChange(idx, e.target.value)}
+                  placeholder="HH:mm"
+                />
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="description">Açıklama</Label>
             <Textarea 

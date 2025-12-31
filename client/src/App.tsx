@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Activities from "@/pages/Activities";
 import Reservations from "@/pages/Reservations";
 import CalendarPage from "@/pages/Calendar";
+import BotTest from "@/pages/BotTest";
 import Messages from "@/pages/Messages";
 import Settings from "@/pages/Settings";
 
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/activities" component={Activities} />
       <Route path="/reservations" component={Reservations} />
       <Route path="/calendar" component={CalendarPage} />
+      <Route path="/bot-test" component={BotTest} />
       <Route path="/messages" component={Messages} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />

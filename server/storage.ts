@@ -90,6 +90,15 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
+  async updateCapacity(id: number, totalSlots: number): Promise<Capacity> {
+    const [updated] = await db
+      .update(capacity)
+      .set({ totalSlots })
+      .where(eq(capacity.id, id))
+      .returning();
+    return updated;
+  }
+
   // Reservations
   async getReservations(): Promise<Reservation[]> {
     return await db.select().from(reservations).orderBy(desc(reservations.date));

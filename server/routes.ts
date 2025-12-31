@@ -51,6 +51,17 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Capacity update endpoint
+  app.patch("/api/capacity/:id", async (req, res) => {
+    try {
+      const { totalSlots } = req.body;
+      const item = await storage.updateCapacity(Number(req.params.id), totalSlots);
+      res.json(item);
+    } catch (err) {
+      res.status(400).json({ error: "Kapasite güncellenemedi" });
+    }
+  });
+
   // === Capacity ===
   app.get(api.capacity.list.path, async (req, res) => {
     const { date, activityId } = req.query;

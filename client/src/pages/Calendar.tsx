@@ -8,7 +8,7 @@ import { useActivities } from "@/hooks/use-activities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Edit2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,102 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import type { Capacity } from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@shared/routes";
+
+function CapacitySlot({ slot, activityName, occupancy, isFull }: { slot: Capacity; activityName: string; occupancy: number; isFull: boolean }) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [newSlots, setNewSlots] = useState(String(slot.totalSlots));
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
+  const updateMutation = useMutation({
+    mutationFn: async (totalSlots: number) => {
+      const res = await fetch(`/api/capacity/${slot.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ totalSlots }),
+      });
+      if (!res.ok) throw new Error("Kapasite güncellenemedi");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.capacity.list.path] });
+      toast({ title: "Başarılı", description: "Kapasite güncellendi." });
+      setEditOpen(false);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Kapasite güncellenemedi.", variant: "destructive" });
+    },
+  });
+
+  return (
+    <div className="bg-card p-4 rounded-xl border flex items-center justify-between hover:shadow-md transition-shadow">
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <h4 className="font-bold text-lg">{activityName}</h4>
+          <Badge variant={isFull ? "destructive" : "secondary"}>
+            {slot.time}
+          </Badge>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {slot.bookedSlots} / {slot.totalSlots} Dolu
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        <div className="w-32">
+          <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+            <div 
+              className={`h-full rounded-full ${isFull ? 'bg-red-500' : 'bg-green-500'}`} 
+              style={{ width: `${occupancy}%` }}
+            />
+          </div>
+          <p className="text-xs text-right mt-1 font-medium text-muted-foreground">
+            %{Math.round(occupancy)} Doluluk
+          </p>
+        </div>
+
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Edit2 className="w-4 h-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Kapasiteyi Düzenle</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Toplam Slot</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={newSlots}
+                  onChange={(e) => setNewSlots(e.target.value)}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Şu anda {slot.bookedSlots} kişi rezerve etmiş.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                type="submit"
+                onClick={() => updateMutation.mutate(Number(newSlots))}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? "Güncelleniyor..." : "Güncelle"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+}
 
 export default function CalendarPage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -88,31 +184,13 @@ export default function CalendarPage() {
                   const isFull = occupancy >= 100;
                   
                   return (
-                    <div key={slot.id} className="bg-card p-4 rounded-xl border flex items-center justify-between hover:shadow-md transition-shadow">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-bold text-lg">{getActivityName(slot.activityId)}</h4>
-                          <Badge variant={isFull ? "destructive" : "secondary"}>
-                            {slot.time}
-                          </Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {slot.bookedSlots} / {slot.totalSlots} Dolu
-                        </div>
-                      </div>
-                      
-                      <div className="w-32">
-                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full ${isFull ? 'bg-red-500' : 'bg-green-500'}`} 
-                            style={{ width: `${occupancy}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-right mt-1 font-medium text-muted-foreground">
-                          %{Math.round(occupancy)} Doluluk
-                        </p>
-                      </div>
-                    </div>
+                    <CapacitySlot
+                      key={slot.id}
+                      slot={slot}
+                      activityName={getActivityName(slot.activityId)}
+                      occupancy={occupancy}
+                      isFull={isFull}
+                    />
                   );
                 })}
               </div>
