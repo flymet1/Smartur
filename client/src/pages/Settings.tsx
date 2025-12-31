@@ -4,8 +4,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { useState } from "react";
 
 export default function Settings() {
+  const [reminderMinutes, setReminderMinutes] = useState(1440); // 24 hours * 60 minutes
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours > 0 && mins > 0) {
+      return `${hours} saat ${mins} dakika`;
+    } else if (hours > 0) {
+      return `${hours} saat`;
+    } else {
+      return `${mins} dakika`;
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
@@ -20,7 +37,7 @@ export default function Settings() {
             <CardHeader>
               <CardTitle>Otomasyon Ayarları</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Otomatik Onay Mesajı</Label>
@@ -28,12 +45,44 @@ export default function Settings() {
                 </div>
                 <Switch defaultChecked />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>24 Saat Kala Hatırlatma</Label>
-                  <p className="text-sm text-muted-foreground">Aktiviteye 1 gün kala hatırlatma gönder</p>
+
+              <div className="border-t pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="space-y-0.5">
+                    <Label>Hatırlatma Mesajı</Label>
+                    <p className="text-sm text-muted-foreground">Aktiviteye belirtilen süre kala hatırlatma gönder</p>
+                  </div>
+                  <Switch 
+                    checked={reminderEnabled} 
+                    onCheckedChange={setReminderEnabled}
+                  />
                 </div>
-                <Switch defaultChecked />
+                
+                {reminderEnabled && (
+                  <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
+                    <div className="space-y-2">
+                      <Label htmlFor="reminderMinutes">Kaç dakika kala hatırlatma yapılsın?</Label>
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <Input 
+                            id="reminderMinutes"
+                            type="number" 
+                            min="1"
+                            value={reminderMinutes}
+                            onChange={(e) => setReminderMinutes(Math.max(1, Number(e.target.value)))}
+                            placeholder="Dakika cinsinden girin..."
+                          />
+                        </div>
+                        <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                          = {formatTime(reminderMinutes)}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Örnek: 1440 = 24 saat, 60 = 1 saat, 30 = 30 dakika
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
