@@ -368,12 +368,23 @@ export class DatabaseStorage implements IStorage {
 
   async findReservationByPhoneOrOrder(phone: string, orderId?: string): Promise<Reservation | undefined> {
     const allReservations = await db.select().from(reservations);
-    const normalizedPhone = phone.replace(/\D/g, '');
     
-    // Find by phone first
-    let reservation = allReservations.find(r => 
-      r.customerPhone?.replace(/\D/g, '') === normalizedPhone
-    );
+    // Normalize phone to last 10 digits (Turkish phone numbers are always 10 digits)
+    // This handles: +905321234567, 05321234567, 5321234567, 532 123 45 67, etc.
+    const normalizePhone = (p: string): string => {
+      const digitsOnly = p.replace(/\D/g, '');
+      // Take last 10 digits (removes country code 90, leading 0, etc.)
+      return digitsOnly.slice(-10);
+    };
+    
+    const searchPhone = normalizePhone(phone);
+    
+    // Find by phone first (compare last 10 digits)
+    let reservation = allReservations.find(r => {
+      if (!r.customerPhone) return false;
+      const reservationPhone = normalizePhone(r.customerPhone);
+      return reservationPhone === searchPhone && searchPhone.length === 10;
+    });
     
     // If not found and orderId provided, try by order ID
     if (!reservation && orderId) {
@@ -403,6 +414,12 @@ export class DatabaseStorage implements IStorage {
     const allReservations = await db.select().from(reservations);
     const allSupportRequests = await db.select().from(supportRequests);
     
+    // Normalize phone to last 10 digits for comparison
+    const normalizePhone = (p: string): string => {
+      const digitsOnly = p.replace(/\D/g, '');
+      return digitsOnly.slice(-10);
+    };
+    
     // Group messages by phone
     const conversationMap: Record<string, {
       phone: string;
@@ -416,11 +433,13 @@ export class DatabaseStorage implements IStorage {
     
     for (const msg of allMessages) {
       if (!conversationMap[msg.phone]) {
-        // Check if phone has reservation
-        const reservation = allReservations.find(r => 
-          r.customerPhone === msg.phone || 
-          r.customerPhone?.replace(/\D/g, '') === msg.phone.replace(/\D/g, '')
-        );
+        // Check if phone has reservation (compare last 10 digits)
+        const msgPhoneNormalized = normalizePhone(msg.phone);
+        const reservation = allReservations.find(r => {
+          if (!r.customerPhone) return false;
+          const resPhoneNormalized = normalizePhone(r.customerPhone);
+          return resPhoneNormalized === msgPhoneNormalized && msgPhoneNormalized.length === 10;
+        });
         
         // Check for open support request
         const supportRequest = allSupportRequests.find(s => 
