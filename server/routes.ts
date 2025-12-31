@@ -147,6 +147,27 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  // Detailed stats with period filter
+  app.get("/api/reservations/detailed-stats", async (req, res) => {
+    const period = (req.query.period as string) || 'weekly';
+    const validPeriods = ['daily', 'weekly', 'monthly', 'yearly'];
+    if (!validPeriods.includes(period)) {
+      return res.status(400).json({ error: "Invalid period" });
+    }
+    const stats = await storage.getDetailedStats(period as any);
+    res.json(stats);
+  });
+
+  // Date details for click-through analysis
+  app.get("/api/reservations/date-details", async (req, res) => {
+    const date = req.query.date as string;
+    if (!date) {
+      return res.status(400).json({ error: "Date parameter required" });
+    }
+    const details = await storage.getDateDetails(date);
+    res.json(details);
+  });
+
   // === Webhooks ===
   app.post(api.webhooks.woocommerce.path, async (req, res) => {
     try {
@@ -196,9 +217,9 @@ export async function registerRoutes(
         const set1 = new Set(tokens1);
         const set2 = new Set(tokens2);
         let overlap = 0;
-        for (const t of set1) {
+        tokens1.forEach(t => {
           if (set2.has(t)) overlap++;
-        }
+        });
         // Return percentage of smaller set that overlaps
         return overlap / Math.min(set1.size, set2.size);
       };

@@ -35,6 +35,8 @@ export interface IStorage {
   getReservations(): Promise<Reservation[]>;
   createReservation(reservation: InsertReservation): Promise<Reservation>;
   getReservationsStats(): Promise<any>;
+  getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<any>;
+  getDateDetails(date: string): Promise<any>;
 
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
@@ -182,6 +184,164 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<any> {
+    const allReservations = await db.select().from(reservations);
+    const allActivities = await db.select().from(activities);
+    
+    const today = new Date();
+    const chartData: Array<{
+      name: string;
+      date: string;
+      salesTl: number;
+      salesUsd: number;
+      reservationCount: number;
+    }> = [];
+    
+    const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+    const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+    
+    if (period === 'daily') {
+      // Last 24 hours by hour
+      for (let i = 23; i >= 0; i--) {
+        const date = new Date(today);
+        date.setHours(today.getHours() - i);
+        const hourStr = `${date.getHours().toString().padStart(2, '0')}:00`;
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const hourReservations = allReservations.filter(r => {
+          if (r.date !== dateStr) return false;
+          const resHour = r.time?.split(':')[0];
+          return resHour === date.getHours().toString().padStart(2, '0');
+        });
+        
+        chartData.push({
+          name: hourStr,
+          date: dateStr,
+          salesTl: hourReservations.reduce((sum, r) => sum + (typeof r.priceTl === 'number' ? r.priceTl : 0), 0),
+          salesUsd: hourReservations.reduce((sum, r) => sum + (typeof r.priceUsd === 'number' ? r.priceUsd : 0), 0),
+          reservationCount: hourReservations.length
+        });
+      }
+    } else if (period === 'weekly') {
+      // Last 7 days
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayName = dayNames[date.getDay()];
+        
+        const dayReservations = allReservations.filter(r => r.date === dateStr);
+        
+        chartData.push({
+          name: `${dayName} (${date.getDate()})`,
+          date: dateStr,
+          salesTl: dayReservations.reduce((sum, r) => sum + (typeof r.priceTl === 'number' ? r.priceTl : 0), 0),
+          salesUsd: dayReservations.reduce((sum, r) => sum + (typeof r.priceUsd === 'number' ? r.priceUsd : 0), 0),
+          reservationCount: dayReservations.length
+        });
+      }
+    } else if (period === 'monthly') {
+      // Last 30 days
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const dayReservations = allReservations.filter(r => r.date === dateStr);
+        
+        chartData.push({
+          name: `${date.getDate()} ${monthNames[date.getMonth()]}`,
+          date: dateStr,
+          salesTl: dayReservations.reduce((sum, r) => sum + (typeof r.priceTl === 'number' ? r.priceTl : 0), 0),
+          salesUsd: dayReservations.reduce((sum, r) => sum + (typeof r.priceUsd === 'number' ? r.priceUsd : 0), 0),
+          reservationCount: dayReservations.length
+        });
+      }
+    } else if (period === 'yearly') {
+      // Last 12 months
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(today);
+        date.setMonth(today.getMonth() - i);
+        const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        const monthReservations = allReservations.filter(r => r.date?.startsWith(yearMonth));
+        
+        chartData.push({
+          name: `${monthNames[date.getMonth()]} ${date.getFullYear()}`,
+          date: yearMonth,
+          salesTl: monthReservations.reduce((sum, r) => sum + (typeof r.priceTl === 'number' ? r.priceTl : 0), 0),
+          salesUsd: monthReservations.reduce((sum, r) => sum + (typeof r.priceUsd === 'number' ? r.priceUsd : 0), 0),
+          reservationCount: monthReservations.length
+        });
+      }
+    }
+    
+    // Calculate totals for the period
+    const periodReservations = chartData.reduce((sum, d) => sum + d.reservationCount, 0);
+    const periodTotalTl = chartData.reduce((sum, d) => sum + d.salesTl, 0);
+    const periodTotalUsd = chartData.reduce((sum, d) => sum + d.salesUsd, 0);
+    
+    return {
+      period,
+      chartData,
+      totals: {
+        reservations: periodReservations,
+        salesTl: periodTotalTl,
+        salesUsd: periodTotalUsd
+      }
+    };
+  }
+
+  async getDateDetails(date: string): Promise<any> {
+    const allReservations = await db.select().from(reservations);
+    const allActivities = await db.select().from(activities);
+    
+    const dateReservations = allReservations.filter(r => r.date === date);
+    
+    // Group by activity
+    const activityBreakdown: Record<number, {
+      activityId: number;
+      activityName: string;
+      reservationCount: number;
+      totalQuantity: number;
+      salesTl: number;
+      salesUsd: number;
+      reservations: typeof dateReservations;
+    }> = {};
+    
+    for (const res of dateReservations) {
+      const actId = res.activityId || 0;
+      if (!activityBreakdown[actId]) {
+        const activity = allActivities.find(a => a.id === actId);
+        activityBreakdown[actId] = {
+          activityId: actId,
+          activityName: activity?.name || 'Bilinmeyen Aktivite',
+          reservationCount: 0,
+          totalQuantity: 0,
+          salesTl: 0,
+          salesUsd: 0,
+          reservations: []
+        };
+      }
+      activityBreakdown[actId].reservationCount++;
+      activityBreakdown[actId].totalQuantity += res.quantity;
+      activityBreakdown[actId].salesTl += typeof res.priceTl === 'number' ? res.priceTl : 0;
+      activityBreakdown[actId].salesUsd += typeof res.priceUsd === 'number' ? res.priceUsd : 0;
+      activityBreakdown[actId].reservations.push(res);
+    }
+    
+    const activities_data = Object.values(activityBreakdown).sort((a, b) => b.reservationCount - a.reservationCount);
+    
+    return {
+      date,
+      totalReservations: dateReservations.length,
+      totalQuantity: dateReservations.reduce((sum, r) => sum + r.quantity, 0),
+      totalSalesTl: dateReservations.reduce((sum, r) => sum + (typeof r.priceTl === 'number' ? r.priceTl : 0), 0),
+      totalSalesUsd: dateReservations.reduce((sum, r) => sum + (typeof r.priceUsd === 'number' ? r.priceUsd : 0), 0),
+      activities: activities_data
+    };
+  }
+
   // Messages
   async addMessage(item: InsertMessage): Promise<Message> {
     const [msg] = await db.insert(messages).values(item).returning();
@@ -200,7 +360,7 @@ export class DatabaseStorage implements IStorage {
   // Settings
   async getSetting(key: string): Promise<string | undefined> {
     const [result] = await db.select().from(settings).where(eq(settings.key, key));
-    return result?.value;
+    return result?.value ?? undefined;
   }
 
   async setSetting(key: string, value: string): Promise<Settings> {

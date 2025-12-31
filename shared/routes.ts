@@ -96,6 +96,13 @@ export const api = {
         200: z.object({
           totalReservations: z.number(),
           totalRevenue: z.number(),
+          totalRevenueTl: z.number(),
+          totalRevenueUsd: z.number(),
+          weeklySales: z.array(z.object({ 
+            name: z.string(), 
+            salesTl: z.number(), 
+            salesUsd: z.number() 
+          })),
           popularActivities: z.array(z.object({ name: z.string(), count: z.number() })),
         }),
       },
