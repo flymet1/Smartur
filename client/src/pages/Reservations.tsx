@@ -160,9 +160,21 @@ export default function Reservations() {
 
 function NewReservationDialog() {
   const [open, setOpen] = useState(false);
+  const [selectedActivityId, setSelectedActivityId] = useState<string>("");
   const { data: activities } = useActivities();
   const createMutation = useCreateReservation();
   const { toast } = useToast();
+
+  const selectedActivity = activities?.find(a => String(a.id) === selectedActivityId);
+  const availableTimes = selectedActivity 
+    ? (() => {
+        try {
+          return JSON.parse((selectedActivity as any).defaultTimes || "[]");
+        } catch {
+          return [];
+        }
+      })()
+    : [];
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -182,6 +194,7 @@ function NewReservationDialog() {
       });
       toast({ title: "Başarılı", description: "Rezervasyon oluşturuldu." });
       setOpen(false);
+      setSelectedActivityId("");
     } catch (err) {
       toast({ 
         title: "Hata", 
@@ -221,7 +234,12 @@ function NewReservationDialog() {
 
           <div className="space-y-2">
             <Label>Aktivite</Label>
-            <Select name="activityId" required>
+            <Select 
+              name="activityId" 
+              required 
+              value={selectedActivityId}
+              onValueChange={setSelectedActivityId}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Aktivite seçin" />
               </SelectTrigger>
@@ -240,7 +258,28 @@ function NewReservationDialog() {
             </div>
             <div className="space-y-2">
               <Label>Saat</Label>
-              <Input name="time" type="time" required />
+              {availableTimes.length > 0 ? (
+                <Select name="time" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Saat seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTimes.map((time: string) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input 
+                  name="time" 
+                  type="time" 
+                  placeholder="Önce aktivite seçin" 
+                  disabled={!selectedActivityId}
+                  required 
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Kişi Sayısı</Label>
