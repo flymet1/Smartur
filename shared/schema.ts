@@ -162,12 +162,31 @@ export const settlementEntries = pgTable("settlement_entries", {
 // Ödemeler
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
-  settlementId: integer("settlement_id").references(() => settlements.id).notNull(),
+  settlementId: integer("settlement_id").references(() => settlements.id),
   amountTl: integer("amount_tl").notNull(),
   method: text("method"), // cash, bank, etc.
   reference: text("reference"),
   notes: text("notes"),
   paidAt: timestamp("paid_at").defaultNow(),
+});
+
+// Acenta Ödemeleri (Manuel Kayıtlar)
+export const agencyPayouts = pgTable("agency_payouts", {
+  id: serial("id").primaryKey(),
+  agencyId: integer("agency_id").references(() => agencies.id).notNull(),
+  periodStart: text("period_start").notNull(), // YYYY-MM-DD
+  periodEnd: text("period_end").notNull(), // YYYY-MM-DD
+  description: text("description"), // Açıklama
+  guestCount: integer("guest_count").default(0), // Müşteri sayısı
+  baseAmountTl: integer("base_amount_tl").default(0), // KDV hariç tutar
+  vatRatePct: integer("vat_rate_pct").default(20), // KDV oranı (%)
+  vatAmountTl: integer("vat_amount_tl").default(0), // KDV tutarı
+  totalAmountTl: integer("total_amount_tl").default(0), // Toplam tutar (KDV dahil)
+  method: text("method"), // cash, bank, card, etc.
+  reference: text("reference"), // Dekont/referans no
+  notes: text("notes"),
+  status: text("status").default("paid"), // paid, pending
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // === RELATIONS ===
@@ -240,3 +259,7 @@ export type InsertSettlementEntry = z.infer<typeof insertSettlementEntrySchema>;
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, paidAt: true });
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+
+export const insertAgencyPayoutSchema = createInsertSchema(agencyPayouts).omit({ id: true, createdAt: true });
+export type AgencyPayout = typeof agencyPayouts.$inferSelect;
+export type InsertAgencyPayout = z.infer<typeof insertAgencyPayoutSchema>;

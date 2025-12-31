@@ -821,6 +821,55 @@ export async function registerRoutes(
     }
   });
 
+  // === Finance - Agency Payouts ===
+  app.get("/api/finance/payouts", async (req, res) => {
+    try {
+      const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : undefined;
+      const payouts = await storage.getAgencyPayouts(agencyId);
+      res.json(payouts);
+    } catch (err) {
+      res.status(500).json({ error: "Ödemeler alınamadı" });
+    }
+  });
+
+  app.post("/api/finance/payouts", async (req, res) => {
+    try {
+      const { agencyId, periodStart, periodEnd, description, guestCount, baseAmountTl, vatRatePct, method, reference, notes } = req.body;
+      
+      const vatAmount = Math.round(baseAmountTl * (vatRatePct / 100));
+      const totalAmount = baseAmountTl + vatAmount;
+      
+      const payout = await storage.createAgencyPayout({
+        agencyId,
+        periodStart,
+        periodEnd,
+        description,
+        guestCount: guestCount || 0,
+        baseAmountTl,
+        vatRatePct,
+        vatAmountTl: vatAmount,
+        totalAmountTl: totalAmount,
+        method,
+        reference,
+        notes,
+        status: 'paid'
+      });
+      res.json(payout);
+    } catch (err) {
+      console.error('Payout error:', err);
+      res.status(400).json({ error: "Ödeme kaydedilemedi" });
+    }
+  });
+
+  app.delete("/api/finance/payouts/:id", async (req, res) => {
+    try {
+      await storage.deleteAgencyPayout(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: "Ödeme silinemedi" });
+    }
+  });
+
   // === Finance - Settlements ===
   app.get("/api/finance/settlements", async (req, res) => {
     try {

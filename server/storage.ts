@@ -13,6 +13,7 @@ import {
   settlements,
   settlementEntries,
   payments,
+  agencyPayouts,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -39,6 +40,8 @@ import {
   type InsertSettlementEntry,
   type Payment,
   type InsertPayment,
+  type AgencyPayout,
+  type InsertAgencyPayout,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -108,6 +111,11 @@ export interface IStorage {
   // Finance - Payments
   getPayments(settlementId: number): Promise<Payment[]>;
   createPayment(payment: InsertPayment): Promise<Payment>;
+
+  // Finance - Agency Payouts
+  getAgencyPayouts(agencyId?: number): Promise<AgencyPayout[]>;
+  createAgencyPayout(payout: InsertAgencyPayout): Promise<AgencyPayout>;
+  deleteAgencyPayout(id: number): Promise<void>;
 
   // Finance - Overview
   getFinanceOverview(startDate: string, endDate: string): Promise<any>;
@@ -712,19 +720,38 @@ export class DatabaseStorage implements IStorage {
   async createPayment(payment: InsertPayment): Promise<Payment> {
     const [created] = await db.insert(payments).values(payment).returning();
     
-    // Update settlement paid amount and remaining
-    const settlement = await this.getSettlement(payment.settlementId);
-    if (settlement) {
-      const newPaidAmount = (settlement.paidAmountTl || 0) + payment.amountTl;
-      const newRemaining = (settlement.payoutTl || 0) - newPaidAmount;
-      await this.updateSettlement(payment.settlementId, {
-        paidAmountTl: newPaidAmount,
-        remainingTl: Math.max(0, newRemaining),
-        status: newRemaining <= 0 ? 'paid' : settlement.status
-      });
+    // Update settlement paid amount and remaining (if settlementId exists)
+    if (payment.settlementId) {
+      const settlement = await this.getSettlement(payment.settlementId);
+      if (settlement) {
+        const newPaidAmount = (settlement.paidAmountTl || 0) + payment.amountTl;
+        const newRemaining = (settlement.payoutTl || 0) - newPaidAmount;
+        await this.updateSettlement(payment.settlementId, {
+          paidAmountTl: newPaidAmount,
+          remainingTl: Math.max(0, newRemaining),
+          status: newRemaining <= 0 ? 'paid' : settlement.status
+        });
+      }
     }
     
     return created;
+  }
+
+  // Finance - Agency Payouts
+  async getAgencyPayouts(agencyId?: number): Promise<AgencyPayout[]> {
+    if (agencyId) {
+      return await db.select().from(agencyPayouts).where(eq(agencyPayouts.agencyId, agencyId)).orderBy(desc(agencyPayouts.createdAt));
+    }
+    return await db.select().from(agencyPayouts).orderBy(desc(agencyPayouts.createdAt));
+  }
+
+  async createAgencyPayout(payout: InsertAgencyPayout): Promise<AgencyPayout> {
+    const [created] = await db.insert(agencyPayouts).values(payout).returning();
+    return created;
+  }
+
+  async deleteAgencyPayout(id: number): Promise<void> {
+    await db.delete(agencyPayouts).where(eq(agencyPayouts.id, id));
   }
 
   // Finance - Overview

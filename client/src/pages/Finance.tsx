@@ -39,8 +39,9 @@ import {
   PiggyBank,
   Calendar
 } from "lucide-react";
-import type { Agency, Activity, ActivityCost, Settlement } from "@shared/schema";
+import type { Agency, Activity, ActivityCost, Settlement, AgencyPayout } from "@shared/schema";
 import { format } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
 
 interface FinanceOverview {
   period: { startDate: string; endDate: string };
@@ -90,9 +91,11 @@ export default function Finance() {
   const [costDialogOpen, setCostDialogOpen] = useState(false);
   const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
   const [selectedAgencyForSettlement, setSelectedAgencyForSettlement] = useState<number | null>(null);
   const [selectedSettlement, setSelectedSettlement] = useState<Settlement | null>(null);
+  const [defaultVatRate, setDefaultVatRate] = useState(20);
   
   const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
   const [costForm, setCostForm] = useState({ activityId: 0, monthStart: selectedMonth, monthEnd: selectedMonth, fixedCost: 0, variableCostPerGuest: 0 });
@@ -101,6 +104,18 @@ export default function Finance() {
     periodStart: startDate, 
     periodEnd: endDate, 
     vatRatePct: 20 
+  });
+  const [payoutForm, setPayoutForm] = useState({
+    agencyId: 0,
+    periodStart: startDate,
+    periodEnd: endDate,
+    description: '',
+    guestCount: 0,
+    baseAmountTl: 0,
+    vatRatePct: defaultVatRate,
+    method: 'cash',
+    reference: '',
+    notes: ''
   });
 
   const { data: overview, isLoading: overviewLoading } = useQuery<FinanceOverview>({
@@ -129,6 +144,10 @@ export default function Finance() {
 
   const { data: settlements = [] } = useQuery<Settlement[]>({
     queryKey: ['/api/finance/settlements']
+  });
+
+  const { data: payouts = [] } = useQuery<AgencyPayout[]>({
+    queryKey: ['/api/finance/payouts']
   });
 
   const createAgencyMutation = useMutation({
@@ -188,6 +207,40 @@ export default function Finance() {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/overview'] });
       setSettlementDialogOpen(false);
       toast({ title: "Hesaplasma olusturuldu" });
+    }
+  });
+
+  const createPayoutMutation = useMutation({
+    mutationFn: async (data: typeof payoutForm) => apiRequest('POST', '/api/finance/payouts', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/overview'] });
+      setPayoutDialogOpen(false);
+      setPayoutForm({
+        agencyId: 0,
+        periodStart: startDate,
+        periodEnd: endDate,
+        description: '',
+        guestCount: 0,
+        baseAmountTl: 0,
+        vatRatePct: defaultVatRate,
+        method: 'cash',
+        reference: '',
+        notes: ''
+      });
+      toast({ title: "Odeme kaydedildi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Odeme kaydedilemedi", variant: "destructive" });
+    }
+  });
+
+  const deletePayoutMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/payouts/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/overview'] });
+      toast({ title: "Odeme silindi" });
     }
   });
 
@@ -302,7 +355,7 @@ export default function Finance() {
             <TabsTrigger value="activities" data-testid="tab-activities">Aktivite Bazli</TabsTrigger>
             <TabsTrigger value="costs" data-testid="tab-costs">Maliyetler</TabsTrigger>
             <TabsTrigger value="agencies" data-testid="tab-agencies">Acentalar</TabsTrigger>
-            <TabsTrigger value="settlements" data-testid="tab-settlements">Hesaplamalar</TabsTrigger>
+            <TabsTrigger value="payouts" data-testid="tab-payouts">Odemeler</TabsTrigger>
           </TabsList>
 
           <TabsContent value="activities" className="space-y-4">
@@ -493,80 +546,129 @@ export default function Finance() {
             </div>
           </TabsContent>
 
-          <TabsContent value="settlements" className="space-y-4">
+          <TabsContent value="payouts" className="space-y-4">
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <h3 className="text-lg font-semibold">Hesaplasma Gecmisi</h3>
-              <Button 
-                onClick={() => {
-                  if (agencies.length === 0) {
-                    toast({ title: "Uyari", description: "Once bir acenta eklemelisiniz", variant: "destructive" });
-                    return;
-                  }
-                  setSelectedAgencyForSettlement(agencies[0].id);
-                  setSettlementDialogOpen(true);
-                }}
-                data-testid="button-add-settlement"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Yeni Hesaplasma
-              </Button>
+              <div>
+                <h3 className="text-lg font-semibold">Acenta Odemeleri</h3>
+                <p className="text-sm text-muted-foreground">Acentalara yapilan odemelerin kaydi</p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">Varsayilan KDV:</Label>
+                  <Input 
+                    type="number"
+                    className="w-20"
+                    value={defaultVatRate}
+                    onChange={e => setDefaultVatRate(parseInt(e.target.value) || 0)}
+                    data-testid="input-default-vat"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+                <Button 
+                  onClick={() => {
+                    if (agencies.length === 0) {
+                      toast({ title: "Uyari", description: "Once bir acenta eklemelisiniz", variant: "destructive" });
+                      return;
+                    }
+                    setPayoutForm({
+                      agencyId: agencies[0].id,
+                      periodStart: startDate,
+                      periodEnd: endDate,
+                      description: '',
+                      guestCount: 0,
+                      baseAmountTl: 0,
+                      vatRatePct: defaultVatRate,
+                      method: 'cash',
+                      reference: '',
+                      notes: ''
+                    });
+                    setPayoutDialogOpen(true);
+                  }}
+                  data-testid="button-add-payout"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Yeni Odeme Kaydi
+                </Button>
+              </div>
             </div>
+
             <Card>
               <CardContent className="pt-4">
-                <div className="space-y-3">
-                  {settlements.map(settlement => {
-                    const agency = agencies.find(a => a.id === settlement.agencyId);
-                    return (
-                      <div key={settlement.id} className="flex flex-wrap items-center justify-between gap-4 p-3 border rounded-lg" data-testid={`row-settlement-${settlement.id}`}>
-                        <div className="flex-1 min-w-[200px]">
-                          <div className="font-medium flex items-center gap-2">
-                            {agency?.name || 'Bilinmeyen Acenta'}
-                            <Badge variant={settlement.status === 'paid' ? 'default' : settlement.status === 'approved' ? 'secondary' : 'outline'}>
-                              {settlement.status === 'paid' ? 'Odendi' : settlement.status === 'approved' ? 'Onaylandi' : 'Taslak'}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {settlement.periodStart} - {settlement.periodEnd} | {settlement.totalGuests} misafir
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-4 text-sm items-center">
-                          <div>
-                            <span className="text-muted-foreground">Borc:</span>
-                            <span className="ml-1 font-medium">{formatMoney(settlement.payoutTl || 0)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Odenen:</span>
-                            <span className="ml-1 font-medium text-green-600">{formatMoney(settlement.paidAmountTl || 0)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Kalan:</span>
-                            <span className="ml-1 font-medium text-orange-600">{formatMoney(settlement.remainingTl || 0)}</span>
-                          </div>
-                          {settlement.remainingTl && settlement.remainingTl > 0 && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedSettlement(settlement);
-                                setPaymentForm({ amountTl: settlement.remainingTl || 0, method: 'cash', reference: '', notes: '' });
-                                setPaymentDialogOpen(true);
-                              }}
-                              data-testid={`button-payment-${settlement.id}`}
-                            >
-                              <CreditCard className="h-4 w-4 mr-1" />
-                              Odeme Yap
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {settlements.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Henuz hesaplasma olusturulmamis
-                    </div>
-                  )}
-                </div>
+                {payouts.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <p>Henuz odeme kaydi bulunmuyor</p>
+                    <p className="text-sm mt-1">Yukaridaki butona tiklayarak yeni odeme ekleyin</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-2 font-medium">Acenta</th>
+                          <th className="text-left py-3 px-2 font-medium">Donem</th>
+                          <th className="text-left py-3 px-2 font-medium">Aciklama</th>
+                          <th className="text-right py-3 px-2 font-medium">Tutar</th>
+                          <th className="text-right py-3 px-2 font-medium">KDV</th>
+                          <th className="text-right py-3 px-2 font-medium">Toplam</th>
+                          <th className="text-center py-3 px-2 font-medium">Yontem</th>
+                          <th className="text-center py-3 px-2 font-medium">Islem</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payouts.map(payout => {
+                          const agency = agencies.find(a => a.id === payout.agencyId);
+                          return (
+                            <tr key={payout.id} className="border-b hover-elevate" data-testid={`row-payout-${payout.id}`}>
+                              <td className="py-3 px-2 font-medium">{agency?.name || '-'}</td>
+                              <td className="py-3 px-2 text-muted-foreground">
+                                {payout.periodStart} - {payout.periodEnd}
+                              </td>
+                              <td className="py-3 px-2">{payout.description || '-'}</td>
+                              <td className="py-3 px-2 text-right">{formatMoney(payout.baseAmountTl || 0)}</td>
+                              <td className="py-3 px-2 text-right text-muted-foreground">
+                                %{payout.vatRatePct} ({formatMoney(payout.vatAmountTl || 0)})
+                              </td>
+                              <td className="py-3 px-2 text-right font-semibold text-green-600">
+                                {formatMoney(payout.totalAmountTl || 0)}
+                              </td>
+                              <td className="py-3 px-2 text-center">
+                                <Badge variant="outline">
+                                  {payout.method === 'cash' ? 'Nakit' : payout.method === 'bank' ? 'Banka' : payout.method || '-'}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-2 text-center">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => deletePayoutMutation.mutate(payout.id)}
+                                  data-testid={`button-delete-payout-${payout.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-muted/50">
+                          <td colSpan={3} className="py-3 px-2 font-semibold">Toplam</td>
+                          <td className="py-3 px-2 text-right font-semibold">
+                            {formatMoney(payouts.reduce((sum, p) => sum + (p.baseAmountTl || 0), 0))}
+                          </td>
+                          <td className="py-3 px-2 text-right font-semibold">
+                            {formatMoney(payouts.reduce((sum, p) => sum + (p.vatAmountTl || 0), 0))}
+                          </td>
+                          <td className="py-3 px-2 text-right font-bold text-green-600">
+                            {formatMoney(payouts.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0))}
+                          </td>
+                          <td colSpan={2}></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -784,6 +886,137 @@ export default function Finance() {
                 data-testid="button-generate-settlement"
               >
                 Olustur
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Yeni Odeme Kaydi</DialogTitle>
+              <DialogDescription>Acentaya yapilan odemeyi kaydedin</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Acenta</Label>
+                <Select 
+                  value={payoutForm.agencyId ? String(payoutForm.agencyId) : ""} 
+                  onValueChange={v => setPayoutForm(f => ({ ...f, agencyId: parseInt(v) }))}
+                >
+                  <SelectTrigger data-testid="select-payout-agency">
+                    <SelectValue placeholder="Acenta secin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agencies.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Baslangic Tarihi</Label>
+                  <Input 
+                    type="date"
+                    value={payoutForm.periodStart} 
+                    onChange={e => setPayoutForm(f => ({ ...f, periodStart: e.target.value }))}
+                    data-testid="input-payout-start"
+                  />
+                </div>
+                <div>
+                  <Label>Bitis Tarihi</Label>
+                  <Input 
+                    type="date"
+                    value={payoutForm.periodEnd} 
+                    onChange={e => setPayoutForm(f => ({ ...f, periodEnd: e.target.value }))}
+                    data-testid="input-payout-end"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Aciklama</Label>
+                <Input 
+                  placeholder="Ornegin: Aralik 2025 donemi odemesi"
+                  value={payoutForm.description} 
+                  onChange={e => setPayoutForm(f => ({ ...f, description: e.target.value }))}
+                  data-testid="input-payout-description"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tutar (KDV Haric TL)</Label>
+                  <Input 
+                    type="number"
+                    value={payoutForm.baseAmountTl} 
+                    onChange={e => setPayoutForm(f => ({ ...f, baseAmountTl: parseInt(e.target.value) || 0 }))}
+                    data-testid="input-payout-amount"
+                  />
+                </div>
+                <div>
+                  <Label>KDV Orani (%)</Label>
+                  <Input 
+                    type="number"
+                    value={payoutForm.vatRatePct} 
+                    onChange={e => setPayoutForm(f => ({ ...f, vatRatePct: parseInt(e.target.value) || 0 }))}
+                    data-testid="input-payout-vat"
+                  />
+                </div>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="flex justify-between text-sm">
+                  <span>KDV Tutari:</span>
+                  <span>{formatMoney(Math.round(payoutForm.baseAmountTl * (payoutForm.vatRatePct / 100)))}</span>
+                </div>
+                <div className="flex justify-between font-semibold mt-1">
+                  <span>Toplam:</span>
+                  <span className="text-green-600">
+                    {formatMoney(payoutForm.baseAmountTl + Math.round(payoutForm.baseAmountTl * (payoutForm.vatRatePct / 100)))}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Odeme Yontemi</Label>
+                  <Select value={payoutForm.method} onValueChange={v => setPayoutForm(f => ({ ...f, method: v }))}>
+                    <SelectTrigger data-testid="select-payout-method">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Nakit</SelectItem>
+                      <SelectItem value="bank">Banka Transferi</SelectItem>
+                      <SelectItem value="card">Kart</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Referans No</Label>
+                  <Input 
+                    placeholder="Dekont no, fatura no vb."
+                    value={payoutForm.reference} 
+                    onChange={e => setPayoutForm(f => ({ ...f, reference: e.target.value }))}
+                    data-testid="input-payout-reference"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Notlar</Label>
+                <Textarea 
+                  placeholder="Ek bilgi..."
+                  value={payoutForm.notes} 
+                  onChange={e => setPayoutForm(f => ({ ...f, notes: e.target.value }))}
+                  data-testid="input-payout-notes"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPayoutDialogOpen(false)}>Iptal</Button>
+              <Button 
+                onClick={() => createPayoutMutation.mutate(payoutForm)}
+                disabled={createPayoutMutation.isPending || !payoutForm.agencyId || !payoutForm.baseAmountTl}
+                data-testid="button-save-payout"
+              >
+                Odeme Kaydet
               </Button>
             </DialogFooter>
           </DialogContent>
