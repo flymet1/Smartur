@@ -83,10 +83,11 @@ export default function Finance() {
     queryKey: ['/api/finance/payouts']
   });
 
-  // Tarih aralığına göre filtrelenmiş ödemeler
+  // Tarih aralığına göre filtrelenmiş ödemeler (dönem kesişimi)
   const filteredPayouts = payouts.filter(p => {
-    if (p.periodStart && p.periodStart < startDate) return false;
-    if (p.periodEnd && p.periodEnd > endDate) return false;
+    // Dönem kesişimi: ödeme dönemi seçili tarih aralığıyla örtüşüyorsa dahil et
+    if (p.periodEnd && p.periodEnd < startDate) return false;
+    if (p.periodStart && p.periodStart > endDate) return false;
     return true;
   });
 
@@ -482,7 +483,7 @@ export default function Finance() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSupplierDialogOpen(false)}>Iptal</Button>
+              <Button variant="outline" onClick={() => setSupplierDialogOpen(false)} data-testid="button-cancel-supplier">Iptal</Button>
               <Button 
                 onClick={handleSupplierSubmit}
                 disabled={createSupplierMutation.isPending || updateSupplierMutation.isPending}
@@ -638,7 +639,7 @@ export default function Finance() {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setPayoutDialogOpen(false)}>Iptal</Button>
+              <Button variant="outline" onClick={() => setPayoutDialogOpen(false)} data-testid="button-cancel-payout">Iptal</Button>
               <Button 
                 onClick={handlePayoutSubmit}
                 disabled={createPayoutMutation.isPending}
