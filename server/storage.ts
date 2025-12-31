@@ -14,6 +14,7 @@ import {
   settlementEntries,
   payments,
   agencyPayouts,
+  supplierDispatches,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -42,6 +43,8 @@ import {
   type InsertPayment,
   type AgencyPayout,
   type InsertAgencyPayout,
+  type SupplierDispatch,
+  type InsertSupplierDispatch,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -116,6 +119,12 @@ export interface IStorage {
   getAgencyPayouts(agencyId?: number): Promise<AgencyPayout[]>;
   createAgencyPayout(payout: InsertAgencyPayout): Promise<AgencyPayout>;
   deleteAgencyPayout(id: number): Promise<void>;
+
+  // Finance - Supplier Dispatches
+  getSupplierDispatches(agencyId?: number): Promise<SupplierDispatch[]>;
+  createSupplierDispatch(dispatch: InsertSupplierDispatch): Promise<SupplierDispatch>;
+  updateSupplierDispatch(id: number, dispatch: Partial<InsertSupplierDispatch>): Promise<SupplierDispatch>;
+  deleteSupplierDispatch(id: number): Promise<void>;
 
   // Finance - Overview
   getFinanceOverview(startDate: string, endDate: string): Promise<any>;
@@ -764,6 +773,28 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAgencyPayout(id: number): Promise<void> {
     await db.delete(agencyPayouts).where(eq(agencyPayouts.id, id));
+  }
+
+  // Finance - Supplier Dispatches
+  async getSupplierDispatches(agencyId?: number): Promise<SupplierDispatch[]> {
+    if (agencyId) {
+      return await db.select().from(supplierDispatches).where(eq(supplierDispatches.agencyId, agencyId)).orderBy(desc(supplierDispatches.dispatchDate));
+    }
+    return await db.select().from(supplierDispatches).orderBy(desc(supplierDispatches.dispatchDate));
+  }
+
+  async createSupplierDispatch(dispatch: InsertSupplierDispatch): Promise<SupplierDispatch> {
+    const [created] = await db.insert(supplierDispatches).values(dispatch).returning();
+    return created;
+  }
+
+  async updateSupplierDispatch(id: number, dispatch: Partial<InsertSupplierDispatch>): Promise<SupplierDispatch> {
+    const [updated] = await db.update(supplierDispatches).set(dispatch).where(eq(supplierDispatches.id, id)).returning();
+    return updated;
+  }
+
+  async deleteSupplierDispatch(id: number): Promise<void> {
+    await db.delete(supplierDispatches).where(eq(supplierDispatches.id, id));
   }
 
   // Finance - Overview

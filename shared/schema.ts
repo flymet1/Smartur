@@ -190,6 +190,21 @@ export const agencyPayouts = pgTable("agency_payouts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Tedarikçi Gönderimleri (Günlük aktivite gönderimi takibi)
+export const supplierDispatches = pgTable("supplier_dispatches", {
+  id: serial("id").primaryKey(),
+  agencyId: integer("agency_id").references(() => agencies.id).notNull(),
+  activityId: integer("activity_id").references(() => activities.id),
+  dispatchDate: text("dispatch_date").notNull(), // YYYY-MM-DD
+  dispatchTime: text("dispatch_time"), // HH:mm
+  guestCount: integer("guest_count").default(0).notNull(),
+  unitPayoutTl: integer("unit_payout_tl").default(0), // Kişi başı ödeme
+  totalPayoutTl: integer("total_payout_tl").default(0), // Toplam = guestCount * unitPayoutTl
+  payoutId: integer("payout_id").references(() => agencyPayouts.id), // Hangi ödemeye bağlı (null = ödenmemiş)
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === RELATIONS ===
 export const capacityRelations = relations(capacity, ({ one }) => ({
   activity: one(activities, {
@@ -264,3 +279,7 @@ export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export const insertAgencyPayoutSchema = createInsertSchema(agencyPayouts).omit({ id: true, createdAt: true });
 export type AgencyPayout = typeof agencyPayouts.$inferSelect;
 export type InsertAgencyPayout = z.infer<typeof insertAgencyPayoutSchema>;
+
+export const insertSupplierDispatchSchema = createInsertSchema(supplierDispatches).omit({ id: true, createdAt: true });
+export type SupplierDispatch = typeof supplierDispatches.$inferSelect;
+export type InsertSupplierDispatch = z.infer<typeof insertSupplierDispatchSchema>;

@@ -880,6 +880,66 @@ export async function registerRoutes(
     }
   });
 
+  // === Finance - Supplier Dispatches ===
+  app.get("/api/finance/dispatches", async (req, res) => {
+    try {
+      const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : undefined;
+      const dispatches = await storage.getSupplierDispatches(agencyId);
+      res.json(dispatches);
+    } catch (err) {
+      res.status(500).json({ error: "Gönderimler alınamadı" });
+    }
+  });
+
+  app.post("/api/finance/dispatches", async (req, res) => {
+    try {
+      const { agencyId, activityId, dispatchDate, dispatchTime, guestCount, unitPayoutTl, notes } = req.body;
+      const totalPayoutTl = (guestCount || 0) * (unitPayoutTl || 0);
+      
+      const dispatch = await storage.createSupplierDispatch({
+        agencyId,
+        activityId,
+        dispatchDate,
+        dispatchTime,
+        guestCount: guestCount || 0,
+        unitPayoutTl: unitPayoutTl || 0,
+        totalPayoutTl,
+        notes
+      });
+      res.json(dispatch);
+    } catch (err) {
+      console.error('Dispatch error:', err);
+      res.status(400).json({ error: "Gönderim kaydedilemedi" });
+    }
+  });
+
+  app.patch("/api/finance/dispatches/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { guestCount, unitPayoutTl, ...rest } = req.body;
+      const totalPayoutTl = (guestCount || 0) * (unitPayoutTl || 0);
+      
+      const dispatch = await storage.updateSupplierDispatch(id, {
+        ...rest,
+        guestCount,
+        unitPayoutTl,
+        totalPayoutTl
+      });
+      res.json(dispatch);
+    } catch (err) {
+      res.status(400).json({ error: "Gönderim güncellenemedi" });
+    }
+  });
+
+  app.delete("/api/finance/dispatches/:id", async (req, res) => {
+    try {
+      await storage.deleteSupplierDispatch(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: "Gönderim silinemedi" });
+    }
+  });
+
   // === Finance - Settlements ===
   app.get("/api/finance/settlements", async (req, res) => {
     try {
