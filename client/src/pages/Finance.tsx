@@ -99,6 +99,19 @@ export default function Finance() {
     queryKey: ['/api/finance/dispatches']
   });
 
+  // Gönderim Özeti (Dispatch Summary)
+  type DispatchSummary = {
+    agencyId: number;
+    agencyName: string;
+    totalGuests: number;
+    totalOwedTl: number;
+    totalPaidTl: number;
+    remainingTl: number;
+  };
+  const { data: dispatchSummary = [] } = useQuery<DispatchSummary[]>({
+    queryKey: [`/api/finance/dispatches/summary?startDate=${startDate}&endDate=${endDate}`]
+  });
+
   // Aktiviteler
   const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities']
@@ -453,6 +466,46 @@ export default function Finance() {
                 Gonderim Ekle
               </Button>
             </div>
+
+            {dispatchSummary.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {dispatchSummary.map(summary => {
+                  const isDebt = summary.remainingTl > 0;
+                  const isCredit = summary.remainingTl < 0;
+                  return (
+                    <Card key={summary.agencyId} data-testid={`card-summary-${summary.agencyId}`}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Building2 className="h-4 w-4" />
+                          {summary.agencyName}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex justify-between gap-2 text-sm">
+                          <span className="text-muted-foreground">Toplam Kisi:</span>
+                          <span className="font-medium">{summary.totalGuests} kisi</span>
+                        </div>
+                        <div className="flex justify-between gap-2 text-sm">
+                          <span className="text-muted-foreground">Toplam Borc:</span>
+                          <span className="font-medium">{summary.totalOwedTl.toLocaleString('tr-TR')} TL</span>
+                        </div>
+                        <div className="flex justify-between gap-2 text-sm">
+                          <span className="text-muted-foreground">Odenen:</span>
+                          <span className="font-medium text-green-600">{summary.totalPaidTl.toLocaleString('tr-TR')} TL</span>
+                        </div>
+                        <div className="flex justify-between gap-2 text-sm border-t pt-2">
+                          <span className="text-muted-foreground">Kalan:</span>
+                          <Badge variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}>
+                            {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
             <Card>
               <CardContent className="pt-4">
                 <div className="space-y-3">

@@ -125,6 +125,14 @@ export interface IStorage {
   createSupplierDispatch(dispatch: InsertSupplierDispatch): Promise<SupplierDispatch>;
   updateSupplierDispatch(id: number, dispatch: Partial<InsertSupplierDispatch>): Promise<SupplierDispatch>;
   deleteSupplierDispatch(id: number): Promise<void>;
+  getSupplierDispatchSummary(startDate?: string, endDate?: string): Promise<{
+    agencyId: number;
+    agencyName: string;
+    totalGuests: number;
+    totalOwedTl: number;
+    totalPaidTl: number;
+    remainingTl: number;
+  }[]>;
 
   // Finance - Overview
   getFinanceOverview(startDate: string, endDate: string): Promise<any>;
@@ -795,6 +803,68 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSupplierDispatch(id: number): Promise<void> {
     await db.delete(supplierDispatches).where(eq(supplierDispatches.id, id));
+  }
+
+  async getSupplierDispatchSummary(startDate?: string, endDate?: string): Promise<{
+    agencyId: number;
+    agencyName: string;
+    totalGuests: number;
+    totalOwedTl: number;
+    totalPaidTl: number;
+    remainingTl: number;
+  }[]> {
+    const allAgencies = await db.select().from(agencies);
+    const allDispatches = await db.select().from(supplierDispatches);
+    const allPayouts = await db.select().from(agencyPayouts);
+    
+    const filteredDispatches = allDispatches.filter(d => {
+      if (!startDate || !endDate) return true;
+      return d.dispatchDate >= startDate && d.dispatchDate <= endDate;
+    });
+    
+    const filteredPayouts = allPayouts.filter(p => {
+      if (!startDate || !endDate) return true;
+      return (p.periodEnd >= startDate && p.periodStart <= endDate);
+    });
+    
+    const summaryMap: Record<number, {
+      agencyId: number;
+      agencyName: string;
+      totalGuests: number;
+      totalOwedTl: number;
+      totalPaidTl: number;
+      remainingTl: number;
+    }> = {};
+    
+    for (const agency of allAgencies) {
+      summaryMap[agency.id] = {
+        agencyId: agency.id,
+        agencyName: agency.name,
+        totalGuests: 0,
+        totalOwedTl: 0,
+        totalPaidTl: 0,
+        remainingTl: 0
+      };
+    }
+    
+    for (const dispatch of filteredDispatches) {
+      if (summaryMap[dispatch.agencyId]) {
+        summaryMap[dispatch.agencyId].totalGuests += dispatch.guestCount || 0;
+        summaryMap[dispatch.agencyId].totalOwedTl += dispatch.totalPayoutTl || 0;
+      }
+    }
+    
+    for (const payout of filteredPayouts) {
+      if (summaryMap[payout.agencyId]) {
+        summaryMap[payout.agencyId].totalPaidTl += payout.totalAmountTl || 0;
+      }
+    }
+    
+    for (const agencyId in summaryMap) {
+      summaryMap[agencyId].remainingTl = summaryMap[agencyId].totalOwedTl - summaryMap[agencyId].totalPaidTl;
+    }
+    
+    return Object.values(summaryMap).filter(s => s.totalGuests > 0 || s.totalPaidTl > 0);
   }
 
   // Finance - Overview

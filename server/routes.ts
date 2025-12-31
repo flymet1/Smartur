@@ -940,6 +940,17 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/finance/dispatches/summary", async (req, res) => {
+    try {
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      const summary = await storage.getSupplierDispatchSummary(startDate, endDate);
+      res.json(summary);
+    } catch (err) {
+      res.status(500).json({ error: "Özet alınamadı" });
+    }
+  });
+
   // === Finance - Settlements ===
   app.get("/api/finance/settlements", async (req, res) => {
     try {
