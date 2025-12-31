@@ -4,22 +4,39 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema } from "@shared/schema";
+import { GoogleGenAI } from "@google/genai";
 
-let genAI: any = null;
+// Replit AI Integration for Gemini
+let ai: GoogleGenAI | null = null;
 try {
-  const mod = require("@google/genai");
-  if (mod.GoogleGenerativeAI) {
-    genAI = new mod.GoogleGenerativeAI(process.env.GOOGLE_AI_KEY || "");
+  if (process.env.AI_INTEGRATIONS_GEMINI_API_KEY && process.env.AI_INTEGRATIONS_GEMINI_BASE_URL) {
+    ai = new GoogleGenAI({
+      apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+      httpOptions: {
+        apiVersion: "",
+        baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+      },
+    });
+    console.log("Gemini AI Integration initialized successfully");
+  } else {
+    console.warn("Gemini API not available, falling back to mock responses");
   }
 } catch (err) {
   console.warn("Gemini API not available, falling back to mock responses");
 }
 
-// AI function using Gemini API with activity descriptions
-async function generateAIResponse(history: any[], context: any) {
+// AI function using Gemini API with activity descriptions and custom bot prompt
+async function generateAIResponse(history: any[], context: any, customPrompt?: string) {
   // Build activity descriptions for context
   const activityDescriptions = context.activities
-    ?.map((a: any) => `- ${a.name}: ${a.description || "Açıklama yok"}`)
+    ?.map((a: any) => {
+      let desc = `- ${a.name}: ${a.description || "Açıklama yok"} (Fiyat: ${a.price} TL`;
+      if (a.priceUsd) desc += `, $${a.priceUsd}`;
+      desc += `, Süre: ${a.durationMinutes} dk)`;
+      if (a.reservationLink) desc += `\n  TR Rezervasyon Linki: ${a.reservationLink}`;
+      if (a.reservationLinkEn) desc += `\n  EN Reservation Link: ${a.reservationLinkEn}`;
+      return desc;
+    })
     .join("\n") || "";
   
   // Build reservation context
@@ -43,47 +60,50 @@ Eğer müşteri mevcut bir rezervasyon hakkında soru soruyorsa, kibarca SİPAR�
 Yeni rezervasyon yapmak istiyorlarsa normal şekilde yardımcı ol.`;
   }
   
-  // If Gemini is available, use it; otherwise use mock
-  if (genAI) {
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      
-      // System prompt with activity information
-      const systemPrompt = `Sen bir TURİZM REZERVASYONLARI DANIŞMANI'sın. 
+  // Use custom prompt from settings if available, otherwise use default
+  const basePrompt = customPrompt || `Sen bir TURİZM REZERVASYONLARI DANIŞMANI'sın. 
 Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. 
 Kibar, samimi ve profesyonel ol. 
-Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol.
+Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol.`;
 
-Mevcut Aktiviteler:
+  const systemPrompt = `${basePrompt}
+
+=== MEVCUT AKTİVİTELER ===
 ${activityDescriptions}
 
 ${reservationContext}
 
-ÖNEMLİ KURALLAR:
+=== ÖNEMLİ KURALLAR ===
 1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 2. Karmaşık konularda veya şikayetlerde "Bu konuyu yetkili arkadaşımıza iletiyorum" de.
 3. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
 4. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.`;
 
+  // If Replit AI Integration is available, use it
+  if (ai) {
+    try {
       // Convert message history to Gemini format
       const contents = history.map((msg: any) => ({
         role: msg.role === "user" ? "user" : "model",
         parts: [{ text: msg.content }]
       }));
 
-      const result = await model.generateContent({
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
         contents,
-        systemInstruction: systemPrompt
+        config: {
+          systemInstruction: systemPrompt
+        }
       });
 
-      const responseText = result.response.text();
+      const responseText = result.text || "";
       return responseText || "Merhaba! Nasıl yardımcı olabilirim?";
     } catch (error) {
       console.error("Gemini API error:", error);
     }
   }
 
-  // Mock response with activity information
+  // Mock response with activity information when AI is not available
   return `Merhaba! Bizim aktivitelerimiz şunlardır:\n\n${activityDescriptions}\n\nBunlardan hangisine ilgi duyuyorsunuz?`;
 }
 
@@ -378,13 +398,16 @@ export async function registerRoutes(
       // Get context (activities, etc)
       const activities = await storage.getActivities();
       
-      // Generate AI response with reservation context
+      // Get custom bot prompt from settings
+      const botPrompt = await storage.getSetting('botPrompt');
+      
+      // Generate AI response with reservation context and custom prompt
       const aiResponse = await generateAIResponse(history, { 
         activities, 
         hasReservation: !!userReservation,
         reservation: userReservation,
         askForOrderNumber: !userReservation
-      });
+      }, botPrompt || undefined);
       
       // Check if response indicates human intervention needed
       const needsHuman = aiResponse.toLowerCase().includes('yetkili') || 
