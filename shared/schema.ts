@@ -139,9 +139,10 @@ export const settlements = pgTable("settlements", {
   totalCostTl: integer("total_cost_tl").default(0),
   payoutTl: integer("payout_tl").default(0), // Acentaya ödenecek
   payoutUsd: integer("payout_usd").default(0),
+  extrasTl: integer("extras_tl").default(0), // Ekstra tutar (manuel eklenen)
   vatRatePct: integer("vat_rate_pct").default(20), // KDV oranı
   vatAmountTl: integer("vat_amount_tl").default(0),
-  profitTl: integer("profit_tl").default(0), // Kar = Gelir - Maliyet - Acenta ödemesi - KDV
+  profitTl: integer("profit_tl").default(0), // Kar = Gelir - Maliyet - Acenta ödemesi - Ekstra
   paidAmountTl: integer("paid_amount_tl").default(0), // Ödenen miktar
   remainingTl: integer("remaining_tl").default(0), // Kalan borç
   createdAt: timestamp("created_at").defaultNow(),
