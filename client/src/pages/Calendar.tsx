@@ -212,6 +212,34 @@ function AddCapacityDialog() {
   const selectedActivity = activities?.find(a => a.id === selectedActivityId);
   const defaultCapacity = selectedActivity ? (selectedActivity as any).defaultCapacity || 10 : 10;
 
+  // Get activity's default times or fallback to 30-minute intervals
+  const getTimeOptions = () => {
+    if (selectedActivity && (selectedActivity as any).defaultTimes) {
+      try {
+        const times = JSON.parse((selectedActivity as any).defaultTimes);
+        return Array.isArray(times) && times.length > 0 ? times : generateAllTimeOptions();
+      } catch {
+        return generateAllTimeOptions();
+      }
+    }
+    return generateAllTimeOptions();
+  };
+
+  // Generate 30-minute intervals (00:00 to 23:30) - fallback
+  const generateAllTimeOptions = () => {
+    const times = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const h = String(hour).padStart(2, '0');
+        const m = String(minute).padStart(2, '0');
+        times.push(`${h}:${m}`);
+      }
+    }
+    return times;
+  };
+
+  const timeOptions = getTimeOptions();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -225,25 +253,11 @@ function AddCapacityDialog() {
       });
       toast({ title: "Başarılı", description: "Slot başarıyla eklendi." });
       setOpen(false);
+      setSelectedActivityId(null);
     } catch (err) {
       toast({ title: "Hata", description: "Slot eklenirken hata oluştu.", variant: "destructive" });
     }
   };
-
-  // Generate 30-minute intervals (00:00 to 23:30)
-  const generateTimeOptions = () => {
-    const times = [];
-    for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const h = String(hour).padStart(2, '0');
-        const m = String(minute).padStart(2, '0');
-        times.push(`${h}:${m}`);
-      }
-    }
-    return times;
-  };
-
-  const timeOptions = generateTimeOptions();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -281,10 +295,10 @@ function AddCapacityDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label>Saat (30 dakikalık aralıklar)</Label>
-            <Select name="time" required>
+            <Label>Saat</Label>
+            <Select name="time" required disabled={!selectedActivityId}>
               <SelectTrigger>
-                <SelectValue placeholder="Saat seçin" />
+                <SelectValue placeholder={selectedActivityId ? "Saat seçin" : "Önce aktivite seçin"} />
               </SelectTrigger>
               <SelectContent className="max-h-60">
                 {timeOptions.map((time) => (
@@ -292,6 +306,11 @@ function AddCapacityDialog() {
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              {selectedActivityId 
+                ? `Seçili aktivitenin saatleri: ${timeOptions.join(", ")}` 
+                : "Saatler aktivite seçildiğinde görünecektir"}
+            </p>
           </div>
 
           <div className="space-y-2">
