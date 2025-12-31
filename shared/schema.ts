@@ -1,18 +1,81 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// === TABLE DEFINITIONS ===
+
+export const activities = pgTable("activities", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  price: integer("price").notNull(), // In cents/kurus or just unit
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  active: boolean("active").default(true),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const capacity = pgTable("capacity", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").references(() => activities.id).notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD
+  time: text("time").notNull(), // HH:mm
+  totalSlots: integer("total_slots").notNull(),
+  bookedSlots: integer("booked_slots").default(0),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export const reservations = pgTable("reservations", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").references(() => activities.id),
+  customerName: text("customer_name").notNull(),
+  customerPhone: text("customer_phone").notNull(),
+  customerEmail: text("customer_email"),
+  date: text("date").notNull(),
+  time: text("time").notNull(),
+  quantity: integer("quantity").notNull(),
+  status: text("status").default("pending"), // pending, confirmed, cancelled
+  source: text("source").default("whatsapp"), // whatsapp, web (woocommerce), manual
+  externalId: text("external_id"), // WooCommerce Order ID
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  phone: text("phone").notNull(),
+  content: text("content").notNull(),
+  role: text("role").notNull(), // user, assistant, system
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+// === RELATIONS ===
+export const capacityRelations = relations(capacity, ({ one }) => ({
+  activity: one(activities, {
+    fields: [capacity.activityId],
+    references: [activities.id],
+  }),
+}));
+
+export const reservationRelations = relations(reservations, ({ one }) => ({
+  activity: one(activities, {
+    fields: [reservations.activityId],
+    references: [activities.id],
+  }),
+}));
+
+// === BASE SCHEMAS ===
+export const insertActivitySchema = createInsertSchema(activities).omit({ id: true });
+export const insertCapacitySchema = createInsertSchema(capacity).omit({ id: true, bookedSlots: true });
+export const insertReservationSchema = createInsertSchema(reservations).omit({ id: true, createdAt: true });
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
+
+// === TYPES ===
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+export type Capacity = typeof capacity.$inferSelect;
+export type InsertCapacity = z.infer<typeof insertCapacitySchema>;
+
+export type Reservation = typeof reservations.$inferSelect;
+export type InsertReservation = z.infer<typeof insertReservationSchema>;
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
