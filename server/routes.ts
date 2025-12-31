@@ -39,6 +39,31 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
     })
     .join("\n") || "";
   
+  // Build capacity/availability information
+  let capacityInfo = "";
+  if (context.capacityData && context.capacityData.length > 0) {
+    const capacityByActivity: Record<string, string[]> = {};
+    for (const cap of context.capacityData) {
+      const activity = context.activities?.find((a: any) => a.id === cap.activityId);
+      const activityName = activity?.name || `Aktivite #${cap.activityId}`;
+      const available = cap.totalSlots - cap.bookedSlots;
+      
+      if (!capacityByActivity[activityName]) {
+        capacityByActivity[activityName] = [];
+      }
+      capacityByActivity[activityName].push(
+        `  ${cap.date} saat ${cap.time}: ${available} kişilik yer ${available > 0 ? 'MÜSAİT' : 'DOLU'}`
+      );
+    }
+    
+    capacityInfo = "\n=== MÜSAİTLİK BİLGİSİ ===\n";
+    for (const [name, slots] of Object.entries(capacityByActivity)) {
+      capacityInfo += `${name}:\n${slots.join('\n')}\n`;
+    }
+  } else {
+    capacityInfo = "\n=== MÜSAİTLİK BİLGİSİ ===\nŞu an sistemde kayıtlı kapasite verisi yok. Müşteriye kontenjan bilgisi için takvime bakmasını veya bizi aramasını önerebilirsin.\n";
+  }
+  
   // Build reservation context
   let reservationContext = "";
   if (context.hasReservation && context.reservation) {
@@ -70,14 +95,16 @@ Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı
 
 === MEVCUT AKTİVİTELER ===
 ${activityDescriptions}
-
+${capacityInfo}
 ${reservationContext}
 
 === ÖNEMLİ KURALLAR ===
 1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
-2. Karmaşık konularda veya şikayetlerde "Bu konuyu yetkili arkadaşımıza iletiyorum" de.
-3. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
-4. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.`;
+2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ bölümünü kontrol et ve doğru cevap ver.
+3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+4. Karmaşık konularda veya şikayetlerde "Bu konuyu yetkili arkadaşımıza iletiyorum" de.
+5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.`;
 
   // If Replit AI Integration is available, use it
   if (ai) {
@@ -398,12 +425,19 @@ export async function registerRoutes(
       // Get context (activities, etc)
       const activities = await storage.getActivities();
       
+      // Get capacity data for the next 7 days
+      const capacityData = await storage.getCapacity();
+      // Filter to only upcoming dates
+      const today = new Date().toISOString().split('T')[0];
+      const upcomingCapacity = capacityData.filter(c => c.date >= today);
+      
       // Get custom bot prompt from settings
       const botPrompt = await storage.getSetting('botPrompt');
       
-      // Generate AI response with reservation context and custom prompt
+      // Generate AI response with reservation context, capacity data, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
         activities, 
+        capacityData: upcomingCapacity,
         hasReservation: !!userReservation,
         reservation: userReservation,
         askForOrderNumber: !userReservation
