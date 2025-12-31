@@ -8,7 +8,7 @@ import { useActivities } from "@/hooks/use-activities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Calendar, Users, Clock, TrendingUp, Filter, CalendarDays, LayoutGrid } from "lucide-react";
+import { Plus, Edit2, Calendar, Users, Clock, TrendingUp, Filter, CalendarDays, LayoutGrid, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,17 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -308,6 +319,7 @@ export default function CalendarPage() {
 
 function CapacityCardWithEdit({ slot, activityName }: { slot: Capacity; activityName: string }) {
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [newSlots, setNewSlots] = useState(String(slot.totalSlots));
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -332,6 +344,22 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: Capacity; activity
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/capacity/${slot.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Kapasite silinemedi");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.capacity.list.path] });
+      toast({ title: "Basarili", description: "Slot silindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Slot silinemedi.", variant: "destructive" });
+    },
+  });
+
   const occupancy = slot.totalSlots > 0 ? (slot.bookedSlots || 0) / slot.totalSlots * 100 : 0;
   const available = slot.totalSlots - (slot.bookedSlots || 0);
   const isFull = occupancy >= 100;
@@ -351,9 +379,14 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: Capacity; activity
                 </Badge>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setEditOpen(true)} data-testid={`button-edit-capacity-${slot.id}`}>
-              <Edit2 className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={() => setEditOpen(true)} data-testid={`button-edit-capacity-${slot.id}`}>
+                <Edit2 className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteOpen(true)} data-testid={`button-delete-capacity-${slot.id}`}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -415,6 +448,32 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: Capacity; activity
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Slotu Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              {activityName} - {slot.time} slotunu silmek istediginizden emin misiniz?
+              {(slot.bookedSlots || 0) > 0 && (
+                <span className="block mt-2 font-medium text-red-600">
+                  Dikkat: Bu slotta {slot.bookedSlots} rezervasyon bulunuyor!
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Vazgec</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteMutation.mutate()}
+              className="bg-red-500 hover:bg-red-600"
+              data-testid="button-confirm-delete"
+            >
+              {deleteMutation.isPending ? "Siliniyor..." : "Sil"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

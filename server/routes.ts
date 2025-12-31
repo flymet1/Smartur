@@ -301,6 +301,16 @@ export async function registerRoutes(
     }
   });
 
+  // Capacity delete endpoint
+  app.delete("/api/capacity/:id", async (req, res) => {
+    try {
+      await storage.deleteCapacity(Number(req.params.id));
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ error: "Kapasite silinemedi" });
+    }
+  });
+
   // === Capacity ===
   app.get(api.capacity.list.path, async (req, res) => {
     const { date, activityId } = req.query;

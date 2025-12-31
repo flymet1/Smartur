@@ -54,6 +54,7 @@ export interface IStorage {
   getCapacity(date?: string, activityId?: number): Promise<Capacity[]>;
   createCapacity(capacity: InsertCapacity): Promise<Capacity>;
   updateCapacitySlots(id: number, bookedChange: number): Promise<Capacity>;
+  deleteCapacity(id: number): Promise<void>;
 
   // Reservations
   getReservations(): Promise<Reservation[]>;
@@ -177,6 +178,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(capacity.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteCapacity(id: number): Promise<void> {
+    await db.delete(capacity).where(eq(capacity.id, id));
   }
 
   // Reservations
