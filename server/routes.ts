@@ -22,6 +22,27 @@ async function generateAIResponse(history: any[], context: any) {
     ?.map((a: any) => `- ${a.name}: ${a.description || "Açıklama yok"}`)
     .join("\n") || "";
   
+  // Build reservation context
+  let reservationContext = "";
+  if (context.hasReservation && context.reservation) {
+    const res = context.reservation;
+    reservationContext = `
+MÜŞTERİ BİLGİSİ (Sistemde kayıtlı):
+- İsim: ${res.customerName}
+- Rezervasyon Tarihi: ${res.date}
+- Saat: ${res.time}
+- Sipariş No: ${res.externalId || 'Yok'}
+- Durum: ${res.status === 'confirmed' ? 'Onaylı' : 'Beklemede'}
+
+Bu müşterinin rezervasyonu var. Ona yardımcı ol.`;
+  } else if (context.askForOrderNumber) {
+    reservationContext = `
+DİKKAT: Bu müşterinin sistemde rezervasyonu bulunamadı.
+Eğer müşteri mevcut bir rezervasyon hakkında soru soruyorsa, kibarca SİPARİŞ NUMARASINI sor.
+"Sipariş numaranızı paylaşır mısınız?" şeklinde sor.
+Yeni rezervasyon yapmak istiyorlarsa normal şekilde yardımcı ol.`;
+  }
+  
   // If Gemini is available, use it; otherwise use mock
   if (genAI) {
     try {
@@ -36,7 +57,13 @@ Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı
 Mevcut Aktiviteler:
 ${activityDescriptions}
 
-Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.`;
+${reservationContext}
+
+ÖNEMLİ KURALLAR:
+1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+2. Karmaşık konularda veya şikayetlerde "Bu konuyu yetkili arkadaşımıza iletiyorum" de.
+3. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+4. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.`;
 
       // Convert message history to Gemini format
       const contents = history.map((msg: any) => ({
@@ -323,14 +350,44 @@ export async function registerRoutes(
         role: "user"
       });
 
+      // Check for open support request - don't respond if exists
+      const openSupportRequest = await storage.getOpenSupportRequest(From);
+      if (openSupportRequest) {
+        // Don't respond to ongoing support requests - human will handle
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+        return;
+      }
+
+      // Check if user has a reservation (by phone or order number in message)
+      const orderNumberMatch = Body.match(/\b(\d{4,})\b/);
+      const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
+      const userReservation = await storage.findReservationByPhoneOrOrder(From, potentialOrderId);
+
       // Get history
       const history = await storage.getMessages(From, 5);
       
       // Get context (activities, etc)
       const activities = await storage.getActivities();
       
-      // Generate AI response
-      const aiResponse = await generateAIResponse(history, { activities });
+      // Generate AI response with reservation context
+      const aiResponse = await generateAIResponse(history, { 
+        activities, 
+        hasReservation: !!userReservation,
+        reservation: userReservation,
+        askForOrderNumber: !userReservation
+      });
+      
+      // Check if response indicates human intervention needed
+      const needsHuman = aiResponse.toLowerCase().includes('yetkili') || 
+                         aiResponse.toLowerCase().includes('müdahale') ||
+                         aiResponse.toLowerCase().includes('iletiyorum');
+      
+      if (needsHuman) {
+        // Create support request
+        await storage.createSupportRequest({ phone: From, status: 'open' });
+        await storage.markHumanIntervention(From, true);
+      }
       
       // Save AI response
       await storage.addMessage({
@@ -364,6 +421,52 @@ export async function registerRoutes(
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: "Ayar kaydedilemedi" });
+    }
+  });
+
+  // === Conversations / Messages ===
+  app.get("/api/conversations", async (req, res) => {
+    try {
+      const filter = req.query.filter as 'all' | 'with_reservation' | 'human_intervention' | undefined;
+      const conversations = await storage.getAllConversations(filter);
+      res.json(conversations);
+    } catch (err) {
+      res.status(500).json({ error: "Konuşmalar alınamadı" });
+    }
+  });
+
+  // === Support Requests ===
+  app.get("/api/support-requests", async (req, res) => {
+    try {
+      const status = req.query.status as 'open' | 'resolved' | undefined;
+      const requests = await storage.getAllSupportRequests(status);
+      res.json(requests);
+    } catch (err) {
+      res.status(500).json({ error: "Destek talepleri alınamadı" });
+    }
+  });
+
+  app.post("/api/support-requests/:id/resolve", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await storage.resolveSupportRequest(id);
+      res.json(updated);
+    } catch (err) {
+      res.status(400).json({ error: "Destek talebi kapatılamadı" });
+    }
+  });
+
+  app.post("/api/support-requests", async (req, res) => {
+    try {
+      const { phone, reservationId } = req.body;
+      const existing = await storage.getOpenSupportRequest(phone);
+      if (existing) {
+        return res.json(existing);
+      }
+      const created = await storage.createSupportRequest({ phone, reservationId, status: 'open' });
+      res.json(created);
+    } catch (err) {
+      res.status(400).json({ error: "Destek talebi oluşturulamadı" });
     }
   });
 

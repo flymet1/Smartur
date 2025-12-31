@@ -1,51 +1,289 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
+import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+type FilterType = 'all' | 'with_reservation' | 'human_intervention';
+
+interface Conversation {
+  phone: string;
+  messages: Array<{
+    id: number;
+    content: string;
+    role: string;
+    timestamp: string;
+    requiresHumanIntervention: boolean;
+  }>;
+  hasReservation: boolean;
+  reservationInfo?: {
+    id: number;
+    customerName: string;
+    date: string;
+    time: string;
+    externalId?: string;
+  };
+  requiresHumanIntervention: boolean;
+  supportRequest?: {
+    id: number;
+    status: string;
+    createdAt: string;
+  };
+  lastMessageTime: string;
+}
 
 export default function Messages() {
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const { toast } = useToast();
+
+  const { data: conversations, isLoading } = useQuery<Conversation[]>({
+    queryKey: ['/api/conversations', filter],
+    queryFn: async () => {
+      const res = await fetch(`/api/conversations?filter=${filter}`);
+      return res.json();
+    }
+  });
+
+  const resolveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('POST', `/api/support-requests/${id}/resolve`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations', filter] });
+      toast({ title: "Tamamlandı", description: "Destek talebi kapatıldı." });
+    }
+  });
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins} dk önce`;
+    if (diffHours < 24) return `${diffHours} saat önce`;
+    if (diffDays === 1) return 'Dün';
+    return date.toLocaleDateString('tr-TR');
+  };
+
+  const getStatusBadge = (conv: Conversation) => {
+    if (conv.supportRequest && conv.supportRequest.status === 'open') {
+      return (
+        <Badge variant="destructive" className="text-xs">
+          Destek Bekliyor
+        </Badge>
+      );
+    }
+    if (conv.requiresHumanIntervention) {
+      return (
+        <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-700 dark:text-yellow-400">
+          <AlertTriangle className="w-3 h-3 mr-1" />
+          Müdahale Gerekiyor
+        </Badge>
+      );
+    }
+    if (conv.hasReservation) {
+      return (
+        <Badge variant="secondary" className="text-xs">
+          <Check className="w-3 h-3 mr-1" />
+          Rezervasyonlu
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-xs">
+        <MessageCircle className="w-3 h-3 mr-1" />
+        Sohbet
+      </Badge>
+    );
+  };
+
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 md:ml-64 p-4 md:p-8 space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold font-display">Mesaj Geçmişi</h1>
-          <p className="text-muted-foreground mt-1">Bot ile yapılan son görüşmeler</p>
+      <main className="flex-1 md:ml-64 p-4 md:p-8 space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold font-display">Mesaj Geçmişi</h1>
+            <p className="text-muted-foreground mt-1">WhatsApp bot görüşmeleri</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <Select value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
+              <SelectTrigger className="w-[200px]" data-testid="select-message-filter">
+                <SelectValue placeholder="Filtre seç" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm Mesajlar</SelectItem>
+                <SelectItem value="with_reservation">Rezervasyonlu Müşteriler</SelectItem>
+                <SelectItem value="human_intervention">Müdahale Gerekiyor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="grid gap-4">
-          {/* Mock data for now */}
-          <Card className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-bold">+90 532 123 45 67</h3>
-                <p className="text-xs text-muted-foreground">Bugün, 14:30</p>
-              </div>
-              <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
-                Bot Yanıtladı
-              </span>
-            </div>
-            <div className="space-y-2 bg-muted/30 p-4 rounded-lg">
-              <p className="text-sm"><span className="font-bold">Kullanıcı:</span> Merhaba, yarın ATV turu var mı?</p>
-              <p className="text-sm text-primary"><span className="font-bold">Bot:</span> Merhaba! Evet, yarın (15 Mayıs) için ATV turu müsaitliğimiz var. Saat 10:00 ve 14:00 slotları boş. Kaç kişi için rezervasyon yapmak istersiniz?</p>
-            </div>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
+          </div>
+        ) : conversations?.length === 0 ? (
+          <Card className="p-12 text-center">
+            <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground">Henüz mesaj yok</p>
           </Card>
+        ) : (
+          <div className="grid gap-4">
+            {conversations?.map((conv) => (
+              <Card 
+                key={conv.phone} 
+                className="p-6 hover-elevate cursor-pointer"
+                onClick={() => setSelectedConversation(conv)}
+                data-testid={`card-conversation-${conv.phone}`}
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Phone className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold" data-testid={`text-phone-${conv.phone}`}>{conv.phone}</h3>
+                        <p className="text-xs text-muted-foreground">{formatDate(conv.lastMessageTime)}</p>
+                      </div>
+                    </div>
 
-          <Card className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-bold">+90 555 987 65 43</h3>
-                <p className="text-xs text-muted-foreground">Dün, 18:15</p>
-              </div>
-              <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full font-medium">
-                İnsan Müdahalesi Gerekiyor
-              </span>
-            </div>
-            <div className="space-y-2 bg-muted/30 p-4 rounded-lg">
-              <p className="text-sm"><span className="font-bold">Kullanıcı:</span> Grup indirimi yapıyor musunuz? 20 kişi geleceğiz.</p>
-              <p className="text-sm text-primary"><span className="font-bold">Bot:</span> Bu konuyu yetkili arkadaşıma iletiyorum, size kısa sürede dönüş yapacaklar.</p>
-            </div>
-          </Card>
-        </div>
+                    {conv.hasReservation && conv.reservationInfo && (
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2 mb-3">
+                        <span className="flex items-center gap-1">
+                          <User className="w-3.5 h-3.5" />
+                          {conv.reservationInfo.customerName}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {conv.reservationInfo.date}
+                        </span>
+                        {conv.reservationInfo.externalId && (
+                          <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                            #{conv.reservationInfo.externalId}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="bg-muted/30 p-3 rounded-lg mt-2">
+                      {conv.messages.slice(0, 2).map((msg, idx) => (
+                        <p key={idx} className="text-sm mb-1 last:mb-0">
+                          <span className={`font-medium ${msg.role === 'user' ? '' : 'text-primary'}`}>
+                            {msg.role === 'user' ? 'Kullanıcı:' : 'Bot:'}
+                          </span>{' '}
+                          <span className="line-clamp-1">{msg.content}</span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-2">
+                    {getStatusBadge(conv)}
+                    
+                    {conv.supportRequest && conv.supportRequest.status === 'open' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          resolveMutation.mutate(conv.supportRequest!.id);
+                        }}
+                        disabled={resolveMutation.isPending}
+                        data-testid={`button-resolve-${conv.phone}`}
+                      >
+                        <Check className="w-4 h-4 mr-1" />
+                        Tamamlandı
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </main>
+
+      <Dialog open={!!selectedConversation} onOpenChange={() => setSelectedConversation(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <Phone className="w-5 h-5" />
+              {selectedConversation?.phone}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto space-y-3 py-4">
+            {selectedConversation?.messages
+              .slice()
+              .reverse()
+              .map((msg, idx) => (
+                <div 
+                  key={idx}
+                  className={`p-3 rounded-lg ${
+                    msg.role === 'user' 
+                      ? 'bg-muted/50 ml-0 mr-12' 
+                      : 'bg-primary/10 ml-12 mr-0'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <span className={`text-xs font-medium ${msg.role === 'user' ? '' : 'text-primary'}`}>
+                      {msg.role === 'user' ? 'Müşteri' : 'Bot'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(msg.timestamp)}
+                    </span>
+                  </div>
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              ))}
+          </div>
+
+          {selectedConversation?.supportRequest && selectedConversation.supportRequest.status === 'open' && (
+            <div className="flex-shrink-0 border-t pt-4">
+              <Button 
+                className="w-full"
+                onClick={() => {
+                  resolveMutation.mutate(selectedConversation.supportRequest!.id);
+                  setSelectedConversation(null);
+                }}
+                disabled={resolveMutation.isPending}
+                data-testid="button-resolve-modal"
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Destek Talebini Kapat
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

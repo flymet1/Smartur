@@ -5,6 +5,7 @@ import {
   reservations,
   messages,
   settings,
+  supportRequests,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -15,8 +16,10 @@ import {
   type InsertMessage,
   type Settings,
   type InsertSettings,
+  type SupportRequest,
+  type InsertSupportRequest,
 } from "@shared/schema";
-import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
 export interface IStorage {
   // Activities
@@ -37,10 +40,19 @@ export interface IStorage {
   getReservationsStats(): Promise<any>;
   getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<any>;
   getDateDetails(date: string): Promise<any>;
+  findReservationByPhoneOrOrder(phone: string, orderId?: string): Promise<Reservation | undefined>;
 
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
   getMessages(phone: string, limit?: number): Promise<Message[]>;
+  getAllConversations(filter?: 'all' | 'with_reservation' | 'human_intervention'): Promise<any[]>;
+  markHumanIntervention(phone: string, requires: boolean): Promise<void>;
+
+  // Support Requests
+  getOpenSupportRequest(phone: string): Promise<SupportRequest | undefined>;
+  createSupportRequest(request: InsertSupportRequest): Promise<SupportRequest>;
+  resolveSupportRequest(id: number): Promise<SupportRequest>;
+  getAllSupportRequests(status?: 'open' | 'resolved'): Promise<SupportRequest[]>;
 
   // Settings
   getSetting(key: string): Promise<string | undefined>;
@@ -342,6 +354,23 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async findReservationByPhoneOrOrder(phone: string, orderId?: string): Promise<Reservation | undefined> {
+    const allReservations = await db.select().from(reservations);
+    const normalizedPhone = phone.replace(/\D/g, '');
+    
+    // Find by phone first
+    let reservation = allReservations.find(r => 
+      r.customerPhone?.replace(/\D/g, '') === normalizedPhone
+    );
+    
+    // If not found and orderId provided, try by order ID
+    if (!reservation && orderId) {
+      reservation = allReservations.find(r => r.externalId === orderId);
+    }
+    
+    return reservation;
+  }
+
   // Messages
   async addMessage(item: InsertMessage): Promise<Message> {
     const [msg] = await db.insert(messages).values(item).returning();
@@ -355,6 +384,119 @@ export class DatabaseStorage implements IStorage {
       .where(eq(messages.phone, phone))
       .orderBy(desc(messages.timestamp))
       .limit(limit);
+  }
+
+  async getAllConversations(filter?: 'all' | 'with_reservation' | 'human_intervention'): Promise<any[]> {
+    const allMessages = await db.select().from(messages).orderBy(desc(messages.timestamp));
+    const allReservations = await db.select().from(reservations);
+    const allSupportRequests = await db.select().from(supportRequests);
+    
+    // Group messages by phone
+    const conversationMap: Record<string, {
+      phone: string;
+      messages: Message[];
+      hasReservation: boolean;
+      reservationInfo?: Reservation;
+      requiresHumanIntervention: boolean;
+      supportRequest?: SupportRequest;
+      lastMessageTime: Date | null;
+    }> = {};
+    
+    for (const msg of allMessages) {
+      if (!conversationMap[msg.phone]) {
+        // Check if phone has reservation
+        const reservation = allReservations.find(r => 
+          r.customerPhone === msg.phone || 
+          r.customerPhone?.replace(/\D/g, '') === msg.phone.replace(/\D/g, '')
+        );
+        
+        // Check for open support request
+        const supportRequest = allSupportRequests.find(s => 
+          s.phone === msg.phone && s.status === 'open'
+        );
+        
+        conversationMap[msg.phone] = {
+          phone: msg.phone,
+          messages: [],
+          hasReservation: !!reservation,
+          reservationInfo: reservation,
+          requiresHumanIntervention: false,
+          supportRequest,
+          lastMessageTime: msg.timestamp
+        };
+      }
+      conversationMap[msg.phone].messages.push(msg);
+      
+      // Check if any message requires human intervention
+      if (msg.requiresHumanIntervention) {
+        conversationMap[msg.phone].requiresHumanIntervention = true;
+      }
+    }
+    
+    let conversations = Object.values(conversationMap);
+    
+    // Apply filters
+    if (filter === 'with_reservation') {
+      conversations = conversations.filter(c => c.hasReservation);
+    } else if (filter === 'human_intervention') {
+      conversations = conversations.filter(c => c.requiresHumanIntervention || c.supportRequest);
+    }
+    
+    // Sort by last message time
+    conversations.sort((a, b) => {
+      const timeA = a.lastMessageTime?.getTime() || 0;
+      const timeB = b.lastMessageTime?.getTime() || 0;
+      return timeB - timeA;
+    });
+    
+    return conversations;
+  }
+
+  async markHumanIntervention(phone: string, requires: boolean): Promise<void> {
+    // Update the latest message for this phone
+    const latestMessages = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.phone, phone))
+      .orderBy(desc(messages.timestamp))
+      .limit(1);
+    
+    if (latestMessages.length > 0) {
+      await db
+        .update(messages)
+        .set({ requiresHumanIntervention: requires })
+        .where(eq(messages.id, latestMessages[0].id));
+    }
+  }
+
+  // Support Requests
+  async getOpenSupportRequest(phone: string): Promise<SupportRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(supportRequests)
+      .where(and(eq(supportRequests.phone, phone), eq(supportRequests.status, 'open')));
+    return request;
+  }
+
+  async createSupportRequest(request: InsertSupportRequest): Promise<SupportRequest> {
+    const [created] = await db.insert(supportRequests).values(request).returning();
+    return created;
+  }
+
+  async resolveSupportRequest(id: number): Promise<SupportRequest> {
+    const [updated] = await db
+      .update(supportRequests)
+      .set({ status: 'resolved', resolvedAt: new Date() })
+      .where(eq(supportRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getAllSupportRequests(status?: 'open' | 'resolved'): Promise<SupportRequest[]> {
+    if (status) {
+      return await db.select().from(supportRequests).where(eq(supportRequests.status, status)).orderBy(desc(supportRequests.createdAt));
+    }
+    return await db.select().from(supportRequests).orderBy(desc(supportRequests.createdAt));
   }
 
   // Settings

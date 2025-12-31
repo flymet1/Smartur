@@ -57,7 +57,17 @@ export const messages = pgTable("messages", {
   phone: text("phone").notNull(),
   content: text("content").notNull(),
   role: text("role").notNull(), // user, assistant, system
+  requiresHumanIntervention: boolean("requires_human_intervention").default(false),
   timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const supportRequests = pgTable("support_requests", {
+  id: serial("id").primaryKey(),
+  phone: text("phone").notNull(),
+  status: text("status").default("open"), // open, resolved
+  reservationId: integer("reservation_id").references(() => reservations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
 });
 
 export const settings = pgTable("settings", {
@@ -86,6 +96,7 @@ export const insertActivitySchema = createInsertSchema(activities).omit({ id: tr
 export const insertCapacitySchema = createInsertSchema(capacity).omit({ id: true, bookedSlots: true });
 export const insertReservationSchema = createInsertSchema(reservations).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
+export const insertSupportRequestSchema = createInsertSchema(supportRequests).omit({ id: true, createdAt: true, resolvedAt: true });
 
 // === TYPES ===
 export type Activity = typeof activities.$inferSelect;
@@ -99,6 +110,9 @@ export type InsertReservation = z.infer<typeof insertReservationSchema>;
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type SupportRequest = typeof supportRequests.$inferSelect;
+export type InsertSupportRequest = z.infer<typeof insertSupportRequestSchema>;
 
 export type Settings = typeof settings.$inferSelect;
 export const insertSettingsSchema = createInsertSchema(settings).omit({ id: true });
