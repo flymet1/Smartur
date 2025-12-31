@@ -25,6 +25,90 @@ try {
   console.warn("Gemini API not available, falling back to mock responses");
 }
 
+// Turkish day names
+const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+
+// Turkish public holidays (fixed dates + Islamic holidays for 2025-2026)
+const TURKISH_HOLIDAYS: { date: string; name: string }[] = [
+  // 2025 Fixed holidays
+  { date: '2025-01-01', name: 'Yılbaşı' },
+  { date: '2025-04-23', name: '23 Nisan Ulusal Egemenlik ve Çocuk Bayramı' },
+  { date: '2025-05-01', name: '1 Mayıs Emek ve Dayanışma Günü' },
+  { date: '2025-05-19', name: '19 Mayıs Atatürk\'ü Anma, Gençlik ve Spor Bayramı' },
+  { date: '2025-07-15', name: '15 Temmuz Demokrasi ve Milli Birlik Günü' },
+  { date: '2025-08-30', name: '30 Ağustos Zafer Bayramı' },
+  { date: '2025-10-29', name: '29 Ekim Cumhuriyet Bayramı' },
+  // 2025 Islamic holidays (approximate - may shift by 1 day based on moon sighting)
+  { date: '2025-03-30', name: 'Ramazan Bayramı 1. Gün' },
+  { date: '2025-03-31', name: 'Ramazan Bayramı 2. Gün' },
+  { date: '2025-04-01', name: 'Ramazan Bayramı 3. Gün' },
+  { date: '2025-06-06', name: 'Kurban Bayramı 1. Gün' },
+  { date: '2025-06-07', name: 'Kurban Bayramı 2. Gün' },
+  { date: '2025-06-08', name: 'Kurban Bayramı 3. Gün' },
+  { date: '2025-06-09', name: 'Kurban Bayramı 4. Gün' },
+  // 2026 Fixed holidays
+  { date: '2026-01-01', name: 'Yılbaşı' },
+  { date: '2026-04-23', name: '23 Nisan Ulusal Egemenlik ve Çocuk Bayramı' },
+  { date: '2026-05-01', name: '1 Mayıs Emek ve Dayanışma Günü' },
+  { date: '2026-05-19', name: '19 Mayıs Atatürk\'ü Anma, Gençlik ve Spor Bayramı' },
+  { date: '2026-07-15', name: '15 Temmuz Demokrasi ve Milli Birlik Günü' },
+  { date: '2026-08-30', name: '30 Ağustos Zafer Bayramı' },
+  { date: '2026-10-29', name: '29 Ekim Cumhuriyet Bayramı' },
+  // 2026 Islamic holidays (approximate)
+  { date: '2026-03-20', name: 'Ramazan Bayramı 1. Gün' },
+  { date: '2026-03-21', name: 'Ramazan Bayramı 2. Gün' },
+  { date: '2026-03-22', name: 'Ramazan Bayramı 3. Gün' },
+  { date: '2026-05-27', name: 'Kurban Bayramı 1. Gün' },
+  { date: '2026-05-28', name: 'Kurban Bayramı 2. Gün' },
+  { date: '2026-05-29', name: 'Kurban Bayramı 3. Gün' },
+  { date: '2026-05-30', name: 'Kurban Bayramı 4. Gün' },
+];
+
+// Build date context for the AI
+function buildDateContext(): string {
+  const now = new Date();
+  // Use Turkey timezone
+  const turkeyOffset = 3 * 60; // UTC+3
+  const localNow = new Date(now.getTime() + (turkeyOffset + now.getTimezoneOffset()) * 60000);
+  
+  const formatDate = (d: Date) => d.toISOString().split('T')[0];
+  const formatReadable = (d: Date) => `${d.getDate()} ${TURKISH_MONTHS[d.getMonth()]} ${d.getFullYear()} ${TURKISH_DAYS[d.getDay()]}`;
+  
+  const today = new Date(localNow);
+  const tomorrow = new Date(localNow); tomorrow.setDate(tomorrow.getDate() + 1);
+  const dayAfter = new Date(localNow); dayAfter.setDate(dayAfter.getDate() + 2);
+  
+  // Find this weekend (Saturday and Sunday)
+  const daysUntilSaturday = (6 - localNow.getDay() + 7) % 7;
+  const thisSaturday = new Date(localNow); thisSaturday.setDate(thisSaturday.getDate() + daysUntilSaturday);
+  const thisSunday = new Date(thisSaturday); thisSunday.setDate(thisSunday.getDate() + 1);
+  
+  // Find next 3 upcoming holidays
+  const todayStr = formatDate(today);
+  const upcomingHolidays = TURKISH_HOLIDAYS
+    .filter(h => h.date >= todayStr)
+    .slice(0, 5)
+    .map(h => {
+      const hDate = new Date(h.date);
+      const daysUntil = Math.ceil((hDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return `  - ${h.name}: ${h.date} (${daysUntil === 0 ? 'BUGÜN' : daysUntil === 1 ? 'YARIN' : daysUntil + ' gün sonra'})`;
+    })
+    .join('\n');
+  
+  return `=== TARİH BİLGİSİ (Türkiye Saati) ===
+Bugün: ${formatDate(today)} - ${formatReadable(today)}
+Yarın: ${formatDate(tomorrow)} - ${formatReadable(tomorrow)}
+Öbür gün: ${formatDate(dayAfter)} - ${formatReadable(dayAfter)}
+Bu Cumartesi: ${formatDate(thisSaturday)} - ${formatReadable(thisSaturday)}
+Bu Pazar: ${formatDate(thisSunday)} - ${formatReadable(thisSunday)}
+
+=== YAKLAŞAN RESMİ TATİLLER ===
+${upcomingHolidays || 'Yakın tarihte resmi tatil yok.'}
+
+Müşteri "yarın", "öbür gün", "bu hafta sonu", "bayramda" gibi ifadeler kullanırsa yukarıdaki tarihleri referans al.`;
+}
+
 // AI function using Gemini API with activity descriptions and custom bot prompt
 async function generateAIResponse(history: any[], context: any, customPrompt?: string) {
   // Build activity descriptions for context
@@ -91,7 +175,12 @@ Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap.
 Kibar, samimi ve profesyonel ol. 
 Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol.`;
 
+  // Get current date context
+  const dateContext = buildDateContext();
+
   const systemPrompt = `${basePrompt}
+
+${dateContext}
 
 === MEVCUT AKTİVİTELER ===
 ${activityDescriptions}
@@ -100,7 +189,7 @@ ${reservationContext}
 
 === ÖNEMLİ KURALLAR ===
 1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
-2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ bölümünü kontrol et ve doğru cevap ver.
+2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
 3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
 4. Karmaşık konularda veya şikayetlerde "Bu konuyu yetkili arkadaşımıza iletiyorum" de.
 5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
