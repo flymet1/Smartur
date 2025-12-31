@@ -350,6 +350,14 @@ export async function registerRoutes(
         role: "user"
       });
 
+      // Check blacklist - don't respond if blacklisted
+      const isBlacklisted = await storage.isBlacklisted(From);
+      if (isBlacklisted) {
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+        return;
+      }
+
       // Check for open support request - don't respond if exists
       const openSupportRequest = await storage.getOpenSupportRequest(From);
       if (openSupportRequest) {
@@ -467,6 +475,39 @@ export async function registerRoutes(
       res.json(created);
     } catch (err) {
       res.status(400).json({ error: "Destek talebi oluşturulamadı" });
+    }
+  });
+
+  // === Blacklist ===
+  app.get("/api/blacklist", async (req, res) => {
+    try {
+      const list = await storage.getBlacklist();
+      res.json(list);
+    } catch (err) {
+      res.status(500).json({ error: "Kara liste alınamadı" });
+    }
+  });
+
+  app.post("/api/blacklist", async (req, res) => {
+    try {
+      const { phone, reason } = req.body;
+      if (!phone) {
+        return res.status(400).json({ error: "Telefon numarası gerekli" });
+      }
+      const created = await storage.addToBlacklist(phone, reason);
+      res.json(created);
+    } catch (err) {
+      res.status(400).json({ error: "Kara listeye eklenemedi" });
+    }
+  });
+
+  app.delete("/api/blacklist/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.removeFromBlacklist(id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: "Kara listeden silinemedi" });
     }
   });
 

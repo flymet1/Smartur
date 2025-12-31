@@ -76,6 +76,13 @@ export const settings = pgTable("settings", {
   value: text("value"),
 });
 
+export const blacklist = pgTable("blacklist", {
+  id: serial("id").primaryKey(),
+  phone: text("phone").notNull().unique(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === RELATIONS ===
 export const capacityRelations = relations(capacity, ({ one }) => ({
   activity: one(activities, {
@@ -117,3 +124,7 @@ export type InsertSupportRequest = z.infer<typeof insertSupportRequestSchema>;
 export type Settings = typeof settings.$inferSelect;
 export const insertSettingsSchema = createInsertSchema(settings).omit({ id: true });
 export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+
+export type Blacklist = typeof blacklist.$inferSelect;
+export const insertBlacklistSchema = createInsertSchema(blacklist).omit({ id: true, createdAt: true });
+export type InsertBlacklist = z.infer<typeof insertBlacklistSchema>;

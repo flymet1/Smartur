@@ -6,6 +6,7 @@ import {
   messages,
   settings,
   supportRequests,
+  blacklist,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -18,6 +19,8 @@ import {
   type InsertSettings,
   type SupportRequest,
   type InsertSupportRequest,
+  type Blacklist,
+  type InsertBlacklist,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -57,6 +60,12 @@ export interface IStorage {
   // Settings
   getSetting(key: string): Promise<string | undefined>;
   setSetting(key: string, value: string): Promise<Settings>;
+
+  // Blacklist
+  getBlacklist(): Promise<Blacklist[]>;
+  addToBlacklist(phone: string, reason?: string): Promise<Blacklist>;
+  removeFromBlacklist(id: number): Promise<void>;
+  isBlacklisted(phone: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -518,6 +527,27 @@ export class DatabaseStorage implements IStorage {
       const [created] = await db.insert(settings).values({ key, value }).returning();
       return created;
     }
+  }
+
+  // Blacklist
+  async getBlacklist(): Promise<Blacklist[]> {
+    return await db.select().from(blacklist).orderBy(desc(blacklist.createdAt));
+  }
+
+  async addToBlacklist(phone: string, reason?: string): Promise<Blacklist> {
+    const normalizedPhone = phone.replace(/\D/g, '');
+    const [created] = await db.insert(blacklist).values({ phone: normalizedPhone, reason }).returning();
+    return created;
+  }
+
+  async removeFromBlacklist(id: number): Promise<void> {
+    await db.delete(blacklist).where(eq(blacklist.id, id));
+  }
+
+  async isBlacklisted(phone: string): Promise<boolean> {
+    const normalizedPhone = phone.replace(/\D/g, '');
+    const all = await db.select().from(blacklist);
+    return all.some(b => normalizedPhone.includes(b.phone) || b.phone.includes(normalizedPhone));
   }
 }
 

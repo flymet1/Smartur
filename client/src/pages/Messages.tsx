@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
-import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle } from "lucide-react";
+import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -70,6 +70,16 @@ export default function Messages() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/conversations', filter] });
       toast({ title: "Tamamlandı", description: "Destek talebi kapatıldı." });
+    }
+  });
+
+  const createSupportMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      return apiRequest('POST', '/api/support-requests', { phone });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations', filter] });
+      toast({ title: "Oluşturuldu", description: "Destek talebi oluşturuldu. Bot bu numaraya cevap vermeyecek." });
     }
   });
 
@@ -208,7 +218,7 @@ export default function Messages() {
                   <div className="flex flex-col items-end gap-2">
                     {getStatusBadge(conv)}
                     
-                    {conv.supportRequest && conv.supportRequest.status === 'open' && (
+                    {conv.supportRequest && conv.supportRequest.status === 'open' ? (
                       <Button 
                         size="sm" 
                         variant="outline"
@@ -221,6 +231,20 @@ export default function Messages() {
                       >
                         <Check className="w-4 h-4 mr-1" />
                         Tamamlandı
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          createSupportMutation.mutate(conv.phone);
+                        }}
+                        disabled={createSupportMutation.isPending}
+                        data-testid={`button-create-support-${conv.phone}`}
+                      >
+                        <UserX className="w-4 h-4 mr-1" />
+                        Destek Talebi Oluştur
                       </Button>
                     )}
                   </div>
