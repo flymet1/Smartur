@@ -54,20 +54,6 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Mesaj Şablonları</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Rezervasyon Onay Mesajı</Label>
-                <textarea 
-                  className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background text-sm"
-                  defaultValue="Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."
-                />
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </main>
     </div>

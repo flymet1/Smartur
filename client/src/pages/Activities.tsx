@@ -166,6 +166,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       durationMinutes: Number(formData.get("durationMinutes")),
       dailyFrequency: Number(frequency),
       defaultTimes: JSON.stringify(times),
+      confirmationMessage: formData.get("confirmationMessage") as string,
       active: true,
     };
 
@@ -260,6 +261,19 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
               placeholder="Tur hakkında kısa bilgi..." 
             />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmationMessage">Rezervasyon Onay Mesajı</Label>
+            <Textarea 
+              id="confirmationMessage" 
+              name="confirmationMessage" 
+              defaultValue={(activity as any)?.confirmationMessage || "Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."} 
+              placeholder="Rezervasyon onayı için özel mesaj..."
+              className="min-h-[80px]"
+            />
+            <p className="text-xs text-muted-foreground">Kullanılabilir etiketler: {'{'}isim{'}'}, {'{'}tarih{'}'}, {'{'}saat{'}'}, {'{'}aktivite{'}'}</p>
+          </div>
+
           <DialogFooter>
             <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
               {createMutation.isPending || updateMutation.isPending ? "Kaydediliyor..." : "Kaydet"}

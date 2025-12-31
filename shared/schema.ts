@@ -13,6 +13,7 @@ export const activities = pgTable("activities", {
   durationMinutes: integer("duration_minutes").notNull().default(60),
   dailyFrequency: integer("daily_frequency").default(1), // 1, 3, or 5 times per day
   defaultTimes: text("default_times").default("[]"), // JSON array of time strings like ["09:00", "14:00"]
+  confirmationMessage: text("confirmation_message").default("Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."),
   active: boolean("active").default(true),
 });
 
