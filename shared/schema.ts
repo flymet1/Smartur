@@ -8,8 +8,10 @@ import { relations } from "drizzle-orm";
 export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  nameAliases: text("name_aliases").default("[]"), // JSON array of alternative names (multilingual: ["paragliding fethiye", "Fethiye yamaç paraşütü"])
   description: text("description"),
-  price: integer("price").notNull(), // In cents/kurus or just unit
+  price: integer("price").notNull(), // In TL
+  priceUsd: integer("price_usd").default(0), // In USD cents
   durationMinutes: integer("duration_minutes").notNull().default(60),
   dailyFrequency: integer("daily_frequency").default(1), // 1, 3, or 5 times per day
   defaultTimes: text("default_times").default("[]"), // JSON array of time strings like ["09:00", "14:00"]
@@ -41,6 +43,9 @@ export const reservations = pgTable("reservations", {
   date: text("date").notNull(),
   time: text("time").notNull(),
   quantity: integer("quantity").notNull(),
+  priceTl: integer("price_tl").default(0), // Price in TL
+  priceUsd: integer("price_usd").default(0), // Price in USD
+  currency: text("currency").default("TRY"), // TRY or USD
   status: text("status").default("pending"), // pending, confirmed, cancelled
   source: text("source").default("whatsapp"), // whatsapp, web (woocommerce), manual
   externalId: text("external_id"), // WooCommerce Order ID

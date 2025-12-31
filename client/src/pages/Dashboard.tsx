@@ -23,15 +23,15 @@ export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useReservationStats();
   const { data: reservations, isLoading: reservationsLoading } = useReservations();
 
-  // Mock data for charts if API not ready
-  const chartData = [
-    { name: 'Pzt', sales: 4000 },
-    { name: 'Sal', sales: 3000 },
-    { name: 'Çar', sales: 2000 },
-    { name: 'Per', sales: 2780 },
-    { name: 'Cum', sales: 1890 },
-    { name: 'Cmt', sales: 2390 },
-    { name: 'Paz', sales: 3490 },
+  // Use real weekly sales data from API, fallback to empty data if not available
+  const chartData = stats?.weeklySales || [
+    { name: 'Pzt', salesTl: 0, salesUsd: 0 },
+    { name: 'Sal', salesTl: 0, salesUsd: 0 },
+    { name: 'Çar', salesTl: 0, salesUsd: 0 },
+    { name: 'Per', salesTl: 0, salesUsd: 0 },
+    { name: 'Cum', salesTl: 0, salesUsd: 0 },
+    { name: 'Cmt', salesTl: 0, salesUsd: 0 },
+    { name: 'Paz', salesTl: 0, salesUsd: 0 },
   ];
 
   if (statsLoading || reservationsLoading) {
@@ -77,10 +77,10 @@ export default function Dashboard() {
             trendUp={true}
           />
           <StatCard 
-            label="Toplam Gelir" 
-            value={`₺${(stats?.totalRevenue || 0).toLocaleString('tr-TR')}`} 
+            label="Toplam Gelir (TL)" 
+            value={`₺${(stats?.totalRevenueTl || 0).toLocaleString('tr-TR')}`} 
             icon={DollarSign} 
-            trend="Geçen aya göre %8" 
+            trend={`$${(stats?.totalRevenueUsd || 0).toLocaleString('en-US')} USD`}
             trendUp={true}
           />
           <StatCard 
@@ -99,19 +99,43 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 dashboard-card p-6">
             <h3 className="text-lg font-bold mb-6">Haftalık Satış Grafiği</h3>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                  <XAxis dataKey="name" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₺${value}`} />
-                  <Tooltip 
-                    cursor={{fill: '#f3f4f6'}}
-                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                  />
-                  <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-2 font-medium">TL Bazlı Satışlar</p>
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                      <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `₺${value}`} />
+                      <Tooltip 
+                        cursor={{fill: '#f3f4f6'}}
+                        contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                        formatter={(value: number) => [`₺${value.toLocaleString('tr-TR')}`, 'TL Satış']}
+                      />
+                      <Bar dataKey="salesTl" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="TL Satış" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-2 font-medium">USD Bazlı Satışlar</p>
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                      <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                      <Tooltip 
+                        cursor={{fill: '#f3f4f6'}}
+                        contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                        formatter={(value: number) => [`$${value.toLocaleString('en-US')}`, 'USD Satış']}
+                      />
+                      <Bar dataKey="salesUsd" fill="#10b981" radius={[4, 4, 0, 0]} name="USD Satış" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             </div>
           </div>
 

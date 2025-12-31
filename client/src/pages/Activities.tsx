@@ -149,6 +149,19 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [notificationMessage, setNotificationMessage] = useState(
     activity ? (activity as any).notificationMessageTemplate || "Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kisiSayisi}" : "Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kisiSayisi}"
   );
+  const [nameAliases, setNameAliases] = useState(() => {
+    if (activity && (activity as any).nameAliases) {
+      try {
+        return JSON.parse((activity as any).nameAliases).join(', ');
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [priceUsd, setPriceUsd] = useState(
+    activity ? (activity as any).priceUsd || 0 : 0
+  );
   
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
@@ -179,10 +192,18 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // Parse aliases from comma-separated string
+    const aliasesArray = nameAliases
+      .split(',')
+      .map((a: string) => a.trim())
+      .filter((a: string) => a.length > 0);
+    
     const data = {
       name: formData.get("name") as string,
+      nameAliases: JSON.stringify(aliasesArray),
       description: formData.get("description") as string,
       price: Number(formData.get("price")),
+      priceUsd: Number(priceUsd),
       durationMinutes: Number(formData.get("durationMinutes")),
       dailyFrequency: Number(frequency),
       defaultTimes: JSON.stringify(times),
@@ -239,13 +260,33 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   <Label htmlFor="name">Aktivite Adı</Label>
                   <Input id="name" name="name" defaultValue={activity?.name} required placeholder="Örn: ATV Safari" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nameAliases">Alternatif İsimler (Çok Dilli)</Label>
+                  <Input 
+                    id="nameAliases"
+                    value={nameAliases}
+                    onChange={(e) => setNameAliases(e.target.value)}
+                    placeholder="paragliding fethiye, Fethiye paragliding"
+                  />
+                  <p className="text-xs text-muted-foreground">WooCommerce eşleştirmesi için virgülle ayrılmış alternatif isimler (TR/EN)</p>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="price">Fiyat (TL)</Label>
                     <Input id="price" name="price" type="number" defaultValue={activity?.price} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="durationMinutes">Süre (Dakika)</Label>
+                    <Label htmlFor="priceUsd">Fiyat (USD)</Label>
+                    <Input 
+                      id="priceUsd" 
+                      type="number" 
+                      value={priceUsd}
+                      onChange={(e) => setPriceUsd(Number(e.target.value))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="durationMinutes">Süre (Dk)</Label>
                     <Input id="durationMinutes" name="durationMinutes" type="number" defaultValue={activity?.durationMinutes} required />
                   </div>
                 </div>

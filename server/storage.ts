@@ -118,11 +118,68 @@ export class DatabaseStorage implements IStorage {
 
   async getReservationsStats(): Promise<any> {
     const allReservations = await db.select().from(reservations);
-    // Simple mock stats for now, better to do aggregation in SQL for prod
+    const allActivities = await db.select().from(activities);
+    
     const totalReservations = allReservations.length;
-    // Assuming price is available via activity join, skipping for speed in this mock
-    const totalRevenue = 0; 
-    return { totalReservations, totalRevenue, popularActivities: [] };
+    
+    // Calculate dual currency revenue with null safety
+    let totalRevenueTl = 0;
+    let totalRevenueUsd = 0;
+    
+    for (const res of allReservations) {
+      const priceTl = typeof res.priceTl === 'number' ? res.priceTl : 0;
+      const priceUsd = typeof res.priceUsd === 'number' ? res.priceUsd : 0;
+      totalRevenueTl += priceTl;
+      totalRevenueUsd += priceUsd;
+    }
+    
+    // Calculate weekly sales (last 7 days)
+    const today = new Date();
+    const weekDays = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+    const weeklySales = [];
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayName = weekDays[date.getDay()];
+      
+      const dayReservations = allReservations.filter(r => r.date === dateStr);
+      const salesTl = dayReservations.reduce((sum, r) => {
+        const val = typeof r.priceTl === 'number' ? r.priceTl : 0;
+        return sum + val;
+      }, 0);
+      const salesUsd = dayReservations.reduce((sum, r) => {
+        const val = typeof r.priceUsd === 'number' ? r.priceUsd : 0;
+        return sum + val;
+      }, 0);
+      
+      weeklySales.push({ name: dayName, salesTl, salesUsd });
+    }
+    
+    // Popular activities
+    const activityCounts: Record<number, { name: string; count: number }> = {};
+    for (const res of allReservations) {
+      if (res.activityId) {
+        if (!activityCounts[res.activityId]) {
+          const act = allActivities.find(a => a.id === res.activityId);
+          activityCounts[res.activityId] = { name: act?.name || 'Bilinmeyen', count: 0 };
+        }
+        activityCounts[res.activityId].count += res.quantity;
+      }
+    }
+    const popularActivities = Object.values(activityCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    
+    return { 
+      totalReservations, 
+      totalRevenueTl, 
+      totalRevenueUsd,
+      totalRevenue: totalRevenueTl, // backwards compatibility
+      weeklySales,
+      popularActivities 
+    };
   }
 
   // Messages

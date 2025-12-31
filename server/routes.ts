@@ -149,14 +149,146 @@ export async function registerRoutes(
 
   // === Webhooks ===
   app.post(api.webhooks.woocommerce.path, async (req, res) => {
-    // Basic WooCommerce webhook handler
-    const order = req.body;
-    console.log("Received WooCommerce Order:", order.id);
-    
-    // Example logic: Extract items and create reservations
-    // const reservation = await storage.createReservation({...});
-    
-    res.json({ received: true });
+    try {
+      const order = req.body;
+      console.log("Received WooCommerce Order:", order.id);
+      
+      // Get all activities for matching
+      const activities = await storage.getActivities();
+      
+      // Helper: Normalize text for Turkish locale matching
+      const normalizeText = (text: string): string => {
+        if (!text) return '';
+        
+        // Turkish-specific character replacements (handle all variants)
+        const turkishMap: Record<string, string> = {
+          'ı': 'i', 'İ': 'i', 'I': 'i',
+          'ğ': 'g', 'Ğ': 'g',
+          'ü': 'u', 'Ü': 'u',
+          'ş': 's', 'Ş': 's',
+          'ö': 'o', 'Ö': 'o',
+          'ç': 'c', 'Ç': 'c'
+        };
+        
+        // Apply Turkish locale lowercase first, then map special chars
+        let normalized = text.toLocaleLowerCase('tr-TR');
+        
+        for (const [from, to] of Object.entries(turkishMap)) {
+          normalized = normalized.split(from).join(to);
+        }
+        
+        return normalized
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+          .replace(/[^a-z0-9\s]/g, '') // Remove non-alphanumeric
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+      
+      // Helper: Extract tokens for comparison
+      const getTokens = (text: string): string[] => {
+        return normalizeText(text).split(' ').filter(t => t.length > 2);
+      };
+      
+      // Helper: Calculate token overlap score
+      const tokenOverlapScore = (tokens1: string[], tokens2: string[]): number => {
+        if (tokens1.length === 0 || tokens2.length === 0) return 0;
+        const set1 = new Set(tokens1);
+        const set2 = new Set(tokens2);
+        let overlap = 0;
+        for (const t of set1) {
+          if (set2.has(t)) overlap++;
+        }
+        // Return percentage of smaller set that overlaps
+        return overlap / Math.min(set1.size, set2.size);
+      };
+      
+      // Helper: Find matching activity by name or aliases
+      const findActivity = (productName: string) => {
+        const productTokens = getTokens(productName);
+        if (productTokens.length === 0) return null;
+        
+        let bestMatch: typeof activities[0] | null = null;
+        let bestScore = 0;
+        const THRESHOLD = 0.5; // At least 50% token overlap required
+        
+        for (const activity of activities) {
+          // Check main name
+          const activityTokens = getTokens(activity.name);
+          const score = tokenOverlapScore(productTokens, activityTokens);
+          
+          if (score > bestScore && score >= THRESHOLD) {
+            bestScore = score;
+            bestMatch = activity;
+          }
+          
+          // Check aliases
+          if (activity.nameAliases) {
+            try {
+              const aliases: string[] = JSON.parse(activity.nameAliases);
+              for (const alias of aliases) {
+                const aliasTokens = getTokens(alias);
+                const aliasScore = tokenOverlapScore(productTokens, aliasTokens);
+                if (aliasScore > bestScore && aliasScore >= THRESHOLD) {
+                  bestScore = aliasScore;
+                  bestMatch = activity;
+                }
+              }
+            } catch (e) {}
+          }
+        }
+        
+        return bestMatch;
+      };
+      
+      // Detect currency from order
+      const currency = order.currency || 'TRY';
+      const isTL = currency === 'TRY' || currency === 'TL';
+      
+      // Process order line items
+      const lineItems = order.line_items || [];
+      for (const item of lineItems) {
+        const matchedActivity = findActivity(item.name || '');
+        
+        if (matchedActivity) {
+          // Extract date/time from order meta or use today
+          const bookingDate = order.meta_data?.find((m: any) => m.key === 'booking_date')?.value 
+            || new Date().toISOString().split('T')[0];
+          const bookingTime = order.meta_data?.find((m: any) => m.key === 'booking_time')?.value 
+            || '10:00';
+          
+          // Calculate prices
+          const itemTotal = parseFloat(item.total) || 0;
+          const priceTl = isTL ? Math.round(itemTotal) : 0;
+          const priceUsd = !isTL ? Math.round(itemTotal) : 0;
+          
+          await storage.createReservation({
+            activityId: matchedActivity.id,
+            customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Müşteri',
+            customerPhone: order.billing?.phone || '',
+            customerEmail: order.billing?.email || '',
+            date: bookingDate,
+            time: bookingTime,
+            quantity: item.quantity || 1,
+            priceTl,
+            priceUsd,
+            currency,
+            status: 'confirmed',
+            source: 'web',
+            externalId: String(order.id)
+          });
+          
+          console.log(`Created reservation for activity: ${matchedActivity.name} from order: ${order.id}`);
+        } else {
+          console.log(`No matching activity found for product: ${item.name}`);
+        }
+      }
+      
+      res.json({ received: true, processed: lineItems.length });
+    } catch (error) {
+      console.error("WooCommerce webhook error:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
   });
 
   app.post(api.webhooks.whatsapp.path, async (req, res) => {
