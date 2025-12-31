@@ -7,6 +7,12 @@ import {
   settings,
   supportRequests,
   blacklist,
+  agencies,
+  agencyActivityTerms,
+  activityCosts,
+  settlements,
+  settlementEntries,
+  payments,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -21,6 +27,18 @@ import {
   type InsertSupportRequest,
   type Blacklist,
   type InsertBlacklist,
+  type Agency,
+  type InsertAgency,
+  type AgencyActivityTerms,
+  type InsertAgencyActivityTerms,
+  type ActivityCost,
+  type InsertActivityCost,
+  type Settlement,
+  type InsertSettlement,
+  type SettlementEntry,
+  type InsertSettlementEntry,
+  type Payment,
+  type InsertPayment,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -66,6 +84,35 @@ export interface IStorage {
   addToBlacklist(phone: string, reason?: string): Promise<Blacklist>;
   removeFromBlacklist(id: number): Promise<void>;
   isBlacklisted(phone: string): Promise<boolean>;
+
+  // Finance - Agencies
+  getAgencies(): Promise<Agency[]>;
+  getAgency(id: number): Promise<Agency | undefined>;
+  createAgency(agency: InsertAgency): Promise<Agency>;
+  updateAgency(id: number, agency: Partial<InsertAgency>): Promise<Agency>;
+  deleteAgency(id: number): Promise<void>;
+
+  // Finance - Activity Costs
+  getActivityCosts(month?: string): Promise<ActivityCost[]>;
+  upsertActivityCost(cost: InsertActivityCost): Promise<ActivityCost>;
+
+  // Finance - Settlements
+  getSettlements(agencyId?: number): Promise<Settlement[]>;
+  getSettlement(id: number): Promise<Settlement | undefined>;
+  createSettlement(settlement: InsertSettlement): Promise<Settlement>;
+  updateSettlement(id: number, settlement: Partial<InsertSettlement>): Promise<Settlement>;
+  getSettlementEntries(settlementId: number): Promise<SettlementEntry[]>;
+  createSettlementEntry(entry: InsertSettlementEntry): Promise<SettlementEntry>;
+
+  // Finance - Payments
+  getPayments(settlementId: number): Promise<Payment[]>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+
+  // Finance - Overview
+  getFinanceOverview(month: string): Promise<any>;
+  getUnpaidReservations(agencyId: number, sinceDate?: string): Promise<Reservation[]>;
+  updateReservationSettlement(reservationId: number, settlementId: number): Promise<void>;
+  updateReservationAgency(reservationId: number, agencyId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -570,6 +617,250 @@ export class DatabaseStorage implements IStorage {
     const normalizedPhone = phone.replace(/\D/g, '');
     const all = await db.select().from(blacklist);
     return all.some(b => normalizedPhone.includes(b.phone) || b.phone.includes(normalizedPhone));
+  }
+
+  // Finance - Agencies
+  async getAgencies(): Promise<Agency[]> {
+    return await db.select().from(agencies).orderBy(desc(agencies.createdAt));
+  }
+
+  async getAgency(id: number): Promise<Agency | undefined> {
+    const [agency] = await db.select().from(agencies).where(eq(agencies.id, id));
+    return agency;
+  }
+
+  async createAgency(agency: InsertAgency): Promise<Agency> {
+    const [created] = await db.insert(agencies).values(agency).returning();
+    return created;
+  }
+
+  async updateAgency(id: number, agency: Partial<InsertAgency>): Promise<Agency> {
+    const [updated] = await db.update(agencies).set(agency).where(eq(agencies.id, id)).returning();
+    return updated;
+  }
+
+  async deleteAgency(id: number): Promise<void> {
+    await db.delete(agencies).where(eq(agencies.id, id));
+  }
+
+  // Finance - Activity Costs
+  async getActivityCosts(month?: string): Promise<ActivityCost[]> {
+    if (month) {
+      return await db.select().from(activityCosts).where(eq(activityCosts.month, month));
+    }
+    return await db.select().from(activityCosts);
+  }
+
+  async upsertActivityCost(cost: InsertActivityCost): Promise<ActivityCost> {
+    // Check if exists for same activity and month
+    const existing = await db.select().from(activityCosts)
+      .where(and(eq(activityCosts.activityId, cost.activityId), eq(activityCosts.month, cost.month)));
+    
+    if (existing.length > 0) {
+      const [updated] = await db.update(activityCosts)
+        .set(cost)
+        .where(eq(activityCosts.id, existing[0].id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(activityCosts).values(cost).returning();
+    return created;
+  }
+
+  // Finance - Settlements
+  async getSettlements(agencyId?: number): Promise<Settlement[]> {
+    if (agencyId) {
+      return await db.select().from(settlements).where(eq(settlements.agencyId, agencyId)).orderBy(desc(settlements.createdAt));
+    }
+    return await db.select().from(settlements).orderBy(desc(settlements.createdAt));
+  }
+
+  async getSettlement(id: number): Promise<Settlement | undefined> {
+    const [settlement] = await db.select().from(settlements).where(eq(settlements.id, id));
+    return settlement;
+  }
+
+  async createSettlement(settlement: InsertSettlement): Promise<Settlement> {
+    const [created] = await db.insert(settlements).values(settlement).returning();
+    return created;
+  }
+
+  async updateSettlement(id: number, settlement: Partial<InsertSettlement>): Promise<Settlement> {
+    const [updated] = await db.update(settlements).set(settlement).where(eq(settlements.id, id)).returning();
+    return updated;
+  }
+
+  async getSettlementEntries(settlementId: number): Promise<SettlementEntry[]> {
+    return await db.select().from(settlementEntries).where(eq(settlementEntries.settlementId, settlementId));
+  }
+
+  async createSettlementEntry(entry: InsertSettlementEntry): Promise<SettlementEntry> {
+    const [created] = await db.insert(settlementEntries).values(entry).returning();
+    return created;
+  }
+
+  // Finance - Payments
+  async getPayments(settlementId: number): Promise<Payment[]> {
+    return await db.select().from(payments).where(eq(payments.settlementId, settlementId)).orderBy(desc(payments.paidAt));
+  }
+
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const [created] = await db.insert(payments).values(payment).returning();
+    
+    // Update settlement paid amount and remaining
+    const settlement = await this.getSettlement(payment.settlementId);
+    if (settlement) {
+      const newPaidAmount = (settlement.paidAmountTl || 0) + payment.amountTl;
+      const newRemaining = (settlement.payoutTl || 0) - newPaidAmount;
+      await this.updateSettlement(payment.settlementId, {
+        paidAmountTl: newPaidAmount,
+        remainingTl: Math.max(0, newRemaining),
+        status: newRemaining <= 0 ? 'paid' : settlement.status
+      });
+    }
+    
+    return created;
+  }
+
+  // Finance - Overview
+  async getFinanceOverview(month: string): Promise<any> {
+    const allReservations = await db.select().from(reservations);
+    const allActivities = await db.select().from(activities);
+    const allCosts = await db.select().from(activityCosts).where(eq(activityCosts.month, month));
+    const allAgencies = await db.select().from(agencies);
+    const allSettlements = await db.select().from(settlements);
+    
+    // Get VAT rate from settings
+    const vatRateSetting = await this.getSetting('vatRate');
+    const vatRate = vatRateSetting ? parseInt(vatRateSetting) : 20;
+    
+    // Filter reservations for the month
+    const monthReservations = allReservations.filter(r => r.date?.startsWith(month));
+    
+    // Calculate totals per activity
+    const activityStats: Record<number, {
+      activityId: number;
+      activityName: string;
+      reservationCount: number;
+      guestCount: number;
+      revenueTl: number;
+      revenueUsd: number;
+      costTl: number;
+      profitTl: number;
+      vatTl: number;
+    }> = {};
+    
+    for (const res of monthReservations) {
+      const actId = res.activityId || 0;
+      if (!activityStats[actId]) {
+        const activity = allActivities.find(a => a.id === actId);
+        const cost = allCosts.find(c => c.activityId === actId);
+        activityStats[actId] = {
+          activityId: actId,
+          activityName: activity?.name || 'Bilinmeyen',
+          reservationCount: 0,
+          guestCount: 0,
+          revenueTl: 0,
+          revenueUsd: 0,
+          costTl: cost?.fixedCost || 0,
+          profitTl: 0,
+          vatTl: 0
+        };
+      }
+      
+      activityStats[actId].reservationCount++;
+      activityStats[actId].guestCount += res.quantity;
+      activityStats[actId].revenueTl += res.priceTl || 0;
+      activityStats[actId].revenueUsd += res.priceUsd || 0;
+      
+      // Add variable cost per guest
+      const cost = allCosts.find(c => c.activityId === actId);
+      if (cost) {
+        activityStats[actId].costTl += (cost.variableCostPerGuest || 0) * res.quantity;
+      }
+    }
+    
+    // Calculate profit and VAT for each activity
+    for (const stat of Object.values(activityStats)) {
+      stat.vatTl = Math.round(stat.revenueTl * vatRate / 100);
+      stat.profitTl = stat.revenueTl - stat.costTl - stat.vatTl;
+    }
+    
+    // Calculate agency payouts
+    const agencyPayouts: Record<number, {
+      agencyId: number;
+      agencyName: string;
+      guestCount: number;
+      payoutTl: number;
+      paidTl: number;
+      remainingTl: number;
+    }> = {};
+    
+    for (const agency of allAgencies) {
+      const agencyReservations = monthReservations.filter(r => r.agencyId === agency.id);
+      const guestCount = agencyReservations.reduce((sum, r) => sum + r.quantity, 0);
+      const payoutTl = guestCount * (agency.defaultPayoutPerGuest || 0);
+      
+      // Calculate paid amount from settlements
+      const agencySettlements = allSettlements.filter(s => s.agencyId === agency.id);
+      const paidTl = agencySettlements.reduce((sum, s) => sum + (s.paidAmountTl || 0), 0);
+      
+      agencyPayouts[agency.id] = {
+        agencyId: agency.id,
+        agencyName: agency.name,
+        guestCount,
+        payoutTl,
+        paidTl,
+        remainingTl: payoutTl - paidTl
+      };
+    }
+    
+    // Calculate totals
+    const totalRevenueTl = Object.values(activityStats).reduce((sum, s) => sum + s.revenueTl, 0);
+    const totalRevenueUsd = Object.values(activityStats).reduce((sum, s) => sum + s.revenueUsd, 0);
+    const totalCostTl = Object.values(activityStats).reduce((sum, s) => sum + s.costTl, 0);
+    const totalVatTl = Object.values(activityStats).reduce((sum, s) => sum + s.vatTl, 0);
+    const totalPayoutTl = Object.values(agencyPayouts).reduce((sum, a) => sum + a.payoutTl, 0);
+    const totalProfitTl = totalRevenueTl - totalCostTl - totalVatTl - totalPayoutTl;
+    
+    return {
+      month,
+      vatRate,
+      totals: {
+        revenueTl: totalRevenueTl,
+        revenueUsd: totalRevenueUsd,
+        costTl: totalCostTl,
+        vatTl: totalVatTl,
+        payoutTl: totalPayoutTl,
+        profitTl: totalProfitTl,
+        reservationCount: monthReservations.length,
+        guestCount: monthReservations.reduce((sum, r) => sum + r.quantity, 0)
+      },
+      activityStats: Object.values(activityStats),
+      agencyPayouts: Object.values(agencyPayouts)
+    };
+  }
+
+  async getUnpaidReservations(agencyId: number, sinceDate?: string): Promise<Reservation[]> {
+    const allReservations = await db.select().from(reservations);
+    return allReservations.filter(r => {
+      if (r.agencyId !== agencyId) return false;
+      if (r.settlementId) return false; // Already in a settlement
+      if (sinceDate && r.date && r.date < sinceDate) return false;
+      return true;
+    });
+  }
+
+  async updateReservationSettlement(reservationId: number, settlementId: number): Promise<void> {
+    await db.update(reservations)
+      .set({ settlementId })
+      .where(eq(reservations.id, reservationId));
+  }
+
+  async updateReservationAgency(reservationId: number, agencyId: number): Promise<void> {
+    await db.update(reservations)
+      .set({ agencyId })
+      .where(eq(reservations.id, reservationId));
   }
 }
 

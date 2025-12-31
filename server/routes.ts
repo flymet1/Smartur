@@ -658,6 +658,220 @@ export async function registerRoutes(
     }
   });
 
+  // === Finance - Agencies ===
+  app.get("/api/finance/agencies", async (req, res) => {
+    try {
+      const agencies = await storage.getAgencies();
+      res.json(agencies);
+    } catch (err) {
+      res.status(500).json({ error: "Acentalar alınamadı" });
+    }
+  });
+
+  app.get("/api/finance/agencies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const agency = await storage.getAgency(id);
+      if (!agency) {
+        return res.status(404).json({ error: "Acenta bulunamadı" });
+      }
+      res.json(agency);
+    } catch (err) {
+      res.status(500).json({ error: "Acenta alınamadı" });
+    }
+  });
+
+  app.post("/api/finance/agencies", async (req, res) => {
+    try {
+      const agency = await storage.createAgency(req.body);
+      res.json(agency);
+    } catch (err) {
+      res.status(400).json({ error: "Acenta oluşturulamadı" });
+    }
+  });
+
+  app.patch("/api/finance/agencies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const agency = await storage.updateAgency(id, req.body);
+      res.json(agency);
+    } catch (err) {
+      res.status(400).json({ error: "Acenta güncellenemedi" });
+    }
+  });
+
+  app.delete("/api/finance/agencies/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAgency(id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: "Acenta silinemedi" });
+    }
+  });
+
+  // === Finance - Activity Costs ===
+  app.get("/api/finance/costs", async (req, res) => {
+    try {
+      const month = req.query.month as string | undefined;
+      const costs = await storage.getActivityCosts(month);
+      res.json(costs);
+    } catch (err) {
+      res.status(500).json({ error: "Maliyetler alınamadı" });
+    }
+  });
+
+  app.post("/api/finance/costs", async (req, res) => {
+    try {
+      const cost = await storage.upsertActivityCost(req.body);
+      res.json(cost);
+    } catch (err) {
+      res.status(400).json({ error: "Maliyet kaydedilemedi" });
+    }
+  });
+
+  // === Finance - Settlements ===
+  app.get("/api/finance/settlements", async (req, res) => {
+    try {
+      const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : undefined;
+      const settlements = await storage.getSettlements(agencyId);
+      res.json(settlements);
+    } catch (err) {
+      res.status(500).json({ error: "Hesaplaşmalar alınamadı" });
+    }
+  });
+
+  app.get("/api/finance/settlements/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const settlement = await storage.getSettlement(id);
+      if (!settlement) {
+        return res.status(404).json({ error: "Hesaplaşma bulunamadı" });
+      }
+      const entries = await storage.getSettlementEntries(id);
+      const payments = await storage.getPayments(id);
+      res.json({ ...settlement, entries, payments });
+    } catch (err) {
+      res.status(500).json({ error: "Hesaplaşma alınamadı" });
+    }
+  });
+
+  app.post("/api/finance/settlements", async (req, res) => {
+    try {
+      const settlement = await storage.createSettlement(req.body);
+      res.json(settlement);
+    } catch (err) {
+      res.status(400).json({ error: "Hesaplaşma oluşturulamadı" });
+    }
+  });
+
+  app.patch("/api/finance/settlements/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const settlement = await storage.updateSettlement(id, req.body);
+      res.json(settlement);
+    } catch (err) {
+      res.status(400).json({ error: "Hesaplaşma güncellenemedi" });
+    }
+  });
+
+  // Generate settlement from unpaid reservations
+  app.post("/api/finance/settlements/generate", async (req, res) => {
+    try {
+      const { agencyId, periodStart, periodEnd, vatRatePct } = req.body;
+      
+      // Get unpaid reservations for this agency
+      const unpaidReservations = await storage.getUnpaidReservations(agencyId, periodStart);
+      const agency = await storage.getAgency(agencyId);
+      
+      if (!agency) {
+        return res.status(404).json({ error: "Acenta bulunamadı" });
+      }
+      
+      // Calculate totals
+      let totalGuests = 0;
+      let grossSalesTl = 0;
+      let grossSalesUsd = 0;
+      
+      for (const res of unpaidReservations) {
+        totalGuests += res.quantity;
+        grossSalesTl += res.priceTl || 0;
+        grossSalesUsd += res.priceUsd || 0;
+      }
+      
+      const payoutTl = totalGuests * (agency.defaultPayoutPerGuest || 0);
+      const vatAmount = Math.round(grossSalesTl * (vatRatePct || 20) / 100);
+      const profitTl = grossSalesTl - payoutTl - vatAmount;
+      
+      // Create settlement
+      const settlement = await storage.createSettlement({
+        agencyId,
+        periodStart,
+        periodEnd,
+        status: 'draft',
+        totalGuests,
+        grossSalesTl,
+        grossSalesUsd,
+        payoutTl,
+        vatRatePct: vatRatePct || 20,
+        vatAmountTl: vatAmount,
+        profitTl,
+        remainingTl: payoutTl
+      });
+      
+      // Create entries and mark reservations
+      for (const r of unpaidReservations) {
+        await storage.createSettlementEntry({
+          settlementId: settlement.id,
+          reservationId: r.id,
+          activityId: r.activityId || undefined,
+          guestCount: r.quantity,
+          revenueTl: r.priceTl || 0,
+          payoutTl: r.quantity * (agency.defaultPayoutPerGuest || 0)
+        });
+        await storage.updateReservationSettlement(r.id, settlement.id);
+      }
+      
+      res.json(settlement);
+    } catch (err) {
+      console.error('Settlement generation error:', err);
+      res.status(400).json({ error: "Hesaplaşma oluşturulamadı" });
+    }
+  });
+
+  // === Finance - Payments ===
+  app.post("/api/finance/payments", async (req, res) => {
+    try {
+      const payment = await storage.createPayment(req.body);
+      res.json(payment);
+    } catch (err) {
+      res.status(400).json({ error: "Ödeme kaydedilemedi" });
+    }
+  });
+
+  // === Finance - Overview ===
+  app.get("/api/finance/overview", async (req, res) => {
+    try {
+      const month = req.query.month as string || new Date().toISOString().slice(0, 7);
+      const overview = await storage.getFinanceOverview(month);
+      res.json(overview);
+    } catch (err) {
+      res.status(500).json({ error: "Finans özeti alınamadı" });
+    }
+  });
+
+  // Update reservation agency
+  app.patch("/api/reservations/:id/agency", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { agencyId } = req.body;
+      await storage.updateReservationAgency(id, agencyId);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: "Rezervasyon güncellenemedi" });
+    }
+  });
+
   return httpServer;
 }
 
