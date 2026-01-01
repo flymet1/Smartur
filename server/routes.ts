@@ -290,6 +290,120 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // === Package Tours ===
+  app.get("/api/package-tours", async (req, res) => {
+    try {
+      const tours = await storage.getPackageTours();
+      res.json(tours);
+    } catch (err) {
+      res.status(500).json({ error: "Paket turlar alinamadi" });
+    }
+  });
+
+  app.get("/api/package-tours/:id", async (req, res) => {
+    try {
+      const tour = await storage.getPackageTour(Number(req.params.id));
+      if (!tour) {
+        return res.status(404).json({ error: "Paket tur bulunamadi" });
+      }
+      res.json(tour);
+    } catch (err) {
+      res.status(500).json({ error: "Paket tur alinamadi" });
+    }
+  });
+
+  app.post("/api/package-tours", async (req, res) => {
+    try {
+      const { name, nameAliases, description, price, priceUsd, confirmationMessage, reservationLink, reservationLinkEn, active, activities: tourActivities } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Paket tur adi zorunlu" });
+      }
+      
+      const tour = await storage.createPackageTour({
+        name,
+        nameAliases: nameAliases || '[]',
+        description,
+        price: price || 0,
+        priceUsd: priceUsd || 0,
+        confirmationMessage,
+        reservationLink,
+        reservationLinkEn,
+        active: active !== false
+      });
+      
+      // Add activities if provided
+      if (tourActivities && Array.isArray(tourActivities) && tourActivities.length > 0) {
+        await storage.setPackageTourActivities(tour.id, tourActivities.map((a: any, idx: number) => ({
+          packageTourId: tour.id,
+          activityId: a.activityId,
+          dayOffset: a.dayOffset || 0,
+          defaultTime: a.defaultTime || '09:00',
+          sortOrder: a.sortOrder ?? idx
+        })));
+      }
+      
+      res.status(201).json(tour);
+    } catch (err) {
+      console.error('Package tour create error:', err);
+      res.status(400).json({ error: "Paket tur olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/package-tours/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { name, nameAliases, description, price, priceUsd, confirmationMessage, reservationLink, reservationLinkEn, active, activities: tourActivities } = req.body;
+      
+      const tour = await storage.updatePackageTour(id, {
+        ...(name !== undefined && { name }),
+        ...(nameAliases !== undefined && { nameAliases }),
+        ...(description !== undefined && { description }),
+        ...(price !== undefined && { price }),
+        ...(priceUsd !== undefined && { priceUsd }),
+        ...(confirmationMessage !== undefined && { confirmationMessage }),
+        ...(reservationLink !== undefined && { reservationLink }),
+        ...(reservationLinkEn !== undefined && { reservationLinkEn }),
+        ...(active !== undefined && { active })
+      });
+      
+      // Update activities if provided
+      if (tourActivities !== undefined && Array.isArray(tourActivities)) {
+        await storage.setPackageTourActivities(id, tourActivities.map((a: any, idx: number) => ({
+          packageTourId: id,
+          activityId: a.activityId,
+          dayOffset: a.dayOffset || 0,
+          defaultTime: a.defaultTime || '09:00',
+          sortOrder: a.sortOrder ?? idx
+        })));
+      }
+      
+      res.json(tour);
+    } catch (err) {
+      console.error('Package tour update error:', err);
+      res.status(400).json({ error: "Paket tur guncellenemedi" });
+    }
+  });
+
+  app.delete("/api/package-tours/:id", async (req, res) => {
+    try {
+      await storage.deletePackageTour(Number(req.params.id));
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ error: "Paket tur silinemedi" });
+    }
+  });
+
+  // Package Tour Activities
+  app.get("/api/package-tours/:id/activities", async (req, res) => {
+    try {
+      const tourActivities = await storage.getPackageTourActivities(Number(req.params.id));
+      res.json(tourActivities);
+    } catch (err) {
+      res.status(500).json({ error: "Paket tur aktiviteleri alinamadi" });
+    }
+  });
+
   // Capacity update endpoint
   app.patch("/api/capacity/:id", async (req, res) => {
     try {
