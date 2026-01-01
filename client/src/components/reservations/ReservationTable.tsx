@@ -9,8 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import type { Reservation, Activity } from "@shared/schema";
-import { MessageSquare, Globe, User } from "lucide-react";
+import type { Reservation, Activity, PackageTour } from "@shared/schema";
+import { MessageSquare, Globe, User, Package } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 interface ReservationTableProps {
@@ -22,9 +22,18 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
     queryKey: ['/api/activities']
   });
 
+  const { data: packageTours = [] } = useQuery<PackageTour[]>({
+    queryKey: ['/api/package-tours']
+  });
+
   const getActivityName = (activityId: number | null) => {
     if (!activityId) return "Bilinmiyor";
     return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
+  };
+
+  const getPackageTourName = (packageTourId: number | null) => {
+    if (!packageTourId) return null;
+    return packageTours.find(p => p.id === packageTourId)?.name || null;
   };
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -78,7 +87,15 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
                   <div className="text-xs text-muted-foreground">{res.customerPhone}</div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-medium">{getActivityName(res.activityId)}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{getActivityName(res.activityId)}</span>
+                    {res.packageTourId && (
+                      <Badge variant="outline" className="text-xs text-purple-600 border-purple-300 bg-purple-50 dark:bg-purple-900/20 flex items-center gap-1">
+                        <Package className="w-3 h-3" />
+                        {getPackageTourName(res.packageTourId) || 'Paket'}
+                      </Badge>
+                    )}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {format(new Date(res.date), "d MMMM yyyy", { locale: tr })} • {res.time}
                   </div>
