@@ -110,7 +110,7 @@ ${upcomingHolidays || 'Yakın tarihte resmi tatil yok.'}
 Müşteri "yarın", "öbür gün", "bu hafta sonu", "bayramda" gibi ifadeler kullanırsa yukarıdaki tarihleri referans al.`;
 }
 
-// AI function using Gemini API with activity descriptions and custom bot prompt
+// AI function using Gemini API with activity descriptions, package tours, and custom bot prompt
 async function generateAIResponse(history: any[], context: any, customPrompt?: string) {
   // Build activity descriptions for context
   const activityDescriptions = context.activities
@@ -147,6 +147,19 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
         }
       } catch {}
       
+      return desc;
+    })
+    .join("\n") || "";
+  
+  // Build package tour descriptions for context
+  const packageTourDescriptions = context.packageTours
+    ?.filter((pt: any) => pt.active)
+    ?.map((pt: any) => {
+      let desc = `- ${pt.name}: ${pt.description || "Paket tur"} (Fiyat: ${pt.price} TL`;
+      if (pt.priceUsd) desc += `, $${pt.priceUsd}`;
+      desc += `)`;
+      if (pt.reservationLink) desc += `\n  TR Rezervasyon Linki: ${pt.reservationLink}`;
+      if (pt.reservationLinkEn) desc += `\n  EN Reservation Link: ${pt.reservationLinkEn}`;
       return desc;
     })
     .join("\n") || "";
@@ -206,13 +219,17 @@ Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı
   // Get current date context
   const dateContext = buildDateContext();
 
+  const packageToursSection = packageTourDescriptions 
+    ? `\n=== PAKET TURLAR ===\n${packageTourDescriptions}\n` 
+    : "";
+
   const systemPrompt = `${basePrompt}
 
 ${dateContext}
 
 === MEVCUT AKTİVİTELER ===
 ${activityDescriptions}
-${capacityInfo}
+${packageToursSection}${capacityInfo}
 ${reservationContext}
 
 === ÖNEMLİ KURALLAR ===
@@ -223,7 +240,8 @@ ${reservationContext}
 5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
 6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
 7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
-8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.`;
+8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.`;
 
   // If Replit AI Integration is available, use it
   if (ai) {
@@ -780,8 +798,9 @@ export async function registerRoutes(
       // Get history
       const history = await storage.getMessages(From, 5);
       
-      // Get context (activities, etc)
+      // Get context (activities, package tours, etc)
       const activities = await storage.getActivities();
+      const packageTours = await storage.getPackageTours();
       
       // Get capacity data for the next 7 days
       const capacityData = await storage.getCapacity();
@@ -792,9 +811,10 @@ export async function registerRoutes(
       // Get custom bot prompt from settings
       const botPrompt = await storage.getSetting('botPrompt');
       
-      // Generate AI response with reservation context, capacity data, and custom prompt
+      // Generate AI response with reservation context, capacity data, package tours, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
         activities, 
+        packageTours,
         capacityData: upcomingCapacity,
         hasReservation: !!userReservation,
         reservation: userReservation,
