@@ -43,6 +43,8 @@ export const capacity = pgTable("capacity", {
 export const reservations = pgTable("reservations", {
   id: serial("id").primaryKey(),
   activityId: integer("activity_id").references(() => activities.id),
+  packageTourId: integer("package_tour_id"), // Paket tur rezervasyonu ise (null değilse bu bir paket tur ana kaydı)
+  parentReservationId: integer("parent_reservation_id"), // Paket tur alt rezervasyonu ise ana rezervasyon ID'si
   agencyId: integer("agency_id"), // Hangi acentadan geldi (opsiyonel)
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone").notNull(),
@@ -221,6 +223,33 @@ export const agencyActivityRates = pgTable("agency_activity_rates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// === PACKAGE TOURS ===
+
+// Paket Turlar
+export const packageTours = pgTable("package_tours", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  nameAliases: text("name_aliases").default("[]"), // JSON array of alternative names (multilingual)
+  description: text("description"),
+  price: integer("price").default(0), // In TL
+  priceUsd: integer("price_usd").default(0), // In USD
+  confirmationMessage: text("confirmation_message").default("Sayın {isim}, paket tur rezervasyonunuz onaylanmıştır. Tarih: {tarih}. Teşekkür ederiz."),
+  reservationLink: text("reservation_link"), // External reservation page URL (Turkish)
+  reservationLinkEn: text("reservation_link_en"), // External reservation page URL (English)
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Paket Tur Aktiviteleri (Hangi aktiviteler dahil, varsayılan saat/offset)
+export const packageTourActivities = pgTable("package_tour_activities", {
+  id: serial("id").primaryKey(),
+  packageTourId: integer("package_tour_id").references(() => packageTours.id).notNull(),
+  activityId: integer("activity_id").references(() => activities.id).notNull(),
+  dayOffset: integer("day_offset").default(0), // Paket başlangıcından kaç gün sonra (0=aynı gün, 1=ertesi gün)
+  defaultTime: text("default_time").default("09:00"), // HH:mm - bu aktivitenin varsayılan saati
+  sortOrder: integer("sort_order").default(0), // Sıralama
+});
+
 // === RELATIONS ===
 export const capacityRelations = relations(capacity, ({ one }) => ({
   activity: one(activities, {
@@ -303,3 +332,12 @@ export type InsertSupplierDispatch = z.infer<typeof insertSupplierDispatchSchema
 export const insertAgencyActivityRateSchema = createInsertSchema(agencyActivityRates).omit({ id: true, createdAt: true });
 export type AgencyActivityRate = typeof agencyActivityRates.$inferSelect;
 export type InsertAgencyActivityRate = z.infer<typeof insertAgencyActivityRateSchema>;
+
+// === PACKAGE TOUR SCHEMAS & TYPES ===
+export const insertPackageTourSchema = createInsertSchema(packageTours).omit({ id: true, createdAt: true });
+export type PackageTour = typeof packageTours.$inferSelect;
+export type InsertPackageTour = z.infer<typeof insertPackageTourSchema>;
+
+export const insertPackageTourActivitySchema = createInsertSchema(packageTourActivities).omit({ id: true });
+export type PackageTourActivity = typeof packageTourActivities.$inferSelect;
+export type InsertPackageTourActivity = z.infer<typeof insertPackageTourActivitySchema>;
