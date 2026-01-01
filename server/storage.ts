@@ -16,6 +16,8 @@ import {
   agencyPayouts,
   supplierDispatches,
   agencyActivityRates,
+  packageTours,
+  packageTourActivities,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -48,6 +50,10 @@ import {
   type InsertSupplierDispatch,
   type AgencyActivityRate,
   type InsertAgencyActivityRate,
+  type PackageTour,
+  type InsertPackageTour,
+  type PackageTourActivity,
+  type InsertPackageTourActivity,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -150,6 +156,20 @@ export interface IStorage {
   getUnpaidReservations(agencyId: number, sinceDate?: string): Promise<Reservation[]>;
   updateReservationSettlement(reservationId: number, settlementId: number): Promise<void>;
   updateReservationAgency(reservationId: number, agencyId: number): Promise<void>;
+
+  // Package Tours
+  getPackageTours(): Promise<PackageTour[]>;
+  getPackageTour(id: number): Promise<PackageTour | undefined>;
+  createPackageTour(tour: InsertPackageTour): Promise<PackageTour>;
+  updatePackageTour(id: number, tour: Partial<InsertPackageTour>): Promise<PackageTour>;
+  deletePackageTour(id: number): Promise<void>;
+  
+  // Package Tour Activities
+  getPackageTourActivities(packageTourId: number): Promise<PackageTourActivity[]>;
+  setPackageTourActivities(packageTourId: number, activities: InsertPackageTourActivity[]): Promise<PackageTourActivity[]>;
+  
+  // Package Tour Matching
+  findPackageTourByName(name: string): Promise<PackageTour | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1072,6 +1092,83 @@ export class DatabaseStorage implements IStorage {
     await db.update(reservations)
       .set({ agencyId })
       .where(eq(reservations.id, reservationId));
+  }
+
+  // Package Tours
+  async getPackageTours(): Promise<PackageTour[]> {
+    return await db.select().from(packageTours).orderBy(desc(packageTours.createdAt));
+  }
+
+  async getPackageTour(id: number): Promise<PackageTour | undefined> {
+    const [tour] = await db.select().from(packageTours).where(eq(packageTours.id, id));
+    return tour;
+  }
+
+  async createPackageTour(tour: InsertPackageTour): Promise<PackageTour> {
+    const [newTour] = await db.insert(packageTours).values(tour).returning();
+    return newTour;
+  }
+
+  async updatePackageTour(id: number, tour: Partial<InsertPackageTour>): Promise<PackageTour> {
+    const [updated] = await db.update(packageTours).set(tour).where(eq(packageTours.id, id)).returning();
+    return updated;
+  }
+
+  async deletePackageTour(id: number): Promise<void> {
+    // First delete related package tour activities
+    await db.delete(packageTourActivities).where(eq(packageTourActivities.packageTourId, id));
+    // Then delete the package tour
+    await db.delete(packageTours).where(eq(packageTours.id, id));
+  }
+
+  // Package Tour Activities
+  async getPackageTourActivities(packageTourId: number): Promise<PackageTourActivity[]> {
+    return await db.select().from(packageTourActivities)
+      .where(eq(packageTourActivities.packageTourId, packageTourId))
+      .orderBy(packageTourActivities.sortOrder);
+  }
+
+  async setPackageTourActivities(packageTourId: number, activityList: InsertPackageTourActivity[]): Promise<PackageTourActivity[]> {
+    // Delete existing activities for this package
+    await db.delete(packageTourActivities).where(eq(packageTourActivities.packageTourId, packageTourId));
+    
+    if (activityList.length === 0) return [];
+    
+    // Insert new activities
+    const toInsert = activityList.map((a, idx) => ({
+      ...a,
+      packageTourId,
+      sortOrder: a.sortOrder ?? idx
+    }));
+    
+    return await db.insert(packageTourActivities).values(toInsert).returning();
+  }
+
+  // Package Tour Matching (for WooCommerce webhook)
+  async findPackageTourByName(name: string): Promise<PackageTour | undefined> {
+    const allTours = await db.select().from(packageTours).where(eq(packageTours.active, true));
+    const normalizedName = name.toLowerCase().trim();
+    
+    for (const tour of allTours) {
+      // Exact match
+      if (tour.name.toLowerCase().trim() === normalizedName) {
+        return tour;
+      }
+      
+      // Check aliases
+      try {
+        const aliases: string[] = JSON.parse(tour.nameAliases || '[]');
+        for (const alias of aliases) {
+          if (alias.toLowerCase().trim() === normalizedName) {
+            return tour;
+          }
+        }
+      } catch (e) {
+        // Invalid JSON, skip
+      }
+    }
+    
+    return undefined;
   }
 }
 
