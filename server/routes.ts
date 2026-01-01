@@ -491,8 +491,9 @@ export async function registerRoutes(
       const order = req.body;
       console.log("Received WooCommerce Order:", order.id);
       
-      // Get all activities for matching
+      // Get all activities and package tours for matching
       const activities = await storage.getActivities();
+      const packageTours = await storage.getPackageTours();
       
       // Helper: Normalize text for Turkish locale matching
       const normalizeText = (text: string): string => {
@@ -579,6 +580,46 @@ export async function registerRoutes(
         return bestMatch;
       };
       
+      // Helper: Find matching package tour by name or aliases
+      const findPackageTour = (productName: string) => {
+        const productTokens = getTokens(productName);
+        if (productTokens.length === 0) return null;
+        
+        let bestMatch: typeof packageTours[0] | null = null;
+        let bestScore = 0;
+        const THRESHOLD = 0.5; // At least 50% token overlap required
+        
+        for (const tour of packageTours) {
+          if (!tour.active) continue;
+          
+          // Check main name
+          const tourTokens = getTokens(tour.name);
+          const score = tokenOverlapScore(productTokens, tourTokens);
+          
+          if (score > bestScore && score >= THRESHOLD) {
+            bestScore = score;
+            bestMatch = tour;
+          }
+          
+          // Check aliases
+          if (tour.nameAliases) {
+            try {
+              const aliases: string[] = JSON.parse(tour.nameAliases);
+              for (const alias of aliases) {
+                const aliasTokens = getTokens(alias);
+                const aliasScore = tokenOverlapScore(productTokens, aliasTokens);
+                if (aliasScore > bestScore && aliasScore >= THRESHOLD) {
+                  bestScore = aliasScore;
+                  bestMatch = tour;
+                }
+              }
+            } catch (e) {}
+          }
+        }
+        
+        return bestMatch;
+      };
+      
       // Detect currency from order
       const currency = order.currency || 'TRY';
       const isTL = currency === 'TRY' || currency === 'TL';
@@ -586,53 +627,113 @@ export async function registerRoutes(
       // Process order line items
       const lineItems = order.line_items || [];
       for (const item of lineItems) {
-        const matchedActivity = findActivity(item.name || '');
+        // First try to match as a package tour
+        const matchedPackageTour = findPackageTour(item.name || '');
         
-        if (matchedActivity) {
-          // Extract date/time from order meta or use today
+        if (matchedPackageTour) {
+          // Extract base date/time from order meta or use today
           const bookingDate = order.meta_data?.find((m: any) => m.key === 'booking_date')?.value 
             || new Date().toISOString().split('T')[0];
-          const bookingTime = order.meta_data?.find((m: any) => m.key === 'booking_time')?.value 
-            || '10:00';
           
-          // Calculate prices for reservation
+          // Calculate prices for the whole package (to be stored in first reservation)
           const itemTotalPrice = parseFloat(item.total) || 0;
           const priceTl = isTL ? Math.round(itemTotalPrice) : 0;
           const priceUsd = !isTL ? Math.round(itemTotalPrice) : 0;
           
-          // Extract order financial details for finance module
-          // Use item-level data for multi-line orders: subtotal (pre-tax), total (after tax), total_tax
           const itemSubtotal = Math.round(parseFloat(item.subtotal || '0'));
           const itemTotalWithTax = Math.round(parseFloat(item.total || '0'));
           const itemTax = Math.round(parseFloat(item.total_tax || item.subtotal_tax || '0'));
           
-          // Store per-item financial data (more accurate than order-level for multi-line)
-          const orderSubtotal = itemSubtotal;
-          const orderTotal = itemTotalWithTax + itemTax;
-          const orderTax = itemTax;
+          // Get package tour activities
+          const tourActivities = await storage.getPackageTourActivities(matchedPackageTour.id);
           
-          await storage.createReservation({
-            activityId: matchedActivity.id,
-            customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Müşteri',
-            customerPhone: order.billing?.phone || '',
-            customerEmail: order.billing?.email || '',
-            date: bookingDate,
-            time: bookingTime,
-            quantity: item.quantity || 1,
-            priceTl,
-            priceUsd,
-            currency,
-            status: 'confirmed',
-            source: 'web',
-            externalId: String(order.id),
-            orderSubtotal,
-            orderTotal,
-            orderTax
-          });
+          // Create a reservation for each activity in the package
+          let parentReservationId: number | null = null;
           
-          console.log(`Created reservation for activity: ${matchedActivity.name} from order: ${order.id}`);
+          for (let i = 0; i < tourActivities.length; i++) {
+            const ta = tourActivities[i];
+            
+            // Calculate actual date with dayOffset
+            const baseDate = new Date(bookingDate);
+            baseDate.setDate(baseDate.getDate() + (ta.dayOffset || 0));
+            const activityDate = baseDate.toISOString().split('T')[0];
+            
+            const reservation = await storage.createReservation({
+              activityId: ta.activityId,
+              packageTourId: matchedPackageTour.id,
+              parentReservationId: parentReservationId,
+              customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Musteri',
+              customerPhone: order.billing?.phone || '',
+              customerEmail: order.billing?.email || '',
+              date: activityDate,
+              time: ta.defaultTime || '09:00',
+              quantity: item.quantity || 1,
+              priceTl: i === 0 ? priceTl : 0,
+              priceUsd: i === 0 ? priceUsd : 0,
+              currency,
+              status: 'confirmed',
+              source: 'web',
+              externalId: String(order.id),
+              orderSubtotal: i === 0 ? itemSubtotal : 0,
+              orderTotal: i === 0 ? itemTotalWithTax + itemTax : 0,
+              orderTax: i === 0 ? itemTax : 0
+            });
+            
+            // First reservation becomes parent for the rest
+            if (i === 0) {
+              parentReservationId = reservation.id;
+            }
+          }
+          
+          console.log(`Created ${tourActivities.length} reservations for package tour: ${matchedPackageTour.name} from order: ${order.id}`);
         } else {
-          console.log(`No matching activity found for product: ${item.name}`);
+          // Fall back to regular activity matching
+          const matchedActivity = findActivity(item.name || '');
+          
+          if (matchedActivity) {
+            // Extract date/time from order meta or use today
+            const bookingDate = order.meta_data?.find((m: any) => m.key === 'booking_date')?.value 
+              || new Date().toISOString().split('T')[0];
+            const bookingTime = order.meta_data?.find((m: any) => m.key === 'booking_time')?.value 
+              || '10:00';
+            
+            // Calculate prices for reservation
+            const itemTotalPrice = parseFloat(item.total) || 0;
+            const priceTl = isTL ? Math.round(itemTotalPrice) : 0;
+            const priceUsd = !isTL ? Math.round(itemTotalPrice) : 0;
+            
+            // Extract order financial details for finance module
+            const itemSubtotal = Math.round(parseFloat(item.subtotal || '0'));
+            const itemTotalWithTax = Math.round(parseFloat(item.total || '0'));
+            const itemTax = Math.round(parseFloat(item.total_tax || item.subtotal_tax || '0'));
+            
+            const orderSubtotal = itemSubtotal;
+            const orderTotal = itemTotalWithTax + itemTax;
+            const orderTax = itemTax;
+            
+            await storage.createReservation({
+              activityId: matchedActivity.id,
+              customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Musteri',
+              customerPhone: order.billing?.phone || '',
+              customerEmail: order.billing?.email || '',
+              date: bookingDate,
+              time: bookingTime,
+              quantity: item.quantity || 1,
+              priceTl,
+              priceUsd,
+              currency,
+              status: 'confirmed',
+              source: 'web',
+              externalId: String(order.id),
+              orderSubtotal,
+              orderTotal,
+              orderTax
+            });
+            
+            console.log(`Created reservation for activity: ${matchedActivity.name} from order: ${order.id}`);
+          } else {
+            console.log(`No matching activity or package tour found for product: ${item.name}`);
+          }
         }
       }
       
