@@ -112,8 +112,19 @@ Müşteri "yarın", "öbür gün", "bu hafta sonu", "bayramda" gibi ifadeler kul
 
 // AI function using Gemini API with activity descriptions, package tours, FAQs, and custom bot prompt
 async function generateAIResponse(history: any[], context: any, customPrompt?: string) {
-  // Build activity descriptions for context
-  const activityDescriptions = context.activities
+  // Get bot access settings (default all to true if not provided)
+  const botAccess = context.botAccess || {
+    activities: true,
+    packageTours: true,
+    capacity: true,
+    faq: true,
+    confirmation: true,
+    transfer: true,
+    extras: true
+  };
+
+  // Build activity descriptions for context (only if access enabled)
+  const activityDescriptions = botAccess.activities ? (context.activities
     ?.map((a: any) => {
       let desc = `- ${a.name}: ${a.description || "Açıklama yok"} (Fiyat: ${a.price} TL`;
       if (a.priceUsd) desc += `, $${a.priceUsd}`;
@@ -121,57 +132,63 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       if (a.reservationLink) desc += `\n  TR Rezervasyon Linki: ${a.reservationLink}`;
       if (a.reservationLinkEn) desc += `\n  EN Reservation Link: ${a.reservationLinkEn}`;
       
-      // Onay mesajı bilgisi
-      if (a.confirmationMessage) {
+      // Onay mesajı bilgisi (only if access enabled)
+      if (botAccess.confirmation && a.confirmationMessage) {
         desc += `\n  Türkçe Sipariş Onay Mesajı: ${a.confirmationMessage}`;
       }
       
-      // Transfer bilgisi
-      if (a.hasFreeHotelTransfer) {
-        desc += `\n  Ücretsiz Otel Transferi: EVET`;
-        try {
-          const zones = JSON.parse(a.transferZones || '[]');
-          if (zones.length > 0) {
-            desc += ` (Bölgeler: ${zones.join(', ')})`;
-          }
-        } catch {}
-      } else {
-        desc += `\n  Ücretsiz Otel Transferi: HAYIR`;
+      // Transfer bilgisi (only if access enabled)
+      if (botAccess.transfer) {
+        if (a.hasFreeHotelTransfer) {
+          desc += `\n  Ücretsiz Otel Transferi: EVET`;
+          try {
+            const zones = JSON.parse(a.transferZones || '[]');
+            if (zones.length > 0) {
+              desc += ` (Bölgeler: ${zones.join(', ')})`;
+            }
+          } catch {}
+        } else {
+          desc += `\n  Ücretsiz Otel Transferi: HAYIR`;
+        }
       }
       
-      // Ekstralar bilgisi
-      try {
-        const extras = JSON.parse(a.extras || '[]');
-        if (extras.length > 0) {
-          desc += `\n  Ekstra Hizmetler:`;
-          for (const extra of extras) {
-            desc += `\n    * ${extra.name}: ${extra.priceTl} TL`;
-            if (extra.priceUsd) desc += ` / $${extra.priceUsd}`;
-            if (extra.description) desc += ` (${extra.description})`;
-          }
-        }
-      } catch {}
-      
-      // SSS bilgisi
-      try {
-        const faqItems = JSON.parse(a.faq || '[]');
-        if (faqItems.length > 0) {
-          desc += `\n  Sık Sorulan Sorular:`;
-          for (const faq of faqItems) {
-            if (faq.question && faq.answer) {
-              desc += `\n    S: ${faq.question}`;
-              desc += `\n    C: ${faq.answer}`;
+      // Ekstralar bilgisi (only if access enabled)
+      if (botAccess.extras) {
+        try {
+          const extras = JSON.parse(a.extras || '[]');
+          if (extras.length > 0) {
+            desc += `\n  Ekstra Hizmetler:`;
+            for (const extra of extras) {
+              desc += `\n    * ${extra.name}: ${extra.priceTl} TL`;
+              if (extra.priceUsd) desc += ` / $${extra.priceUsd}`;
+              if (extra.description) desc += ` (${extra.description})`;
             }
           }
-        }
-      } catch {}
+        } catch {}
+      }
+      
+      // SSS bilgisi (only if access enabled)
+      if (botAccess.faq) {
+        try {
+          const faqItems = JSON.parse(a.faq || '[]');
+          if (faqItems.length > 0) {
+            desc += `\n  Sık Sorulan Sorular:`;
+            for (const faq of faqItems) {
+              if (faq.question && faq.answer) {
+                desc += `\n    S: ${faq.question}`;
+                desc += `\n    C: ${faq.answer}`;
+              }
+            }
+          }
+        } catch {}
+      }
       
       return desc;
     })
-    .join("\n") || "";
+    .join("\n") || "") : "";
   
-  // Build package tour descriptions for context
-  const packageTourDescriptions = context.packageTours
+  // Build package tour descriptions for context (only if access enabled)
+  const packageTourDescriptions = botAccess.packageTours ? (context.packageTours
     ?.filter((pt: any) => pt.active)
     ?.map((pt: any) => {
       let desc = `- ${pt.name}: ${pt.description || "Paket tur"} (Fiyat: ${pt.price} TL`;
@@ -180,32 +197,34 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       if (pt.reservationLink) desc += `\n  TR Rezervasyon Linki: ${pt.reservationLink}`;
       if (pt.reservationLinkEn) desc += `\n  EN Reservation Link: ${pt.reservationLinkEn}`;
       
-      // Onay mesajı bilgisi
-      if (pt.confirmationMessage) {
+      // Onay mesajı bilgisi (only if access enabled)
+      if (botAccess.confirmation && pt.confirmationMessage) {
         desc += `\n  Türkçe Sipariş Onay Mesajı: ${pt.confirmationMessage}`;
       }
       
-      // SSS bilgisi
-      try {
-        const faqItems = JSON.parse(pt.faq || '[]');
-        if (faqItems.length > 0) {
-          desc += `\n  Sık Sorulan Sorular:`;
-          for (const faq of faqItems) {
-            if (faq.question && faq.answer) {
-              desc += `\n    S: ${faq.question}`;
-              desc += `\n    C: ${faq.answer}`;
+      // SSS bilgisi (only if access enabled)
+      if (botAccess.faq) {
+        try {
+          const faqItems = JSON.parse(pt.faq || '[]');
+          if (faqItems.length > 0) {
+            desc += `\n  Sık Sorulan Sorular:`;
+            for (const faq of faqItems) {
+              if (faq.question && faq.answer) {
+                desc += `\n    S: ${faq.question}`;
+                desc += `\n    C: ${faq.answer}`;
+              }
             }
           }
-        }
-      } catch {}
+        } catch {}
+      }
       
       return desc;
     })
-    .join("\n") || "";
+    .join("\n") || "") : "";
   
-  // Build capacity/availability information
+  // Build capacity/availability information (only if access enabled)
   let capacityInfo = "";
-  if (context.capacityData && context.capacityData.length > 0) {
+  if (botAccess.capacity && context.capacityData && context.capacityData.length > 0) {
     const capacityByActivity: Record<string, string[]> = {};
     for (const cap of context.capacityData) {
       const activity = context.activities?.find((a: any) => a.id === cap.activityId);
@@ -224,9 +243,10 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
     for (const [name, slots] of Object.entries(capacityByActivity)) {
       capacityInfo += `${name}:\n${slots.join('\n')}\n`;
     }
-  } else {
+  } else if (botAccess.capacity) {
     capacityInfo = "\n=== MÜSAİTLİK BİLGİSİ ===\nŞu an sistemde kayıtlı kapasite verisi yok. Müşteriye kontenjan bilgisi için takvime bakmasını veya bizi aramasını önerebilirsin.\n";
   }
+  // If botAccess.capacity is false, capacityInfo remains empty
   
   // Build reservation context
   let reservationContext = "";
@@ -855,14 +875,32 @@ export async function registerRoutes(
       // Get custom bot prompt from settings
       const botPrompt = await storage.getSetting('botPrompt');
       
+      // Get bot access settings
+      const botAccessSetting = await storage.getSetting('botAccess');
+      let botAccess = {
+        activities: true,
+        packageTours: true,
+        capacity: true,
+        faq: true,
+        confirmation: true,
+        transfer: true,
+        extras: true
+      };
+      if (botAccessSetting) {
+        try {
+          botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) };
+        } catch {}
+      }
+      
       // Generate AI response with reservation context, capacity data, package tours, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
-        activities, 
-        packageTours,
-        capacityData: upcomingCapacity,
+        activities: botAccess.activities ? activities : [], 
+        packageTours: botAccess.packageTours ? packageTours : [],
+        capacityData: botAccess.capacity ? upcomingCapacity : [],
         hasReservation: !!userReservation,
         reservation: userReservation,
-        askForOrderNumber: !userReservation
+        askForOrderNumber: !userReservation,
+        botAccess
       }, botPrompt || undefined);
       
       // Check if response indicates human intervention needed

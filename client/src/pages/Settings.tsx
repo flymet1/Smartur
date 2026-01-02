@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +32,16 @@ export default function Settings() {
   const [newBlacklistReason, setNewBlacklistReason] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  
+  // Bot Access Settings
+  const [botAccessActivities, setBotAccessActivities] = useState(true);
+  const [botAccessPackageTours, setBotAccessPackageTours] = useState(true);
+  const [botAccessCapacity, setBotAccessCapacity] = useState(true);
+  const [botAccessFaq, setBotAccessFaq] = useState(true);
+  const [botAccessConfirmation, setBotAccessConfirmation] = useState(true);
+  const [botAccessTransfer, setBotAccessTransfer] = useState(true);
+  const [botAccessExtras, setBotAccessExtras] = useState(true);
+  const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
 
   const { data: sidebarLogoSetting, refetch: refetchLogo } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'sidebarLogo'],
@@ -40,6 +50,32 @@ export default function Settings() {
       return res.json();
     },
   });
+
+  // Load bot access settings
+  const { data: botAccessSettings } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'botAccess'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/botAccess');
+      return res.json();
+    },
+  });
+
+  // Apply loaded bot access settings when data arrives (using useEffect)
+  useEffect(() => {
+    if (botAccessSettings?.value && !botAccessSettingsLoaded) {
+      try {
+        const settings = JSON.parse(botAccessSettings.value);
+        if (settings.activities !== undefined) setBotAccessActivities(settings.activities);
+        if (settings.packageTours !== undefined) setBotAccessPackageTours(settings.packageTours);
+        if (settings.capacity !== undefined) setBotAccessCapacity(settings.capacity);
+        if (settings.faq !== undefined) setBotAccessFaq(settings.faq);
+        if (settings.confirmation !== undefined) setBotAccessConfirmation(settings.confirmation);
+        if (settings.transfer !== undefined) setBotAccessTransfer(settings.transfer);
+        if (settings.extras !== undefined) setBotAccessExtras(settings.extras);
+        setBotAccessSettingsLoaded(true);
+      } catch {}
+    }
+  }, [botAccessSettings?.value, botAccessSettingsLoaded]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,6 +182,17 @@ export default function Settings() {
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
+      // Build bot access settings object
+      const botAccessValue = JSON.stringify({
+        activities: botAccessActivities,
+        packageTours: botAccessPackageTours,
+        capacity: botAccessCapacity,
+        faq: botAccessFaq,
+        confirmation: botAccessConfirmation,
+        transfer: botAccessTransfer,
+        extras: botAccessExtras
+      });
+
       // Save all settings
       await Promise.all([
         fetch("/api/settings/customerSupportEmail", {
@@ -167,6 +214,11 @@ export default function Settings() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: reminderMessage })
+        }),
+        fetch("/api/settings/botAccess", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: botAccessValue })
         })
       ]);
       
@@ -499,25 +551,122 @@ export default function Settings() {
                   </div>
 
                   {botEnabled && (
-                    <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
-                      <div className="space-y-2">
-                        <Label htmlFor="botPrompt">Bot Sistemi Prompt'u</Label>
-                        <Textarea 
-                          id="botPrompt"
-                          value={botPrompt}
-                          onChange={(e) => setBotPrompt(e.target.value)}
-                          placeholder="Bot'un nasıl davranacağını tanımlayan talimatleri yazın..."
-                          className="min-h-[150px]"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Bu prompt'u değiştirerek bot'un kişiliğini ve davranışını özelleştirebilirsiniz. Bot bu talimatlara uyarak müşterilerle konuşacak.
-                        </p>
+                    <div className="space-y-6">
+                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                        <div className="space-y-2">
+                          <Label htmlFor="botPrompt">Bot Sistemi Prompt'u</Label>
+                          <Textarea 
+                            id="botPrompt"
+                            value={botPrompt}
+                            onChange={(e) => setBotPrompt(e.target.value)}
+                            placeholder="Bot'un nasıl davranacağını tanımlayan talimatleri yazın..."
+                            className="min-h-[150px]"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Bu prompt'u değiştirerek bot'un kişiliğini ve davranışını özelleştirebilirsiniz. Bot bu talimatlara uyarak müşterilerle konuşacak.
+                          </p>
+                        </div>
+
+                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                          <p className="text-xs text-blue-900 dark:text-blue-200">
+                            <strong>Ipucu:</strong> Prompt'unuzda musterilerle samimi olmalarini, kibar olmalarini, hizli cevap vermelerini ve rezervasyon yapmalarina yardimci olmalarini belirtin.
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                        <p className="text-xs text-blue-900 dark:text-blue-200">
-                          <strong>💡 İpucu:</strong> Prompt'unuzda müşterilerle samimi olmalarını, kibar olmalarını, hızlı cevap vermelerini ve rezervasyon yapmalarına yardımcı olmalarını belirtin.
-                        </p>
+                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                        <div className="space-y-1">
+                          <Label className="text-base font-medium">Bot Erisim Ayarlari</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Bot'un hangi bilgilere erisebilecegini secin. Kapatilan bilgiler bot'a gonderilmez.
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
+                            <div className="space-y-0.5">
+                              <Label>Aktivite Bilgileri</Label>
+                              <p className="text-xs text-muted-foreground">Aktivite aciklamalari, fiyatlar ve rezervasyon linkleri</p>
+                            </div>
+                            <Switch 
+                              checked={botAccessActivities} 
+                              onCheckedChange={setBotAccessActivities}
+                              data-testid="switch-bot-access-activities"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
+                            <div className="space-y-0.5">
+                              <Label>Paket Tur Bilgileri</Label>
+                              <p className="text-xs text-muted-foreground">Paket tur aciklamalari, fiyatlar ve rezervasyon linkleri</p>
+                            </div>
+                            <Switch 
+                              checked={botAccessPackageTours} 
+                              onCheckedChange={setBotAccessPackageTours}
+                              data-testid="switch-bot-access-package-tours"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
+                            <div className="space-y-0.5">
+                              <Label>Kapasite / Takvim</Label>
+                              <p className="text-xs text-muted-foreground">Musaitlik ve kontenjan bilgileri</p>
+                            </div>
+                            <Switch 
+                              checked={botAccessCapacity} 
+                              onCheckedChange={setBotAccessCapacity}
+                              data-testid="switch-bot-access-capacity"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
+                            <div className="space-y-0.5">
+                              <Label>Sik Sorulan Sorular (SSS)</Label>
+                              <p className="text-xs text-muted-foreground">Aktivite ve paket turlar icin tanimli SSS'ler</p>
+                            </div>
+                            <Switch 
+                              checked={botAccessFaq} 
+                              onCheckedChange={setBotAccessFaq}
+                              data-testid="switch-bot-access-faq"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
+                            <div className="space-y-0.5">
+                              <Label>Onay Mesajlari</Label>
+                              <p className="text-xs text-muted-foreground">Siparis tamamlandiginda gonderilecek onay mesajlari</p>
+                            </div>
+                            <Switch 
+                              checked={botAccessConfirmation} 
+                              onCheckedChange={setBotAccessConfirmation}
+                              data-testid="switch-bot-access-confirmation"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
+                            <div className="space-y-0.5">
+                              <Label>Transfer Bilgileri</Label>
+                              <p className="text-xs text-muted-foreground">Ucretsiz otel transferi bolgeleri</p>
+                            </div>
+                            <Switch 
+                              checked={botAccessTransfer} 
+                              onCheckedChange={setBotAccessTransfer}
+                              data-testid="switch-bot-access-transfer"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2">
+                            <div className="space-y-0.5">
+                              <Label>Ekstra Hizmetler</Label>
+                              <p className="text-xs text-muted-foreground">Aktivitelere eklenebilecek ekstra hizmetler ve fiyatlari</p>
+                            </div>
+                            <Switch 
+                              checked={botAccessExtras} 
+                              onCheckedChange={setBotAccessExtras}
+                              data-testid="switch-bot-access-extras"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
