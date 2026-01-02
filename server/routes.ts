@@ -812,11 +812,25 @@ export async function registerRoutes(
     }
   });
 
-  // Package Tour Activities
+  // Package Tour Activities - returns full activity data with defaultTime from package config
   app.get("/api/package-tours/:id/activities", async (req, res) => {
     try {
       const tourActivities = await storage.getPackageTourActivities(Number(req.params.id));
-      res.json(tourActivities);
+      const allActivities = await storage.getActivities();
+      
+      // Merge activity data with package tour settings
+      const enrichedActivities = tourActivities.map(ta => {
+        const activity = allActivities.find(a => a.id === ta.activityId);
+        if (!activity) return null;
+        return {
+          ...activity,
+          defaultTime: ta.defaultTime,
+          dayOffset: ta.dayOffset,
+          sortOrder: ta.sortOrder
+        };
+      }).filter(Boolean);
+      
+      res.json(enrichedActivities);
     } catch (err) {
       res.status(500).json({ error: "Paket tur aktiviteleri alinamadi" });
     }
