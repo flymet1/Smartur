@@ -29,6 +29,8 @@ export const activities = pgTable("activities", {
   hasFreeHotelTransfer: boolean("has_free_hotel_transfer").default(false),
   transferZones: text("transfer_zones").default("[]"), // JSON array of zone names ["Ölüdeniz", "Fethiye Merkez", "Hisarönü"]
   extras: text("extras").default("[]"), // JSON array of {name, priceTl, priceUsd, description}
+  // Sık Sorulan Sorular
+  faq: text("faq").default("[]"), // JSON array of {question, answer}
 });
 
 export const capacity = pgTable("capacity", {
@@ -237,6 +239,8 @@ export const packageTours = pgTable("package_tours", {
   reservationLink: text("reservation_link"), // External reservation page URL (Turkish)
   reservationLinkEn: text("reservation_link_en"), // External reservation page URL (English)
   active: boolean("active").default(true),
+  // Sık Sorulan Sorular
+  faq: text("faq").default("[]"), // JSON array of {question, answer}
   createdAt: timestamp("created_at").defaultNow(),
 });
 
