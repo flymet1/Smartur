@@ -30,6 +30,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: Kapsamlı Kullanım Kılavuzu - UserGuide.tsx tamamen yeniden yazıldı. 10 ana bölüm, tüm sayfa fonksiyonları, WhatsApp bot sistemi, rezervasyon yönetimi, müşteri takip, finans, ayarlar ve lisans sistemi detaylı açıklandı. Sayfa içi navigasyon linkleri eklendi.
 - 02.01.2026: Kapsamlı Türkçe Karakter Düzeltmeleri - Settings.tsx, CustomerRequests.tsx, BotRules.tsx, Dashboard.tsx, CustomerTracking.tsx sayfalarında tüm Türkçe karakterler düzeltildi. Toast mesajları, dialog başlıkları, açıklama metinleri ve yorumlar Unicode karakterlerle güncellendi (ş, ç, ö, ü, ğ, ı, İ).
 - 02.01.2026: Sidebar Üyelik Durumu - WooCommerce bilgisi kaldırıldı, yerine lisans durumu eklendi. Aktif lisanslarda kalan gün sayısı, süresi dolmuş lisanslarda "Yenileme Gerekli" gösterilir. Renk kodlaması: yeşil (>14 gün), sarı (7-14 gün), kırmızı (<7 gün veya süre dolmuş).
 - 02.01.2026: Dinamik Doluluk Orani - Dashboard'daki doluluk orani artik secilen tarihe gore gercek verilerden hesaplaniyor. Tarih degistirme, aktivite bazli detay goruntusu ve bugun/yarin hizli gecis butonlari eklendi.
