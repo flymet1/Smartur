@@ -12,7 +12,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle } from "lucide-react";
 import { Link } from "wouter";
 import type { Holiday } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1217,21 +1217,7 @@ export default function Settings() {
 
           {/* INTEGRATIONS TAB */}
           <TabsContent value="integrations" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>WooCommerce Entegrasyonu</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Webhook URL</Label>
-                <div className="flex gap-2">
-                  <Input readOnly value="https://api.domain.com/api/webhooks/woocommerce" className="bg-muted" />
-                  <Button variant="outline">Kopyala</Button>
-                </div>
-                <p className="text-xs text-muted-foreground">Bu URL'i WooCommerce ayarlarınıza ekleyin.</p>
-              </div>
-            </CardContent>
-          </Card>
+          <WooCommerceCard />
 
           <AutoResponsesCard />
           </TabsContent>
@@ -1268,6 +1254,229 @@ export default function Settings() {
         </div>
       </main>
     </div>
+  );
+}
+
+// WooCommerce Card Component
+function WooCommerceCard() {
+  const { toast } = useToast();
+  const [storeUrl, setStoreUrl] = useState("");
+  const [consumerKey, setConsumerKey] = useState("");
+  const [consumerSecret, setConsumerSecret] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  const { data: wooSettings, isLoading, refetch } = useQuery<{
+    storeUrl: string;
+    consumerKey: string;
+    isConfigured: boolean;
+  }>({
+    queryKey: ['/api/woocommerce-settings'],
+  });
+
+  const webhookUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/api/webhooks/woocommerce`
+    : '/api/webhooks/woocommerce';
+
+  const handleConnect = async () => {
+    if (!storeUrl || !consumerKey || !consumerSecret) {
+      toast({
+        title: "Hata",
+        description: "Tum alanlari doldurun",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const response = await fetch('/api/woocommerce-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeUrl, consumerKey, consumerSecret }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Basarili",
+          description: "WooCommerce baglantisi kuruldu",
+        });
+        setStoreUrl("");
+        setConsumerKey("");
+        setConsumerSecret("");
+        refetch();
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Hata",
+          description: data.error || "Baglanti kurulamadi",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Baglanti hatasi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setIsDisconnecting(true);
+    try {
+      const response = await fetch('/api/woocommerce-settings', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Basarili",
+          description: "WooCommerce baglantisi kaldirildi",
+        });
+        refetch();
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Baglanti kaldirilamadi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    toast({
+      title: "Kopyalandi",
+      description: "Webhook URL panoya kopyalandi",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>WooCommerce Entegrasyonu</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Yukleniyor...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-2">
+          <span>WooCommerce Entegrasyonu</span>
+          {wooSettings?.isConfigured ? (
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Bagli
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              <XCircle className="w-3 h-3" />
+              Bagli Degil
+            </Badge>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {wooSettings?.isConfigured ? (
+          <>
+            <div className="p-4 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                <CheckCircle className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">WooCommerce Baglantisi Aktif</p>
+                  <p className="text-sm opacity-80">Magaza: {wooSettings.storeUrl}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Webhook URL</Label>
+              <div className="flex gap-2">
+                <Input readOnly value={webhookUrl} className="bg-muted" data-testid="input-webhook-url" />
+                <Button variant="outline" onClick={copyToClipboard} data-testid="button-copy-webhook">
+                  Kopyala
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Bu URL'i WooCommerce ayarlariniza ekleyin (WooCommerce &gt; Settings &gt; Advanced &gt; Webhooks).
+              </p>
+            </div>
+
+            <Button 
+              variant="destructive" 
+              onClick={handleDisconnect}
+              disabled={isDisconnecting}
+              data-testid="button-disconnect-woo"
+            >
+              {isDisconnecting ? "Kaldiriliyor..." : "Baglantiyi Kaldir"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="woo-store-url">Magaza URL</Label>
+                <Input
+                  id="woo-store-url"
+                  value={storeUrl}
+                  onChange={(e) => setStoreUrl(e.target.value)}
+                  placeholder="https://magazaniz.com"
+                  data-testid="input-woo-store-url"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="woo-consumer-key">Consumer Key</Label>
+                <Input
+                  id="woo-consumer-key"
+                  value={consumerKey}
+                  onChange={(e) => setConsumerKey(e.target.value)}
+                  placeholder="ck_xxxxxxxx"
+                  data-testid="input-woo-consumer-key"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="woo-consumer-secret">Consumer Secret</Label>
+                <Input
+                  id="woo-consumer-secret"
+                  type="password"
+                  value={consumerSecret}
+                  onChange={(e) => setConsumerSecret(e.target.value)}
+                  placeholder="cs_xxxxxxxx"
+                  data-testid="input-woo-consumer-secret"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              WooCommerce &gt; Settings &gt; Advanced &gt; REST API bolumunden API anahtarlarinizi olusturabilirsiniz.
+            </p>
+
+            <Button 
+              onClick={handleConnect}
+              disabled={isConnecting}
+              data-testid="button-connect-woo"
+            >
+              {isConnecting ? "Baglaniyor..." : "WooCommerce'e Baglan"}
+            </Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

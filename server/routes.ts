@@ -2360,6 +2360,57 @@ Sky Fethiye`;
     }
   });
 
+  // WooCommerce Settings endpoints
+  app.get("/api/woocommerce-settings", async (req, res) => {
+    try {
+      const storeUrl = await storage.getSetting('woocommerceStoreUrl');
+      const consumerKey = await storage.getSetting('woocommerceConsumerKey');
+      const consumerSecretEncrypted = await storage.getSetting('woocommerceConsumerSecretEncrypted');
+      
+      res.json({
+        storeUrl: storeUrl || '',
+        consumerKey: consumerKey || '',
+        isConfigured: !!(storeUrl && consumerKey && consumerSecretEncrypted),
+      });
+    } catch (err) {
+      res.status(500).json({ error: "WooCommerce ayarlari alinamadi" });
+    }
+  });
+
+  app.post("/api/woocommerce-settings", async (req, res) => {
+    try {
+      const { storeUrl, consumerKey, consumerSecret } = req.body;
+      
+      if (!storeUrl || !consumerKey || !consumerSecret) {
+        return res.status(400).json({ error: "Magaza URL, Consumer Key ve Consumer Secret gerekli" });
+      }
+      
+      // Encrypt the consumer secret before storing
+      const encryptedSecret = encrypt(consumerSecret);
+      
+      await storage.setSetting('woocommerceStoreUrl', storeUrl);
+      await storage.setSetting('woocommerceConsumerKey', consumerKey);
+      await storage.setSetting('woocommerceConsumerSecretEncrypted', encryptedSecret);
+      
+      res.json({ success: true, message: "WooCommerce ayarlari kaydedildi" });
+    } catch (err) {
+      console.error("WooCommerce settings save error:", err);
+      res.status(500).json({ error: "WooCommerce ayarlari kaydedilemedi" });
+    }
+  });
+
+  app.delete("/api/woocommerce-settings", async (req, res) => {
+    try {
+      await storage.setSetting('woocommerceStoreUrl', '');
+      await storage.setSetting('woocommerceConsumerKey', '');
+      await storage.setSetting('woocommerceConsumerSecretEncrypted', '');
+      
+      res.json({ success: true, message: "WooCommerce baglantisi kaldirildi" });
+    } catch (err) {
+      res.status(500).json({ error: "WooCommerce ayarlari silinemedi" });
+    }
+  });
+
   // Helper function to get Gmail credentials from DB or env vars
   async function getGmailCredentials(): Promise<{ user: string; password: string } | null> {
     // First check database settings
