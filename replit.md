@@ -29,6 +29,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: Dinamik Onay Mesajı - WhatsApp bildirimi artık aktivite/paket tur'daki "Rezervasyon Onay Mesajı" alanından çekiliyor. {isim}, {tarih}, {saat}, {aktivite} yer tutucuları otomatik değiştiriliyor.
 - 02.01.2026: Müşteri Talepleri Bildirim - Müşteri talepleri sayfasında her talepte "Bilgilendir" butonu eklendi. Onay/red sonrası otomatik WhatsApp bildirim dialogu açılır. Dinamik mesaj şablonu (talep tipi, durum, tercih edilen saat) ile özelleştirilebilir metin. Twilio API ile gönderim.
 - 02.01.2026: WhatsApp Bildirim Özelliği - Manuel rezervasyon oluştururken "Müşteriyi WhatsApp ile bilgilendir" checkbox'ı eklendi. Twilio API entegrasyonu ile müşteriye otomatik rezervasyon onay mesajı gönderilir. Hata durumunda kullanıcıya bilgi verilir.
 - 02.01.2026: Müşteri Talepleri Admin Paneli - Geliştirici panelinde müşteri taleplerini görüntüleme ve yönetme eklendi. Saat değişikliği, iptal ve diğer talepleri onaylama/reddetme. Yeni talep sayısı badge ile gösterilir. Otomatik yenileme (30 saniye).

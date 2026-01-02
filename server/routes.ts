@@ -1814,7 +1814,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
   // === Send WhatsApp Notification (Twilio) ===
   app.post("/api/send-whatsapp-notification", async (req, res) => {
     try {
-      const { phone, customerName, activityName, date, time } = req.body;
+      const { phone, customerName, activityName, date, time, activityId, packageTourId } = req.body;
       
       if (!phone || !customerName || !activityName || !date) {
         return res.status(400).json({ error: "Eksik bilgi: telefon, isim, aktivite ve tarih gerekli" });
@@ -1838,7 +1838,30 @@ Bu talep musteri takip sayfasindan gonderilmistir.
         formattedPhone = '90' + formattedPhone;
       }
       
-      const message = `Merhaba ${customerName},
+      // Fetch confirmation message from activity or package tour
+      let confirmationTemplate = "";
+      if (packageTourId) {
+        const packageTour = await storage.getPackageTour(packageTourId);
+        if (packageTour?.confirmationMessage) {
+          confirmationTemplate = packageTour.confirmationMessage;
+        }
+      } else if (activityId) {
+        const activity = await storage.getActivity(activityId);
+        if (activity?.confirmationMessage) {
+          confirmationTemplate = activity.confirmationMessage;
+        }
+      }
+      
+      // Use template with placeholder replacement, or fallback to default
+      let message: string;
+      if (confirmationTemplate) {
+        message = confirmationTemplate
+          .replace(/\{isim\}/gi, customerName)
+          .replace(/\{tarih\}/gi, date)
+          .replace(/\{saat\}/gi, time || '')
+          .replace(/\{aktivite\}/gi, activityName);
+      } else {
+        message = `Merhaba ${customerName},
 
 Rezervasyonunuz olusturulmustur:
 Aktivite: ${activityName}
@@ -1848,6 +1871,7 @@ ${time ? `Saat: ${time}` : ''}
 Sorulariniz icin bize bu numaradan yazabilirsiniz.
 
 Sky Fethiye`;
+      }
 
       // Use Twilio API to send WhatsApp message
       const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
