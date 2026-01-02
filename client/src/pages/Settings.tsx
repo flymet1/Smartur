@@ -397,7 +397,7 @@ export default function Settings() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 md:ml-64 p-4 md:p-8 pb-24 max-w-4xl mx-auto">
+      <main className="flex-1 md:ml-64 p-4 md:p-8 max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold font-display">Ayarlar</h1>
           <p className="text-muted-foreground mt-1">Sistem yapılandırması</p>
@@ -1170,9 +1170,9 @@ export default function Settings() {
           </TabsContent>
         </Tabs>
 
-        {/* Sticky Save Button */}
-        <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-background/95 backdrop-blur border-t p-4 z-50">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+        {/* Save Button at the end of content */}
+        <div className="mt-8 pt-6 border-t">
+          <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground hidden sm:block">
               Değişikliklerinizi kaydetmeyi unutmayın
             </p>
