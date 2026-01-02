@@ -14,7 +14,8 @@ import {
   HelpCircle,
   Code,
   Building2,
-  Bell
+  Bell,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -67,9 +68,75 @@ export function Sidebar() {
     refetchInterval: 30000,
   });
 
+  // License data for sidebar status
+  type LicenseData = {
+    license: unknown;
+    usage: unknown;
+    status: {
+      valid: boolean;
+      message: string;
+      status?: 'active' | 'warning' | 'grace' | 'suspended' | 'expired';
+      daysRemaining?: number;
+      graceDaysRemaining?: number;
+      canWrite?: boolean;
+    };
+  };
+  
+  const { data: licenseData, isLoading: isLicenseLoading } = useQuery<LicenseData>({
+    queryKey: ['/api/license'],
+    refetchInterval: 60000, // Check every minute
+  });
+
   const openSupportCount = supportSummary?.openCount || 0;
   const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
   const logoUrl = logoSetting?.value;
+
+  // License status helper
+  const getLicenseStatusInfo = () => {
+    // Show neutral state while loading
+    if (isLicenseLoading || !licenseData?.status) {
+      return { text: 'Uyelik Durumu', color: 'text-muted-foreground', bgColor: 'bg-muted-foreground', isActive: false, isLoading: true };
+    }
+    
+    const { valid, status, daysRemaining } = licenseData.status;
+    
+    if (!valid || status === 'expired' || status === 'suspended' || status === 'grace') {
+      return { text: 'Yenileme Gerekli', color: 'text-red-600', bgColor: 'bg-red-500', isActive: false, isLoading: false };
+    }
+    
+    // Active license - show days remaining with color coding
+    if (daysRemaining !== undefined) {
+      if (daysRemaining <= 7) {
+        return { 
+          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          color: 'text-red-600', 
+          bgColor: 'bg-red-500',
+          isActive: true,
+          isLoading: false
+        };
+      } else if (daysRemaining <= 14) {
+        return { 
+          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          color: 'text-amber-600', 
+          bgColor: 'bg-amber-500',
+          isActive: true,
+          isLoading: false
+        };
+      } else {
+        return { 
+          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          color: 'text-green-600', 
+          bgColor: 'bg-green-500',
+          isActive: true,
+          isLoading: false
+        };
+      }
+    }
+    
+    return { text: 'Aktif', color: 'text-green-600', bgColor: 'bg-green-500', isActive: true, isLoading: false };
+  };
+
+  const licenseStatusInfo = getLicenseStatusInfo();
 
   return (
     <>
@@ -242,10 +309,19 @@ export function Sidebar() {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               WhatsApp Bot Aktif
             </div>
-            <div className="flex items-center gap-2 text-sm text-blue-600 font-medium mt-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              WooCommerce Bağlı
-            </div>
+            <Link href="/settings">
+              <div 
+                className={cn(
+                  "flex items-center gap-2 text-sm font-medium mt-1 cursor-pointer hover:opacity-80 transition-opacity",
+                  licenseStatusInfo.color
+                )}
+                data-testid="link-license-status"
+              >
+                <div className={cn("w-2 h-2 rounded-full", licenseStatusInfo.bgColor, licenseStatusInfo.isActive && "animate-pulse")} />
+                <Shield className="h-3.5 w-3.5" />
+                {licenseStatusInfo.text}
+              </div>
+            </Link>
           </div>
           <Link href="/user-guide">
             <div className={cn(
