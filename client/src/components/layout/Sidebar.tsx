@@ -53,7 +53,7 @@ export function Sidebar() {
         {logoUrl ? (
           <img src={logoUrl} alt="Logo" className="h-8 w-auto" data-testid="img-sidebar-logo-mobile" />
         ) : (
-          <div className="font-display font-bold text-xl text-primary">Operasyon</div>
+          <div className="font-display font-bold text-xl text-primary">My Smartur</div>
         )}
         <Sheet>
           <SheetTrigger asChild>
@@ -91,7 +91,7 @@ export function Sidebar() {
               <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                 <Activity className="h-5 w-5" />
               </span>
-              Operasyon
+              My Smartur
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-# WhatsApp Rezervasyon & Operasyon Sistemi
+# My Smartur - WhatsApp Rezervasyon & Operasyon Sistemi
 
 ## Genel Bakış
 Bu proje, Python yerine Node.js/TypeScript ile geliştirilmiş modern bir rezervasyon ve operasyon yönetim sistemidir. 
