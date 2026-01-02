@@ -61,7 +61,7 @@ export default function CustomerRequests() {
   });
 
   const { data: agencies } = useQuery<Agency[]>({
-    queryKey: ['/api/agencies'],
+    queryKey: ['/api/finance/agencies'],
   });
 
   const [pendingNotification, setPendingNotification] = useState<{ id: number; status: string } | null>(null);
