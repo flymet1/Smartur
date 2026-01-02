@@ -1021,6 +1021,23 @@ export async function registerRoutes(
     res.json(details);
   });
 
+  // Update reservation status
+  app.patch("/api/reservations/:id/status", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { status } = req.body;
+    
+    if (!status || !["pending", "confirmed", "cancelled"].includes(status)) {
+      return res.status(400).json({ error: "Invalid status. Must be pending, confirmed, or cancelled." });
+    }
+    
+    try {
+      const updated = await storage.updateReservationStatus(id, status);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update reservation status" });
+    }
+  });
+
   // === Webhooks ===
   app.post(api.webhooks.woocommerce.path, async (req, res) => {
     try {

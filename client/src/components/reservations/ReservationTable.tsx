@@ -10,20 +10,43 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { MessageSquare, Globe, User, Package, ChevronDown } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReservationTableProps {
   reservations: Reservation[];
 }
 
 export function ReservationTable({ reservations }: ReservationTableProps) {
+  const { toast } = useToast();
+  
   const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities']
   });
 
   const { data: packageTours = [] } = useQuery<PackageTour[]>({
     queryKey: ['/api/package-tours']
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      toast({ title: "Başarılı", description: "Rezervasyon durumu güncellendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Durum güncellenemedi.", variant: "destructive" });
+    },
   });
 
   const getActivityName = (activityId: number | null) => {
@@ -35,17 +58,52 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
     if (!packageTourId) return null;
     return packageTours.find(p => p.id === packageTourId)?.name || null;
   };
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">Onaylı</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200">Beklemede</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive">İptal</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+
+  const getStatusBadge = (status: string, reservationId: number) => {
+    const statusConfig = {
+      confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 hover:bg-green-200 border-green-200" },
+      pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200" },
+      cancelled: { label: "İptal", className: "bg-red-100 text-red-700 hover:bg-red-200 border-red-200" },
+    };
+    
+    const current = statusConfig[status as keyof typeof statusConfig] || { label: status, className: "" };
+    
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button 
+            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border cursor-pointer ${current.className}`}
+            data-testid={`button-status-${reservationId}`}
+          >
+            {current.label}
+            <ChevronDown className="h-3 w-3" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem 
+            onClick={() => statusMutation.mutate({ id: reservationId, status: 'pending' })}
+            className="text-yellow-700"
+            data-testid={`status-pending-${reservationId}`}
+          >
+            Beklemede
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => statusMutation.mutate({ id: reservationId, status: 'confirmed' })}
+            className="text-green-700"
+            data-testid={`status-confirmed-${reservationId}`}
+          >
+            Onaylı
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => statusMutation.mutate({ id: reservationId, status: 'cancelled' })}
+            className="text-red-700"
+            data-testid={`status-cancelled-${reservationId}`}
+          >
+            İptal
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
 
   const getSourceIcon = (source: string | null) => {
@@ -107,7 +165,7 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
                     <span className="capitalize text-sm">{res.source || 'Manuel'}</span>
                   </div>
                 </TableCell>
-                <TableCell>{getStatusBadge(res.status || 'pending')}</TableCell>
+                <TableCell>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
                 <TableCell className="text-right font-medium">
                   ₺{(res.quantity * 1500).toLocaleString('tr-TR')} {/* Mock price logic */}
                 </TableCell>

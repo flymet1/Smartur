@@ -159,6 +159,7 @@ export interface IStorage {
   getUnpaidReservations(agencyId: number, sinceDate?: string): Promise<Reservation[]>;
   updateReservationSettlement(reservationId: number, settlementId: number): Promise<void>;
   updateReservationAgency(reservationId: number, agencyId: number): Promise<void>;
+  updateReservationStatus(reservationId: number, status: string): Promise<Reservation>;
 
   // Package Tours
   getPackageTours(): Promise<PackageTour[]>;
@@ -1103,6 +1104,14 @@ export class DatabaseStorage implements IStorage {
     await db.update(reservations)
       .set({ agencyId })
       .where(eq(reservations.id, reservationId));
+  }
+
+  async updateReservationStatus(reservationId: number, status: string): Promise<Reservation> {
+    const [updated] = await db.update(reservations)
+      .set({ status })
+      .where(eq(reservations.id, reservationId))
+      .returning();
+    return updated;
   }
 
   // Package Tours
