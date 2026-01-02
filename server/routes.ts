@@ -2826,11 +2826,10 @@ export async function registerRoutes(
           })),
           reservations: recentReservations.slice(0, 50).map(r => ({
             id: r.id, activityId: r.activityId, date: r.date, time: r.time, 
-            quantity: r.quantity, status: r.status, source: r.source,
-            customerName: r.customerName ? '[GIZLI]' : null
+            quantity: r.quantity, status: r.status, source: r.source
           })),
           supportRequests: supportRequests.map(s => ({
-            id: s.id, status: s.status, createdAt: s.createdAt, phone: '[GIZLI]'
+            id: s.id, status: s.status, createdAt: s.createdAt
           })),
           autoResponses: autoResponses.map(ar => ({
             id: ar.id, name: ar.name, isActive: ar.isActive, priority: ar.priority
