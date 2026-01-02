@@ -2717,6 +2717,165 @@ export async function registerRoutes(
     }
   });
 
+  // Debug Snapshot - Tum sistem verisini topla
+  app.get("/api/system/debug-snapshot", async (req, res) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      // Sistem bilgileri
+      const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      
+      let gitInfo = { commit: null, branch: null };
+      try {
+        const { execSync } = await import('child_process');
+        gitInfo.commit = execSync('git rev-parse --short HEAD', { encoding: 'utf8', timeout: 5000 }).trim();
+        gitInfo.branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8', timeout: 5000 }).trim();
+      } catch {}
+      
+      // Veritabani verileri (hassas bilgiler maskelenmis)
+      const activities = await storage.getActivities();
+      const packageTours = await storage.getPackageTours();
+      const recentReservations = await storage.getReservations();
+      const supportRequests = await storage.getAllSupportRequests();
+      const recentLogs = await getRecentLogs(undefined, 100);
+      const autoResponses = await storage.getAutoResponses();
+      const blacklist = await storage.getBlacklist();
+      
+      // Ayarlar (hassas olmayan)
+      const botRules = await storage.getSetting('botRules');
+      const botAccess = await storage.getSetting('botAccess');
+      
+      // Sistem sagligi kontrolleri
+      const healthChecks = [];
+      
+      // AI baglantisi kontrolu
+      const aiErrors = recentLogs.filter(l => l.source === 'ai' && l.level === 'error');
+      if (aiErrors.length > 5) {
+        healthChecks.push({
+          id: 'ai_errors',
+          severity: 'error',
+          title: 'AI Baglanti Sorunu',
+          description: `Son 24 saatte ${aiErrors.length} AI hatasi. Gemini API limitine ulasilmis olabilir.`,
+          suggestion: 'Biraz bekleyin veya API kotasini kontrol edin.'
+        });
+      }
+      
+      // Webhook hatalari kontrolu
+      const webhookErrors = recentLogs.filter(l => l.source === 'webhook' && l.level === 'error');
+      if (webhookErrors.length > 0) {
+        healthChecks.push({
+          id: 'webhook_errors',
+          severity: 'warning',
+          title: 'Webhook Hatalari',
+          description: `${webhookErrors.length} WooCommerce webhook hatasi tespit edildi.`,
+          suggestion: 'WooCommerce baglanti ayarlarini kontrol edin.'
+        });
+      }
+      
+      // Acik destek talepleri
+      const openSupport = supportRequests.filter(s => s.status === 'open');
+      if (openSupport.length > 5) {
+        healthChecks.push({
+          id: 'pending_support',
+          severity: 'info',
+          title: 'Bekleyen Destek Talepleri',
+          description: `${openSupport.length} acik destek talebi var.`,
+          suggestion: 'Destek taleplerini inceleyin ve cozumleyin.'
+        });
+      }
+      
+      // Aktivite kontrolu
+      if (activities.length === 0) {
+        healthChecks.push({
+          id: 'no_activities',
+          severity: 'warning',
+          title: 'Aktivite Tanimlanmamis',
+          description: 'Sistemde hic aktivite tanimli degil.',
+          suggestion: 'Aktiviteler sayfasindan aktivite ekleyin.'
+        });
+      }
+
+      const snapshot = {
+        timestamp: new Date().toISOString(),
+        version: packageJson.version,
+        git: gitInfo,
+        nodeVersion: process.version,
+        uptime: process.uptime(),
+        
+        healthChecks,
+        
+        summary: {
+          activitiesCount: activities.length,
+          packageToursCount: packageTours.length,
+          reservationsCount: recentReservations.length,
+          openSupportCount: openSupport.length,
+          recentErrorsCount: recentLogs.filter(l => l.level === 'error').length,
+          autoResponsesCount: autoResponses.length,
+          blacklistCount: blacklist.length,
+        },
+        
+        data: {
+          activities: activities.map(a => ({
+            id: a.id, name: a.name, priceTl: a.priceTl, priceUsd: a.priceUsd, 
+            defaultTimes: a.defaultTimes, defaultCapacity: a.defaultCapacity, active: a.active
+          })),
+          packageTours: packageTours.map(p => ({
+            id: p.id, name: p.name, priceTl: p.priceTl, priceUsd: p.priceUsd, active: p.active
+          })),
+          reservations: recentReservations.slice(0, 50).map(r => ({
+            id: r.id, activityId: r.activityId, date: r.date, time: r.time, 
+            quantity: r.quantity, status: r.status, source: r.source,
+            customerName: r.customerName ? '[GIZLI]' : null
+          })),
+          supportRequests: supportRequests.map(s => ({
+            id: s.id, status: s.status, createdAt: s.createdAt, phone: '[GIZLI]'
+          })),
+          autoResponses: autoResponses.map(ar => ({
+            id: ar.id, name: ar.name, isActive: ar.isActive, priority: ar.priority
+          })),
+          recentLogs: recentLogs.slice(0, 50).map(l => ({
+            id: l.id, level: l.level, source: l.source, message: l.message, createdAt: l.createdAt
+          })),
+        },
+        
+        settings: {
+          botRulesConfigured: !!botRules?.value,
+          botAccess: botAccess?.value ? JSON.parse(botAccess.value) : null,
+        }
+      };
+      
+      res.json(snapshot);
+    } catch (err) {
+      console.error('Debug snapshot hatasi:', err);
+      await logError('system', 'Debug snapshot olusturulamadi', err);
+      res.status(500).json({ error: "Debug snapshot olusturulamadi" });
+    }
+  });
+
+  // Sistem Sagligi kontrolu (basit endpoint)
+  app.get("/api/system/health", async (req, res) => {
+    try {
+      const recentLogs = await getRecentLogs(undefined, 50);
+      const errorCount = recentLogs.filter(l => l.level === 'error').length;
+      const warnCount = recentLogs.filter(l => l.level === 'warn').length;
+      
+      let status = 'healthy';
+      if (errorCount > 10) status = 'critical';
+      else if (errorCount > 0 || warnCount > 5) status = 'warning';
+      
+      res.json({
+        status,
+        errorCount,
+        warnCount,
+        lastCheck: new Date().toISOString()
+      });
+    } catch (err) {
+      res.status(500).json({ status: 'error', error: 'Sistem durumu alinamadi' });
+    }
+  });
+
   // Auto Responses CRUD
   app.get("/api/auto-responses", async (req, res) => {
     try {
