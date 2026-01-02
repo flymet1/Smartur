@@ -36,7 +36,7 @@ export default function Support() {
     },
   });
 
-  const developerEmail = emailSetting?.value || "logobudur@gmail.com";
+  const developerEmail = emailSetting?.value || "destek@smartur.com";
 
   const sendMutation = useMutation({
     mutationFn: async (data: { subject: string; requestType: string; message: string; senderName: string; senderEmail: string; developerEmail: string }) => {
