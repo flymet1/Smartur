@@ -35,10 +35,9 @@ const navItems = [
   { href: "/settings", label: "Ayarlar", icon: Settings },
 ];
 
-// Quick access buttons at the top
+// Quick access buttons at the top (Talepler and Destek only)
 const quickAccessItems = [
-  { href: "/bot-test", label: "Bot Test", icon: MessageCircle },
-  { href: "/holidays", label: "Tatiller", icon: CalendarHeart },
+  { href: "/customer-requests", label: "Talepler", icon: MessageCircle },
 ];
 
 type SupportSummary = {
@@ -241,6 +240,17 @@ export function Sidebar() {
             )} data-testid="link-support">
               <HelpCircle className="h-4 w-4" />
               Destek
+            </div>
+          </Link>
+          <Link href="/bot-test">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+              location === "/bot-test"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )} data-testid="link-bot-test">
+              <MessageCircle className="h-4 w-4" />
+              Bot Test
             </div>
           </Link>
           <Link href="/bot-rules">

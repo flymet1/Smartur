@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,8 +12,17 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2 } from "lucide-react";
 import { Link } from "wouter";
+import type { Holiday } from "@shared/schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -420,10 +430,10 @@ export default function Settings() {
 
         {/* Settings Navigation Tabs */}
         <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="security" data-testid="tab-security">
               <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
-              Güvenlik
+              Guvenlik
             </TabsTrigger>
             <TabsTrigger value="whatsapp" data-testid="tab-whatsapp">
               <MessageSquare className="w-4 h-4 mr-2 hidden sm:inline" />
@@ -432,6 +442,10 @@ export default function Settings() {
             <TabsTrigger value="integrations" data-testid="tab-integrations">
               <ExternalLink className="w-4 h-4 mr-2 hidden sm:inline" />
               Entegrasyonlar
+            </TabsTrigger>
+            <TabsTrigger value="holidays" data-testid="tab-holidays">
+              <CalendarHeart className="w-4 h-4 mr-2 hidden sm:inline" />
+              Tatiller
             </TabsTrigger>
             <TabsTrigger value="system" data-testid="tab-system">
               <Server className="w-4 h-4 mr-2 hidden sm:inline" />
@@ -1206,6 +1220,11 @@ export default function Settings() {
           </Card>
 
           <AutoResponsesCard />
+          </TabsContent>
+
+          {/* HOLIDAYS TAB */}
+          <TabsContent value="holidays" className="space-y-6">
+            <HolidaysSection />
           </TabsContent>
 
           {/* SYSTEM TAB */}
@@ -2086,6 +2105,253 @@ function DebugSnapshotCard() {
           </div>
         )}
       </CardContent>
+    </Card>
+  );
+}
+
+// === HOLIDAYS SECTION ===
+const HOLIDAY_TYPES = [
+  { value: 'official', label: 'Resmi Tatil' },
+  { value: 'religious', label: 'Dini Bayram' },
+  { value: 'special', label: 'Ozel Gun' },
+];
+
+const PRESET_HOLIDAYS_2026 = [
+  { name: "Yilbasi", startDate: "2026-01-01", endDate: "2026-01-01", type: "official", keywords: '["yilbasi", "yeni yil", "1 ocak"]' },
+  { name: "23 Nisan Ulusal Egemenlik ve Cocuk Bayrami", startDate: "2026-04-23", endDate: "2026-04-23", type: "official", keywords: '["23 nisan", "cocuk bayrami"]' },
+  { name: "1 Mayis Emek ve Dayanisma Gunu", startDate: "2026-05-01", endDate: "2026-05-01", type: "official", keywords: '["1 mayis", "isci bayrami"]' },
+  { name: "19 Mayis Ataturku Anma Genclik ve Spor Bayrami", startDate: "2026-05-19", endDate: "2026-05-19", type: "official", keywords: '["19 mayis", "genclik bayrami"]' },
+  { name: "15 Temmuz Demokrasi ve Milli Birlik Gunu", startDate: "2026-07-15", endDate: "2026-07-15", type: "official", keywords: '["15 temmuz"]' },
+  { name: "30 Agustos Zafer Bayrami", startDate: "2026-08-30", endDate: "2026-08-30", type: "official", keywords: '["30 agustos", "zafer bayrami"]' },
+  { name: "29 Ekim Cumhuriyet Bayrami", startDate: "2026-10-29", endDate: "2026-10-29", type: "official", keywords: '["29 ekim", "cumhuriyet bayrami"]' },
+  { name: "Ramazan Bayrami 2026", startDate: "2026-03-20", endDate: "2026-03-22", type: "religious", keywords: '["ramazan bayrami", "seker bayrami"]' },
+  { name: "Kurban Bayrami 2026", startDate: "2026-05-27", endDate: "2026-05-30", type: "religious", keywords: '["kurban bayrami", "bayram"]' },
+];
+
+function HolidaysSection() {
+  const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formStartDate, setFormStartDate] = useState("");
+  const [formEndDate, setFormEndDate] = useState("");
+  const [formType, setFormType] = useState("official");
+  const [formKeywords, setFormKeywords] = useState("");
+  const [formNotes, setFormNotes] = useState("");
+  const [formIsActive, setFormIsActive] = useState(true);
+
+  const { data: holidays = [], isLoading } = useQuery<Holiday[]>({
+    queryKey: ['/api/holidays']
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => apiRequest('POST', '/api/holidays', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/holidays'] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({ title: "Basarili", description: "Tatil eklendi." });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => apiRequest('PATCH', `/api/holidays/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/holidays'] });
+      setIsDialogOpen(false);
+      resetForm();
+      toast({ title: "Basarili", description: "Tatil guncellendi." });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/holidays/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/holidays'] });
+      toast({ title: "Basarili", description: "Tatil silindi." });
+    }
+  });
+
+  const resetForm = () => {
+    setEditingHoliday(null);
+    setFormName("");
+    setFormStartDate("");
+    setFormEndDate("");
+    setFormType("official");
+    setFormKeywords("");
+    setFormNotes("");
+    setFormIsActive(true);
+  };
+
+  const openEditDialog = (holiday: Holiday) => {
+    setEditingHoliday(holiday);
+    setFormName(holiday.name);
+    setFormStartDate(holiday.startDate);
+    setFormEndDate(holiday.endDate);
+    setFormType(holiday.type || "official");
+    try {
+      const kw = JSON.parse(holiday.keywords || '[]');
+      setFormKeywords(Array.isArray(kw) ? kw.join(', ') : '');
+    } catch { setFormKeywords(''); }
+    setFormNotes(holiday.notes || '');
+    setFormIsActive(holiday.isActive ?? true);
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!formName || !formStartDate) {
+      toast({ title: "Hata", description: "Tatil adi ve baslangic tarihi zorunludur.", variant: "destructive" });
+      return;
+    }
+    const keywordsArray = formKeywords.split(',').map(k => k.trim()).filter(k => k);
+    const data = {
+      name: formName,
+      startDate: formStartDate,
+      endDate: formEndDate || formStartDate,
+      type: formType,
+      keywords: JSON.stringify(keywordsArray),
+      notes: formNotes,
+      isActive: formIsActive
+    };
+    if (editingHoliday) {
+      await updateMutation.mutateAsync({ id: editingHoliday.id, data });
+    } else {
+      await createMutation.mutateAsync(data);
+    }
+  };
+
+  const handleImportPresets = async () => {
+    if (!confirm("2026 yili icin varsayilan tatilleri eklemek istiyor musunuz?")) return;
+    let added = 0;
+    for (const preset of PRESET_HOLIDAYS_2026) {
+      try {
+        await createMutation.mutateAsync({ ...preset, isActive: true, notes: '' });
+        added++;
+      } catch {}
+    }
+    toast({ title: "Basarili", description: `${added} tatil eklendi.` });
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarHeart className="h-5 w-5" />
+            Tatil ve Bayram Yonetimi
+          </CardTitle>
+          <CardDescription>Resmi tatiller ve bayramlari yonetin. Bot musaitlik kontrolunde bu tarihleri dikkate alir.</CardDescription>
+        </div>
+        <div className="flex gap-2">
+          {holidays.length === 0 && (
+            <Button variant="outline" size="sm" onClick={handleImportPresets} data-testid="button-import-holidays">
+              2026 Tatillerini Ekle
+            </Button>
+          )}
+          <Button size="sm" onClick={() => { resetForm(); setIsDialogOpen(true); }} data-testid="button-add-holiday">
+            <Plus className="h-4 w-4 mr-1" />
+            Yeni Tatil
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : holidays.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+            Henuz tatil eklenmemis. "2026 Tatillerini Ekle" butonuna tiklayarak baslayabilirsiniz.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {holidays.map((holiday) => {
+              const typeLabel = HOLIDAY_TYPES.find(t => t.value === holiday.type)?.label || holiday.type;
+              const isMultiDay = holiday.startDate !== holiday.endDate;
+              return (
+                <div key={holiday.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 gap-3" data-testid={`row-holiday-${holiday.id}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium truncate">{holiday.name}</span>
+                      <Badge variant="outline" className="shrink-0">{typeLabel}</Badge>
+                      {!holiday.isActive && <Badge variant="secondary" className="shrink-0">Pasif</Badge>}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {isMultiDay ? `${formatDate(holiday.startDate)} - ${formatDate(holiday.endDate)}` : formatDate(holiday.startDate)}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(holiday)} data-testid={`button-edit-holiday-${holiday.id}`}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(holiday.id)} data-testid={`button-delete-holiday-${holiday.id}`}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingHoliday ? 'Tatil Duzenle' : 'Yeni Tatil Ekle'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Tatil Adi *</Label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ornegin: Kurban Bayrami" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Baslangic Tarihi *</Label>
+                <Input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Bitis Tarihi</Label>
+                <Input type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Tatil Tipi</Label>
+              <Select value={formType} onValueChange={setFormType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {HOLIDAY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Anahtar Kelimeler</Label>
+              <Input value={formKeywords} onChange={(e) => setFormKeywords(e.target.value)} placeholder="bayram, tatil, kurban (virgullerle ayirin)" />
+              <p className="text-xs text-muted-foreground">Bot bu kelimeleri algiladiginda tatil bilgisi verir</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Notlar</Label>
+              <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Opsiyonel notlar" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={formIsActive} onCheckedChange={setFormIsActive} />
+              <Label>Aktif</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Iptal</Button>
+            <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending}>
+              {createMutation.isPending || updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
