@@ -63,15 +63,16 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Badge 
-            className={`${current.className} cursor-pointer flex items-center gap-1`}
+          <button
+            type="button"
+            className={`${current.className} cursor-pointer flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold border`}
             data-testid={`button-calendar-status-${reservationId}`}
           >
             {current.label}
             <ChevronDown className="h-3 w-3" />
-          </Badge>
+          </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="z-[100]">
           <DropdownMenuItem
             onClick={() => statusMutation.mutate({ id: reservationId, status: 'pending' })}
             className="text-yellow-700"
