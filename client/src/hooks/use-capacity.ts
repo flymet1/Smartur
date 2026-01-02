@@ -1,9 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import type { InsertCapacity } from "@shared/schema";
+import type { InsertCapacity, Capacity } from "@shared/schema";
+
+// Extended capacity type with virtual flag from activity defaults
+export type CapacitySlot = Capacity & { isVirtual?: boolean };
 
 export function useCapacity(filters?: { date?: string; activityId?: string }) {
-  return useQuery({
+  return useQuery<CapacitySlot[]>({
     queryKey: [api.capacity.list.path, filters],
     queryFn: async () => {
       const url = new URL(window.location.origin + api.capacity.list.path);
@@ -12,7 +15,7 @@ export function useCapacity(filters?: { date?: string; activityId?: string }) {
       
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error("Kapasite bilgisi alınamadı");
-      return api.capacity.list.responses[200].parse(await res.json());
+      return await res.json();
     },
   });
 }

@@ -529,11 +529,65 @@ export async function registerRoutes(
   // === Capacity ===
   app.get(api.capacity.list.path, async (req, res) => {
     const { date, activityId } = req.query;
-    const items = await storage.getCapacity(
-      date as string, 
-      activityId ? Number(activityId) : undefined
+    const dateStr = date as string;
+    const actId = activityId ? Number(activityId) : undefined;
+    
+    // Get actual capacity from database
+    const dbItems = await storage.getCapacity(dateStr, actId);
+    
+    // If no date specified, just return database items (for backward compatibility)
+    if (!dateStr) {
+      return res.json(dbItems);
+    }
+    
+    // Get all active activities to generate virtual slots from defaults
+    const allActivities = await storage.getActivities();
+    const activities = actId 
+      ? allActivities.filter(a => a.id === actId && a.active)
+      : allActivities.filter(a => a.active);
+    
+    // Create a set of existing slots for quick lookup (activityId-time)
+    const existingSlots = new Set(
+      dbItems.map(item => `${item.activityId}-${item.time}`)
     );
-    res.json(items);
+    
+    // Generate virtual slots from activity defaults
+    const virtualSlots: any[] = [];
+    for (const activity of activities) {
+      if (activity.defaultTimes) {
+        try {
+          const times = JSON.parse(activity.defaultTimes);
+          if (Array.isArray(times)) {
+            for (const time of times) {
+              const slotKey = `${activity.id}-${time}`;
+              // Only add virtual slot if no real slot exists for this activity+time
+              if (!existingSlots.has(slotKey)) {
+                virtualSlots.push({
+                  id: -1, // Negative ID indicates virtual slot
+                  activityId: activity.id,
+                  date: dateStr,
+                  time: time,
+                  totalSlots: activity.defaultCapacity || 10,
+                  bookedSlots: 0,
+                  isVirtual: true // Flag to indicate this is auto-generated
+                });
+              }
+            }
+          }
+        } catch {}
+      }
+    }
+    
+    // Combine real and virtual slots, mark real slots as not virtual
+    const allSlots = [
+      ...dbItems.map(item => ({ ...item, isVirtual: false })),
+      ...virtualSlots
+    ];
+    
+    // Sort by time
+    allSlots.sort((a, b) => a.time.localeCompare(b.time));
+    
+    res.json(allSlots);
   });
 
   app.post(api.capacity.create.path, async (req, res) => {

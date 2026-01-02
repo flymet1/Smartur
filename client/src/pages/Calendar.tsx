@@ -38,19 +38,29 @@ import { useToast } from "@/hooks/use-toast";
 import type { Capacity } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
+import type { CapacitySlot } from "@/hooks/use-capacity";
 
-function CapacityCard({ slot, activityName, onEdit }: { slot: Capacity; activityName: string; onEdit: () => void }) {
+function CapacityCard({ slot, activityName, onEdit }: { slot: CapacitySlot; activityName: string; onEdit: () => void }) {
   const occupancy = slot.totalSlots > 0 ? (slot.bookedSlots || 0) / slot.totalSlots * 100 : 0;
   const available = slot.totalSlots - (slot.bookedSlots || 0);
   const isFull = occupancy >= 100;
   const isAlmostFull = occupancy >= 80 && occupancy < 100;
+  const isVirtual = slot.isVirtual;
+  const slotId = isVirtual ? `v-${slot.activityId}-${slot.time.replace(':', '')}` : String(slot.id);
   
   return (
-    <Card className={`transition-all hover:shadow-md ${isFull ? 'border-red-200 bg-red-50/50 dark:bg-red-950/20' : isAlmostFull ? 'border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20' : ''}`} data-testid={`card-capacity-${slot.id}`}>
+    <Card className={`transition-all hover:shadow-md ${isVirtual ? 'border-dashed border-2 border-primary/30 bg-primary/5' : ''} ${isFull ? 'border-red-200 bg-red-50/50 dark:bg-red-950/20' : isAlmostFull ? 'border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20' : ''}`} data-testid={`card-capacity-${slotId}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold truncate" data-testid={`text-activity-name-${slot.id}`}>{activityName}</h4>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="font-semibold truncate" data-testid={`text-activity-name-${slotId}`}>{activityName}</h4>
+              {isVirtual && (
+                <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                  Varsayilan
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={isFull ? "destructive" : isAlmostFull ? "secondary" : "outline"} className="text-xs">
                 <Clock className="w-3 h-3 mr-1" />
@@ -58,9 +68,11 @@ function CapacityCard({ slot, activityName, onEdit }: { slot: Capacity; activity
               </Badge>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onEdit} data-testid={`button-edit-capacity-${slot.id}`}>
-            <Edit2 className="w-4 h-4" />
-          </Button>
+          {!isVirtual && (
+            <Button variant="ghost" size="icon" onClick={onEdit} data-testid={`button-edit-capacity-${slotId}`}>
+              <Edit2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
         
         <div className="space-y-2">
@@ -301,9 +313,9 @@ export default function CalendarPage() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredCapacity?.map((slot) => (
+                {filteredCapacity?.map((slot, index) => (
                   <CapacityCardWithEdit 
-                    key={slot.id} 
+                    key={slot.isVirtual ? `virtual-${slot.activityId}-${slot.time}` : slot.id} 
                     slot={slot} 
                     activityName={getActivityName(slot.activityId)} 
                   />
@@ -317,12 +329,13 @@ export default function CalendarPage() {
   );
 }
 
-function CapacityCardWithEdit({ slot, activityName }: { slot: Capacity; activityName: string }) {
+function CapacityCardWithEdit({ slot, activityName }: { slot: CapacitySlot; activityName: string }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [newSlots, setNewSlots] = useState(String(slot.totalSlots));
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isVirtual = slot.isVirtual;
   
   const updateMutation = useMutation({
     mutationFn: async (totalSlots: number) => {
@@ -364,14 +377,22 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: Capacity; activity
   const available = slot.totalSlots - (slot.bookedSlots || 0);
   const isFull = occupancy >= 100;
   const isAlmostFull = occupancy >= 80 && occupancy < 100;
+  const slotId = isVirtual ? `v-${slot.activityId}-${slot.time.replace(':', '')}` : String(slot.id);
 
   return (
     <>
-      <Card className={`transition-all hover:shadow-md ${isFull ? 'border-red-200 bg-red-50/50 dark:bg-red-950/20' : isAlmostFull ? 'border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20' : ''}`} data-testid={`card-capacity-${slot.id}`}>
+      <Card className={`transition-all hover:shadow-md ${isVirtual ? 'border-dashed border-2 border-primary/30 bg-primary/5' : ''} ${!isVirtual && isFull ? 'border-red-200 bg-red-50/50 dark:bg-red-950/20' : !isVirtual && isAlmostFull ? 'border-yellow-200 bg-yellow-50/50 dark:bg-yellow-950/20' : ''}`} data-testid={`card-capacity-${slotId}`}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-2 mb-3">
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold truncate" data-testid={`text-activity-name-${slot.id}`}>{activityName}</h4>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="font-semibold truncate" data-testid={`text-activity-name-${slotId}`}>{activityName}</h4>
+                {isVirtual && (
+                  <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                    Varsayilan
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant={isFull ? "destructive" : isAlmostFull ? "secondary" : "outline"} className="text-xs">
                   <Clock className="w-3 h-3 mr-1" />
@@ -379,14 +400,16 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: Capacity; activity
                 </Badge>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => setEditOpen(true)} data-testid={`button-edit-capacity-${slot.id}`}>
-                <Edit2 className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteOpen(true)} data-testid={`button-delete-capacity-${slot.id}`}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+            {!isVirtual && (
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={() => setEditOpen(true)} data-testid={`button-edit-capacity-${slotId}`}>
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeleteOpen(true)} data-testid={`button-delete-capacity-${slotId}`}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
           
           <div className="space-y-2">
