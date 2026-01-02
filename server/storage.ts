@@ -21,6 +21,7 @@ import {
   holidays,
   autoResponses,
   customerRequests,
+  license,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -63,6 +64,8 @@ import {
   type InsertAutoResponse,
   type CustomerRequest,
   type InsertCustomerRequest,
+  type License,
+  type InsertLicense,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -207,6 +210,13 @@ export interface IStorage {
   getCustomerRequests(): Promise<CustomerRequest[]>;
   getCustomerRequest(id: number): Promise<CustomerRequest | undefined>;
   updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest>;
+
+  // License
+  getLicense(): Promise<License | undefined>;
+  createLicense(licenseData: InsertLicense): Promise<License>;
+  updateLicense(id: number, licenseData: Partial<InsertLicense>): Promise<License>;
+  verifyLicense(): Promise<{ valid: boolean; message: string; license?: License }>;
+  getLicenseUsage(): Promise<{ activitiesUsed: number; reservationsThisMonth: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1407,6 +1417,91 @@ export class DatabaseStorage implements IStorage {
   async updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest> {
     const [updated] = await db.update(customerRequests).set(data).where(eq(customerRequests.id, id)).returning();
     return updated;
+  }
+
+  // License
+  async getLicense(): Promise<License | undefined> {
+    const [currentLicense] = await db.select().from(license).limit(1);
+    return currentLicense;
+  }
+
+  async createLicense(licenseData: InsertLicense): Promise<License> {
+    // First delete any existing license (only one allowed)
+    await db.delete(license);
+    const [newLicense] = await db.insert(license).values(licenseData).returning();
+    return newLicense;
+  }
+
+  async updateLicense(id: number, licenseData: Partial<InsertLicense>): Promise<License> {
+    const [updated] = await db.update(license)
+      .set({ ...licenseData, updatedAt: new Date() })
+      .where(eq(license.id, id))
+      .returning();
+    return updated;
+  }
+
+  async verifyLicense(): Promise<{ valid: boolean; message: string; license?: License }> {
+    const currentLicense = await this.getLicense();
+    
+    if (!currentLicense) {
+      return { valid: false, message: "Lisans bulunamadi. Lutfen lisans bilgilerinizi girin." };
+    }
+
+    if (!currentLicense.isActive) {
+      return { valid: false, message: "Lisansiniz devre disi birakilmis.", license: currentLicense };
+    }
+
+    if (currentLicense.expiryDate && new Date(currentLicense.expiryDate) < new Date()) {
+      return { valid: false, message: "Lisansiniz suresi dolmus. Lutfen yenileyin.", license: currentLicense };
+    }
+
+    // Check usage limits
+    const usage = await this.getLicenseUsage();
+    
+    if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
+      return { 
+        valid: false, 
+        message: `Aktivite limitini astiniz (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lutfen planinizi yukseltin.`,
+        license: currentLicense 
+      };
+    }
+
+    if (currentLicense.maxReservationsPerMonth && usage.reservationsThisMonth > currentLicense.maxReservationsPerMonth) {
+      return { 
+        valid: false, 
+        message: `Aylik rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
+        license: currentLicense 
+      };
+    }
+
+    // Update last verified timestamp
+    await db.update(license)
+      .set({ lastVerifiedAt: new Date() })
+      .where(eq(license.id, currentLicense.id));
+
+    return { valid: true, message: "Lisans gecerli.", license: currentLicense };
+  }
+
+  async getLicenseUsage(): Promise<{ activitiesUsed: number; reservationsThisMonth: number }> {
+    // Count active activities
+    const activeActivities = await db.select().from(activities).where(eq(activities.active, true));
+    
+    // Count reservations this month
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    
+    const monthlyReservations = await db.select()
+      .from(reservations)
+      .where(and(
+        gte(reservations.date, firstDayOfMonth),
+        lte(reservations.date, lastDayOfMonth)
+      ));
+
+    return {
+      activitiesUsed: activeActivities.length,
+      reservationsThisMonth: monthlyReservations.length
+    };
   }
 }
 

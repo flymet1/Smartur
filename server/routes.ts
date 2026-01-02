@@ -3406,6 +3406,178 @@ Sky Fethiye`;
     }
   });
 
+  // === LICENSE & SUBSCRIPTION ===
+  
+  // Get current license
+  app.get("/api/license", async (req, res) => {
+    try {
+      const currentLicense = await storage.getLicense();
+      const usage = await storage.getLicenseUsage();
+      
+      if (!currentLicense) {
+        return res.json({ 
+          license: null, 
+          usage,
+          status: { valid: false, message: "Lisans bulunamadi" }
+        });
+      }
+      
+      const verification = await storage.verifyLicense();
+      res.json({ 
+        license: currentLicense, 
+        usage,
+        status: verification
+      });
+    } catch (err) {
+      console.error("Lisans bilgisi alinamadi:", err);
+      res.status(500).json({ error: "Lisans bilgisi alinamadi" });
+    }
+  });
+
+  // Verify license
+  app.get("/api/license/verify", async (req, res) => {
+    try {
+      const verification = await storage.verifyLicense();
+      res.json(verification);
+    } catch (err) {
+      console.error("Lisans dogrulama hatasi:", err);
+      res.status(500).json({ error: "Lisans dogrulanamadi" });
+    }
+  });
+
+  // Create/activate license
+  app.post("/api/license", async (req, res) => {
+    try {
+      const { licenseKey, agencyName, agencyEmail, agencyPhone, planType, expiryDate } = req.body;
+      
+      if (!licenseKey || !agencyName) {
+        return res.status(400).json({ error: "Lisans anahtari ve acenta adi zorunludur" });
+      }
+
+      // Define plan limits based on plan type
+      const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string }> = {
+        trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme" },
+        basic: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel" },
+        professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel" },
+        enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal" }
+      };
+
+      const plan = planLimits[planType || 'trial'] || planLimits.trial;
+      
+      const newLicense = await storage.createLicense({
+        licenseKey,
+        agencyName,
+        agencyEmail: agencyEmail || null,
+        agencyPhone: agencyPhone || null,
+        planType: planType || 'trial',
+        planName: plan.planName,
+        maxActivities: plan.maxActivities,
+        maxReservationsPerMonth: plan.maxReservationsPerMonth,
+        maxUsers: plan.maxUsers,
+        features: JSON.stringify([]),
+        startDate: new Date(),
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        isActive: true
+      });
+
+      res.status(201).json(newLicense);
+    } catch (err) {
+      console.error("Lisans olusturma hatasi:", err);
+      res.status(400).json({ error: "Lisans olusturulamadi" });
+    }
+  });
+
+  // Update license
+  app.patch("/api/license/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { agencyName, agencyEmail, agencyPhone, planType, expiryDate, isActive } = req.body;
+      
+      const updateData: Record<string, unknown> = {};
+      if (agencyName !== undefined) updateData.agencyName = agencyName;
+      if (agencyEmail !== undefined) updateData.agencyEmail = agencyEmail;
+      if (agencyPhone !== undefined) updateData.agencyPhone = agencyPhone;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      // If plan type changes, update limits too
+      if (planType !== undefined) {
+        const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string }> = {
+          trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme" },
+          basic: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel" },
+          professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel" },
+          enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal" }
+        };
+        const plan = planLimits[planType] || planLimits.trial;
+        updateData.planType = planType;
+        updateData.planName = plan.planName;
+        updateData.maxActivities = plan.maxActivities;
+        updateData.maxReservationsPerMonth = plan.maxReservationsPerMonth;
+        updateData.maxUsers = plan.maxUsers;
+      }
+      
+      if (expiryDate !== undefined) {
+        updateData.expiryDate = expiryDate ? new Date(expiryDate) : null;
+      }
+      
+      const updated = await storage.updateLicense(id, updateData);
+      res.json(updated);
+    } catch (err) {
+      console.error("Lisans guncelleme hatasi:", err);
+      res.status(400).json({ error: "Lisans guncellenemedi" });
+    }
+  });
+
+  // Renew license (extend expiry date)
+  app.post("/api/license/:id/renew", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { months = 1 } = req.body;
+      
+      const currentLicense = await storage.getLicense();
+      if (!currentLicense || currentLicense.id !== id) {
+        return res.status(404).json({ error: "Lisans bulunamadi" });
+      }
+      
+      // Calculate new expiry date
+      const currentExpiry = currentLicense.expiryDate ? new Date(currentLicense.expiryDate) : new Date();
+      const baseDate = currentExpiry < new Date() ? new Date() : currentExpiry;
+      const newExpiry = new Date(baseDate);
+      newExpiry.setMonth(newExpiry.getMonth() + months);
+      
+      const updated = await storage.updateLicense(id, { 
+        expiryDate: newExpiry,
+        isActive: true 
+      });
+      
+      res.json({ 
+        license: updated, 
+        message: `Lisansiniz ${months} ay uzatildi. Yeni bitis tarihi: ${newExpiry.toLocaleDateString('tr-TR')}` 
+      });
+    } catch (err) {
+      console.error("Lisans yenileme hatasi:", err);
+      res.status(400).json({ error: "Lisans yenilenemedi" });
+    }
+  });
+
+  // Get license usage statistics
+  app.get("/api/license/usage", async (req, res) => {
+    try {
+      const usage = await storage.getLicenseUsage();
+      const currentLicense = await storage.getLicense();
+      
+      res.json({
+        usage,
+        limits: currentLicense ? {
+          maxActivities: currentLicense.maxActivities,
+          maxReservationsPerMonth: currentLicense.maxReservationsPerMonth
+        } : null
+      });
+    } catch (err) {
+      console.error("Kullanim bilgisi alinamadi:", err);
+      res.status(500).json({ error: "Kullanim bilgisi alinamadi" });
+    }
+  });
+
   return httpServer;
 }
 
