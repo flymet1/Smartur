@@ -184,7 +184,8 @@ export default function Reservations() {
     .filter(r => {
       const matchesSearch = 
         r.customerName.toLowerCase().includes(search.toLowerCase()) || 
-        r.customerPhone.includes(search);
+        r.customerPhone.includes(search) ||
+        (r.orderNumber && r.orderNumber.toLowerCase().includes(search.toLowerCase()));
       const matchesStatus = statusFilter === "all" || r.status === statusFilter;
       const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
       const matchesDate = !dateFilter || r.date === dateFilter;
@@ -267,7 +268,7 @@ export default function Reservations() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Müşteri adı veya telefon ile ara..." 
+              placeholder="Müşteri adı, telefon veya sipariş numarası ile ara..." 
               className="pl-9 w-full" 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -406,6 +407,7 @@ function NewReservationDialog() {
     const customerName = formData.get("customerName") as string;
     const customerPhone = formData.get("customerPhone") as string;
     const customerEmail = formData.get("customerEmail") as string;
+    const orderNumber = formData.get("orderNumber") as string || undefined;
     const date = formData.get("date") as string;
     const quantity = Number(formData.get("quantity"));
     
@@ -416,6 +418,7 @@ function NewReservationDialog() {
           await createMutation.mutateAsync({
             activityId: activity.id,
             packageTourId: Number(selectedPackageId),
+            orderNumber,
             customerName,
             customerPhone,
             customerEmail,
@@ -430,6 +433,7 @@ function NewReservationDialog() {
       } else {
         await createMutation.mutateAsync({
           activityId: Number(formData.get("activityId")),
+          orderNumber,
           customerName,
           customerPhone,
           customerEmail,
@@ -507,9 +511,15 @@ function NewReservationDialog() {
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label>E-posta (İsteğe bağlı)</Label>
-            <Input name="customerEmail" type="email" placeholder="ornek@email.com" data-testid="input-customer-email" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>E-posta (İsteğe bağlı)</Label>
+              <Input name="customerEmail" type="email" placeholder="ornek@email.com" data-testid="input-customer-email" />
+            </div>
+            <div className="space-y-2">
+              <Label>Sipariş No (İsteğe bağlı)</Label>
+              <Input name="orderNumber" placeholder="örn: 1234" data-testid="input-order-number" />
+            </div>
           </div>
 
           {reservationType === "activity" ? (

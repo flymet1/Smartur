@@ -122,6 +122,7 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
+            <TableHead>Sipariş No</TableHead>
             <TableHead>Müşteri</TableHead>
             <TableHead>Aktivite & Tarih</TableHead>
             <TableHead>Kişi</TableHead>
@@ -133,13 +134,22 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
         <TableBody>
           {reservations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                 Henüz rezervasyon bulunmuyor.
               </TableCell>
             </TableRow>
           ) : (
             reservations.map((res) => (
               <TableRow key={res.id} className="hover:bg-muted/50">
+                <TableCell>
+                  {res.orderNumber ? (
+                    <Badge variant="outline" className="font-mono text-xs">
+                      #{res.orderNumber}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">-</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <div className="font-medium">{res.customerName}</div>
                   <div className="text-xs text-muted-foreground">{res.customerPhone}</div>

@@ -48,6 +48,7 @@ export const reservations = pgTable("reservations", {
   packageTourId: integer("package_tour_id"), // Paket tur rezervasyonu ise (null değilse bu bir paket tur ana kaydı)
   parentReservationId: integer("parent_reservation_id"), // Paket tur alt rezervasyonu ise ana rezervasyon ID'si
   agencyId: integer("agency_id"), // Hangi acentadan geldi (opsiyonel)
+  orderNumber: text("order_number"), // Sipariş numarası (WooCommerce'den gelir veya manuel girilir, paket turlarda ortak)
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone").notNull(),
   customerEmail: text("customer_email"),

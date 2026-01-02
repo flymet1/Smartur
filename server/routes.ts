@@ -1276,6 +1276,7 @@ export async function registerRoutes(
               activityId: ta.activityId,
               packageTourId: matchedPackageTour.id,
               parentReservationId: parentReservationId,
+              orderNumber: String(order.id),
               customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Musteri',
               customerPhone: order.billing?.phone || '',
               customerEmail: order.billing?.email || '',
@@ -1327,6 +1328,7 @@ export async function registerRoutes(
             
             await storage.createReservation({
               activityId: matchedActivity.id,
+              orderNumber: String(order.id),
               customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Musteri',
               customerPhone: order.billing?.phone || '',
               customerEmail: order.billing?.email || '',
