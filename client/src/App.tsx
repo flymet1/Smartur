@@ -20,6 +20,7 @@ import Support from "@/pages/Support";
 import CustomerTracking from "@/pages/CustomerTracking";
 import CustomerRequests from "@/pages/CustomerRequests";
 import Agencies from "@/pages/Agencies";
+import SalesPresentation from "@/pages/SalesPresentation";
 
 function Router() {
   return (
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/support" component={Support} />
       <Route path="/takip/:token" component={CustomerTracking} />
       <Route path="/customer-requests" component={CustomerRequests} />
+      <Route path="/sales-presentation" component={SalesPresentation} />
       <Route component={NotFound} />
     </Switch>
   );
