@@ -5,8 +5,10 @@ import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { Package } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Package, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface ReservationCalendarProps {
   reservations: Reservation[];
@@ -21,6 +23,15 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
 
   const { data: packageTours = [] } = useQuery<PackageTour[]>({
     queryKey: ['/api/package-tours']
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+    },
   });
 
   const getActivityName = (activityId: number | null) => {
@@ -41,17 +52,50 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
     ? getReservationsForDate(formattedDate) 
     : [];
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">Onaylı</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200">Beklemede</Badge>;
-      case 'cancelled':
-        return <Badge variant="destructive">İptal</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+  const getStatusBadge = (status: string, reservationId: number) => {
+    const statusConfig = {
+      confirmed: { label: "Onayli", className: "bg-green-100 text-green-700 hover:bg-green-200 border-green-200" },
+      pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200" },
+      cancelled: { label: "Iptal", className: "bg-red-100 text-red-700 hover:bg-red-200 border-red-200" },
+    };
+    const current = statusConfig[status as keyof typeof statusConfig] || { label: status, className: "" };
+    
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Badge 
+            className={`${current.className} cursor-pointer flex items-center gap-1`}
+            data-testid={`button-calendar-status-${reservationId}`}
+          >
+            {current.label}
+            <ChevronDown className="h-3 w-3" />
+          </Badge>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => statusMutation.mutate({ id: reservationId, status: 'pending' })}
+            className="text-yellow-700"
+            data-testid={`calendar-status-pending-${reservationId}`}
+          >
+            Beklemede
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => statusMutation.mutate({ id: reservationId, status: 'confirmed' })}
+            className="text-green-700"
+            data-testid={`calendar-status-confirmed-${reservationId}`}
+          >
+            Onayli
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => statusMutation.mutate({ id: reservationId, status: 'cancelled' })}
+            className="text-red-700"
+            data-testid={`calendar-status-cancelled-${reservationId}`}
+          >
+            Iptal
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
   };
 
   const getDatesWithReservations = () => {
@@ -210,7 +254,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                               <p className="font-medium">{first.customerName}</p>
                               <p className="text-sm text-muted-foreground">{first.customerPhone}</p>
                             </div>
-                            {getStatusBadge(first.status || 'pending')}
+                            {getStatusBadge(first.status || 'pending', first.id)}
                           </div>
                           <div className="space-y-2 pl-2 border-l-2 border-purple-300 dark:border-purple-600">
                             {items.map((res, idx) => (
@@ -248,7 +292,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                             </div>
                             <p className="text-sm text-muted-foreground">{res.customerPhone}</p>
                           </div>
-                          {getStatusBadge(res.status || 'pending')}
+                          {getStatusBadge(res.status || 'pending', res.id)}
                         </div>
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">
