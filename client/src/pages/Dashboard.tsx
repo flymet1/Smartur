@@ -3,7 +3,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
 import { useReservationStats, useReservations } from "@/hooks/use-reservations";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList, MessageSquare } from "lucide-react";
+import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList, MessageSquare, Shield, AlertTriangle, CheckCircle, CreditCard } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { 
@@ -107,6 +107,38 @@ export default function Dashboard() {
 
   const pendingRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
 
+  // License query
+  interface LicenseData {
+    license: {
+      id: number;
+      licenseKey: string;
+      agencyName: string;
+      planType: string;
+      planName: string;
+      maxActivities: number;
+      maxReservationsPerMonth: number;
+      expiryDate: string | null;
+      isActive: boolean;
+    } | null;
+    usage: {
+      activitiesUsed: number;
+      reservationsThisMonth: number;
+    };
+    status: {
+      valid: boolean;
+      message: string;
+    };
+  }
+
+  const { data: licenseData, isLoading: licenseLoading } = useQuery<LicenseData>({
+    queryKey: ['/api/license'],
+    queryFn: async () => {
+      const res = await fetch('/api/license');
+      return res.json();
+    },
+    refetchInterval: 60000,
+  });
+
   const chartData = detailedStats?.chartData || [];
 
   const handleBarClick = (data: any) => {
@@ -197,6 +229,98 @@ export default function Dashboard() {
             icon={TrendingUp} 
           />
         </div>
+
+        {/* License Status Card */}
+        <Card className="border" data-testid="card-license-status">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Uyelik Durumu
+            </CardTitle>
+            <Link href="/settings">
+              <Button variant="outline" size="sm" data-testid="button-manage-subscription">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Uyelik Yonetimi
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {licenseLoading ? (
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : licenseData?.license ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Status */}
+                <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
+                  {licenseData.status.valid ? (
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  ) : (
+                    <AlertTriangle className="w-8 h-8 text-orange-500" />
+                  )}
+                  <div>
+                    <p className="text-sm text-muted-foreground">Durum</p>
+                    <p className={`font-bold ${licenseData.status.valid ? 'text-green-600' : 'text-orange-600'}`} data-testid="text-license-status">
+                      {licenseData.status.valid ? 'Aktif' : 'Dikkat'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Plan */}
+                <div className="p-3 rounded-md bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Plan</p>
+                  <p className="font-bold" data-testid="text-license-plan">{licenseData.license.planName || 'Deneme'}</p>
+                  <Badge variant="secondary" className="mt-1">{licenseData.license.planType}</Badge>
+                </div>
+                
+                {/* Usage */}
+                <div className="p-3 rounded-md bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Kullanim</p>
+                  <div className="space-y-1 mt-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Aktivite:</span>
+                      <span className="font-medium" data-testid="text-activities-usage">
+                        {licenseData.usage.activitiesUsed}/{licenseData.license.maxActivities}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Aylik Rez.:</span>
+                      <span className="font-medium" data-testid="text-reservations-usage">
+                        {licenseData.usage.reservationsThisMonth}/{licenseData.license.maxReservationsPerMonth}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Expiry */}
+                <div className="p-3 rounded-md bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Bitis Tarihi</p>
+                  <p className="font-bold" data-testid="text-license-expiry">
+                    {licenseData.license.expiryDate 
+                      ? new Date(licenseData.license.expiryDate).toLocaleDateString('tr-TR')
+                      : 'Sinirsiz'}
+                  </p>
+                  {licenseData.license.expiryDate && new Date(licenseData.license.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) && (
+                    <Badge variant="destructive" className="mt-1">Yaklasıyor</Badge>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-md border border-orange-200 dark:border-orange-800">
+                <AlertTriangle className="w-8 h-8 text-orange-500" />
+                <div>
+                  <p className="font-bold text-orange-700 dark:text-orange-300">Lisans Bulunamadi</p>
+                  <p className="text-sm text-orange-600 dark:text-orange-400">Lutfen ayarlar sayfasindan lisans bilgilerinizi girin.</p>
+                </div>
+                <Link href="/settings">
+                  <Button variant="default" size="sm" data-testid="button-activate-license">
+                    Lisans Aktive Et
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
