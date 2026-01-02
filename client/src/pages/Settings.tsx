@@ -442,7 +442,7 @@ export default function Settings() {
               </div>
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                 <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Bu bilgiler Geliştirici Girişi sayfasına erişim için kullanılacaktır. Şifreyi güvenli bir yerde saklayın.
+                  Bu bilgiler yönetim paneline giriş için kullanılacaktır. Şifreyi güvenli bir yerde saklayın.
                 </p>
               </div>
             </CardContent>
