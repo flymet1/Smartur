@@ -1466,6 +1466,22 @@ export async function registerRoutes(
         return;
       }
 
+      // Check for auto-response match (keyword-based, no AI call = cost savings)
+      const autoResponseMatch = await storage.findMatchingAutoResponse(Body);
+      if (autoResponseMatch) {
+        // Save auto-response as assistant message
+        await storage.addMessage({
+          phone: From,
+          content: autoResponseMatch.response,
+          role: "assistant"
+        });
+        
+        // Return TwiML with matched response
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${autoResponseMatch.response}</Message></Response>`);
+        return;
+      }
+
       // Check if user has a reservation (by phone or order number in message)
       const orderNumberMatch = Body.match(/\b(\d{4,})\b/);
       const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;

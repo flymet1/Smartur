@@ -29,6 +29,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: Otomatik Yanıtlar - Anahtar kelime eşleşmesiyle AI çağırısı yapmadan hızlı yanıt sistemi eklendi. Maliyet tasarrufu ve daha hızlı yanıt süreleri. Ayarlar sayfasından yönetilebilir. Türkçe karakter normalleştirme (ı/i, ö/o, ü/u, ş/s, ç/c, ğ/g) desteklenir.
 - 02.01.2026: AI Bot Kararlılığı - Retry mekanizması (3 deneme, exponential backoff) ve akıllı fallback yanıtları eklendi. AI erişilemezse fiyat, müsaitlik, rezervasyon, iptal niyetlerine göre Türkçe yanıt verilir.
 - 02.01.2026: Sidebar Hızlı Erişim - "Bot Test" ve "Tatiller" menüden kaldırılıp, sidebar üstüne yan yana küçük kutucuklar olarak taşındı.
 - 02.01.2026: Güncellemeler Paneli - Ayarlara "Güncellemeler" kartı eklendi. Sistem sürümü, Git commit, çalışma süresi, Node.js versiyonu görüntülenir. "Güncelleme Kontrol Et" butonu ile GitHub'dan yeni güncelleme olup olmadığı kontrol edilir. VPS güncelleme talimatları gösterilir.
