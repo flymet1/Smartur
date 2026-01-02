@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Activities from "@/pages/Activities";
 import PackageTours from "@/pages/PackageTours";
+import Holidays from "@/pages/Holidays";
 import Reservations from "@/pages/Reservations";
 import CalendarPage from "@/pages/Calendar";
 import BotTest from "@/pages/BotTest";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/activities" component={Activities} />
       <Route path="/package-tours" component={PackageTours} />
+      <Route path="/holidays" component={Holidays} />
       <Route path="/reservations" component={Reservations} />
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/finance" component={Finance} />

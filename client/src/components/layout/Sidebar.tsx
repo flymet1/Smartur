@@ -8,7 +8,8 @@ import {
   MessageCircle,
   Menu,
   Calculator,
-  Package
+  Package,
+  CalendarHeart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/reservations", label: "Rezervasyonlar", icon: Ticket },
   { href: "/activities", label: "Aktiviteler", icon: Activity },
   { href: "/package-tours", label: "Paket Turlar", icon: Package },
+  { href: "/holidays", label: "Tatiller", icon: CalendarHeart },
   { href: "/finance", label: "Finans & Acentalar", icon: Calculator },
   { href: "/bot-test", label: "Bot Test", icon: MessageCircle },
   { href: "/messages", label: "Mesaj Geçmişi", icon: MessageCircle },
