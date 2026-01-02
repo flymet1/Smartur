@@ -192,7 +192,7 @@ export interface IStorage {
   createAutoResponse(autoResponse: InsertAutoResponse): Promise<AutoResponse>;
   updateAutoResponse(id: number, autoResponse: Partial<InsertAutoResponse>): Promise<AutoResponse>;
   deleteAutoResponse(id: number): Promise<void>;
-  findMatchingAutoResponse(message: string): Promise<AutoResponse | undefined>;
+  findMatchingAutoResponse(message: string): Promise<{ response: string; matchedLanguage: 'tr' | 'en' } | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1274,20 +1274,38 @@ export class DatabaseStorage implements IStorage {
       .trim();
   }
 
-  async findMatchingAutoResponse(message: string): Promise<AutoResponse | undefined> {
+  async findMatchingAutoResponse(message: string): Promise<{ response: string; matchedLanguage: 'tr' | 'en' } | undefined> {
     const allResponses = await db.select().from(autoResponses)
       .where(eq(autoResponses.isActive, true))
       .orderBy(desc(autoResponses.priority));
     
     const normalizedMessage = this.normalizeTurkish(message);
+    const messageLower = message.toLowerCase();
     
-    for (const response of allResponses) {
+    for (const autoResp of allResponses) {
+      // Check Turkish keywords first
       try {
-        const keywords: string[] = JSON.parse(response.keywords);
-        for (const keyword of keywords) {
+        const keywordsTr: string[] = JSON.parse(autoResp.keywords);
+        for (const keyword of keywordsTr) {
           const normalizedKeyword = this.normalizeTurkish(keyword);
           if (normalizedMessage.includes(normalizedKeyword)) {
-            return response;
+            return { response: autoResp.response, matchedLanguage: 'tr' };
+          }
+        }
+      } catch (e) {
+        // Invalid JSON, skip
+      }
+      
+      // Check English keywords
+      try {
+        const keywordsEn: string[] = JSON.parse(autoResp.keywordsEn || '[]');
+        for (const keyword of keywordsEn) {
+          if (messageLower.includes(keyword.toLowerCase())) {
+            // Return English response if available, otherwise Turkish
+            const responseText = autoResp.responseEn && autoResp.responseEn.trim() 
+              ? autoResp.responseEn 
+              : autoResp.response;
+            return { response: responseText, matchedLanguage: 'en' };
           }
         }
       } catch (e) {

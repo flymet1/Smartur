@@ -372,8 +372,10 @@ export type InsertHoliday = z.infer<typeof insertHolidaySchema>;
 export const autoResponses = pgTable("auto_responses", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(), // Kural adı (örn: "Fiyat Sorgusu")
-  keywords: text("keywords").notNull(), // JSON array of keywords ["fiyat", "ücret", "ne kadar"]
-  response: text("response").notNull(), // Otomatik gönderilecek yanıt
+  keywords: text("keywords").notNull(), // JSON array of Turkish keywords ["fiyat", "ücret", "ne kadar"]
+  keywordsEn: text("keywords_en").default("[]"), // JSON array of English keywords ["price", "cost", "how much"]
+  response: text("response").notNull(), // Türkçe yanıt
+  responseEn: text("response_en").default(""), // İngilizce yanıt
   priority: integer("priority").default(0), // Öncelik (yüksek = önce kontrol edilir)
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
