@@ -25,8 +25,12 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Onay Mesajları**: Her aktivite/paket tur için tanımlı onay mesajlarını müşteriye iletir
 - **Eskalasyon Sistemi**: Karmaşık sorunlarda destek talebi oluşturur, personel dashboard'dan takip eder
 - **SSS Desteği**: Aktivite ve paket turlara tanımlı SSS'leri yanıtlarda kullanır
+- **Retry Mekanizması**: AI hata verdiğinde otomatik yeniden deneme (3 deneme, exponential backoff)
+- **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: AI Bot Kararlılığı - Retry mekanizması (3 deneme, exponential backoff) ve akıllı fallback yanıtları eklendi. AI erişilemezse fiyat, müsaitlik, rezervasyon, iptal niyetlerine göre Türkçe yanıt verilir.
+- 02.01.2026: Sidebar Hızlı Erişim - "Bot Test" ve "Tatiller" menüden kaldırılıp, sidebar üstüne yan yana küçük kutucuklar olarak taşındı.
 - 02.01.2026: Güncellemeler Paneli - Ayarlara "Güncellemeler" kartı eklendi. Sistem sürümü, Git commit, çalışma süresi, Node.js versiyonu görüntülenir. "Güncelleme Kontrol Et" butonu ile GitHub'dan yeni güncelleme olup olmadığı kontrol edilir. VPS güncelleme talimatları gösterilir.
 - 02.01.2026: Sipariş Numarası Alanı - Rezervasyonlara orderNumber alanı eklendi. Manuel girişte opsiyonel, WooCommerce'den otomatik alınır, paket tur aktivitelerinde ortak sipariş numarası kullanılır. Arama fonksiyonunda sipariş numarası ile aranabilir.
 - 02.01.2026: Takvim-Rezervasyon Entegrasyonu - Takvim sayfasından "Bu Günün Rezervasyonları" butonu ile seçili tarihin rezervasyonlarına hızlı erişim. Rezervasyonlar sayfasında tarih filtresi ve görsel gösterge.
