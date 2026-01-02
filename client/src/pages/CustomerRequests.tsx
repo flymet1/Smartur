@@ -8,10 +8,18 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Check, X, Clock, RefreshCw, ArrowLeft, Send } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MessageSquare, Check, X, Clock, RefreshCw, ArrowLeft, Send, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+
+interface Agency {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+}
 
 interface CustomerRequest {
   id: number;
@@ -36,6 +44,12 @@ export default function CustomerRequests() {
   const [selectedRequest, setSelectedRequest] = useState<CustomerRequest | null>(null);
   const [notifyMessage, setNotifyMessage] = useState("");
   const [isSendingNotification, setIsSendingNotification] = useState(false);
+  
+  // Agency notification state
+  const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string>("");
+  const [agencyMessage, setAgencyMessage] = useState("");
+  const [isSendingAgencyNotification, setIsSendingAgencyNotification] = useState(false);
 
   const { data: customerRequests, isLoading, refetch } = useQuery<CustomerRequest[]>({
     queryKey: ['/api/customer-requests'],
@@ -44,6 +58,10 @@ export default function CustomerRequests() {
       return res.json();
     },
     refetchInterval: 30000,
+  });
+
+  const { data: agencies } = useQuery<Agency[]>({
+    queryKey: ['/api/agencies'],
   });
 
   const [pendingNotification, setPendingNotification] = useState<{ id: number; status: string } | null>(null);
@@ -133,6 +151,79 @@ export default function CustomerRequests() {
       toast({ title: "Hata", description: errorMsg, variant: "destructive" });
     } finally {
       setIsSendingNotification(false);
+    }
+  };
+
+  // Agency notification functions
+  const generateAgencyMessage = (request: CustomerRequest) => {
+    const requestTypeText = getRequestTypeText(request.requestType);
+    let message = `Musteri Talep Bildirimi\n\n`;
+    message += `Musteri: ${request.customerName}\n`;
+    message += `Talep: ${requestTypeText}\n`;
+    
+    if (request.status === 'approved') {
+      message += `Durum: Onaylandi\n`;
+      if (request.requestType === 'time_change' && request.preferredTime) {
+        message += `Yeni Saat: ${request.preferredTime}\n`;
+      }
+    } else if (request.status === 'rejected') {
+      message += `Durum: Reddedildi\n`;
+    } else {
+      message += `Durum: Beklemede\n`;
+    }
+    
+    if (request.requestDetails) {
+      message += `\nDetay: ${request.requestDetails}\n`;
+    }
+    
+    message += `\nSky Fethiye`;
+    return message;
+  };
+
+  const openAgencyDialog = (request: CustomerRequest) => {
+    setSelectedRequest(request);
+    setAgencyMessage(generateAgencyMessage(request));
+    setSelectedAgencyId("");
+    setAgencyDialogOpen(true);
+  };
+
+  const sendAgencyNotification = async () => {
+    if (!selectedAgencyId) {
+      toast({ title: "Hata", description: "Lutfen bir acenta secin.", variant: "destructive" });
+      return;
+    }
+    
+    const selectedAgency = agencies?.find(a => String(a.id) === selectedAgencyId);
+    if (!selectedAgency?.phone) {
+      toast({ title: "Hata", description: "Secilen acentanin telefon numarasi bulunamadi.", variant: "destructive" });
+      return;
+    }
+    
+    setIsSendingAgencyNotification(true);
+    try {
+      const response = await fetch('/api/send-whatsapp-custom-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: selectedAgency.phone,
+          message: agencyMessage
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'WhatsApp mesaji gonderilemedi');
+      }
+      
+      toast({ title: "Basarili", description: `${selectedAgency.name} acentasina bildirim gonderildi.` });
+      setAgencyDialogOpen(false);
+      setSelectedRequest(null);
+      setSelectedAgencyId("");
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesaji gonderilemedi';
+      toast({ title: "Hata", description: errorMsg, variant: "destructive" });
+    } finally {
+      setIsSendingAgencyNotification(false);
     }
   };
 
@@ -288,6 +379,18 @@ export default function CustomerRequests() {
                             Bilgilendir
                           </Button>
                         )}
+                        {agencies && agencies.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-orange-600 border-orange-200 dark:border-orange-800"
+                            onClick={() => openAgencyDialog(request)}
+                            data-testid={`button-notify-agency-${request.id}`}
+                          >
+                            <Building2 className="w-4 h-4 mr-1" />
+                            Acentayi Bilgilendir
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -344,6 +447,75 @@ export default function CustomerRequests() {
                 data-testid="button-send-notification"
               >
                 {isSendingNotification ? "Gonderiliyor..." : "WhatsApp ile Gonder"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={agencyDialogOpen} onOpenChange={setAgencyDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-orange-600" />
+                Acentayi Bilgilendir
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {selectedRequest && (
+                <div className="text-sm space-y-1 p-3 bg-muted/50 rounded-lg">
+                  <p><span className="text-muted-foreground">Musteri:</span> {selectedRequest.customerName}</p>
+                  <p><span className="text-muted-foreground">Talep:</span> {getRequestTypeText(selectedRequest.requestType)}</p>
+                  <p><span className="text-muted-foreground">Durum:</span> {selectedRequest.status === 'approved' ? 'Onaylandi' : selectedRequest.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="agencySelect">Acenta Secin</Label>
+                <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
+                  <SelectTrigger data-testid="select-agency">
+                    <SelectValue placeholder="Acenta secin..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agencies?.filter(a => a.phone).map((agency) => (
+                      <SelectItem key={agency.id} value={String(agency.id)}>
+                        {agency.name} {agency.phone ? `(${agency.phone})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {agencies?.filter(a => a.phone).length === 0 && (
+                  <p className="text-xs text-orange-600">Telefon numarasi olan acenta bulunamadi.</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agencyMessage">WhatsApp Mesaji</Label>
+                <Textarea
+                  id="agencyMessage"
+                  value={agencyMessage}
+                  onChange={(e) => setAgencyMessage(e.target.value)}
+                  rows={8}
+                  className="resize-none"
+                  placeholder="Acentaya gonderilecek mesaj..."
+                  data-testid="textarea-agency-message"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Mesaji duzenleyebilir veya varsayilan metni kullanabilirsiniz.
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setAgencyDialogOpen(false)}
+                disabled={isSendingAgencyNotification}
+              >
+                Iptal
+              </Button>
+              <Button
+                onClick={sendAgencyNotification}
+                disabled={isSendingAgencyNotification || !agencyMessage.trim() || !selectedAgencyId}
+                data-testid="button-send-agency-notification"
+              >
+                {isSendingAgencyNotification ? "Gonderiliyor..." : "WhatsApp ile Gonder"}
               </Button>
             </DialogFooter>
           </DialogContent>
