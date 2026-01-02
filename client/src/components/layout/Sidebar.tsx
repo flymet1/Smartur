@@ -269,17 +269,6 @@ export function Sidebar() {
               Destek
             </div>
           </Link>
-          <Link href="/bot-test">
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
-              location === "/bot-test"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )} data-testid="link-bot-test">
-              <MessageCircle className="h-4 w-4" />
-              Bot Test
-            </div>
-          </Link>
           <Link href="/bot-rules">
             <div className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
