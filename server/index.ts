@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { storage } from "./storage";
 
 const app = express();
 const httpServer = createServer(app);
@@ -93,6 +94,23 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      
+      // Daily cleanup job for expired tracking tokens
+      // Runs every 24 hours (86400000 ms)
+      const runCleanup = async () => {
+        try {
+          const count = await storage.cleanupExpiredTrackingTokens();
+          if (count > 0) {
+            log(`Cleaned up ${count} expired tracking tokens`, 'cleanup');
+          }
+        } catch (error) {
+          log(`Error cleaning up tracking tokens: ${error}`, 'cleanup');
+        }
+      };
+      
+      // Run cleanup on startup and then every 24 hours
+      runCleanup();
+      setInterval(runCleanup, 24 * 60 * 60 * 1000);
     },
   );
 })();

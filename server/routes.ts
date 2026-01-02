@@ -1211,6 +1211,7 @@ export async function registerRoutes(
       }
       
       // Return only necessary information (no sensitive data)
+      // Note: priceTl and priceUsd are stored as integers in the database
       res.json({
         customerName: reservation.customerName,
         activityName,
@@ -1218,9 +1219,9 @@ export async function registerRoutes(
         time: reservation.time,
         quantity: reservation.quantity,
         status: reservation.status,
-        priceTl: reservation.priceTl,
-        priceUsd: reservation.priceUsd,
-        currency: reservation.currency,
+        priceTl: reservation.priceTl || 0,
+        priceUsd: reservation.priceUsd || 0,
+        currency: reservation.currency || 'TRY',
         orderNumber: reservation.orderNumber
       });
     } catch (error) {

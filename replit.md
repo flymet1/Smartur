@@ -29,6 +29,8 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: Müşteri Rezervasyon Takip Sistemi - Müşterilere benzersiz takip linki gönderilerek rezervasyon durumlarını görmeleri sağlanır. Token tabanlı güvenlik, aktivite tarihinden 1 gün sonra otomatik temizleme. Mobil uyumlu takip sayfası (/takip/:token). Günlük otomatik temizleme job'ı.
+- 02.01.2026: Şifre Değiştirme Güvenliği - Ayarlar sayfasında şifre değiştirirken onay alanı eklendi. Şifreler eşleşmezse kaydetmeye izin verilmez.
 - 02.01.2026: Hata Ayıklama (Debug Snapshot) - Ayarlar sayfasına "Hata Ayıklama" kartı eklendi. Tek tıkla tüm sistem verilerini toplayan rapor oluşturulur (aktiviteler, rezervasyonlar, loglar, ayarlar). Sistem sağlığı otomatik kontrol edilir (AI hataları, webhook sorunları). İndirilebilir JSON rapor ile geliştirici destek alınabilir. Müşteri bilgileri otomatik gizlenir.
 - 02.01.2026: Sistem Logları - Geliştirici paneline sistem logları görüntüleme eklendi. AI hataları, webhook hataları ve sistem olayları kaydedilir. Destek taleplerine son 20 log otomatik eklenir. PII verileri (telefon, e-posta, API anahtarları) maskelenir.
 - 02.01.2026: İki Dilli Otomatik Yanıtlar - Her kural için ayrı Türkçe ve İngilizce anahtar kelimeler ve yanıtlar destekleniyor. Türkçe soru gelirse Türkçe, İngilizce soru gelirse İngilizce yanıt verilir. Ayarlar sayfasında TR/EN sekmeleri ile yönetim. İngilizce yanıt boşsa Türkçe yanıt kullanılır.
