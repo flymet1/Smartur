@@ -3,7 +3,9 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
 import { useReservationStats, useReservations } from "@/hooks/use-reservations";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin } from "lucide-react";
+import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList } from "lucide-react";
+import { Link } from "wouter";
+import { format } from "date-fns";
 import { 
   BarChart, 
   Bar, 
@@ -133,9 +135,17 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">Genel Bakış</h1>
             <p className="text-muted-foreground mt-1">Hoş geldiniz, bugünün operasyon özeti.</p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-card px-4 py-2 rounded-full border shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            Sistem Aktif
+          <div className="flex items-center gap-3">
+            <Link href={`/reservations?date=${format(new Date(), "yyyy-MM-dd")}`}>
+              <Button variant="outline" data-testid="button-today-reservations">
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Bugünün Rezervasyonları
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-card px-4 py-2 rounded-full border shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              Sistem Aktif
+            </div>
           </div>
         </div>
 
