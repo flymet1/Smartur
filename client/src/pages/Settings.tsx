@@ -1382,7 +1382,9 @@ type AutoResponse = {
   id: number;
   name: string;
   keywords: string;
+  keywordsEn: string | null;
   response: string;
+  responseEn: string | null;
   priority: number | null;
   isActive: boolean | null;
   createdAt: Date | null;
@@ -1394,16 +1396,19 @@ function AutoResponsesCard() {
   const [editingItem, setEditingItem] = useState<AutoResponse | null>(null);
   const [formName, setFormName] = useState("");
   const [formKeywords, setFormKeywords] = useState("");
+  const [formKeywordsEn, setFormKeywordsEn] = useState("");
   const [formResponse, setFormResponse] = useState("");
+  const [formResponseEn, setFormResponseEn] = useState("");
   const [formPriority, setFormPriority] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+  const [activeTab, setActiveTab] = useState<'tr' | 'en'>('tr');
 
   const { data: autoResponses = [], isLoading } = useQuery<AutoResponse[]>({
     queryKey: ['/api/auto-responses']
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; keywords: string; response: string; priority: number; isActive: boolean }) => 
+    mutationFn: async (data: { name: string; keywords: string; keywordsEn: string; response: string; responseEn: string; priority: number; isActive: boolean }) => 
       apiRequest('POST', '/api/auto-responses', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auto-responses'] });
@@ -1417,7 +1422,7 @@ function AutoResponsesCard() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { name: string; keywords: string; response: string; priority: number; isActive: boolean } }) => 
+    mutationFn: async ({ id, data }: { id: number; data: { name: string; keywords: string; keywordsEn: string; response: string; responseEn: string; priority: number; isActive: boolean } }) => 
       apiRequest('PATCH', `/api/auto-responses/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auto-responses'] });
@@ -1444,10 +1449,13 @@ function AutoResponsesCard() {
   const resetForm = () => {
     setFormName("");
     setFormKeywords("");
+    setFormKeywordsEn("");
     setFormResponse("");
+    setFormResponseEn("");
     setFormPriority(0);
     setFormIsActive(true);
     setEditingItem(null);
+    setActiveTab('tr');
   };
 
   const handleOpenDialog = (item?: AutoResponse) => {
@@ -1460,31 +1468,43 @@ function AutoResponsesCard() {
       } catch {
         setFormKeywords("");
       }
+      try {
+        const keywordsEn = JSON.parse(item.keywordsEn || '[]');
+        setFormKeywordsEn(Array.isArray(keywordsEn) ? keywordsEn.join(", ") : "");
+      } catch {
+        setFormKeywordsEn("");
+      }
       setFormResponse(item.response);
+      setFormResponseEn(item.responseEn || "");
       setFormPriority(item.priority || 0);
       setFormIsActive(item.isActive !== false);
     } else {
       resetForm();
     }
+    setActiveTab('tr');
     setDialogOpen(true);
   };
 
   const handleSubmit = () => {
     if (!formName.trim() || !formKeywords.trim() || !formResponse.trim()) {
-      toast({ title: "Hata", description: "Tum alanlar zorunludur.", variant: "destructive" });
+      toast({ title: "Hata", description: "Turkce alanlar zorunludur.", variant: "destructive" });
       return;
     }
 
     const keywordsArray = formKeywords.split(",").map(k => k.trim()).filter(k => k);
     if (keywordsArray.length === 0) {
-      toast({ title: "Hata", description: "En az bir anahtar kelime girmelisiniz.", variant: "destructive" });
+      toast({ title: "Hata", description: "En az bir Turkce anahtar kelime girmelisiniz.", variant: "destructive" });
       return;
     }
+
+    const keywordsEnArray = formKeywordsEn.split(",").map(k => k.trim()).filter(k => k);
 
     const data = {
       name: formName.trim(),
       keywords: JSON.stringify(keywordsArray),
+      keywordsEn: JSON.stringify(keywordsEnArray),
       response: formResponse.trim(),
+      responseEn: formResponseEn.trim(),
       priority: formPriority,
       isActive: formIsActive
     };
@@ -1531,8 +1551,12 @@ function AutoResponsesCard() {
           <div className="space-y-3">
             {autoResponses.map((item) => {
               let keywords: string[] = [];
+              let keywordsEn: string[] = [];
               try {
                 keywords = JSON.parse(item.keywords);
+              } catch {}
+              try {
+                keywordsEn = JSON.parse(item.keywordsEn || '[]');
               } catch {}
               
               return (
@@ -1568,12 +1592,25 @@ function AutoResponsesCard() {
                       </Button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {keywords.map((kw, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {kw}
-                      </Badge>
-                    ))}
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap gap-1 items-center">
+                      <span className="text-xs text-muted-foreground">TR:</span>
+                      {keywords.map((kw, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {kw}
+                        </Badge>
+                      ))}
+                    </div>
+                    {keywordsEn.length > 0 && (
+                      <div className="flex flex-wrap gap-1 items-center">
+                        <span className="text-xs text-muted-foreground">EN:</span>
+                        {keywordsEn.map((kw, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {kw}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2">{item.response}</p>
                 </div>
@@ -1602,31 +1639,89 @@ function AutoResponsesCard() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="auto-keywords">Anahtar Kelimeler (virgul ile ayirin)</Label>
-                  <Input
-                    id="auto-keywords"
-                    value={formKeywords}
-                    onChange={(e) => setFormKeywords(e.target.value)}
-                    placeholder="fiyat, ucret, ne kadar, kac para"
-                    data-testid="input-auto-keywords"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Turkce karakter farki gozetilmez (i/ı, o/ö, u/ü, s/ş, c/ç, g/ğ)
-                  </p>
+                <div className="flex gap-1 border-b">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={`rounded-none border-b-2 ${activeTab === 'tr' ? 'border-primary' : 'border-transparent'}`}
+                    onClick={() => setActiveTab('tr')}
+                    data-testid="tab-tr"
+                  >
+                    Turkce
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={`rounded-none border-b-2 ${activeTab === 'en' ? 'border-primary' : 'border-transparent'}`}
+                    onClick={() => setActiveTab('en')}
+                    data-testid="tab-en"
+                  >
+                    English
+                  </Button>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="auto-response">Yanit Metni</Label>
-                  <Textarea
-                    id="auto-response"
-                    value={formResponse}
-                    onChange={(e) => setFormResponse(e.target.value)}
-                    placeholder="Merhaba! Fiyatlarimiz hakkinda bilgi almak icin..."
-                    rows={4}
-                    data-testid="input-auto-response"
-                  />
-                </div>
+                {activeTab === 'tr' ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="auto-keywords">Turkce Anahtar Kelimeler (virgul ile ayirin)</Label>
+                      <Input
+                        id="auto-keywords"
+                        value={formKeywords}
+                        onChange={(e) => setFormKeywords(e.target.value)}
+                        placeholder="fiyat, ucret, ne kadar, kac para"
+                        data-testid="input-auto-keywords"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Turkce karakter farki gozetilmez (i/ı, o/ö, u/ü, s/ş, c/ç, g/ğ)
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="auto-response">Turkce Yanit</Label>
+                      <Textarea
+                        id="auto-response"
+                        value={formResponse}
+                        onChange={(e) => setFormResponse(e.target.value)}
+                        placeholder="Merhaba! Fiyatlarimiz hakkinda bilgi almak icin..."
+                        rows={4}
+                        data-testid="input-auto-response"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="auto-keywords-en">English Keywords (comma separated)</Label>
+                      <Input
+                        id="auto-keywords-en"
+                        value={formKeywordsEn}
+                        onChange={(e) => setFormKeywordsEn(e.target.value)}
+                        placeholder="price, cost, how much"
+                        data-testid="input-auto-keywords-en"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Optional - leave empty if no English support needed
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="auto-response-en">English Response</Label>
+                      <Textarea
+                        id="auto-response-en"
+                        value={formResponseEn}
+                        onChange={(e) => setFormResponseEn(e.target.value)}
+                        placeholder="Hello! For price information..."
+                        rows={4}
+                        data-testid="input-auto-response-en"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        If empty, Turkish response will be used for English queries
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">

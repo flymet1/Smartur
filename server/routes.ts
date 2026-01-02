@@ -2712,7 +2712,7 @@ export async function registerRoutes(
 
   app.post("/api/auto-responses", async (req, res) => {
     try {
-      const { name, keywords, response, priority, isActive } = req.body;
+      const { name, keywords, keywordsEn, response, responseEn, priority, isActive } = req.body;
       
       if (!name || !keywords || !response) {
         return res.status(400).json({ error: "Kural adi, anahtar kelimeler ve yanit metni zorunlu" });
@@ -2728,10 +2728,24 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Anahtar kelimeler gecerli bir JSON dizisi olmali" });
       }
       
+      // Validate English keywords JSON if provided
+      if (keywordsEn) {
+        try {
+          const parsedKeywordsEn = JSON.parse(keywordsEn);
+          if (!Array.isArray(parsedKeywordsEn)) {
+            return res.status(400).json({ error: "Ingilizce anahtar kelimeler bir dizi olmali" });
+          }
+        } catch {
+          return res.status(400).json({ error: "Ingilizce anahtar kelimeler gecerli bir JSON dizisi olmali" });
+        }
+      }
+      
       const autoResponse = await storage.createAutoResponse({
         name,
         keywords,
+        keywordsEn: keywordsEn || "[]",
         response,
+        responseEn: responseEn || "",
         priority: priority ?? 0,
         isActive: isActive ?? true
       });
@@ -2746,7 +2760,7 @@ export async function registerRoutes(
   app.patch("/api/auto-responses/:id", async (req, res) => {
     try {
       const id = Number(req.params.id);
-      const { name, keywords, response, priority, isActive } = req.body;
+      const { name, keywords, keywordsEn, response, responseEn, priority, isActive } = req.body;
       
       // Validate keywords JSON if provided
       if (keywords !== undefined) {
@@ -2760,10 +2774,24 @@ export async function registerRoutes(
         }
       }
       
+      // Validate English keywords JSON if provided
+      if (keywordsEn !== undefined && keywordsEn !== "") {
+        try {
+          const parsedKeywordsEn = JSON.parse(keywordsEn);
+          if (!Array.isArray(parsedKeywordsEn)) {
+            return res.status(400).json({ error: "Ingilizce anahtar kelimeler bir dizi olmali" });
+          }
+        } catch {
+          return res.status(400).json({ error: "Ingilizce anahtar kelimeler gecerli bir JSON dizisi olmali" });
+        }
+      }
+      
       const updateData: Record<string, unknown> = {};
       if (name !== undefined) updateData.name = name;
       if (keywords !== undefined) updateData.keywords = keywords;
+      if (keywordsEn !== undefined) updateData.keywordsEn = keywordsEn;
       if (response !== undefined) updateData.response = response;
+      if (responseEn !== undefined) updateData.responseEn = responseEn;
       if (priority !== undefined) updateData.priority = priority;
       if (isActive !== undefined) updateData.isActive = isActive;
       
