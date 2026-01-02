@@ -29,6 +29,8 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: Lisans/Üyelik Sistemi - 4 plan tipi (trial/basic/professional/enterprise) ile lisans yönetimi eklendi. Dashboard'da üyelik durumu kartı, API endpoint'leri ve otomatik yenileme sistemi. Aktivite ve rezervasyon limitleri plan bazında kontrol ediliyor.
+- 02.01.2026: Menü Düzenlemesi - Tatiller ayarlar sayfasına yeni sekme olarak taşındı. Bot Test sidebar alt kısmına taşındı. Hızlı erişim sadece Müşteri Talepleri ve Destek gösteriyor.
 - 02.01.2026: Acenta Bildirim Özelliği - Müşteri talepleri sayfasında "Acentayı Bilgilendir" butonu eklendi. Acenta seçimi dropdown ile yapılabilir. Düzenlenebilir mesaj içeriği. Telefon numarası olan acentalar listelenir.
 - 02.01.2026: Dinamik Onay Mesajı - WhatsApp bildirimi artık aktivite/paket tur'daki "Rezervasyon Onay Mesajı" alanından çekiliyor. {isim}, {tarih}, {saat}, {aktivite} yer tutucuları otomatik değiştiriliyor.
 - 02.01.2026: Müşteri Talepleri Bildirim - Müşteri talepleri sayfasında her talepte "Bilgilendir" butonu eklendi. Onay/red sonrası otomatik WhatsApp bildirim dialogu açılır. Dinamik mesaj şablonu (talep tipi, durum, tercih edilen saat) ile özelleştirilebilir metin. Twilio API ile gönderim.
