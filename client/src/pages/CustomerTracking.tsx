@@ -1,8 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send } from "lucide-react";
+import { useState } from "react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface TrackingData {
   customerName: string;
@@ -17,13 +24,49 @@ interface TrackingData {
   orderNumber: string | null;
 }
 
+type RequestType = 'time_change' | 'cancellation' | 'other' | null;
+
 export default function CustomerTracking() {
   const params = useParams<{ token: string }>();
   const token = params.token;
+  const { toast } = useToast();
+  
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestType, setRequestType] = useState<RequestType>(null);
+  const [preferredTime, setPreferredTime] = useState("");
+  const [requestDetails, setRequestDetails] = useState("");
+  const [requestSent, setRequestSent] = useState(false);
 
   const { data: reservation, isLoading, error } = useQuery<TrackingData>({
     queryKey: ['/api/track', token],
     enabled: !!token,
+  });
+
+  const submitRequestMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/customer-requests', {
+        token,
+        requestType,
+        preferredTime: requestType === 'time_change' ? preferredTime : undefined,
+        requestDetails: requestDetails || undefined,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setRequestSent(true);
+      setShowRequestForm(false);
+      toast({
+        title: "Talep Gonderildi",
+        description: "Talebiniz basariyla iletildi. En kisa surede size donecegiz.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Hata",
+        description: "Talep gonderilemedi. Lutfen tekrar deneyin.",
+        variant: "destructive",
+      });
+    },
   });
 
   const formatDate = (dateStr: string) => {
@@ -71,6 +114,18 @@ export default function CustomerTracking() {
     }
   };
 
+  const handleRequestClick = (type: RequestType) => {
+    setRequestType(type);
+    setShowRequestForm(true);
+    setPreferredTime("");
+    setRequestDetails("");
+  };
+
+  const handleSubmitRequest = () => {
+    if (!requestType) return;
+    submitRequestMutation.mutate();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-muted/20 flex items-center justify-center p-4">
@@ -105,102 +160,255 @@ export default function CustomerTracking() {
 
   return (
     <div className="min-h-screen bg-muted/20 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg" data-testid="card-reservation-tracking">
-        <CardHeader className="text-center border-b pb-6">
-          <div className="mx-auto mb-4">
-            {reservation.status === 'confirmed' ? (
-              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+      <div className="w-full max-w-lg space-y-4">
+        <Card data-testid="card-reservation-tracking">
+          <CardHeader className="text-center border-b pb-6">
+            <div className="mx-auto mb-4">
+              {reservation.status === 'confirmed' ? (
+                <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                </div>
+              ) : reservation.status === 'pending' ? (
+                <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+                  <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                  <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+                </div>
+              )}
+            </div>
+            <CardTitle className="text-2xl" data-testid="text-customer-name">
+              Merhaba, {reservation.customerName}
+            </CardTitle>
+            <p className="text-muted-foreground mt-2">Rezervasyon Detaylari</p>
+          </CardHeader>
+          
+          <CardContent className="pt-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Durum</span>
+              {getStatusBadge(reservation.status)}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium" data-testid="text-activity-name">{reservation.activityName}</p>
+                  {reservation.orderNumber && (
+                    <p className="text-sm text-muted-foreground">Siparis No: {reservation.orderNumber}</p>
+                  )}
+                </div>
               </div>
-            ) : reservation.status === 'pending' ? (
-              <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+
+              <div className="flex items-center gap-3">
+                <CalendarDays className="w-5 h-5 text-primary shrink-0" />
+                <div>
+                  <p className="font-medium" data-testid="text-date">{formatDate(reservation.date)}</p>
+                </div>
               </div>
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-primary shrink-0" />
+                <div>
+                  <p className="font-medium" data-testid="text-time">{reservation.time}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-primary shrink-0" />
+                <div>
+                  <p className="font-medium" data-testid="text-quantity">{reservation.quantity} Kisi</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Toplam Tutar</span>
+                <span className="text-xl font-semibold" data-testid="text-price">
+                  {formatPrice(reservation.priceTl, reservation.priceUsd, reservation.currency)}
+                </span>
+              </div>
+            </div>
+
+            {reservation.status === 'confirmed' && (
+              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                <p className="text-green-800 dark:text-green-300 text-sm">
+                  Rezervasyonunuz onaylandi! Belirtilen tarih ve saatte sizi bekliyoruz.
+                </p>
               </div>
             )}
-          </div>
-          <CardTitle className="text-2xl" data-testid="text-customer-name">
-            Merhaba, {reservation.customerName}
-          </CardTitle>
-          <p className="text-muted-foreground mt-2">Rezervasyon Detaylari</p>
-        </CardHeader>
-        
-        <CardContent className="pt-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Durum</span>
-            {getStatusBadge(reservation.status)}
-          </div>
 
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-              <div>
-                <p className="font-medium" data-testid="text-activity-name">{reservation.activityName}</p>
-                {reservation.orderNumber && (
-                  <p className="text-sm text-muted-foreground">Siparis No: {reservation.orderNumber}</p>
-                )}
+            {reservation.status === 'pending' && (
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-center">
+                <p className="text-amber-800 dark:text-amber-300 text-sm">
+                  Rezervasyonunuz beklemede. En kisa surede size donecegiz.
+                </p>
               </div>
-            </div>
+            )}
 
-            <div className="flex items-center gap-3">
-              <CalendarDays className="w-5 h-5 text-primary shrink-0" />
-              <div>
-                <p className="font-medium" data-testid="text-date">{formatDate(reservation.date)}</p>
+            {reservation.status === 'cancelled' && (
+              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
+                <p className="text-red-800 dark:text-red-300 text-sm">
+                  Rezervasyonunuz iptal edilmistir. Sorulariniz icin bizimle iletisime gecebilirsiniz.
+                </p>
               </div>
-            </div>
+            )}
+          </CardContent>
+        </Card>
 
-            <div className="flex items-center gap-3">
-              <Clock className="w-5 h-5 text-primary shrink-0" />
-              <div>
-                <p className="font-medium" data-testid="text-time">{reservation.time}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Users className="w-5 h-5 text-primary shrink-0" />
-              <div>
-                <p className="font-medium" data-testid="text-quantity">{reservation.quantity} Kisi</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Toplam Tutar</span>
-              <span className="text-xl font-semibold" data-testid="text-price">
-                {formatPrice(reservation.priceTl, reservation.priceUsd, reservation.currency)}
-              </span>
-            </div>
-          </div>
-
-          {reservation.status === 'confirmed' && (
-            <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
-              <p className="text-green-800 dark:text-green-300 text-sm">
-                Rezervasyonunuz onaylandi! Belirtilen tarih ve saatte sizi bekliyoruz.
+        {/* Request Actions */}
+        {reservation.status !== 'cancelled' && !requestSent && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Talep Olustur
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Rezervasyonunuzla ilgili degisiklik veya iptal talebi olusturabilirsiniz.
               </p>
-            </div>
-          )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!showRequestForm ? (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 h-auto py-3"
+                    onClick={() => handleRequestClick('time_change')}
+                    data-testid="button-time-change"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    <span className="text-sm">Saat Degistir</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 h-auto py-3 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950"
+                    onClick={() => handleRequestClick('cancellation')}
+                    data-testid="button-cancellation"
+                  >
+                    <Ban className="w-4 h-4" />
+                    <span className="text-sm">Iptal Et</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 h-auto py-3"
+                    onClick={() => handleRequestClick('other')}
+                    data-testid="button-other-request"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span className="text-sm">Diger Talep</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    {requestType === 'time_change' && (
+                      <>
+                        <Edit3 className="w-4 h-4 text-primary" />
+                        Saat Degisikligi Talebi
+                      </>
+                    )}
+                    {requestType === 'cancellation' && (
+                      <>
+                        <Ban className="w-4 h-4 text-red-500" />
+                        Iptal Talebi
+                      </>
+                    )}
+                    {requestType === 'other' && (
+                      <>
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                        Diger Talep
+                      </>
+                    )}
+                  </div>
 
-          {reservation.status === 'pending' && (
-            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-center">
-              <p className="text-amber-800 dark:text-amber-300 text-sm">
-                Rezervasyonunuz beklemede. En kisa surede size donecegiz.
-              </p>
-            </div>
-          )}
+                  {requestType === 'time_change' && (
+                    <div className="space-y-2">
+                      <Label>Tercih Ettiginiz Saat</Label>
+                      <Select value={preferredTime} onValueChange={setPreferredTime}>
+                        <SelectTrigger data-testid="select-preferred-time">
+                          <SelectValue placeholder="Saat secin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="09:00">09:00</SelectItem>
+                          <SelectItem value="10:00">10:00</SelectItem>
+                          <SelectItem value="11:00">11:00</SelectItem>
+                          <SelectItem value="12:00">12:00</SelectItem>
+                          <SelectItem value="13:00">13:00</SelectItem>
+                          <SelectItem value="14:00">14:00</SelectItem>
+                          <SelectItem value="15:00">15:00</SelectItem>
+                          <SelectItem value="16:00">16:00</SelectItem>
+                          <SelectItem value="17:00">17:00</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
-          {reservation.status === 'cancelled' && (
-            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
-              <p className="text-red-800 dark:text-red-300 text-sm">
-                Rezervasyonunuz iptal edilmistir. Sorulariniz icin bizimle iletisime gecebilirsiniz.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  <div className="space-y-2">
+                    <Label>
+                      {requestType === 'cancellation' ? 'Iptal Sebebi (Opsiyonel)' : 'Ek Aciklama (Opsiyonel)'}
+                    </Label>
+                    <Textarea
+                      placeholder={
+                        requestType === 'cancellation' 
+                          ? "Iptal sebebinizi yazabilirsiniz..." 
+                          : "Talebinizle ilgili ek bilgi..."
+                      }
+                      value={requestDetails}
+                      onChange={(e) => setRequestDetails(e.target.value)}
+                      rows={3}
+                      data-testid="textarea-request-details"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowRequestForm(false)}
+                      className="flex-1"
+                      data-testid="button-cancel-request"
+                    >
+                      Vazgec
+                    </Button>
+                    <Button
+                      onClick={handleSubmitRequest}
+                      disabled={submitRequestMutation.isPending || (requestType === 'time_change' && !preferredTime)}
+                      className="flex-1"
+                      data-testid="button-submit-request"
+                    >
+                      {submitRequestMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <Send className="w-4 h-4 mr-2" />
+                      )}
+                      Gonder
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Request Sent Confirmation */}
+        {requestSent && (
+          <Card className="border-green-200 dark:border-green-800">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3 text-green-700 dark:text-green-400">
+                <CheckCircle className="w-6 h-6 shrink-0" />
+                <div>
+                  <p className="font-medium">Talebiniz Alindi</p>
+                  <p className="text-sm text-muted-foreground">
+                    En kisa surede size donecegiz. Tesekkur ederiz.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

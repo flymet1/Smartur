@@ -109,6 +109,23 @@ export const supportRequestLogs = pgTable("support_request_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Müşteri Talepleri (Takip sayfasından gelen talepler)
+export const customerRequests = pgTable("customer_requests", {
+  id: serial("id").primaryKey(),
+  reservationId: integer("reservation_id").references(() => reservations.id).notNull(),
+  requestType: text("request_type").notNull(), // time_change, cancellation, other
+  requestDetails: text("request_details"), // Talep detayları
+  preferredTime: text("preferred_time"), // Saat değişikliği için tercih edilen saat
+  customerName: text("customer_name").notNull(),
+  customerPhone: text("customer_phone"),
+  customerEmail: text("customer_email"),
+  status: text("status").default("pending"), // pending, approved, rejected
+  adminNotes: text("admin_notes"), // Admin notları
+  emailSent: boolean("email_sent").default(false), // E-posta gönderildi mi
+  createdAt: timestamp("created_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
   key: text("key").notNull().unique(),
@@ -315,6 +332,7 @@ export const insertMessageSchema = createInsertSchema(messages).omit({ id: true,
 export const insertSupportRequestSchema = createInsertSchema(supportRequests).omit({ id: true, createdAt: true, resolvedAt: true });
 export const insertSystemLogSchema = createInsertSchema(systemLogs).omit({ id: true, createdAt: true });
 export const insertSupportRequestLogSchema = createInsertSchema(supportRequestLogs).omit({ id: true, createdAt: true });
+export const insertCustomerRequestSchema = createInsertSchema(customerRequests).omit({ id: true, createdAt: true, processedAt: true });
 
 // === TYPES ===
 export type Activity = typeof activities.$inferSelect;
@@ -337,6 +355,9 @@ export type InsertSystemLog = z.infer<typeof insertSystemLogSchema>;
 
 export type SupportRequestLog = typeof supportRequestLogs.$inferSelect;
 export type InsertSupportRequestLog = z.infer<typeof insertSupportRequestLogSchema>;
+
+export type CustomerRequest = typeof customerRequests.$inferSelect;
+export type InsertCustomerRequest = z.infer<typeof insertCustomerRequestSchema>;
 
 export type Settings = typeof settings.$inferSelect;
 export const insertSettingsSchema = createInsertSchema(settings).omit({ id: true });

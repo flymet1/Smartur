@@ -20,6 +20,7 @@ import {
   packageTourActivities,
   holidays,
   autoResponses,
+  customerRequests,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -60,6 +61,8 @@ import {
   type InsertPackageTourActivity,
   type AutoResponse,
   type InsertAutoResponse,
+  type CustomerRequest,
+  type InsertCustomerRequest,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -198,6 +201,12 @@ export interface IStorage {
   getReservationByTrackingToken(token: string): Promise<Reservation | undefined>;
   generateTrackingToken(reservationId: number): Promise<string>;
   cleanupExpiredTrackingTokens(): Promise<number>;
+
+  // Customer Requests
+  createCustomerRequest(request: InsertCustomerRequest): Promise<CustomerRequest>;
+  getCustomerRequests(): Promise<CustomerRequest[]>;
+  getCustomerRequest(id: number): Promise<CustomerRequest | undefined>;
+  updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1378,6 +1387,26 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return result.length;
+  }
+
+  // Customer Requests
+  async createCustomerRequest(request: InsertCustomerRequest): Promise<CustomerRequest> {
+    const [newRequest] = await db.insert(customerRequests).values(request).returning();
+    return newRequest;
+  }
+
+  async getCustomerRequests(): Promise<CustomerRequest[]> {
+    return await db.select().from(customerRequests).orderBy(desc(customerRequests.createdAt));
+  }
+
+  async getCustomerRequest(id: number): Promise<CustomerRequest | undefined> {
+    const [request] = await db.select().from(customerRequests).where(eq(customerRequests.id, id));
+    return request;
+  }
+
+  async updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest> {
+    const [updated] = await db.update(customerRequests).set(data).where(eq(customerRequests.id, id)).returning();
+    return updated;
   }
 }
 

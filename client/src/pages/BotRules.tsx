@@ -5,12 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Lock, Save, ArrowLeft, Eye, EyeOff, Mail, FileText, AlertCircle, AlertTriangle, Info, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Shield, Lock, Save, ArrowLeft, Eye, EyeOff, Mail, FileText, AlertCircle, AlertTriangle, Info, RefreshCw, ChevronDown, ChevronUp, MessageSquare, Check, X, Clock } from "lucide-react";
 import { Link } from "wouter";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { apiRequest } from "@/lib/queryClient";
 
 const DEFAULT_BOT_RULES = `1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
@@ -49,6 +50,22 @@ export default function BotRules() {
     createdAt: string;
   }
 
+  interface CustomerRequest {
+    id: number;
+    reservationId: number;
+    requestType: string;
+    requestDetails: string | null;
+    preferredTime: string | null;
+    customerName: string;
+    customerPhone: string | null;
+    customerEmail: string | null;
+    status: string;
+    adminNotes: string | null;
+    emailSent: boolean | null;
+    createdAt: string;
+    processedAt: string | null;
+  }
+
   // Load developer email setting
   const { data: emailSetting } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'developerEmail'],
@@ -69,6 +86,54 @@ export default function BotRules() {
     enabled: isAuthenticated,
     refetchInterval: 30000,
   });
+
+  // Load customer requests
+  const { data: customerRequests, isLoading: requestsLoading, refetch: refetchRequests } = useQuery<CustomerRequest[]>({
+    queryKey: ['/api/customer-requests'],
+    queryFn: async () => {
+      const res = await fetch('/api/customer-requests');
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    refetchInterval: 30000,
+  });
+
+  // Update customer request status
+  const updateRequestMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const res = await apiRequest('PATCH', `/api/customer-requests/${id}`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customer-requests'] });
+      toast({ title: "Basarili", description: "Talep durumu guncellendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
+    },
+  });
+
+  const getRequestTypeText = (type: string) => {
+    switch (type) {
+      case 'time_change': return 'Saat Degisikligi';
+      case 'cancellation': return 'Iptal Talebi';
+      case 'other': return 'Diger Talep';
+      default: return type;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="gap-1"><Clock className="w-3 h-3" />Beklemede</Badge>;
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-700 gap-1"><Check className="w-3 h-3" />Onaylandi</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-700 gap-1"><X className="w-3 h-3" />Reddedildi</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
 
   useEffect(() => {
     if (emailSetting?.value) {
@@ -439,6 +504,109 @@ export default function BotRules() {
                         )}
                       </div>
                     </Collapsible>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Musteri Talepleri
+                {customerRequests && customerRequests.filter(r => r.status === 'pending').length > 0 && (
+                  <Badge variant="destructive" className="text-xs">
+                    {customerRequests.filter(r => r.status === 'pending').length} yeni
+                  </Badge>
+                )}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => refetchRequests()}
+                disabled={requestsLoading}
+                data-testid="button-refresh-requests"
+              >
+                <RefreshCw className={`h-4 w-4 ${requestsLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              Musteri takip sayfasindan gelen talepler (saat degisikligi, iptal vb.)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {requestsLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            ) : !customerRequests || customerRequests.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                Henuz musteri talebi yok
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-3">
+                  {customerRequests.map((request) => (
+                    <div key={request.id} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium">{request.customerName}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {getRequestTypeText(request.requestType)}
+                            </Badge>
+                            {getStatusBadge(request.status)}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {request.customerPhone && <span>{request.customerPhone}</span>}
+                            {request.customerEmail && <span className="ml-2">{request.customerEmail}</span>}
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {new Date(request.createdAt).toLocaleString('tr-TR')}
+                        </span>
+                      </div>
+                      
+                      {request.requestType === 'time_change' && request.preferredTime && (
+                        <div className="text-sm bg-blue-50 dark:bg-blue-950/30 p-2 rounded">
+                          <span className="text-muted-foreground">Tercih edilen saat:</span>{' '}
+                          <span className="font-medium">{request.preferredTime}</span>
+                        </div>
+                      )}
+                      
+                      {request.requestDetails && (
+                        <p className="text-sm bg-muted/50 p-2 rounded">{request.requestDetails}</p>
+                      )}
+                      
+                      {request.status === 'pending' && (
+                        <div className="flex gap-2 pt-2 border-t">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            onClick={() => updateRequestMutation.mutate({ id: request.id, status: 'approved' })}
+                            disabled={updateRequestMutation.isPending}
+                            data-testid={`button-approve-${request.id}`}
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Onayla
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => updateRequestMutation.mutate({ id: request.id, status: 'rejected' })}
+                            disabled={updateRequestMutation.isPending}
+                            data-testid={`button-reject-${request.id}`}
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Reddet
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </ScrollArea>

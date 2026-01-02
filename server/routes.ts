@@ -1265,6 +1265,148 @@ export async function registerRoutes(
     }
   });
 
+  // === Customer Requests (from tracking page) ===
+  
+  // Create customer request (public - via tracking token)
+  app.post("/api/customer-requests", async (req, res) => {
+    try {
+      const { token, requestType, requestDetails, preferredTime } = req.body;
+      
+      if (!token || !requestType) {
+        return res.status(400).json({ error: "Token ve talep tipi gerekli" });
+      }
+      
+      // Verify token and get reservation
+      const reservation = await storage.getReservationByTrackingToken(token);
+      if (!reservation) {
+        return res.status(404).json({ error: "Gecersiz veya suresi dolmus takip linki" });
+      }
+      
+      // Create the request
+      const customerRequest = await storage.createCustomerRequest({
+        reservationId: reservation.id,
+        requestType,
+        requestDetails: requestDetails || null,
+        preferredTime: preferredTime || null,
+        customerName: reservation.customerName,
+        customerPhone: reservation.customerPhone,
+        customerEmail: reservation.customerEmail || null,
+        status: "pending",
+        emailSent: false,
+      });
+      
+      // Get activity name for email
+      let activityName = "Bilinmiyor";
+      if (reservation.activityId) {
+        const activity = await storage.getActivity(reservation.activityId);
+        if (activity) activityName = activity.name;
+      }
+      
+      // Try to send email notification to admin
+      try {
+        const developerEmail = await storage.getSetting("developerEmail");
+        if (developerEmail) {
+          const requestTypeText = requestType === 'time_change' ? 'Saat Degisikligi' : 
+                                  requestType === 'cancellation' ? 'Iptal Talebi' : 'Diger Talep';
+          
+          const emailBody = `
+Yeni Musteri Talebi
+
+Talep Tipi: ${requestTypeText}
+Musteri: ${reservation.customerName}
+Telefon: ${reservation.customerPhone}
+E-posta: ${reservation.customerEmail || '-'}
+
+Rezervasyon Bilgileri:
+- Aktivite: ${activityName}
+- Tarih: ${reservation.date}
+- Saat: ${reservation.time}
+- Kisi Sayisi: ${reservation.quantity}
+
+${requestType === 'time_change' && preferredTime ? `Tercih Edilen Saat: ${preferredTime}` : ''}
+${requestDetails ? `Ek Aciklama: ${requestDetails}` : ''}
+
+---
+Bu talep musteri takip sayfasindan gonderilmistir.
+          `.trim();
+          
+          // Send email using nodemailer (if configured)
+          const gmailUser = await storage.getSetting("gmailUser");
+          const gmailAppPasswordEncrypted = await storage.getSetting("gmailAppPassword");
+          
+          if (gmailUser && gmailAppPasswordEncrypted) {
+            const nodemailer = await import("nodemailer");
+            const { decrypt } = await import("./encryption");
+            
+            const gmailAppPassword = decrypt(gmailAppPasswordEncrypted);
+            
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: gmailUser,
+                pass: gmailAppPassword,
+              },
+            });
+            
+            await transporter.sendMail({
+              from: gmailUser,
+              to: developerEmail,
+              subject: `[Musteri Talebi] ${requestTypeText} - ${reservation.customerName}`,
+              text: emailBody,
+            });
+            
+            // Mark email as sent
+            await storage.updateCustomerRequest(customerRequest.id, { emailSent: true });
+          }
+        }
+      } catch (emailError) {
+        console.error("Failed to send customer request email:", emailError);
+        // Don't fail the request, just log the error
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Talebiniz basariyla iletildi. En kisa surede size donecegiz.",
+        requestId: customerRequest.id
+      });
+    } catch (error) {
+      console.error("Create customer request error:", error);
+      res.status(500).json({ error: "Talep olusturulamadi" });
+    }
+  });
+
+  // Get all customer requests (admin)
+  app.get("/api/customer-requests", async (req, res) => {
+    try {
+      const requests = await storage.getCustomerRequests();
+      res.json(requests);
+    } catch (error) {
+      console.error("Get customer requests error:", error);
+      res.status(500).json({ error: "Talepler alinamadi" });
+    }
+  });
+
+  // Update customer request status (admin)
+  app.patch("/api/customer-requests/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status, adminNotes } = req.body;
+      
+      const updateData: any = {};
+      if (status) updateData.status = status;
+      if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+      if (status === 'approved' || status === 'rejected') {
+        updateData.processedAt = new Date();
+      }
+      
+      const updated = await storage.updateCustomerRequest(id, updateData);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update customer request error:", error);
+      res.status(500).json({ error: "Talep guncellenemedi" });
+    }
+  });
+
   // === Webhooks ===
   app.post(api.webhooks.woocommerce.path, async (req, res) => {
     try {
