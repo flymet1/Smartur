@@ -11,7 +11,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Settings() {
@@ -49,6 +49,13 @@ export default function Settings() {
   const [botAccessTransfer, setBotAccessTransfer] = useState(true);
   const [botAccessExtras, setBotAccessExtras] = useState(true);
   const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
+  
+  // Gmail Settings
+  const [gmailUser, setGmailUser] = useState("");
+  const [gmailPassword, setGmailPassword] = useState("");
+  const [showGmailPassword, setShowGmailPassword] = useState(false);
+  const [isTestingGmail, setIsTestingGmail] = useState(false);
+  const [isSavingGmail, setIsSavingGmail] = useState(false);
 
   const { data: sidebarLogoSetting, refetch: refetchLogo } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'sidebarLogo'],
@@ -75,6 +82,22 @@ export default function Settings() {
       return res.json();
     },
   });
+
+  // Load Gmail settings
+  const { data: gmailSettings, refetch: refetchGmailSettings } = useQuery<{ gmailUser: string; isConfigured: boolean }>({
+    queryKey: ['/api/gmail-settings'],
+    queryFn: async () => {
+      const res = await fetch('/api/gmail-settings');
+      return res.json();
+    },
+  });
+
+  // Apply loaded Gmail settings
+  useEffect(() => {
+    if (gmailSettings?.gmailUser) {
+      setGmailUser(gmailSettings.gmailUser);
+    }
+  }, [gmailSettings?.gmailUser]);
 
   // Apply loaded bot access settings when data arrives (using useEffect)
   useEffect(() => {
@@ -153,6 +176,67 @@ export default function Settings() {
       toast({ title: "Başarılı", description: "Logo kaldırıldı." });
     } catch (err) {
       toast({ title: "Hata", description: "Logo kaldırılamadı.", variant: "destructive" });
+    }
+  };
+
+  const handleSaveGmailSettings = async () => {
+    if (!gmailUser || !gmailPassword) {
+      toast({ title: "Hata", description: "Gmail adresi ve uygulama şifresi gerekli.", variant: "destructive" });
+      return;
+    }
+    
+    setIsSavingGmail(true);
+    try {
+      const res = await fetch('/api/gmail-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gmailUser, gmailPassword })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast({ title: "Başarılı", description: data.message || "Gmail ayarları kaydedildi." });
+        setGmailPassword("");
+        await refetchGmailSettings();
+      } else {
+        toast({ title: "Hata", description: data.error || "Gmail ayarları kaydedilemedi.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Gmail ayarları kaydedilemedi.", variant: "destructive" });
+    } finally {
+      setIsSavingGmail(false);
+    }
+  };
+
+  const handleTestGmailConnection = async () => {
+    setIsTestingGmail(true);
+    try {
+      const res = await fetch('/api/gmail-settings/test', { method: 'POST' });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast({ title: "Başarılı", description: data.message || "Gmail bağlantısı başarılı!" });
+      } else {
+        toast({ title: "Hata", description: data.error || "Gmail bağlantısı başarısız.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Gmail bağlantısı test edilemedi.", variant: "destructive" });
+    } finally {
+      setIsTestingGmail(false);
+    }
+  };
+
+  const handleDisconnectGmail = async () => {
+    try {
+      const res = await fetch('/api/gmail-settings', { method: 'DELETE' });
+      if (res.ok) {
+        toast({ title: "Başarılı", description: "Gmail bağlantısı kaldırıldı." });
+        setGmailUser("");
+        setGmailPassword("");
+        await refetchGmailSettings();
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Gmail bağlantısı kaldırılamadı.", variant: "destructive" });
     }
   };
 
@@ -361,6 +445,138 @@ export default function Settings() {
                   Bu bilgiler Geliştirici Girişi sayfasına erişim için kullanılacaktır. Şifreyi güvenli bir yerde saklayın.
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                Gmail E-posta Ayarları
+              </CardTitle>
+              <CardDescription>
+                Destek talepleri ve bildirimler için Gmail hesabınızı bağlayın
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {gmailSettings?.isConfigured ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <div className="flex-1">
+                      <p className="font-medium text-green-800 dark:text-green-300">Gmail Bağlı</p>
+                      <p className="text-sm text-green-700 dark:text-green-400">{gmailSettings.gmailUser}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={handleTestGmailConnection}
+                      disabled={isTestingGmail}
+                      data-testid="button-test-gmail"
+                    >
+                      {isTestingGmail ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4 mr-2" />
+                      )}
+                      Bağlantıyı Test Et
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={handleDisconnectGmail}
+                      className="text-destructive"
+                      data-testid="button-disconnect-gmail"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Bağlantıyı Kaldır
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-800 dark:text-amber-300">Gmail Bağlı Değil</p>
+                      <p className="text-sm text-amber-700 dark:text-amber-400">
+                        E-posta bildirimleri göndermek için Gmail hesabınızı bağlayın.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="gmailUser">Gmail Adresi</Label>
+                      <Input 
+                        id="gmailUser"
+                        type="email"
+                        value={gmailUser}
+                        onChange={(e) => setGmailUser(e.target.value)}
+                        placeholder="ornek@gmail.com"
+                        data-testid="input-gmail-user"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gmailPassword">Uygulama Şifresi</Label>
+                      <div className="relative">
+                        <Input 
+                          id="gmailPassword"
+                          type={showGmailPassword ? "text" : "password"}
+                          value={gmailPassword}
+                          onChange={(e) => setGmailPassword(e.target.value)}
+                          placeholder="16 karakterlik uygulama şifresi"
+                          data-testid="input-gmail-password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3"
+                          onClick={() => setShowGmailPassword(!showGmailPassword)}
+                          data-testid="button-toggle-gmail-password"
+                        >
+                          {showGmailPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
+                    <p className="font-medium">Uygulama Şifresi Nasıl Alınır?</p>
+                    <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                      <li>
+                        <a 
+                          href="https://myaccount.google.com/security" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          Google Hesap Güvenliği
+                        </a>
+                        {" "}sayfasına gidin
+                      </li>
+                      <li>2 Adımlı Doğrulama'yı açın (açık değilse)</li>
+                      <li>"Uygulama şifreleri" bölümüne gidin</li>
+                      <li>"My Smartur" adıyla yeni şifre oluşturun</li>
+                      <li>16 karakterlik şifreyi kopyalayın</li>
+                    </ol>
+                  </div>
+                  
+                  <Button
+                    onClick={handleSaveGmailSettings}
+                    disabled={isSavingGmail || !gmailUser || !gmailPassword}
+                    data-testid="button-save-gmail"
+                  >
+                    {isSavingGmail ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4 mr-2" />
+                    )}
+                    Gmail'i Bağla
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

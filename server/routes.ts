@@ -1649,8 +1649,8 @@ export async function registerRoutes(
 
   app.delete("/api/gmail-settings", async (req, res) => {
     try {
-      await storage.setSetting('gmailUser', null);
-      await storage.setSetting('gmailPasswordEncrypted', null);
+      await storage.setSetting('gmailUser', '');
+      await storage.setSetting('gmailPasswordEncrypted', '');
       
       res.json({ success: true, message: "Gmail bağlantısı kaldırıldı" });
     } catch (err) {
