@@ -1179,6 +1179,91 @@ export async function registerRoutes(
     }
   });
 
+  // === Customer Tracking ===
+  
+  // Get reservation by tracking token (public endpoint for customers)
+  app.get("/api/track/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token || token.length < 10) {
+        return res.status(400).json({ error: "Gecersiz takip kodu" });
+      }
+      
+      const reservation = await storage.getReservationByTrackingToken(token);
+      
+      if (!reservation) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadi veya takip suresi dolmus" });
+      }
+      
+      // Get activity details
+      let activityName = "Bilinmeyen Aktivite";
+      if (reservation.activityId) {
+        const activity = await storage.getActivity(reservation.activityId);
+        if (activity) {
+          activityName = activity.name;
+        }
+      } else if (reservation.packageTourId) {
+        const packageTour = await storage.getPackageTour(reservation.packageTourId);
+        if (packageTour) {
+          activityName = packageTour.name + " (Paket Tur)";
+        }
+      }
+      
+      // Return only necessary information (no sensitive data)
+      res.json({
+        customerName: reservation.customerName,
+        activityName,
+        date: reservation.date,
+        time: reservation.time,
+        quantity: reservation.quantity,
+        status: reservation.status,
+        priceTl: reservation.priceTl,
+        priceUsd: reservation.priceUsd,
+        currency: reservation.currency,
+        orderNumber: reservation.orderNumber
+      });
+    } catch (error) {
+      console.error("Track reservation error:", error);
+      res.status(500).json({ error: "Rezervasyon bilgileri alinamadi" });
+    }
+  });
+
+  // Generate tracking token for a reservation (admin only)
+  app.post("/api/reservations/:id/generate-tracking", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Gecersiz rezervasyon ID" });
+      }
+      
+      const token = await storage.generateTrackingToken(id);
+      
+      res.json({ 
+        token,
+        trackingUrl: `/takip/${token}`
+      });
+    } catch (error: any) {
+      console.error("Generate tracking token error:", error);
+      res.status(500).json({ error: error.message || "Token olusturulamadi" });
+    }
+  });
+
+  // Cleanup expired tracking tokens (can be called by a cron job)
+  app.post("/api/tracking/cleanup", async (req, res) => {
+    try {
+      const count = await storage.cleanupExpiredTrackingTokens();
+      res.json({ 
+        success: true, 
+        message: `${count} suresi dolmus takip kodu temizlendi` 
+      });
+    } catch (error) {
+      console.error("Cleanup tracking tokens error:", error);
+      res.status(500).json({ error: "Temizleme basarisiz" });
+    }
+  });
+
   // === Webhooks ===
   app.post(api.webhooks.woocommerce.path, async (req, res) => {
     try {
