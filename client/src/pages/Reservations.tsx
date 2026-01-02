@@ -4,9 +4,9 @@ import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { ReservationCalendar } from "@/components/reservations/ReservationCalendar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,16 +23,30 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import type { PackageTour, Activity } from "@shared/schema";
+import { useSearch, useLocation } from "wouter";
+import { format, parse } from "date-fns";
+import { tr } from "date-fns/locale";
 
 export default function Reservations() {
   const { data: reservations, isLoading } = useReservations();
   const { data: activities } = useActivities();
+  const searchParams = useSearch();
+  const [, setLocation] = useLocation();
+  const urlDate = new URLSearchParams(searchParams).get("date");
+  
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activityFilter, setActivityFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>(urlDate || "");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name">("date-desc");
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (urlDate) {
+      setDateFilter(urlDate);
+    }
+  }, [urlDate]);
 
   // Export to CSV
   const exportToCSV = () => {
@@ -160,6 +174,11 @@ export default function Reservations() {
     toast({ title: "Başarılı", description: "PDF için yazdırma penceresi açıldı." });
   };
 
+  const clearDateFilter = () => {
+    setDateFilter("");
+    setLocation("/reservations");
+  };
+
   // Filter ve sort
   const filteredReservations = (reservations || [])
     .filter(r => {
@@ -168,7 +187,8 @@ export default function Reservations() {
         r.customerPhone.includes(search);
       const matchesStatus = statusFilter === "all" || r.status === statusFilter;
       const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
-      return matchesSearch && matchesStatus && matchesActivity;
+      const matchesDate = !dateFilter || r.date === dateFilter;
+      return matchesSearch && matchesStatus && matchesActivity && matchesDate;
     })
     .sort((a, b) => {
       if (sortBy === "date-desc") return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -208,6 +228,39 @@ export default function Reservations() {
             <NewReservationDialog />
           </div>
         </div>
+
+        {/* Tarih Filtresi Göstergesi */}
+        {dateFilter && (
+          <Card className="p-3 bg-primary/5 border-primary/20">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">
+                  {(() => {
+                    try {
+                      const parsedDate = parse(dateFilter, "yyyy-MM-dd", new Date());
+                      return format(parsedDate, "d MMMM yyyy, EEEE", { locale: tr });
+                    } catch {
+                      return dateFilter;
+                    }
+                  })()}
+                </span>
+                <Badge variant="secondary" className="text-xs">
+                  {filteredReservations.length} rezervasyon
+                </Badge>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearDateFilter}
+                data-testid="button-clear-date-filter"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Filtreyi Kaldır
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Arama Barı */}
         <Card className="p-4">

@@ -8,7 +8,8 @@ import { useActivities } from "@/hooks/use-activities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Calendar, Users, Clock, TrendingUp, Filter, CalendarDays, LayoutGrid, Trash2 } from "lucide-react";
+import { Plus, Edit2, Calendar, Users, Clock, TrendingUp, Filter, CalendarDays, LayoutGrid, Trash2, ClipboardList } from "lucide-react";
+import { Link } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -246,6 +247,13 @@ export default function CalendarPage() {
                 />
               </CardContent>
             </Card>
+
+            <Link href={`/reservations?date=${format(date, "yyyy-MM-dd")}`}>
+              <Button variant="outline" className="w-full" data-testid="button-view-reservations">
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Bu Günün Rezervasyonları
+              </Button>
+            </Link>
 
           </div>
 
