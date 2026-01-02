@@ -13,7 +13,15 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Globe
+  Globe,
+  Zap,
+  HelpCircle,
+  Search,
+  Bell,
+  Shield,
+  BarChart3,
+  FileText,
+  Languages
 } from "lucide-react";
 
 export default function UserGuide() {
@@ -27,279 +35,379 @@ export default function UserGuide() {
             Kullanım Kılavuzu
           </h1>
           <p className="text-muted-foreground mt-2">
-            Sistem fonksiyonları, WhatsApp bot ve admin panel kullanım rehberi
+            Rezervasyon sisteminizi en verimli şekilde kullanmak için rehber
           </p>
         </div>
 
         <div className="space-y-8">
           <Section 
             icon={<Globe className="h-5 w-5" />}
-            title="1. Sistem Genel Bakış"
-            id="genel-bakis"
+            title="1. Sisteme Hoş Geldiniz"
+            id="hos-geldiniz"
           >
             <p className="text-muted-foreground mb-4">
-              Bu sistem, tur ve aktivite operasyonlarınızı yönetmek için tasarlanmış kapsamlı bir platformdur.
-              WooCommerce web sitesi entegrasyonu ve WhatsApp bot desteği ile müşterilerinize 7/24 hizmet verebilirsiniz.
+              Bu sistem, tur ve aktivite operasyonlarınızı kolayca yönetmenizi sağlar.
+              Web sitenizden gelen siparişler otomatik olarak sisteme akar ve WhatsApp botunuz 
+              müşterilerinize 7/24 hizmet verir.
             </p>
             
             <div className="grid md:grid-cols-2 gap-4">
               <FeatureCard 
                 icon={<ShoppingCart className="h-5 w-5 text-blue-500" />}
-                title="WooCommerce Entegrasyonu"
-                description="Web sitenizdeki siparişler otomatik olarak sisteme akar. Ödemesi yapılmış siparişler 'Onaylı' durumunda kaydedilir."
+                title="Otomatik Sipariş Aktarımı"
+                description="Web sitenizdeki siparişler anında sisteme aktarılır. Ödemesi tamamlanan siparişler otomatik onaylanır."
               />
               <FeatureCard 
                 icon={<MessageCircle className="h-5 w-5 text-green-500" />}
-                title="WhatsApp Bot"
-                description="Müşteri sorularını otomatik yanıtlar, müsaitlik bilgisi verir ve web sitesine yönlendirir."
+                title="Akıllı WhatsApp Asistanı"
+                description="Müşteri sorularını otomatik yanıtlar, müsaitlik bilgisi verir ve rezervasyon için yönlendirir."
               />
               <FeatureCard 
                 icon={<Calendar className="h-5 w-5 text-orange-500" />}
                 title="Takvim & Kapasite"
-                description="Aktiviteler için günlük kapasite tanımı, müsaitlik takibi ve rezervasyon yönetimi."
+                description="Aktiviteleriniz için günlük kapasite tanımlayın, doluluk oranlarını takip edin."
               />
               <FeatureCard 
                 icon={<CreditCard className="h-5 w-5 text-purple-500" />}
-                title="Finans Modülü"
-                description="Acenta ödemeleri, tedarikçi maliyetleri ve hesaplaşma takibi."
+                title="Finansal Takip"
+                description="Acenta ödemeleri, tedarikçi maliyetleri ve hesaplaşmalarınızı tek yerden yönetin."
               />
             </div>
           </Section>
 
           <Section 
             icon={<Bot className="h-5 w-5" />}
-            title="2. WhatsApp Bot Sistemi"
-            id="whatsapp-bot"
+            title="2. WhatsApp Asistanınız"
+            id="whatsapp-asistan"
           >
             <div className="space-y-6">
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  Temel Çalışma Prensibi
+                  Neler Yapabilir?
                 </h4>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                  <li>Bot, Twilio WhatsApp API üzerinden gelen mesajları alır</li>
-                  <li>Google Gemini AI ile akıllı yanıtlar üretir</li>
-                  <li>Aktivite bilgileri, fiyatlar ve müsaitlik verileri AI'a aktarılır</li>
-                  <li>Bot sadece bilgi verir, <strong>asla rezervasyon oluşturmaz</strong></li>
+                  <li>Aktiviteleriniz hakkında bilgi verir (fiyat, süre, detaylar)</li>
+                  <li>Müsaitlik durumunu kontrol eder ve bildirir</li>
+                  <li>Müşterileri rezervasyon için web sitenize yönlendirir</li>
+                  <li>Sık sorulan soruları otomatik yanıtlar</li>
+                  <li>Karmaşık konularda size yönlendirir</li>
                 </ul>
               </div>
 
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <h4 className="font-semibold mb-2 flex items-center gap-2 text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
-                  Önemli Kural: Rezervasyon Politikası
+                  Önemli: Rezervasyon Politikası
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  Bot asla doğrudan rezervasyon oluşturmaz. Ön ödeme olmadan rezervasyon alınmaz. 
-                  Müsaitlik varsa müşteriye "Müsaitlik mevcut, rezervasyonunuzu web sitemizden oluşturabilirsiniz" 
-                  diyerek ilgili aktivitenin rezervasyon linkini paylaşır.
+                  Asistan asla doğrudan rezervasyon almaz. Müsaitlik varsa müşteriye web sitenizdeki 
+                  rezervasyon linkini paylaşarak ödeme yapmasını sağlar. Böylece tüm rezervasyonlarınız 
+                  güvenli ve ödemeli şekilde alınır.
                 </p>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Clock className="h-4 w-4 text-blue-500" />
-                  Müsaitlik Kontrolü
-                </h4>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                  <li>Bot, takvimde tanımlı kapasiteleri ve varsayılan slotları kontrol eder</li>
-                  <li>Mevcut rezervasyonları düşürerek gerçek müsaitliği hesaplar</li>
-                  <li>7 günlük ileriye dönük kapasite bilgisi AI'a aktarılır</li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-purple-500" />
-                  Dinamik Tarih Algılama
+                  Tarih Anlama Özelliği
                 </h4>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Bot şu Türkçe tarih ifadelerini anlar:
+                  Asistan şu ifadeleri anlayarak doğru tarihlerin müsaitliğini kontrol eder:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">bugün</Badge>
                   <Badge variant="secondary">yarın</Badge>
                   <Badge variant="secondary">hafta sonu</Badge>
                   <Badge variant="secondary">5 şubat</Badge>
-                  <Badge variant="secondary">15.01</Badge>
                   <Badge variant="secondary">gelecek pazartesi</Badge>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-amber-500" />
-                  Tatil ve Bayram Algılama
-                </h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  "Tatiller" sayfasında tanımlı bayram ve tatiller için bot otomatik tarih eşleştirmesi yapar:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">bayramda müsait misiniz?</Badge>
                   <Badge variant="secondary">kurban bayramı</Badge>
-                  <Badge variant="secondary">ramazan bayramı</Badge>
                   <Badge variant="secondary">yılbaşında</Badge>
                 </div>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-red-500" />
-                  Eskalasyon Kuralları
+                  <Languages className="h-4 w-4 text-purple-500" />
+                  Çok Dilli Destek
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  Bot şu durumlarda müşteriyi yetkili personele yönlendirir:
+                  Asistan, müşterinin kullandığı dile göre Türkçe veya İngilizce yanıt verir.
+                  Yabancı müşterilerinize de profesyonel hizmet sunabilirsiniz.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-red-500" />
+                  Size Yönlendirme
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Asistan şu durumlarda müşteriyi size yönlendirir ve bildirim gönderir:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4 mt-2">
-                  <li>Karmaşık konular veya şikayetler</li>
-                  <li>2 mesaj içinde çözülemeyen sorunlar</li>
-                  <li>Fiyat indirimi, grup indirimi talepleri</li>
-                  <li>Müşteri "operatör", "beni arayın" gibi ifadeler kullandığında</li>
-                  <li>Agresif veya memnuniyetsiz müşteri davranışı</li>
+                  <li>Şikayet veya özel talepler</li>
+                  <li>Fiyat indirimi, grup indirimi istekleri</li>
+                  <li>Müşteri "beni arayın" veya "operatör" dediğinde</li>
+                  <li>2 mesajda çözülemeyen sorular</li>
+                </ul>
+              </div>
+            </div>
+          </Section>
+
+          <Section 
+            icon={<Zap className="h-5 w-5" />}
+            title="3. Otomatik Yanıtlar (Maliyet Tasarrufu)"
+            id="otomatik-yanitlar"
+          >
+            <div className="space-y-4">
+              <p className="text-muted-foreground">
+                Sık sorulan sorular için otomatik yanıt kuralları tanımlayabilirsiniz. 
+                Bu yanıtlar yapay zeka kullanmadan anında verilir, böylece hem maliyet 
+                tasarrufu sağlar hem de daha hızlı yanıt verilir.
+              </p>
+              
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-4 w-4" />
+                  Nasıl Çalışır?
+                </h4>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  <li>Ayarlar sayfasında "Otomatik Yanıtlar" bölümünden kurallar ekleyin</li>
+                  <li>Anahtar kelimeler tanımlayın (örn: "transfer", "havalimanı")</li>
+                  <li>Türkçe ve İngilizce için ayrı yanıtlar belirleyin</li>
+                  <li>Müşteri bu kelimeleri kullandığında otomatik yanıt gider</li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold mb-2">Dil Desteği</h4>
-                <p className="text-sm text-muted-foreground">
-                  Bot, müşterinin diliyle (Türkçe/İngilizce) iletişim kurar. İngilizce konuşmalarda 
-                  aktivitelerin İngilizce rezervasyon linkini kullanır.
-                </p>
+                <h4 className="font-semibold mb-2">Örnek Kullanım Alanları:</h4>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium">Transfer Bilgisi</p>
+                    <p className="text-xs text-muted-foreground">Anahtar: "transfer, havalimanı"</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium">Çalışma Saatleri</p>
+                    <p className="text-xs text-muted-foreground">Anahtar: "saat, kaçta, açık mı"</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium">İptal Politikası</p>
+                    <p className="text-xs text-muted-foreground">Anahtar: "iptal, iade"</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium">Ödeme Bilgisi</p>
+                    <p className="text-xs text-muted-foreground">Anahtar: "ödeme, kredi kartı"</p>
+                  </div>
+                </div>
               </div>
+            </div>
+          </Section>
+
+          <Section 
+            icon={<BarChart3 className="h-5 w-5" />}
+            title="4. Panel Sayfaları"
+            id="panel-sayfalari"
+          >
+            <div className="space-y-4">
+              <AdminPageGuide 
+                title="Genel Bakış"
+                description="Günlük rezervasyon özeti, bugünkü aktiviteler ve temel istatistikler. Günün durumunu tek bakışta görün."
+              />
+              <AdminPageGuide 
+                title="Takvim"
+                description="Aktivitelerinizin günlük kapasitesini görün ve düzenleyin. Hangi günlerde boşluk var, hangi günler dolu anında görün."
+              />
+              <AdminPageGuide 
+                title="Rezervasyonlar"
+                description="Tüm rezervasyonlarınızı listeleyin, filtreleyin ve yönetin. Sipariş numarası, müşteri adı veya telefon ile arama yapın."
+              />
+              <AdminPageGuide 
+                title="Aktiviteler"
+                description="Turlarınızı ve aktivitelerinizi tanımlayın. Fiyat, süre, kapasite ve rezervasyon linklerini buradan ayarlayın."
+              />
+              <AdminPageGuide 
+                title="Paket Turlar"
+                description="Birden fazla aktiviteyi içeren paket programlarınızı oluşturun. Gün bazlı aktivite planlaması yapın."
+              />
+              <AdminPageGuide 
+                title="Tatiller"
+                description="Resmi tatil ve bayramları tanımlayın. Asistan 'bayramda müsait misiniz?' gibi sorularda bu tarihleri kullanır."
+              />
+              <AdminPageGuide 
+                title="Finans"
+                description="Tedarikçi maliyetleri, acenta ödemeleri ve hesaplaşma takibi. Finansal durumunuzu takip edin."
+              />
+              <AdminPageGuide 
+                title="Mesajlar"
+                description="WhatsApp üzerinden gelen tüm mesajları ve asistan yanıtlarını görün. Müşteri geçmişini inceleyin."
+              />
+              <AdminPageGuide 
+                title="Raporlar"
+                description="Aktivite bazlı satış raporları, doluluk oranları ve performans analizi."
+              />
+              <AdminPageGuide 
+                title="Ayarlar"
+                description="Sistem ayarlarınızı düzenleyin: Logo, WhatsApp botu, otomatik yanıtlar ve entegrasyonlar."
+              />
             </div>
           </Section>
 
           <Section 
             icon={<Settings className="h-5 w-5" />}
-            title="3. Admin Panel Kullanımı"
-            id="admin-panel"
+            title="5. Ayarlar Sayfası"
+            id="ayarlar"
           >
             <div className="space-y-4">
-              <AdminPageGuide 
-                title="Genel Bakış (Dashboard)"
-                description="Günlük rezervasyon özeti, yaklaşan aktiviteler ve temel istatistikler."
-              />
-              <AdminPageGuide 
-                title="Takvim & Kapasite"
-                description="Aktiviteler için günlük/saatlik kapasite tanımlama. Varsayılan kapasiteler aktivite ayarlarından gelir, özel günler için manuel düzenleme yapılabilir."
-              />
-              <AdminPageGuide 
-                title="Rezervasyonlar"
-                description="Tüm rezervasyonları listeler. WooCommerce'den gelenler otomatik 'Onaylı' durumundadır. Durum değişikliği, iptal ve düzenleme yapılabilir."
-              />
-              <AdminPageGuide 
-                title="Aktiviteler"
-                description="Tur ve aktivite tanımları. Fiyat, süre, varsayılan saat/kapasite, onay mesajı, rezervasyon linki ve SSS tanımları burada yapılır."
-              />
-              <AdminPageGuide 
-                title="Paket Turlar"
-                description="Birden fazla aktiviteyi içeren paket tur tanımları. Gün bazlı aktivite sıralaması ve fiyatlandırma."
-              />
-              <AdminPageGuide 
-                title="Tatiller"
-                description="Resmi tatil ve dini bayram tanımları. Bot bu tarihleri 'bayramda müsait misiniz?' gibi sorularda kullanır."
-              />
-              <AdminPageGuide 
-                title="Finans & Acentalar"
-                description="Tedarikçi maliyetleri, acenta ödemeleri ve hesaplaşma takibi."
-              />
-              <AdminPageGuide 
-                title="Bot Test"
-                description="WhatsApp bot'u test etmek için simülasyon alanı. Gerçek API'ye bağlanmadan bot yanıtlarını test edin."
-              />
-              <AdminPageGuide 
-                title="Mesaj Geçmişi"
-                description="WhatsApp üzerinden gelen tüm mesajlar ve bot yanıtları. Müşteri bazlı filtreleme ve arama."
-              />
-              <AdminPageGuide 
-                title="Bot Kuralları"
-                description="Bot'un davranış kurallarını özelleştirebileceğiniz alan. Şifre korumalıdır (varsayılan: Netim1905)."
-              />
-              <AdminPageGuide 
-                title="Ayarlar"
-                description="Sistem ayarları, logo yükleme ve genel konfigürasyonlar."
-              />
-            </div>
-          </Section>
-
-          <Section 
-            icon={<ShoppingCart className="h-5 w-5" />}
-            title="4. WooCommerce Entegrasyonu"
-            id="woocommerce"
-          >
-            <div className="space-y-4">
-              <p className="text-muted-foreground">
-                WooCommerce web sitesinden gelen siparişler webhook aracılığıyla otomatik olarak sisteme akar.
+              <p className="text-muted-foreground mb-4">
+                Ayarlar sayfası dört ana bölüme ayrılmıştır:
               </p>
               
-              <div>
-                <h4 className="font-semibold mb-2">Sipariş Akışı</h4>
-                <ol className="list-decimal list-inside space-y-2 text-muted-foreground ml-4">
-                  <li>Müşteri web sitesinden rezervasyon yapar ve ödeme tamamlar</li>
-                  <li>WooCommerce webhook tetiklenir ve sipariş sisteme iletilir</li>
-                  <li>Sistem, ürün adını aktivite/paket tur ile eşleştirir</li>
-                  <li>Rezervasyon <strong>"Onaylı"</strong> durumunda oluşturulur</li>
-                  <li>Aktivitenin onay mesajı müşteriye (WhatsApp veya email ile) gönderilebilir</li>
-                </ol>
-              </div>
-
-              <div>
-                <h4 className="font-semibold mb-2">Para Birimi Desteği</h4>
-                <p className="text-muted-foreground">
-                  Sistem TRY ve USD para birimlerini destekler. WooCommerce siparişindeki para birimine göre 
-                  fiyat otomatik olarak ilgili alana (priceTl veya priceUsd) kaydedilir.
-                </p>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="h-5 w-5 text-blue-500" />
+                    <h4 className="font-semibold">Güvenlik</h4>
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>Panel giriş bilgileri</li>
+                    <li>E-posta ayarları</li>
+                    <li>Logo yükleme</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageCircle className="h-5 w-5 text-green-500" />
+                    <h4 className="font-semibold">WhatsApp</h4>
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>Bot ayarları</li>
+                    <li>Otomatik mesajlar</li>
+                    <li>Kara liste yönetimi</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShoppingCart className="h-5 w-5 text-orange-500" />
+                    <h4 className="font-semibold">Entegrasyonlar</h4>
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>WooCommerce bağlantısı</li>
+                    <li>Otomatik yanıt kuralları</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="h-5 w-5 text-purple-500" />
+                    <h4 className="font-semibold">Sistem</h4>
+                  </div>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>Sürüm bilgisi</li>
+                    <li>Güncelleme kontrolü</li>
+                    <li>Hata raporu oluşturma</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </Section>
 
           <Section 
-            icon={<Clock className="h-5 w-5" />}
-            title="5. Güncelleme Geçmişi"
+            icon={<HelpCircle className="h-5 w-5" />}
+            title="6. Sorun Giderme"
+            id="sorun-giderme"
+          >
+            <div className="space-y-4">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-blue-600">
+                  <Search className="h-4 w-4" />
+                  Hata Raporu Oluşturma
+                </h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Bir sorunla karşılaştığınızda, Ayarlar &gt; Sistem sekmesindeki "Hata Ayıklama" 
+                  kartından tek tıkla sistem raporu oluşturabilirsiniz.
+                </p>
+                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                  <li>Rapor, sisteminizin durumunu özetler</li>
+                  <li>Müşteri bilgileri otomatik olarak gizlenir</li>
+                  <li>Raporu geliştiriciye göndererek hızlı destek alabilirsiniz</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Sık Karşılaşılan Durumlar:</h4>
+                <div className="space-y-3">
+                  <div className="border rounded-lg p-3">
+                    <p className="font-medium text-sm">WhatsApp mesajları gelmiyor</p>
+                    <p className="text-xs text-muted-foreground">Twilio bağlantınızı kontrol edin. Ayarlar &gt; WhatsApp sekmesinden durumu görün.</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <p className="font-medium text-sm">Sipariş otomatik gelmiyor</p>
+                    <p className="text-xs text-muted-foreground">WooCommerce webhook ayarlarınızı kontrol edin. Doğru URL girildiğinden emin olun.</p>
+                  </div>
+                  <div className="border rounded-lg p-3">
+                    <p className="font-medium text-sm">Bot yanlış bilgi veriyor</p>
+                    <p className="text-xs text-muted-foreground">Aktivite bilgilerini güncelleyin. SSS bölümlerine doğru bilgileri ekleyin.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          <Section 
+            icon={<Bell className="h-5 w-5" />}
+            title="7. Son Güncellemeler"
             id="guncellemeler"
           >
             <div className="space-y-4">
               <UpdateEntry 
                 date="02.01.2026"
-                title="Bot Rezervasyon Kuralı Eklendi"
-                description="Bot asla doğrudan rezervasyon oluşturmaz. Müsaitlik varsa web sitesi linkini paylaşarak yönlendirir. Ön ödeme olmadan rezervasyon alınmaz."
-                type="kural"
-              />
-              <UpdateEntry 
-                date="02.01.2026"
-                title="Tatil/Bayram Algılama"
-                description="Bot artık 'bayramda müsait misiniz?', 'kurban bayramı' gibi ifadeleri anlıyor ve ilgili tarihlerin kapasitesini kontrol ediyor."
-                type="ozellik"
-              />
-              <UpdateEntry 
-                date="02.01.2026"
-                title="Dinamik Tarih Algılama"
-                description="Bot 'yarın', '5 şubat', 'hafta sonu', '15.01' gibi Türkçe tarih ifadelerini anlıyor."
-                type="ozellik"
-              />
-              <UpdateEntry 
-                date="02.01.2026"
-                title="Anahtar Kelime Girişi Kolaylaştırıldı"
-                description="Tatil eklerken anahtar kelimeler artık virgül ile ayrılarak girilebilir (JSON formatına gerek yok)."
+                title="Yeni Ayarlar Düzeni"
+                description="Ayarlar sayfası 4 kategoriye ayrıldı: Güvenlik, WhatsApp, Entegrasyonlar, Sistem. Daha kolay kullanım."
                 type="iyilestirme"
               />
               <UpdateEntry 
                 date="02.01.2026"
-                title="WooCommerce Siparişleri Otomatik Onaylı"
-                description="Web sitesinden gelen ve ödemesi yapılmış siparişler artık 'Onaylı' durumunda kaydediliyor."
+                title="Hata Raporu Özelliği"
+                description="Tek tıkla sistem durumu raporu oluşturun. Sorunları hızlıca çözün."
                 type="ozellik"
               />
               <UpdateEntry 
-                date="31.12.2025"
-                title="Finans & Acenta Modülü"
-                description="Aktivite maliyetleri, KDV hesaplaması, acenta ödemeleri ve hesaplaşma takibi eklendi."
+                date="02.01.2026"
+                title="İki Dilli Otomatik Yanıtlar"
+                description="Otomatik yanıtlarda Türkçe ve İngilizce için ayrı mesajlar tanımlayabilirsiniz."
                 type="ozellik"
               />
               <UpdateEntry 
+                date="02.01.2026"
+                title="Otomatik Yanıt Sistemi"
+                description="Sık sorulan sorular için maliyet tasarruflu otomatik yanıtlar. Yapay zeka kullanmadan hızlı cevap."
+                type="ozellik"
+              />
+              <UpdateEntry 
+                date="02.01.2026"
+                title="Tatil/Bayram Algılama"
+                description="Asistan artık 'bayramda müsait misiniz?' gibi soruları anlıyor."
+                type="ozellik"
+              />
+              <UpdateEntry 
+                date="02.01.2026"
+                title="Sipariş Numarası Takibi"
+                description="Rezervasyonlarda sipariş numarası ile arama ve takip."
+                type="ozellik"
+              />
+              <UpdateEntry 
+                date="02.01.2026"
+                title="Takvim-Rezervasyon Bağlantısı"
+                description="Takvimden tek tıkla o günün rezervasyonlarını görün."
+                type="iyilestirme"
+              />
+              <UpdateEntry 
                 date="31.12.2025"
-                title="Proje Başlangıcı"
-                description="Temel altyapı kuruldu: Aktivite yönetimi, rezervasyonlar, takvim, WhatsApp bot entegrasyonu."
+                title="Finans Modülü"
+                description="Tedarikçi maliyetleri, acenta ödemeleri ve hesaplaşma takibi."
                 type="ozellik"
               />
             </div>
@@ -307,7 +415,7 @@ export default function UserGuide() {
         </div>
 
         <div className="text-center text-xs text-muted-foreground pt-8 border-t">
-          Bu kılavuz sistem güncellemeleriyle birlikte güncellenmektedir.
+          Sorularınız için destek ekibimizle iletişime geçebilirsiniz.
         </div>
       </main>
     </div>
