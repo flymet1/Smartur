@@ -211,13 +211,30 @@ function HolidayCard({ holiday, onDelete }: { holiday: Holiday; onDelete: () => 
   );
 }
 
+// Helper to convert JSON array to comma-separated string for display
+function jsonToCommaSeparated(jsonStr: string): string {
+  try {
+    const arr = JSON.parse(jsonStr || '[]');
+    if (Array.isArray(arr)) {
+      return arr.join(', ');
+    }
+  } catch {}
+  return '';
+}
+
+// Helper to convert comma-separated string to JSON array for API
+function commaSeparatedToJson(text: string): string {
+  const items = text.split(',').map(s => s.trim()).filter(s => s);
+  return JSON.stringify(items);
+}
+
 function HolidayDialog({ holiday }: { holiday?: Holiday }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(holiday?.name || "");
   const [startDate, setStartDate] = useState(holiday?.startDate || "");
   const [endDate, setEndDate] = useState(holiday?.endDate || "");
   const [type, setType] = useState(holiday?.type || "official");
-  const [keywords, setKeywords] = useState(holiday?.keywords || "[]");
+  const [keywordsText, setKeywordsText] = useState(jsonToCommaSeparated(holiday?.keywords || "[]"));
   const [notes, setNotes] = useState(holiday?.notes || "");
   const [isActive, setIsActive] = useState(holiday?.isActive !== false);
   
@@ -245,7 +262,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
     setStartDate("");
     setEndDate("");
     setType("official");
-    setKeywords("[]");
+    setKeywordsText("");
     setNotes("");
     setIsActive(true);
   };
@@ -261,7 +278,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
       startDate,
       endDate,
       type,
-      keywords,
+      keywords: commaSeparatedToJson(keywordsText),
       notes,
       isActive
     };
@@ -290,7 +307,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
             setStartDate(holiday.startDate);
             setEndDate(holiday.endDate);
             setType(holiday.type || "official");
-            setKeywords(holiday.keywords || "[]");
+            setKeywordsText(jsonToCommaSeparated(holiday.keywords || "[]"));
             setNotes(holiday.notes || "");
             setIsActive(holiday.isActive !== false);
           }
@@ -359,16 +376,15 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="keywords">Anahtar Kelimeler (JSON)</Label>
-            <Textarea
+            <Label htmlFor="keywords">Anahtar Kelimeler</Label>
+            <Input
               id="keywords"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              placeholder='["bayram", "tatil", "kurban"]'
-              className="font-mono text-sm"
+              value={keywordsText}
+              onChange={(e) => setKeywordsText(e.target.value)}
+              placeholder="bayram, tatil, kurban"
               data-testid="input-holiday-keywords"
             />
-            <p className="text-xs text-muted-foreground">Bot bu kelimeleri algiladiginda bu tatili bulur.</p>
+            <p className="text-xs text-muted-foreground">Virgul ile ayirarak yazin. Bot bu kelimeleri algiladiginda bu tatili bulur.</p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="notes">Notlar</Label>
