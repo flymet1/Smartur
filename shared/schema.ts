@@ -80,10 +80,31 @@ export const messages = pgTable("messages", {
 export const supportRequests = pgTable("support_requests", {
   id: serial("id").primaryKey(),
   phone: text("phone").notNull(),
+  description: text("description"), // Kullanıcının girdiği sorun açıklaması
   status: text("status").default("open"), // open, resolved
   reservationId: integer("reservation_id").references(() => reservations.id),
   createdAt: timestamp("created_at").defaultNow(),
   resolvedAt: timestamp("resolved_at"),
+});
+
+// Sistem logları - hata ayıklama için
+export const systemLogs = pgTable("system_logs", {
+  id: serial("id").primaryKey(),
+  level: text("level").notNull(), // error, warn, info
+  source: text("source").notNull(), // whatsapp, ai, webhook, system
+  message: text("message").notNull(),
+  details: text("details"), // JSON detayları (stack trace, request body vb)
+  phone: text("phone"), // İlgili telefon numarası (varsa)
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Destek taleplerine eklenmiş loglar
+export const supportRequestLogs = pgTable("support_request_logs", {
+  id: serial("id").primaryKey(),
+  supportRequestId: integer("support_request_id").references(() => supportRequests.id).notNull(),
+  logId: integer("log_id").references(() => systemLogs.id),
+  messageSnapshot: text("message_snapshot"), // Mesaj geçmişi snapshot'ı
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const settings = pgTable("settings", {
@@ -290,6 +311,8 @@ export const insertCapacitySchema = createInsertSchema(capacity).omit({ id: true
 export const insertReservationSchema = createInsertSchema(reservations).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
 export const insertSupportRequestSchema = createInsertSchema(supportRequests).omit({ id: true, createdAt: true, resolvedAt: true });
+export const insertSystemLogSchema = createInsertSchema(systemLogs).omit({ id: true, createdAt: true });
+export const insertSupportRequestLogSchema = createInsertSchema(supportRequestLogs).omit({ id: true, createdAt: true });
 
 // === TYPES ===
 export type Activity = typeof activities.$inferSelect;
@@ -306,6 +329,12 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type SupportRequest = typeof supportRequests.$inferSelect;
 export type InsertSupportRequest = z.infer<typeof insertSupportRequestSchema>;
+
+export type SystemLog = typeof systemLogs.$inferSelect;
+export type InsertSystemLog = z.infer<typeof insertSystemLogSchema>;
+
+export type SupportRequestLog = typeof supportRequestLogs.$inferSelect;
+export type InsertSupportRequestLog = z.infer<typeof insertSupportRequestLogSchema>;
 
 export type Settings = typeof settings.$inferSelect;
 export const insertSettingsSchema = createInsertSchema(settings).omit({ id: true });
