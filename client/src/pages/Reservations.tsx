@@ -4,7 +4,7 @@ import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { ReservationCalendar } from "@/components/reservations/ReservationCalendar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
 import {
@@ -372,6 +372,8 @@ function NewReservationDialog() {
   const [activityTimes, setActivityTimes] = useState<Record<number, string>>({});
   const [notifyCustomer, setNotifyCustomer] = useState(false);
   const [isSendingNotification, setIsSendingNotification] = useState(false);
+  const [hotelName, setHotelName] = useState("");
+  const [hasTransfer, setHasTransfer] = useState(false);
   const { data: activities } = useActivities();
   const createMutation = useCreateReservation();
   const { toast } = useToast();
@@ -433,6 +435,8 @@ function NewReservationDialog() {
             quantity,
             status: "pending",
             source: "manual",
+            hotelName: hotelName || undefined,
+            hasTransfer,
           });
           if (!createdActivityId) {
             createdActivityId = activity.id;
@@ -484,6 +488,8 @@ function NewReservationDialog() {
           quantity,
           status: "pending",
           source: "manual",
+          hotelName: hotelName || undefined,
+          hasTransfer,
         });
         
         if (notifyCustomer && customerPhone) {
@@ -523,6 +529,8 @@ function NewReservationDialog() {
       setActivityTimes({});
       setReservationType("activity");
       setNotifyCustomer(false);
+      setHotelName("");
+      setHasTransfer(false);
     } catch (err) {
       toast({ 
         title: "Hata", 
@@ -586,12 +594,36 @@ function NewReservationDialog() {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>E-posta (İsteğe bağlı)</Label>
+              <Label>E-posta (Istege bagli)</Label>
               <Input name="customerEmail" type="email" placeholder="ornek@email.com" data-testid="input-customer-email" />
             </div>
             <div className="space-y-2">
-              <Label>Sipariş No (İsteğe bağlı)</Label>
-              <Input name="orderNumber" placeholder="örn: 1234" data-testid="input-order-number" />
+              <Label>Siparis No (Istege bagli)</Label>
+              <Input name="orderNumber" placeholder="orn: 1234" data-testid="input-order-number" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Otel Adi (Istege bagli)</Label>
+              <Input 
+                value={hotelName}
+                onChange={(e) => setHotelName(e.target.value)}
+                placeholder="orn: Liberty Hotels Lykia" 
+                data-testid="input-hotel-name" 
+              />
+            </div>
+            <div className="flex items-center space-x-3 mt-7">
+              <Checkbox
+                id="hasTransfer"
+                checked={hasTransfer}
+                onCheckedChange={(checked) => setHasTransfer(checked === true)}
+                data-testid="checkbox-has-transfer"
+              />
+              <Label htmlFor="hasTransfer" className="text-sm cursor-pointer flex items-center gap-2">
+                <Bus className="h-4 w-4 text-blue-600" />
+                Otel Transferi Istedi
+              </Label>
             </div>
           </div>
 
