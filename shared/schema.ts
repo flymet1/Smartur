@@ -65,6 +65,8 @@ export const reservations = pgTable("reservations", {
   orderTotal: integer("order_total").default(0), // WooCommerce total
   orderTax: integer("order_tax").default(0), // WooCommerce tax amount
   settlementId: integer("settlement_id"), // Hangi hesaplaşmaya dahil edildi
+  trackingToken: text("tracking_token"), // Müşteri takip linki için benzersiz token
+  trackingTokenExpiresAt: timestamp("tracking_token_expires_at"), // Token geçerlilik süresi (aktivite tarihi + 1 gün)
   createdAt: timestamp("created_at").defaultNow(),
 });
 

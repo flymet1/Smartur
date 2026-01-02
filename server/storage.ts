@@ -193,6 +193,11 @@ export interface IStorage {
   updateAutoResponse(id: number, autoResponse: Partial<InsertAutoResponse>): Promise<AutoResponse>;
   deleteAutoResponse(id: number): Promise<void>;
   findMatchingAutoResponse(message: string): Promise<{ response: string; matchedLanguage: 'tr' | 'en' } | undefined>;
+
+  // Customer Tracking
+  getReservationByTrackingToken(token: string): Promise<Reservation | undefined>;
+  generateTrackingToken(reservationId: number): Promise<string>;
+  cleanupExpiredTrackingTokens(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1314,6 +1319,65 @@ export class DatabaseStorage implements IStorage {
     }
     
     return undefined;
+  }
+
+  // Customer Tracking
+  async getReservationByTrackingToken(token: string): Promise<Reservation | undefined> {
+    const [reservation] = await db.select().from(reservations)
+      .where(and(
+        eq(reservations.trackingToken, token),
+        or(
+          isNull(reservations.trackingTokenExpiresAt),
+          gte(reservations.trackingTokenExpiresAt, new Date())
+        )
+      ));
+    return reservation;
+  }
+
+  async generateTrackingToken(reservationId: number): Promise<string> {
+    // Generate a secure random token
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(16).toString('hex');
+    
+    // Get the reservation to calculate expiry date (activity date + 1 day)
+    const [reservation] = await db.select().from(reservations).where(eq(reservations.id, reservationId));
+    if (!reservation) {
+      throw new Error('Rezervasyon bulunamadi');
+    }
+    
+    // Calculate expiry: activity date + 1 day at 23:59:59
+    const activityDate = new Date(reservation.date);
+    const expiryDate = new Date(activityDate);
+    expiryDate.setDate(expiryDate.getDate() + 1);
+    expiryDate.setHours(23, 59, 59, 999);
+    
+    // Update reservation with tracking token
+    await db.update(reservations)
+      .set({ 
+        trackingToken: token,
+        trackingTokenExpiresAt: expiryDate
+      })
+      .where(eq(reservations.id, reservationId));
+    
+    return token;
+  }
+
+  async cleanupExpiredTrackingTokens(): Promise<number> {
+    const now = new Date();
+    
+    // Clear tokens where expiry date has passed
+    const result = await db.update(reservations)
+      .set({ 
+        trackingToken: null,
+        trackingTokenExpiresAt: null
+      })
+      .where(and(
+        sql`${reservations.trackingToken} IS NOT NULL`,
+        lte(reservations.trackingTokenExpiresAt, now)
+      ))
+      .returning();
+    
+    return result.length;
   }
 }
 
