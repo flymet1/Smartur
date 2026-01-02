@@ -418,6 +418,29 @@ export const insertHolidaySchema = createInsertSchema(holidays).omit({ id: true 
 export type Holiday = typeof holidays.$inferSelect;
 export type InsertHoliday = z.infer<typeof insertHolidaySchema>;
 
+// === LICENSE/SUBSCRIPTION ===
+
+// Lisans ve Üyelik Bilgileri
+export const license = pgTable("license", {
+  id: serial("id").primaryKey(),
+  licenseKey: text("license_key").notNull(), // Benzersiz lisans anahtarı
+  agencyName: text("agency_name").notNull(), // Acenta adı
+  agencyEmail: text("agency_email"), // Acenta e-postası
+  agencyPhone: text("agency_phone"), // Acenta telefonu
+  planType: text("plan_type").default("trial"), // trial, basic, professional, enterprise
+  planName: text("plan_name").default("Deneme"), // Plan görüntüleme adı
+  maxActivities: integer("max_activities").default(5), // Maksimum aktivite sayısı
+  maxReservationsPerMonth: integer("max_reservations_per_month").default(100), // Aylık maksimum rezervasyon
+  maxUsers: integer("max_users").default(1), // Maksimum kullanıcı sayısı
+  features: text("features").default("[]"), // JSON array of enabled features
+  startDate: timestamp("start_date").defaultNow(), // Lisans başlangıç tarihi
+  expiryDate: timestamp("expiry_date"), // Lisans bitiş tarihi (null = sınırsız)
+  isActive: boolean("is_active").default(true),
+  lastVerifiedAt: timestamp("last_verified_at"), // Son doğrulama zamanı
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // === AUTO RESPONSES ===
 
 // Otomatik Yanıtlar (AI çağrısı yapmadan anahtar kelime eşleştirme ile yanıt)
@@ -437,3 +460,8 @@ export const autoResponses = pgTable("auto_responses", {
 export const insertAutoResponseSchema = createInsertSchema(autoResponses).omit({ id: true, createdAt: true });
 export type AutoResponse = typeof autoResponses.$inferSelect;
 export type InsertAutoResponse = z.infer<typeof insertAutoResponseSchema>;
+
+// === LICENSE SCHEMAS & TYPES ===
+export const insertLicenseSchema = createInsertSchema(license).omit({ id: true, createdAt: true, updatedAt: true, lastVerifiedAt: true });
+export type License = typeof license.$inferSelect;
+export type InsertLicense = z.infer<typeof insertLicenseSchema>;
