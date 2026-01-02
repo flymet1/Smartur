@@ -59,6 +59,91 @@ try {
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
+// Helper function to get capacity including virtual slots from activity defaults
+async function getCapacityWithVirtualSlots(dates: string[]): Promise<Array<{
+  activityId: number;
+  date: string;
+  time: string;
+  totalSlots: number;
+  bookedSlots: number;
+  isVirtual: boolean;
+}>> {
+  const allCapacity = await storage.getCapacity();
+  const allReservations = await storage.getReservations();
+  const allActivities = await storage.getActivities();
+  const activeActivities = allActivities.filter(a => a.active);
+  
+  const result: Array<{
+    activityId: number;
+    date: string;
+    time: string;
+    totalSlots: number;
+    bookedSlots: number;
+    isVirtual: boolean;
+  }> = [];
+  
+  for (const dateStr of dates) {
+    // Get DB capacity for this date
+    const dbCapacity = allCapacity.filter(c => c.date === dateStr);
+    
+    // Get reservations for this date (not cancelled)
+    const dateReservations = allReservations.filter(r => 
+      r.date === dateStr && r.status !== 'cancelled'
+    );
+    
+    // Build reservation counts map
+    const reservationCounts: Record<string, number> = {};
+    for (const r of dateReservations) {
+      if (r.activityId && r.time) {
+        const key = `${r.activityId}-${r.time}`;
+        reservationCounts[key] = (reservationCounts[key] || 0) + r.quantity;
+      }
+    }
+    
+    // Track which slots exist in DB
+    const existingSlots = new Set(dbCapacity.map(c => `${c.activityId}-${c.time}`));
+    
+    // Add DB capacity
+    for (const cap of dbCapacity) {
+      result.push({
+        activityId: cap.activityId,
+        date: cap.date,
+        time: cap.time,
+        totalSlots: cap.totalSlots,
+        bookedSlots: cap.bookedSlots || 0,
+        isVirtual: false
+      });
+    }
+    
+    // Generate virtual slots from activity defaults
+    for (const activity of activeActivities) {
+      if (activity.defaultTimes) {
+        try {
+          const times = JSON.parse(activity.defaultTimes);
+          if (Array.isArray(times)) {
+            for (const time of times) {
+              const slotKey = `${activity.id}-${time}`;
+              if (!existingSlots.has(slotKey)) {
+                const bookedCount = reservationCounts[slotKey] || 0;
+                result.push({
+                  activityId: activity.id,
+                  date: dateStr,
+                  time: time,
+                  totalSlots: activity.defaultCapacity || 10,
+                  bookedSlots: bookedCount,
+                  isVirtual: true
+                });
+              }
+            }
+          }
+        } catch {}
+      }
+    }
+  }
+  
+  return result;
+}
+
 // Turkish public holidays (fixed dates + Islamic holidays for 2025-2026)
 const TURKISH_HOLIDAYS: { date: string; name: string }[] = [
   // 2025 Fixed holidays
@@ -540,6 +625,21 @@ export async function registerRoutes(
       return res.json(dbItems);
     }
     
+    // Get reservations for this date to calculate booked slots for virtual capacity
+    const allReservations = await storage.getReservations();
+    const dateReservations = allReservations.filter(r => 
+      r.date === dateStr && r.status !== 'cancelled'
+    );
+    
+    // Build a map of activityId-time -> total booked quantity
+    const reservationCounts: Record<string, number> = {};
+    for (const r of dateReservations) {
+      if (r.activityId && r.time) {
+        const key = `${r.activityId}-${r.time}`;
+        reservationCounts[key] = (reservationCounts[key] || 0) + r.quantity;
+      }
+    }
+    
     // Get all active activities to generate virtual slots from defaults
     const allActivities = await storage.getActivities();
     const activities = actId 
@@ -562,13 +662,15 @@ export async function registerRoutes(
               const slotKey = `${activity.id}-${time}`;
               // Only add virtual slot if no real slot exists for this activity+time
               if (!existingSlots.has(slotKey)) {
+                // Count reservations for this virtual slot
+                const bookedCount = reservationCounts[slotKey] || 0;
                 virtualSlots.push({
                   id: -1, // Negative ID indicates virtual slot
                   activityId: activity.id,
                   date: dateStr,
                   time: time,
                   totalSlots: activity.defaultCapacity || 10,
-                  bookedSlots: 0,
+                  bookedSlots: bookedCount,
                   isVirtual: true // Flag to indicate this is auto-generated
                 });
               }
@@ -939,11 +1041,15 @@ export async function registerRoutes(
       const activities = await storage.getActivities();
       const packageTours = await storage.getPackageTours();
       
-      // Get capacity data for the next 7 days
-      const capacityData = await storage.getCapacity();
-      // Filter to only upcoming dates
-      const today = new Date().toISOString().split('T')[0];
-      const upcomingCapacity = capacityData.filter(c => c.date >= today);
+      // Get capacity data for the next 7 days (including virtual slots from activity defaults)
+      const today = new Date();
+      const upcomingDates: string[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        upcomingDates.push(d.toISOString().split('T')[0]);
+      }
+      const upcomingCapacity = await getCapacityWithVirtualSlots(upcomingDates);
       
       // Get custom bot prompt from settings
       const botPrompt = await storage.getSetting('botPrompt');
