@@ -7,6 +7,7 @@ import { insertActivitySchema, insertCapacitySchema, insertReservationSchema } f
 import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { encrypt, decrypt } from "./encryption";
 
 // Simple password hashing using SHA-256 with salt
 function hashPassword(password: string): string {
@@ -1570,6 +1571,119 @@ export async function registerRoutes(
     }
   });
 
+  // === Gmail Settings ===
+  app.get("/api/gmail-settings", async (req, res) => {
+    try {
+      const gmailUser = await storage.getSetting('gmailUser');
+      const gmailPasswordEncrypted = await storage.getSetting('gmailPasswordEncrypted');
+      
+      res.json({
+        gmailUser: gmailUser || '',
+        isConfigured: !!(gmailUser && gmailPasswordEncrypted),
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Gmail ayarları alınamadı" });
+    }
+  });
+
+  app.post("/api/gmail-settings", async (req, res) => {
+    try {
+      const { gmailUser, gmailPassword } = req.body;
+      
+      if (!gmailUser || !gmailPassword) {
+        return res.status(400).json({ error: "Gmail adresi ve uygulama şifresi gerekli" });
+      }
+      
+      // Encrypt the password before storing
+      const encryptedPassword = encrypt(gmailPassword);
+      
+      await storage.setSetting('gmailUser', gmailUser);
+      await storage.setSetting('gmailPasswordEncrypted', encryptedPassword);
+      
+      res.json({ success: true, message: "Gmail ayarları kaydedildi" });
+    } catch (err) {
+      console.error("Gmail settings save error:", err);
+      res.status(500).json({ error: "Gmail ayarları kaydedilemedi" });
+    }
+  });
+
+  app.post("/api/gmail-settings/test", async (req, res) => {
+    try {
+      const gmailUser = await storage.getSetting('gmailUser');
+      const gmailPasswordEncrypted = await storage.getSetting('gmailPasswordEncrypted');
+      
+      if (!gmailUser || !gmailPasswordEncrypted) {
+        return res.status(400).json({ success: false, error: "Gmail ayarları yapılandırılmamış" });
+      }
+      
+      let gmailPassword: string;
+      try {
+        gmailPassword = decrypt(gmailPasswordEncrypted);
+      } catch (decryptErr) {
+        return res.status(400).json({ success: false, error: "Şifre çözme hatası. Lütfen Gmail şifresini yeniden girin." });
+      }
+      
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailPassword,
+        },
+      });
+      
+      // Verify SMTP connection
+      await transporter.verify();
+      
+      res.json({ success: true, message: "Gmail bağlantısı başarılı!" });
+    } catch (err: any) {
+      console.error("Gmail test error:", err);
+      let errorMessage = "Gmail bağlantısı başarısız";
+      if (err.code === 'EAUTH') {
+        errorMessage = "Kimlik doğrulama hatası. Lütfen Gmail adresinizi ve uygulama şifrenizi kontrol edin.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      res.status(400).json({ success: false, error: errorMessage });
+    }
+  });
+
+  app.delete("/api/gmail-settings", async (req, res) => {
+    try {
+      await storage.setSetting('gmailUser', null);
+      await storage.setSetting('gmailPasswordEncrypted', null);
+      
+      res.json({ success: true, message: "Gmail bağlantısı kaldırıldı" });
+    } catch (err) {
+      res.status(500).json({ error: "Gmail ayarları silinemedi" });
+    }
+  });
+
+  // Helper function to get Gmail credentials from DB or env vars
+  async function getGmailCredentials(): Promise<{ user: string; password: string } | null> {
+    // First check database settings
+    const gmailUser = await storage.getSetting('gmailUser');
+    const gmailPasswordEncrypted = await storage.getSetting('gmailPasswordEncrypted');
+    
+    if (gmailUser && gmailPasswordEncrypted) {
+      try {
+        const gmailPassword = decrypt(gmailPasswordEncrypted);
+        return { user: gmailUser, password: gmailPassword };
+      } catch {
+        // Decryption failed, fall through to env vars
+      }
+    }
+    
+    // Fallback to environment variables
+    const envUser = process.env.GMAIL_USER;
+    const envPassword = process.env.GMAIL_APP_PASSWORD;
+    
+    if (envUser && envPassword) {
+      return { user: envUser, password: envPassword };
+    }
+    
+    return null;
+  }
+
   // === Conversations / Messages ===
   app.get("/api/conversations", async (req, res) => {
     try {
@@ -1643,16 +1757,15 @@ export async function registerRoutes(
 
       // Send email via Gmail SMTP if credentials are configured
       let emailSent = false;
-      const gmailUser = process.env.GMAIL_USER;
-      const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+      const gmailCreds = await getGmailCredentials();
       
-      if (gmailUser && gmailAppPassword && developerEmail) {
+      if (gmailCreds && developerEmail) {
         try {
           const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-              user: gmailUser,
-              pass: gmailAppPassword,
+              user: gmailCreds.user,
+              pass: gmailCreds.password,
             },
           });
 
@@ -1686,7 +1799,7 @@ export async function registerRoutes(
           `;
 
           await transporter.sendMail({
-            from: `"My Smartur Destek" <${gmailUser}>`,
+            from: `"My Smartur Destek" <${gmailCreds.user}>`,
             to: developerEmail,
             replyTo: senderEmail || undefined,
             subject: `[Destek] ${requestTypeLabels[requestType] || requestType}: ${subject}`,
