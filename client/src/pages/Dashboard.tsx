@@ -166,6 +166,10 @@ export default function Dashboard() {
     status: {
       valid: boolean;
       message: string;
+      status?: 'active' | 'warning' | 'grace' | 'suspended' | 'expired';
+      daysRemaining?: number;
+      graceDaysRemaining?: number;
+      canWrite?: boolean;
     };
   }
 
@@ -255,6 +259,35 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* License Warning Banner */}
+        {licenseData?.status.status && ['warning', 'grace', 'expired', 'suspended'].includes(licenseData.status.status) && (
+          <div className={`p-4 rounded-md border flex items-center gap-3 ${
+            licenseData.status.status === 'warning' 
+              ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
+              : licenseData.status.status === 'grace'
+              ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+          }`} data-testid="banner-license-warning">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium">
+                {licenseData.status.status === 'warning' && `Lisansinizin bitmesine ${licenseData.status.daysRemaining} gun kaldi`}
+                {licenseData.status.status === 'grace' && `Lisansiniz doldu! Ek sureniz: ${licenseData.status.graceDaysRemaining} gun (Salt okunur mod)`}
+                {licenseData.status.status === 'expired' && 'Lisansiniz ve ek sureniz dolmus. Sisteme erisim kisitli.'}
+                {licenseData.status.status === 'suspended' && 'Lisansiniz askiya alindi. Destek ile iletisime gecin.'}
+              </p>
+              <p className="text-sm opacity-80">
+                {licenseData.status.canWrite === false && 'Yeni rezervasyon, aktivite veya duzenleme yapamazsiniz.'}
+              </p>
+            </div>
+            <Link href="/settings">
+              <Button variant={licenseData.status.status === 'warning' ? 'outline' : 'default'} size="sm">
+                Lisansi Yenile
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* License Info Dialog */}
         <Dialog open={licenseDialogOpen} onOpenChange={setLicenseDialogOpen}>
@@ -511,15 +544,15 @@ export default function Dashboard() {
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {reservation.activityName} - {reservation.date} {reservation.time}
+                            {reservation.date} {reservation.time}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {reservation.personCount} kisi
+                            {reservation.quantity} kisi
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium">
-                            {reservation.currency === 'USD' ? `$${reservation.totalPrice}` : `${reservation.totalPrice} TL`}
+                            {reservation.currency === 'USD' ? `$${reservation.priceUsd || 0}` : `${reservation.priceTl || 0} TL`}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(reservation.createdAt || new Date()), 'd MMM HH:mm', { locale: tr })}
