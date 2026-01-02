@@ -17,8 +17,8 @@ import { Link } from "wouter";
 interface Agency {
   id: number;
   name: string;
-  phone: string | null;
-  email: string | null;
+  contactInfo: string | null;
+  notes: string | null;
 }
 
 interface CustomerRequest {
@@ -194,8 +194,8 @@ export default function CustomerRequests() {
     }
     
     const selectedAgency = agencies?.find(a => String(a.id) === selectedAgencyId);
-    if (!selectedAgency?.phone) {
-      toast({ title: "Hata", description: "Secilen acentanin telefon numarasi bulunamadi.", variant: "destructive" });
+    if (!selectedAgency?.contactInfo) {
+      toast({ title: "Hata", description: "Secilen acentanin iletisim bilgisi bulunamadi.", variant: "destructive" });
       return;
     }
     
@@ -205,7 +205,7 @@ export default function CustomerRequests() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: selectedAgency.phone,
+          phone: selectedAgency.contactInfo,
           message: agencyMessage
         })
       });
@@ -473,9 +473,9 @@ export default function CustomerRequests() {
                     <SelectValue placeholder="Acenta secin..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {agencies?.filter(a => a.phone).map((agency) => (
+                    {agencies?.map((agency) => (
                       <SelectItem key={agency.id} value={String(agency.id)}>
-                        {agency.name} {agency.phone ? `(${agency.phone})` : ''}
+                        {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(iletisim bilgisi yok)'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -483,9 +483,9 @@ export default function CustomerRequests() {
                 {(!agencies || agencies.length === 0) && (
                   <p className="text-xs text-orange-600">Sistemde kayitli acenta bulunamadi. Once Finans sayfasindan acenta ekleyin.</p>
                 )}
-                {agencies && agencies.length > 0 && agencies.filter(a => a.phone).length === 0 && (
-                  <p className="text-xs text-orange-600">Telefon numarasi olan acenta bulunamadi.</p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  Not: Acentanin iletisim bilgisi (telefon numarasi) Finans sayfasinda tanimlanmalidir.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="agencyMessage">WhatsApp Mesaji</Label>
