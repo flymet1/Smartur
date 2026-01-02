@@ -29,6 +29,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: WhatsApp Bildirim Özelliği - Manuel rezervasyon oluştururken "Müşteriyi WhatsApp ile bilgilendir" checkbox'ı eklendi. Twilio API entegrasyonu ile müşteriye otomatik rezervasyon onay mesajı gönderilir. Hata durumunda kullanıcıya bilgi verilir.
 - 02.01.2026: Müşteri Talepleri Admin Paneli - Geliştirici panelinde müşteri taleplerini görüntüleme ve yönetme eklendi. Saat değişikliği, iptal ve diğer talepleri onaylama/reddetme. Yeni talep sayısı badge ile gösterilir. Otomatik yenileme (30 saniye).
 - 02.01.2026: Müşteri Rezervasyon Takip Sistemi - Müşterilere benzersiz takip linki gönderilerek rezervasyon durumlarını görmeleri sağlanır. Token tabanlı güvenlik, aktivite tarihinden 1 gün sonra otomatik temizleme. Mobil uyumlu takip sayfası (/takip/:token). Günlük otomatik temizleme job'ı.
 - 02.01.2026: Şifre Değiştirme Güvenliği - Ayarlar sayfasında şifre değiştirirken onay alanı eklendi. Şifreler eşleşmezse kaydetmeye izin verilmez.

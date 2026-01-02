@@ -4,7 +4,7 @@ import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { ReservationCalendar } from "@/components/reservations/ReservationCalendar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
 import {
@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useActivities } from "@/hooks/use-activities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -369,6 +370,8 @@ function NewReservationDialog() {
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
   const [selectedPackageId, setSelectedPackageId] = useState<string>("");
   const [activityTimes, setActivityTimes] = useState<Record<number, string>>({});
+  const [notifyCustomer, setNotifyCustomer] = useState(false);
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
   const { data: activities } = useActivities();
   const createMutation = useCreateReservation();
   const { toast } = useToast();
@@ -412,6 +415,9 @@ function NewReservationDialog() {
     const quantity = Number(formData.get("quantity"));
     
     try {
+      let createdActivityId: number | null = null;
+      let createdTime: string = "";
+      
       if (reservationType === "package" && selectedPackageId && packageActivities.length > 0) {
         for (const activity of packageActivities) {
           const time = activityTimes[activity.id] || (activity as any).defaultTime || "10:00";
@@ -428,28 +434,95 @@ function NewReservationDialog() {
             status: "pending",
             source: "manual",
           });
+          if (!createdActivityId) {
+            createdActivityId = activity.id;
+            createdTime = time;
+          }
         }
-        toast({ title: "Başarılı", description: `Paket tur için ${packageActivities.length} rezervasyon oluşturuldu.` });
+        
+        if (notifyCustomer && customerPhone) {
+          setIsSendingNotification(true);
+          try {
+            const selectedPackage = packageTours.find(p => String(p.id) === selectedPackageId);
+            const response = await fetch('/api/send-whatsapp-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone: customerPhone,
+                customerName,
+                activityName: selectedPackage?.name || 'Paket Tur',
+                date,
+                time: createdTime,
+                packageTourId: Number(selectedPackageId)
+              })
+            });
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || 'WhatsApp mesaji gonderilemedi');
+            }
+            toast({ title: "Basarili", description: `Paket tur icin ${packageActivities.length} rezervasyon olusturuldu ve musteri bilgilendirildi.` });
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesaji gonderilemedi';
+            toast({ title: "Uyari", description: `Rezervasyon olusturuldu ancak ${errorMsg}`, variant: "destructive" });
+          } finally {
+            setIsSendingNotification(false);
+          }
+        } else {
+          toast({ title: "Basarili", description: `Paket tur icin ${packageActivities.length} rezervasyon olusturuldu.` });
+        }
       } else {
+        const activityId = Number(formData.get("activityId"));
+        const time = formData.get("time") as string;
         await createMutation.mutateAsync({
-          activityId: Number(formData.get("activityId")),
+          activityId,
           orderNumber,
           customerName,
           customerPhone,
           customerEmail,
           date,
-          time: formData.get("time") as string,
+          time,
           quantity,
           status: "pending",
           source: "manual",
         });
-        toast({ title: "Başarılı", description: "Rezervasyon oluşturuldu." });
+        
+        if (notifyCustomer && customerPhone) {
+          setIsSendingNotification(true);
+          try {
+            const selectedAct = activities?.find(a => a.id === activityId);
+            const response = await fetch('/api/send-whatsapp-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                phone: customerPhone,
+                customerName,
+                activityName: selectedAct?.name || 'Aktivite',
+                date,
+                time,
+                activityId
+              })
+            });
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              throw new Error(errorData.error || 'WhatsApp mesaji gonderilemedi');
+            }
+            toast({ title: "Basarili", description: "Rezervasyon olusturuldu ve musteri bilgilendirildi." });
+          } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesaji gonderilemedi';
+            toast({ title: "Uyari", description: `Rezervasyon olusturuldu ancak ${errorMsg}`, variant: "destructive" });
+          } finally {
+            setIsSendingNotification(false);
+          }
+        } else {
+          toast({ title: "Basarili", description: "Rezervasyon olusturuldu." });
+        }
       }
       setOpen(false);
       setSelectedActivityId("");
       setSelectedPackageId("");
       setActivityTimes({});
       setReservationType("activity");
+      setNotifyCustomer(false);
     } catch (err) {
       toast({ 
         title: "Hata", 
@@ -647,13 +720,28 @@ function NewReservationDialog() {
             </div>
           </div>
 
+          <div className="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+            <Checkbox
+              id="notifyCustomer"
+              checked={notifyCustomer}
+              onCheckedChange={(checked) => setNotifyCustomer(checked === true)}
+              data-testid="checkbox-notify-customer"
+            />
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Label htmlFor="notifyCustomer" className="text-sm cursor-pointer">
+                Musteriyi WhatsApp ile bilgilendir
+              </Label>
+            </div>
+          </div>
+
           <DialogFooter>
             <Button 
               type="submit" 
-              disabled={createMutation.isPending || (reservationType === "package" && !selectedPackageId)}
+              disabled={createMutation.isPending || isSendingNotification || (reservationType === "package" && !selectedPackageId)}
               data-testid="button-submit-reservation"
             >
-              {createMutation.isPending ? "Oluşturuluyor..." : "Oluştur"}
+              {createMutation.isPending ? "Olusturuluyor..." : isSendingNotification ? "Bildirim gonderiliyor..." : "Olustur"}
             </Button>
           </DialogFooter>
         </form>
