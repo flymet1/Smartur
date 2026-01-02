@@ -391,24 +391,41 @@ export default function Settings() {
     }
   };
 
+  // Settings tab state
+  const [settingsTab, setSettingsTab] = useState("security");
+
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 md:ml-64 p-4 md:p-8 space-y-8 max-w-4xl mx-auto">
-        <div>
+      <main className="flex-1 md:ml-64 p-4 md:p-8 pb-24 max-w-4xl mx-auto">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold font-display">Ayarlar</h1>
           <p className="text-muted-foreground mt-1">Sistem yapılandırması</p>
-          <Button 
-            onClick={handleSaveSettings} 
-            disabled={isSaving}
-            size="lg"
-            className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all"
-          >
-            {isSaving ? "Kaydediliyor..." : "Tüm Ayarları Kaydet"}
-          </Button>
         </div>
 
-        <div className="space-y-6">
+        {/* Settings Navigation Tabs */}
+        <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="security" data-testid="tab-security">
+              <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
+              Güvenlik
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" data-testid="tab-whatsapp">
+              <MessageSquare className="w-4 h-4 mr-2 hidden sm:inline" />
+              WhatsApp
+            </TabsTrigger>
+            <TabsTrigger value="integrations" data-testid="tab-integrations">
+              <ExternalLink className="w-4 h-4 mr-2 hidden sm:inline" />
+              Entegrasyonlar
+            </TabsTrigger>
+            <TabsTrigger value="system" data-testid="tab-system">
+              <Server className="w-4 h-4 mr-2 hidden sm:inline" />
+              Sistem
+            </TabsTrigger>
+          </TabsList>
+
+          {/* SECURITY TAB */}
+          <TabsContent value="security" className="space-y-6">
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -673,7 +690,10 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+          </TabsContent>
 
+          {/* WHATSAPP TAB */}
+          <TabsContent value="whatsapp" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Otomasyon Ayarları</CardTitle>
@@ -1119,7 +1139,10 @@ export default function Settings() {
               </Tabs>
             </CardContent>
           </Card>
+          </TabsContent>
 
+          {/* INTEGRATIONS TAB */}
+          <TabsContent value="integrations" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>WooCommerce Entegrasyonu</CardTitle>
@@ -1136,12 +1159,33 @@ export default function Settings() {
             </CardContent>
           </Card>
 
+          <AutoResponsesCard />
+          </TabsContent>
+
+          {/* SYSTEM TAB */}
+          <TabsContent value="system" className="space-y-6">
           <UpdatesCard />
 
-          <AutoResponsesCard />
-
           <DebugSnapshotCard />
+          </TabsContent>
+        </Tabs>
 
+        {/* Sticky Save Button */}
+        <div className="fixed bottom-0 left-0 md:left-64 right-0 bg-background/95 backdrop-blur border-t p-4 z-50">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground hidden sm:block">
+              Değişikliklerinizi kaydetmeyi unutmayın
+            </p>
+            <Button 
+              onClick={handleSaveSettings} 
+              disabled={isSaving}
+              size="lg"
+              className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all ml-auto"
+              data-testid="button-save-all"
+            >
+              {isSaving ? "Kaydediliyor..." : "Tüm Ayarları Kaydet"}
+            </Button>
+          </div>
         </div>
       </main>
     </div>
