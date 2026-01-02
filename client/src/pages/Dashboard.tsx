@@ -3,7 +3,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
 import { useReservationStats, useReservations } from "@/hooks/use-reservations";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList } from "lucide-react";
+import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList, MessageSquare } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { 
@@ -96,6 +96,17 @@ export default function Dashboard() {
     enabled: !!selectedDate
   });
 
+  const { data: customerRequests } = useQuery<{ id: number; status: string }[]>({
+    queryKey: ['/api/customer-requests'],
+    queryFn: async () => {
+      const res = await fetch('/api/customer-requests');
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  const pendingRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
+
   const chartData = detailedStats?.chartData || [];
 
   const handleBarClick = (data: any) => {
@@ -142,6 +153,14 @@ export default function Dashboard() {
                 Bugünün Rezervasyonları
               </Button>
             </Link>
+            {pendingRequestsCount > 0 && (
+              <Link href="/gelistirici">
+                <div className="flex items-center gap-2 text-sm bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-4 py-2 rounded-full border border-orange-200 dark:border-orange-800 shadow-sm hover-elevate cursor-pointer" data-testid="link-pending-requests">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{pendingRequestsCount} Yeni Talep</span>
+                </div>
+              </Link>
+            )}
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-card px-4 py-2 rounded-full border shadow-sm">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               Sistem Aktif
