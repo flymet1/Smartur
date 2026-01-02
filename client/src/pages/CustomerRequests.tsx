@@ -379,18 +379,16 @@ export default function CustomerRequests() {
                             Bilgilendir
                           </Button>
                         )}
-                        {agencies && agencies.length > 0 && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-orange-600 border-orange-200 dark:border-orange-800"
-                            onClick={() => openAgencyDialog(request)}
-                            data-testid={`button-notify-agency-${request.id}`}
-                          >
-                            <Building2 className="w-4 h-4 mr-1" />
-                            Acentayi Bilgilendir
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-orange-600 border-orange-200 dark:border-orange-800"
+                          onClick={() => openAgencyDialog(request)}
+                          data-testid={`button-notify-agency-${request.id}`}
+                        >
+                          <Building2 className="w-4 h-4 mr-1" />
+                          Acentayi Bilgilendir
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -482,7 +480,10 @@ export default function CustomerRequests() {
                     ))}
                   </SelectContent>
                 </Select>
-                {agencies?.filter(a => a.phone).length === 0 && (
+                {(!agencies || agencies.length === 0) && (
+                  <p className="text-xs text-orange-600">Sistemde kayitli acenta bulunamadi. Once Finans sayfasindan acenta ekleyin.</p>
+                )}
+                {agencies && agencies.length > 0 && agencies.filter(a => a.phone).length === 0 && (
                   <p className="text-xs text-orange-600">Telefon numarasi olan acenta bulunamadi.</p>
                 )}
               </div>
