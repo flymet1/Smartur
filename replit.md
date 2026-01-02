@@ -25,6 +25,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **SSS Desteği**: Aktivite ve paket turlara tanımlı SSS'leri yanıtlarda kullanır
 
 ## Son Değişiklikler
+- 02.01.2026: Bot dinamik tarih algilama - "yarin", "5 subat", "15.01", "hafta sonu" gibi Turkce tarih ifadelerini anlar ve o tarihin kapasitesini ceker.
 - 02.01.2026: Sanal kapasite slotları artık rezervasyonları sayıyor - varsayılan kapasiteye karşı yapılan rezervasyonlar doğru hesaplanıyor (örn: 5 kişilik varsayılan, 4 kişilik rezervasyon = 1 kişi müsait).
 - 02.01.2026: Bot artık sanal slot müsaitliğini görebiliyor - 7 günlük kapasite verisi (hem DB hem varsayılan) AI'a aktarılıyor.
 - 02.01.2026: Takvim filtresi üst kısma taşındı, Rezervasyon takviminde gün özeti eklendi.
