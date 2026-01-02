@@ -358,16 +358,8 @@ export default function Settings() {
               </div>
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                 <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Bu bilgiler Bot Kurallari sayfasina erisim icin kullanilacaktir. Sifreyi guvenli bir yerde saklayin.
+                  Bu bilgiler Geliştirici Girişi sayfasına erişim için kullanılacaktır. Şifreyi güvenli bir yerde saklayın.
                 </p>
-              </div>
-              <div className="pt-2">
-                <Link href="/bot-rules">
-                  <Button variant="outline" className="w-full" data-testid="link-bot-rules">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Bot Kurallarını Düzenle
-                  </Button>
-                </Link>
               </div>
             </CardContent>
           </Card>

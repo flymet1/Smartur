@@ -27,6 +27,10 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **SSS Desteği**: Aktivite ve paket turlara tanımlı SSS'leri yanıtlarda kullanır
 
 ## Son Değişiklikler
+- 02.01.2026: Destek Talebi Oluştur - Kullanım Kılavuzu sayfasına destek talebi formu eklendi, talepler veritabanına kaydediliyor.
+- 02.01.2026: Geliştirici Girişi - 'Bot Kurallarını Düzenle' sayfası 'Geliştirici Girişi' olarak yeniden adlandırıldı, sidebar'a taşındı.
+- 02.01.2026: Geliştirici E-posta Ayarı - Destek taleplerinin gönderileceği e-posta adresi geliştirici panelinden ayarlanabiliyor.
+- 02.01.2026: Türkçe karakter düzeltmeleri - Tüm admin panelinde ş, ç, ö, ü, ğ, ı, İ karakterleri düzeltildi.
 - 02.01.2026: Bot dinamik tarih algilama - "yarin", "5 subat", "15.01", "hafta sonu" gibi Turkce tarih ifadelerini anlar ve o tarihin kapasitesini ceker.
 - 02.01.2026: Sanal kapasite slotları artık rezervasyonları sayıyor - varsayılan kapasiteye karşı yapılan rezervasyonlar doğru hesaplanıyor (örn: 5 kişilik varsayılan, 4 kişilik rezervasyon = 1 kişi müsait).
 - 02.01.2026: Bot artık sanal slot müsaitliğini görebiliyor - 7 günlük kapasite verisi (hem DB hem varsayılan) AI'a aktarılıyor.

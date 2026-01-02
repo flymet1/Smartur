@@ -5,8 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Lock, Save, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Shield, Lock, Save, ArrowLeft, Eye, EyeOff, Mail } from "lucide-react";
 import { Link } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const DEFAULT_BOT_RULES = `1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
@@ -31,6 +32,24 @@ export default function BotRules() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [botRules, setBotRules] = useState(DEFAULT_BOT_RULES);
   const [isSaving, setIsSaving] = useState(false);
+  const [developerEmail, setDeveloperEmail] = useState("logobudur@gmail.com");
+  const queryClient = useQueryClient();
+
+  // Load developer email setting
+  const { data: emailSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'developerEmail'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/developerEmail');
+      return res.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  useEffect(() => {
+    if (emailSetting?.value) {
+      setDeveloperEmail(emailSetting.value);
+    }
+  }, [emailSetting]);
 
   // Check if already authenticated
   useEffect(() => {
@@ -103,6 +122,8 @@ export default function BotRules() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem('botRulesToken');
+      
+      // Save bot rules
       const res = await fetch('/api/settings/botRules', {
         method: 'POST',
         headers: { 
@@ -115,9 +136,25 @@ export default function BotRules() {
         const error = await res.json();
         throw new Error(error.error || 'Kayıt başarısız');
       }
-      toast({ title: "Kaydedildi", description: "Bot kuralları güncellendi." });
+      
+      // Save developer email
+      const emailRes = await fetch('/api/settings/developerEmail', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ value: developerEmail })
+      });
+      
+      if (!emailRes.ok) {
+        throw new Error('E-posta ayarı kaydedilemedi');
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/settings', 'developerEmail'] });
+      toast({ title: "Kaydedildi", description: "Geliştirici ayarları güncellendi." });
     } catch (err: any) {
-      toast({ title: "Hata", description: err.message || "Kurallar kaydedilemedi", variant: "destructive" });
+      toast({ title: "Hata", description: err.message || "Ayarlar kaydedilemedi", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -132,7 +169,7 @@ export default function BotRules() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20">
-        <div className="text-muted-foreground">Yukleniyor...</div>
+        <div className="text-muted-foreground">Yükleniyor...</div>
       </div>
     );
   }
@@ -145,7 +182,7 @@ export default function BotRules() {
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <Lock className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle>Bot Kuralları - Giriş</CardTitle>
+            <CardTitle>Geliştirici Girişi</CardTitle>
             <CardDescription>
               Bu sayfaya erişmek için şifrenizi girin
             </CardDescription>
@@ -160,7 +197,7 @@ export default function BotRules() {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Sifrenizi girin"
+                    placeholder="Şifrenizi girin"
                     required
                     data-testid="input-login-password"
                   />
@@ -189,7 +226,7 @@ export default function BotRules() {
               <Link href="/settings">
                 <Button variant="ghost" className="text-muted-foreground" data-testid="link-back-settings">
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Ayarlara Don
+                  Ayarlara Dön
                 </Button>
               </Link>
             </div>
@@ -206,10 +243,10 @@ export default function BotRules() {
           <div>
             <h1 className="text-3xl font-bold font-display flex items-center gap-2">
               <Shield className="w-8 h-8 text-primary" />
-              Bot Kurallari
+              Geliştirici Paneli
             </h1>
             <p className="text-muted-foreground mt-1">
-              AI botunun kullandigi kurallari duzenleyin
+              AI bot kuralları ve geliştirici ayarlarını düzenleyin
             </p>
           </div>
           <div className="flex gap-2">
@@ -220,17 +257,45 @@ export default function BotRules() {
               </Button>
             </Link>
             <Button variant="ghost" onClick={handleLogout} data-testid="button-logout">
-              Cikis
+              Çıkış
             </Button>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Onemli Kurallar</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Destek E-posta Adresi
+            </CardTitle>
             <CardDescription>
-              Bu kurallar bot'un sistem prompt'una eklenir ve her mesajda gecerli olur.
-              Her satir bir kural olarak yazilmalidir.
+              Kullanıcıların destek talepleri bu adrese gönderilecektir.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="developerEmail">Geliştirici E-posta</Label>
+              <Input
+                id="developerEmail"
+                type="email"
+                value={developerEmail}
+                onChange={(e) => setDeveloperEmail(e.target.value)}
+                placeholder="ornek@email.com"
+                data-testid="input-developer-email"
+              />
+              <p className="text-xs text-muted-foreground">
+                Destek talepleri ve sistem bildirimleri bu adrese gönderilir.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Önemli Kurallar</CardTitle>
+            <CardDescription>
+              Bu kurallar bot'un sistem prompt'una eklenir ve her mesajda geçerli olur.
+              Her satır bir kural olarak yazılmalıdır.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -238,7 +303,7 @@ export default function BotRules() {
               value={botRules}
               onChange={(e) => setBotRules(e.target.value)}
               className="min-h-[500px] font-mono text-sm"
-              placeholder="Bot kurallarini buraya yazin..."
+              placeholder="Bot kurallarını buraya yazın..."
               data-testid="textarea-bot-rules"
             />
 
@@ -249,17 +314,17 @@ export default function BotRules() {
                 data-testid="button-save-rules"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {isSaving ? "Kaydediliyor..." : "Kurallari Kaydet"}
+                {isSaving ? "Kaydediliyor..." : "Ayarları Kaydet"}
               </Button>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-2">Ipuclari</h4>
+              <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-2">İpuçları</h4>
               <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-                <li>Her kurali numaralandirarak yazin (1., 2., 3. gibi)</li>
-                <li>Kurallar net ve acik olmali</li>
-                <li>Bot bu kurallara gore musteri mesajlarini yanitlar</li>
-                <li>Ozel durumlar icin (eskalasyon, indirim talepleri vs.) kurallar ekleyin</li>
+                <li>Her kuralı numaralandırarak yazın (1., 2., 3. gibi)</li>
+                <li>Kurallar net ve açık olmalı</li>
+                <li>Bot bu kurallara göre müşteri mesajlarını yanıtlar</li>
+                <li>Özel durumlar için (eskalasyon, indirim talepleri vs.) kurallar ekleyin</li>
               </ul>
             </div>
           </CardContent>

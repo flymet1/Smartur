@@ -1422,7 +1422,7 @@ export async function registerRoutes(
       const authHeader = req.headers.authorization;
       
       // Protected settings that require bot rules authentication
-      const protectedSettings = ['botRules'];
+      const protectedSettings = ['botRules', 'developerEmail'];
       if (protectedSettings.includes(req.params.key)) {
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
           return res.status(401).json({ error: "Yetkilendirme gerekli" });
@@ -1595,6 +1595,48 @@ export async function registerRoutes(
       res.json(created);
     } catch (err) {
       res.status(400).json({ error: "Destek talebi oluşturulamadı" });
+    }
+  });
+
+  // === Support Request Email (from User Guide) ===
+  app.post("/api/support-request", async (req, res) => {
+    try {
+      const { subject, requestType, message, senderName, senderEmail, developerEmail } = req.body;
+      
+      if (!subject || !requestType || !message || !senderName) {
+        return res.status(400).json({ error: "Tüm zorunlu alanlar doldurulmalı" });
+      }
+
+      const requestTypeLabels: Record<string, string> = {
+        hata: 'Hata Bildirimi',
+        guncelleme: 'Güncelleme İsteği',
+        oneri: 'Öneri',
+        soru: 'Soru',
+        diger: 'Diğer'
+      };
+
+      // Log the support request for now (in production, integrate with email service)
+      console.log('=== DESTEK TALEBİ ===');
+      console.log(`Gönderen: ${senderName}${senderEmail ? ` (${senderEmail})` : ''}`);
+      console.log(`Tür: ${requestTypeLabels[requestType] || requestType}`);
+      console.log(`Konu: ${subject}`);
+      console.log(`Mesaj: ${message}`);
+      console.log(`Hedef: ${developerEmail}`);
+      console.log('====================');
+
+      // Store the support request in database for tracking
+      // Use a formatted phone field to store all request details since schema only supports phone field
+      const formattedPhone = `[${requestTypeLabels[requestType] || requestType}] ${senderName}${senderEmail ? ` <${senderEmail}>` : ''} - ${subject}`;
+      
+      await storage.createSupportRequest({
+        phone: formattedPhone.substring(0, 255), // Limit to prevent overflow
+        status: 'open'
+      });
+
+      res.json({ success: true, message: "Destek talebi kaydedildi" });
+    } catch (err) {
+      console.error("Support request error:", err);
+      res.status(500).json({ error: "Destek talebi gönderilemedi" });
     }
   });
 

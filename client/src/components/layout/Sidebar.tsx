@@ -10,7 +10,9 @@ import {
   Calculator,
   Package,
   CalendarHeart,
-  BookOpen
+  BookOpen,
+  HelpCircle,
+  Code
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -134,6 +136,26 @@ export function Sidebar() {
             )} data-testid="link-user-guide">
               <BookOpen className="h-4 w-4" />
               Kullanım Kılavuzu
+            </div>
+          </Link>
+          <Link href="/user-guide#destek-talebi">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+              "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )} data-testid="link-support-request">
+              <HelpCircle className="h-4 w-4" />
+              Destek Talebi
+            </div>
+          </Link>
+          <Link href="/bot-rules">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+              location === "/bot-rules"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )} data-testid="link-developer-login">
+              <Code className="h-4 w-4" />
+              Geliştirici Girişi
             </div>
           </Link>
         </div>
