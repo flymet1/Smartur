@@ -83,6 +83,18 @@ export default function Settings() {
     },
   });
 
+  // Load bot prompt
+  const { data: botPromptSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'botPrompt'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/botPrompt');
+      return res.json();
+    },
+  });
+
+  // State to track if bot prompt has been loaded
+  const [botPromptLoaded, setBotPromptLoaded] = useState(false);
+
   // Load Gmail settings
   const { data: gmailSettings, refetch: refetchGmailSettings } = useQuery<{ gmailUser: string; isConfigured: boolean }>({
     queryKey: ['/api/gmail-settings'],
@@ -127,6 +139,14 @@ export default function Settings() {
       } catch {}
     }
   }, [adminCredentialsSetting?.value, adminCredentialsLoaded]);
+
+  // Apply loaded bot prompt when data arrives
+  useEffect(() => {
+    if (botPromptSetting?.value && !botPromptLoaded) {
+      setBotPrompt(botPromptSetting.value);
+      setBotPromptLoaded(true);
+    }
+  }, [botPromptSetting?.value, botPromptLoaded]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
