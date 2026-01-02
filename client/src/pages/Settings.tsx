@@ -668,6 +668,90 @@ export default function Settings() {
                           </div>
                         </div>
                       </div>
+
+                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Ban className="w-5 h-5" />
+                            <Label className="text-base font-medium">Kara Liste</Label>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Bot bu numaralara asla otomatik cevap vermez
+                          </p>
+                        </div>
+                        
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          <Input 
+                            placeholder="Telefon numarası (örn: 5321234567)"
+                            value={newBlacklistPhone}
+                            onChange={(e) => setNewBlacklistPhone(e.target.value)}
+                            className="flex-1"
+                            data-testid="input-blacklist-phone"
+                          />
+                          <Input 
+                            placeholder="Sebep (opsiyonel)"
+                            value={newBlacklistReason}
+                            onChange={(e) => setNewBlacklistReason(e.target.value)}
+                            className="flex-1"
+                            data-testid="input-blacklist-reason"
+                          />
+                          <Button 
+                            onClick={() => {
+                              if (newBlacklistPhone.trim()) {
+                                addToBlacklistMutation.mutate({ 
+                                  phone: newBlacklistPhone.trim(), 
+                                  reason: newBlacklistReason.trim() || undefined 
+                                });
+                              }
+                            }}
+                            disabled={!newBlacklistPhone.trim() || addToBlacklistMutation.isPending}
+                            data-testid="button-add-blacklist"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            Ekle
+                          </Button>
+                        </div>
+
+                        {isBlacklistLoading ? (
+                          <div className="text-sm text-muted-foreground">Yükleniyor...</div>
+                        ) : blacklist?.length === 0 ? (
+                          <div className="text-sm text-muted-foreground text-center py-4 bg-background/50 rounded-lg">
+                            Kara listede numara yok
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {blacklist?.map((entry) => (
+                              <div 
+                                key={entry.id} 
+                                className="flex items-center justify-between gap-2 p-3 bg-background/50 rounded-lg"
+                                data-testid={`blacklist-entry-${entry.id}`}
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium">{entry.phone}</div>
+                                  {entry.reason && (
+                                    <div className="text-xs text-muted-foreground">{entry.reason}</div>
+                                  )}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => removeFromBlacklistMutation.mutate(entry.id)}
+                                  disabled={removeFromBlacklistMutation.isPending}
+                                  data-testid={`button-remove-blacklist-${entry.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                          <p className="text-xs text-amber-800 dark:text-amber-300">
+                            Kara listedeki numaralardan gelen mesajlar kaydedilir ancak bot otomatik cevap vermez.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -703,91 +787,6 @@ export default function Settings() {
                   <Button variant="outline">Kopyala</Button>
                 </div>
                 <p className="text-xs text-muted-foreground">Bu URL'i WooCommerce ayarlarınıza ekleyin.</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Ban className="w-5 h-5" />
-                Kara Liste
-              </CardTitle>
-              <CardDescription>
-                Bot bu numaralara asla otomatik cevap vermez
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input 
-                  placeholder="Telefon numarası (örn: 5321234567)"
-                  value={newBlacklistPhone}
-                  onChange={(e) => setNewBlacklistPhone(e.target.value)}
-                  className="flex-1"
-                  data-testid="input-blacklist-phone"
-                />
-                <Input 
-                  placeholder="Sebep (opsiyonel)"
-                  value={newBlacklistReason}
-                  onChange={(e) => setNewBlacklistReason(e.target.value)}
-                  className="flex-1"
-                  data-testid="input-blacklist-reason"
-                />
-                <Button 
-                  onClick={() => {
-                    if (newBlacklistPhone.trim()) {
-                      addToBlacklistMutation.mutate({ 
-                        phone: newBlacklistPhone.trim(), 
-                        reason: newBlacklistReason.trim() || undefined 
-                      });
-                    }
-                  }}
-                  disabled={!newBlacklistPhone.trim() || addToBlacklistMutation.isPending}
-                  data-testid="button-add-blacklist"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Ekle
-                </Button>
-              </div>
-
-              {isBlacklistLoading ? (
-                <div className="text-sm text-muted-foreground">Yükleniyor...</div>
-              ) : blacklist?.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-4 bg-muted/30 rounded-lg">
-                  Kara listede numara yok
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {blacklist?.map((entry) => (
-                    <div 
-                      key={entry.id} 
-                      className="flex items-center justify-between gap-2 p-3 bg-muted/30 rounded-lg"
-                      data-testid={`blacklist-entry-${entry.id}`}
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{entry.phone}</div>
-                        {entry.reason && (
-                          <div className="text-xs text-muted-foreground">{entry.reason}</div>
-                        )}
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => removeFromBlacklistMutation.mutate(entry.id)}
-                        disabled={removeFromBlacklistMutation.isPending}
-                        data-testid={`button-remove-blacklist-${entry.id}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Kara listedeki numaralardan gelen mesajlar kaydedilir ancak bot otomatik cevap vermez.
-                </p>
               </div>
             </CardContent>
           </Card>
