@@ -59,6 +59,103 @@ try {
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
+// Helper function to parse Turkish date expressions from message and return relevant dates
+function parseDatesFromMessage(message: string): string[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
+  const currentYear = today.getFullYear();
+  const dates: Set<string> = new Set();
+  const msgLower = message.toLowerCase();
+  
+  // Turkish month names to number mapping
+  const monthMap: Record<string, number> = {
+    'ocak': 0, 'subat': 1, 'şubat': 1, 'mart': 2, 'nisan': 3, 
+    'mayis': 4, 'mayıs': 4, 'haziran': 5, 'temmuz': 6, 'agustos': 7, 'ağustos': 7,
+    'eylul': 8, 'eylül': 8, 'ekim': 9, 'kasim': 10, 'kasım': 10, 'aralik': 11, 'aralık': 11
+  };
+  
+  // Helper to format date as YYYY-MM-DD
+  const formatDate = (d: Date) => d.toISOString().split('T')[0];
+  
+  // Relative date keywords
+  if (msgLower.includes('bugün') || msgLower.includes('bugun')) {
+    dates.add(formatDate(today));
+  }
+  if (msgLower.includes('yarın') || msgLower.includes('yarin')) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    dates.add(formatDate(tomorrow));
+  }
+  if (msgLower.includes('öbür gün') || msgLower.includes('obur gun') || msgLower.includes('ertesi gün')) {
+    const dayAfter = new Date(today);
+    dayAfter.setDate(today.getDate() + 2);
+    dates.add(formatDate(dayAfter));
+  }
+  if (msgLower.includes('hafta sonu') || msgLower.includes('haftasonu')) {
+    // Find next Saturday and Sunday (or this weekend if today is Sat/Sun)
+    const dayOfWeek = today.getDay();
+    let daysUntilSat = (6 - dayOfWeek + 7) % 7;
+    if (daysUntilSat === 0 && dayOfWeek === 6) daysUntilSat = 0; // Today is Saturday
+    if (dayOfWeek === 0) daysUntilSat = 6; // Today is Sunday, get next Saturday
+    const saturday = new Date(today);
+    saturday.setDate(today.getDate() + daysUntilSat);
+    const sunday = new Date(saturday);
+    sunday.setDate(saturday.getDate() + 1);
+    dates.add(formatDate(saturday));
+    dates.add(formatDate(sunday));
+  }
+  if (msgLower.includes('gelecek hafta') || msgLower.includes('önümüzdeki hafta') || msgLower.includes('haftaya')) {
+    // Add next 7 days starting from next Monday
+    const daysUntilMon = (8 - today.getDay()) % 7 || 7;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + daysUntilMon + i);
+      dates.add(formatDate(d));
+    }
+  }
+  
+  // Parse "5 şubat", "15 ocak" patterns
+  for (const [monthName, monthNum] of Object.entries(monthMap)) {
+    const regex = new RegExp(`(\\d{1,2})\\s*${monthName}`, 'gi');
+    let match;
+    while ((match = regex.exec(msgLower)) !== null) {
+      const day = parseInt(match[1], 10);
+      if (day >= 1 && day <= 31) {
+        let year = currentYear;
+        const targetDate = new Date(year, monthNum, day);
+        targetDate.setHours(0, 0, 0, 0); // Normalize for comparison
+        // If date is strictly in the past (not today), assume next year
+        if (targetDate.getTime() < today.getTime()) {
+          year = currentYear + 1;
+        }
+        const dateStr = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        dates.add(dateStr);
+      }
+    }
+  }
+  
+  // Parse DD/MM or DD.MM patterns
+  const slashPattern = /(\d{1,2})[\/\.](\d{1,2})/g;
+  let slashMatch;
+  while ((slashMatch = slashPattern.exec(message)) !== null) {
+    const day = parseInt(slashMatch[1], 10);
+    const month = parseInt(slashMatch[2], 10);
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+      let year = currentYear;
+      const targetDate = new Date(year, month - 1, day);
+      targetDate.setHours(0, 0, 0, 0); // Normalize for comparison
+      // If date is strictly in the past (not today), assume next year
+      if (targetDate.getTime() < today.getTime()) {
+        year = currentYear + 1;
+      }
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      dates.add(dateStr);
+    }
+  }
+  
+  return Array.from(dates);
+}
+
 // Helper function to get capacity including virtual slots from activity defaults
 async function getCapacityWithVirtualSlots(dates: string[]): Promise<Array<{
   activityId: number;
@@ -1041,15 +1138,24 @@ export async function registerRoutes(
       const activities = await storage.getActivities();
       const packageTours = await storage.getPackageTours();
       
-      // Get capacity data for the next 7 days (including virtual slots from activity defaults)
+      // Get capacity data dynamically based on dates mentioned in message + next 7 days
       const today = new Date();
-      const upcomingDates: string[] = [];
+      const upcomingDates: Set<string> = new Set();
+      
+      // Always include next 7 days as baseline
       for (let i = 0; i < 7; i++) {
         const d = new Date(today);
         d.setDate(d.getDate() + i);
-        upcomingDates.push(d.toISOString().split('T')[0]);
+        upcomingDates.add(d.toISOString().split('T')[0]);
       }
-      const upcomingCapacity = await getCapacityWithVirtualSlots(upcomingDates);
+      
+      // Parse dates from message and add them (supports "15 şubat", "yarın", "hafta sonu", etc.)
+      const messageDates = parseDatesFromMessage(Body);
+      for (const dateStr of messageDates) {
+        upcomingDates.add(dateStr);
+      }
+      
+      const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates));
       
       // Get custom bot prompt from settings
       const botPrompt = await storage.getSetting('botPrompt');
