@@ -1,10 +1,14 @@
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { MessageSquare, Check, X, Clock, RefreshCw, ArrowLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { MessageSquare, Check, X, Clock, RefreshCw, ArrowLeft, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
@@ -28,6 +32,10 @@ interface CustomerRequest {
 export default function CustomerRequests() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [notifyDialogOpen, setNotifyDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<CustomerRequest | null>(null);
+  const [notifyMessage, setNotifyMessage] = useState("");
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
 
   const { data: customerRequests, isLoading, refetch } = useQuery<CustomerRequest[]>({
     queryKey: ['/api/customer-requests'],
@@ -38,19 +46,95 @@ export default function CustomerRequests() {
     refetchInterval: 30000,
   });
 
+  const [pendingNotification, setPendingNotification] = useState<{ id: number; status: string } | null>(null);
+
   const updateRequestMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       const res = await apiRequest('PATCH', `/api/customer-requests/${id}`, { status });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customer-requests'] });
       toast({ title: "Basarili", description: "Talep durumu guncellendi." });
+      // Store the pending notification to open after refetch
+      setPendingNotification({ id: variables.id, status: variables.status });
     },
     onError: () => {
       toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
     },
   });
+
+  // Effect to open notification dialog after status update
+  useEffect(() => {
+    if (pendingNotification && customerRequests && !notifyDialogOpen) {
+      const updatedRequest = customerRequests.find(r => r.id === pendingNotification.id);
+      if (updatedRequest && updatedRequest.status === pendingNotification.status && updatedRequest.customerPhone) {
+        openNotifyDialog(updatedRequest);
+      }
+      setPendingNotification(null);
+    }
+  }, [pendingNotification, customerRequests, notifyDialogOpen]);
+
+  const generateDefaultMessage = (request: CustomerRequest) => {
+    const requestTypeText = getRequestTypeText(request.requestType);
+    let message = `Merhaba ${request.customerName},\n\n`;
+    
+    if (request.status === 'approved') {
+      message += `${requestTypeText} talebiniz onaylanmistir.\n\n`;
+      if (request.requestType === 'time_change' && request.preferredTime) {
+        message += `Yeni saatiniz: ${request.preferredTime}\n\n`;
+      }
+      if (request.requestType === 'cancellation') {
+        message += `Rezervasyonunuz basariyla iptal edilmistir.\n\n`;
+      }
+    } else if (request.status === 'rejected') {
+      message += `Uzgunum, ${requestTypeText.toLowerCase()} talebinizi su anda karsilayamiyoruz.\n\n`;
+    } else {
+      message += `${requestTypeText} talebiniz alindi ve degerlendiriliyor.\n\n`;
+    }
+    
+    message += `Sorulariniz icin bize bu numaradan yazabilirsiniz.\n\nSky Fethiye`;
+    return message;
+  };
+
+  const openNotifyDialog = (request: CustomerRequest) => {
+    setSelectedRequest(request);
+    setNotifyMessage(generateDefaultMessage(request));
+    setNotifyDialogOpen(true);
+  };
+
+  const sendWhatsAppNotification = async () => {
+    if (!selectedRequest || !selectedRequest.customerPhone) {
+      toast({ title: "Hata", description: "Musteri telefon numarasi bulunamadi.", variant: "destructive" });
+      return;
+    }
+    
+    setIsSendingNotification(true);
+    try {
+      const response = await fetch('/api/send-whatsapp-custom-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: selectedRequest.customerPhone,
+          message: notifyMessage
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'WhatsApp mesaji gonderilemedi');
+      }
+      
+      toast({ title: "Basarili", description: "Musteri WhatsApp ile bilgilendirildi." });
+      setNotifyDialogOpen(false);
+      setSelectedRequest(null);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesaji gonderilemedi';
+      toast({ title: "Hata", description: errorMsg, variant: "destructive" });
+    } finally {
+      setIsSendingNotification(false);
+    }
+  };
 
   const getRequestTypeText = (type: string) => {
     switch (type) {
@@ -165,32 +249,46 @@ export default function CustomerRequests() {
                         <p className="text-sm bg-muted/50 p-3 rounded">{request.requestDetails}</p>
                       )}
                       
-                      {request.status === 'pending' && (
-                        <div className="flex gap-2 pt-3 border-t">
+                      <div className="flex gap-2 pt-3 border-t flex-wrap">
+                        {request.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 border-green-200 dark:border-green-800"
+                              onClick={() => updateRequestMutation.mutate({ id: request.id, status: 'approved' })}
+                              disabled={updateRequestMutation.isPending}
+                              data-testid={`button-approve-${request.id}`}
+                            >
+                              <Check className="w-4 h-4 mr-1" />
+                              Onayla
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 border-red-200 dark:border-red-800"
+                              onClick={() => updateRequestMutation.mutate({ id: request.id, status: 'rejected' })}
+                              disabled={updateRequestMutation.isPending}
+                              data-testid={`button-reject-${request.id}`}
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Reddet
+                            </Button>
+                          </>
+                        )}
+                        {request.customerPhone && (
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-green-600 border-green-200 dark:border-green-800"
-                            onClick={() => updateRequestMutation.mutate({ id: request.id, status: 'approved' })}
-                            disabled={updateRequestMutation.isPending}
-                            data-testid={`button-approve-${request.id}`}
+                            className="text-blue-600 border-blue-200 dark:border-blue-800"
+                            onClick={() => openNotifyDialog(request)}
+                            data-testid={`button-notify-${request.id}`}
                           >
-                            <Check className="w-4 h-4 mr-1" />
-                            Onayla
+                            <Send className="w-4 h-4 mr-1" />
+                            Bilgilendir
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 border-red-200 dark:border-red-800"
-                            onClick={() => updateRequestMutation.mutate({ id: request.id, status: 'rejected' })}
-                            disabled={updateRequestMutation.isPending}
-                            data-testid={`button-reject-${request.id}`}
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            Reddet
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -198,6 +296,58 @@ export default function CustomerRequests() {
             )}
           </CardContent>
         </Card>
+
+        <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Send className="w-5 h-5 text-blue-600" />
+                Musteriyi Bilgilendir
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {selectedRequest && (
+                <div className="text-sm space-y-1 p-3 bg-muted/50 rounded-lg">
+                  <p><span className="text-muted-foreground">Musteri:</span> {selectedRequest.customerName}</p>
+                  <p><span className="text-muted-foreground">Telefon:</span> {selectedRequest.customerPhone}</p>
+                  <p><span className="text-muted-foreground">Talep:</span> {getRequestTypeText(selectedRequest.requestType)}</p>
+                  <p><span className="text-muted-foreground">Durum:</span> {selectedRequest.status === 'approved' ? 'Onaylandi' : selectedRequest.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}</p>
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="notifyMessage">WhatsApp Mesaji</Label>
+                <Textarea
+                  id="notifyMessage"
+                  value={notifyMessage}
+                  onChange={(e) => setNotifyMessage(e.target.value)}
+                  rows={8}
+                  className="resize-none"
+                  placeholder="Museteriye gonderilecek mesaj..."
+                  data-testid="textarea-notify-message"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Mesaji duzenleyebilir veya varsayilan metni kullanabilirsiniz.
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setNotifyDialogOpen(false)}
+                disabled={isSendingNotification}
+              >
+                Iptal
+              </Button>
+              <Button
+                onClick={sendWhatsAppNotification}
+                disabled={isSendingNotification || !notifyMessage.trim()}
+                data-testid="button-send-notification"
+              >
+                {isSendingNotification ? "Gonderiliyor..." : "WhatsApp ile Gonder"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

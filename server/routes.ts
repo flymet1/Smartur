@@ -1888,6 +1888,72 @@ Sky Fethiye`;
     }
   });
 
+  // === Send Custom WhatsApp Message (for customer requests) ===
+  app.post("/api/send-whatsapp-custom-message", async (req, res) => {
+    try {
+      const { phone, message } = req.body;
+      
+      if (!phone || !message) {
+        return res.status(400).json({ error: "Eksik bilgi: telefon ve mesaj gerekli" });
+      }
+      
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+      
+      if (!accountSid || !authToken || !twilioWhatsAppNumber) {
+        await logError('whatsapp', 'Twilio yapilandirmasi eksik', { phone });
+        return res.status(500).json({ error: "WhatsApp yapilandirmasi eksik" });
+      }
+      
+      // Format phone number for WhatsApp (must start with country code)
+      let formattedPhone = phone.replace(/\s+/g, '').replace(/^\+/, '');
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '90' + formattedPhone.substring(1); // Turkey country code
+      }
+      if (!formattedPhone.startsWith('90') && formattedPhone.length === 10) {
+        formattedPhone = '90' + formattedPhone;
+      }
+      
+      // Use Twilio API to send WhatsApp message
+      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+      const formData = new URLSearchParams();
+      formData.append('From', `whatsapp:${twilioWhatsAppNumber}`);
+      formData.append('To', `whatsapp:+${formattedPhone}`);
+      formData.append('Body', message);
+      
+      const twilioResponse = await fetch(twilioUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: formData.toString()
+      });
+      
+      if (!twilioResponse.ok) {
+        const errorText = await twilioResponse.text();
+        await logError('whatsapp', 'Twilio mesaj gonderme hatasi', { phone, error: errorText });
+        return res.status(500).json({ error: "WhatsApp mesaji gonderilemedi" });
+      }
+      
+      const result = await twilioResponse.json();
+      await logInfo('whatsapp', `Ozel WhatsApp mesaji gonderildi: ${formattedPhone}`);
+      
+      // Also save the message to conversation history
+      await storage.addMessage({
+        phone: `whatsapp:+${formattedPhone}`,
+        content: message,
+        role: "assistant"
+      });
+      
+      res.json({ success: true, messageSid: result.sid });
+    } catch (error) {
+      await logError('whatsapp', 'WhatsApp ozel mesaj hatasi', { error: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "WhatsApp mesaji gonderilemedi" });
+    }
+  });
+
   // === Settings ===
   app.get("/api/settings/:key", async (req, res) => {
     try {
