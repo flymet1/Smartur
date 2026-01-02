@@ -20,6 +20,8 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 
 ## AI Bot Özellikleri
 - **Takvim/Kapasite Erişimi**: Bot, müsaitlik bilgilerini takvimden okur
+- **Dinamik Tarih Algılama**: "yarın", "5 şubat", "hafta sonu", "15.01" gibi Türkçe tarih ifadelerini anlar
+- **Tatil/Bayram Tanıma**: "bayramda müsait misiniz?", "kurban bayramı" gibi tatil sorularını algılar ve ilgili tarihlerin kapasitesini çeker
 - **Onay Mesajları**: Her aktivite/paket tur için tanımlı onay mesajlarını müşteriye iletir
 - **Eskalasyon Sistemi**: Karmaşık sorunlarda destek talebi oluşturur, personel dashboard'dan takip eder
 - **SSS Desteği**: Aktivite ve paket turlara tanımlı SSS'leri yanıtlarda kullanır

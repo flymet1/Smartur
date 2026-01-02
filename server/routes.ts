@@ -156,6 +156,79 @@ function parseDatesFromMessage(message: string): string[] {
   return Array.from(dates);
 }
 
+// Helper to normalize Turkish text for matching (remove accents, lowercase)
+function normalizeTurkish(text: string): string {
+  return text.toLowerCase()
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ı/g, 'i')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .replace(/İ/g, 'i')
+    .replace(/Ğ/g, 'g')
+    .replace(/Ü/g, 'u')
+    .replace(/Ş/g, 's')
+    .replace(/Ö/g, 'o')
+    .replace(/Ç/g, 'c')
+    .trim();
+}
+
+// Helper function to find holidays matching keywords in a message
+async function findHolidayDatesFromMessage(message: string): Promise<string[]> {
+  const msgNormalized = normalizeTurkish(message);
+  const dates: Set<string> = new Set();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Get all active holidays
+  const allHolidays = await storage.getHolidays();
+  const activeHolidays = allHolidays.filter(h => h.isActive);
+  
+  for (const holiday of activeHolidays) {
+    let keywords: string[] = [];
+    try {
+      const parsed = JSON.parse(holiday.keywords || '[]');
+      if (Array.isArray(parsed)) {
+        keywords = parsed.map(k => String(k));
+      }
+    } catch {
+      // If parsing fails, skip keywords
+    }
+    
+    // Also match holiday name (normalized)
+    keywords.push(holiday.name);
+    
+    // Normalize all keywords and check for matches
+    const matches = keywords.some(kw => {
+      const kwNormalized = normalizeTurkish(kw);
+      return msgNormalized.includes(kwNormalized);
+    });
+    
+    if (matches) {
+      // Include holidays that are ongoing or in the future (endDate >= today)
+      const endDate = new Date(holiday.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      if (endDate.getTime() >= today.getTime()) {
+        // Add all days of this holiday (from start or today, whichever is later)
+        const startDate = new Date(holiday.startDate);
+        startDate.setHours(0, 0, 0, 0);
+        const effectiveStart = startDate.getTime() >= today.getTime() ? startDate : today;
+        const current = new Date(effectiveStart);
+        const holidayEnd = new Date(holiday.endDate);
+        
+        while (current <= holidayEnd) {
+          dates.add(current.toISOString().split('T')[0]);
+          current.setDate(current.getDate() + 1);
+        }
+      }
+    }
+  }
+  
+  return Array.from(dates);
+}
+
 // Helper function to get capacity including virtual slots from activity defaults
 async function getCapacityWithVirtualSlots(dates: string[]): Promise<Array<{
   activityId: number;
@@ -717,12 +790,27 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Tatil adi, baslangic ve bitis tarihi zorunlu" });
       }
       
+      // Validate and normalize keywords JSON
+      let validKeywords = '[]';
+      if (keywords) {
+        try {
+          const parsed = JSON.parse(keywords);
+          if (Array.isArray(parsed)) {
+            validKeywords = JSON.stringify(parsed.map(k => String(k).trim()).filter(k => k));
+          } else {
+            return res.status(400).json({ error: "Anahtar kelimeler JSON dizisi olmali" });
+          }
+        } catch {
+          return res.status(400).json({ error: "Gecersiz JSON formati" });
+        }
+      }
+      
       const holiday = await storage.createHoliday({
         name,
         startDate,
         endDate,
         type: type || 'official',
-        keywords: keywords || '[]',
+        keywords: validKeywords,
         notes,
         isActive: isActive !== false
       });
@@ -739,12 +827,27 @@ export async function registerRoutes(
       const id = Number(req.params.id);
       const { name, startDate, endDate, type, keywords, notes, isActive } = req.body;
       
+      // Validate keywords JSON if provided
+      let validKeywords: string | undefined;
+      if (keywords !== undefined) {
+        try {
+          const parsed = JSON.parse(keywords);
+          if (Array.isArray(parsed)) {
+            validKeywords = JSON.stringify(parsed.map(k => String(k).trim()).filter(k => k));
+          } else {
+            return res.status(400).json({ error: "Anahtar kelimeler JSON dizisi olmali" });
+          }
+        } catch {
+          return res.status(400).json({ error: "Gecersiz JSON formati" });
+        }
+      }
+      
       const holiday = await storage.updateHoliday(id, {
         ...(name !== undefined && { name }),
         ...(startDate !== undefined && { startDate }),
         ...(endDate !== undefined && { endDate }),
         ...(type !== undefined && { type }),
-        ...(keywords !== undefined && { keywords }),
+        ...(validKeywords !== undefined && { keywords: validKeywords }),
         ...(notes !== undefined && { notes }),
         ...(isActive !== undefined && { isActive })
       });
@@ -1230,6 +1333,12 @@ export async function registerRoutes(
       // Parse dates from message and add them (supports "15 şubat", "yarın", "hafta sonu", etc.)
       const messageDates = parseDatesFromMessage(Body);
       for (const dateStr of messageDates) {
+        upcomingDates.add(dateStr);
+      }
+      
+      // Also find holiday dates from message (supports "bayram", "tatil", "kurban bayrami", etc.)
+      const holidayDates = await findHolidayDatesFromMessage(Body);
+      for (const dateStr of holidayDates) {
         upcomingDates.add(dateStr);
       }
       
