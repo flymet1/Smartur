@@ -249,14 +249,6 @@ export default function Dashboard() {
               <Bell className="w-4 h-4" />
               <span>{newReservationsCount > 0 ? `${newReservationsCount} Yeni Rezervasyon` : 'Yeni Rezervasyon Yok'}</span>
             </div>
-            <div 
-              className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-card px-4 py-2 rounded-full border shadow-sm cursor-pointer hover:bg-muted transition-colors"
-              onClick={() => setLicenseDialogOpen(true)}
-              data-testid="button-system-status"
-            >
-              <span className={`w-2 h-2 rounded-full ${licenseData?.status.valid ? 'bg-green-500' : 'bg-orange-500'} animate-pulse`}></span>
-              {licenseData?.status.valid ? 'Sistem Aktif' : 'Dikkat Gerekli'}
-            </div>
           </div>
         </div>
 
