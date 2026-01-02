@@ -1706,6 +1706,18 @@ Bu talep musteri takip sayfasindan gonderilmistir.
           const bookingDate = order.meta_data?.find((m: any) => m.key === 'booking_date')?.value 
             || new Date().toISOString().split('T')[0];
           
+          // Extract hotel name and transfer info from order meta
+          const hotelName = order.meta_data?.find((m: any) => 
+            m.key === 'hotel_name' || m.key === 'otel_adi' || m.key === '_hotel_name' || m.key === 'otel'
+          )?.value || order.shipping?.company || '';
+          const hasTransfer = !!(order.meta_data?.find((m: any) => 
+            m.key === 'transfer' || m.key === 'otel_transferi' || m.key === 'hotel_transfer' || m.key === '_transfer'
+          )?.value === 'yes' || order.meta_data?.find((m: any) => 
+            m.key === 'transfer' || m.key === 'otel_transferi' || m.key === 'hotel_transfer' || m.key === '_transfer'
+          )?.value === 'evet' || order.meta_data?.find((m: any) => 
+            m.key === 'transfer' || m.key === 'otel_transferi' || m.key === 'hotel_transfer' || m.key === '_transfer'
+          )?.value === '1' || hotelName);
+          
           // Calculate prices for the whole package (to be stored in first reservation)
           const itemTotalPrice = parseFloat(item.total) || 0;
           const priceTl = isTL ? Math.round(itemTotalPrice) : 0;
@@ -1748,7 +1760,9 @@ Bu talep musteri takip sayfasindan gonderilmistir.
               externalId: String(order.id),
               orderSubtotal: i === 0 ? itemSubtotal : 0,
               orderTotal: i === 0 ? itemTotalWithTax + itemTax : 0,
-              orderTax: i === 0 ? itemTax : 0
+              orderTax: i === 0 ? itemTax : 0,
+              hotelName: hotelName || undefined,
+              hasTransfer
             });
             
             // First reservation becomes parent for the rest
@@ -1768,6 +1782,18 @@ Bu talep musteri takip sayfasindan gonderilmistir.
               || new Date().toISOString().split('T')[0];
             const bookingTime = order.meta_data?.find((m: any) => m.key === 'booking_time')?.value 
               || '10:00';
+            
+            // Extract hotel name and transfer info from order meta
+            const hotelName = order.meta_data?.find((m: any) => 
+              m.key === 'hotel_name' || m.key === 'otel_adi' || m.key === '_hotel_name' || m.key === 'otel'
+            )?.value || order.shipping?.company || '';
+            const hasTransfer = !!(order.meta_data?.find((m: any) => 
+              m.key === 'transfer' || m.key === 'otel_transferi' || m.key === 'hotel_transfer' || m.key === '_transfer'
+            )?.value === 'yes' || order.meta_data?.find((m: any) => 
+              m.key === 'transfer' || m.key === 'otel_transferi' || m.key === 'hotel_transfer' || m.key === '_transfer'
+            )?.value === 'evet' || order.meta_data?.find((m: any) => 
+              m.key === 'transfer' || m.key === 'otel_transferi' || m.key === 'hotel_transfer' || m.key === '_transfer'
+            )?.value === '1' || hotelName);
             
             // Calculate prices for reservation
             const itemTotalPrice = parseFloat(item.total) || 0;
@@ -1800,7 +1826,9 @@ Bu talep musteri takip sayfasindan gonderilmistir.
               externalId: String(order.id),
               orderSubtotal,
               orderTotal,
-              orderTax
+              orderTax,
+              hotelName: hotelName || undefined,
+              hasTransfer
             });
             
             console.log(`Created reservation for activity: ${matchedActivity.name} from order: ${order.id}`);

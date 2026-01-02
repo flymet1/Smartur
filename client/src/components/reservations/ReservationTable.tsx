@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -158,6 +158,7 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
             <TableHead>Sipariş No</TableHead>
             <TableHead>Müşteri</TableHead>
             <TableHead>Aktivite & Tarih</TableHead>
+            <TableHead>Otel / Transfer</TableHead>
             <TableHead>Kişi</TableHead>
             <TableHead>Kaynak</TableHead>
             <TableHead>Durum</TableHead>
@@ -168,7 +169,7 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
         <TableBody>
           {reservations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
                 Henüz rezervasyon bulunmuyor.
               </TableCell>
             </TableRow>
@@ -201,6 +202,30 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
                   <div className="text-xs text-muted-foreground">
                     {format(new Date(res.date), "d MMMM yyyy", { locale: tr })} • {res.time}
                   </div>
+                </TableCell>
+                <TableCell>
+                  {res.hotelName ? (
+                    <div className="flex items-center gap-2">
+                      {res.hasTransfer && (
+                        <span title="Transfer Istedi">
+                          <Bus className="h-4 w-4 text-blue-600" />
+                        </span>
+                      )}
+                      <div>
+                        <div className="flex items-center gap-1 text-sm">
+                          <Hotel className="h-3 w-3 text-muted-foreground" />
+                          <span>{res.hotelName}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : res.hasTransfer ? (
+                    <div className="flex items-center gap-1 text-blue-600" title="Transfer Istedi">
+                      <Bus className="h-4 w-4" />
+                      <span className="text-xs">Transfer</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">-</span>
+                  )}
                 </TableCell>
                 <TableCell>{res.quantity} Kişi</TableCell>
                 <TableCell>

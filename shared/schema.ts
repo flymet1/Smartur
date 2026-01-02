@@ -67,6 +67,8 @@ export const reservations = pgTable("reservations", {
   settlementId: integer("settlement_id"), // Hangi hesaplaşmaya dahil edildi
   trackingToken: text("tracking_token"), // Müşteri takip linki için benzersiz token
   trackingTokenExpiresAt: timestamp("tracking_token_expires_at"), // Token geçerlilik süresi (aktivite tarihi + 1 gün)
+  hotelName: text("hotel_name"), // WooCommerce'den gelen otel ismi
+  hasTransfer: boolean("has_transfer").default(false), // Otel transferi istendi mi
   createdAt: timestamp("created_at").defaultNow(),
 });
 
