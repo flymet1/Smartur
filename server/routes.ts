@@ -121,6 +121,11 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       if (a.reservationLink) desc += `\n  TR Rezervasyon Linki: ${a.reservationLink}`;
       if (a.reservationLinkEn) desc += `\n  EN Reservation Link: ${a.reservationLinkEn}`;
       
+      // Onay mesajı bilgisi
+      if (a.confirmationMessage) {
+        desc += `\n  Türkçe Sipariş Onay Mesajı: ${a.confirmationMessage}`;
+      }
+      
       // Transfer bilgisi
       if (a.hasFreeHotelTransfer) {
         desc += `\n  Ücretsiz Otel Transferi: EVET`;
@@ -174,6 +179,11 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       desc += `)`;
       if (pt.reservationLink) desc += `\n  TR Rezervasyon Linki: ${pt.reservationLink}`;
       if (pt.reservationLinkEn) desc += `\n  EN Reservation Link: ${pt.reservationLinkEn}`;
+      
+      // Onay mesajı bilgisi
+      if (pt.confirmationMessage) {
+        desc += `\n  Türkçe Sipariş Onay Mesajı: ${pt.confirmationMessage}`;
+      }
       
       // SSS bilgisi
       try {
@@ -265,13 +275,15 @@ ${reservationContext}
 1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
 3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
-4. Karmaşık konularda veya şikayetlerde "Bu konuyu yetkili arkadaşımıza iletiyorum" de.
+4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
 5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
 6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
 7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
 8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
 9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
-10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.`;
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+12. DEĞİŞİKLİK TALEPLERİ: Paket turlarda saat/tarih değişikliği isteyenlere, rezervasyon sonrası info@skyfethiye.com adresine sipariş numarasıyla mail atmaları gerektiğini söyle.`;
 
   // If Replit AI Integration is available, use it
   if (ai) {
