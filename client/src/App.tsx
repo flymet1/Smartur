@@ -16,6 +16,7 @@ import Settings from "@/pages/Settings";
 import Finance from "@/pages/Finance";
 import BotRules from "@/pages/BotRules";
 import UserGuide from "@/pages/UserGuide";
+import Support from "@/pages/Support";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/bot-rules" component={BotRules} />
       <Route path="/user-guide" component={UserGuide} />
+      <Route path="/support" component={Support} />
       <Route component={NotFound} />
     </Switch>
   );

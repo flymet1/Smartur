@@ -138,13 +138,15 @@ export function Sidebar() {
               Kullanım Kılavuzu
             </div>
           </Link>
-          <Link href="/user-guide#destek-talebi">
+          <Link href="/support">
             <div className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
-              "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )} data-testid="link-support-request">
+              location === "/support"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )} data-testid="link-support">
               <HelpCircle className="h-4 w-4" />
-              Destek Talebi
+              Destek
             </div>
           </Link>
           <Link href="/bot-rules">

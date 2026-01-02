@@ -1,16 +1,6 @@
-import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { 
   BookOpen, 
   Bot, 
@@ -23,10 +13,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Globe,
-  Mail,
-  Send,
-  HelpCircle
+  Globe
 } from "lucide-react";
 
 export default function UserGuide() {
@@ -319,160 +306,11 @@ export default function UserGuide() {
           </Section>
         </div>
 
-        <SupportRequestSection />
-
         <div className="text-center text-xs text-muted-foreground pt-8 border-t">
           Bu kılavuz sistem güncellemeleriyle birlikte güncellenmektedir.
         </div>
       </main>
     </div>
-  );
-}
-
-function SupportRequestSection() {
-  const { toast } = useToast();
-  const [subject, setSubject] = useState("");
-  const [requestType, setRequestType] = useState("");
-  const [message, setMessage] = useState("");
-  const [senderName, setSenderName] = useState("");
-  const [senderEmail, setSenderEmail] = useState("");
-
-  // Get developer email from settings
-  const { data: emailSetting } = useQuery<{ key: string; value: string | null }>({
-    queryKey: ['/api/settings', 'developerEmail'],
-    queryFn: async () => {
-      const res = await fetch('/api/settings/developerEmail');
-      return res.json();
-    },
-  });
-
-  const developerEmail = emailSetting?.value || "logobudur@gmail.com";
-
-  const sendMutation = useMutation({
-    mutationFn: async (data: { subject: string; requestType: string; message: string; senderName: string; senderEmail: string; developerEmail: string }) => {
-      return apiRequest('POST', '/api/support-request', data);
-    },
-    onSuccess: () => {
-      toast({ title: "Gönderildi", description: "Destek talebiniz başarıyla gönderildi." });
-      setSubject("");
-      setRequestType("");
-      setMessage("");
-      setSenderName("");
-      setSenderEmail("");
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Destek talebi gönderilemedi.", variant: "destructive" });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!subject || !requestType || !message || !senderName) {
-      toast({ title: "Uyarı", description: "Lütfen tüm zorunlu alanları doldurun.", variant: "destructive" });
-      return;
-    }
-    sendMutation.mutate({ subject, requestType, message, senderName, senderEmail, developerEmail });
-  };
-
-  return (
-    <Card id="destek-talebi">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl">
-          <HelpCircle className="h-5 w-5" />
-          Destek Talebi Oluştur
-        </CardTitle>
-        <CardDescription>
-          Sistem sorunlarını, güncelleme isteklerini veya önerilerinizi buradan iletebilirsiniz.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="senderName">Adınız *</Label>
-              <Input
-                id="senderName"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                placeholder="Adınızı girin"
-                required
-                data-testid="input-sender-name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="senderEmail">E-posta Adresiniz (Opsiyonel)</Label>
-              <Input
-                id="senderEmail"
-                type="email"
-                value={senderEmail}
-                onChange={(e) => setSenderEmail(e.target.value)}
-                placeholder="E-posta adresiniz"
-                data-testid="input-sender-email"
-              />
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="requestType">Talep Türü *</Label>
-              <Select value={requestType} onValueChange={setRequestType} required>
-                <SelectTrigger data-testid="select-request-type">
-                  <SelectValue placeholder="Talep türü seçin" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hata">Hata Bildirimi</SelectItem>
-                  <SelectItem value="guncelleme">Güncelleme İsteği</SelectItem>
-                  <SelectItem value="oneri">Öneri</SelectItem>
-                  <SelectItem value="soru">Soru</SelectItem>
-                  <SelectItem value="diger">Diğer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="subject">Konu *</Label>
-              <Input
-                id="subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="Kısa bir konu başlığı"
-                required
-                data-testid="input-subject"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="message">Mesajınız *</Label>
-            <Textarea
-              id="message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Sorununuzu veya isteğinizi detaylı bir şekilde açıklayın..."
-              className="min-h-[120px]"
-              required
-              data-testid="textarea-message"
-            />
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span>Gönderilecek adres: {developerEmail}</span>
-            </div>
-            <Button type="submit" disabled={sendMutation.isPending} data-testid="button-send-support">
-              <Send className="h-4 w-4 mr-2" />
-              {sendMutation.isPending ? "Gönderiliyor..." : "Talebi Gönder"}
-            </Button>
-          </div>
-        </form>
-
-        <div className="mt-4 bg-muted/50 rounded-lg p-4">
-          <p className="text-sm text-muted-foreground">
-            Talebiniz geliştirici ekibine e-posta olarak iletilecektir. Acil durumlar için doğrudan iletişime geçebilirsiniz.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
