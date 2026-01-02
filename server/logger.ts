@@ -31,6 +31,9 @@ function sanitizeDetails(details: unknown): string {
     detailsStr = detailsStr.replace(pattern, '$1[REDACTED]');
   }
   
+  detailsStr = detailsStr.replace(/\+?[0-9]{10,15}/g, '[PHONE_REDACTED]');
+  detailsStr = detailsStr.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL_REDACTED]');
+  
   return detailsStr;
 }
 

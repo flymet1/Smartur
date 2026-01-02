@@ -29,6 +29,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: Sistem Logları - Geliştirici paneline sistem logları görüntüleme eklendi. AI hataları, webhook hataları ve sistem olayları kaydedilir. Destek taleplerine son 20 log otomatik eklenir. PII verileri (telefon, e-posta, API anahtarları) maskelenir.
 - 02.01.2026: İki Dilli Otomatik Yanıtlar - Her kural için ayrı Türkçe ve İngilizce anahtar kelimeler ve yanıtlar destekleniyor. Türkçe soru gelirse Türkçe, İngilizce soru gelirse İngilizce yanıt verilir. Ayarlar sayfasında TR/EN sekmeleri ile yönetim. İngilizce yanıt boşsa Türkçe yanıt kullanılır.
 - 02.01.2026: Otomatik Yanıtlar - Anahtar kelime eşleşmesiyle AI çağırısı yapmadan hızlı yanıt sistemi eklendi. Maliyet tasarrufu ve daha hızlı yanıt süreleri. Ayarlar sayfasından yönetilebilir. Türkçe karakter normalleştirme (ı/i, ö/o, ü/u, ş/s, ç/c, ğ/g) desteklenir.
 - 02.01.2026: AI Bot Kararlılığı - Retry mekanizması (3 deneme, exponential backoff) ve akıllı fallback yanıtları eklendi. AI erişilemezse fiyat, müsaitlik, rezervasyon, iptal niyetlerine göre Türkçe yanıt verilir.

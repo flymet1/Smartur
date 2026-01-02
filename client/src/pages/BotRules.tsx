@@ -5,9 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Lock, Save, ArrowLeft, Eye, EyeOff, Mail } from "lucide-react";
+import { Shield, Lock, Save, ArrowLeft, Eye, EyeOff, Mail, FileText, AlertCircle, AlertTriangle, Info, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const DEFAULT_BOT_RULES = `1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
@@ -33,7 +36,18 @@ export default function BotRules() {
   const [botRules, setBotRules] = useState(DEFAULT_BOT_RULES);
   const [isSaving, setIsSaving] = useState(false);
   const [developerEmail, setDeveloperEmail] = useState("logobudur@gmail.com");
+  const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
   const queryClient = useQueryClient();
+
+  interface SystemLog {
+    id: number;
+    level: string;
+    source: string;
+    message: string;
+    details: string | null;
+    phone: string | null;
+    createdAt: string;
+  }
 
   // Load developer email setting
   const { data: emailSetting } = useQuery<{ key: string; value: string | null }>({
@@ -43,6 +57,17 @@ export default function BotRules() {
       return res.json();
     },
     enabled: isAuthenticated,
+  });
+
+  // Load system logs
+  const { data: systemLogs, isLoading: logsLoading, refetch: refetchLogs } = useQuery<SystemLog[]>({
+    queryKey: ['/api/system-logs'],
+    queryFn: async () => {
+      const res = await fetch('/api/system-logs?limit=50');
+      return res.json();
+    },
+    enabled: isAuthenticated,
+    refetchInterval: 30000,
   });
 
   useEffect(() => {
@@ -327,6 +352,97 @@ export default function BotRules() {
                 <li>Özel durumlar için (eskalasyon, indirim talepleri vs.) kurallar ekleyin</li>
               </ul>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Sistem Logları
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => refetchLogs()}
+                disabled={logsLoading}
+                data-testid="button-refresh-logs"
+              >
+                <RefreshCw className={`h-4 w-4 ${logsLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            </CardTitle>
+            <CardDescription>
+              Son 24 saat içindeki hata ve uyarı kayıtları (en yeni en üstte)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {logsLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
+            ) : !systemLogs || systemLogs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                Henüz log kaydı yok
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-2">
+                  {systemLogs.map((log) => (
+                    <Collapsible
+                      key={log.id}
+                      open={expandedLogId === log.id}
+                      onOpenChange={(open) => setExpandedLogId(open ? log.id : null)}
+                    >
+                      <div className="border rounded-md p-3">
+                        <CollapsibleTrigger className="w-full">
+                          <div className="flex items-start gap-2 text-left">
+                            {log.level === 'error' ? (
+                              <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                            ) : log.level === 'warn' ? (
+                              <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
+                            ) : (
+                              <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant={log.level === 'error' ? 'destructive' : log.level === 'warn' ? 'secondary' : 'outline'} className="text-xs">
+                                  {log.source}
+                                </Badge>
+                                {log.phone && (
+                                  <span className="text-xs text-muted-foreground">{log.phone}</span>
+                                )}
+                                <span className="text-xs text-muted-foreground ml-auto">
+                                  {new Date(log.createdAt).toLocaleString('tr-TR')}
+                                </span>
+                              </div>
+                              <p className="text-sm mt-1 break-words">{log.message}</p>
+                            </div>
+                            {log.details && (
+                              <div className="shrink-0">
+                                {expandedLogId === log.id ? (
+                                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </CollapsibleTrigger>
+                        {log.details && (
+                          <CollapsibleContent>
+                            <div className="mt-3 pt-3 border-t">
+                              <pre className="text-xs bg-muted p-2 rounded overflow-x-auto whitespace-pre-wrap break-words">
+                                {log.details}
+                              </pre>
+                            </div>
+                          </CollapsibleContent>
+                        )}
+                      </div>
+                    </Collapsible>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
           </CardContent>
         </Card>
       </div>
