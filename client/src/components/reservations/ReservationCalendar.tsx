@@ -153,34 +153,122 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                 Bu tarihte rezervasyon bulunmuyor.
               </div>
             ) : (
-              selectedReservations.map((res) => (
-                <div 
-                  key={res.id} 
-                  className="p-4 bg-muted/50 rounded-lg border hover:bg-muted/70 transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-medium">{res.customerName}</p>
-                      <p className="text-sm text-muted-foreground">{res.customerPhone}</p>
-                    </div>
-                    {getStatusBadge(res.status || 'pending')}
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">
-                      {res.time} • {res.quantity} Kisi
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{getActivityName(res.activityId)}</span>
-                      {res.packageTourId && (
-                        <Badge variant="outline" className="text-xs text-purple-600 border-purple-300 bg-purple-50 dark:bg-purple-900/20 flex items-center gap-1">
-                          <Package className="w-3 h-3" />
-                          {getPackageTourName(res.packageTourId) || 'Paket'}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
+              (() => {
+                // Group reservations by order number or package tour + customer
+                const groups: Record<string, Reservation[]> = {};
+                const standalone: Reservation[] = [];
+                
+                selectedReservations.forEach(res => {
+                  if (res.orderNumber) {
+                    // Group by order number
+                    const key = `order_${res.orderNumber}`;
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(res);
+                  } else if (res.packageTourId) {
+                    // Group by package tour + customer info
+                    const key = `pkg_${res.packageTourId}_${res.customerName}_${res.customerPhone}`;
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(res);
+                  } else {
+                    standalone.push(res);
+                  }
+                });
+                
+                // Render grouped reservations
+                const groupEntries = Object.entries(groups).filter(([_, items]) => items.length > 1);
+                const ungrouped = [
+                  ...standalone,
+                  ...Object.entries(groups)
+                    .filter(([_, items]) => items.length === 1)
+                    .flatMap(([_, items]) => items)
+                ];
+                
+                return (
+                  <>
+                    {/* Grouped package/order reservations */}
+                    {groupEntries.map(([groupKey, items]) => {
+                      const first = items[0];
+                      const packageName = getPackageTourName(first.packageTourId);
+                      return (
+                        <div 
+                          key={groupKey}
+                          className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-purple-300 dark:border-purple-700"
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Package className="w-4 h-4 text-purple-600" />
+                                <span className="font-semibold text-purple-700 dark:text-purple-300">
+                                  {packageName || "Paket Siparis"}
+                                </span>
+                                {first.orderNumber && (
+                                  <Badge variant="outline" className="font-mono text-xs">
+                                    #{first.orderNumber}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="font-medium">{first.customerName}</p>
+                              <p className="text-sm text-muted-foreground">{first.customerPhone}</p>
+                            </div>
+                            {getStatusBadge(first.status || 'pending')}
+                          </div>
+                          <div className="space-y-2 pl-2 border-l-2 border-purple-300 dark:border-purple-600">
+                            {items.map((res, idx) => (
+                              <div key={res.id} className="flex justify-between items-center text-sm bg-background/50 rounded p-2">
+                                <span className="text-muted-foreground">
+                                  {res.time} • {res.quantity} Kisi
+                                </span>
+                                <span className="font-medium">{getActivityName(res.activityId)}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-purple-200 dark:border-purple-700 flex justify-between text-sm">
+                            <span className="text-muted-foreground">{items.length} aktivite</span>
+                            <span className="font-medium">{items.reduce((sum, r) => sum + r.quantity, 0)} Kisi toplam</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* Ungrouped single reservations */}
+                    {ungrouped.map((res) => (
+                      <div 
+                        key={res.id} 
+                        className="p-4 bg-muted/50 rounded-lg border hover:bg-muted/70 transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{res.customerName}</p>
+                              {res.orderNumber && (
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  #{res.orderNumber}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{res.customerPhone}</p>
+                          </div>
+                          {getStatusBadge(res.status || 'pending')}
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">
+                            {res.time} • {res.quantity} Kisi
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{getActivityName(res.activityId)}</span>
+                            {res.packageTourId && (
+                              <Badge variant="outline" className="text-xs text-purple-600 border-purple-300 bg-purple-50 dark:bg-purple-900/20 flex items-center gap-1">
+                                <Package className="w-3 h-3" />
+                                {getPackageTourName(res.packageTourId) || 'Paket'}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                );
+              })()
             )}
           </div>
         </Card>
