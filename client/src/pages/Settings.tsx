@@ -1118,6 +1118,8 @@ export default function Settings() {
 
           <UpdatesCard />
 
+          <AutoResponsesCard />
+
         </div>
       </main>
     </div>
@@ -1367,6 +1369,306 @@ pm2 reload my-smartur`}
               <p className="text-xs text-blue-800 dark:text-blue-300">
                 PM2 ile <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">reload</code> komutu kullanarak kesintisiz güncelleme yapabilirsiniz.
               </p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Auto Responses Card Component
+type AutoResponse = {
+  id: number;
+  name: string;
+  keywords: string;
+  response: string;
+  priority: number | null;
+  isActive: boolean | null;
+  createdAt: Date | null;
+};
+
+function AutoResponsesCard() {
+  const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<AutoResponse | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formKeywords, setFormKeywords] = useState("");
+  const [formResponse, setFormResponse] = useState("");
+  const [formPriority, setFormPriority] = useState(0);
+  const [formIsActive, setFormIsActive] = useState(true);
+
+  const { data: autoResponses = [], isLoading } = useQuery<AutoResponse[]>({
+    queryKey: ['/api/auto-responses']
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: { name: string; keywords: string; response: string; priority: number; isActive: boolean }) => 
+      apiRequest('POST', '/api/auto-responses', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-responses'] });
+      resetForm();
+      setDialogOpen(false);
+      toast({ title: "Basarili", description: "Otomatik yanit eklendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Otomatik yanit eklenemedi.", variant: "destructive" });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { name: string; keywords: string; response: string; priority: number; isActive: boolean } }) => 
+      apiRequest('PATCH', `/api/auto-responses/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-responses'] });
+      resetForm();
+      setDialogOpen(false);
+      toast({ title: "Basarili", description: "Otomatik yanit guncellendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Otomatik yanit guncellenemedi.", variant: "destructive" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/auto-responses/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auto-responses'] });
+      toast({ title: "Basarili", description: "Otomatik yanit silindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Otomatik yanit silinemedi.", variant: "destructive" });
+    }
+  });
+
+  const resetForm = () => {
+    setFormName("");
+    setFormKeywords("");
+    setFormResponse("");
+    setFormPriority(0);
+    setFormIsActive(true);
+    setEditingItem(null);
+  };
+
+  const handleOpenDialog = (item?: AutoResponse) => {
+    if (item) {
+      setEditingItem(item);
+      setFormName(item.name);
+      try {
+        const keywords = JSON.parse(item.keywords);
+        setFormKeywords(Array.isArray(keywords) ? keywords.join(", ") : "");
+      } catch {
+        setFormKeywords("");
+      }
+      setFormResponse(item.response);
+      setFormPriority(item.priority || 0);
+      setFormIsActive(item.isActive !== false);
+    } else {
+      resetForm();
+    }
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (!formName.trim() || !formKeywords.trim() || !formResponse.trim()) {
+      toast({ title: "Hata", description: "Tum alanlar zorunludur.", variant: "destructive" });
+      return;
+    }
+
+    const keywordsArray = formKeywords.split(",").map(k => k.trim()).filter(k => k);
+    if (keywordsArray.length === 0) {
+      toast({ title: "Hata", description: "En az bir anahtar kelime girmelisiniz.", variant: "destructive" });
+      return;
+    }
+
+    const data = {
+      name: formName.trim(),
+      keywords: JSON.stringify(keywordsArray),
+      response: formResponse.trim(),
+      priority: formPriority,
+      isActive: formIsActive
+    };
+
+    if (editingItem) {
+      updateMutation.mutate({ id: editingItem.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Bu otomatik yaniti silmek istediginize emin misiniz?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <MessageSquare className="w-5 h-5" />
+          Otomatik Yanitlar
+        </CardTitle>
+        <CardDescription>
+          AI cagirisi yapmadan anahtar kelime eslesmesiyle hizli yanitlar (maliyet tasarrufu)
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex justify-end">
+          <Button onClick={() => handleOpenDialog()} data-testid="button-add-auto-response">
+            <Plus className="w-4 h-4 mr-2" />
+            Yeni Kural Ekle
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="text-center py-4 text-muted-foreground">Yukleniyor...</div>
+        ) : autoResponses.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+            Henuz otomatik yanit kurali eklenmemis.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {autoResponses.map((item) => {
+              let keywords: string[] = [];
+              try {
+                keywords = JSON.parse(item.keywords);
+              } catch {}
+              
+              return (
+                <div
+                  key={item.id}
+                  className={`p-4 border rounded-lg space-y-2 ${item.isActive === false ? 'opacity-50' : ''}`}
+                  data-testid={`auto-response-item-${item.id}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">{item.name}</span>
+                      {item.isActive === false && (
+                        <Badge variant="secondary">Pasif</Badge>
+                      )}
+                      <Badge variant="outline">Oncelik: {item.priority || 0}</Badge>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenDialog(item)}
+                        data-testid={`button-edit-${item.id}`}
+                      >
+                        <Shield className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(item.id)}
+                        data-testid={`button-delete-${item.id}`}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {keywords.map((kw, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {kw}
+                      </Badge>
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{item.response}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Add/Edit Dialog */}
+        {dialogOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDialogOpen(false)}>
+            <div className="bg-background border rounded-lg p-6 max-w-lg w-full mx-4 space-y-4" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold">
+                {editingItem ? "Otomatik Yaniti Duzenle" : "Yeni Otomatik Yanit"}
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="auto-name">Kural Adi</Label>
+                  <Input
+                    id="auto-name"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="orn: Fiyat Sorgusu"
+                    data-testid="input-auto-name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="auto-keywords">Anahtar Kelimeler (virgul ile ayirin)</Label>
+                  <Input
+                    id="auto-keywords"
+                    value={formKeywords}
+                    onChange={(e) => setFormKeywords(e.target.value)}
+                    placeholder="fiyat, ucret, ne kadar, kac para"
+                    data-testid="input-auto-keywords"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Turkce karakter farki gozetilmez (i/ı, o/ö, u/ü, s/ş, c/ç, g/ğ)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="auto-response">Yanit Metni</Label>
+                  <Textarea
+                    id="auto-response"
+                    value={formResponse}
+                    onChange={(e) => setFormResponse(e.target.value)}
+                    placeholder="Merhaba! Fiyatlarimiz hakkinda bilgi almak icin..."
+                    rows={4}
+                    data-testid="input-auto-response"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="auto-priority">Oncelik</Label>
+                    <Input
+                      id="auto-priority"
+                      type="number"
+                      value={formPriority}
+                      onChange={(e) => setFormPriority(parseInt(e.target.value) || 0)}
+                      data-testid="input-auto-priority"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Yuksek deger = once kontrol edilir
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Durum</Label>
+                    <div className="flex items-center gap-2 pt-2">
+                      <Switch
+                        checked={formIsActive}
+                        onCheckedChange={setFormIsActive}
+                        data-testid="switch-auto-active"
+                      />
+                      <span className="text-sm">{formIsActive ? "Aktif" : "Pasif"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setDialogOpen(false)} data-testid="button-cancel">
+                  Iptal
+                </Button>
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  data-testid="button-save-auto"
+                >
+                  {createMutation.isPending || updateMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
+                </Button>
+              </div>
             </div>
           </div>
         )}
