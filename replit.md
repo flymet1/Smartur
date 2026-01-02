@@ -23,12 +23,14 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Dinamik Tarih Algılama**: "yarın", "5 şubat", "hafta sonu", "15.01" gibi Türkçe tarih ifadelerini anlar
 - **Tatil/Bayram Tanıma**: "bayramda müsait misiniz?", "kurban bayramı" gibi tatil sorularını algılar ve ilgili tarihlerin kapasitesini çeker
 - **Onay Mesajları**: Her aktivite/paket tur için tanımlı onay mesajlarını müşteriye iletir
+- **Takip Sayfası Yönlendirme**: Rezervasyon sonrası takip linki bilgisi, değişiklik/iptal için takip sayfasına yönlendirme
 - **Eskalasyon Sistemi**: Karmaşık sorunlarda destek talebi oluşturur, personel dashboard'dan takip eder
 - **SSS Desteği**: Aktivite ve paket turlara tanımlı SSS'leri yanıtlarda kullanır
 - **Retry Mekanizması**: AI hata verdiğinde otomatik yeniden deneme (3 deneme, exponential backoff)
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: Bot Takip Sayfası Entegrasyonu - Rezervasyon sonrası müşteriye takip sayfası bilgisi verilmesi, değişiklik/iptal taleplerinde takip sayfasına yönlendirme. Sistem prompt güncellendi.
 - 02.01.2026: Lisans/Üyelik Sistemi - 4 plan tipi (trial/basic/professional/enterprise) ile lisans yönetimi eklendi. Dashboard'da üyelik durumu kartı, API endpoint'leri ve otomatik yenileme sistemi. Aktivite ve rezervasyon limitleri plan bazında kontrol ediliyor.
 - 02.01.2026: Menü Düzenlemesi - Tatiller ayarlar sayfasına yeni sekme olarak taşındı. Bot Test sidebar alt kısmına taşındı. Hızlı erişim sadece Müşteri Talepleri ve Destek gösteriyor.
 - 02.01.2026: Acenta Bildirim Özelliği - Müşteri talepleri sayfasında "Acentayı Bilgilendir" butonu eklendi. Acenta seçimi dropdown ile yapılabilir. Düzenlenebilir mesaj içeriği. Telefon numarası olan acentalar listelenir.

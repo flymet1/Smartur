@@ -85,7 +85,11 @@ const DEFAULT_BOT_RULES = `
 
 5.2 SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa, konuşulan dile göre "Türkçe Sipariş Onay Mesajı" veya "İngilizce Sipariş Onay Mesajı" alanını seç. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
 
-5.3 DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği isteyenlere, rezervasyon sonrası info@skyfethiye.com adresine sipariş numarasıyla mail atmaları gerektiğini söyle.
+5.3 REZERVASYON TAKİP SAYFASI: Rezervasyon onaylandıktan sonra müşteriye şunu mutlaka bildir:
+"Rezervasyonunuzun detaylarını görüntüleyebileceğiniz ve değişiklik/iptal talebi oluşturabileceğiniz takip linkinizi WhatsApp'a gönderdik. Bu link üzerinden tüm işlemlerinizi yapabilirsiniz."
+
+5.4 DEĞİŞİKLİK/İPTAL TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere şunu söyle:
+"Size gönderdiğimiz takip linkinden rezervasyon bilgilerinizi görüntüleyebilir ve değişiklik/iptal talebi oluşturabilirsiniz. Takip linkiniz yoksa veya süresi dolmuşsa, sipariş numaranızı paylaşın, size yeni link gönderelim."
 
 === 6. SORUN ÇÖZME VE ESKALASYON ===
 
@@ -94,6 +98,7 @@ const DEFAULT_BOT_RULES = `
 - Müşteri memnuniyetsiz veya agresifse
 - "Destek talebi", "Operatör", "Beni arayın" gibi ifadeler kullanılırsa
 - Fiyat indirimi, grup indirimi gibi özel talepler gelirse
+- Takip sayfasından gelen talepler (bunlar otomatik bildirim olarak gelir)
 
 6.2 ESKALASYON SÜRECİ: Bu durumlarda şunu söyle:
 "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir."
@@ -728,7 +733,7 @@ ${context.botRules || DEFAULT_BOT_RULES}`;
   }
   
   if (lastUserMessage.includes("iptal") || lastUserMessage.includes("değişiklik") || lastUserMessage.includes("tarih")) {
-    return `Merhaba! Rezervasyon değişikliği veya iptal talepleriniz için lütfen sipariş numaranızı paylaşır mısınız? Size en kısa sürede yardımcı olacağız.`;
+    return `Merhaba! Rezervasyon değişikliği veya iptal talepleriniz için size gönderdiğimiz takip linkini kullanabilirsiniz. Takip linkiniz yoksa veya süresi dolmuşsa, lütfen sipariş numaranızı paylaşın, size yeni link gönderelim.`;
   }
   
   // Default fallback with activity list
