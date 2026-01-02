@@ -25,11 +25,15 @@ const navItems = [
   { href: "/reservations", label: "Rezervasyonlar", icon: Ticket },
   { href: "/activities", label: "Aktiviteler", icon: Activity },
   { href: "/package-tours", label: "Paket Turlar", icon: Package },
-  { href: "/holidays", label: "Tatiller", icon: CalendarHeart },
   { href: "/finance", label: "Finans & Acentalar", icon: Calculator },
-  { href: "/bot-test", label: "Bot Test", icon: MessageCircle },
   { href: "/messages", label: "Mesaj Geçmişi", icon: MessageCircle },
   { href: "/settings", label: "Ayarlar", icon: Settings },
+];
+
+// Quick access buttons at the top
+const quickAccessItems = [
+  { href: "/bot-test", label: "Bot Test", icon: MessageCircle },
+  { href: "/holidays", label: "Tatiller", icon: CalendarHeart },
 ];
 
 export function Sidebar() {
@@ -63,6 +67,22 @@ export function Sidebar() {
           </SheetTrigger>
           <SheetContent side="left" className="w-[240px] sm:w-[300px]">
             <nav className="flex flex-col gap-2 mt-8">
+              {/* Quick Access Buttons for Mobile */}
+              <div className="flex gap-2 mb-3 pb-3 border-b">
+                {quickAccessItems.map((item) => (
+                  <Link key={item.href} href={item.href} className="flex-1">
+                    <div className={cn(
+                      "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
+                      location === item.href 
+                        ? "bg-primary text-primary-foreground border-primary" 
+                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                    )}>
+                      <item.icon className="h-3.5 w-3.5" />
+                      {item.label}
+                    </div>
+                  </Link>
+                ))}
+              </div>
               {navItems.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div className={cn(
@@ -96,7 +116,26 @@ export function Sidebar() {
           )}
         </div>
 
-        <div className="flex-1 px-4 py-4 space-y-1">
+        {/* Quick Access Buttons */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-2">
+            {quickAccessItems.map((item) => (
+              <Link key={item.href} href={item.href} className="flex-1">
+                <div className={cn(
+                  "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
+                  location === item.href 
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                    : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                )} data-testid={`button-quick-${item.href.replace('/', '')}`}>
+                  <item.icon className="h-3.5 w-3.5" />
+                  {item.label}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1 px-4 py-4 space-y-1 border-t">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <div className={cn(
