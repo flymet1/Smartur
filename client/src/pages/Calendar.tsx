@@ -182,7 +182,21 @@ export default function CalendarPage() {
             <h1 className="text-3xl font-bold" data-testid="text-page-title">Takvim & Kapasite</h1>
             <p className="text-muted-foreground mt-1">Musaitlik durumunu yonetin</p>
           </div>
-          <AddCapacityDialog />
+          <div className="flex items-center gap-3 flex-wrap">
+            <Select value={activityFilter} onValueChange={setActivityFilter}>
+              <SelectTrigger className="w-[180px]" data-testid="select-activity-filter">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Aktivite Filtrele" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tum Aktiviteler</SelectItem>
+                {activities?.map(a => (
+                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <AddCapacityDialog />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -233,30 +247,6 @@ export default function CalendarPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Filter className="w-4 h-4" />
-                  Filtreler
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <Label className="text-xs">Aktivite</Label>
-                  <Select value={activityFilter} onValueChange={setActivityFilter}>
-                    <SelectTrigger data-testid="select-activity-filter">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tum Aktiviteler</SelectItem>
-                      {activities?.map(a => (
-                        <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           <div className="lg:col-span-8 space-y-4">

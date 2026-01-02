@@ -62,6 +62,33 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
 
   const datesWithReservations = getDatesWithReservations();
 
+  // Generate summary by activity and hour
+  const generateSummary = () => {
+    if (selectedReservations.length === 0) return null;
+    
+    // Group by activity
+    const byActivity: Record<number, { name: string; byHour: Record<string, number>; total: number }> = {};
+    
+    selectedReservations.forEach(res => {
+      const actId = res.activityId || 0;
+      const actName = getActivityName(actId);
+      
+      if (!byActivity[actId]) {
+        byActivity[actId] = { name: actName, byHour: {}, total: 0 };
+      }
+      
+      const time = res.time || "00:00";
+      byActivity[actId].byHour[time] = (byActivity[actId].byHour[time] || 0) + res.quantity;
+      byActivity[actId].total += res.quantity;
+    });
+    
+    const grandTotal = Object.values(byActivity).reduce((sum, a) => sum + a.total, 0);
+    
+    return { byActivity, grandTotal };
+  };
+  
+  const summary = generateSummary();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <Card className="p-4">
@@ -77,7 +104,39 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
         />
       </Card>
 
-      <div className="md:col-span-2">
+      <div className="md:col-span-2 space-y-4">
+        {summary && (
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-primary rounded-full"></span>
+              Gun Ozeti - {formattedDate ? format(new Date(formattedDate), "d MMMM", { locale: tr }) : ""}
+            </h4>
+            <div className="space-y-3">
+              {Object.entries(summary.byActivity).map(([actId, data]) => (
+                <div key={actId} className="bg-card rounded-lg p-3 border">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium">{data.name}</span>
+                    <Badge variant="secondary">{data.total} kisi</Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(data.byHour)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([time, count]) => (
+                        <Badge key={time} variant="outline" className="text-xs">
+                          {time}: {count} kisi
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+              ))}
+              <div className="pt-2 border-t flex justify-between items-center">
+                <span className="font-semibold">Toplam</span>
+                <Badge className="bg-primary text-primary-foreground">{summary.grandTotal} kisi</Badge>
+              </div>
+            </div>
+          </Card>
+        )}
+        
         <Card className="p-6">
           <div className="mb-6">
             <h3 className="text-lg font-bold">
@@ -108,7 +167,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">
-                      {res.time} • {res.quantity} Kişi
+                      {res.time} • {res.quantity} Kisi
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{getActivityName(res.activityId)}</span>
