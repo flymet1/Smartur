@@ -13,12 +13,15 @@ import {
   BookOpen,
   HelpCircle,
   Code,
-  Building2
+  Building2,
+  Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import type { SupportRequest } from "@shared/schema";
 
 const navItems = [
   { href: "/", label: "Genel Bakış", icon: LayoutDashboard },
@@ -38,6 +41,11 @@ const quickAccessItems = [
   { href: "/holidays", label: "Tatiller", icon: CalendarHeart },
 ];
 
+type SupportSummary = {
+  openCount: number;
+  requests: SupportRequest[];
+};
+
 export function Sidebar() {
   const [location] = useLocation();
 
@@ -50,6 +58,12 @@ export function Sidebar() {
     staleTime: 60000,
   });
 
+  const { data: supportSummary } = useQuery<SupportSummary>({
+    queryKey: ['/api/support-requests/summary'],
+    refetchInterval: 30000,
+  });
+
+  const openSupportCount = supportSummary?.openCount || 0;
   const logoUrl = logoSetting?.value;
 
   return (
@@ -70,7 +84,7 @@ export function Sidebar() {
           <SheetContent side="left" className="w-[240px] sm:w-[300px]">
             <nav className="flex flex-col gap-2 mt-8">
               {/* Quick Access Buttons for Mobile */}
-              <div className="flex gap-2 mb-3 pb-3 border-b">
+              <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b">
                 {quickAccessItems.map((item) => (
                   <Link key={item.href} href={item.href} className="flex-1">
                     <div className={cn(
@@ -84,6 +98,25 @@ export function Sidebar() {
                     </div>
                   </Link>
                 ))}
+                <Link href="/messages?filter=human_intervention" className="flex-1">
+                  <div className={cn(
+                    "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                    openSupportCount > 0 
+                      ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
+                      : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                  )}>
+                    <Bell className="h-3.5 w-3.5" />
+                    Destek
+                    {openSupportCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                      >
+                        {openSupportCount}
+                      </Badge>
+                    )}
+                  </div>
+                </Link>
               </div>
               {navItems.map((item) => (
                 <Link key={item.href} href={item.href}>
@@ -134,6 +167,26 @@ export function Sidebar() {
                 </div>
               </Link>
             ))}
+            <Link href="/messages?filter=human_intervention">
+              <div className={cn(
+                "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                openSupportCount > 0 
+                  ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
+                  : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+              )} data-testid="button-support-notifications">
+                <Bell className="h-3.5 w-3.5" />
+                Destek
+                {openSupportCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                    data-testid="badge-support-open"
+                  >
+                    {openSupportCount}
+                  </Badge>
+                )}
+              </div>
+            </Link>
           </div>
         </div>
 

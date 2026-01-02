@@ -2249,6 +2249,18 @@ Sky Fethiye`;
   });
 
   // === Support Requests ===
+  app.get("/api/support-requests/summary", async (req, res) => {
+    try {
+      const openRequests = await storage.getAllSupportRequests('open');
+      res.json({ 
+        openCount: openRequests.length,
+        requests: openRequests.slice(0, 5)
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Destek ozeti alinamadi" });
+    }
+  });
+
   app.get("/api/support-requests", async (req, res) => {
     try {
       const status = req.query.status as 'open' | 'resolved' | undefined;
