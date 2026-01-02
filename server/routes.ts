@@ -2434,6 +2434,101 @@ export async function registerRoutes(
     }
   });
 
+  // Version and update info endpoint
+  app.get("/api/system/version", async (req, res) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      // Read package.json for version
+      const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const currentVersion = packageJson.version || '1.0.0';
+      
+      // Try to get git commit info
+      let gitCommit = null;
+      let gitBranch = null;
+      try {
+        const { execSync } = await import('child_process');
+        gitCommit = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+        gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+      } catch (e) {
+        // Git not available
+      }
+      
+      res.json({
+        version: currentVersion,
+        gitCommit,
+        gitBranch,
+        nodeVersion: process.version,
+        environment: process.env.NODE_ENV || 'development',
+        uptime: process.uptime(),
+        lastChecked: new Date().toISOString()
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Sürüm bilgisi alınamadı" });
+    }
+  });
+
+  // Check for updates from GitHub
+  app.get("/api/system/check-updates", async (req, res) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      // Read package.json for version
+      const packageJsonPath = path.resolve(process.cwd(), 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const currentVersion = packageJson.version || '1.0.0';
+      
+      // Try to get local and remote commit info
+      let localCommit = null;
+      let remoteCommit = null;
+      let behindCount = 0;
+      let hasUpdates = false;
+      
+      try {
+        const { execSync } = await import('child_process');
+        
+        // Fetch latest from remote
+        execSync('git fetch origin main --quiet 2>/dev/null || git fetch origin master --quiet 2>/dev/null', { encoding: 'utf8' });
+        
+        // Get local commit
+        localCommit = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+        
+        // Get remote commit
+        try {
+          remoteCommit = execSync('git rev-parse --short origin/main', { encoding: 'utf8' }).trim();
+        } catch {
+          remoteCommit = execSync('git rev-parse --short origin/master', { encoding: 'utf8' }).trim();
+        }
+        
+        // Count commits behind
+        try {
+          const behindOutput = execSync('git rev-list --count HEAD..origin/main 2>/dev/null || git rev-list --count HEAD..origin/master 2>/dev/null', { encoding: 'utf8' }).trim();
+          behindCount = parseInt(behindOutput) || 0;
+        } catch {
+          behindCount = 0;
+        }
+        
+        hasUpdates = localCommit !== remoteCommit && behindCount > 0;
+      } catch (e) {
+        // Git not available or not a git repo
+      }
+      
+      res.json({
+        currentVersion,
+        localCommit,
+        remoteCommit,
+        behindCount,
+        hasUpdates,
+        lastChecked: new Date().toISOString()
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Güncelleme kontrolü yapılamadı" });
+    }
+  });
+
   return httpServer;
 }
 
