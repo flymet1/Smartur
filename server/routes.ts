@@ -641,32 +641,96 @@ ${reservationContext}
 === ÖNEMLİ KURALLAR ===
 ${context.botRules || DEFAULT_BOT_RULES}`;
 
-  // If Replit AI Integration is available, use it
+  // Helper function to check if error is rate limit related
+  const isRateLimitError = (error: unknown): boolean => {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return (
+      errorMsg.includes("429") ||
+      errorMsg.includes("RATELIMIT_EXCEEDED") ||
+      errorMsg.toLowerCase().includes("quota") ||
+      errorMsg.toLowerCase().includes("rate limit") ||
+      errorMsg.toLowerCase().includes("resource exhausted")
+    );
+  };
+
+  // Helper function to delay execution
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // Retry configuration
+  const MAX_RETRIES = 3;
+  const INITIAL_DELAY = 1000; // 1 second
+  const MAX_DELAY = 16000; // 16 seconds
+
+  // If Replit AI Integration is available, use it with retry logic
   if (ai) {
-    try {
-      // Convert message history to Gemini format
-      const contents = history.map((msg: any) => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.content }]
-      }));
+    let lastError: unknown = null;
+    
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        // Convert message history to Gemini format
+        const contents = history.map((msg: any) => ({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.content }]
+        }));
 
-      const result = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents,
-        config: {
-          systemInstruction: systemPrompt
+        const result = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents,
+          config: {
+            systemInstruction: systemPrompt
+          }
+        });
+
+        const responseText = result.text || "";
+        return responseText || "Merhaba! Nasıl yardımcı olabilirim?";
+      } catch (error) {
+        lastError = error;
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        
+        console.error(`Gemini API error (attempt ${attempt + 1}/${MAX_RETRIES}):`, errorMsg);
+        
+        // If rate limit error and not last attempt, retry with exponential backoff
+        if (isRateLimitError(error) && attempt < MAX_RETRIES - 1) {
+          const delayTime = Math.min(INITIAL_DELAY * Math.pow(2, attempt), MAX_DELAY);
+          console.log(`Rate limit hit. Retrying in ${delayTime}ms...`);
+          await delay(delayTime);
+          continue;
         }
-      });
-
-      const responseText = result.text || "";
-      return responseText || "Merhaba! Nasıl yardımcı olabilirim?";
-    } catch (error) {
-      console.error("Gemini API error:", error);
+        
+        // For non-rate-limit errors, don't retry
+        if (!isRateLimitError(error)) {
+          break;
+        }
+      }
     }
+    
+    // Log final error for debugging
+    console.error("AI generation failed after all retries. Last error:", lastError);
   }
 
-  // Mock response with activity information when AI is not available
-  return `Merhaba! Bizim aktivitelerimiz şunlardır:\n\n${activityDescriptions}\n\nBunlardan hangisine ilgi duyuyorsunuz?`;
+  // Smart fallback response when AI is not available or fails
+  // Parse the last user message to provide a contextual response
+  const lastUserMessage = history.filter((m: any) => m.role === "user").pop()?.content?.toLowerCase() || "";
+  
+  // Check for common intents and provide smart fallback
+  if (lastUserMessage.includes("fiyat") || lastUserMessage.includes("ücret") || lastUserMessage.includes("ne kadar")) {
+    return `Merhaba! Fiyatlarımız hakkında bilgi almak için web sitemizi ziyaret edebilir veya size yardımcı olabilmemiz için lütfen biraz bekleyiniz. Sistemimiz şu an yoğun, kısa süre içinde size geri döneceğiz.\n\nAktivitelerimiz:\n${activityDescriptions}`;
+  }
+  
+  if (lastUserMessage.includes("müsait") || lastUserMessage.includes("yer var") || lastUserMessage.includes("boş")) {
+    return `Merhaba! Müsaitlik bilgisi için lütfen biraz bekleyiniz. Sistemimiz şu an yoğun olduğu için kısa süre içinde size geri döneceğiz. Alternatif olarak web sitemizden online rezervasyon yapabilirsiniz.`;
+  }
+  
+  if (lastUserMessage.includes("rezervasyon") || lastUserMessage.includes("kayıt")) {
+    return `Merhaba! Rezervasyon talebinizi aldık. Sistemimiz şu an yoğun olduğu için size en kısa sürede geri döneceğiz. Acil durumlarda web sitemizden online rezervasyon yapabilirsiniz.`;
+  }
+  
+  if (lastUserMessage.includes("iptal") || lastUserMessage.includes("değişiklik") || lastUserMessage.includes("tarih")) {
+    return `Merhaba! Rezervasyon değişikliği veya iptal talepleriniz için lütfen sipariş numaranızı paylaşır mısınız? Size en kısa sürede yardımcı olacağız.`;
+  }
+  
+  // Default fallback with activity list
+  return `Merhaba! Size yardımcı olmak için buradayım. Sistemimiz şu an biraz meşgul olduğu için kısa süre içinde size detaylı bilgi vereceğiz.\n\nAktivitelerimiz:\n${activityDescriptions}\n\nBunlardan hangisi hakkında bilgi almak istersiniz?`;
 }
 
 export async function registerRoutes(
