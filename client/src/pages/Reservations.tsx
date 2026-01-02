@@ -4,7 +4,7 @@ import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { ReservationCalendar } from "@/components/reservations/ReservationCalendar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import {
@@ -20,6 +20,9 @@ import { useActivities } from "@/hooks/use-activities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import type { PackageTour, Activity } from "@shared/schema";
 
 export default function Reservations() {
   const { data: reservations, isLoading } = useReservations();
@@ -308,10 +311,22 @@ export default function Reservations() {
 
 function NewReservationDialog() {
   const [open, setOpen] = useState(false);
+  const [reservationType, setReservationType] = useState<"activity" | "package">("activity");
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
+  const [selectedPackageId, setSelectedPackageId] = useState<string>("");
+  const [activityTimes, setActivityTimes] = useState<Record<number, string>>({});
   const { data: activities } = useActivities();
   const createMutation = useCreateReservation();
   const { toast } = useToast();
+
+  const { data: packageTours = [] } = useQuery<PackageTour[]>({
+    queryKey: ['/api/package-tours']
+  });
+
+  const { data: packageActivities = [] } = useQuery<(Activity & { defaultTime?: string })[]>({
+    queryKey: ['/api/package-tours', selectedPackageId, 'activities'],
+    enabled: !!selectedPackageId,
+  });
 
   const selectedActivity = activities?.find(a => String(a.id) === selectedActivityId);
   const availableTimes = selectedActivity 
@@ -324,25 +339,60 @@ function NewReservationDialog() {
       })()
     : [];
 
+  const getActivityTimes = (activity: Activity) => {
+    try {
+      return JSON.parse((activity as any).defaultTimes || "[]");
+    } catch {
+      return [];
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const customerName = formData.get("customerName") as string;
+    const customerPhone = formData.get("customerPhone") as string;
+    const customerEmail = formData.get("customerEmail") as string;
+    const date = formData.get("date") as string;
+    const quantity = Number(formData.get("quantity"));
     
     try {
-      await createMutation.mutateAsync({
-        activityId: Number(formData.get("activityId")),
-        customerName: formData.get("customerName") as string,
-        customerPhone: formData.get("customerPhone") as string,
-        customerEmail: formData.get("customerEmail") as string,
-        date: formData.get("date") as string,
-        time: formData.get("time") as string,
-        quantity: Number(formData.get("quantity")),
-        status: "pending",
-        source: "manual",
-      });
-      toast({ title: "Başarılı", description: "Rezervasyon oluşturuldu." });
+      if (reservationType === "package" && selectedPackageId && packageActivities.length > 0) {
+        for (const activity of packageActivities) {
+          const time = activityTimes[activity.id] || (activity as any).defaultTime || "10:00";
+          await createMutation.mutateAsync({
+            activityId: activity.id,
+            packageTourId: Number(selectedPackageId),
+            customerName,
+            customerPhone,
+            customerEmail,
+            date,
+            time,
+            quantity,
+            status: "pending",
+            source: "manual",
+          });
+        }
+        toast({ title: "Başarılı", description: `Paket tur için ${packageActivities.length} rezervasyon oluşturuldu.` });
+      } else {
+        await createMutation.mutateAsync({
+          activityId: Number(formData.get("activityId")),
+          customerName,
+          customerPhone,
+          customerEmail,
+          date,
+          time: formData.get("time") as string,
+          quantity,
+          status: "pending",
+          source: "manual",
+        });
+        toast({ title: "Başarılı", description: "Rezervasyon oluşturuldu." });
+      }
       setOpen(false);
       setSelectedActivityId("");
+      setSelectedPackageId("");
+      setActivityTimes({});
+      setReservationType("activity");
     } catch (err) {
       toast({ 
         title: "Hata", 
@@ -359,84 +409,187 @@ function NewReservationDialog() {
           <Plus className="h-4 w-4 mr-2" /> Yeni Rezervasyon
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Yeni Rezervasyon Oluştur</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="flex gap-2 p-1 bg-muted rounded-lg">
+            <Button
+              type="button"
+              variant={reservationType === "activity" ? "default" : "ghost"}
+              className="flex-1"
+              onClick={() => {
+                setReservationType("activity");
+                setSelectedPackageId("");
+                setActivityTimes({});
+              }}
+              data-testid="button-type-activity"
+            >
+              Tekli Aktivite
+            </Button>
+            <Button
+              type="button"
+              variant={reservationType === "package" ? "default" : "ghost"}
+              className="flex-1"
+              onClick={() => {
+                setReservationType("package");
+                setSelectedActivityId("");
+              }}
+              data-testid="button-type-package"
+            >
+              <Package className="h-4 w-4 mr-2" />
+              Paket Tur
+            </Button>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Müşteri Adı</Label>
-              <Input name="customerName" required placeholder="Ad Soyad" />
+              <Input name="customerName" required placeholder="Ad Soyad" data-testid="input-customer-name" />
             </div>
             <div className="space-y-2">
               <Label>Telefon</Label>
-              <Input name="customerPhone" required placeholder="5XX..." />
+              <Input name="customerPhone" required placeholder="5XX..." data-testid="input-customer-phone" />
             </div>
           </div>
           
           <div className="space-y-2">
             <Label>E-posta (İsteğe bağlı)</Label>
-            <Input name="customerEmail" type="email" placeholder="ornek@email.com" />
+            <Input name="customerEmail" type="email" placeholder="ornek@email.com" data-testid="input-customer-email" />
           </div>
 
-          <div className="space-y-2">
-            <Label>Aktivite</Label>
-            <Select 
-              name="activityId" 
-              required 
-              value={selectedActivityId}
-              onValueChange={setSelectedActivityId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Aktivite seçin" />
-              </SelectTrigger>
-              <SelectContent>
-                {activities?.map(a => (
-                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {reservationType === "activity" ? (
+            <div className="space-y-2">
+              <Label>Aktivite</Label>
+              <Select 
+                name="activityId" 
+                required 
+                value={selectedActivityId}
+                onValueChange={setSelectedActivityId}
+              >
+                <SelectTrigger data-testid="select-activity">
+                  <SelectValue placeholder="Aktivite seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activities?.map(a => (
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Paket Tur</Label>
+              <Select 
+                value={selectedPackageId}
+                onValueChange={(val) => {
+                  setSelectedPackageId(val);
+                  setActivityTimes({});
+                }}
+              >
+                <SelectTrigger data-testid="select-package">
+                  <SelectValue placeholder="Paket tur seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {packageTours.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-purple-500" />
+                        {p.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {reservationType === "package" && selectedPackageId && packageActivities.length > 0 && (
+            <div className="space-y-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center gap-2 text-sm font-medium text-purple-700 dark:text-purple-300">
+                <Package className="h-4 w-4" />
+                Paket İçeriği - Her aktivite için saat seçin
+              </div>
+              {packageActivities.map((activity) => {
+                const times = getActivityTimes(activity);
+                return (
+                  <div key={activity.id} className="flex items-center gap-3 bg-background p-2 rounded-md">
+                    <span className="flex-1 text-sm font-medium">{activity.name}</span>
+                    {times.length > 0 ? (
+                      <Select 
+                        value={activityTimes[activity.id] || ""} 
+                        onValueChange={(val) => setActivityTimes(prev => ({ ...prev, [activity.id]: val }))}
+                      >
+                        <SelectTrigger className="w-28" data-testid={`select-time-${activity.id}`}>
+                          <SelectValue placeholder="Saat" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {times.map((time: string) => (
+                            <SelectItem key={time} value={time}>{time}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        type="time"
+                        className="w-28"
+                        value={activityTimes[activity.id] || ""}
+                        onChange={(e) => setActivityTimes(prev => ({ ...prev, [activity.id]: e.target.value }))}
+                        data-testid={`input-time-${activity.id}`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Tarih</Label>
-              <Input name="date" type="date" required />
+              <Input name="date" type="date" required data-testid="input-date" />
             </div>
-            <div className="space-y-2">
-              <Label>Saat</Label>
-              {availableTimes.length > 0 ? (
-                <Select name="time" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Saat seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTimes.map((time: string) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input 
-                  name="time" 
-                  type="time" 
-                  placeholder="Önce aktivite seçin" 
-                  disabled={!selectedActivityId}
-                  required 
-                />
-              )}
-            </div>
+            {reservationType === "activity" && (
+              <div className="space-y-2">
+                <Label>Saat</Label>
+                {availableTimes.length > 0 ? (
+                  <Select name="time" required>
+                    <SelectTrigger data-testid="select-time">
+                      <SelectValue placeholder="Saat seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTimes.map((time: string) => (
+                        <SelectItem key={time} value={time}>
+                          {time}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input 
+                    name="time" 
+                    type="time" 
+                    placeholder="Önce aktivite seçin" 
+                    disabled={!selectedActivityId}
+                    required 
+                    data-testid="input-time"
+                  />
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Kişi Sayısı</Label>
-              <Input name="quantity" type="number" min="1" defaultValue="1" required />
+              <Input name="quantity" type="number" min="1" defaultValue="1" required data-testid="input-quantity" />
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={createMutation.isPending}>
+            <Button 
+              type="submit" 
+              disabled={createMutation.isPending || (reservationType === "package" && !selectedPackageId)}
+              data-testid="button-submit-reservation"
+            >
               {createMutation.isPending ? "Oluşturuluyor..." : "Oluştur"}
             </Button>
           </DialogFooter>
