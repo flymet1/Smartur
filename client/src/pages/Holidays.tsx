@@ -29,15 +29,15 @@ const HOLIDAY_TYPES = [
 ];
 
 const PRESET_HOLIDAYS_2026 = [
-  { name: "Yilbasi", startDate: "2026-01-01", endDate: "2026-01-01", type: "official", keywords: '["yilbasi", "yeni yil", "1 ocak"]' },
-  { name: "23 Nisan Ulusal Egemenlik ve Cocuk Bayrami", startDate: "2026-04-23", endDate: "2026-04-23", type: "official", keywords: '["23 nisan", "cocuk bayrami", "ulusal egemenlik"]' },
-  { name: "1 Mayis Emek ve Dayanisma Gunu", startDate: "2026-05-01", endDate: "2026-05-01", type: "official", keywords: '["1 mayis", "isci bayrami", "emek gunu"]' },
-  { name: "19 Mayis Ataturku Anma Genclik ve Spor Bayrami", startDate: "2026-05-19", endDate: "2026-05-19", type: "official", keywords: '["19 mayis", "genclik bayrami"]' },
-  { name: "15 Temmuz Demokrasi ve Milli Birlik Gunu", startDate: "2026-07-15", endDate: "2026-07-15", type: "official", keywords: '["15 temmuz"]' },
-  { name: "30 Agustos Zafer Bayrami", startDate: "2026-08-30", endDate: "2026-08-30", type: "official", keywords: '["30 agustos", "zafer bayrami"]' },
-  { name: "29 Ekim Cumhuriyet Bayrami", startDate: "2026-10-29", endDate: "2026-10-29", type: "official", keywords: '["29 ekim", "cumhuriyet bayrami"]' },
-  { name: "Ramazan Bayrami 2026", startDate: "2026-03-20", endDate: "2026-03-22", type: "religious", keywords: '["ramazan bayrami", "seker bayrami", "bayram"]' },
-  { name: "Kurban Bayrami 2026", startDate: "2026-05-27", endDate: "2026-05-30", type: "religious", keywords: '["kurban bayrami", "bayram"]' },
+  { name: "Yılbaşı", startDate: "2026-01-01", endDate: "2026-01-01", type: "official", keywords: '["yılbaşı", "yeni yıl", "1 ocak"]' },
+  { name: "23 Nisan Ulusal Egemenlik ve Çocuk Bayramı", startDate: "2026-04-23", endDate: "2026-04-23", type: "official", keywords: '["23 nisan", "çocuk bayramı", "ulusal egemenlik"]' },
+  { name: "1 Mayıs Emek ve Dayanışma Günü", startDate: "2026-05-01", endDate: "2026-05-01", type: "official", keywords: '["1 mayıs", "işçi bayramı", "emek günü"]' },
+  { name: "19 Mayıs Atatürk'ü Anma Gençlik ve Spor Bayramı", startDate: "2026-05-19", endDate: "2026-05-19", type: "official", keywords: '["19 mayıs", "gençlik bayramı"]' },
+  { name: "15 Temmuz Demokrasi ve Milli Birlik Günü", startDate: "2026-07-15", endDate: "2026-07-15", type: "official", keywords: '["15 temmuz"]' },
+  { name: "30 Ağustos Zafer Bayramı", startDate: "2026-08-30", endDate: "2026-08-30", type: "official", keywords: '["30 ağustos", "zafer bayramı"]' },
+  { name: "29 Ekim Cumhuriyet Bayramı", startDate: "2026-10-29", endDate: "2026-10-29", type: "official", keywords: '["29 ekim", "cumhuriyet bayramı"]' },
+  { name: "Ramazan Bayramı 2026", startDate: "2026-03-20", endDate: "2026-03-22", type: "religious", keywords: '["ramazan bayramı", "şeker bayramı", "bayram"]' },
+  { name: "Kurban Bayramı 2026", startDate: "2026-05-27", endDate: "2026-05-30", type: "religious", keywords: '["kurban bayramı", "bayram"]' },
 ];
 
 export default function Holidays() {

@@ -462,17 +462,17 @@ function NewReservationDialog() {
             });
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || 'WhatsApp mesaji gonderilemedi');
+              throw new Error(errorData.error || 'WhatsApp mesajı gönderilemedi');
             }
-            toast({ title: "Basarili", description: `Paket tur icin ${packageActivities.length} rezervasyon olusturuldu ve musteri bilgilendirildi.` });
+            toast({ title: "Başarılı", description: `Paket tur için ${packageActivities.length} rezervasyon oluşturuldu ve müşteri bilgilendirildi.` });
           } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesaji gonderilemedi';
-            toast({ title: "Uyari", description: `Rezervasyon olusturuldu ancak ${errorMsg}`, variant: "destructive" });
+            const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesajı gönderilemedi';
+            toast({ title: "Uyarı", description: `Rezervasyon oluşturuldu ancak ${errorMsg}`, variant: "destructive" });
           } finally {
             setIsSendingNotification(false);
           }
         } else {
-          toast({ title: "Basarili", description: `Paket tur icin ${packageActivities.length} rezervasyon olusturuldu.` });
+          toast({ title: "Başarılı", description: `Paket tur için ${packageActivities.length} rezervasyon oluşturuldu.` });
         }
       } else {
         const activityId = Number(formData.get("activityId"));
@@ -510,17 +510,17 @@ function NewReservationDialog() {
             });
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || 'WhatsApp mesaji gonderilemedi');
+              throw new Error(errorData.error || 'WhatsApp mesajı gönderilemedi');
             }
-            toast({ title: "Basarili", description: "Rezervasyon olusturuldu ve musteri bilgilendirildi." });
+            toast({ title: "Başarılı", description: "Rezervasyon oluşturuldu ve müşteri bilgilendirildi." });
           } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesaji gonderilemedi';
-            toast({ title: "Uyari", description: `Rezervasyon olusturuldu ancak ${errorMsg}`, variant: "destructive" });
+            const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesajı gönderilemedi';
+            toast({ title: "Uyarı", description: `Rezervasyon oluşturuldu ancak ${errorMsg}`, variant: "destructive" });
           } finally {
             setIsSendingNotification(false);
           }
         } else {
-          toast({ title: "Basarili", description: "Rezervasyon olusturuldu." });
+          toast({ title: "Başarılı", description: "Rezervasyon oluşturuldu." });
         }
       }
       setOpen(false);
@@ -594,22 +594,22 @@ function NewReservationDialog() {
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>E-posta (Istege bagli)</Label>
+              <Label>E-posta (İsteğe bağlı)</Label>
               <Input name="customerEmail" type="email" placeholder="ornek@email.com" data-testid="input-customer-email" />
             </div>
             <div className="space-y-2">
-              <Label>Siparis No (Istege bagli)</Label>
-              <Input name="orderNumber" placeholder="orn: 1234" data-testid="input-order-number" />
+              <Label>Sipariş No (İsteğe bağlı)</Label>
+              <Input name="orderNumber" placeholder="örn: 1234" data-testid="input-order-number" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Otel Adi (Istege bagli)</Label>
+              <Label>Otel Adı (İsteğe bağlı)</Label>
               <Input 
                 value={hotelName}
                 onChange={(e) => setHotelName(e.target.value)}
-                placeholder="orn: Liberty Hotels Lykia" 
+                placeholder="örn: Liberty Hotels Lykia" 
                 data-testid="input-hotel-name" 
               />
             </div>
@@ -622,7 +622,7 @@ function NewReservationDialog() {
               />
               <Label htmlFor="hasTransfer" className="text-sm cursor-pointer flex items-center gap-2">
                 <Bus className="h-4 w-4 text-blue-600" />
-                Otel Transferi Istedi
+                Otel Transferi İstedi
               </Label>
             </div>
           </div>

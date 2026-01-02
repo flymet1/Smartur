@@ -73,7 +73,7 @@ export default function CustomerRequests() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/customer-requests'] });
-      toast({ title: "Basarili", description: "Talep durumu guncellendi." });
+      toast({ title: "Başarılı", description: "Talep durumu güncellendi." });
       // Store the pending notification to open after refetch
       setPendingNotification({ id: variables.id, status: variables.status });
     },
@@ -123,7 +123,7 @@ export default function CustomerRequests() {
 
   const sendWhatsAppNotification = async () => {
     if (!selectedRequest || !selectedRequest.customerPhone) {
-      toast({ title: "Hata", description: "Musteri telefon numarasi bulunamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Müşteri telefon numarası bulunamadı.", variant: "destructive" });
       return;
     }
     
@@ -140,14 +140,14 @@ export default function CustomerRequests() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'WhatsApp mesaji gonderilemedi');
+        throw new Error(errorData.error || 'WhatsApp mesajı gönderilemedi');
       }
       
-      toast({ title: "Basarili", description: "Musteri WhatsApp ile bilgilendirildi." });
+      toast({ title: "Başarılı", description: "Müşteri WhatsApp ile bilgilendirildi." });
       setNotifyDialogOpen(false);
       setSelectedRequest(null);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesaji gonderilemedi';
+      const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesajı gönderilemedi';
       toast({ title: "Hata", description: errorMsg, variant: "destructive" });
     } finally {
       setIsSendingNotification(false);
@@ -157,12 +157,12 @@ export default function CustomerRequests() {
   // Agency notification functions
   const generateAgencyMessage = (request: CustomerRequest) => {
     const requestTypeText = getRequestTypeText(request.requestType);
-    let message = `Musteri Talep Bildirimi\n\n`;
-    message += `Musteri: ${request.customerName}\n`;
+    let message = `Müşteri Talep Bildirimi\n\n`;
+    message += `Müşteri: ${request.customerName}\n`;
     message += `Talep: ${requestTypeText}\n`;
     
     if (request.status === 'approved') {
-      message += `Durum: Onaylandi\n`;
+      message += `Durum: Onaylandı\n`;
       if (request.requestType === 'time_change' && request.preferredTime) {
         message += `Yeni Saat: ${request.preferredTime}\n`;
       }
@@ -189,13 +189,13 @@ export default function CustomerRequests() {
 
   const sendAgencyNotification = async () => {
     if (!selectedAgencyId) {
-      toast({ title: "Hata", description: "Lutfen bir acenta secin.", variant: "destructive" });
+      toast({ title: "Hata", description: "Lütfen bir acenta seçin.", variant: "destructive" });
       return;
     }
     
     const selectedAgency = agencies?.find(a => String(a.id) === selectedAgencyId);
     if (!selectedAgency?.contactInfo) {
-      toast({ title: "Hata", description: "Secilen acentanin iletisim bilgisi bulunamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Seçilen acentanın iletişim bilgisi bulunamadı.", variant: "destructive" });
       return;
     }
     
@@ -212,15 +212,15 @@ export default function CustomerRequests() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'WhatsApp mesaji gonderilemedi');
+        throw new Error(errorData.error || 'WhatsApp mesajı gönderilemedi');
       }
       
-      toast({ title: "Basarili", description: `${selectedAgency.name} acentasina bildirim gonderildi.` });
+      toast({ title: "Başarılı", description: `${selectedAgency.name} acentasına bildirim gönderildi.` });
       setAgencyDialogOpen(false);
       setSelectedRequest(null);
       setSelectedAgencyId("");
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesaji gonderilemedi';
+      const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesajı gönderilemedi';
       toast({ title: "Hata", description: errorMsg, variant: "destructive" });
     } finally {
       setIsSendingAgencyNotification(false);
@@ -229,9 +229,9 @@ export default function CustomerRequests() {
 
   const getRequestTypeText = (type: string) => {
     switch (type) {
-      case 'time_change': return 'Saat Degisikligi';
-      case 'cancellation': return 'Iptal Talebi';
-      case 'other': return 'Diger Talep';
+      case 'time_change': return 'Saat Değişikliği';
+      case 'cancellation': return 'İptal Talebi';
+      case 'other': return 'Diğer Talep';
       default: return type;
     }
   };
@@ -241,7 +241,7 @@ export default function CustomerRequests() {
       case 'pending':
         return <Badge variant="secondary" className="gap-1"><Clock className="w-3 h-3" />Beklemede</Badge>;
       case 'approved':
-        return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 gap-1"><Check className="w-3 h-3" />Onaylandi</Badge>;
+        return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 gap-1"><Check className="w-3 h-3" />Onaylandı</Badge>;
       case 'rejected':
         return <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 gap-1"><X className="w-3 h-3" />Reddedildi</Badge>;
       default:
@@ -259,7 +259,7 @@ export default function CustomerRequests() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="text-page-title">
               <MessageSquare className="w-8 h-8 text-primary" />
-              Musteri Talepleri
+              Müşteri Talepleri
               {pendingCount > 0 && (
                 <Badge variant="destructive" className="text-sm">
                   {pendingCount} beklemede
@@ -267,14 +267,14 @@ export default function CustomerRequests() {
               )}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Musterilerden gelen saat degisikligi, iptal ve diger talepler
+              Müşterilerden gelen saat değişikliği, iptal ve diğer talepler
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/">
               <Button variant="outline" data-testid="button-back-dashboard">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Genel Bakis
+                Genel Bakış
               </Button>
             </Link>
             <Button 
@@ -387,7 +387,7 @@ export default function CustomerRequests() {
                           data-testid={`button-notify-agency-${request.id}`}
                         >
                           <Building2 className="w-4 h-4 mr-1" />
-                          Acentayi Bilgilendir
+                          Acentayı Bilgilendir
                         </Button>
                       </div>
                     </div>
@@ -403,31 +403,31 @@ export default function CustomerRequests() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Send className="w-5 h-5 text-blue-600" />
-                Musteriyi Bilgilendir
+                Müşteriyi Bilgilendir
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               {selectedRequest && (
                 <div className="text-sm space-y-1 p-3 bg-muted/50 rounded-lg">
-                  <p><span className="text-muted-foreground">Musteri:</span> {selectedRequest.customerName}</p>
+                  <p><span className="text-muted-foreground">Müşteri:</span> {selectedRequest.customerName}</p>
                   <p><span className="text-muted-foreground">Telefon:</span> {selectedRequest.customerPhone}</p>
                   <p><span className="text-muted-foreground">Talep:</span> {getRequestTypeText(selectedRequest.requestType)}</p>
-                  <p><span className="text-muted-foreground">Durum:</span> {selectedRequest.status === 'approved' ? 'Onaylandi' : selectedRequest.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}</p>
+                  <p><span className="text-muted-foreground">Durum:</span> {selectedRequest.status === 'approved' ? 'Onaylandı' : selectedRequest.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}</p>
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="notifyMessage">WhatsApp Mesaji</Label>
+                <Label htmlFor="notifyMessage">WhatsApp Mesajı</Label>
                 <Textarea
                   id="notifyMessage"
                   value={notifyMessage}
                   onChange={(e) => setNotifyMessage(e.target.value)}
                   rows={8}
                   className="resize-none"
-                  placeholder="Museteriye gonderilecek mesaj..."
+                  placeholder="Müşteriye gönderilecek mesaj..."
                   data-testid="textarea-notify-message"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Mesaji duzenleyebilir veya varsayilan metni kullanabilirsiniz.
+                  Mesajı düzenleyebilir veya varsayılan metni kullanabilirsiniz.
                 </p>
               </div>
             </div>
@@ -437,14 +437,14 @@ export default function CustomerRequests() {
                 onClick={() => setNotifyDialogOpen(false)}
                 disabled={isSendingNotification}
               >
-                Iptal
+                İptal
               </Button>
               <Button
                 onClick={sendWhatsAppNotification}
                 disabled={isSendingNotification || !notifyMessage.trim()}
                 data-testid="button-send-notification"
               >
-                {isSendingNotification ? "Gonderiliyor..." : "WhatsApp ile Gonder"}
+                {isSendingNotification ? "Gönderiliyor..." : "WhatsApp ile Gönder"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -455,40 +455,40 @@ export default function CustomerRequests() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-orange-600" />
-                Acentayi Bilgilendir
+                Acentayı Bilgilendir
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               {selectedRequest && (
                 <div className="text-sm space-y-1 p-3 bg-muted/50 rounded-lg">
-                  <p><span className="text-muted-foreground">Musteri:</span> {selectedRequest.customerName}</p>
+                  <p><span className="text-muted-foreground">Müşteri:</span> {selectedRequest.customerName}</p>
                   <p><span className="text-muted-foreground">Talep:</span> {getRequestTypeText(selectedRequest.requestType)}</p>
-                  <p><span className="text-muted-foreground">Durum:</span> {selectedRequest.status === 'approved' ? 'Onaylandi' : selectedRequest.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}</p>
+                  <p><span className="text-muted-foreground">Durum:</span> {selectedRequest.status === 'approved' ? 'Onaylandı' : selectedRequest.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}</p>
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="agencySelect">Acenta Secin</Label>
+                <Label htmlFor="agencySelect">Acenta Seçin</Label>
                 <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
                   <SelectTrigger data-testid="select-agency">
-                    <SelectValue placeholder="Acenta secin..." />
+                    <SelectValue placeholder="Acenta seçin..." />
                   </SelectTrigger>
                   <SelectContent>
                     {agencies?.map((agency) => (
                       <SelectItem key={agency.id} value={String(agency.id)}>
-                        {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(iletisim bilgisi yok)'}
+                        {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(iletişim bilgisi yok)'}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {(!agencies || agencies.length === 0) && (
-                  <p className="text-xs text-orange-600">Sistemde kayitli acenta bulunamadi. Once Finans sayfasindan acenta ekleyin.</p>
+                  <p className="text-xs text-orange-600">Sistemde kayıtlı acenta bulunamadı. Önce Finans sayfasından acenta ekleyin.</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Not: Acentanin iletisim bilgisi (telefon numarasi) Finans sayfasinda tanimlanmalidir.
+                  Not: Acentanın iletişim bilgisi (telefon numarası) Finans sayfasında tanımlanmalıdır.
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="agencyMessage">WhatsApp Mesaji</Label>
+                <Label htmlFor="agencyMessage">WhatsApp Mesajı</Label>
                 <Textarea
                   id="agencyMessage"
                   value={agencyMessage}
@@ -499,7 +499,7 @@ export default function CustomerRequests() {
                   data-testid="textarea-agency-message"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Mesaji duzenleyebilir veya varsayilan metni kullanabilirsiniz.
+                  Mesajı düzenleyebilir veya varsayılan metni kullanabilirsiniz.
                 </p>
               </div>
             </div>
@@ -509,7 +509,7 @@ export default function CustomerRequests() {
                 onClick={() => setAgencyDialogOpen(false)}
                 disabled={isSendingAgencyNotification}
               >
-                Iptal
+                İptal
               </Button>
               <Button
                 onClick={sendAgencyNotification}

@@ -740,7 +740,7 @@ export default function Settings() {
                 >
                   <Upload className="h-10 w-10 text-muted-foreground" />
                   <div className="text-center">
-                    <p className="font-medium">Logo yuklemek icin tiklayin</p>
+                    <p className="font-medium">Logo yüklemek için tıklayın</p>
                     <p className="text-sm text-muted-foreground">PNG, JPG (max 2MB)</p>
                   </div>
                 </div>
@@ -1057,7 +1057,7 @@ export default function Settings() {
                           <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
                             <div className="space-y-0.5">
                               <Label>Sik Sorulan Sorular (SSS)</Label>
-                              <p className="text-xs text-muted-foreground">Aktivite ve paket turlar icin tanimli SSS'ler</p>
+                              <p className="text-xs text-muted-foreground">Aktivite ve paket turlar için tanımlı SSS'ler</p>
                             </div>
                             <Switch 
                               checked={botAccessFaq} 
@@ -1183,7 +1183,7 @@ export default function Settings() {
 
                         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                           <p className="text-xs text-amber-800 dark:text-amber-300">
-                            Kara listedeki numaralardan gelen mesajlar kaydedilir ancak bot otomatik cevap vermez.
+                            Kara listedeki numaralardan gelen mesajlar kaydedilir ancak bot otomatik yanıt vermez.
                           </p>
                         </div>
                       </div>
@@ -1282,7 +1282,7 @@ function WooCommerceCard() {
     if (!storeUrl || !consumerKey || !consumerSecret) {
       toast({
         title: "Hata",
-        description: "Tum alanlari doldurun",
+        description: "Tüm alanları doldurun",
         variant: "destructive",
       });
       return;
@@ -1298,8 +1298,8 @@ function WooCommerceCard() {
 
       if (response.ok) {
         toast({
-          title: "Basarili",
-          description: "WooCommerce baglantisi kuruldu",
+          title: "Başarılı",
+          description: "WooCommerce bağlantısı kuruldu",
         });
         setStoreUrl("");
         setConsumerKey("");
@@ -1309,14 +1309,14 @@ function WooCommerceCard() {
         const data = await response.json();
         toast({
           title: "Hata",
-          description: data.error || "Baglanti kurulamadi",
+          description: data.error || "Bağlantı kurulamadı",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Hata",
-        description: "Baglanti hatasi",
+        description: "Bağlantı hatası",
         variant: "destructive",
       });
     } finally {
@@ -1333,15 +1333,15 @@ function WooCommerceCard() {
 
       if (response.ok) {
         toast({
-          title: "Basarili",
-          description: "WooCommerce baglantisi kaldirildi",
+          title: "Başarılı",
+          description: "WooCommerce bağlantısı kaldırıldı",
         });
         refetch();
       }
     } catch (error) {
       toast({
         title: "Hata",
-        description: "Baglanti kaldirilamadi",
+        description: "Bağlantı kaldırılamadı",
         variant: "destructive",
       });
     } finally {
@@ -1352,8 +1352,8 @@ function WooCommerceCard() {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(webhookUrl);
     toast({
-      title: "Kopyalandi",
-      description: "Webhook URL panoya kopyalandi",
+      title: "Kopyalandı",
+      description: "Webhook URL panoya kopyalandı",
     });
   };
 
@@ -1366,7 +1366,7 @@ function WooCommerceCard() {
         <CardContent>
           <div className="flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Yukleniyor...</span>
+            <span>Yükleniyor...</span>
           </div>
         </CardContent>
       </Card>
@@ -1463,7 +1463,7 @@ function WooCommerceCard() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              WooCommerce &gt; Settings &gt; Advanced &gt; REST API bolumunden API anahtarlarinizi olusturabilirsiniz.
+              WooCommerce &gt; Settings &gt; Advanced &gt; REST API bölümünden API anahtarlarınızı oluşturabilirsiniz.
             </p>
 
             <Button 
@@ -1768,10 +1768,10 @@ function AutoResponsesCard() {
       queryClient.invalidateQueries({ queryKey: ['/api/auto-responses'] });
       resetForm();
       setDialogOpen(false);
-      toast({ title: "Basarili", description: "Otomatik yanit eklendi." });
+      toast({ title: "Başarılı", description: "Otomatik yanıt eklendi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Otomatik yanit eklenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Otomatik yanıt eklenemedi.", variant: "destructive" });
     }
   });
 
@@ -1782,10 +1782,10 @@ function AutoResponsesCard() {
       queryClient.invalidateQueries({ queryKey: ['/api/auto-responses'] });
       resetForm();
       setDialogOpen(false);
-      toast({ title: "Basarili", description: "Otomatik yanit guncellendi." });
+      toast({ title: "Başarılı", description: "Otomatik yanıt güncellendi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Otomatik yanit guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Otomatik yanıt güncellenemedi.", variant: "destructive" });
     }
   });
 
@@ -1793,10 +1793,10 @@ function AutoResponsesCard() {
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/auto-responses/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auto-responses'] });
-      toast({ title: "Basarili", description: "Otomatik yanit silindi." });
+      toast({ title: "Başarılı", description: "Otomatik yanıt silindi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Otomatik yanit silinemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Otomatik yanıt silinemedi.", variant: "destructive" });
     }
   });
 
@@ -1896,10 +1896,10 @@ function AutoResponsesCard() {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-4 text-muted-foreground">Yukleniyor...</div>
+          <div className="text-center py-4 text-muted-foreground">Yükleniyor...</div>
         ) : autoResponses.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
-            Henuz otomatik yanit kurali eklenmemis.
+            Henüz otomatik yanıt kuralı eklenmemiş.
           </div>
         ) : (
           <div className="space-y-3">
@@ -2161,7 +2161,7 @@ function DebugSnapshotCard() {
   const [snapshot, setSnapshot] = useState<DebugSnapshot | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Sistem sagligi basit kontrolu
+  // Sistem sağlığı basit kontrolü
   const { data: healthStatus } = useQuery<{ status: string; errorCount: number; warnCount: number }>({
     queryKey: ['/api/system/health'],
     refetchInterval: 60000, // Her dakika kontrol et
@@ -2171,13 +2171,13 @@ function DebugSnapshotCard() {
     setIsLoading(true);
     try {
       const res = await fetch('/api/system/debug-snapshot');
-      if (!res.ok) throw new Error('Snapshot olusturulamadi');
+      if (!res.ok) throw new Error('Snapshot oluşturulamadı');
       const data = await res.json();
       setSnapshot(data);
       setShowDetails(true);
-      toast({ title: "Basarili", description: "Hata ayiklama raporu olusturuldu." });
+      toast({ title: "Başarılı", description: "Hata ayıklama raporu oluşturuldu." });
     } catch (err) {
-      toast({ title: "Hata", description: "Rapor olusturulamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Rapor oluşturulamadı.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -2194,7 +2194,7 @@ function DebugSnapshotCard() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast({ title: "Indirildi", description: "Dosya indirildi. Gelistiriciye gonderin." });
+    toast({ title: "İndirildi", description: "Dosya indirildi. Geliştiriciye gönderin." });
   };
 
   const getSeverityColor = (severity: string) => {
@@ -2211,9 +2211,9 @@ function DebugSnapshotCard() {
       case 'critical':
         return <Badge variant="destructive" data-testid="badge-health-critical">Kritik Hata</Badge>;
       case 'warning':
-        return <Badge variant="outline" className="border-amber-500 text-amber-600" data-testid="badge-health-warning">Uyari</Badge>;
+        return <Badge variant="outline" className="border-amber-500 text-amber-600" data-testid="badge-health-warning">Uyarı</Badge>;
       default:
-        return <Badge variant="outline" className="border-green-500 text-green-600" data-testid="badge-health-ok">Saglikli</Badge>;
+        return <Badge variant="outline" className="border-green-500 text-green-600" data-testid="badge-health-ok">Sağlıklı</Badge>;
     }
   };
 
@@ -2223,28 +2223,28 @@ function DebugSnapshotCard() {
         <CardTitle className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
-            Hata Ayiklama
+            Hata Ayıklama
           </div>
           {getStatusBadge()}
         </CardTitle>
         <CardDescription>
-          Sorun yasadiginizda bu arac ile tum sistem bilgilerini toplayip gelistiriciye gonderebilirsiniz.
+          Sorun yaşadığınızda bu araç ile tüm sistem bilgilerini toplayıp geliştiriciye gönderebilirsiniz.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Sistem Durumu Ozeti */}
+        {/* Sistem Durumu Özeti */}
         {healthStatus && (healthStatus.errorCount > 0 || healthStatus.warnCount > 0) && (
           <div className={`p-3 rounded-lg border ${healthStatus.status === 'critical' ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'}`}>
             <div className="flex items-center gap-2">
               <AlertCircle className={`w-4 h-4 ${healthStatus.status === 'critical' ? 'text-red-600' : 'text-amber-600'}`} />
               <span className={`text-sm font-medium ${healthStatus.status === 'critical' ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'}`}>
-                Son 24 saatte {healthStatus.errorCount} hata, {healthStatus.warnCount} uyari tespit edildi
+                Son 24 saatte {healthStatus.errorCount} hata, {healthStatus.warnCount} uyarı tespit edildi
               </span>
             </div>
           </div>
         )}
 
-        {/* Snapshot Olustur Butonu */}
+        {/* Snapshot Oluştur Butonu */}
         <div className="flex items-center gap-2">
           <Button 
             onClick={handleCreateSnapshot} 
@@ -2252,14 +2252,14 @@ function DebugSnapshotCard() {
             data-testid="button-create-snapshot"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? "Rapor Olusturuluyor..." : "Hata Raporu Olustur"}
+            {isLoading ? "Rapor Oluşturuluyor..." : "Hata Raporu Oluştur"}
           </Button>
         </div>
 
-        {/* Snapshot Detaylari */}
+        {/* Snapshot Detayları */}
         {snapshot && showDetails && (
           <div className="space-y-4 pt-4 border-t">
-            {/* Sistem Ozeti */}
+            {/* Sistem Özeti */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="text-center p-2 bg-muted rounded-lg">
                 <div className="text-lg font-semibold">{snapshot.summary.activitiesCount}</div>
@@ -2304,25 +2304,25 @@ function DebugSnapshotCard() {
               </div>
             )}
 
-            {/* Indir Butonu */}
+            {/* İndir Butonu */}
             <div className="flex flex-col gap-2 pt-2">
               <Button variant="outline" onClick={handleDownloadSnapshot} data-testid="button-download-snapshot">
                 <Download className="w-4 h-4 mr-2" />
-                Raporu Indir (JSON)
+                Raporu İndir (JSON)
               </Button>
               <p className="text-xs text-muted-foreground">
-                Bu dosyayi gelistiriciye gonderin. Musteri bilgileri gizlenmis halde kaydedilir.
+                Bu dosyayı geliştiriciye gönderin. Müşteri bilgileri gizlenmiş halde kaydedilir.
               </p>
             </div>
 
-            {/* Gelistiriciye Gonderme Talimatlari */}
+            {/* Geliştiriciye Gönderme Talimatları */}
             <div className="bg-muted p-4 rounded-lg space-y-2">
-              <h4 className="font-medium text-sm">Gelistiriciye Nasil Gonderilir?</h4>
+              <h4 className="font-medium text-sm">Geliştiriciye Nasıl Gönderilir?</h4>
               <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1">
-                <li>"Raporu Indir" butonuna tiklayarak dosyayi indirin</li>
-                <li>Indirilen .json dosyasini gelistiriciye e-posta veya mesaj ile gonderin</li>
-                <li>Yasadiginiz sorunu kisa bir cumle ile aciklayin</li>
-                <li>Gelistirici bu dosyayi Replit'e yukleyerek sorunu inceleyecek</li>
+                <li>"Raporu İndir" butonuna tıklayarak dosyayı indirin</li>
+                <li>İndirilen .json dosyasını geliştiriciye e-posta veya mesaj ile gönderin</li>
+                <li>Yaşadığınız sorunu kısa bir cümle ile açıklayın</li>
+                <li>Geliştirici bu dosyayı Replit'e yükleyerek sorunu inceleyecek</li>
               </ol>
             </div>
           </div>
@@ -2373,7 +2373,7 @@ function HolidaysSection() {
       queryClient.invalidateQueries({ queryKey: ['/api/holidays'] });
       setIsDialogOpen(false);
       resetForm();
-      toast({ title: "Basarili", description: "Tatil eklendi." });
+      toast({ title: "Başarılı", description: "Tatil eklendi." });
     }
   });
 
@@ -2383,7 +2383,7 @@ function HolidaysSection() {
       queryClient.invalidateQueries({ queryKey: ['/api/holidays'] });
       setIsDialogOpen(false);
       resetForm();
-      toast({ title: "Basarili", description: "Tatil guncellendi." });
+      toast({ title: "Başarılı", description: "Tatil güncellendi." });
     }
   });
 
@@ -2391,7 +2391,7 @@ function HolidaysSection() {
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/holidays/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/holidays'] });
-      toast({ title: "Basarili", description: "Tatil silindi." });
+      toast({ title: "Başarılı", description: "Tatil silindi." });
     }
   });
 
@@ -2423,7 +2423,7 @@ function HolidaysSection() {
 
   const handleSave = async () => {
     if (!formName || !formStartDate) {
-      toast({ title: "Hata", description: "Tatil adi ve baslangic tarihi zorunludur.", variant: "destructive" });
+      toast({ title: "Hata", description: "Tatil adı ve başlangıç tarihi zorunludur.", variant: "destructive" });
       return;
     }
     const keywordsArray = formKeywords.split(',').map(k => k.trim()).filter(k => k);
@@ -2444,7 +2444,7 @@ function HolidaysSection() {
   };
 
   const handleImportPresets = async () => {
-    if (!confirm("2026 yili icin varsayilan tatilleri eklemek istiyor musunuz?")) return;
+    if (!confirm("2026 yılı için varsayılan tatilleri eklemek istiyor musunuz?")) return;
     let added = 0;
     for (const preset of PRESET_HOLIDAYS_2026) {
       try {
@@ -2452,7 +2452,7 @@ function HolidaysSection() {
         added++;
       } catch {}
     }
-    toast({ title: "Basarili", description: `${added} tatil eklendi.` });
+    toast({ title: "Başarılı", description: `${added} tatil eklendi.` });
   };
 
   const formatDate = (dateStr: string) => {
@@ -2466,9 +2466,9 @@ function HolidaysSection() {
         <div>
           <CardTitle className="flex items-center gap-2">
             <CalendarHeart className="h-5 w-5" />
-            Tatil ve Bayram Yonetimi
+            Tatil ve Bayram Yönetimi
           </CardTitle>
-          <CardDescription>Resmi tatiller ve bayramlari yonetin. Bot musaitlik kontrolunde bu tarihleri dikkate alir.</CardDescription>
+          <CardDescription>Resmi tatiller ve bayramları yönetin. Bot müsaitlik kontrolünde bu tarihleri dikkate alır.</CardDescription>
         </div>
         <div className="flex gap-2">
           {holidays.length === 0 && (
@@ -2490,7 +2490,7 @@ function HolidaysSection() {
           </div>
         ) : holidays.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
-            Henuz tatil eklenmemis. "2026 Tatillerini Ekle" butonuna tiklayarak baslayabilirsiniz.
+            Henüz tatil eklenmemiş. "2026 Tatillerini Ekle" butonuna tıklayarak başlayabilirsiniz.
           </div>
         ) : (
           <div className="space-y-2">
@@ -2618,7 +2618,7 @@ function LicenseSection() {
       return;
     }
     if (!agencyName.trim()) {
-      toast({ title: "Hata", description: "Acenta/isletme adi gerekli.", variant: "destructive" });
+      toast({ title: "Hata", description: "Acenta/işletme adı gerekli.", variant: "destructive" });
       return;
     }
 
@@ -2632,7 +2632,7 @@ function LicenseSection() {
       const data = await res.json();
 
       if (res.ok) {
-        toast({ title: "Basarili", description: "Lisans aktive edildi." });
+        toast({ title: "Başarılı", description: "Lisans aktive edildi." });
         setLicenseKey("");
         setAgencyName("");
         await refetch();
@@ -2648,17 +2648,17 @@ function LicenseSection() {
   };
 
   const handleDeactivateLicense = async () => {
-    if (!confirm("Lisansi kaldirmak istediginize emin misiniz?")) return;
+    if (!confirm("Lisansı kaldırmak istediğinize emin misiniz?")) return;
 
     try {
       const res = await fetch('/api/license', { method: 'DELETE' });
       if (res.ok) {
-        toast({ title: "Basarili", description: "Lisans kaldirildi." });
+        toast({ title: "Başarılı", description: "Lisans kaldırıldı." });
         await refetch();
         queryClient.invalidateQueries({ queryKey: ['/api/license'] });
       }
     } catch (err) {
-      toast({ title: "Hata", description: "Lisans kaldirilamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Lisans kaldırılamadı.", variant: "destructive" });
     }
   };
 
@@ -2669,9 +2669,9 @@ function LicenseSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Mevcut Uyelik Durumu
+            Mevcut Üyelik Durumu
           </CardTitle>
-          <CardDescription>Lisans bilgileri ve kullanim durumu</CardDescription>
+          <CardDescription>Lisans bilgileri ve kullanım durumu</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -2904,11 +2904,11 @@ function BotTestSection() {
       ]);
       setMessage("");
       
-      toast({ title: "Basarili", description: "Bot yanit verdi." });
+      toast({ title: "Başarılı", description: "Bot yanıt verdi." });
     } catch (error) {
       toast({ 
         title: "Hata", 
-        description: "Bot test edilirken hata olustu.",
+        description: "Bot test edilirken hata oluştu.",
         variant: "destructive"
       });
     } finally {
@@ -2925,8 +2925,8 @@ function BotTestSection() {
           {history.length === 0 ? (
             <div className="h-full flex items-center justify-center text-center text-muted-foreground">
               <div>
-                <p className="text-sm font-semibold mb-1">Henuz mesaj yok</p>
-                <p className="text-xs">Botu test etmek icin asagida bir mesaj yazin</p>
+                <p className="text-sm font-semibold mb-1">Henüz mesaj yok</p>
+                <p className="text-xs">Botu test etmek için aşağıda bir mesaj yazın</p>
               </div>
             </div>
           ) : (

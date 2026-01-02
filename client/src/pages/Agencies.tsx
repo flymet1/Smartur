@@ -149,7 +149,7 @@ export default function Agencies() {
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => {
-                      if (confirm(`${agency.name} acentasini ve tum odeme kayitlarini silmek istediginize emin misiniz?`)) {
+                      if (confirm(`${agency.name} acentasını ve tüm ödeme kayıtlarını silmek istediğinize emin misiniz?`)) {
                         deleteMutation.mutate(agency.id);
                       }
                     }} data-testid={`button-delete-agency-${agency.id}`}>
@@ -167,7 +167,7 @@ export default function Agencies() {
                 )}
                 <div className="flex items-center gap-2 text-sm">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span>Kisi basi: {formatMoney(agency.defaultPayoutPerGuest || 0)}</span>
+                  <span>Kişi başı: {formatMoney(agency.defaultPayoutPerGuest || 0)}</span>
                 </div>
                 {agency.notes && (
                   <div className="flex items-start gap-2 text-sm pt-2 border-t">
@@ -181,10 +181,10 @@ export default function Agencies() {
           {agencies.length === 0 && (
             <div className="col-span-full text-center py-12 text-muted-foreground">
               <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Henuz acenta eklenmemis</p>
+              <p>Henüz acenta eklenmemiş</p>
               <Button variant="outline" className="mt-4" onClick={openCreateDialog}>
                 <Plus className="h-4 w-4 mr-2" />
-                Ilk Acentayi Ekle
+                İlk Acentayı Ekle
               </Button>
             </div>
           )}
@@ -194,16 +194,16 @@ export default function Agencies() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingAgency ? 'Acenta Duzenle' : 'Yeni Acenta'}</DialogTitle>
+            <DialogTitle>{editingAgency ? 'Acenta Düzenle' : 'Yeni Acenta'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Acenta Adi *</Label>
+              <Label htmlFor="name">Acenta Adı *</Label>
               <Input
                 id="name"
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder="Ornek: ABC Turizm"
+                placeholder="Örnek: ABC Turizm"
                 data-testid="input-agency-name"
               />
             </div>

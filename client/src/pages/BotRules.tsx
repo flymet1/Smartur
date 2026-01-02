@@ -106,18 +106,18 @@ export default function BotRules() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customer-requests'] });
-      toast({ title: "Basarili", description: "Talep durumu guncellendi." });
+      toast({ title: "Başarılı", description: "Talep durumu güncellendi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Talep güncellenemedi.", variant: "destructive" });
     },
   });
 
   const getRequestTypeText = (type: string) => {
     switch (type) {
-      case 'time_change': return 'Saat Degisikligi';
-      case 'cancellation': return 'Iptal Talebi';
-      case 'other': return 'Diger Talep';
+      case 'time_change': return 'Saat Değişikliği';
+      case 'cancellation': return 'İptal Talebi';
+      case 'other': return 'Diğer Talep';
       default: return type;
     }
   };
@@ -127,7 +127,7 @@ export default function BotRules() {
       case 'pending':
         return <Badge variant="secondary" className="gap-1"><Clock className="w-3 h-3" />Beklemede</Badge>;
       case 'approved':
-        return <Badge className="bg-green-100 text-green-700 gap-1"><Check className="w-3 h-3" />Onaylandi</Badge>;
+        return <Badge className="bg-green-100 text-green-700 gap-1"><Check className="w-3 h-3" />Onaylandı</Badge>;
       case 'rejected':
         return <Badge className="bg-red-100 text-red-700 gap-1"><X className="w-3 h-3" />Reddedildi</Badge>;
       default:
@@ -534,7 +534,7 @@ export default function BotRules() {
               </Button>
             </CardTitle>
             <CardDescription>
-              Musteri takip sayfasindan gelen talepler (saat degisikligi, iptal vb.)
+              Müşteri takip sayfasından gelen talepler (saat değişikliği, iptal vb.)
             </CardDescription>
           </CardHeader>
           <CardContent>

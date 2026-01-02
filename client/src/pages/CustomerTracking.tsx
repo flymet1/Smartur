@@ -56,14 +56,14 @@ export default function CustomerTracking() {
       setRequestSent(true);
       setShowRequestForm(false);
       toast({
-        title: "Talep Gonderildi",
-        description: "Talebiniz basariyla iletildi. En kisa surede size donecegiz.",
+        title: "Talep Gönderildi",
+        description: "Talebiniz başarıyla iletildi. En kısa sürede size döneceğiz.",
       });
     },
     onError: () => {
       toast({
         title: "Hata",
-        description: "Talep gonderilemedi. Lutfen tekrar deneyin.",
+        description: "Talep gönderilemedi. Lütfen tekrar deneyin.",
         variant: "destructive",
       });
     },
@@ -92,7 +92,7 @@ export default function CustomerTracking() {
         return (
           <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 gap-1" data-testid="badge-status-confirmed">
             <CheckCircle className="w-3 h-3" />
-            Onaylandi
+            Onaylandı
           </Badge>
         );
       case 'pending':

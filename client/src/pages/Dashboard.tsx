@@ -310,16 +310,16 @@ export default function Dashboard() {
                       <p className="font-bold">{licenseData.license.agencyName || '-'}</p>
                     </div>
                     <div className="p-3 rounded-md bg-muted/50">
-                      <p className="text-sm text-muted-foreground">Bitis Tarihi</p>
+                      <p className="text-sm text-muted-foreground">Bitiş Tarihi</p>
                       <p className="font-bold">
                         {licenseData.license.expiryDate 
                           ? new Date(licenseData.license.expiryDate).toLocaleDateString('tr-TR')
-                          : 'Sinirsiz'}
+                          : 'Sınırsız'}
                       </p>
                     </div>
                   </div>
                   <div className="p-4 rounded-md bg-muted/50">
-                    <p className="text-sm text-muted-foreground mb-2">Kullanim Limitleri</p>
+                    <p className="text-sm text-muted-foreground mb-2">Kullanım Limitleri</p>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Aktiviteler:</span>
@@ -328,7 +328,7 @@ export default function Dashboard() {
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Aylik Rezervasyonlar:</span>
+                        <span>Aylık Rezervasyonlar:</span>
                         <span className="font-medium">
                           {licenseData.usage.reservationsThisMonth} / {licenseData.license.maxReservationsPerMonth}
                         </span>
@@ -343,8 +343,8 @@ export default function Dashboard() {
                 <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-md border border-orange-200 dark:border-orange-800">
                   <AlertTriangle className="w-8 h-8 text-orange-500" />
                   <div>
-                    <p className="font-bold text-orange-700 dark:text-orange-300">Lisans Bulunamadi</p>
-                    <p className="text-sm text-orange-600 dark:text-orange-400">Lutfen ayarlar sayfasindan lisans bilgilerinizi girin.</p>
+                    <p className="font-bold text-orange-700 dark:text-orange-300">Lisans Bulunamadı</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400">Lütfen ayarlar sayfasından lisans bilgilerinizi girin.</p>
                   </div>
                 </div>
               )}
@@ -353,7 +353,7 @@ export default function Dashboard() {
                 <Link href="/settings">
                   <Button onClick={() => setLicenseDialogOpen(false)} data-testid="button-go-to-settings">
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Uyelik Yonetimi
+                    Üyelik Yönetimi
                   </Button>
                 </Link>
               </div>
@@ -403,7 +403,7 @@ export default function Dashboard() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CalendarDays className="w-5 h-5" />
-                Doluluk Detaylari
+                Doluluk Detayları
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
@@ -488,8 +488,8 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="text-center p-4 text-muted-foreground">
-                  <p>Bu tarih icin kapasite verisi bulunamadi.</p>
-                  <p className="text-sm mt-1">Aktivitelerinize varsayilan saatler ve kapasite tanimlayin.</p>
+                  <p>Bu tarih için kapasite verisi bulunamadı.</p>
+                  <p className="text-sm mt-1">Aktivitelerinize varsayılan saatler ve kapasite tanımlayın.</p>
                 </div>
               )}
 
@@ -520,7 +520,7 @@ export default function Dashboard() {
               {newReservations.length > 0 ? (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    Son goruntulemenizden bu yana {newReservationsCount} yeni rezervasyon olusturuldu.
+                    Son görüntülemenizden bu yana {newReservationsCount} yeni rezervasyon oluşturuldu.
                   </p>
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {newReservations.map((reservation) => (
@@ -562,11 +562,11 @@ export default function Dashboard() {
                       }}
                     >
                       <Eye className="w-4 h-4 mr-2" />
-                      Goruldu Olarak Isaretle
+                      Görüldü Olarak İşaretle
                     </Button>
                     <Link href="/reservations">
                       <Button onClick={() => setReservationsDialogOpen(false)}>
-                        Tum Rezervasyonlar
+                        Tüm Rezervasyonlar
                       </Button>
                     </Link>
                   </div>
@@ -575,10 +575,10 @@ export default function Dashboard() {
                 <div className="text-center p-8 text-muted-foreground">
                   <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p className="font-medium">Yeni rezervasyon yok</p>
-                  <p className="text-sm mt-1">Son goruntulemenizden bu yana yeni rezervasyon olusturulmadi.</p>
+                  <p className="text-sm mt-1">Son görüntülemenizden bu yana yeni rezervasyon oluşturulmadı.</p>
                   <Link href="/reservations">
                     <Button variant="outline" className="mt-4" onClick={() => setReservationsDialogOpen(false)}>
-                      Tum Rezervasyonlari Gor
+                      Tüm Rezervasyonları Gör
                     </Button>
                   </Link>
                 </div>
@@ -592,12 +592,12 @@ export default function Dashboard() {
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-lg font-bold flex items-center gap-2">
               <Shield className="w-5 h-5" />
-              Uyelik Durumu
+              Üyelik Durumu
             </CardTitle>
             <Link href="/settings">
               <Button variant="outline" size="sm" data-testid="button-manage-subscription">
                 <CreditCard className="w-4 h-4 mr-2" />
-                Uyelik Yonetimi
+                Üyelik Yönetimi
               </Button>
             </Link>
           </CardHeader>

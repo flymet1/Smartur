@@ -54,9 +54,9 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
 
   const getStatusBadge = (status: string, reservationId: number) => {
     const statusConfig = {
-      confirmed: { label: "Onayli", className: "bg-green-100 text-green-700 hover:bg-green-200 border-green-200" },
+      confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 hover:bg-green-200 border-green-200" },
       pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200" },
-      cancelled: { label: "Iptal", className: "bg-red-100 text-red-700 hover:bg-red-200 border-red-200" },
+      cancelled: { label: "İptal", className: "bg-red-100 text-red-700 hover:bg-red-200 border-red-200" },
     };
     const current = statusConfig[status as keyof typeof statusConfig] || { label: status, className: "" };
     
@@ -84,14 +84,14 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
             className="text-green-700"
             data-testid={`calendar-status-confirmed-${reservationId}`}
           >
-            Onayli
+            Onaylı
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => statusMutation.mutate({ id: reservationId, status: 'cancelled' })}
             className="text-red-700"
             data-testid={`calendar-status-cancelled-${reservationId}`}
           >
-            Iptal
+            İptal
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
