@@ -25,44 +25,44 @@ export default function UserGuide() {
         <div>
           <h1 className="text-3xl font-bold font-display flex items-center gap-3" data-testid="text-page-title">
             <BookOpen className="h-8 w-8 text-primary" />
-            Kullanim Kilavuzu
+            Kullanım Kılavuzu
           </h1>
           <p className="text-muted-foreground mt-2">
-            Sistem fonksiyonlari, WhatsApp bot ve admin panel kullanim rehberi
+            Sistem fonksiyonları, WhatsApp bot ve admin panel kullanım rehberi
           </p>
         </div>
 
         <div className="space-y-8">
           <Section 
             icon={<Globe className="h-5 w-5" />}
-            title="1. Sistem Genel Bakis"
+            title="1. Sistem Genel Bakış"
             id="genel-bakis"
           >
             <p className="text-muted-foreground mb-4">
-              Bu sistem, tur ve aktivite operasyonlarinizi yonetmek icin tasarlanmis kapsamli bir platformdur.
-              WooCommerce web sitesi entegrasyonu ve WhatsApp bot destegi ile musterilerinize 7/24 hizmet verebilirsiniz.
+              Bu sistem, tur ve aktivite operasyonlarınızı yönetmek için tasarlanmış kapsamlı bir platformdur.
+              WooCommerce web sitesi entegrasyonu ve WhatsApp bot desteği ile müşterilerinize 7/24 hizmet verebilirsiniz.
             </p>
             
             <div className="grid md:grid-cols-2 gap-4">
               <FeatureCard 
                 icon={<ShoppingCart className="h-5 w-5 text-blue-500" />}
                 title="WooCommerce Entegrasyonu"
-                description="Web sitenizdeki siparisler otomatik olarak sisteme akar. Odemesi yapilmis siparisler 'Onayli' durumunda kaydedilir."
+                description="Web sitenizdeki siparişler otomatik olarak sisteme akar. Ödemesi yapılmış siparişler 'Onaylı' durumunda kaydedilir."
               />
               <FeatureCard 
                 icon={<MessageCircle className="h-5 w-5 text-green-500" />}
                 title="WhatsApp Bot"
-                description="Musteri sorularini otomatik yanitlar, musaitlik bilgisi verir ve web sitesine yonlendirir."
+                description="Müşteri sorularını otomatik yanıtlar, müsaitlik bilgisi verir ve web sitesine yönlendirir."
               />
               <FeatureCard 
                 icon={<Calendar className="h-5 w-5 text-orange-500" />}
                 title="Takvim & Kapasite"
-                description="Aktiviteler icin gunluk kapasite tanimi, musaitlik takibi ve rezervasyon yonetimi."
+                description="Aktiviteler için günlük kapasite tanımı, müsaitlik takibi ve rezervasyon yönetimi."
               />
               <FeatureCard 
                 icon={<CreditCard className="h-5 w-5 text-purple-500" />}
-                title="Finans Modulu"
-                description="Acenta odemeleri, tedarikci maliyetleri ve hesaplasma takibi."
+                title="Finans Modülü"
+                description="Acenta ödemeleri, tedarikçi maliyetleri ve hesaplaşma takibi."
               />
             </div>
           </Section>
@@ -76,53 +76,53 @@ export default function UserGuide() {
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  Temel Calisma Prensibi
+                  Temel Çalışma Prensibi
                 </h4>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                  <li>Bot, Twilio WhatsApp API uzerinden gelen mesajlari alir</li>
-                  <li>Google Gemini AI ile akilli yanitlar uretir</li>
-                  <li>Aktivite bilgileri, fiyatlar ve musaitlik verileri AI'a aktarilir</li>
-                  <li>Bot sadece bilgi verir, <strong>asla rezervasyon olusturmaz</strong></li>
+                  <li>Bot, Twilio WhatsApp API üzerinden gelen mesajları alır</li>
+                  <li>Google Gemini AI ile akıllı yanıtlar üretir</li>
+                  <li>Aktivite bilgileri, fiyatlar ve müsaitlik verileri AI'a aktarılır</li>
+                  <li>Bot sadece bilgi verir, <strong>asla rezervasyon oluşturmaz</strong></li>
                 </ul>
               </div>
 
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <h4 className="font-semibold mb-2 flex items-center gap-2 text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
-                  Onemli Kural: Rezervasyon Politikasi
+                  Önemli Kural: Rezervasyon Politikası
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  Bot asla dogrudan rezervasyon olusturmaz. On odeme olmadan rezervasyon alinmaz. 
-                  Musaitlik varsa musteriye "Musaitlik mevcut, rezervasyonunuzu web sitemizden olusturabilirsiniz" 
-                  diyerek ilgili aktivitenin rezervasyon linkini paylasir.
+                  Bot asla doğrudan rezervasyon oluşturmaz. Ön ödeme olmadan rezervasyon alınmaz. 
+                  Müsaitlik varsa müşteriye "Müsaitlik mevcut, rezervasyonunuzu web sitemizden oluşturabilirsiniz" 
+                  diyerek ilgili aktivitenin rezervasyon linkini paylaşır.
                 </p>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Clock className="h-4 w-4 text-blue-500" />
-                  Musaitlik Kontrolu
+                  Müsaitlik Kontrolü
                 </h4>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                  <li>Bot, takvimde tanimli kapasiteleri ve varsayilan slotlari kontrol eder</li>
-                  <li>Mevcut rezervasyonlari dusurerek gercek musaitligi hesaplar</li>
-                  <li>7 gunluk ileriye donuk kapasite bilgisi AI'a aktarilir</li>
+                  <li>Bot, takvimde tanımlı kapasiteleri ve varsayılan slotları kontrol eder</li>
+                  <li>Mevcut rezervasyonları düşürerek gerçek müsaitliği hesaplar</li>
+                  <li>7 günlük ileriye dönük kapasite bilgisi AI'a aktarılır</li>
                 </ul>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-purple-500" />
-                  Dinamik Tarih Algilama
+                  Dinamik Tarih Algılama
                 </h4>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Bot su Turkce tarih ifadelerini anlar:
+                  Bot şu Türkçe tarih ifadelerini anlar:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">bugun</Badge>
-                  <Badge variant="secondary">yarin</Badge>
+                  <Badge variant="secondary">bugün</Badge>
+                  <Badge variant="secondary">yarın</Badge>
                   <Badge variant="secondary">hafta sonu</Badge>
-                  <Badge variant="secondary">5 subat</Badge>
+                  <Badge variant="secondary">5 şubat</Badge>
                   <Badge variant="secondary">15.01</Badge>
                   <Badge variant="secondary">gelecek pazartesi</Badge>
                 </div>
@@ -131,41 +131,41 @@ export default function UserGuide() {
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-amber-500" />
-                  Tatil ve Bayram Algilama
+                  Tatil ve Bayram Algılama
                 </h4>
                 <p className="text-sm text-muted-foreground mb-2">
-                  "Tatiller" sayfasinda tanimli bayram ve tatiller icin bot otomatik tarih eslestirmesi yapar:
+                  "Tatiller" sayfasında tanımlı bayram ve tatiller için bot otomatik tarih eşleştirmesi yapar:
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">bayramda musait misiniz?</Badge>
-                  <Badge variant="secondary">kurban bayrami</Badge>
-                  <Badge variant="secondary">ramazan bayrami</Badge>
-                  <Badge variant="secondary">yilbasinda</Badge>
+                  <Badge variant="secondary">bayramda müsait misiniz?</Badge>
+                  <Badge variant="secondary">kurban bayramı</Badge>
+                  <Badge variant="secondary">ramazan bayramı</Badge>
+                  <Badge variant="secondary">yılbaşında</Badge>
                 </div>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <Users className="h-4 w-4 text-red-500" />
-                  Eskalasyon Kurallari
+                  Eskalasyon Kuralları
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  Bot su durumlarda musteryi yetkili personele yonlendirir:
+                  Bot şu durumlarda müşteriyi yetkili personele yönlendirir:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4 mt-2">
-                  <li>Karmasik konular veya sikayetler</li>
-                  <li>2 mesaj icinde cozulemeyen sorunlar</li>
+                  <li>Karmaşık konular veya şikayetler</li>
+                  <li>2 mesaj içinde çözülemeyen sorunlar</li>
                   <li>Fiyat indirimi, grup indirimi talepleri</li>
-                  <li>Musteri "operator", "beni arayin" gibi ifadeler kullandiginda</li>
-                  <li>Agresif veya memnuniyetsiz musteri davranisi</li>
+                  <li>Müşteri "operatör", "beni arayın" gibi ifadeler kullandığında</li>
+                  <li>Agresif veya memnuniyetsiz müşteri davranışı</li>
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold mb-2">Dil Destegi</h4>
+                <h4 className="font-semibold mb-2">Dil Desteği</h4>
                 <p className="text-sm text-muted-foreground">
-                  Bot, musterinin diliyle (Turkce/Ingilizce) iletisim kurar. Ingilizce konusmalarda 
-                  aktivitelerin Ingilizce rezervasyon linkini kullanir.
+                  Bot, müşterinin diliyle (Türkçe/İngilizce) iletişim kurar. İngilizce konuşmalarda 
+                  aktivitelerin İngilizce rezervasyon linkini kullanır.
                 </p>
               </div>
             </div>
@@ -173,53 +173,53 @@ export default function UserGuide() {
 
           <Section 
             icon={<Settings className="h-5 w-5" />}
-            title="3. Admin Panel Kullanimi"
+            title="3. Admin Panel Kullanımı"
             id="admin-panel"
           >
             <div className="space-y-4">
               <AdminPageGuide 
-                title="Genel Bakis (Dashboard)"
-                description="Gunluk rezervasyon ozeti, yaklasan aktiviteler ve temel istatistikler."
+                title="Genel Bakış (Dashboard)"
+                description="Günlük rezervasyon özeti, yaklaşan aktiviteler ve temel istatistikler."
               />
               <AdminPageGuide 
                 title="Takvim & Kapasite"
-                description="Aktiviteler icin gunluk/saatlik kapasite tanimlama. Varsayilan kapasiteler aktivite ayarlarindan gelir, ozel gunler icin manuel duzenleme yapilabilir."
+                description="Aktiviteler için günlük/saatlik kapasite tanımlama. Varsayılan kapasiteler aktivite ayarlarından gelir, özel günler için manuel düzenleme yapılabilir."
               />
               <AdminPageGuide 
                 title="Rezervasyonlar"
-                description="Tum rezervasyonlari listeler. WooCommerce'den gelenler otomatik 'Onayli' durumundadir. Durum degisikligi, iptal ve duzenleme yapilabilir."
+                description="Tüm rezervasyonları listeler. WooCommerce'den gelenler otomatik 'Onaylı' durumundadır. Durum değişikliği, iptal ve düzenleme yapılabilir."
               />
               <AdminPageGuide 
                 title="Aktiviteler"
-                description="Tur ve aktivite tanimlari. Fiyat, sure, varsayilan saat/kapasite, onay mesaji, rezervasyon linki ve SSS tanimlari burada yapilir."
+                description="Tur ve aktivite tanımları. Fiyat, süre, varsayılan saat/kapasite, onay mesajı, rezervasyon linki ve SSS tanımları burada yapılır."
               />
               <AdminPageGuide 
                 title="Paket Turlar"
-                description="Birden fazla aktiviteyi iceren paket tur tanimlari. Gun bazli aktivite siralaması ve fiyatlandirma."
+                description="Birden fazla aktiviteyi içeren paket tur tanımları. Gün bazlı aktivite sıralaması ve fiyatlandırma."
               />
               <AdminPageGuide 
                 title="Tatiller"
-                description="Resmi tatil ve dini bayram tanimlari. Bot bu tarihleri 'bayramda musait misiniz?' gibi sorularda kullanir."
+                description="Resmi tatil ve dini bayram tanımları. Bot bu tarihleri 'bayramda müsait misiniz?' gibi sorularda kullanır."
               />
               <AdminPageGuide 
                 title="Finans & Acentalar"
-                description="Tedarikci maliyetleri, acenta odemeleri ve hesaplasma takibi."
+                description="Tedarikçi maliyetleri, acenta ödemeleri ve hesaplaşma takibi."
               />
               <AdminPageGuide 
                 title="Bot Test"
-                description="WhatsApp bot'u test etmek icin simulasyon alani. Gercek API'ye baglanmadan bot yanitlarini test edin."
+                description="WhatsApp bot'u test etmek için simülasyon alanı. Gerçek API'ye bağlanmadan bot yanıtlarını test edin."
               />
               <AdminPageGuide 
-                title="Mesaj Gecmisi"
-                description="WhatsApp uzerinden gelen tum mesajlar ve bot yanitlari. Musteri bazli filtreleme ve arama."
+                title="Mesaj Geçmişi"
+                description="WhatsApp üzerinden gelen tüm mesajlar ve bot yanıtları. Müşteri bazlı filtreleme ve arama."
               />
               <AdminPageGuide 
-                title="Bot Kurallari"
-                description="Bot'un davranis kurallarini ozellestirebileceginiz alan. Sifre korumalıdir (varsayilan: Netim1905)."
+                title="Bot Kuralları"
+                description="Bot'un davranış kurallarını özelleştirebileceğiniz alan. Şifre korumalıdır (varsayılan: Netim1905)."
               />
               <AdminPageGuide 
                 title="Ayarlar"
-                description="Sistem ayarlari, logo yukleme ve genel konfigurasyonlar."
+                description="Sistem ayarları, logo yükleme ve genel konfigürasyonlar."
               />
             </div>
           </Section>
@@ -231,24 +231,24 @@ export default function UserGuide() {
           >
             <div className="space-y-4">
               <p className="text-muted-foreground">
-                WooCommerce web sitesinden gelen siparisler webhook araciligiyla otomatik olarak sisteme akar.
+                WooCommerce web sitesinden gelen siparişler webhook aracılığıyla otomatik olarak sisteme akar.
               </p>
               
               <div>
-                <h4 className="font-semibold mb-2">Siparis Akisi</h4>
+                <h4 className="font-semibold mb-2">Sipariş Akışı</h4>
                 <ol className="list-decimal list-inside space-y-2 text-muted-foreground ml-4">
-                  <li>Musteri web sitesinden rezervasyon yapar ve odeme tamamlar</li>
-                  <li>WooCommerce webhook tetiklenir ve siparis sisteme iletilir</li>
-                  <li>Sistem, urun adini aktivite/paket tur ile eslestirir</li>
-                  <li>Rezervasyon <strong>"Onayli"</strong> durumunda olusturulur</li>
-                  <li>Aktivitenin onay mesaji musteriye (WhatsApp veya email ile) gonderilebilir</li>
+                  <li>Müşteri web sitesinden rezervasyon yapar ve ödeme tamamlar</li>
+                  <li>WooCommerce webhook tetiklenir ve sipariş sisteme iletilir</li>
+                  <li>Sistem, ürün adını aktivite/paket tur ile eşleştirir</li>
+                  <li>Rezervasyon <strong>"Onaylı"</strong> durumunda oluşturulur</li>
+                  <li>Aktivitenin onay mesajı müşteriye (WhatsApp veya email ile) gönderilebilir</li>
                 </ol>
               </div>
 
               <div>
-                <h4 className="font-semibold mb-2">Para Birimi Destegi</h4>
+                <h4 className="font-semibold mb-2">Para Birimi Desteği</h4>
                 <p className="text-muted-foreground">
-                  Sistem TRY ve USD para birimlerini destekler. WooCommerce siparisindeki para birimine gore 
+                  Sistem TRY ve USD para birimlerini destekler. WooCommerce siparişindeki para birimine göre 
                   fiyat otomatik olarak ilgili alana (priceTl veya priceUsd) kaydedilir.
                 </p>
               </div>
@@ -257,50 +257,50 @@ export default function UserGuide() {
 
           <Section 
             icon={<Clock className="h-5 w-5" />}
-            title="5. Guncelleme Gecmisi"
+            title="5. Güncelleme Geçmişi"
             id="guncellemeler"
           >
             <div className="space-y-4">
               <UpdateEntry 
                 date="02.01.2026"
-                title="Bot Rezervasyon Kurali Eklendi"
-                description="Bot asla dogrudan rezervasyon olusturmaz. Musaitlik varsa web sitesi linkini paylasarak yonlendirir. On odeme olmadan rezervasyon alinmaz."
+                title="Bot Rezervasyon Kuralı Eklendi"
+                description="Bot asla doğrudan rezervasyon oluşturmaz. Müsaitlik varsa web sitesi linkini paylaşarak yönlendirir. Ön ödeme olmadan rezervasyon alınmaz."
                 type="kural"
               />
               <UpdateEntry 
                 date="02.01.2026"
-                title="Tatil/Bayram Algilama"
-                description="Bot artik 'bayramda musait misiniz?', 'kurban bayrami' gibi ifadeleri anliyor ve ilgili tarihlerin kapasitesini kontrol ediyor."
+                title="Tatil/Bayram Algılama"
+                description="Bot artık 'bayramda müsait misiniz?', 'kurban bayramı' gibi ifadeleri anlıyor ve ilgili tarihlerin kapasitesini kontrol ediyor."
                 type="ozellik"
               />
               <UpdateEntry 
                 date="02.01.2026"
-                title="Dinamik Tarih Algilama"
-                description="Bot 'yarin', '5 subat', 'hafta sonu', '15.01' gibi Turkce tarih ifadelerini anliyor."
+                title="Dinamik Tarih Algılama"
+                description="Bot 'yarın', '5 şubat', 'hafta sonu', '15.01' gibi Türkçe tarih ifadelerini anlıyor."
                 type="ozellik"
               />
               <UpdateEntry 
                 date="02.01.2026"
-                title="Anahtar Kelime Girisi Kolaylastirildi"
-                description="Tatil eklerken anahtar kelimeler artik virgul ile ayrilarak girilebilir (JSON formatina gerek yok)."
+                title="Anahtar Kelime Girişi Kolaylaştırıldı"
+                description="Tatil eklerken anahtar kelimeler artık virgül ile ayrılarak girilebilir (JSON formatına gerek yok)."
                 type="iyilestirme"
               />
               <UpdateEntry 
                 date="02.01.2026"
-                title="WooCommerce Siparisleri Otomatik Onayli"
-                description="Web sitesinden gelen ve odemesi yapilmis siparisler artik 'Onayli' durumunda kaydediliyor."
+                title="WooCommerce Siparişleri Otomatik Onaylı"
+                description="Web sitesinden gelen ve ödemesi yapılmış siparişler artık 'Onaylı' durumunda kaydediliyor."
                 type="ozellik"
               />
               <UpdateEntry 
                 date="31.12.2025"
-                title="Finans & Acenta Modulu"
-                description="Aktivite maliyetleri, KDV hesaplamasi, acenta odemeleri ve hesaplasma takibi eklendi."
+                title="Finans & Acenta Modülü"
+                description="Aktivite maliyetleri, KDV hesaplaması, acenta ödemeleri ve hesaplaşma takibi eklendi."
                 type="ozellik"
               />
               <UpdateEntry 
                 date="31.12.2025"
-                title="Proje Baslangici"
-                description="Temel altyapi kuruldu: Aktivite yonetimi, rezervasyonlar, takvim, WhatsApp bot entegrasyonu."
+                title="Proje Başlangıcı"
+                description="Temel altyapı kuruldu: Aktivite yönetimi, rezervasyonlar, takvim, WhatsApp bot entegrasyonu."
                 type="ozellik"
               />
             </div>
@@ -308,7 +308,7 @@ export default function UserGuide() {
         </div>
 
         <div className="text-center text-xs text-muted-foreground pt-8 border-t">
-          Bu kilavuz sistem guncellemeleriyle birlikte guncellenmektedir.
+          Bu kılavuz sistem güncellemeleriyle birlikte güncellenmektedir.
         </div>
       </main>
     </div>
@@ -362,10 +362,10 @@ function UpdateEntry({ date, title, description, type }: { date: string; title: 
   };
   
   const typeLabels = {
-    ozellik: 'Yeni Ozellik',
-    kural: 'Kural Degisikligi',
-    iyilestirme: 'Iyilestirme',
-    duzeltme: 'Duzeltme',
+    ozellik: 'Yeni Özellik',
+    kural: 'Kural Değişikliği',
+    iyilestirme: 'İyileştirme',
+    duzeltme: 'Düzeltme',
   };
 
   return (

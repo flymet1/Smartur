@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const HOLIDAY_TYPES = [
   { value: 'official', label: 'Resmi Tatil' },
   { value: 'religious', label: 'Dini Bayram' },
-  { value: 'special', label: 'Ozel Gun' },
+  { value: 'special', label: 'Özel Gün' },
 ];
 
 const PRESET_HOLIDAYS_2026 = [
@@ -62,18 +62,18 @@ export default function Holidays() {
   const { toast } = useToast();
 
   const handleDelete = async (id: number) => {
-    if (confirm("Bu tatili silmek istediginize emin misiniz?")) {
+    if (confirm("Bu tatili silmek istediğinize emin misiniz?")) {
       try {
         await deleteMutation.mutateAsync(id);
-        toast({ title: "Basarili", description: "Tatil silindi." });
+        toast({ title: "Başarılı", description: "Tatil silindi." });
       } catch (error) {
-        toast({ title: "Hata", description: "Silme islemi basarisiz.", variant: "destructive" });
+        toast({ title: "Hata", description: "Silme işlemi başarısız.", variant: "destructive" });
       }
     }
   };
 
   const handleImportPresets = async () => {
-    if (!confirm("2026 yili icin varsayilan tatilleri eklemek istiyor musunuz?")) return;
+    if (!confirm("2026 yılı için varsayılan tatilleri eklemek istiyor musunuz?")) return;
     
     let added = 0;
     for (const preset of PRESET_HOLIDAYS_2026) {
@@ -88,7 +88,7 @@ export default function Holidays() {
         console.error('Failed to add holiday:', preset.name, e);
       }
     }
-    toast({ title: "Basarili", description: `${added} tatil eklendi.` });
+    toast({ title: "Başarılı", description: `${added} tatil eklendi.` });
   };
 
   return (
@@ -98,7 +98,7 @@ export default function Holidays() {
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold font-display" data-testid="text-page-title">Tatiller</h1>
-            <p className="text-muted-foreground mt-1">Resmi tatiller ve bayramlari yonetin</p>
+            <p className="text-muted-foreground mt-1">Resmi tatiller ve bayramları yönetin</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {holidays.length === 0 && (
@@ -125,7 +125,7 @@ export default function Holidays() {
             ))}
             {holidays.length === 0 && (
               <div className="col-span-full py-12 text-center text-muted-foreground bg-card rounded-xl border border-dashed">
-                Henuz hic tatil eklenmemis. "2026 Tatillerini Ekle" butonuna tiklayarak baslayabilirsiniz.
+                Henüz hiç tatil eklenmemiş. "2026 Tatillerini Ekle" butonuna tıklayarak başlayabilirsiniz.
               </div>
             )}
           </div>
@@ -286,13 +286,13 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
     try {
       if (holiday) {
         await updateMutation.mutateAsync(data);
-        toast({ title: "Basarili", description: "Tatil guncellendi." });
+        toast({ title: "Başarılı", description: "Tatil güncellendi." });
       } else {
         await createMutation.mutateAsync(data);
-        toast({ title: "Basarili", description: "Tatil eklendi." });
+        toast({ title: "Başarılı", description: "Tatil eklendi." });
       }
     } catch (error) {
-      toast({ title: "Hata", description: "Islem basarisiz.", variant: "destructive" });
+      toast({ title: "Hata", description: "İşlem başarısız.", variant: "destructive" });
     }
   };
 
@@ -324,7 +324,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
       </Button>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{holiday ? "Tatil Duzenle" : "Yeni Tatil Ekle"}</DialogTitle>
+          <DialogTitle>{holiday ? "Tatil Düzenle" : "Yeni Tatil Ekle"}</DialogTitle>
           <DialogDescription>
             Resmi tatil veya dini bayram bilgilerini girin.
           </DialogDescription>
@@ -407,9 +407,9 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Iptal</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>İptal</Button>
           <Button onClick={handleSubmit} data-testid="button-save-holiday">
-            {holiday ? "Guncelle" : "Kaydet"}
+            {holiday ? "Güncelle" : "Kaydet"}
           </Button>
         </DialogFooter>
       </DialogContent>

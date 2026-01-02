@@ -57,7 +57,7 @@ function CapacityCard({ slot, activityName, onEdit }: { slot: CapacitySlot; acti
               <h4 className="font-semibold truncate" data-testid={`text-activity-name-${slotId}`}>{activityName}</h4>
               {isVirtual && (
                 <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                  Varsayilan
+                  Varsayılan
                 </Badge>
               )}
             </div>
@@ -87,7 +87,7 @@ function CapacityCard({ slot, activityName, onEdit }: { slot: CapacitySlot; acti
             className={`h-2 ${isFull ? '[&>div]:bg-red-500' : isAlmostFull ? '[&>div]:bg-yellow-500' : '[&>div]:bg-green-500'}`}
           />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{available} kisi bos</span>
+            <span>{available} kişi boş</span>
             <span>%{Math.round(occupancy)}</span>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function CalendarPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold" data-testid="text-page-title">Takvim & Kapasite</h1>
-            <p className="text-muted-foreground mt-1">Musaitlik durumunu yonetin</p>
+            <p className="text-muted-foreground mt-1">Müsaitlik durumunu yönetin</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <Select value={activityFilter} onValueChange={setActivityFilter}>
@@ -220,7 +220,7 @@ export default function CalendarPage() {
             trend={stats.availableSlots > 0 ? 'neutral' : 'down'}
           />
           <StatCard 
-            title="Secili Tarih" 
+            title="Seçili Tarih" 
             value={format(date, "d MMM", { locale: tr })} 
             subtitle={format(date, "EEEE", { locale: tr })}
             icon={CalendarDays}
@@ -339,11 +339,11 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: CapacitySlot; acti
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.capacity.list.path] });
-      toast({ title: "Basarili", description: "Kapasite guncellendi." });
+      toast({ title: "Başarılı", description: "Kapasite güncellendi." });
       setEditOpen(false);
     },
     onError: () => {
-      toast({ title: "Hata", description: "Kapasite guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Kapasite güncellenemedi.", variant: "destructive" });
     },
   });
 
@@ -356,7 +356,7 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: CapacitySlot; acti
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.capacity.list.path] });
-      toast({ title: "Basarili", description: "Slot silindi." });
+      toast({ title: "Başarılı", description: "Slot silindi." });
     },
     onError: () => {
       toast({ title: "Hata", description: "Slot silinemedi.", variant: "destructive" });
@@ -379,7 +379,7 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: CapacitySlot; acti
                 <h4 className="font-semibold truncate" data-testid={`text-activity-name-${slotId}`}>{activityName}</h4>
                 {isVirtual && (
                   <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
-                    Varsayilan
+                    Varsayılan
                   </Badge>
                 )}
               </div>
@@ -414,7 +414,7 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: CapacitySlot; acti
               className={`h-2 ${isFull ? '[&>div]:bg-red-500' : isAlmostFull ? '[&>div]:bg-yellow-500' : '[&>div]:bg-green-500'}`}
             />
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{available} kisi bos</span>
+              <span>{available} kişi boş</span>
               <span>%{Math.round(occupancy)}</span>
             </div>
           </div>
@@ -424,7 +424,7 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: CapacitySlot; acti
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Kapasiteyi Duzenle</DialogTitle>
+            <DialogTitle>Kapasiteyi Düzenle</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -446,11 +446,11 @@ function CapacityCardWithEdit({ slot, activityName }: { slot: CapacitySlot; acti
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              Su anda {slot.bookedSlots || 0} kisi rezerve etmis.
+              Şu anda {slot.bookedSlots || 0} kişi rezerve etmiş.
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Iptal</Button>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>İptal</Button>
             <Button
               onClick={() => updateMutation.mutate(Number(newSlots))}
               disabled={updateMutation.isPending}
@@ -538,11 +538,11 @@ function AddCapacityDialog() {
         time: formData.get("time") as string,
         totalSlots: Number(formData.get("totalSlots")) || defaultCapacity,
       });
-      toast({ title: "Basarili", description: "Slot basariyla eklendi." });
+      toast({ title: "Başarılı", description: "Slot başarıyla eklendi." });
       setOpen(false);
       setSelectedActivityId(null);
     } catch (err) {
-      toast({ title: "Hata", description: "Slot eklenirken hata olustu.", variant: "destructive" });
+      toast({ title: "Hata", description: "Slot eklenirken hata oluştu.", variant: "destructive" });
     }
   };
 
@@ -566,7 +566,7 @@ function AddCapacityDialog() {
               onValueChange={(val) => setSelectedActivityId(Number(val))}
             >
               <SelectTrigger data-testid="select-activity">
-                <SelectValue placeholder="Aktivite secin" />
+                <SelectValue placeholder="Aktivite seçin" />
               </SelectTrigger>
               <SelectContent>
                 {activities?.map(a => (
@@ -585,7 +585,7 @@ function AddCapacityDialog() {
             <Label>Saat</Label>
             <Select name="time" required disabled={!selectedActivityId}>
               <SelectTrigger data-testid="select-time">
-                <SelectValue placeholder={selectedActivityId ? "Saat secin" : "Once aktivite secin"} />
+                <SelectValue placeholder={selectedActivityId ? "Saat seçin" : "Önce aktivite seçin"} />
               </SelectTrigger>
               <SelectContent className="max-h-60">
                 {timeOptions.map((time) => (
@@ -596,11 +596,11 @@ function AddCapacityDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label>Toplam Kapasite (Kisi)</Label>
+            <Label>Toplam Kapasite (Kişi)</Label>
             <Input 
               name="totalSlots" 
               type="number" 
-              placeholder={`Varsayilan: ${defaultCapacity}`}
+              placeholder={`Varsayılan: ${defaultCapacity}`}
               defaultValue={defaultCapacity}
               data-testid="input-total-slots"
             />

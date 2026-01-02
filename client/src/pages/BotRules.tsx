@@ -88,12 +88,12 @@ export default function BotRules() {
         localStorage.setItem('botRulesToken', data.token);
         setIsAuthenticated(true);
         loadBotRules();
-        toast({ title: "Giris Basarili", description: "Bot kurallarini duzenleyebilirsiniz." });
+        toast({ title: "Giriş Başarılı", description: "Bot kurallarını düzenleyebilirsiniz." });
       } else {
-        toast({ title: "Hata", description: data.error || "Giris basarisiz", variant: "destructive" });
+        toast({ title: "Hata", description: data.error || "Giriş başarısız", variant: "destructive" });
       }
     } catch {
-      toast({ title: "Hata", description: "Giris yapilamadi", variant: "destructive" });
+      toast({ title: "Hata", description: "Giriş yapılamadı", variant: "destructive" });
     } finally {
       setIsLoggingIn(false);
     }
@@ -113,9 +113,9 @@ export default function BotRules() {
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || 'Kayit basarisiz');
+        throw new Error(error.error || 'Kayıt başarısız');
       }
-      toast({ title: "Kaydedildi", description: "Bot kurallari guncellendi." });
+      toast({ title: "Kaydedildi", description: "Bot kuralları güncellendi." });
     } catch (err: any) {
       toast({ title: "Hata", description: err.message || "Kurallar kaydedilemedi", variant: "destructive" });
     } finally {
@@ -145,15 +145,15 @@ export default function BotRules() {
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <Lock className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle>Bot Kurallari - Giris</CardTitle>
+            <CardTitle>Bot Kuralları - Giriş</CardTitle>
             <CardDescription>
-              Bu sayfaya erismek icin sifrenizi girin
+              Bu sayfaya erişmek için şifrenizi girin
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Sifre</Label>
+                <Label htmlFor="password">Şifre</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -182,7 +182,7 @@ export default function BotRules() {
                 disabled={isLoggingIn}
                 data-testid="button-login"
               >
-                {isLoggingIn ? "Giris yapiliyor..." : "Giris Yap"}
+                {isLoggingIn ? "Giriş yapılıyor..." : "Giriş Yap"}
               </Button>
             </form>
             <div className="mt-4 text-center">

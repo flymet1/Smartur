@@ -440,8 +440,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label className="text-base">Ucretsiz Otel Transferi</Label>
-                      <p className="text-xs text-muted-foreground">Aktivite icin ucretsiz transfer sunuluyor mu?</p>
+                      <Label className="text-base">Ücretsiz Otel Transferi</Label>
+                      <p className="text-xs text-muted-foreground">Aktivite için ücretsiz transfer sunuluyor mu?</p>
                     </div>
                     <Switch 
                       checked={hasFreeHotelTransfer}
@@ -452,7 +452,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   
                   {hasFreeHotelTransfer && (
                     <div className="space-y-2 pt-2 border-t">
-                      <Label>Transfer Bolgeleri</Label>
+                      <Label>Transfer Bölgeleri</Label>
                       <Textarea 
                         value={transferZones}
                         onChange={(e) => setTransferZones(e.target.value)}
@@ -460,7 +460,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                         className="min-h-[60px]"
                         data-testid="input-transfer-zones"
                       />
-                      <p className="text-xs text-muted-foreground">Virgule ayirarak bolgeleri girin. Bot bu verileri kullanabilir.</p>
+                      <p className="text-xs text-muted-foreground">Virgülle ayırarak bölgeleri girin. Bot bu verileri kullanabilir.</p>
                     </div>
                   )}
                 </div>
@@ -488,7 +488,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                         <div key={idx} className="flex gap-2 items-start">
                           <div className="flex-1 space-y-2">
                             <Input
-                              placeholder="Ekstra adi (ornek: 10 dk ekstra ucus)"
+                              placeholder="Ekstra adı (örnek: 10 dk ekstra uçuş)"
                               value={extra.name}
                               onChange={(e) => {
                                 const newExtras = [...extras];
@@ -523,7 +523,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                                 data-testid={`input-extra-priceUsd-${idx}`}
                               />
                               <Input
-                                placeholder="Aciklama (opsiyonel)"
+                                placeholder="Açıklama (opsiyonel)"
                                 value={extra.description}
                                 onChange={(e) => {
                                   const newExtras = [...extras];
@@ -551,7 +551,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   
                   {extras.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      Henuz ekstra eklenmedi. "Ekle" butonuna tiklayarak ekstra hizmet ekleyebilirsiniz.
+                      Henüz ekstra eklenmedi. "Ekle" butonuna tıklayarak ekstra hizmet ekleyebilirsiniz.
                     </p>
                   )}
                 </div>

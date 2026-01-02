@@ -170,10 +170,10 @@ export default function Finance() {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       setSupplierDialogOpen(false);
       setSupplierForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
-      toast({ title: "Tedarikci eklendi" });
+      toast({ title: "Tedarikçi eklendi" });
     },
     onError: (error: any) => {
-      toast({ title: "Hata", description: error?.message || "Tedarikci eklenemedi", variant: "destructive" });
+      toast({ title: "Hata", description: error?.message || "Tedarikçi eklenemedi", variant: "destructive" });
     }
   });
 
@@ -184,7 +184,7 @@ export default function Finance() {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       setSupplierDialogOpen(false);
       setEditingSupplier(null);
-      toast({ title: "Tedarikci guncellendi" });
+      toast({ title: "Tedarikçi güncellendi" });
     }
   });
 
@@ -193,10 +193,10 @@ export default function Finance() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
-      toast({ title: "Tedarikci silindi" });
+      toast({ title: "Tedarikçi silindi" });
     },
     onError: (error: any) => {
-      toast({ title: "Hata", description: error?.message || "Tedarikci silinemedi", variant: "destructive" });
+      toast({ title: "Hata", description: error?.message || "Tedarikçi silinemedi", variant: "destructive" });
     }
   });
 
@@ -218,10 +218,10 @@ export default function Finance() {
         notes: '',
         status: 'paid'
       });
-      toast({ title: "Odeme kaydedildi" });
+      toast({ title: "Ödeme kaydedildi" });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Odeme kaydedilemedi", variant: "destructive" });
+      toast({ title: "Hata", description: "Ödeme kaydedilemedi", variant: "destructive" });
     }
   });
 
@@ -229,10 +229,10 @@ export default function Finance() {
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/payouts/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
-      toast({ title: "Odeme silindi" });
+      toast({ title: "Ödeme silindi" });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Odeme silinemedi", variant: "destructive" });
+      toast({ title: "Hata", description: "Ödeme silinemedi", variant: "destructive" });
     }
   });
 
@@ -250,10 +250,10 @@ export default function Finance() {
         unitPayoutTl: 0,
         notes: ''
       });
-      toast({ title: "Gonderim kaydedildi" });
+      toast({ title: "Gönderim kaydedildi" });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Gonderim kaydedilemedi", variant: "destructive" });
+      toast({ title: "Hata", description: "Gönderim kaydedilemedi", variant: "destructive" });
     }
   });
 
@@ -261,10 +261,10 @@ export default function Finance() {
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/dispatches/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
-      toast({ title: "Gonderim silindi" });
+      toast({ title: "Gönderim silindi" });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Gonderim silinemedi", variant: "destructive" });
+      toast({ title: "Hata", description: "Gönderim silinemedi", variant: "destructive" });
     }
   });
 
@@ -289,7 +289,7 @@ export default function Finance() {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/rates'] });
       setRateDialogOpen(false);
       setEditingRate(null);
-      toast({ title: "Tarife guncellendi" });
+      toast({ title: "Tarife güncellendi" });
     }
   });
 
@@ -314,7 +314,7 @@ export default function Finance() {
 
   const handlePayoutSubmit = () => {
     if (!payoutForm.agencyId) {
-      toast({ title: "Hata", description: "Tedarikci secin", variant: "destructive" });
+      toast({ title: "Hata", description: "Tedarikçi seçin", variant: "destructive" });
       return;
     }
     const vatAmount = Math.round(payoutForm.baseAmountTl * (payoutForm.vatRatePct || 0) / 100);
@@ -328,7 +328,7 @@ export default function Finance() {
 
   const handleDispatchSubmit = () => {
     if (!dispatchForm.agencyId) {
-      toast({ title: "Hata", description: "Tedarikci secin", variant: "destructive" });
+      toast({ title: "Hata", description: "Tedarikçi seçin", variant: "destructive" });
       return;
     }
     createDispatchMutation.mutate(dispatchForm);
@@ -336,7 +336,7 @@ export default function Finance() {
 
   const handleRateSubmit = () => {
     if (!rateForm.agencyId) {
-      toast({ title: "Hata", description: "Tedarikci secin", variant: "destructive" });
+      toast({ title: "Hata", description: "Tedarikçi seçin", variant: "destructive" });
       return;
     }
     if (editingRate) {
@@ -366,8 +366,8 @@ export default function Finance() {
       <main className="flex-1 md:ml-64 p-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold" data-testid="text-page-title">Tedarikci Yonetimi</h1>
-            <p className="text-muted-foreground">Tedarikci firmalara yapilan odemeler ve takip</p>
+            <h1 className="text-3xl font-bold" data-testid="text-page-title">Tedarikçi Yönetimi</h1>
+            <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1">
@@ -404,22 +404,22 @@ export default function Finance() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-sm font-medium">Gonderilen Misafir</CardTitle>
+              <CardTitle className="text-sm font-medium">Gönderilen Misafir</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="text-guest-count">{totalGuests}</div>
-              <p className="text-xs text-muted-foreground">Secili donemde</p>
+              <p className="text-xs text-muted-foreground">Seçili dönemde</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Odeme</CardTitle>
+              <CardTitle className="text-sm font-medium">Toplam Ödeme</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600" data-testid="text-total-paid">{formatMoney(totalPaid)}</div>
-              <p className="text-xs text-muted-foreground">Acentalara odenen</p>
+              <p className="text-xs text-muted-foreground">Acentalara ödenen</p>
             </CardContent>
           </Card>
         </div>
@@ -432,11 +432,11 @@ export default function Finance() {
             </TabsTrigger>
             <TabsTrigger value="dispatches" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-dispatches">
               <UserCheck className="h-5 w-5" />
-              Gonderilen Musteri
+              Gönderilen Müşteri
             </TabsTrigger>
             <TabsTrigger value="payouts" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-payouts">
               <CreditCard className="h-5 w-5" />
-              Odemeler
+              Ödemeler
             </TabsTrigger>
             <TabsTrigger value="rates" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-rates">
               <TableProperties className="h-5 w-5" />
@@ -493,15 +493,15 @@ export default function Finance() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Kisi basi odeme:</span>
+                      <span className="text-muted-foreground">Kişi başı ödeme:</span>
                       <span className="font-medium">{formatMoney(supplier.defaultPayoutPerGuest || 0)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Gonderilen misafir:</span>
-                      <span className="font-medium">{supplier.guestCount} kisi</span>
+                      <span className="text-muted-foreground">Gönderilen misafir:</span>
+                      <span className="font-medium">{supplier.guestCount} kişi</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Toplam odeme:</span>
+                      <span className="text-muted-foreground">Toplam ödeme:</span>
                       <span className="font-medium text-orange-600">{formatMoney(supplier.totalPaid)}</span>
                     </div>
                     {supplier.notes && (
@@ -512,7 +512,7 @@ export default function Finance() {
               ))}
               {suppliers.length === 0 && (
                 <div className="col-span-full text-center py-8 text-muted-foreground">
-                  Henuz tedarikci eklenmemis
+                  Henüz tedarikçi eklenmemiş
                 </div>
               )}
             </div>
@@ -520,7 +520,7 @@ export default function Finance() {
 
           <TabsContent value="dispatches" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Gunluk Gonderimler</h3>
+              <h3 className="text-lg font-semibold">Günlük Gönderimler</h3>
               <Button onClick={() => {
                 setDispatchForm({
                   agencyId: 0,
@@ -534,7 +534,7 @@ export default function Finance() {
                 setDispatchDialogOpen(true);
               }} data-testid="button-add-dispatch">
                 <Plus className="h-4 w-4 mr-2" />
-                Gonderim Ekle
+                Gönderim Ekle
               </Button>
             </div>
 
@@ -553,15 +553,15 @@ export default function Finance() {
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div className="flex justify-between gap-2 text-sm">
-                          <span className="text-muted-foreground">Toplam Kisi:</span>
-                          <span className="font-medium">{summary.totalGuests} kisi</span>
+                          <span className="text-muted-foreground">Toplam Kişi:</span>
+                          <span className="font-medium">{summary.totalGuests} kişi</span>
                         </div>
                         <div className="flex justify-between gap-2 text-sm">
-                          <span className="text-muted-foreground">Toplam Borc:</span>
+                          <span className="text-muted-foreground">Toplam Borç:</span>
                           <span className="font-medium">{summary.totalOwedTl.toLocaleString('tr-TR')} TL</span>
                         </div>
                         <div className="flex justify-between gap-2 text-sm">
-                          <span className="text-muted-foreground">Odenen:</span>
+                          <span className="text-muted-foreground">Ödenen:</span>
                           <span className="font-medium text-green-600">{summary.totalPaidTl.toLocaleString('tr-TR')} TL</span>
                         </div>
                         <div className="flex justify-between gap-2 text-sm border-t pt-2">
@@ -599,7 +599,7 @@ export default function Finance() {
                         <div className="flex flex-wrap items-center gap-4 text-sm">
                           <div>
                             <span className="text-muted-foreground">Misafir:</span>
-                            <span className="ml-1 font-medium">{dispatch.guestCount} kisi</span>
+                            <span className="ml-1 font-medium">{dispatch.guestCount} kişi</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Birim:</span>
@@ -613,7 +613,7 @@ export default function Finance() {
                             variant="ghost"
                             size="icon"
                             onClick={() => {
-                              if (confirm('Bu gonderim kaydini silmek istediginize emin misiniz?')) {
+                              if (confirm('Bu gönderim kaydını silmek istediğinize emin misiniz?')) {
                                 deleteDispatchMutation.mutate(dispatch.id);
                               }
                             }}
@@ -627,7 +627,7 @@ export default function Finance() {
                   })}
                   {filteredDispatches.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      Bu donemde gonderim kaydi bulunamadi
+                      Bu dönemde gönderim kaydı bulunamadı
                     </div>
                   )}
                 </div>
@@ -637,7 +637,7 @@ export default function Finance() {
 
           <TabsContent value="payouts" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Odeme Kayitlari</h3>
+              <h3 className="text-lg font-semibold">Ödeme Kayıtları</h3>
               <Button onClick={() => {
                 setPayoutForm({
                   agencyId: 0,
@@ -655,7 +655,7 @@ export default function Finance() {
                 setPayoutDialogOpen(true);
               }} data-testid="button-add-payout">
                 <Plus className="h-4 w-4 mr-2" />
-                Odeme Ekle
+                Ödeme Ekle
               </Button>
             </div>
             <Card>
@@ -678,7 +678,7 @@ export default function Finance() {
                         <div className="flex flex-wrap items-center gap-4 text-sm">
                           <div>
                             <span className="text-muted-foreground">Misafir:</span>
-                            <span className="ml-1 font-medium">{payout.guestCount} kisi</span>
+                            <span className="ml-1 font-medium">{payout.guestCount} kişi</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Tutar:</span>
@@ -692,7 +692,7 @@ export default function Finance() {
                             variant="ghost"
                             size="icon"
                             onClick={() => {
-                              if (confirm('Bu odeme kaydini silmek istediginize emin misiniz?')) {
+                              if (confirm('Bu ödeme kaydını silmek istediğinize emin misiniz?')) {
                                 deletePayoutMutation.mutate(payout.id);
                               }
                             }}
@@ -706,7 +706,7 @@ export default function Finance() {
                   })}
                   {filteredPayouts.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      Bu donemde odeme kaydi bulunamadi
+                      Bu dönemde ödeme kaydı bulunamadı
                     </div>
                   )}
                 </div>
@@ -731,7 +731,7 @@ export default function Finance() {
               <CardHeader>
                 <CardTitle>Acenta Fiyat Listesi</CardTitle>
                 <CardDescription>
-                  Acenta firmalar icin donem bazli kisi basi odeme fiyatlari. Musteri gonderiminde bu fiyatlar otomatik uygulanir.
+                  Acenta firmalar için dönem bazlı kişi başı ödeme fiyatları. Müşteri gönderiminde bu fiyatlar otomatik uygulanır.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -764,7 +764,7 @@ export default function Finance() {
                             <div className="text-lg font-bold text-orange-600" data-testid={`text-rate-amount-${rate.id}`}>
                               {displayAmount.toLocaleString('tr-TR')} {currencySymbol}
                             </div>
-                            <div className="text-xs text-muted-foreground">kisi basi</div>
+                            <div className="text-xs text-muted-foreground">kişi başı</div>
                           </div>
                           <div className="flex gap-1">
                             <Button variant="ghost" size="icon" onClick={() => {
@@ -806,16 +806,16 @@ export default function Finance() {
         <Dialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingSupplier ? 'Tedarikci Duzenle' : 'Yeni Tedarikci'}</DialogTitle>
-              <DialogDescription>Aktivite saglayici firma bilgilerini girin</DialogDescription>
+              <DialogTitle>{editingSupplier ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi'}</DialogTitle>
+              <DialogDescription>Aktivite sağlayıcı firma bilgilerini girin</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Firma Adi</Label>
+                <Label>Firma Adı</Label>
                 <Input 
                   value={supplierForm.name} 
                   onChange={e => setSupplierForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="Ornek: UP Firma, Dalis Merkezi"
+                  placeholder="Örnek: UP Firma, Dalış Merkezi"
                   data-testid="input-supplier-name"
                 />
               </div>
@@ -829,7 +829,7 @@ export default function Finance() {
                 />
               </div>
               <div>
-                <Label>Kisi Basi Odeme (TL)</Label>
+                <Label>Kişi Başı Ödeme (TL)</Label>
                 <Input 
                   type="number" 
                   value={supplierForm.defaultPayoutPerGuest} 
@@ -848,7 +848,7 @@ export default function Finance() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setSupplierDialogOpen(false)} data-testid="button-cancel-supplier">Iptal</Button>
+              <Button variant="outline" onClick={() => setSupplierDialogOpen(false)} data-testid="button-cancel-supplier">İptal</Button>
               <Button 
                 onClick={handleSupplierSubmit}
                 disabled={createSupplierMutation.isPending || updateSupplierMutation.isPending}
@@ -864,12 +864,12 @@ export default function Finance() {
         <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Odeme Kaydi Ekle</DialogTitle>
-              <DialogDescription>Tedarikci firmaya yapilan odemeyi kaydedin</DialogDescription>
+              <DialogTitle>Ödeme Kaydı Ekle</DialogTitle>
+              <DialogDescription>Tedarikçi firmaya yapılan ödemeyi kaydedin</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Tedarikci</Label>
+                <Label>Tedarikçi</Label>
                 <Select 
                   value={payoutForm.agencyId ? String(payoutForm.agencyId) : ""} 
                   onValueChange={v => {
@@ -883,7 +883,7 @@ export default function Finance() {
                   }}
                 >
                   <SelectTrigger data-testid="select-payout-supplier">
-                    <SelectValue placeholder="Tedarikci secin" />
+                    <SelectValue placeholder="Tedarikçi seçin" />
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map(s => (
@@ -894,7 +894,7 @@ export default function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Donem Baslangici</Label>
+                  <Label>Dönem Başlangıcı</Label>
                   <Input 
                     type="date"
                     value={payoutForm.periodStart}
@@ -903,7 +903,7 @@ export default function Finance() {
                   />
                 </div>
                 <div>
-                  <Label>Donem Bitisi</Label>
+                  <Label>Dönem Bitişi</Label>
                   <Input 
                     type="date"
                     value={payoutForm.periodEnd}
@@ -913,17 +913,17 @@ export default function Finance() {
                 </div>
               </div>
               <div>
-                <Label>Aciklama</Label>
+                <Label>Açıklama</Label>
                 <Input 
                   value={payoutForm.description}
                   onChange={e => setPayoutForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Ornek: Aralik ayi paragliding"
+                  placeholder="Örnek: Aralık ayı paragliding"
                   data-testid="input-payout-description"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Misafir Sayisi</Label>
+                  <Label>Misafir Sayısı</Label>
                   <Input 
                     type="number"
                     value={payoutForm.guestCount}
@@ -951,7 +951,7 @@ export default function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Odeme Yontemi</Label>
+                  <Label>Ödeme Yöntemi</Label>
                   <Select value={payoutForm.method} onValueChange={v => setPayoutForm(f => ({ ...f, method: v }))}>
                     <SelectTrigger data-testid="select-payout-method">
                       <SelectValue />
@@ -981,7 +981,7 @@ export default function Finance() {
                 <Input 
                   value={payoutForm.reference}
                   onChange={e => setPayoutForm(f => ({ ...f, reference: e.target.value }))}
-                  placeholder="Odeme referans numarasi"
+                  placeholder="Ödeme referans numarası"
                   data-testid="input-payout-reference"
                 />
               </div>
@@ -997,14 +997,14 @@ export default function Finance() {
               {payoutForm.baseAmountTl > 0 && (
                 <div className="p-3 bg-muted rounded-lg">
                   <div className="flex justify-between text-sm">
-                    <span>Toplam Odeme:</span>
+                    <span>Toplam Ödeme:</span>
                     <span className="font-bold text-orange-600">{formatMoney(payoutForm.baseAmountTl)}</span>
                   </div>
                 </div>
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setPayoutDialogOpen(false)} data-testid="button-cancel-payout">Iptal</Button>
+              <Button variant="outline" onClick={() => setPayoutDialogOpen(false)} data-testid="button-cancel-payout">İptal</Button>
               <Button 
                 onClick={handlePayoutSubmit}
                 disabled={createPayoutMutation.isPending}
@@ -1020,12 +1020,12 @@ export default function Finance() {
         <Dialog open={dispatchDialogOpen} onOpenChange={setDispatchDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Gonderim Kaydi Ekle</DialogTitle>
-              <DialogDescription>Tedarikci firmaya gonderilen misafirleri kaydedin</DialogDescription>
+              <DialogTitle>Gönderim Kaydı Ekle</DialogTitle>
+              <DialogDescription>Tedarikçi firmaya gönderilen misafirleri kaydedin</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Tedarikci</Label>
+                <Label>Tedarikçi</Label>
                 <Select 
                   value={dispatchForm.agencyId ? String(dispatchForm.agencyId) : ""} 
                   onValueChange={v => {
@@ -1039,7 +1039,7 @@ export default function Finance() {
                   }}
                 >
                   <SelectTrigger data-testid="select-dispatch-supplier">
-                    <SelectValue placeholder="Tedarikci secin" />
+                    <SelectValue placeholder="Tedarikçi seçin" />
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map(s => (
@@ -1055,7 +1055,7 @@ export default function Finance() {
                   onValueChange={v => setDispatchForm(f => ({ ...f, activityId: parseInt(v) || 0 }))}
                 >
                   <SelectTrigger data-testid="select-dispatch-activity">
-                    <SelectValue placeholder="Aktivite secin" />
+                    <SelectValue placeholder="Aktivite seçin" />
                   </SelectTrigger>
                   <SelectContent>
                     {activities.map(a => (
@@ -1086,7 +1086,7 @@ export default function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Misafir Sayisi</Label>
+                  <Label>Misafir Sayısı</Label>
                   <Input 
                     type="number"
                     min="1"
@@ -1117,14 +1117,14 @@ export default function Finance() {
               {dispatchForm.guestCount > 0 && dispatchForm.unitPayoutTl > 0 && (
                 <div className="p-3 bg-muted rounded-lg">
                   <div className="flex justify-between text-sm">
-                    <span>Toplam Odeme:</span>
+                    <span>Toplam Ödeme:</span>
                     <span className="font-bold text-orange-600">{formatMoney(dispatchForm.guestCount * dispatchForm.unitPayoutTl)}</span>
                   </div>
                 </div>
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDispatchDialogOpen(false)} data-testid="button-cancel-dispatch">Iptal</Button>
+              <Button variant="outline" onClick={() => setDispatchDialogOpen(false)} data-testid="button-cancel-dispatch">İptal</Button>
               <Button 
                 onClick={handleDispatchSubmit}
                 disabled={createDispatchMutation.isPending}
@@ -1140,8 +1140,8 @@ export default function Finance() {
         <Dialog open={rateDialogOpen} onOpenChange={setRateDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>{editingRate ? 'Fiyat Duzenle' : 'Yeni Fiyat'}</DialogTitle>
-              <DialogDescription>Acenta firma icin donemsel odeme fiyati tanimlayin</DialogDescription>
+              <DialogTitle>{editingRate ? 'Fiyat Düzenle' : 'Yeni Fiyat'}</DialogTitle>
+              <DialogDescription>Acenta firma için dönemsel ödeme fiyatı tanımlayın</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -1151,7 +1151,7 @@ export default function Finance() {
                   onValueChange={v => setRateForm(f => ({ ...f, agencyId: parseInt(v) }))}
                 >
                   <SelectTrigger data-testid="select-rate-supplier">
-                    <SelectValue placeholder="Acenta secin" />
+                    <SelectValue placeholder="Acenta seçin" />
                   </SelectTrigger>
                   <SelectContent>
                     {suppliers.map(s => (
@@ -1204,16 +1204,16 @@ export default function Finance() {
                   onValueChange={v => setRateForm(f => ({ ...f, currency: v }))}
                 >
                   <SelectTrigger data-testid="select-rate-currency">
-                    <SelectValue placeholder="Para birimi secin" />
+                    <SelectValue placeholder="Para birimi seçin" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="TRY">TL (Turk Lirasi)</SelectItem>
-                    <SelectItem value="USD">USD (Amerikan Dolari)</SelectItem>
+                    <SelectItem value="TRY">TL (Türk Lirası)</SelectItem>
+                    <SelectItem value="USD">USD (Amerikan Doları)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Kisi Basi Odeme ({rateForm.currency === 'TRY' ? 'TL' : 'USD'})</Label>
+                <Label>Kişi Başı Ödeme ({rateForm.currency === 'TRY' ? 'TL' : 'USD'})</Label>
                 <Input 
                   type="number"
                   min="0"
@@ -1240,7 +1240,7 @@ export default function Finance() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setRateDialogOpen(false)} data-testid="button-cancel-rate">Iptal</Button>
+              <Button variant="outline" onClick={() => setRateDialogOpen(false)} data-testid="button-cancel-rate">İptal</Button>
               <Button 
                 onClick={handleRateSubmit}
                 disabled={createRateMutation.isPending || updateRateMutation.isPending}

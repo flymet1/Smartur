@@ -110,12 +110,12 @@ export default function Settings() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast({ title: "Hata", description: "Lutfen bir gorsel dosyasi secin.", variant: "destructive" });
+      toast({ title: "Hata", description: "Lütfen bir görsel dosyası seçin.", variant: "destructive" });
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "Hata", description: "Dosya boyutu 2MB'dan kucuk olmali.", variant: "destructive" });
+      toast({ title: "Hata", description: "Dosya boyutu 2MB'dan küçük olmalı.", variant: "destructive" });
       return;
     }
 
@@ -131,7 +131,7 @@ export default function Settings() {
         });
         await refetchLogo();
         queryClient.invalidateQueries({ queryKey: ['/api/settings', 'sidebarLogo'] });
-        toast({ title: "Basarili", description: "Logo yuklendi." });
+        toast({ title: "Başarılı", description: "Logo yüklendi." });
         setIsUploadingLogo(false);
       };
       reader.readAsDataURL(file);
@@ -150,9 +150,9 @@ export default function Settings() {
       });
       await refetchLogo();
       queryClient.invalidateQueries({ queryKey: ['/api/settings', 'sidebarLogo'] });
-      toast({ title: "Basarili", description: "Logo kaldirildi." });
+      toast({ title: "Başarılı", description: "Logo kaldırıldı." });
     } catch (err) {
-      toast({ title: "Hata", description: "Logo kaldirilamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Logo kaldırılamadı.", variant: "destructive" });
     }
   };
 
@@ -309,10 +309,10 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" />
-                Admin Giris Bilgileri
+                Admin Giriş Bilgileri
               </CardTitle>
               <CardDescription>
-                Bot kurallari sayfasina ve uygulamaya giris icin kullanilacak kimlik bilgileri
+                Bot kuralları sayfasına ve uygulamaya giriş için kullanılacak kimlik bilgileri
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -328,14 +328,14 @@ export default function Settings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="adminPassword">Sifre</Label>
+                  <Label htmlFor="adminPassword">Şifre</Label>
                   <div className="relative">
                     <Input 
                       id="adminPassword"
                       type={showPassword ? "text" : "password"}
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder={adminCredentialsLoaded ? "Degistirmek icin yeni sifre girin" : "Sifre belirleyin"}
+                      placeholder={adminCredentialsLoaded ? "Değiştirmek için yeni şifre girin" : "Şifre belirleyin"}
                       data-testid="input-admin-password"
                     />
                     <Button
@@ -351,8 +351,8 @@ export default function Settings() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {adminCredentialsLoaded 
-                      ? "Mevcut sifre gizlidir. Degistirmek icin yeni sifre girin." 
-                      : "Bu sifre ile korunmus sayfalara erisebilirsiniz."}
+                      ? "Mevcut şifre gizlidir. Değiştirmek için yeni şifre girin." 
+                      : "Bu şifre ile korumuş sayfalara erişebilirsiniz."}
                   </p>
                 </div>
               </div>
@@ -365,7 +365,7 @@ export default function Settings() {
                 <Link href="/bot-rules">
                   <Button variant="outline" className="w-full" data-testid="link-bot-rules">
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Bot Kurallarini Duzenle
+                    Bot Kurallarını Düzenle
                   </Button>
                 </Link>
               </div>
@@ -693,9 +693,9 @@ export default function Settings() {
 
                       <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                         <div className="space-y-1">
-                          <Label className="text-base font-medium">Bot Erisim Ayarlari</Label>
+                          <Label className="text-base font-medium">Bot Erişim Ayarları</Label>
                           <p className="text-sm text-muted-foreground">
-                            Bot'un hangi bilgilere erisebilecegini secin. Kapatilan bilgiler bot'a gonderilmez.
+                            Bot'un hangi bilgilere erişebileceğini seçin. Kapatılan bilgiler bot'a gönderilmez.
                           </p>
                         </div>
                         
@@ -727,7 +727,7 @@ export default function Settings() {
                           <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
                             <div className="space-y-0.5">
                               <Label>Kapasite / Takvim</Label>
-                              <p className="text-xs text-muted-foreground">Musaitlik ve kontenjan bilgileri</p>
+                              <p className="text-xs text-muted-foreground">Müsaitlik ve kontenjan bilgileri</p>
                             </div>
                             <Switch 
                               checked={botAccessCapacity} 

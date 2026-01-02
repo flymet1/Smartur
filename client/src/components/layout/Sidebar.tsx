@@ -133,7 +133,7 @@ export function Sidebar() {
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )} data-testid="link-user-guide">
               <BookOpen className="h-4 w-4" />
-              Kullanim Kilavuzu
+              Kullanım Kılavuzu
             </div>
           </Link>
         </div>

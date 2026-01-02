@@ -39,12 +39,12 @@ export default function PackageTours() {
   const { toast } = useToast();
 
   const handleDelete = async (id: number) => {
-    if (confirm("Bu paket turu silmek istediginize emin misiniz?")) {
+    if (confirm("Bu paket turu silmek istediğinize emin misiniz?")) {
       try {
         await deleteMutation.mutateAsync(id);
-        toast({ title: "Basarili", description: "Paket tur silindi." });
+        toast({ title: "Başarılı", description: "Paket tur silindi." });
       } catch (error) {
-        toast({ title: "Hata", description: "Silme islemi basarisiz.", variant: "destructive" });
+        toast({ title: "Hata", description: "Silme işlemi başarısız.", variant: "destructive" });
       }
     }
   };
@@ -56,7 +56,7 @@ export default function PackageTours() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold font-display" data-testid="text-page-title">Paket Turlar</h1>
-            <p className="text-muted-foreground mt-1">Birden fazla aktivite iceren paket turlarinizi yonetin</p>
+            <p className="text-muted-foreground mt-1">Birden fazla aktivite içeren paket turlarınızı yönetin</p>
           </div>
           <PackageTourDialog />
         </div>
@@ -76,7 +76,7 @@ export default function PackageTours() {
             ))}
             {packageTours.length === 0 && (
               <div className="col-span-full py-12 text-center text-muted-foreground bg-card rounded-xl border border-dashed">
-                Henuz hic paket tur eklenmemis.
+                Henüz hiç paket tur eklenmemiş.
               </div>
             )}
           </div>
@@ -134,14 +134,14 @@ function PackageTourCard({ tour, onDelete }: { tour: PackageTour; onDelete: () =
             ) : null;
           })}
           {tourActivities.length === 0 && (
-            <span className="text-xs text-muted-foreground">Aktivite eklenmemis</span>
+            <span className="text-xs text-muted-foreground">Aktivite eklenmemiş</span>
           )}
         </div>
 
         <div className="flex gap-2 pt-4 border-t mt-auto">
           <PackageTourDialog tour={tour} trigger={
             <Button variant="outline" className="flex-1" data-testid={`button-edit-tour-${tour.id}`}>
-              <Edit className="w-4 h-4 mr-2" /> Duzenle
+              <Edit className="w-4 h-4 mr-2" /> Düzenle
             </Button>
           } />
           <Button variant="destructive" size="icon" onClick={onDelete} data-testid={`button-delete-tour-${tour.id}`}>
@@ -221,10 +221,10 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/package-tours'] });
       setOpen(false);
-      toast({ title: "Basarili", description: "Paket tur olusturuldu." });
+      toast({ title: "Başarılı", description: "Paket tur oluşturuldu." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Paket tur olusturulamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Paket tur oluşturulamadı.", variant: "destructive" });
     }
   });
 
@@ -233,10 +233,10 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/package-tours'] });
       setOpen(false);
-      toast({ title: "Basarili", description: "Paket tur guncellendi." });
+      toast({ title: "Başarılı", description: "Paket tur güncellendi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Paket tur guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Paket tur güncellenemedi.", variant: "destructive" });
     }
   });
 
@@ -305,8 +305,8 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
       )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{tour ? 'Paket Turu Duzenle' : 'Yeni Paket Tur'}</DialogTitle>
-          <DialogDescription>Birden fazla aktivite iceren bir paket tur tanimlayin</DialogDescription>
+          <DialogTitle>{tour ? 'Paket Turu Düzenle' : 'Yeni Paket Tur'}</DialogTitle>
+          <DialogDescription>Birden fazla aktivite içeren bir paket tur tanımlayın</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -343,11 +343,11 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
             </div>
             
             <div className="col-span-2">
-              <Label>Aciklama</Label>
+              <Label>Açıklama</Label>
               <Textarea 
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
-                placeholder="Paket tur aciklamasi..."
+                placeholder="Paket tur açıklaması..."
                 data-testid="input-tour-description"
               />
             </div>
@@ -389,7 +389,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
                     onValueChange={v => updateActivity(index, 'activityId', parseInt(v))}
                   >
                     <SelectTrigger className="flex-1" data-testid={`select-activity-${index}`}>
-                      <SelectValue placeholder="Aktivite secin" />
+                      <SelectValue placeholder="Aktivite seçin" />
                     </SelectTrigger>
                     <SelectContent>
                       {allActivities.filter(a => a.active).map(a => (
@@ -499,7 +499,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} data-testid="button-cancel">Iptal</Button>
+          <Button variant="outline" onClick={() => setOpen(false)} data-testid="button-cancel">İptal</Button>
           <Button 
             onClick={handleSubmit}
             disabled={createMutation.isPending || updateMutation.isPending}
