@@ -24,6 +24,27 @@ function verifyPassword(password: string, storedHash: string): boolean {
   return hash === verifyHash;
 }
 
+// License middleware - checks if write operations are allowed
+async function checkLicenseForWrite(): Promise<{ allowed: boolean; message: string; status?: string }> {
+  const verification = await storage.verifyLicense();
+  
+  if (!verification.canWrite) {
+    let message = verification.message;
+    
+    if (verification.status === 'grace') {
+      message = `Lisansiniz dolmus (Ek sure: ${verification.graceDaysRemaining} gun). Salt okunur moddasiniz - yeni islem yapamazsiniz.`;
+    } else if (verification.status === 'expired') {
+      message = "Lisansiniz tamamen dolmus. Sisteme erisim icin lisansinizi yenileyin.";
+    } else if (verification.status === 'suspended') {
+      message = "Lisansiniz askiya alinmis. Destek ile iletisime gecin.";
+    }
+    
+    return { allowed: false, message, status: verification.status };
+  }
+  
+  return { allowed: true, message: "OK", status: verification.status };
+}
+
 // Default bot rules (used when no custom rules are defined in database)
 const DEFAULT_BOT_RULES = `
 === 1. İLETİŞİM PROTOKOLÜ ===
@@ -753,6 +774,12 @@ export async function registerRoutes(
 
   app.post(api.activities.create.path, async (req, res) => {
     try {
+      // License check for write operations
+      const licenseCheck = await checkLicenseForWrite();
+      if (!licenseCheck.allowed) {
+        return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
+      }
+      
       const input = api.activities.create.input.parse(req.body);
       const item = await storage.createActivity(input);
       res.status(201).json(item);
@@ -764,6 +791,12 @@ export async function registerRoutes(
 
   app.put(api.activities.update.path, async (req, res) => {
     try {
+      // License check for write operations
+      const licenseCheck = await checkLicenseForWrite();
+      if (!licenseCheck.allowed) {
+        return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
+      }
+      
       const input = api.activities.update.input.parse(req.body);
       const item = await storage.updateActivity(Number(req.params.id), input);
       res.json(item);
@@ -773,6 +806,12 @@ export async function registerRoutes(
   });
 
   app.delete(api.activities.delete.path, async (req, res) => {
+    // License check for write operations
+    const licenseCheck = await checkLicenseForWrite();
+    if (!licenseCheck.allowed) {
+      return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
+    }
+    
     await storage.deleteActivity(Number(req.params.id));
     res.status(204).send();
   });
@@ -801,6 +840,12 @@ export async function registerRoutes(
 
   app.post("/api/package-tours", async (req, res) => {
     try {
+      // License check for write operations
+      const licenseCheck = await checkLicenseForWrite();
+      if (!licenseCheck.allowed) {
+        return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
+      }
+      
       const { name, nameAliases, description, price, priceUsd, confirmationMessage, reservationLink, reservationLinkEn, active, faq, activities: tourActivities } = req.body;
       
       if (!name) {
@@ -1130,6 +1175,12 @@ export async function registerRoutes(
   });
 
   app.post(api.reservations.create.path, async (req, res) => {
+    // License check for write operations
+    const licenseCheck = await checkLicenseForWrite();
+    if (!licenseCheck.allowed) {
+      return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
+    }
+    
     const input = api.reservations.create.input.parse(req.body);
     const item = await storage.createReservation(input);
     

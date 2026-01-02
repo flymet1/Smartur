@@ -216,7 +216,15 @@ export interface IStorage {
   createLicense(licenseData: InsertLicense): Promise<License>;
   updateLicense(id: number, licenseData: Partial<InsertLicense>): Promise<License>;
   deleteLicense(id: number): Promise<void>;
-  verifyLicense(): Promise<{ valid: boolean; message: string; license?: License }>;
+  verifyLicense(): Promise<{ 
+    valid: boolean; 
+    message: string; 
+    license?: License;
+    status?: 'active' | 'warning' | 'grace' | 'suspended' | 'expired';
+    daysRemaining?: number;
+    graceDaysRemaining?: number;
+    canWrite?: boolean;
+  }>;
   getLicenseUsage(): Promise<{ activitiesUsed: number; reservationsThisMonth: number }>;
 }
 
@@ -1445,29 +1453,122 @@ export class DatabaseStorage implements IStorage {
     await db.delete(license).where(eq(license.id, id));
   }
 
-  async verifyLicense(): Promise<{ valid: boolean; message: string; license?: License }> {
+  async verifyLicense(): Promise<{ 
+    valid: boolean; 
+    message: string; 
+    license?: License;
+    status?: 'active' | 'warning' | 'grace' | 'suspended' | 'expired';
+    daysRemaining?: number;
+    graceDaysRemaining?: number;
+    canWrite?: boolean;
+  }> {
     const currentLicense = await this.getLicense();
+    const now = new Date();
+    const GRACE_PERIOD_DAYS = 7;
+    const WARNING_PERIOD_DAYS = 14;
     
     if (!currentLicense) {
-      return { valid: false, message: "Lisans bulunamadi. Lutfen lisans bilgilerinizi girin." };
+      return { valid: false, message: "Lisans bulunamadi. Lutfen lisans bilgilerinizi girin.", status: 'expired', canWrite: false };
     }
 
     if (!currentLicense.isActive) {
-      return { valid: false, message: "Lisansiniz devre disi birakilmis.", license: currentLicense };
+      return { 
+        valid: false, 
+        message: "Lisansiniz devre disi birakilmis.", 
+        license: currentLicense,
+        status: 'suspended',
+        canWrite: false
+      };
     }
 
-    if (currentLicense.expiryDate && new Date(currentLicense.expiryDate) < new Date()) {
-      return { valid: false, message: "Lisansiniz suresi dolmus. Lutfen yenileyin.", license: currentLicense };
+    // Check expiry date with grace period logic
+    if (currentLicense.expiryDate) {
+      const expiryDate = new Date(currentLicense.expiryDate);
+      const graceEndDate = new Date(expiryDate);
+      graceEndDate.setDate(graceEndDate.getDate() + GRACE_PERIOD_DAYS);
+      
+      const timeDiff = expiryDate.getTime() - now.getTime();
+      const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+      
+      // Fully expired (past grace period)
+      if (now > graceEndDate) {
+        return { 
+          valid: false, 
+          message: "Lisansiniz ve ek sure dolmus. Lutfen yenileyin.", 
+          license: currentLicense,
+          status: 'expired',
+          daysRemaining: daysRemaining,
+          canWrite: false
+        };
+      }
+      
+      // In grace period (expired but within 7 days)
+      if (now > expiryDate) {
+        const graceDaysRemaining = Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return { 
+          valid: false, 
+          message: `Lisansiniz dolmus. ${graceDaysRemaining} gun icinde yenileyin, aksi halde sisteme erisim kapanacak.`, 
+          license: currentLicense,
+          status: 'grace',
+          daysRemaining: daysRemaining,
+          graceDaysRemaining: graceDaysRemaining,
+          canWrite: false // Read-only mode during grace period
+        };
+      }
+      
+      // Warning period (within 14 days of expiry)
+      if (daysRemaining <= WARNING_PERIOD_DAYS) {
+        // Continue to check usage limits but with warning status
+        const usage = await this.getLicenseUsage();
+        
+        if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
+          return { 
+            valid: false, 
+            message: `Aktivite limitini astiniz (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lutfen planinizi yukseltin.`,
+            license: currentLicense,
+            status: 'warning',
+            daysRemaining: daysRemaining,
+            canWrite: false
+          };
+        }
+
+        if (currentLicense.maxReservationsPerMonth && usage.reservationsThisMonth > currentLicense.maxReservationsPerMonth) {
+          return { 
+            valid: false, 
+            message: `Aylik rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
+            license: currentLicense,
+            status: 'warning',
+            daysRemaining: daysRemaining,
+            canWrite: false
+          };
+        }
+
+        // Update last verified timestamp
+        await db.update(license)
+          .set({ lastVerifiedAt: new Date() })
+          .where(eq(license.id, currentLicense.id));
+
+        return { 
+          valid: true, 
+          message: `Lisansinizin bitmesine ${daysRemaining} gun kaldi. Lutfen yenilemeyi unutmayin.`, 
+          license: currentLicense,
+          status: 'warning',
+          daysRemaining: daysRemaining,
+          canWrite: true
+        };
+      }
     }
 
-    // Check usage limits
+    // Check usage limits for active license
     const usage = await this.getLicenseUsage();
     
     if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
       return { 
         valid: false, 
         message: `Aktivite limitini astiniz (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lutfen planinizi yukseltin.`,
-        license: currentLicense 
+        license: currentLicense,
+        status: 'active',
+        canWrite: false
       };
     }
 
@@ -1475,7 +1576,9 @@ export class DatabaseStorage implements IStorage {
       return { 
         valid: false, 
         message: `Aylik rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
-        license: currentLicense 
+        license: currentLicense,
+        status: 'active',
+        canWrite: false
       };
     }
 
@@ -1484,7 +1587,13 @@ export class DatabaseStorage implements IStorage {
       .set({ lastVerifiedAt: new Date() })
       .where(eq(license.id, currentLicense.id));
 
-    return { valid: true, message: "Lisans gecerli.", license: currentLicense };
+    return { 
+      valid: true, 
+      message: "Lisans gecerli.", 
+      license: currentLicense,
+      status: 'active',
+      canWrite: true
+    };
   }
 
   async getLicenseUsage(): Promise<{ activitiesUsed: number; reservationsThisMonth: number }> {
