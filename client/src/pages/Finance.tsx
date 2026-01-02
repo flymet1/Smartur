@@ -57,14 +57,10 @@ export default function Finance() {
     return new Date().toISOString().split('T')[0];
   });
   
-  const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Agency | null>(null);
   const [editingRate, setEditingRate] = useState<AgencyActivityRate | null>(null);
-  
-  const [supplierForm, setSupplierForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
   const [payoutForm, setPayoutForm] = useState({
     agencyId: 0,
     periodStart: startDate,
@@ -164,42 +160,6 @@ export default function Finance() {
   });
 
   // Mutations
-  const createSupplierMutation = useMutation({
-    mutationFn: async (data: typeof supplierForm) => apiRequest('POST', '/api/finance/agencies', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
-      setSupplierDialogOpen(false);
-      setSupplierForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
-      toast({ title: "Tedarikçi eklendi" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Hata", description: error?.message || "Tedarikçi eklenemedi", variant: "destructive" });
-    }
-  });
-
-  const updateSupplierMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: typeof supplierForm }) => 
-      apiRequest('PATCH', `/api/finance/agencies/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
-      setSupplierDialogOpen(false);
-      setEditingSupplier(null);
-      toast({ title: "Tedarikçi güncellendi" });
-    }
-  });
-
-  const deleteSupplierMutation = useMutation({
-    mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/agencies/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
-      toast({ title: "Tedarikçi silindi" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Hata", description: error?.message || "Tedarikçi silinemedi", variant: "destructive" });
-    }
-  });
-
   const createPayoutMutation = useMutation({
     mutationFn: async (data: typeof payoutForm) => apiRequest('POST', '/api/finance/payouts', data),
     onSuccess: () => {
@@ -303,14 +263,6 @@ export default function Finance() {
       toast({ title: "Hata", description: "Tarife silinemedi", variant: "destructive" });
     }
   });
-
-  const handleSupplierSubmit = () => {
-    if (editingSupplier) {
-      updateSupplierMutation.mutate({ id: editingSupplier.id, data: supplierForm });
-    } else {
-      createSupplierMutation.mutate(supplierForm);
-    }
-  };
 
   const handlePayoutSubmit = () => {
     if (!payoutForm.agencyId) {
@@ -424,12 +376,8 @@ export default function Finance() {
           </Card>
         </div>
 
-        <Tabs defaultValue="suppliers" className="space-y-4">
+        <Tabs defaultValue="dispatches" className="space-y-4">
           <TabsList className="h-14 p-1.5 gap-1">
-            <TabsTrigger value="suppliers" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-suppliers">
-              <Umbrella className="h-5 w-5" />
-              Acentalar
-            </TabsTrigger>
             <TabsTrigger value="dispatches" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-dispatches">
               <UserCheck className="h-5 w-5" />
               Gönderilen Müşteri
@@ -443,80 +391,6 @@ export default function Finance() {
               Fiyat Tablosu
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="suppliers" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Acenta Firmalari</h3>
-              <Button onClick={() => { 
-                setEditingSupplier(null); 
-                setSupplierForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' }); 
-                setSupplierDialogOpen(true); 
-              }} data-testid="button-add-supplier">
-                <Plus className="h-4 w-4 mr-2" />
-                Acenta Ekle
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {supplierSummary.map(supplier => (
-                <Card key={supplier.id} data-testid={`card-supplier-${supplier.id}`}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Umbrella className="h-5 w-5" />
-                        {supplier.name}
-                      </CardTitle>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          setEditingSupplier(supplier);
-                          setSupplierForm({
-                            name: supplier.name,
-                            contactInfo: supplier.contactInfo || '',
-                            defaultPayoutPerGuest: supplier.defaultPayoutPerGuest || 0,
-                            notes: supplier.notes || ''
-                          });
-                          setSupplierDialogOpen(true);
-                        }} data-testid={`button-edit-supplier-${supplier.id}`}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          if (confirm(`${supplier.name} tedarikçisini ve tüm ödeme kayıtlarını silmek istediğinize emin misiniz?`)) {
-                            deleteSupplierMutation.mutate(supplier.id);
-                          }
-                        }} data-testid={`button-delete-supplier-${supplier.id}`}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                    {supplier.contactInfo && (
-                      <CardDescription>{supplier.contactInfo}</CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Kişi başı ödeme:</span>
-                      <span className="font-medium">{formatMoney(supplier.defaultPayoutPerGuest || 0)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Gönderilen misafir:</span>
-                      <span className="font-medium">{supplier.guestCount} kişi</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Toplam ödeme:</span>
-                      <span className="font-medium text-orange-600">{formatMoney(supplier.totalPaid)}</span>
-                    </div>
-                    {supplier.notes && (
-                      <p className="text-xs text-muted-foreground pt-2 border-t">{supplier.notes}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-              {suppliers.length === 0 && (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  Henüz tedarikçi eklenmemiş
-                </div>
-              )}
-            </div>
-          </TabsContent>
 
           <TabsContent value="dispatches" className="space-y-4">
             <div className="flex justify-between items-center">
@@ -801,64 +675,6 @@ export default function Finance() {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Tedarikci Dialog */}
-        <Dialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingSupplier ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi'}</DialogTitle>
-              <DialogDescription>Aktivite sağlayıcı firma bilgilerini girin</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Firma Adı</Label>
-                <Input 
-                  value={supplierForm.name} 
-                  onChange={e => setSupplierForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="Örnek: UP Firma, Dalış Merkezi"
-                  data-testid="input-supplier-name"
-                />
-              </div>
-              <div>
-                <Label>Iletisim Bilgisi</Label>
-                <Input 
-                  value={supplierForm.contactInfo} 
-                  onChange={e => setSupplierForm(f => ({ ...f, contactInfo: e.target.value }))}
-                  placeholder="Telefon veya email"
-                  data-testid="input-supplier-contact"
-                />
-              </div>
-              <div>
-                <Label>Kişi Başı Ödeme (TL)</Label>
-                <Input 
-                  type="number" 
-                  value={supplierForm.defaultPayoutPerGuest} 
-                  onChange={e => setSupplierForm(f => ({ ...f, defaultPayoutPerGuest: parseInt(e.target.value) || 0 }))}
-                  data-testid="input-supplier-payout"
-                />
-              </div>
-              <div>
-                <Label>Notlar</Label>
-                <Textarea 
-                  value={supplierForm.notes} 
-                  onChange={e => setSupplierForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Ek bilgiler..."
-                  data-testid="input-supplier-notes"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSupplierDialogOpen(false)} data-testid="button-cancel-supplier">İptal</Button>
-              <Button 
-                onClick={handleSupplierSubmit}
-                disabled={createSupplierMutation.isPending || updateSupplierMutation.isPending}
-                data-testid="button-save-supplier"
-              >
-                Kaydet
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Odeme Dialog */}
         <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
