@@ -2672,6 +2672,102 @@ export async function registerRoutes(
     }
   });
 
+  // Auto Responses CRUD
+  app.get("/api/auto-responses", async (req, res) => {
+    try {
+      const autoResponses = await storage.getAutoResponses();
+      res.json(autoResponses);
+    } catch (err) {
+      res.status(500).json({ error: "Otomatik yanitlar alinamadi" });
+    }
+  });
+
+  app.get("/api/auto-responses/:id", async (req, res) => {
+    try {
+      const autoResponse = await storage.getAutoResponse(Number(req.params.id));
+      if (!autoResponse) {
+        return res.status(404).json({ error: "Otomatik yanit bulunamadi" });
+      }
+      res.json(autoResponse);
+    } catch (err) {
+      res.status(500).json({ error: "Otomatik yanit alinamadi" });
+    }
+  });
+
+  app.post("/api/auto-responses", async (req, res) => {
+    try {
+      const { name, keywords, response, priority, isActive } = req.body;
+      
+      if (!name || !keywords || !response) {
+        return res.status(400).json({ error: "Kural adi, anahtar kelimeler ve yanit metni zorunlu" });
+      }
+      
+      // Validate keywords JSON
+      try {
+        const parsedKeywords = JSON.parse(keywords);
+        if (!Array.isArray(parsedKeywords) || parsedKeywords.length === 0) {
+          return res.status(400).json({ error: "Anahtar kelimeler bir dizi olmali ve en az bir kelime icermeli" });
+        }
+      } catch {
+        return res.status(400).json({ error: "Anahtar kelimeler gecerli bir JSON dizisi olmali" });
+      }
+      
+      const autoResponse = await storage.createAutoResponse({
+        name,
+        keywords,
+        response,
+        priority: priority ?? 0,
+        isActive: isActive ?? true
+      });
+      
+      res.status(201).json(autoResponse);
+    } catch (err) {
+      console.error("Otomatik yanit olusturma hatasi:", err);
+      res.status(400).json({ error: "Otomatik yanit olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/auto-responses/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { name, keywords, response, priority, isActive } = req.body;
+      
+      // Validate keywords JSON if provided
+      if (keywords !== undefined) {
+        try {
+          const parsedKeywords = JSON.parse(keywords);
+          if (!Array.isArray(parsedKeywords)) {
+            return res.status(400).json({ error: "Anahtar kelimeler bir dizi olmali" });
+          }
+        } catch {
+          return res.status(400).json({ error: "Anahtar kelimeler gecerli bir JSON dizisi olmali" });
+        }
+      }
+      
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (keywords !== undefined) updateData.keywords = keywords;
+      if (response !== undefined) updateData.response = response;
+      if (priority !== undefined) updateData.priority = priority;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      const updated = await storage.updateAutoResponse(id, updateData);
+      res.json(updated);
+    } catch (err) {
+      console.error("Otomatik yanit guncelleme hatasi:", err);
+      res.status(400).json({ error: "Otomatik yanit guncellenemedi" });
+    }
+  });
+
+  app.delete("/api/auto-responses/:id", async (req, res) => {
+    try {
+      await storage.deleteAutoResponse(Number(req.params.id));
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ error: "Otomatik yanit silinemedi" });
+    }
+  });
+
   return httpServer;
 }
 
