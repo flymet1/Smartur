@@ -8,6 +8,7 @@ import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { encrypt, decrypt } from "./encryption";
+import { logError, logWarn, logInfo, attachLogsToSupportRequest, getSupportRequestLogs, getRecentLogs } from "./logger";
 
 // Simple password hashing using SHA-256 with salt
 function hashPassword(password: string): string {
@@ -706,6 +707,7 @@ ${context.botRules || DEFAULT_BOT_RULES}`;
     
     // Log final error for debugging
     console.error("AI generation failed after all retries. Last error:", lastError);
+    await logError('ai', 'AI yanit olusturulamadi - tum denemeler basarisiz', { error: lastError instanceof Error ? lastError.message : String(lastError) });
   }
 
   // Smart fallback response when AI is not available or fails
@@ -1434,6 +1436,7 @@ export async function registerRoutes(
       res.json({ received: true, processed: lineItems.length });
     } catch (error) {
       console.error("WooCommerce webhook error:", error);
+      await logError('webhook', 'WooCommerce webhook hatasi', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Webhook processing failed" });
     }
   });
@@ -1873,15 +1876,41 @@ export async function registerRoutes(
 
   app.post("/api/support-requests", async (req, res) => {
     try {
-      const { phone, reservationId } = req.body;
+      const { phone, reservationId, description } = req.body;
       const existing = await storage.getOpenSupportRequest(phone);
       if (existing) {
         return res.json(existing);
       }
-      const created = await storage.createSupportRequest({ phone, reservationId, status: 'open' });
+      const created = await storage.createSupportRequest({ phone, reservationId, description, status: 'open' });
+      
+      await attachLogsToSupportRequest(created.id, phone);
+      await logInfo('system', `Destek talebi olusturuldu: #${created.id}`, { phone, reservationId }, phone);
+      
       res.json(created);
     } catch (err) {
+      await logError('system', 'Destek talebi olusturma hatasi', err);
       res.status(400).json({ error: "Destek talebi oluşturulamadı" });
+    }
+  });
+
+  app.get("/api/support-requests/:id/logs", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const logs = await getSupportRequestLogs(id);
+      res.json(logs);
+    } catch (err) {
+      res.status(500).json({ error: "Loglar alinamadi" });
+    }
+  });
+
+  app.get("/api/system-logs", async (req, res) => {
+    try {
+      const phone = req.query.phone as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const logs = await getRecentLogs(phone, limit);
+      res.json(logs);
+    } catch (err) {
+      res.status(500).json({ error: "Sistem loglari alinamadi" });
     }
   });
 
