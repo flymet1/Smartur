@@ -153,7 +153,7 @@ export default function Dashboard() {
                 Bugünün Rezervasyonları
               </Button>
             </Link>
-            <Link href="/gelistirici">
+            <Link href="/bot-rules">
               <div className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full border shadow-sm hover-elevate cursor-pointer ${
                 pendingRequestsCount > 0 
                   ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800' 
