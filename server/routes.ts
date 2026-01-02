@@ -967,14 +967,14 @@ export async function registerRoutes(
       let { value } = req.body;
       const authHeader = req.headers.authorization;
       
-      // Protected settings that require admin authentication
+      // Protected settings that require bot rules authentication
       const protectedSettings = ['botRules'];
       if (protectedSettings.includes(req.params.key)) {
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
           return res.status(401).json({ error: "Yetkilendirme gerekli" });
         }
         const token = authHeader.split(' ')[1];
-        const storedToken = await storage.getSetting('adminSessionToken');
+        const storedToken = await storage.getSetting('botRulesSessionToken');
         if (!storedToken || storedToken !== token) {
           return res.status(401).json({ error: "Geçersiz oturum" });
         }
@@ -1045,6 +1045,48 @@ export async function registerRoutes(
     try {
       const { token } = req.body;
       const storedToken = await storage.getSetting('adminSessionToken');
+      
+      if (storedToken && storedToken === token) {
+        return res.json({ valid: true });
+      }
+      
+      return res.json({ valid: false });
+    } catch (err) {
+      res.status(500).json({ valid: false });
+    }
+  });
+
+  // Bot Rules login - uses fixed password (not changeable from panel)
+  // Password is hashed for security - default: 'Netim1905'
+  const BOT_RULES_PASSWORD_HASH = hashPassword(process.env.BOT_RULES_PASSWORD || 'Netim1905');
+  
+  app.post("/api/bot-rules/login", async (req, res) => {
+    try {
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ success: false, error: "Şifre gerekli" });
+      }
+      
+      // Verify against hashed password
+      if (verifyPassword(password, BOT_RULES_PASSWORD_HASH)) {
+        // Generate a session token for bot rules
+        const token = crypto.randomBytes(32).toString('hex');
+        await storage.setSetting('botRulesSessionToken', token);
+        return res.json({ success: true, token });
+      }
+      
+      return res.status(401).json({ success: false, error: "Geçersiz şifre" });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Giriş yapılamadı" });
+    }
+  });
+
+  // Verify bot rules token
+  app.post("/api/bot-rules/verify", async (req, res) => {
+    try {
+      const { token } = req.body;
+      const storedToken = await storage.getSetting('botRulesSessionToken');
       
       if (storedToken && storedToken === token) {
         return res.json({ valid: true });

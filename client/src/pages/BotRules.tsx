@@ -26,7 +26,6 @@ export default function BotRules() {
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -35,7 +34,7 @@ export default function BotRules() {
 
   // Check if already authenticated
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('botRulesToken');
     if (token) {
       verifyToken(token);
     } else {
@@ -45,7 +44,7 @@ export default function BotRules() {
 
   const verifyToken = async (token: string) => {
     try {
-      const res = await fetch('/api/admin/verify', {
+      const res = await fetch('/api/bot-rules/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
@@ -55,10 +54,10 @@ export default function BotRules() {
         setIsAuthenticated(true);
         loadBotRules();
       } else {
-        localStorage.removeItem('adminToken');
+        localStorage.removeItem('botRulesToken');
       }
     } catch {
-      localStorage.removeItem('adminToken');
+      localStorage.removeItem('botRulesToken');
     }
     setIsLoading(false);
   };
@@ -78,15 +77,15 @@ export default function BotRules() {
     setIsLoggingIn(true);
 
     try {
-      const res = await fetch('/api/admin/login', {
+      const res = await fetch('/api/bot-rules/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ password })
       });
       const data = await res.json();
 
       if (data.success && data.token) {
-        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('botRulesToken', data.token);
         setIsAuthenticated(true);
         loadBotRules();
         toast({ title: "Giris Basarili", description: "Bot kurallarini duzenleyebilirsiniz." });
@@ -103,7 +102,7 @@ export default function BotRules() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('botRulesToken');
       const res = await fetch('/api/settings/botRules', {
         method: 'POST',
         headers: { 
@@ -125,9 +124,8 @@ export default function BotRules() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
+    localStorage.removeItem('botRulesToken');
     setIsAuthenticated(false);
-    setUsername("");
     setPassword("");
   };
 
@@ -149,22 +147,11 @@ export default function BotRules() {
             </div>
             <CardTitle>Bot Kurallari - Giris</CardTitle>
             <CardDescription>
-              Bu sayfaya erismek icin admin bilgilerinizi girin
+              Bu sayfaya erismek icin sifrenizi girin
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">Kullanici Adi</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Kullanici adinizi girin"
-                  required
-                  data-testid="input-login-username"
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Sifre</Label>
                 <div className="relative">
