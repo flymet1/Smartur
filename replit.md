@@ -27,6 +27,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **SSS Desteği**: Aktivite ve paket turlara tanımlı SSS'leri yanıtlarda kullanır
 
 ## Son Değişiklikler
+- 02.01.2026: Profesyonel Bot Kuralları - 6 ana bölüm altında organize edilmiş kapsamlı bot kuralları eklendi (İletişim, Müsaitlik, Rezervasyon, Bilgi Sorguları, Sipariş Yönetimi, Eskalasyon).
 - 02.01.2026: Gmail Ayarları UI - Ayarlar sayfasına Gmail yapılandırma kartı eklendi (bağlantı durumu, test butonu, bağlantı kaldırma).
 - 02.01.2026: Gmail Şifreli Depolama - Gmail kimlik bilgileri AES-256-GCM şifreleme ile veritabanında güvenli saklanıyor (server/encryption.ts).
 - 02.01.2026: Destek Talebi Oluştur - Kullanım Kılavuzu sayfasına destek talebi formu eklendi, talepler veritabanına kaydediliyor.
