@@ -18,6 +18,7 @@ import {
   agencyActivityRates,
   packageTours,
   packageTourActivities,
+  holidays,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -53,6 +54,8 @@ import {
   type PackageTour,
   type InsertPackageTour,
   type PackageTourActivity,
+  type Holiday,
+  type InsertHoliday,
   type InsertPackageTourActivity,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
@@ -170,6 +173,14 @@ export interface IStorage {
   
   // Package Tour Matching
   findPackageTourByName(name: string): Promise<PackageTour | undefined>;
+  
+  // Holidays
+  getHolidays(): Promise<Holiday[]>;
+  getHoliday(id: number): Promise<Holiday | undefined>;
+  createHoliday(holiday: InsertHoliday): Promise<Holiday>;
+  updateHoliday(id: number, holiday: Partial<InsertHoliday>): Promise<Holiday>;
+  deleteHoliday(id: number): Promise<void>;
+  getHolidaysForDateRange(startDate: string, endDate: string): Promise<Holiday[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1169,6 +1180,40 @@ export class DatabaseStorage implements IStorage {
     }
     
     return undefined;
+  }
+
+  // Holidays
+  async getHolidays(): Promise<Holiday[]> {
+    return await db.select().from(holidays).orderBy(holidays.startDate);
+  }
+
+  async getHoliday(id: number): Promise<Holiday | undefined> {
+    const [holiday] = await db.select().from(holidays).where(eq(holidays.id, id));
+    return holiday;
+  }
+
+  async createHoliday(holiday: InsertHoliday): Promise<Holiday> {
+    const [newHoliday] = await db.insert(holidays).values(holiday).returning();
+    return newHoliday;
+  }
+
+  async updateHoliday(id: number, holiday: Partial<InsertHoliday>): Promise<Holiday> {
+    const [updated] = await db.update(holidays).set(holiday).where(eq(holidays.id, id)).returning();
+    return updated;
+  }
+
+  async deleteHoliday(id: number): Promise<void> {
+    await db.delete(holidays).where(eq(holidays.id, id));
+  }
+
+  async getHolidaysForDateRange(startDate: string, endDate: string): Promise<Holiday[]> {
+    return await db.select().from(holidays).where(
+      and(
+        eq(holidays.isActive, true),
+        lte(holidays.startDate, endDate),
+        gte(holidays.endDate, startDate)
+      )
+    ).orderBy(holidays.startDate);
   }
 }
 

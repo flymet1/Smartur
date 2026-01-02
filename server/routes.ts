@@ -687,6 +687,84 @@ export async function registerRoutes(
     }
   });
 
+  // === Holidays ===
+  app.get("/api/holidays", async (req, res) => {
+    try {
+      const holidayList = await storage.getHolidays();
+      res.json(holidayList);
+    } catch (err) {
+      res.status(500).json({ error: "Tatiller alinamadi" });
+    }
+  });
+
+  app.get("/api/holidays/:id", async (req, res) => {
+    try {
+      const holiday = await storage.getHoliday(Number(req.params.id));
+      if (!holiday) {
+        return res.status(404).json({ error: "Tatil bulunamadi" });
+      }
+      res.json(holiday);
+    } catch (err) {
+      res.status(500).json({ error: "Tatil alinamadi" });
+    }
+  });
+
+  app.post("/api/holidays", async (req, res) => {
+    try {
+      const { name, startDate, endDate, type, keywords, notes, isActive } = req.body;
+      
+      if (!name || !startDate || !endDate) {
+        return res.status(400).json({ error: "Tatil adi, baslangic ve bitis tarihi zorunlu" });
+      }
+      
+      const holiday = await storage.createHoliday({
+        name,
+        startDate,
+        endDate,
+        type: type || 'official',
+        keywords: keywords || '[]',
+        notes,
+        isActive: isActive !== false
+      });
+      
+      res.status(201).json(holiday);
+    } catch (err) {
+      console.error('Holiday create error:', err);
+      res.status(400).json({ error: "Tatil olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/holidays/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { name, startDate, endDate, type, keywords, notes, isActive } = req.body;
+      
+      const holiday = await storage.updateHoliday(id, {
+        ...(name !== undefined && { name }),
+        ...(startDate !== undefined && { startDate }),
+        ...(endDate !== undefined && { endDate }),
+        ...(type !== undefined && { type }),
+        ...(keywords !== undefined && { keywords }),
+        ...(notes !== undefined && { notes }),
+        ...(isActive !== undefined && { isActive })
+      });
+      
+      res.json(holiday);
+    } catch (err) {
+      console.error('Holiday update error:', err);
+      res.status(400).json({ error: "Tatil guncellenemedi" });
+    }
+  });
+
+  app.delete("/api/holidays/:id", async (req, res) => {
+    try {
+      await storage.deleteHoliday(Number(req.params.id));
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ error: "Tatil silinemedi" });
+    }
+  });
+
   // Capacity update endpoint
   app.patch("/api/capacity/:id", async (req, res) => {
     try {

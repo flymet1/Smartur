@@ -225,6 +225,20 @@ export const agencyActivityRates = pgTable("agency_activity_rates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// === HOLIDAYS ===
+
+// Resmi Tatiller ve Bayramlar
+export const holidays = pgTable("holidays", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Tatil adı (örn: "Ramazan Bayramı", "29 Ekim Cumhuriyet Bayramı")
+  startDate: text("start_date").notNull(), // YYYY-MM-DD
+  endDate: text("end_date").notNull(), // YYYY-MM-DD (tek günlük tatil için aynı tarih)
+  type: text("type").default("official"), // official (resmi), religious (dini), special (özel)
+  keywords: text("keywords").default("[]"), // JSON array of keywords for bot matching ["bayram", "tatil", "kurban"]
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
+});
+
 // === PACKAGE TOURS ===
 
 // Paket Turlar
@@ -345,3 +359,8 @@ export type InsertPackageTour = z.infer<typeof insertPackageTourSchema>;
 export const insertPackageTourActivitySchema = createInsertSchema(packageTourActivities).omit({ id: true });
 export type PackageTourActivity = typeof packageTourActivities.$inferSelect;
 export type InsertPackageTourActivity = z.infer<typeof insertPackageTourActivitySchema>;
+
+// === HOLIDAY SCHEMAS & TYPES ===
+export const insertHolidaySchema = createInsertSchema(holidays).omit({ id: true });
+export type Holiday = typeof holidays.$inferSelect;
+export type InsertHoliday = z.infer<typeof insertHolidaySchema>;
