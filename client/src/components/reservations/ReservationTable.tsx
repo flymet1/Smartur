@@ -7,10 +7,11 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -18,8 +19,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 interface ReservationTableProps {
   reservations: Reservation[];
@@ -27,6 +30,7 @@ interface ReservationTableProps {
 
 export function ReservationTable({ reservations }: ReservationTableProps) {
   const { toast } = useToast();
+  const [copiedId, setCopiedId] = useState<number | null>(null);
   
   const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities']
@@ -42,12 +46,41 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
-      toast({ title: "Başarılı", description: "Rezervasyon durumu güncellendi." });
+      toast({ title: "Başarili", description: "Rezervasyon durumu güncellendi." });
     },
     onError: () => {
       toast({ title: "Hata", description: "Durum güncellenemedi.", variant: "destructive" });
     },
   });
+
+  const trackingMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest('POST', `/api/reservations/${id}/generate-tracking`);
+      return response.json();
+    },
+    onSuccess: (data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      const trackingUrl = `${window.location.origin}/takip/${data.token}`;
+      navigator.clipboard.writeText(trackingUrl);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+      toast({ 
+        title: "Takip Linki Oluşturuldu", 
+        description: "Link panoya kopyalandı. WhatsApp'tan müşteriye gönderebilirsiniz." 
+      });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Takip linki oluşturulamadı.", variant: "destructive" });
+    },
+  });
+
+  const copyExistingLink = async (token: string, id: number) => {
+    const trackingUrl = `${window.location.origin}/takip/${token}`;
+    await navigator.clipboard.writeText(trackingUrl);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+    toast({ title: "Kopyalandı", description: "Takip linki panoya kopyalandı." });
+  };
 
   const getActivityName = (activityId: number | null) => {
     if (!activityId) return "Bilinmiyor";
@@ -129,12 +162,13 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
             <TableHead>Kaynak</TableHead>
             <TableHead>Durum</TableHead>
             <TableHead className="text-right">Tutar</TableHead>
+            <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {reservations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                 Henüz rezervasyon bulunmuyor.
               </TableCell>
             </TableRow>
@@ -178,6 +212,44 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
                 <TableCell>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
                 <TableCell className="text-right font-medium">
                   ₺{(res.quantity * 1500).toLocaleString('tr-TR')} {/* Mock price logic */}
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {res.trackingToken ? (
+                        <DropdownMenuItem 
+                          onClick={() => copyExistingLink(res.trackingToken!, res.id)}
+                          data-testid={`copy-tracking-${res.id}`}
+                        >
+                          {copiedId === res.id ? (
+                            <>
+                              <Check className="h-4 w-4 mr-2 text-green-600" />
+                              Kopyalandı
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Takip Linkini Kopyala
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem 
+                          onClick={() => trackingMutation.mutate(res.id)}
+                          disabled={trackingMutation.isPending}
+                          data-testid={`generate-tracking-${res.id}`}
+                        >
+                          <Link2 className="h-4 w-4 mr-2" />
+                          Takip Linki Oluştur
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))
