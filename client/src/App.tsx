@@ -18,6 +18,7 @@ import BotRules from "@/pages/BotRules";
 import UserGuide from "@/pages/UserGuide";
 import Support from "@/pages/Support";
 import CustomerTracking from "@/pages/CustomerTracking";
+import CustomerRequests from "@/pages/CustomerRequests";
 
 function Router() {
   return (
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/user-guide" component={UserGuide} />
       <Route path="/support" component={Support} />
       <Route path="/takip/:token" component={CustomerTracking} />
+      <Route path="/customer-requests" component={CustomerRequests} />
       <Route component={NotFound} />
     </Switch>
   );
