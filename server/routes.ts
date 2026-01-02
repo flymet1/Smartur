@@ -2445,15 +2445,24 @@ export async function registerRoutes(
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       const currentVersion = packageJson.version || '1.0.0';
       
-      // Try to get git commit info
+      // Try to get git commit info with timeout
       let gitCommit = null;
       let gitBranch = null;
       try {
         const { execSync } = await import('child_process');
-        gitCommit = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
-        gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+        gitCommit = execSync('git rev-parse --short HEAD', { 
+          encoding: 'utf8',
+          timeout: 5000,
+          stdio: ['pipe', 'pipe', 'pipe']
+        }).trim();
+        gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { 
+          encoding: 'utf8',
+          timeout: 5000,
+          stdio: ['pipe', 'pipe', 'pipe']
+        }).trim();
       } catch (e) {
-        // Git not available
+        // Git not available or timed out
+        console.log('Git bilgisi alınamadı:', e instanceof Error ? e.message : 'Bilinmeyen hata');
       }
       
       res.json({
@@ -2466,13 +2475,30 @@ export async function registerRoutes(
         lastChecked: new Date().toISOString()
       });
     } catch (err) {
+      console.error('Sürüm bilgisi hatası:', err);
       res.status(500).json({ error: "Sürüm bilgisi alınamadı" });
     }
   });
 
+  // Cache for update check to prevent repeated blocking calls
+  let updateCheckCache: {
+    data: Record<string, unknown>;
+    timestamp: number;
+  } | null = null;
+  const UPDATE_CACHE_TTL = 60000; // 1 minute cache
+
   // Check for updates from GitHub
   app.get("/api/system/check-updates", async (req, res) => {
     try {
+      // Return cached result if still fresh
+      if (updateCheckCache && Date.now() - updateCheckCache.timestamp < UPDATE_CACHE_TTL) {
+        return res.json({
+          ...updateCheckCache.data,
+          cached: true,
+          lastChecked: new Date(updateCheckCache.timestamp).toISOString()
+        });
+      }
+
       const fs = await import('fs');
       const path = await import('path');
       
@@ -2486,45 +2512,98 @@ export async function registerRoutes(
       let remoteCommit = null;
       let behindCount = 0;
       let hasUpdates = false;
+      let errorMessage = null;
       
       try {
         const { execSync } = await import('child_process');
         
-        // Fetch latest from remote
-        execSync('git fetch origin main --quiet 2>/dev/null || git fetch origin master --quiet 2>/dev/null', { encoding: 'utf8' });
+        // Get local commit first (fast, no network)
+        localCommit = execSync('git rev-parse --short HEAD', { 
+          encoding: 'utf8',
+          timeout: 5000,
+          stdio: ['pipe', 'pipe', 'pipe']
+        }).trim();
         
-        // Get local commit
-        localCommit = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
-        
-        // Get remote commit
+        // Try to fetch from remote with timeout (10 seconds max)
         try {
-          remoteCommit = execSync('git rev-parse --short origin/main', { encoding: 'utf8' }).trim();
+          execSync('git fetch origin --quiet', { 
+            encoding: 'utf8',
+            timeout: 10000,
+            stdio: ['pipe', 'pipe', 'pipe']
+          });
+        } catch (fetchErr) {
+          // Fetch failed - continue with cached remote info
+          console.log('Git fetch başarısız, önbellek kullanılıyor');
+        }
+        
+        // Get remote commit (may be stale if fetch failed)
+        try {
+          remoteCommit = execSync('git rev-parse --short origin/main', { 
+            encoding: 'utf8',
+            timeout: 5000,
+            stdio: ['pipe', 'pipe', 'pipe']
+          }).trim();
         } catch {
-          remoteCommit = execSync('git rev-parse --short origin/master', { encoding: 'utf8' }).trim();
+          try {
+            remoteCommit = execSync('git rev-parse --short origin/master', { 
+              encoding: 'utf8',
+              timeout: 5000,
+              stdio: ['pipe', 'pipe', 'pipe']
+            }).trim();
+          } catch {
+            remoteCommit = null;
+          }
         }
         
         // Count commits behind
-        try {
-          const behindOutput = execSync('git rev-list --count HEAD..origin/main 2>/dev/null || git rev-list --count HEAD..origin/master 2>/dev/null', { encoding: 'utf8' }).trim();
-          behindCount = parseInt(behindOutput) || 0;
-        } catch {
-          behindCount = 0;
+        if (remoteCommit) {
+          try {
+            const behindOutput = execSync('git rev-list --count HEAD..origin/main', { 
+              encoding: 'utf8',
+              timeout: 5000,
+              stdio: ['pipe', 'pipe', 'pipe']
+            }).trim();
+            behindCount = parseInt(behindOutput) || 0;
+          } catch {
+            try {
+              const behindOutput = execSync('git rev-list --count HEAD..origin/master', { 
+                encoding: 'utf8',
+                timeout: 5000,
+                stdio: ['pipe', 'pipe', 'pipe']
+              }).trim();
+              behindCount = parseInt(behindOutput) || 0;
+            } catch {
+              behindCount = 0;
+            }
+          }
         }
         
         hasUpdates = localCommit !== remoteCommit && behindCount > 0;
       } catch (e) {
         // Git not available or not a git repo
+        errorMessage = e instanceof Error ? e.message : 'Git erişilemedi';
+        console.log('Git güncelleme kontrolü başarısız:', errorMessage);
       }
       
-      res.json({
+      const responseData = {
         currentVersion,
         localCommit,
         remoteCommit,
         behindCount,
         hasUpdates,
-        lastChecked: new Date().toISOString()
-      });
+        lastChecked: new Date().toISOString(),
+        error: errorMessage
+      };
+      
+      // Update cache
+      updateCheckCache = {
+        data: responseData,
+        timestamp: Date.now()
+      };
+      
+      res.json(responseData);
     } catch (err) {
+      console.error('Güncelleme kontrolü hatası:', err);
       res.status(500).json({ error: "Güncelleme kontrolü yapılamadı" });
     }
   });

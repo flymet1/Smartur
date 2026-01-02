@@ -27,6 +27,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **SSS Desteği**: Aktivite ve paket turlara tanımlı SSS'leri yanıtlarda kullanır
 
 ## Son Değişiklikler
+- 02.01.2026: Güncellemeler Paneli - Ayarlara "Güncellemeler" kartı eklendi. Sistem sürümü, Git commit, çalışma süresi, Node.js versiyonu görüntülenir. "Güncelleme Kontrol Et" butonu ile GitHub'dan yeni güncelleme olup olmadığı kontrol edilir. VPS güncelleme talimatları gösterilir.
 - 02.01.2026: Sipariş Numarası Alanı - Rezervasyonlara orderNumber alanı eklendi. Manuel girişte opsiyonel, WooCommerce'den otomatik alınır, paket tur aktivitelerinde ortak sipariş numarası kullanılır. Arama fonksiyonunda sipariş numarası ile aranabilir.
 - 02.01.2026: Takvim-Rezervasyon Entegrasyonu - Takvim sayfasından "Bu Günün Rezervasyonları" butonu ile seçili tarihin rezervasyonlarına hızlı erişim. Rezervasyonlar sayfasında tarih filtresi ve görsel gösterge.
 - 02.01.2026: Profesyonel Bot Kuralları - 6 ana bölüm altında organize edilmiş kapsamlı bot kuralları eklendi (İletişim, Müsaitlik, Rezervasyon, Bilgi Sorguları, Sipariş Yönetimi, Eskalasyon).
