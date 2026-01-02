@@ -19,6 +19,7 @@ import {
   packageTours,
   packageTourActivities,
   holidays,
+  autoResponses,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -57,6 +58,8 @@ import {
   type Holiday,
   type InsertHoliday,
   type InsertPackageTourActivity,
+  type AutoResponse,
+  type InsertAutoResponse,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -182,6 +185,14 @@ export interface IStorage {
   updateHoliday(id: number, holiday: Partial<InsertHoliday>): Promise<Holiday>;
   deleteHoliday(id: number): Promise<void>;
   getHolidaysForDateRange(startDate: string, endDate: string): Promise<Holiday[]>;
+
+  // Auto Responses
+  getAutoResponses(): Promise<AutoResponse[]>;
+  getAutoResponse(id: number): Promise<AutoResponse | undefined>;
+  createAutoResponse(autoResponse: InsertAutoResponse): Promise<AutoResponse>;
+  updateAutoResponse(id: number, autoResponse: Partial<InsertAutoResponse>): Promise<AutoResponse>;
+  deleteAutoResponse(id: number): Promise<void>;
+  findMatchingAutoResponse(message: string): Promise<AutoResponse | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1223,6 +1234,68 @@ export class DatabaseStorage implements IStorage {
         gte(holidays.endDate, startDate)
       )
     ).orderBy(holidays.startDate);
+  }
+
+  // Auto Responses
+  async getAutoResponses(): Promise<AutoResponse[]> {
+    return await db.select().from(autoResponses).orderBy(desc(autoResponses.priority));
+  }
+
+  async getAutoResponse(id: number): Promise<AutoResponse | undefined> {
+    const [autoResponse] = await db.select().from(autoResponses).where(eq(autoResponses.id, id));
+    return autoResponse;
+  }
+
+  async createAutoResponse(autoResponse: InsertAutoResponse): Promise<AutoResponse> {
+    const [newAutoResponse] = await db.insert(autoResponses).values(autoResponse).returning();
+    return newAutoResponse;
+  }
+
+  async updateAutoResponse(id: number, autoResponse: Partial<InsertAutoResponse>): Promise<AutoResponse> {
+    const [updated] = await db.update(autoResponses).set(autoResponse).where(eq(autoResponses.id, id)).returning();
+    return updated;
+  }
+
+  async deleteAutoResponse(id: number): Promise<void> {
+    await db.delete(autoResponses).where(eq(autoResponses.id, id));
+  }
+
+  // Helper function to normalize Turkish text for matching
+  private normalizeTurkish(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/ı/g, 'i')
+      .replace(/ğ/g, 'g')
+      .replace(/ü/g, 'u')
+      .replace(/ş/g, 's')
+      .replace(/ö/g, 'o')
+      .replace(/ç/g, 'c')
+      .replace(/İ/g, 'i')
+      .trim();
+  }
+
+  async findMatchingAutoResponse(message: string): Promise<AutoResponse | undefined> {
+    const allResponses = await db.select().from(autoResponses)
+      .where(eq(autoResponses.isActive, true))
+      .orderBy(desc(autoResponses.priority));
+    
+    const normalizedMessage = this.normalizeTurkish(message);
+    
+    for (const response of allResponses) {
+      try {
+        const keywords: string[] = JSON.parse(response.keywords);
+        for (const keyword of keywords) {
+          const normalizedKeyword = this.normalizeTurkish(keyword);
+          if (normalizedMessage.includes(normalizedKeyword)) {
+            return response;
+          }
+        }
+      } catch (e) {
+        // Invalid JSON, skip
+      }
+    }
+    
+    return undefined;
   }
 }
 

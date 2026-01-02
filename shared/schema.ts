@@ -365,3 +365,21 @@ export type InsertPackageTourActivity = z.infer<typeof insertPackageTourActivity
 export const insertHolidaySchema = createInsertSchema(holidays).omit({ id: true });
 export type Holiday = typeof holidays.$inferSelect;
 export type InsertHoliday = z.infer<typeof insertHolidaySchema>;
+
+// === AUTO RESPONSES ===
+
+// Otomatik Yanıtlar (AI çağrısı yapmadan anahtar kelime eşleştirme ile yanıt)
+export const autoResponses = pgTable("auto_responses", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Kural adı (örn: "Fiyat Sorgusu")
+  keywords: text("keywords").notNull(), // JSON array of keywords ["fiyat", "ücret", "ne kadar"]
+  response: text("response").notNull(), // Otomatik gönderilecek yanıt
+  priority: integer("priority").default(0), // Öncelik (yüksek = önce kontrol edilir)
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === AUTO RESPONSE SCHEMAS & TYPES ===
+export const insertAutoResponseSchema = createInsertSchema(autoResponses).omit({ id: true, createdAt: true });
+export type AutoResponse = typeof autoResponses.$inferSelect;
+export type InsertAutoResponse = z.infer<typeof insertAutoResponseSchema>;
