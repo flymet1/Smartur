@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FaqEditor, FaqItem, parseFaq, stringifyFaq } from "@/components/FaqEditor";
 
 export default function PackageTours() {
   const { data: packageTours = [], isLoading } = useQuery<PackageTour[]>({
@@ -185,6 +186,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
   
   const [tourActivities, setTourActivities] = useState<TourActivityForm[]>([]);
   const [aliasInput, setAliasInput] = useState('');
+  const [faq, setFaq] = useState<FaqItem[]>(() => parseFaq((tour as any)?.faq));
 
   // Initialize tour activities when dialog opens
   const handleOpenChange = (isOpen: boolean) => {
@@ -201,6 +203,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
         reservationLinkEn: tour?.reservationLinkEn || '',
         active: tour?.active !== false
       });
+      setFaq(parseFaq((tour as any)?.faq));
       if (tour && existingActivities.length > 0) {
         setTourActivities(existingActivities.map(ea => ({
           activityId: ea.activityId,
@@ -245,6 +248,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
     
     const payload = {
       ...form,
+      faq: stringifyFaq(faq),
       activities: tourActivities.filter(ta => ta.activityId > 0)
     };
     
@@ -478,6 +482,20 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
               <Label>Aktif</Label>
             </div>
           </div>
+          
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Sik Sorulan Sorular</CardTitle>
+              <CardDescription>Musterilerin sik sordugu sorular ve cevaplar</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FaqEditor 
+                faq={faq} 
+                onChange={setFaq} 
+                testIdPrefix="package-tour-faq"
+              />
+            </CardContent>
+          </Card>
         </div>
 
         <DialogFooter>

@@ -110,7 +110,7 @@ ${upcomingHolidays || 'Yakın tarihte resmi tatil yok.'}
 Müşteri "yarın", "öbür gün", "bu hafta sonu", "bayramda" gibi ifadeler kullanırsa yukarıdaki tarihleri referans al.`;
 }
 
-// AI function using Gemini API with activity descriptions, package tours, and custom bot prompt
+// AI function using Gemini API with activity descriptions, package tours, FAQs, and custom bot prompt
 async function generateAIResponse(history: any[], context: any, customPrompt?: string) {
   // Build activity descriptions for context
   const activityDescriptions = context.activities
@@ -147,6 +147,20 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
         }
       } catch {}
       
+      // SSS bilgisi
+      try {
+        const faqItems = JSON.parse(a.faq || '[]');
+        if (faqItems.length > 0) {
+          desc += `\n  Sık Sorulan Sorular:`;
+          for (const faq of faqItems) {
+            if (faq.question && faq.answer) {
+              desc += `\n    S: ${faq.question}`;
+              desc += `\n    C: ${faq.answer}`;
+            }
+          }
+        }
+      } catch {}
+      
       return desc;
     })
     .join("\n") || "";
@@ -160,6 +174,21 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       desc += `)`;
       if (pt.reservationLink) desc += `\n  TR Rezervasyon Linki: ${pt.reservationLink}`;
       if (pt.reservationLinkEn) desc += `\n  EN Reservation Link: ${pt.reservationLinkEn}`;
+      
+      // SSS bilgisi
+      try {
+        const faqItems = JSON.parse(pt.faq || '[]');
+        if (faqItems.length > 0) {
+          desc += `\n  Sık Sorulan Sorular:`;
+          for (const faq of faqItems) {
+            if (faq.question && faq.answer) {
+              desc += `\n    S: ${faq.question}`;
+              desc += `\n    C: ${faq.answer}`;
+            }
+          }
+        }
+      } catch {}
+      
       return desc;
     })
     .join("\n") || "";
@@ -241,7 +270,8 @@ ${reservationContext}
 6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
 7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
 8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
-9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.`;
+9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.`;
 
   // If Replit AI Integration is available, use it
   if (ai) {
@@ -332,7 +362,7 @@ export async function registerRoutes(
 
   app.post("/api/package-tours", async (req, res) => {
     try {
-      const { name, nameAliases, description, price, priceUsd, confirmationMessage, reservationLink, reservationLinkEn, active, activities: tourActivities } = req.body;
+      const { name, nameAliases, description, price, priceUsd, confirmationMessage, reservationLink, reservationLinkEn, active, faq, activities: tourActivities } = req.body;
       
       if (!name) {
         return res.status(400).json({ error: "Paket tur adi zorunlu" });
@@ -347,7 +377,8 @@ export async function registerRoutes(
         confirmationMessage,
         reservationLink,
         reservationLinkEn,
-        active: active !== false
+        active: active !== false,
+        faq: faq || '[]'
       });
       
       // Add activities if provided
@@ -371,7 +402,7 @@ export async function registerRoutes(
   app.patch("/api/package-tours/:id", async (req, res) => {
     try {
       const id = Number(req.params.id);
-      const { name, nameAliases, description, price, priceUsd, confirmationMessage, reservationLink, reservationLinkEn, active, activities: tourActivities } = req.body;
+      const { name, nameAliases, description, price, priceUsd, confirmationMessage, reservationLink, reservationLinkEn, active, faq, activities: tourActivities } = req.body;
       
       const tour = await storage.updatePackageTour(id, {
         ...(name !== undefined && { name }),
@@ -382,7 +413,8 @@ export async function registerRoutes(
         ...(confirmationMessage !== undefined && { confirmationMessage }),
         ...(reservationLink !== undefined && { reservationLink }),
         ...(reservationLinkEn !== undefined && { reservationLinkEn }),
-        ...(active !== undefined && { active })
+        ...(active !== undefined && { active }),
+        ...(faq !== undefined && { faq })
       });
       
       // Update activities if provided

@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Activity } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FaqEditor, FaqItem, parseFaq, stringifyFaq } from "@/components/FaqEditor";
 
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
@@ -194,6 +195,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     return [];
   });
   
+  // FAQ state
+  const [faq, setFaq] = useState<FaqItem[]>(() => parseFaq((activity as any)?.faq));
+  
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
   const { toast } = useToast();
@@ -257,6 +261,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       hasFreeHotelTransfer: hasFreeHotelTransfer,
       transferZones: JSON.stringify(zonesArray),
       extras: JSON.stringify(extras),
+      faq: stringifyFaq(faq),
     };
 
     try {
@@ -292,9 +297,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <Tabs defaultValue="general" className="w-full flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+            <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
               <TabsTrigger value="general">Genel</TabsTrigger>
               <TabsTrigger value="extras">Transfer & Ekstra</TabsTrigger>
+              <TabsTrigger value="faq">SSS</TabsTrigger>
               <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
             </TabsList>
             <div className="flex-1 overflow-y-auto py-4 px-1 min-h-0">
@@ -549,6 +555,14 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     </p>
                   )}
                 </div>
+              </TabsContent>
+
+              <TabsContent value="faq" className="space-y-4 mt-0">
+                <FaqEditor 
+                  faq={faq} 
+                  onChange={setFaq} 
+                  testIdPrefix="activity-faq"
+                />
               </TabsContent>
 
               <TabsContent value="notifications" className="space-y-4 mt-0">
