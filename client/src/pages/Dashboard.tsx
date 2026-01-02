@@ -3,7 +3,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
 import { useReservationStats, useReservations } from "@/hooks/use-reservations";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList, MessageSquare, Shield, AlertTriangle, CheckCircle, CreditCard, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList, Bell, Shield, AlertTriangle, CheckCircle, CreditCard, CalendarDays, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Link } from "wouter";
 import { format, addDays, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -89,9 +89,18 @@ export default function Dashboard() {
   const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
   const [occupancyDateStr, setOccupancyDateStr] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [occupancyDialogOpen, setOccupancyDialogOpen] = useState(false);
+  const [reservationsDialogOpen, setReservationsDialogOpen] = useState(false);
   
   // Derived Date object for display formatting
   const occupancyDate = new Date(occupancyDateStr + 'T00:00:00');
+  
+  // Last viewed timestamp for new reservations - stored in localStorage
+  const getLastViewedTimestamp = () => {
+    const stored = localStorage.getItem('lastViewedReservations');
+    return stored ? new Date(stored) : new Date(0);
+  };
+  
+  const [lastViewedTime, setLastViewedTime] = useState<Date>(getLastViewedTimestamp);
   
   const { data: stats, isLoading: statsLoading } = useReservationStats();
   const { data: reservations, isLoading: reservationsLoading } = useReservations();
@@ -117,16 +126,25 @@ export default function Dashboard() {
     enabled: !!selectedDate
   });
 
-  const { data: customerRequests } = useQuery<{ id: number; status: string }[]>({
-    queryKey: ['/api/customer-requests'],
-    queryFn: async () => {
-      const res = await fetch('/api/customer-requests');
-      return res.json();
-    },
-    refetchInterval: 30000,
-  });
-
-  const pendingRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
+  // Calculate new/unviewed reservations count (only include reservations with valid createdAt)
+  const newReservationsCount = reservations?.filter(r => {
+    if (!r.createdAt) return false; // Skip records without createdAt
+    const createdAt = new Date(r.createdAt);
+    return !isNaN(createdAt.getTime()) && createdAt > lastViewedTime;
+  }).length || 0;
+  
+  const newReservations = reservations?.filter(r => {
+    if (!r.createdAt) return false; // Skip records without createdAt
+    const createdAt = new Date(r.createdAt);
+    return !isNaN(createdAt.getTime()) && createdAt > lastViewedTime;
+  }).slice(0, 10) || [];
+  
+  // Mark reservations as viewed
+  const markReservationsAsViewed = () => {
+    const now = new Date();
+    localStorage.setItem('lastViewedReservations', now.toISOString());
+    setLastViewedTime(now);
+  };
 
   // License query
   interface LicenseData {
@@ -215,16 +233,18 @@ export default function Dashboard() {
                 Bugünün Rezervasyonları
               </Button>
             </Link>
-            <Link href="/customer-requests">
-              <div className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full border shadow-sm hover-elevate cursor-pointer ${
-                pendingRequestsCount > 0 
-                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800' 
+            <div 
+              className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full border shadow-sm hover-elevate cursor-pointer ${
+                newReservationsCount > 0 
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800' 
                   : 'bg-white dark:bg-card text-muted-foreground border-border'
-              }`} data-testid="link-pending-requests">
-                <MessageSquare className="w-4 h-4" />
-                <span>{pendingRequestsCount > 0 ? `${pendingRequestsCount} Yeni Talep` : 'Bekleyen Talep Yok'}</span>
-              </div>
-            </Link>
+              }`} 
+              onClick={() => setReservationsDialogOpen(true)}
+              data-testid="button-new-reservations"
+            >
+              <Bell className="w-4 h-4" />
+              <span>{newReservationsCount > 0 ? `${newReservationsCount} Yeni Rezervasyon` : 'Yeni Rezervasyon Yok'}</span>
+            </div>
             <div 
               className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-card px-4 py-2 rounded-full border shadow-sm cursor-pointer hover:bg-muted transition-colors"
               onClick={() => setLicenseDialogOpen(true)}
@@ -453,6 +473,91 @@ export default function Dashboard() {
                   Kapat
                 </Button>
               </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* New Reservations Dialog */}
+        <Dialog open={reservationsDialogOpen} onOpenChange={(open) => {
+          setReservationsDialogOpen(open);
+          if (!open) {
+            markReservationsAsViewed();
+          }
+        }}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5" />
+                Yeni Rezervasyonlar
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {newReservations.length > 0 ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Son goruntulemenizden bu yana {newReservationsCount} yeni rezervasyon olusturuldu.
+                  </p>
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {newReservations.map((reservation) => (
+                      <div 
+                        key={reservation.id}
+                        className="flex items-center justify-between p-3 rounded-md bg-muted/50 border"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{reservation.customerName}</p>
+                            <Badge variant="outline" className="text-xs">
+                              {reservation.source === 'whatsapp' ? 'WhatsApp' : reservation.source === 'woocommerce' ? 'WooCommerce' : 'Manuel'}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {reservation.activityName} - {reservation.date} {reservation.time}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {reservation.personCount} kisi
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            {reservation.currency === 'USD' ? `$${reservation.totalPrice}` : `${reservation.totalPrice} TL`}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(reservation.createdAt || new Date()), 'd MMM HH:mm', { locale: tr })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        markReservationsAsViewed();
+                        setReservationsDialogOpen(false);
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Goruldu Olarak Isaretle
+                    </Button>
+                    <Link href="/reservations">
+                      <Button onClick={() => setReservationsDialogOpen(false)}>
+                        Tum Rezervasyonlar
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center p-8 text-muted-foreground">
+                  <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="font-medium">Yeni rezervasyon yok</p>
+                  <p className="text-sm mt-1">Son goruntulemenizden bu yana yeni rezervasyon olusturulmadi.</p>
+                  <Link href="/reservations">
+                    <Button variant="outline" className="mt-4" onClick={() => setReservationsDialogOpen(false)}>
+                      Tum Rezervasyonlari Gor
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
