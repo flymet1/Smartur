@@ -11,7 +11,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Settings() {
@@ -23,6 +23,8 @@ export default function Settings() {
   // Admin credentials
   const [adminUsername, setAdminUsername] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
+  const [adminPasswordConfirm, setAdminPasswordConfirm] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [adminCredentialsLoaded, setAdminCredentialsLoaded] = useState(false);
   const [reminderMessage, setReminderMessage] = useState(
@@ -312,6 +314,17 @@ export default function Settings() {
   };
 
   const handleSaveSettings = async () => {
+    // Validate password confirmation if password is being changed
+    if (adminPassword && adminPassword !== adminPasswordConfirm) {
+      setPasswordError("Şifreler eşleşmiyor. Lütfen kontrol edin.");
+      toast({ 
+        title: "Hata", 
+        description: "Şifreler eşleşmiyor.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
       // Build bot access settings object
@@ -373,12 +386,14 @@ export default function Settings() {
 
       await Promise.all(savePromises);
       
-      // Clear password field after save
+      // Clear password fields after save
       setAdminPassword("");
+      setAdminPasswordConfirm("");
+      setPasswordError("");
       
       toast({ 
         title: "Başarılı", 
-        description: "Ayarlar kaydedildi." 
+        description: adminPassword ? "Ayarlar ve şifre kaydedildi." : "Ayarlar kaydedildi." 
       });
     } catch (err) {
       toast({ 
@@ -437,7 +452,7 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="adminUsername">Kullanici Adi</Label>
                   <Input 
@@ -448,32 +463,63 @@ export default function Settings() {
                     data-testid="input-admin-username"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adminPassword">Şifre</Label>
-                  <div className="relative">
-                    <Input 
-                      id="adminPassword"
-                      type={showPassword ? "text" : "password"}
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder={adminCredentialsLoaded ? "Değiştirmek için yeni şifre girin" : "Şifre belirleyin"}
-                      data-testid="input-admin-password"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => setShowPassword(!showPassword)}
-                      data-testid="button-toggle-password"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
+                
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Key className="h-4 w-4" />
+                    {adminCredentialsLoaded ? "Şifre Değiştir" : "Şifre Belirle"}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="adminPassword">
+                        {adminCredentialsLoaded ? "Yeni Şifre" : "Şifre"}
+                      </Label>
+                      <div className="relative">
+                        <Input 
+                          id="adminPassword"
+                          type={showPassword ? "text" : "password"}
+                          value={adminPassword}
+                          onChange={(e) => {
+                            setAdminPassword(e.target.value);
+                            setPasswordError("");
+                          }}
+                          placeholder={adminCredentialsLoaded ? "Yeni şifre girin" : "Şifre belirleyin"}
+                          data-testid="input-admin-password"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3"
+                          onClick={() => setShowPassword(!showPassword)}
+                          data-testid="button-toggle-password"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="adminPasswordConfirm">Şifre Tekrar</Label>
+                      <Input 
+                        id="adminPasswordConfirm"
+                        type={showPassword ? "text" : "password"}
+                        value={adminPasswordConfirm}
+                        onChange={(e) => {
+                          setAdminPasswordConfirm(e.target.value);
+                          setPasswordError("");
+                        }}
+                        placeholder="Şifreyi tekrar girin"
+                        data-testid="input-admin-password-confirm"
+                      />
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  {passwordError && (
+                    <p className="text-sm text-destructive mt-2">{passwordError}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
                     {adminCredentialsLoaded 
-                      ? "Mevcut şifre gizlidir. Değiştirmek için yeni şifre girin." 
-                      : "Bu şifre ile korumuş sayfalara erişebilirsiniz."}
+                      ? "Mevcut şifreniz gizlidir. Değiştirmek için her iki alana da yeni şifrenizi girin." 
+                      : "Bu şifre ile korunan sayfalara erişebilirsiniz."}
                   </p>
                 </div>
               </div>
