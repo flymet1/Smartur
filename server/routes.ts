@@ -6,6 +6,7 @@ import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema } from "@shared/schema";
 import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 // Simple password hashing using SHA-256 with salt
 function hashPassword(password: string): string {
@@ -1632,25 +1633,79 @@ export async function registerRoutes(
         diger: 'Diğer'
       };
 
-      // Log the support request for now (in production, integrate with email service)
-      console.log('=== DESTEK TALEBİ ===');
-      console.log(`Gönderen: ${senderName}${senderEmail ? ` (${senderEmail})` : ''}`);
-      console.log(`Tür: ${requestTypeLabels[requestType] || requestType}`);
-      console.log(`Konu: ${subject}`);
-      console.log(`Mesaj: ${message}`);
-      console.log(`Hedef: ${developerEmail}`);
-      console.log('====================');
-
       // Store the support request in database for tracking
-      // Use a formatted phone field to store all request details since schema only supports phone field
       const formattedPhone = `[${requestTypeLabels[requestType] || requestType}] ${senderName}${senderEmail ? ` <${senderEmail}>` : ''} - ${subject}`;
       
       await storage.createSupportRequest({
-        phone: formattedPhone.substring(0, 255), // Limit to prevent overflow
+        phone: formattedPhone.substring(0, 255),
         status: 'open'
       });
 
-      res.json({ success: true, message: "Destek talebi kaydedildi" });
+      // Send email via Gmail SMTP if credentials are configured
+      let emailSent = false;
+      const gmailUser = process.env.GMAIL_USER;
+      const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+      
+      if (gmailUser && gmailAppPassword && developerEmail) {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: gmailUser,
+              pass: gmailAppPassword,
+            },
+          });
+
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+                Yeni Destek Talebi - My Smartur
+              </h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Gönderen:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${senderName}${senderEmail ? ` (${senderEmail})` : ''}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Talep Türü:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${requestTypeLabels[requestType] || requestType}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Konu:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td>
+                </tr>
+              </table>
+              <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                <h4 style="margin-top: 0; color: #333;">Mesaj:</h4>
+                <p style="white-space: pre-wrap; margin: 0;">${message}</p>
+              </div>
+              <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                Bu e-posta My Smartur destek sistemi tarafından otomatik olarak gönderilmiştir.
+              </p>
+            </div>
+          `;
+
+          await transporter.sendMail({
+            from: `"My Smartur Destek" <${gmailUser}>`,
+            to: developerEmail,
+            replyTo: senderEmail || undefined,
+            subject: `[Destek] ${requestTypeLabels[requestType] || requestType}: ${subject}`,
+            html: emailHtml,
+          });
+
+          emailSent = true;
+          console.log(`Support request email sent to ${developerEmail}`);
+        } catch (emailErr) {
+          console.error("Email sending failed:", emailErr);
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        message: emailSent 
+          ? "Destek talebi kaydedildi ve e-posta gönderildi" 
+          : "Destek talebi kaydedildi (e-posta yapılandırması eksik)"
+      });
     } catch (err) {
       console.error("Support request error:", err);
       res.status(500).json({ error: "Destek talebi gönderilemedi" });
