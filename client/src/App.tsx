@@ -13,6 +13,7 @@ import BotTest from "@/pages/BotTest";
 import Messages from "@/pages/Messages";
 import Settings from "@/pages/Settings";
 import Finance from "@/pages/Finance";
+import BotRules from "@/pages/BotRules";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/bot-test" component={BotTest} />
       <Route path="/messages" component={Messages} />
       <Route path="/settings" component={Settings} />
+      <Route path="/bot-rules" component={BotRules} />
       <Route component={NotFound} />
     </Switch>
   );

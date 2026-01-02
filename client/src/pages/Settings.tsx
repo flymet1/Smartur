@@ -11,13 +11,20 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Settings() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [reminderHours, setReminderHours] = useState(24);
   const [reminderEnabled, setReminderEnabled] = useState(true);
+  
+  // Admin credentials
+  const [adminUsername, setAdminUsername] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [adminCredentialsLoaded, setAdminCredentialsLoaded] = useState(false);
   const [reminderMessage, setReminderMessage] = useState(
     "Merhaba {isim}! Rezervasyonunuz için hatırlatma:\n\n{aktiviteler}\nTarih: {tarih}\n\nSizi görmek için sabırsızlanıyoruz!"
   );
@@ -60,6 +67,15 @@ export default function Settings() {
     },
   });
 
+  // Load admin credentials
+  const { data: adminCredentialsSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'adminCredentials'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/adminCredentials');
+      return res.json();
+    },
+  });
+
   // Apply loaded bot access settings when data arrives (using useEffect)
   useEffect(() => {
     if (botAccessSettings?.value && !botAccessSettingsLoaded) {
@@ -76,6 +92,18 @@ export default function Settings() {
       } catch {}
     }
   }, [botAccessSettings?.value, botAccessSettingsLoaded]);
+
+  // Apply loaded admin credentials when data arrives (using useEffect)
+  useEffect(() => {
+    if (adminCredentialsSetting?.value && !adminCredentialsLoaded) {
+      try {
+        const creds = JSON.parse(adminCredentialsSetting.value);
+        if (creds.username) setAdminUsername(creds.username);
+        // Note: password is not loaded back for security - only username is shown
+        setAdminCredentialsLoaded(true);
+      } catch {}
+    }
+  }, [adminCredentialsSetting?.value, adminCredentialsLoaded]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -193,8 +221,14 @@ export default function Settings() {
         extras: botAccessExtras
       });
 
+      // Build admin credentials object (only update if password is provided)
+      const adminCredentialsValue = JSON.stringify({
+        username: adminUsername,
+        password: adminPassword // Will be hashed on server side
+      });
+
       // Save all settings
-      await Promise.all([
+      const savePromises = [
         fetch("/api/settings/customerSupportEmail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -220,7 +254,23 @@ export default function Settings() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: botAccessValue })
         })
-      ]);
+      ];
+
+      // Only save admin credentials if username is provided
+      if (adminUsername.trim()) {
+        savePromises.push(
+          fetch("/api/settings/adminCredentials", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ value: adminCredentialsValue })
+          })
+        );
+      }
+
+      await Promise.all(savePromises);
+      
+      // Clear password field after save
+      setAdminPassword("");
       
       toast({ 
         title: "Başarılı", 
@@ -255,6 +305,73 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Admin Giris Bilgileri
+              </CardTitle>
+              <CardDescription>
+                Bot kurallari sayfasina ve uygulamaya giris icin kullanilacak kimlik bilgileri
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="adminUsername">Kullanici Adi</Label>
+                  <Input 
+                    id="adminUsername"
+                    value={adminUsername}
+                    onChange={(e) => setAdminUsername(e.target.value)}
+                    placeholder="admin"
+                    data-testid="input-admin-username"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adminPassword">Sifre</Label>
+                  <div className="relative">
+                    <Input 
+                      id="adminPassword"
+                      type={showPassword ? "text" : "password"}
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      placeholder={adminCredentialsLoaded ? "Degistirmek icin yeni sifre girin" : "Sifre belirleyin"}
+                      data-testid="input-admin-password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3"
+                      onClick={() => setShowPassword(!showPassword)}
+                      data-testid="button-toggle-password"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {adminCredentialsLoaded 
+                      ? "Mevcut sifre gizlidir. Degistirmek icin yeni sifre girin." 
+                      : "Bu sifre ile korunmus sayfalara erisebilirsiniz."}
+                  </p>
+                </div>
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  Bu bilgiler Bot Kurallari sayfasina erisim icin kullanilacaktir. Sifreyi guvenli bir yerde saklayin.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link href="/bot-rules">
+                  <Button variant="outline" className="w-full" data-testid="link-bot-rules">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Bot Kurallarini Duzenle
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

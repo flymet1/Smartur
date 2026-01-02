@@ -5,6 +5,36 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema } from "@shared/schema";
 import { GoogleGenAI } from "@google/genai";
+import crypto from "crypto";
+
+// Simple password hashing using SHA-256 with salt
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password: string, storedHash: string): boolean {
+  const [salt, hash] = storedHash.split(':');
+  if (!salt || !hash) return false;
+  const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return hash === verifyHash;
+}
+
+// Default bot rules (used when no custom rules are defined in database)
+const DEFAULT_BOT_RULES = `1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
+3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
+5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+12. DEĞİŞİKLİK TALEPLERİ: Paket turlarda saat/tarih değişikliği isteyenlere, rezervasyon sonrası info@skyfethiye.com adresine sipariş numarasıyla mail atmaları gerektiğini söyle.
+13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.`;
 
 // Replit AI Integration for Gemini
 let ai: GoogleGenAI | null = null;
@@ -292,19 +322,7 @@ ${packageToursSection}${capacityInfo}
 ${reservationContext}
 
 === ÖNEMLİ KURALLAR ===
-1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
-2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
-3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
-4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
-5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
-6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
-7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
-8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
-9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
-10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
-11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
-12. DEĞİŞİKLİK TALEPLERİ: Paket turlarda saat/tarih değişikliği isteyenlere, rezervasyon sonrası info@skyfethiye.com adresine sipariş numarasıyla mail atmaları gerektiğini söyle.
-13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.`;
+${context.botRules || DEFAULT_BOT_RULES}`;
 
   // If Replit AI Integration is available, use it
   if (ai) {
@@ -893,6 +911,9 @@ export async function registerRoutes(
         } catch {}
       }
       
+      // Get custom bot rules from settings
+      const botRules = await storage.getSetting('botRules');
+      
       // Generate AI response with reservation context, capacity data, package tours, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
         activities: botAccess.activities ? activities : [], 
@@ -901,7 +922,8 @@ export async function registerRoutes(
         hasReservation: !!userReservation,
         reservation: userReservation,
         askForOrderNumber: !userReservation,
-        botAccess
+        botAccess,
+        botRules
       }, botPrompt || undefined);
       
       // Check if response indicates human intervention needed
@@ -942,11 +964,95 @@ export async function registerRoutes(
 
   app.post("/api/settings/:key", async (req, res) => {
     try {
-      const { value } = req.body;
+      let { value } = req.body;
+      const authHeader = req.headers.authorization;
+      
+      // Protected settings that require admin authentication
+      const protectedSettings = ['botRules'];
+      if (protectedSettings.includes(req.params.key)) {
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+          return res.status(401).json({ error: "Yetkilendirme gerekli" });
+        }
+        const token = authHeader.split(' ')[1];
+        const storedToken = await storage.getSetting('adminSessionToken');
+        if (!storedToken || storedToken !== token) {
+          return res.status(401).json({ error: "Geçersiz oturum" });
+        }
+      }
+      
+      // Special handling for adminCredentials - hash the password
+      if (req.params.key === 'adminCredentials' && value) {
+        try {
+          const creds = JSON.parse(value);
+          if (creds.password && creds.password.trim()) {
+            // Hash the password before storing
+            creds.passwordHash = hashPassword(creds.password);
+            delete creds.password; // Don't store plain password
+            value = JSON.stringify(creds);
+          } else {
+            // If no new password provided, keep existing hash
+            const existingSetting = await storage.getSetting('adminCredentials');
+            if (existingSetting) {
+              const existingCreds = JSON.parse(existingSetting);
+              creds.passwordHash = existingCreds.passwordHash;
+              delete creds.password;
+              value = JSON.stringify(creds);
+            }
+          }
+        } catch {}
+      }
+      
       const result = await storage.setSetting(req.params.key, value);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: "Ayar kaydedilemedi" });
+    }
+  });
+
+  // Admin login verification
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ success: false, error: "Kullanıcı adı ve şifre gerekli" });
+      }
+      
+      const setting = await storage.getSetting('adminCredentials');
+      if (!setting) {
+        return res.status(401).json({ success: false, error: "Admin kimlik bilgileri tanımlanmamış" });
+      }
+      
+      try {
+        const creds = JSON.parse(setting);
+        if (creds.username === username && creds.passwordHash && verifyPassword(password, creds.passwordHash)) {
+          // Generate a simple session token
+          const token = crypto.randomBytes(32).toString('hex');
+          // Store token in settings temporarily (in production, use proper session management)
+          await storage.setSetting('adminSessionToken', token);
+          return res.json({ success: true, token });
+        }
+      } catch {}
+      
+      return res.status(401).json({ success: false, error: "Geçersiz kullanıcı adı veya şifre" });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Giriş yapılamadı" });
+    }
+  });
+
+  // Verify admin token
+  app.post("/api/admin/verify", async (req, res) => {
+    try {
+      const { token } = req.body;
+      const storedToken = await storage.getSetting('adminSessionToken');
+      
+      if (storedToken && storedToken === token) {
+        return res.json({ valid: true });
+      }
+      
+      return res.json({ valid: false });
+    } catch (err) {
+      res.status(500).json({ valid: false });
     }
   });
 
