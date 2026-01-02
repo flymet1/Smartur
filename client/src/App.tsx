@@ -19,6 +19,7 @@ import UserGuide from "@/pages/UserGuide";
 import Support from "@/pages/Support";
 import CustomerTracking from "@/pages/CustomerTracking";
 import CustomerRequests from "@/pages/CustomerRequests";
+import Agencies from "@/pages/Agencies";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/reservations" component={Reservations} />
       <Route path="/calendar" component={CalendarPage} />
       <Route path="/finance" component={Finance} />
+      <Route path="/agencies" component={Agencies} />
       <Route path="/bot-test" component={BotTest} />
       <Route path="/messages" component={Messages} />
       <Route path="/settings" component={Settings} />

@@ -12,7 +12,8 @@ import {
   CalendarHeart,
   BookOpen,
   HelpCircle,
-  Code
+  Code,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -25,7 +26,8 @@ const navItems = [
   { href: "/reservations", label: "Rezervasyonlar", icon: Ticket },
   { href: "/activities", label: "Aktiviteler", icon: Activity },
   { href: "/package-tours", label: "Paket Turlar", icon: Package },
-  { href: "/finance", label: "Finans & Acentalar", icon: Calculator },
+  { href: "/finance", label: "Finans", icon: Calculator },
+  { href: "/agencies", label: "Acentalar", icon: Building2 },
   { href: "/messages", label: "Mesaj Geçmişi", icon: MessageCircle },
   { href: "/settings", label: "Ayarlar", icon: Settings },
 ];
