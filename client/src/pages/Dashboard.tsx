@@ -153,14 +153,16 @@ export default function Dashboard() {
                 Bugünün Rezervasyonları
               </Button>
             </Link>
-            {pendingRequestsCount > 0 && (
-              <Link href="/gelistirici">
-                <div className="flex items-center gap-2 text-sm bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-4 py-2 rounded-full border border-orange-200 dark:border-orange-800 shadow-sm hover-elevate cursor-pointer" data-testid="link-pending-requests">
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{pendingRequestsCount} Yeni Talep</span>
-                </div>
-              </Link>
-            )}
+            <Link href="/gelistirici">
+              <div className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full border shadow-sm hover-elevate cursor-pointer ${
+                pendingRequestsCount > 0 
+                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800' 
+                  : 'bg-white dark:bg-card text-muted-foreground border-border'
+              }`} data-testid="link-pending-requests">
+                <MessageSquare className="w-4 h-4" />
+                <span>{pendingRequestsCount > 0 ? `${pendingRequestsCount} Yeni Talep` : 'Bekleyen Talep Yok'}</span>
+              </div>
+            </Link>
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-card px-4 py-2 rounded-full border shadow-sm">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               Sistem Aktif
