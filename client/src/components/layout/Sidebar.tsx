@@ -21,7 +21,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import type { SupportRequest } from "@shared/schema";
+import type { SupportRequest, CustomerRequest } from "@shared/schema";
 
 const navItems = [
   { href: "/", label: "Genel Bakış", icon: LayoutDashboard },
@@ -62,7 +62,13 @@ export function Sidebar() {
     refetchInterval: 30000,
   });
 
+  const { data: customerRequests } = useQuery<CustomerRequest[]>({
+    queryKey: ['/api/customer-requests'],
+    refetchInterval: 30000,
+  });
+
   const openSupportCount = supportSummary?.openCount || 0;
+  const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
   const logoUrl = logoSetting?.value;
 
   return (
@@ -87,13 +93,23 @@ export function Sidebar() {
                 {quickAccessItems.map((item) => (
                   <Link key={item.href} href={item.href} className="flex-1">
                     <div className={cn(
-                      "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
-                      location === item.href 
-                        ? "bg-primary text-primary-foreground border-primary" 
-                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                      "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                      pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
+                        ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
+                        : location === item.href 
+                          ? "bg-primary text-primary-foreground border-primary" 
+                          : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
                     )}>
                       <item.icon className="h-3.5 w-3.5" />
                       {item.label}
+                      {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
+                        <Badge 
+                          variant="destructive" 
+                          className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                        >
+                          {pendingCustomerRequestsCount}
+                        </Badge>
+                      )}
                     </div>
                   </Link>
                 ))}
@@ -156,13 +172,24 @@ export function Sidebar() {
             {quickAccessItems.map((item) => (
               <Link key={item.href} href={item.href} className="flex-1">
                 <div className={cn(
-                  "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border",
-                  location === item.href 
-                    ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                    : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                  "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                  pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
+                    ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
+                    : location === item.href 
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                      : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
                 )} data-testid={`button-quick-${item.href.replace('/', '')}`}>
                   <item.icon className="h-3.5 w-3.5" />
                   {item.label}
+                  {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                      data-testid="badge-customer-requests"
+                    >
+                      {pendingCustomerRequestsCount}
+                    </Badge>
+                  )}
                 </div>
               </Link>
             ))}

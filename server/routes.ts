@@ -3578,6 +3578,89 @@ Sky Fethiye`;
     }
   });
 
+  // Activate license with license key
+  app.post("/api/license/activate", async (req, res) => {
+    try {
+      const { licenseKey, agencyName } = req.body;
+      
+      if (!licenseKey || !agencyName) {
+        return res.status(400).json({ error: "Lisans anahtari ve acenta adi zorunludur" });
+      }
+
+      // Parse license key to determine plan type
+      // Format: PLAN-XXXX-XXXX-XXXX (e.g., PRO-1234-5678-9012)
+      const keyPrefix = licenseKey.split('-')[0]?.toUpperCase();
+      let planType = 'trial';
+      
+      if (keyPrefix === 'ENT' || keyPrefix === 'ENTERPRISE') {
+        planType = 'enterprise';
+      } else if (keyPrefix === 'PRO' || keyPrefix === 'PROFESSIONAL') {
+        planType = 'professional';
+      } else if (keyPrefix === 'BAS' || keyPrefix === 'BASIC') {
+        planType = 'basic';
+      } else if (keyPrefix === 'TRI' || keyPrefix === 'TRIAL') {
+        planType = 'trial';
+      }
+
+      // Define plan limits based on plan type
+      const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string; expiryMonths: number }> = {
+        trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme", expiryMonths: 0.5 },
+        basic: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel", expiryMonths: 12 },
+        professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel", expiryMonths: 12 },
+        enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal", expiryMonths: 0 }
+      };
+
+      const plan = planLimits[planType];
+      
+      // Calculate expiry date
+      let expiryDate: Date | null = null;
+      if (plan.expiryMonths > 0) {
+        expiryDate = new Date();
+        expiryDate.setMonth(expiryDate.getMonth() + plan.expiryMonths);
+      }
+
+      const newLicense = await storage.createLicense({
+        licenseKey,
+        agencyName,
+        agencyEmail: null,
+        agencyPhone: null,
+        planType,
+        planName: plan.planName,
+        maxActivities: plan.maxActivities,
+        maxReservationsPerMonth: plan.maxReservationsPerMonth,
+        maxUsers: plan.maxUsers,
+        features: JSON.stringify([]),
+        startDate: new Date(),
+        expiryDate,
+        isActive: true
+      });
+
+      res.status(201).json({ 
+        license: newLicense, 
+        message: `Lisans basariyla aktive edildi. Plan: ${plan.planName}` 
+      });
+    } catch (err) {
+      console.error("Lisans aktivasyon hatasi:", err);
+      res.status(400).json({ error: "Lisans aktive edilemedi" });
+    }
+  });
+
+  // Delete/deactivate license
+  app.delete("/api/license", async (req, res) => {
+    try {
+      const currentLicense = await storage.getLicense();
+      if (!currentLicense) {
+        return res.status(404).json({ error: "Kaldirilacak lisans bulunamadi" });
+      }
+      
+      await storage.deleteLicense(currentLicense.id);
+      res.json({ success: true, message: "Lisans kaldirildi" });
+    } catch (err) {
+      console.error("Lisans kaldirma hatasi:", err);
+      res.status(500).json({ error: "Lisans kaldirilamadi" });
+    }
+  });
+
   return httpServer;
 }
 

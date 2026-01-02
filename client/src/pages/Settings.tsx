@@ -12,7 +12,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2 } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import type { Holiday } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -430,10 +430,14 @@ export default function Settings() {
 
         {/* Settings Navigation Tabs */}
         <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6">
             <TabsTrigger value="security" data-testid="tab-security">
               <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
               Guvenlik
+            </TabsTrigger>
+            <TabsTrigger value="license" data-testid="tab-license">
+              <CreditCard className="w-4 h-4 mr-2 hidden sm:inline" />
+              Uyelik
             </TabsTrigger>
             <TabsTrigger value="whatsapp" data-testid="tab-whatsapp">
               <MessageSquare className="w-4 h-4 mr-2 hidden sm:inline" />
@@ -750,6 +754,11 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+          </TabsContent>
+
+          {/* LICENSE TAB */}
+          <TabsContent value="license" className="space-y-6">
+            <LicenseSection />
           </TabsContent>
 
           {/* WHATSAPP TAB */}
@@ -2353,5 +2362,290 @@ function HolidaysSection() {
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+// === LICENSE SECTION ===
+interface LicenseData {
+  license: {
+    id: number;
+    licenseKey: string;
+    agencyName: string;
+    planType: string;
+    planName: string;
+    maxActivities: number;
+    maxReservationsPerMonth: number;
+    expiryDate: string | null;
+    isActive: boolean;
+  } | null;
+  usage: {
+    activitiesUsed: number;
+    reservationsThisMonth: number;
+  };
+  status: {
+    valid: boolean;
+    message: string;
+  };
+}
+
+function LicenseSection() {
+  const { toast } = useToast();
+  const [licenseKey, setLicenseKey] = useState("");
+  const [agencyName, setAgencyName] = useState("");
+  const [isActivating, setIsActivating] = useState(false);
+
+  const { data: licenseData, isLoading, refetch } = useQuery<LicenseData>({
+    queryKey: ['/api/license']
+  });
+
+  const handleActivateLicense = async () => {
+    if (!licenseKey.trim()) {
+      toast({ title: "Hata", description: "Lisans kodu gerekli.", variant: "destructive" });
+      return;
+    }
+    if (!agencyName.trim()) {
+      toast({ title: "Hata", description: "Acenta/isletme adi gerekli.", variant: "destructive" });
+      return;
+    }
+
+    setIsActivating(true);
+    try {
+      const res = await fetch('/api/license/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licenseKey, agencyName })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({ title: "Basarili", description: "Lisans aktive edildi." });
+        setLicenseKey("");
+        setAgencyName("");
+        await refetch();
+        queryClient.invalidateQueries({ queryKey: ['/api/license'] });
+      } else {
+        toast({ title: "Hata", description: data.error || "Lisans aktive edilemedi.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Lisans aktive edilemedi.", variant: "destructive" });
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  const handleDeactivateLicense = async () => {
+    if (!confirm("Lisansi kaldirmak istediginize emin misiniz?")) return;
+
+    try {
+      const res = await fetch('/api/license', { method: 'DELETE' });
+      if (res.ok) {
+        toast({ title: "Basarili", description: "Lisans kaldirildi." });
+        await refetch();
+        queryClient.invalidateQueries({ queryKey: ['/api/license'] });
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Lisans kaldirilamadi.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <>
+      {/* Current License Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Mevcut Uyelik Durumu
+          </CardTitle>
+          <CardDescription>Lisans bilgileri ve kullanim durumu</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-20 w-full" />
+            </div>
+          ) : licenseData?.license ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Durum</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {licenseData.status.valid ? (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-orange-500" />
+                    )}
+                    <span className={`font-bold ${licenseData.status.valid ? 'text-green-600' : 'text-orange-600'}`}>
+                      {licenseData.status.valid ? 'Aktif' : 'Dikkat'}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Plan</p>
+                  <p className="font-bold mt-1">{licenseData.license.planName}</p>
+                  <Badge variant="secondary" className="mt-1">{licenseData.license.planType}</Badge>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Acenta</p>
+                  <p className="font-bold mt-1">{licenseData.license.agencyName || '-'}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Bitis Tarihi</p>
+                  <p className="font-bold mt-1">
+                    {licenseData.license.expiryDate 
+                      ? new Date(licenseData.license.expiryDate).toLocaleDateString('tr-TR')
+                      : 'Sinirsiz'}
+                  </p>
+                  {licenseData.license.expiryDate && new Date(licenseData.license.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) && (
+                    <Badge variant="destructive" className="mt-1">Yaklasiyor</Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-muted/50">
+                <p className="text-sm text-muted-foreground mb-3">Kullanim Limitleri</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Aktiviteler</span>
+                      <span className="font-medium">{licenseData.usage.activitiesUsed} / {licenseData.license.maxActivities}</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary rounded-full transition-all" 
+                        style={{ width: `${Math.min(100, (licenseData.usage.activitiesUsed / licenseData.license.maxActivities) * 100)}%` }} 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Aylik Rezervasyonlar</span>
+                      <span className="font-medium">{licenseData.usage.reservationsThisMonth} / {licenseData.license.maxReservationsPerMonth}</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary rounded-full transition-all" 
+                        style={{ width: `${Math.min(100, (licenseData.usage.reservationsThisMonth / licenseData.license.maxReservationsPerMonth) * 100)}%` }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {licenseData.status.message && (
+                <p className="text-sm text-muted-foreground">{licenseData.status.message}</p>
+              )}
+
+              <div className="flex justify-end">
+                <Button variant="destructive" size="sm" onClick={handleDeactivateLicense} data-testid="button-deactivate-license">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Lisansi Kaldir
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+              <AlertTriangle className="w-8 h-8 text-orange-500 shrink-0" />
+              <div>
+                <p className="font-bold text-orange-700 dark:text-orange-300">Lisans Bulunamadi</p>
+                <p className="text-sm text-orange-600 dark:text-orange-400">Asagidaki formu kullanarak lisansinizi aktive edin.</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* License Activation */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5" />
+            {licenseData?.license ? 'Lisans Degistir' : 'Lisans Aktive Et'}
+          </CardTitle>
+          <CardDescription>Lisans kodunuzu girerek sistemi aktive edin</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="agencyName">Acenta / Isletme Adi *</Label>
+            <Input
+              id="agencyName"
+              value={agencyName}
+              onChange={(e) => setAgencyName(e.target.value)}
+              placeholder="Ornegin: Sky Fethiye"
+              data-testid="input-agency-name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="licenseKey">Lisans Kodu *</Label>
+            <Input
+              id="licenseKey"
+              value={licenseKey}
+              onChange={(e) => setLicenseKey(e.target.value)}
+              placeholder="XXXX-XXXX-XXXX-XXXX"
+              className="font-mono"
+              data-testid="input-license-key"
+            />
+            <p className="text-xs text-muted-foreground">
+              Lisans kodunuz yoksa destek@smartur.com adresine e-posta gonderin.
+            </p>
+          </div>
+          <Button 
+            onClick={handleActivateLicense} 
+            disabled={isActivating}
+            data-testid="button-activate-license"
+          >
+            {isActivating ? 'Aktive Ediliyor...' : 'Lisansi Aktive Et'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Plan Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Plan Karsilastirmasi</CardTitle>
+          <CardDescription>Mevcut planlar ve ozellikleri</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <Badge variant="secondary" className="mb-2">Trial</Badge>
+              <h4 className="font-bold">Deneme</h4>
+              <p className="text-sm text-muted-foreground mt-1">14 gun ucretsiz</p>
+              <ul className="text-sm mt-3 space-y-1">
+                <li>5 aktivite</li>
+                <li>50 rez./ay</li>
+              </ul>
+            </div>
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <Badge variant="secondary" className="mb-2">Basic</Badge>
+              <h4 className="font-bold">Temel</h4>
+              <p className="text-sm text-muted-foreground mt-1">Kucuk isletmeler icin</p>
+              <ul className="text-sm mt-3 space-y-1">
+                <li>10 aktivite</li>
+                <li>200 rez./ay</li>
+              </ul>
+            </div>
+            <div className="p-4 rounded-lg border border-primary bg-primary/5">
+              <Badge className="mb-2">Professional</Badge>
+              <h4 className="font-bold">Profesyonel</h4>
+              <p className="text-sm text-muted-foreground mt-1">Orta olcekli isletmeler</p>
+              <ul className="text-sm mt-3 space-y-1">
+                <li>25 aktivite</li>
+                <li>500 rez./ay</li>
+              </ul>
+            </div>
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <Badge variant="outline" className="mb-2">Enterprise</Badge>
+              <h4 className="font-bold">Kurumsal</h4>
+              <p className="text-sm text-muted-foreground mt-1">Buyuk isletmeler icin</p>
+              <ul className="text-sm mt-3 space-y-1">
+                <li>Sinirsiz aktivite</li>
+                <li>Sinirsiz rezervasyon</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 }

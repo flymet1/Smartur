@@ -71,6 +71,7 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('weekly');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
   
   const { data: stats, isLoading: statsLoading } = useReservationStats();
   const { data: reservations, isLoading: reservationsLoading } = useReservations();
@@ -195,12 +196,96 @@ export default function Dashboard() {
                 <span>{pendingRequestsCount > 0 ? `${pendingRequestsCount} Yeni Talep` : 'Bekleyen Talep Yok'}</span>
               </div>
             </Link>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-card px-4 py-2 rounded-full border shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              Sistem Aktif
+            <div 
+              className="flex items-center gap-2 text-sm text-muted-foreground bg-white dark:bg-card px-4 py-2 rounded-full border shadow-sm cursor-pointer hover:bg-muted transition-colors"
+              onClick={() => setLicenseDialogOpen(true)}
+              data-testid="button-system-status"
+            >
+              <span className={`w-2 h-2 rounded-full ${licenseData?.status.valid ? 'bg-green-500' : 'bg-orange-500'} animate-pulse`}></span>
+              {licenseData?.status.valid ? 'Sistem Aktif' : 'Dikkat Gerekli'}
             </div>
           </div>
         </div>
+
+        {/* License Info Dialog */}
+        <Dialog open={licenseDialogOpen} onOpenChange={setLicenseDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Uyelik Bilgileri
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {licenseData?.license ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 rounded-md bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Durum</p>
+                      <p className={`font-bold ${licenseData.status.valid ? 'text-green-600' : 'text-orange-600'}`}>
+                        {licenseData.status.valid ? 'Aktif' : 'Dikkat Gerekli'}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-md bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Plan</p>
+                      <p className="font-bold">{licenseData.license.planName}</p>
+                      <Badge variant="secondary" className="mt-1">{licenseData.license.planType}</Badge>
+                    </div>
+                    <div className="p-3 rounded-md bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Acenta</p>
+                      <p className="font-bold">{licenseData.license.agencyName || '-'}</p>
+                    </div>
+                    <div className="p-3 rounded-md bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Bitis Tarihi</p>
+                      <p className="font-bold">
+                        {licenseData.license.expiryDate 
+                          ? new Date(licenseData.license.expiryDate).toLocaleDateString('tr-TR')
+                          : 'Sinirsiz'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-md bg-muted/50">
+                    <p className="text-sm text-muted-foreground mb-2">Kullanim Limitleri</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Aktiviteler:</span>
+                        <span className="font-medium">
+                          {licenseData.usage.activitiesUsed} / {licenseData.license.maxActivities}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Aylik Rezervasyonlar:</span>
+                        <span className="font-medium">
+                          {licenseData.usage.reservationsThisMonth} / {licenseData.license.maxReservationsPerMonth}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {licenseData.status.message && (
+                    <p className="text-sm text-muted-foreground">{licenseData.status.message}</p>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-md border border-orange-200 dark:border-orange-800">
+                  <AlertTriangle className="w-8 h-8 text-orange-500" />
+                  <div>
+                    <p className="font-bold text-orange-700 dark:text-orange-300">Lisans Bulunamadi</p>
+                    <p className="text-sm text-orange-600 dark:text-orange-400">Lutfen ayarlar sayfasindan lisans bilgilerinizi girin.</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setLicenseDialogOpen(false)}>Kapat</Button>
+                <Link href="/settings">
+                  <Button onClick={() => setLicenseDialogOpen(false)} data-testid="button-go-to-settings">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Uyelik Yonetimi
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

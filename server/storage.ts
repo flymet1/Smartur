@@ -215,6 +215,7 @@ export interface IStorage {
   getLicense(): Promise<License | undefined>;
   createLicense(licenseData: InsertLicense): Promise<License>;
   updateLicense(id: number, licenseData: Partial<InsertLicense>): Promise<License>;
+  deleteLicense(id: number): Promise<void>;
   verifyLicense(): Promise<{ valid: boolean; message: string; license?: License }>;
   getLicenseUsage(): Promise<{ activitiesUsed: number; reservationsThisMonth: number }>;
 }
@@ -1438,6 +1439,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(license.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteLicense(id: number): Promise<void> {
+    await db.delete(license).where(eq(license.id, id));
   }
 
   async verifyLicense(): Promise<{ valid: boolean; message: string; license?: License }> {
