@@ -3,9 +3,10 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
 import { useReservationStats, useReservations } from "@/hooks/use-reservations";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList, MessageSquare, Shield, AlertTriangle, CheckCircle, CreditCard } from "lucide-react";
+import { Calendar, TrendingUp, Users, DollarSign, X, Clock, MapPin, ClipboardList, MessageSquare, Shield, AlertTriangle, CheckCircle, CreditCard, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
-import { format } from "date-fns";
+import { format, addDays, subDays } from "date-fns";
+import { tr } from "date-fns/locale";
 import { 
   BarChart, 
   Bar, 
@@ -67,11 +68,30 @@ interface DateDetails {
   }>;
 }
 
+interface OccupancyData {
+  date: string;
+  occupancyRate: number;
+  totalSlots: number;
+  bookedSlots: number;
+  activities: Array<{
+    activityId: number;
+    activityName: string;
+    totalSlots: number;
+    bookedSlots: number;
+    occupancyRate: number;
+  }>;
+}
+
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('weekly');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
+  const [occupancyDateStr, setOccupancyDateStr] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [occupancyDialogOpen, setOccupancyDialogOpen] = useState(false);
+  
+  // Derived Date object for display formatting
+  const occupancyDate = new Date(occupancyDateStr + 'T00:00:00');
   
   const { data: stats, isLoading: statsLoading } = useReservationStats();
   const { data: reservations, isLoading: reservationsLoading } = useReservations();
@@ -138,6 +158,15 @@ export default function Dashboard() {
       return res.json();
     },
     refetchInterval: 60000,
+  });
+
+  // Occupancy query - uses occupancyDateStr state directly
+  const { data: occupancyData, isLoading: occupancyLoading } = useQuery<OccupancyData>({
+    queryKey: ['/api/occupancy', occupancyDateStr],
+    queryFn: async () => {
+      const res = await fetch(`/api/occupancy?date=${occupancyDateStr}`);
+      return res.json();
+    },
   });
 
   const chartData = detailedStats?.chartData || [];
@@ -308,12 +337,125 @@ export default function Dashboard() {
             value={124} 
             icon={Users} 
           />
-          <StatCard 
-            label="Doluluk Oranı" 
-            value="%78" 
-            icon={TrendingUp} 
-          />
+          <div 
+            className="cursor-pointer" 
+            onClick={() => setOccupancyDialogOpen(true)}
+            data-testid="card-occupancy"
+          >
+            <StatCard 
+              label={`Doluluk (${format(occupancyDate, 'd MMM', { locale: tr })})`}
+              value={occupancyLoading ? "..." : `%${occupancyData?.occupancyRate || 0}`}
+              icon={TrendingUp}
+              trend={occupancyData ? `${occupancyData.bookedSlots}/${occupancyData.totalSlots} kisi` : undefined}
+              trendUp={occupancyData && occupancyData.occupancyRate > 50}
+            />
+          </div>
         </div>
+
+        {/* Occupancy Details Dialog */}
+        <Dialog open={occupancyDialogOpen} onOpenChange={setOccupancyDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CalendarDays className="w-5 h-5" />
+                Doluluk Detaylari
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setOccupancyDateStr(format(subDays(occupancyDate, 1), 'yyyy-MM-dd'))}
+                  data-testid="button-prev-day"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div className="text-center">
+                  <p className="font-bold text-lg" data-testid="text-occupancy-date">
+                    {format(occupancyDate, 'd MMMM yyyy, EEEE', { locale: tr })}
+                  </p>
+                  <div className="flex items-center justify-center gap-2 mt-1">
+                    <Badge variant={occupancyData?.occupancyRate && occupancyData.occupancyRate >= 80 ? "destructive" : occupancyData?.occupancyRate && occupancyData.occupancyRate >= 50 ? "default" : "secondary"}>
+                      %{occupancyData?.occupancyRate || 0} Doluluk
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      ({occupancyData?.bookedSlots || 0}/{occupancyData?.totalSlots || 0} kisi)
+                    </span>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setOccupancyDateStr(format(addDays(occupancyDate, 1), 'yyyy-MM-dd'))}
+                  data-testid="button-next-day"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="flex justify-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setOccupancyDateStr(format(new Date(), 'yyyy-MM-dd'))}
+                  data-testid="button-today"
+                >
+                  Bugun
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setOccupancyDateStr(format(addDays(new Date(), 1), 'yyyy-MM-dd'))}
+                  data-testid="button-tomorrow"
+                >
+                  Yarin
+                </Button>
+              </div>
+
+              {occupancyLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : occupancyData?.activities && occupancyData.activities.length > 0 ? (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {occupancyData.activities.map((activity) => (
+                    <div 
+                      key={activity.activityId}
+                      className="flex items-center justify-between p-3 rounded-md bg-muted/50 border"
+                    >
+                      <div>
+                        <p className="font-medium text-sm">{activity.activityName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {activity.bookedSlots} / {activity.totalSlots} kisi
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <Badge 
+                          variant={activity.occupancyRate >= 80 ? "destructive" : activity.occupancyRate >= 50 ? "default" : "secondary"}
+                        >
+                          %{activity.occupancyRate}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-4 text-muted-foreground">
+                  <p>Bu tarih icin kapasite verisi bulunamadi.</p>
+                  <p className="text-sm mt-1">Aktivitelerinize varsayilan saatler ve kapasite tanimlayin.</p>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setOccupancyDialogOpen(false)}>
+                  Kapat
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* License Status Card */}
         <Card className="border" data-testid="card-license-status">

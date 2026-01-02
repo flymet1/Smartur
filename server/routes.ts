@@ -1167,6 +1167,99 @@ export async function registerRoutes(
     res.json(details);
   });
 
+  // Occupancy rate for a specific date
+  app.get("/api/occupancy", async (req, res) => {
+    const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
+    
+    try {
+      // Get all activities, reservations, and capacity
+      const allActivities = await storage.getActivities();
+      const activeActivities = allActivities.filter(a => a.active);
+      const allReservations = await storage.getReservations();
+      const allCapacity = await storage.getCapacity();
+      
+      // Get reservations for this date (not cancelled)
+      const dateReservations = allReservations.filter(r => 
+        r.date === date && r.status !== 'cancelled' && r.activityId
+      );
+      
+      // Calculate booked quantities per activity from actual reservations
+      const bookedByActivity: Record<number, number> = {};
+      for (const r of dateReservations) {
+        if (r.activityId) {
+          bookedByActivity[r.activityId] = (bookedByActivity[r.activityId] || 0) + r.quantity;
+        }
+      }
+      
+      // Calculate total slots per activity (from DB capacity or defaults)
+      const slotsByActivity: Record<number, number> = {};
+      
+      // First, check DB capacity for this date
+      const dbCapacity = allCapacity.filter(c => c.date === date);
+      const activitiesWithDbCapacity = new Set(dbCapacity.map(c => c.activityId));
+      
+      for (const cap of dbCapacity) {
+        slotsByActivity[cap.activityId] = (slotsByActivity[cap.activityId] || 0) + cap.totalSlots;
+      }
+      
+      // For activities without DB capacity, use defaults
+      for (const activity of activeActivities) {
+        if (!activitiesWithDbCapacity.has(activity.id)) {
+          // Count time slots from defaultTimes
+          let timeSlotCount = 1;
+          try {
+            const times = JSON.parse(activity.defaultTimes || '[]');
+            if (Array.isArray(times) && times.length > 0) {
+              timeSlotCount = times.length;
+            }
+          } catch {}
+          
+          const totalSlots = (activity.defaultCapacity || 10) * timeSlotCount;
+          slotsByActivity[activity.id] = totalSlots;
+        }
+      }
+      
+      // Build activity stats
+      const activityStats: Array<{
+        activityId: number;
+        activityName: string;
+        totalSlots: number;
+        bookedSlots: number;
+        occupancyRate: number;
+      }> = [];
+      
+      for (const activity of activeActivities) {
+        const totalSlots = slotsByActivity[activity.id] || 0;
+        const bookedSlots = bookedByActivity[activity.id] || 0;
+        
+        if (totalSlots > 0) {
+          activityStats.push({
+            activityId: activity.id,
+            activityName: activity.name,
+            totalSlots,
+            bookedSlots,
+            occupancyRate: Math.round((bookedSlots / totalSlots) * 100)
+          });
+        }
+      }
+      
+      const totalSlots = activityStats.reduce((sum, a) => sum + a.totalSlots, 0);
+      const bookedSlots = activityStats.reduce((sum, a) => sum + a.bookedSlots, 0);
+      const occupancyRate = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : 0;
+      
+      res.json({
+        date,
+        occupancyRate,
+        totalSlots,
+        bookedSlots,
+        activities: activityStats
+      });
+    } catch (error) {
+      console.error('Occupancy calculation error:', error);
+      res.status(500).json({ error: "Doluluk orani hesaplanamadi" });
+    }
+  });
+
   // Update reservation status
   app.patch("/api/reservations/:id/status", async (req, res) => {
     const id = parseInt(req.params.id);

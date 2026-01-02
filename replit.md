@@ -30,6 +30,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 02.01.2026: Dinamik Doluluk Orani - Dashboard'daki doluluk orani artik secilen tarihe gore gercek verilerden hesaplaniyor. Tarih degistirme, aktivite bazli detay goruntusu ve bugun/yarin hizli gecis butonlari eklendi.
 - 02.01.2026: Bot Takip Sayfası Entegrasyonu - Rezervasyon sonrası müşteriye takip sayfası bilgisi verilmesi, değişiklik/iptal taleplerinde takip sayfasına yönlendirme. Sistem prompt güncellendi.
 - 02.01.2026: Lisans/Üyelik Sistemi - 4 plan tipi (trial/basic/professional/enterprise) ile lisans yönetimi eklendi. Dashboard'da üyelik durumu kartı, API endpoint'leri ve otomatik yenileme sistemi. Aktivite ve rezervasyon limitleri plan bazında kontrol ediliyor.
 - 02.01.2026: Menü Düzenlemesi - Tatiller ayarlar sayfasına yeni sekme olarak taşındı. Bot Test sidebar alt kısmına taşındı. Hızlı erişim sadece Müşteri Talepleri ve Destek gösteriyor.
