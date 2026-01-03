@@ -22,6 +22,7 @@ interface TrackingData {
   priceUsd: number;
   currency: string;
   orderNumber: string | null;
+  defaultTimes: string[];
 }
 
 type RequestType = 'time_change' | 'cancellation' | 'other' | null;
@@ -332,15 +333,21 @@ export default function CustomerTracking() {
                           <SelectValue placeholder="Saat secin" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="09:00">09:00</SelectItem>
-                          <SelectItem value="10:00">10:00</SelectItem>
-                          <SelectItem value="11:00">11:00</SelectItem>
-                          <SelectItem value="12:00">12:00</SelectItem>
-                          <SelectItem value="13:00">13:00</SelectItem>
-                          <SelectItem value="14:00">14:00</SelectItem>
-                          <SelectItem value="15:00">15:00</SelectItem>
-                          <SelectItem value="16:00">16:00</SelectItem>
-                          <SelectItem value="17:00">17:00</SelectItem>
+                          {reservation?.defaultTimes && reservation.defaultTimes.length > 0 ? (
+                            reservation.defaultTimes.map((time) => (
+                              <SelectItem key={time} value={time}>{time}</SelectItem>
+                            ))
+                          ) : (
+                            <>
+                              <SelectItem value="09:00">09:00</SelectItem>
+                              <SelectItem value="10:00">10:00</SelectItem>
+                              <SelectItem value="11:00">11:00</SelectItem>
+                              <SelectItem value="12:00">12:00</SelectItem>
+                              <SelectItem value="14:00">14:00</SelectItem>
+                              <SelectItem value="15:00">15:00</SelectItem>
+                              <SelectItem value="16:00">16:00</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>

@@ -1347,15 +1347,18 @@ export async function registerRoutes(
       
       // Get activity details
       let activityName = "Bilinmeyen Aktivite";
+      let defaultTimes: string[] = [];
       if (reservation.activityId) {
         const activity = await storage.getActivity(reservation.activityId);
         if (activity) {
           activityName = activity.name;
+          defaultTimes = activity.defaultTimes || [];
         }
       } else if (reservation.packageTourId) {
         const packageTour = await storage.getPackageTour(reservation.packageTourId);
         if (packageTour) {
           activityName = packageTour.name + " (Paket Tur)";
+          defaultTimes = packageTour.defaultTimes || [];
         }
       }
       
@@ -1371,7 +1374,8 @@ export async function registerRoutes(
         priceTl: reservation.priceTl || 0,
         priceUsd: reservation.priceUsd || 0,
         currency: reservation.currency || 'TRY',
-        orderNumber: reservation.orderNumber
+        orderNumber: reservation.orderNumber,
+        defaultTimes
       });
     } catch (error) {
       console.error("Track reservation error:", error);
