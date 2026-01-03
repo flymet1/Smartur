@@ -273,7 +273,7 @@ export default function Dashboard() {
                 {licenseData.status.canWrite === false && 'Yeni rezervasyon, aktivite veya duzenleme yapamazsiniz.'}
               </p>
             </div>
-            <Link href="/settings">
+            <Link href="/settings?tab=license">
               <Button variant={licenseData.status.status === 'warning' ? 'outline' : 'default'} size="sm">
                 Lisansi Yenile
               </Button>
@@ -350,7 +350,7 @@ export default function Dashboard() {
               )}
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setLicenseDialogOpen(false)}>Kapat</Button>
-                <Link href="/settings">
+                <Link href="/settings?tab=license">
                   <Button onClick={() => setLicenseDialogOpen(false)} data-testid="button-go-to-settings">
                     <CreditCard className="w-4 h-4 mr-2" />
                     Üyelik Yönetimi
@@ -594,7 +594,7 @@ export default function Dashboard() {
               <Shield className="w-5 h-5" />
               Üyelik Durumu
             </CardTitle>
-            <Link href="/settings">
+            <Link href="/settings?tab=license">
               <Button variant="outline" size="sm" data-testid="button-manage-subscription">
                 <CreditCard className="w-4 h-4 mr-2" />
                 Üyelik Yönetimi
@@ -669,7 +669,7 @@ export default function Dashboard() {
                   <p className="font-bold text-orange-700 dark:text-orange-300">Lisans Bulunamadi</p>
                   <p className="text-sm text-orange-600 dark:text-orange-400">Lutfen ayarlar sayfasindan lisans bilgilerinizi girin.</p>
                 </div>
-                <Link href="/settings">
+                <Link href="/settings?tab=license">
                   <Button variant="default" size="sm" data-testid="button-activate-license">
                     Lisans Aktive Et
                   </Button>

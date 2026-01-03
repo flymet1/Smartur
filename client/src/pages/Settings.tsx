@@ -416,8 +416,15 @@ export default function Settings() {
     }
   };
 
-  // Settings tab state
-  const [settingsTab, setSettingsTab] = useState("security");
+  // Settings tab state - read from URL query parameter if present
+  const [settingsTab, setSettingsTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['security', 'license', 'whatsapp', 'integrations', 'holidays', 'system'].includes(tab)) {
+      return tab;
+    }
+    return 'security';
+  });
 
   return (
     <div className="flex min-h-screen bg-muted/20">
