@@ -30,6 +30,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 03.01.2026: Takip Linki Şablon Desteği - Onay mesajı şablonlarında {takip_linki} yer tutucusu kullanılabilir. Manuel rezervasyon oluşturulup WhatsApp bildirimi gönderildiğinde takip tokeni otomatik oluşturulur ve mesaja eklenir.
 - 03.01.2026: Müşteri Takip Dinamik Saat Seçimi - Saat değişikliği talebinde artık sadece ilgili aktivitenin varsayılan saatleri gösteriliyor. Backend'den defaultTimes çekiliyor, aktivite/paket tur bazında dinamik seçenekler sunuluyor.
 - 02.01.2026: Profesyonel Satış Sunumu - /sales-presentation sayfası oluşturuldu. 14 bölümlü kapsamlı satış dökümanı: Kapak, Yönetici Özeti, Karşılaşılan Zorluklar, Değer Önerisi, Dashboard, Rezervasyon, Takvim, WhatsApp Bot, Müşteri Takip, Finans, Entegrasyonlar, Sektörel Çözümler, Fiyatlandırma ve İletişim. PDF export butonu ile yazdırılabilir A4 format. Lucide-react ikonları, print-optimized CSS styling.
 - 02.01.2026: Kapsamlı Kullanım Kılavuzu - UserGuide.tsx tamamen yeniden yazıldı. 10 ana bölüm, tüm sayfa fonksiyonları, WhatsApp bot sistemi, rezervasyon yönetimi, müşteri takip, finans, ayarlar ve lisans sistemi detaylı açıklandı. Sayfa içi navigasyon linkleri eklendi.

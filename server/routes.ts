@@ -2007,7 +2007,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
   // === Send WhatsApp Notification (Twilio) ===
   app.post("/api/send-whatsapp-notification", async (req, res) => {
     try {
-      const { phone, customerName, activityName, date, time, activityId, packageTourId } = req.body;
+      const { phone, customerName, activityName, date, time, activityId, packageTourId, trackingToken } = req.body;
       
       if (!phone || !customerName || !activityName || !date) {
         return res.status(400).json({ error: "Eksik bilgi: telefon, isim, aktivite ve tarih gerekli" });
@@ -2045,6 +2045,11 @@ Bu talep musteri takip sayfasindan gonderilmistir.
         }
       }
       
+      // Build tracking link if token is provided
+      const trackingLink = trackingToken 
+        ? `${req.protocol}://${req.get('host')}/takip/${trackingToken}`
+        : '';
+      
       // Use template with placeholder replacement, or fallback to default
       let message: string;
       if (confirmationTemplate) {
@@ -2052,7 +2057,8 @@ Bu talep musteri takip sayfasindan gonderilmistir.
           .replace(/\{isim\}/gi, customerName)
           .replace(/\{tarih\}/gi, date)
           .replace(/\{saat\}/gi, time || '')
-          .replace(/\{aktivite\}/gi, activityName);
+          .replace(/\{aktivite\}/gi, activityName)
+          .replace(/\{takip_linki\}/gi, trackingLink);
       } else {
         message = `Merhaba ${customerName},
 

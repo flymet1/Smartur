@@ -448,6 +448,8 @@ function NewReservationDialog() {
           setIsSendingNotification(true);
           try {
             const selectedPackage = packageTours.find(p => String(p.id) === selectedPackageId);
+            // Note: For package tours, tracking token is per-activity reservation
+            // We send notification without tracking link for package tours
             const response = await fetch('/api/send-whatsapp-notification', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -477,7 +479,7 @@ function NewReservationDialog() {
       } else {
         const activityId = Number(formData.get("activityId"));
         const time = formData.get("time") as string;
-        await createMutation.mutateAsync({
+        const createdReservation = await createMutation.mutateAsync({
           activityId,
           orderNumber,
           customerName,
@@ -495,6 +497,18 @@ function NewReservationDialog() {
         if (notifyCustomer && customerPhone) {
           setIsSendingNotification(true);
           try {
+            // Generate tracking token for this reservation
+            let trackingToken: string | undefined;
+            if (createdReservation?.id) {
+              const tokenResponse = await fetch(`/api/reservations/${createdReservation.id}/generate-tracking`, {
+                method: 'POST'
+              });
+              if (tokenResponse.ok) {
+                const tokenData = await tokenResponse.json();
+                trackingToken = tokenData.token;
+              }
+            }
+            
             const selectedAct = activities?.find(a => a.id === activityId);
             const response = await fetch('/api/send-whatsapp-notification', {
               method: 'POST',
@@ -505,7 +519,8 @@ function NewReservationDialog() {
                 activityName: selectedAct?.name || 'Aktivite',
                 date,
                 time,
-                activityId
+                activityId,
+                trackingToken
               })
             });
             if (!response.ok) {
