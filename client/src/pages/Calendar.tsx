@@ -248,13 +248,14 @@ export default function CalendarPage() {
               </CardContent>
             </Card>
 
-            <Link href={`/reservations?date=${format(date, "yyyy-MM-dd")}`}>
-              <Button variant="outline" className="w-full" data-testid="button-view-reservations">
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Bu Günün Rezervasyonları
-              </Button>
-            </Link>
-
+            <div className="pt-2">
+              <Link href={`/reservations?date=${format(date, "yyyy-MM-dd")}`}>
+                <Button variant="outline" className="w-full" data-testid="button-view-reservations">
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Bu Günün Rezervasyonları
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="lg:col-span-8 space-y-4">
