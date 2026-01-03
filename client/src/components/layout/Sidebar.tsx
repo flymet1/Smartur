@@ -309,7 +309,7 @@ export function Sidebar() {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               WhatsApp Bot Aktif
             </div>
-            <Link href="/settings">
+            <Link href="/settings?tab=license">
               <div 
                 className={cn(
                   "flex items-center gap-2 text-sm font-medium mt-1 cursor-pointer hover:opacity-80 transition-opacity",
