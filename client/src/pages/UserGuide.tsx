@@ -419,6 +419,52 @@ export default function UserGuide() {
 
               <div>
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <MessagesSquare className="h-4 w-4 text-blue-500" />
+                  Onay Mesajı Şablonu Etiketleri
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Aktivite ve paket tur onay mesajlarında aşağıdaki dinamik etiketleri kullanabilirsiniz. 
+                  Bu etiketler gönderim sırasında otomatik olarak gerçek değerlerle değiştirilir.
+                </p>
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium font-mono">{'{isim}'}</p>
+                    <p className="text-xs text-muted-foreground">Müşterinin adı</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium font-mono">{'{tarih}'}</p>
+                    <p className="text-xs text-muted-foreground">Rezervasyon tarihi</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium font-mono">{'{saat}'}</p>
+                    <p className="text-xs text-muted-foreground">Rezervasyon saati</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium font-mono">{'{aktivite}'}</p>
+                    <p className="text-xs text-muted-foreground">Aktivite veya paket tur adı</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium font-mono">{'{telefon}'}</p>
+                    <p className="text-xs text-muted-foreground">Müşteri telefon numarası</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3 border border-primary/30">
+                    <p className="text-sm font-medium font-mono">{'{takip_linki}'}</p>
+                    <p className="text-xs text-muted-foreground">Rezervasyon takip sayfası linki</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs font-medium mb-1">Örnek Şablon:</p>
+                  <p className="text-xs text-muted-foreground italic">
+                    "Sayın {'{isim}'}, {'{aktivite}'} rezervasyonunuz {'{tarih}'} tarihinde saat {'{saat}'} için onaylanmıştır. 
+                    Rezervasyonunuzu takip etmek için: {'{takip_linki}'} Teşekkür ederiz."
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
                   <Zap className="h-4 w-4 text-yellow-500" />
                   Otomatik Yanıtlar (Maliyet Tasarrufu)
                 </h4>
