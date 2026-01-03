@@ -1352,13 +1352,25 @@ export async function registerRoutes(
         const activity = await storage.getActivity(reservation.activityId);
         if (activity) {
           activityName = activity.name;
-          defaultTimes = activity.defaultTimes || [];
+          // Parse defaultTimes from JSON string if needed
+          try {
+            const times = activity.defaultTimes;
+            defaultTimes = typeof times === 'string' ? JSON.parse(times) : (times || []);
+          } catch {
+            defaultTimes = [];
+          }
         }
       } else if (reservation.packageTourId) {
         const packageTour = await storage.getPackageTour(reservation.packageTourId);
         if (packageTour) {
           activityName = packageTour.name + " (Paket Tur)";
-          defaultTimes = packageTour.defaultTimes || [];
+          // Parse defaultTimes from JSON string if needed
+          try {
+            const times = packageTour.defaultTimes;
+            defaultTimes = typeof times === 'string' ? JSON.parse(times) : (times || []);
+          } catch {
+            defaultTimes = [];
+          }
         }
       }
       
