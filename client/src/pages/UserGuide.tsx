@@ -182,9 +182,23 @@ export default function UserGuide() {
                   "Özel kapasite slotları ekleme/düzenleme",
                   "Slot silme ve kapasite ayarlama",
                   "Seçili günün rezervasyonlarına hızlı erişim butonu",
-                  "Aktivite filtresi ile sadece istenen aktiviteyi görme"
+                  "Aktivite filtresi ile sadece istenen aktiviteyi görme",
+                  "Haftalık görünüm ile birden fazla günü karşılaştırma"
                 ]}
               />
+
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 ml-4">
+                <p className="text-sm font-medium mb-2 flex items-center gap-2 text-orange-600">
+                  <Clock className="h-4 w-4" />
+                  Varsayılan Kapasite Slotları
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Aktiviteler için tanımladığınız "Varsayılan Saatler" ve "Varsayılan Kapasite" değerleri 
+                  takvimde otomatik olarak kesikli kenarlıklı slotlar olarak görünür. Bu slotları 
+                  manuel eklemezseniz bile sistem otomatik olarak gösterir ve rezervasyonları bu 
+                  kapasiteden düşer.
+                </p>
+              </div>
 
               <PageGuideCard 
                 icon={<ClipboardList className="h-5 w-5 text-green-500" />}
@@ -364,7 +378,11 @@ export default function UserGuide() {
                   />
                   <CapabilityItem 
                     title="Tarih Algılama" 
-                    description="'Yarın', '5 şubat', 'hafta sonu', 'bayramda' gibi ifadeleri anlar"
+                    description="'Yarın', '5 şubat', 'hafta sonu' gibi ifadeleri anlar"
+                  />
+                  <CapabilityItem 
+                    title="Tatil/Bayram Tanıma" 
+                    description="'Bayramda müsait misiniz?', 'kurban bayramı' sorularında tatil kapasitesini çeker"
                   />
                   <CapabilityItem 
                     title="Rezervasyon Yönlendirme" 
@@ -376,7 +394,11 @@ export default function UserGuide() {
                   />
                   <CapabilityItem 
                     title="SSS Yanıtları" 
-                    description="Aktivite ve paket turlara tanımlı SSS'leri kullanır"
+                    description="Aktivite ve paket turlara tanımlı SSS'leri otomatik kullanır"
+                  />
+                  <CapabilityItem 
+                    title="Akıllı Fallback" 
+                    description="AI erişilemezse fiyat, müsaitlik, rezervasyon niyetine göre yanıt verir"
                   />
                   <CapabilityItem 
                     title="Onay Mesajları" 
@@ -492,6 +514,40 @@ export default function UserGuide() {
                 </div>
                 <div className="mt-3">
                   <NavLink href="/settings" label="Otomatik Yanıtları Düzenle" icon={<Settings className="h-4 w-4" />} />
+                </div>
+
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mt-4">
+                  <p className="text-sm font-medium mb-2 flex items-center gap-2 text-green-600">
+                    <Globe className="h-4 w-4" />
+                    İki Dilli Destek (TR/EN)
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Her otomatik yanıt kuralı için ayrı Türkçe ve İngilizce anahtar kelimeler ve yanıtlar tanımlayabilirsiniz.
+                    Sistem müşterinin dilini otomatik algılar ve uygun dilde yanıt verir.
+                    İngilizce yanıt boşsa Türkçe yanıt kullanılır.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-cyan-500" />
+                  SSS (Sık Sorulan Sorular) Yönetimi
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Her aktivite ve paket tur için SSS tanımlayabilirsiniz. Bot bu SSS'leri müşteri sorularını yanıtlarken kullanır.
+                </p>
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <p className="text-xs font-medium mb-2">SSS Ekleme:</p>
+                  <ol className="list-decimal list-inside text-xs text-muted-foreground space-y-1">
+                    <li>Aktiviteler veya Paket Turlar sayfasına gidin</li>
+                    <li>Bir aktivite/paket tur düzenleyin</li>
+                    <li>"SSS" sekmesine geçin</li>
+                    <li>Soru ve yanıt çiftleri ekleyin</li>
+                    <li>Kaydedin - Bot artık bu bilgileri kullanabilir</li>
+                  </ol>
                 </div>
               </div>
 
@@ -618,6 +674,20 @@ export default function UserGuide() {
                   Aynı sipariş numarasına sahip aktiviteler tek grup altında toplanır.
                 </p>
               </div>
+
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Search className="h-4 w-4 text-blue-500" />
+                  Arama ve Filtreleme İpuçları
+                </h4>
+                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                  <li><strong>Sipariş Numarası:</strong> WooCommerce sipariş ID'si ile arama yapabilirsiniz</li>
+                  <li><strong>Müşteri Adı:</strong> İsme göre hızlı filtreleme</li>
+                  <li><strong>Telefon:</strong> Telefon numarası ile arama</li>
+                  <li><strong>Tarih Filtresi:</strong> Belirli bir günün rezervasyonlarını görme</li>
+                  <li><strong>Durum Filtresi:</strong> Sadece bekleyen, onaylı veya iptal rezervasyonları gösterme</li>
+                </ul>
+              </div>
             </div>
           </Section>
 
@@ -739,6 +809,21 @@ export default function UserGuide() {
                 </div>
               </div>
 
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-green-600">
+                  <Send className="h-4 w-4" />
+                  Acenta WhatsApp Bildirimi
+                </h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Müşteri Talepleri sayfasında "Acentayı Bilgilendir" butonu ile acentalara WhatsApp mesajı gönderebilirsiniz:
+                </p>
+                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                  <li>Telefon numarası olan acentalar dropdown'da listelenir</li>
+                  <li>Mesaj içeriğini düzenleyebilirsiniz</li>
+                  <li>Talep detayları otomatik mesaja eklenir</li>
+                </ul>
+              </div>
+
               <div className="mt-3">
                 <NavLink href="/finance" label="Finans Sayfasına Git" icon={<Receipt className="h-4 w-4" />} />
               </div>
@@ -803,13 +888,20 @@ export default function UserGuide() {
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                 <h4 className="font-semibold mb-2 flex items-center gap-2 text-blue-600">
                   <Download className="h-4 w-4" />
-                  Hata Raporu Oluşturma
+                  Hata Raporu (Debug Snapshot) Oluşturma
                 </h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-2">
                   Sorun yaşadığınızda Ayarlar &gt; Sistem sekmesindeki "Hata Ayıklama" kartından
-                  tek tıkla sistem raporu oluşturabilirsiniz. Rapor tüm sistem bilgilerini toplar
-                  ve müşteri bilgilerini otomatik gizler.
+                  tek tıkla sistem raporu oluşturabilirsiniz.
                 </p>
+                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                  <li>Tüm aktiviteler, rezervasyonlar ve ayarlar toplanır</li>
+                  <li>Son sistem logları eklenir</li>
+                  <li>Sistem sağlığı otomatik kontrol edilir (AI hataları, webhook sorunları)</li>
+                  <li>Müşteri bilgileri (telefon, e-posta) otomatik gizlenir</li>
+                  <li>JSON formatında indirilebilir rapor oluşturulur</li>
+                  <li>Bu raporu geliştirici ile paylaşarak hızlı destek alabilirsiniz</li>
+                </ul>
               </div>
 
               <div className="mt-3">
