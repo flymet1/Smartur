@@ -537,6 +537,49 @@ export default function UserGuide() {
                 </div>
               </div>
 
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 text-blue-600">
+                  <Webhook className="h-4 w-4" />
+                  WooCommerce Entegrasyonu Nasıl Çalışır?
+                </h4>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    WooCommerce sitenizden gelen siparişler otomatik olarak rezervasyona dönüştürülür:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground ml-2">
+                    <li>Müşteri WooCommerce sitesinden ürün satın alır (örn: "Paragliding")</li>
+                    <li>WooCommerce otomatik olarak webhook ile siparişi bu sisteme gönderir</li>
+                    <li>Sistem, siparişteki ürün adını aktivitelerle eşleştirmeye çalışır</li>
+                    <li>Eşleşirse, rezervasyon otomatik olarak "Onaylı" statüsüyle oluşturulur</li>
+                  </ol>
+                  
+                  <div className="bg-background/50 rounded-lg p-3 mt-3">
+                    <p className="text-sm font-medium mb-2">İngilizce Ürün Eşleştirmesi:</p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Aktivite ayarlarında "İsim Takma Adları" (name aliases) alanına İngilizce isimleri eklemeniz gerekiyor.
+                    </p>
+                    <div className="bg-muted/50 rounded p-2">
+                      <p className="text-xs font-mono">Örnek: "Yamaç Paraşütü" aktivitesi için</p>
+                      <p className="text-xs font-mono text-primary">Takma adlar: paragliding, tandem paragliding, parachute</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Bu şekilde WooCommerce'den "Paragliding" siparişi geldiğinde sistem "Yamaç Paraşütü" aktivitesiyle eşleştirir.
+                    </p>
+                  </div>
+
+                  <div className="bg-background/50 rounded-lg p-3">
+                    <p className="text-sm font-medium mb-2">Rezervasyonları Görüntüleme:</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                      <li><strong>Rezervasyonlar</strong> sayfasında tüm gelen siparişler listelenir</li>
+                      <li>Kaynak: "web" olarak işaretlenir</li>
+                      <li>Sipariş numarası WooCommerce sipariş ID'sidir</li>
+                      <li>Fiyat bilgisi TL ve USD olarak kaydedilir</li>
+                      <li>Otel bilgisi ve transfer durumu otomatik algılanır</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <Separator />
 
               <div>
