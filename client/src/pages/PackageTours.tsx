@@ -178,7 +178,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
     description: tour?.description || '',
     price: tour?.price || 0,
     priceUsd: tour?.priceUsd || 0,
-    confirmationMessage: tour?.confirmationMessage || 'Sayin {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Tesekkur ederiz.',
+    confirmationMessage: tour?.confirmationMessage || 'Sayin {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Rezervasyonunuzu takip etmek icin: {takip_linki} Tesekkur ederiz.',
     reservationLink: tour?.reservationLink || '',
     reservationLinkEn: tour?.reservationLinkEn || '',
     active: tour?.active !== false
@@ -198,7 +198,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
         description: tour?.description || '',
         price: tour?.price || 0,
         priceUsd: tour?.priceUsd || 0,
-        confirmationMessage: tour?.confirmationMessage || 'Sayin {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Tesekkur ederiz.',
+        confirmationMessage: tour?.confirmationMessage || 'Sayin {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Rezervasyonunuzu takip etmek icin: {takip_linki} Tesekkur ederiz.',
         reservationLink: tour?.reservationLink || '',
         reservationLinkEn: tour?.reservationLinkEn || '',
         active: tour?.active !== false
@@ -449,7 +449,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
                 data-testid="input-confirmation-message"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Kullanilabilir degiskenler: {'{isim}'}, {'{tarih}'}, {'{saat}'}, {'{telefon}'}
+                Kullanilabilir degiskenler: {'{isim}'}, {'{tarih}'}, {'{saat}'}, {'{telefon}'}, {'{takip_linki}'}
               </p>
             </div>
             

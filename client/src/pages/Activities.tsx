@@ -428,11 +428,11 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   <Textarea 
                     id="confirmationMessage" 
                     name="confirmationMessage" 
-                    defaultValue={(activity as any)?.confirmationMessage || "Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."} 
+                    defaultValue={(activity as any)?.confirmationMessage || "Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz."} 
                     placeholder="Rezervasyon onayı için özel mesaj..."
                     className="min-h-[80px]"
                   />
-                  <p className="text-xs text-muted-foreground">Kullanılabilir etiketler: {'{'}isim{'}'}, {'{'}tarih{'}'}, {'{'}saat{'}'}, {'{'}aktivite{'}'}</p>
+                  <p className="text-xs text-muted-foreground">Kullanılabilir etiketler: {'{'}isim{'}'}, {'{'}tarih{'}'}, {'{'}saat{'}'}, {'{'}aktivite{'}'}, {'{'}takip_linki{'}'}</p>
                 </div>
               </TabsContent>
 
