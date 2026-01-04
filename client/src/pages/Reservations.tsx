@@ -1814,15 +1814,13 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">{reservation.customerName}</div>
-                        <div className="text-sm opacity-80 flex items-center gap-1">
-                          {isPackage && <Package className="h-3 w-3 text-purple-600 dark:text-purple-400" />}
-                          {getActivityName(reservation.activityId)}
-                          {isPackage && (
-                            <span className="text-purple-600 dark:text-purple-400">
-                              ({getPackageName(reservation.packageTourId)})
-                            </span>
-                          )}
-                        </div>
+                        <div className="text-sm opacity-80">{getActivityName(reservation.activityId)}</div>
+                        {isPackage && (
+                          <div className="text-xs flex items-center gap-1 mt-0.5 text-purple-600 dark:text-purple-400">
+                            <Package className="h-3 w-3" />
+                            <span className="font-medium">{getPackageName(reservation.packageTourId)}</span>
+                          </div>
+                        )}
                         <div className="text-xs opacity-70 mt-1">
                           {reservation.time} - {reservation.quantity} kişi
                         </div>
