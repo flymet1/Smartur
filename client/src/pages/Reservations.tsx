@@ -573,6 +573,7 @@ export default function Reservations() {
             selectedDate={miniSelectedDate}
             onDateSelect={setMiniSelectedDate}
             onReservationSelect={setSelectedReservation}
+            onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           />
         ) : (
           <>
@@ -2224,9 +2225,10 @@ interface MiniCalendarViewProps {
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
   onReservationSelect: (reservation: Reservation) => void;
+  onStatusChange: (reservationId: number, newStatus: string) => void;
 }
 
-function MiniCalendarView({ reservations, activities, packageTours, selectedDate, onDateSelect, onReservationSelect }: MiniCalendarViewProps) {
+function MiniCalendarView({ reservations, activities, packageTours, selectedDate, onDateSelect, onReservationSelect, onStatusChange }: MiniCalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(selectedDate);
   
   useEffect(() => {
@@ -2362,19 +2364,51 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                           return (
                             <div 
                               key={reservation.id}
-                              onClick={() => onReservationSelect(reservation)}
-                              className={`p-2 rounded-md border cursor-pointer hover-elevate ${getActivityColor(reservation.activityId)}`}
+                              className={`p-2 rounded-md border hover-elevate ${getActivityColor(reservation.activityId)}`}
                               data-testid={`mini-reservation-${reservation.id}`}
                             >
                               <div className="flex items-center justify-between gap-2">
-                                <div className="flex-1 min-w-0">
+                                <div 
+                                  className="flex-1 min-w-0 cursor-pointer"
+                                  onClick={() => onReservationSelect(reservation)}
+                                >
                                   <div className="font-medium text-sm truncate">{reservation.customerName}</div>
                                   <div className="text-xs opacity-80">{getActivityName(reservation.activityId)}</div>
                                   <div className="text-xs opacity-70">
                                     {reservation.time} - {reservation.quantity} kişi
                                   </div>
                                 </div>
-                                <Badge className={`${status.className} text-xs`}>{status.label}</Badge>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                    <Badge className={`${status.className} text-xs cursor-pointer`} data-testid={`mini-status-dropdown-${reservation.id}`}>
+                                      {status.label}
+                                      <ChevronDown className="h-3 w-3 ml-1" />
+                                    </Badge>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem 
+                                      onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "pending"); }}
+                                      data-testid={`mini-status-pending-${reservation.id}`}
+                                    >
+                                      <Clock className="h-4 w-4 mr-2 text-yellow-500" />
+                                      Beklemede
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "confirmed"); }}
+                                      data-testid={`mini-status-confirmed-${reservation.id}`}
+                                    >
+                                      <Check className="h-4 w-4 mr-2 text-green-500" />
+                                      Onaylı
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "cancelled"); }}
+                                      data-testid={`mini-status-cancelled-${reservation.id}`}
+                                    >
+                                      <X className="h-4 w-4 mr-2 text-red-500" />
+                                      İptal
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </div>
                           );
@@ -2389,19 +2423,51 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                   elements.push(
                     <div 
                       key={reservation.id}
-                      onClick={() => onReservationSelect(reservation)}
-                      className={`p-3 rounded-md border cursor-pointer hover-elevate ${getActivityColor(reservation.activityId)}`}
+                      className={`p-3 rounded-md border hover-elevate ${getActivityColor(reservation.activityId)}`}
                       data-testid={`mini-reservation-${reservation.id}`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex-1 min-w-0">
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => onReservationSelect(reservation)}
+                        >
                           <div className="font-medium truncate">{reservation.customerName}</div>
                           <div className="text-sm opacity-80">{getActivityName(reservation.activityId)}</div>
                           <div className="text-xs opacity-70 mt-1">
                             {reservation.time} - {reservation.quantity} kişi
                           </div>
                         </div>
-                        <Badge className={status.className}>{status.label}</Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Badge className={`${status.className} cursor-pointer`} data-testid={`mini-status-dropdown-${reservation.id}`}>
+                              {status.label}
+                              <ChevronDown className="h-3 w-3 ml-1" />
+                            </Badge>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "pending"); }}
+                              data-testid={`mini-status-pending-${reservation.id}`}
+                            >
+                              <Clock className="h-4 w-4 mr-2 text-yellow-500" />
+                              Beklemede
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "confirmed"); }}
+                              data-testid={`mini-status-confirmed-${reservation.id}`}
+                            >
+                              <Check className="h-4 w-4 mr-2 text-green-500" />
+                              Onaylı
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "cancelled"); }}
+                              data-testid={`mini-status-cancelled-${reservation.id}`}
+                            >
+                              <X className="h-4 w-4 mr-2 text-red-500" />
+                              İptal
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   );
