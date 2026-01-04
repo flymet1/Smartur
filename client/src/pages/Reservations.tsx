@@ -1437,7 +1437,11 @@ function BigCalendar({
     let totalCapacity = 0;
     let totalBooked = 0;
     
-    activities.forEach(activity => {
+    const filteredActivities = activityFilter 
+      ? activities.filter(a => String(a.id) === activityFilter)
+      : activities;
+    
+    filteredActivities.forEach(activity => {
       const capacity = (activity as any)?.defaultCapacity || 10;
       const booked = dayReservations.filter(r => r.activityId === activity.id).reduce((sum, r) => sum + r.quantity, 0);
       totalCapacity += capacity;
