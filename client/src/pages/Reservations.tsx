@@ -56,6 +56,13 @@ export default function Reservations() {
   const { data: holidays = [] } = useQuery<Holiday[]>({
     queryKey: ['/api/holidays']
   });
+  const { data: bulkMessageTemplateSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'bulkMessageTemplate'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/bulkMessageTemplate');
+      return res.json();
+    },
+  });
   const searchParams = useSearch();
   const [, setLocation] = useLocation();
   const urlDate = new URLSearchParams(searchParams).get("date");
@@ -971,10 +978,30 @@ export default function Reservations() {
                       toast({ title: "Uyarı", description: "Seçili rezervasyon bulunamadı.", variant: "destructive" });
                       return;
                     }
-                    // Generate default message
-                    const defaultMsg = selected.length === 1 
-                      ? `Merhaba ${selected[0].customerName},\n\nRezervasyon bilgilendirmesi:\nTarih: ${format(new Date(selected[0].date), "d MMMM yyyy", { locale: tr })}\nSaat: ${selected[0].time}\n\nİyi günler dileriz.`
-                      : `Merhaba,\n\nRezervasyon bilgilendirmesi.\n\nİyi günler dileriz.`;
+                    // Generate default message from template
+                    const template = bulkMessageTemplateSetting?.value || "Merhaba {isim},\n\nRezervasyon bilgilendirmesi:\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz.";
+                    let defaultMsg: string;
+                    if (selected.length === 1) {
+                      const r = selected[0];
+                      const activityName = activities?.find(a => a.id === r.activityId)?.name || "";
+                      defaultMsg = template
+                        .replace(/{isim}/g, r.customerName)
+                        .replace(/{tarih}/g, format(new Date(r.date), "d MMMM yyyy", { locale: tr }))
+                        .replace(/{saat}/g, r.time || "")
+                        .replace(/{aktivite}/g, activityName);
+                    } else {
+                      // For multiple reservations, use template without specific values
+                      defaultMsg = template
+                        .replace(/{isim}/g, "")
+                        .replace(/{tarih}/g, "")
+                        .replace(/{saat}/g, "")
+                        .replace(/{aktivite}/g, "")
+                        .replace(/Aktivite:\s*\n/g, "")
+                        .replace(/Tarih:\s*\n/g, "")
+                        .replace(/Saat:\s*\n/g, "")
+                        .replace(/\n\n+/g, "\n\n")
+                        .trim();
+                    }
                     setBulkWhatsAppMessage(defaultMsg);
                     setBulkWhatsAppOpen(true);
                   }}

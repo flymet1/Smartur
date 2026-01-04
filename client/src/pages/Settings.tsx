@@ -67,6 +67,12 @@ export default function Settings() {
   const [showGmailPassword, setShowGmailPassword] = useState(false);
   const [isTestingGmail, setIsTestingGmail] = useState(false);
   const [isSavingGmail, setIsSavingGmail] = useState(false);
+  
+  // Bulk WhatsApp Message Template
+  const [bulkMessageTemplate, setBulkMessageTemplate] = useState(
+    "Merhaba {isim},\n\nRezervasyon bilgilendirmesi:\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz."
+  );
+  const [bulkMessageTemplateLoaded, setBulkMessageTemplateLoaded] = useState(false);
 
   
   // Load bot access settings
@@ -98,6 +104,15 @@ export default function Settings() {
 
   // State to track if bot prompt has been loaded
   const [botPromptLoaded, setBotPromptLoaded] = useState(false);
+
+  // Load bulk message template
+  const { data: bulkMessageTemplateSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'bulkMessageTemplate'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/bulkMessageTemplate');
+      return res.json();
+    },
+  });
 
   // Load Gmail settings
   const { data: gmailSettings, refetch: refetchGmailSettings } = useQuery<{ gmailUser: string; isConfigured: boolean }>({
@@ -151,6 +166,14 @@ export default function Settings() {
       setBotPromptLoaded(true);
     }
   }, [botPromptSetting?.value, botPromptLoaded]);
+
+  // Apply loaded bulk message template when data arrives
+  useEffect(() => {
+    if (bulkMessageTemplateSetting?.value && !bulkMessageTemplateLoaded) {
+      setBulkMessageTemplate(bulkMessageTemplateSetting.value);
+      setBulkMessageTemplateLoaded(true);
+    }
+  }, [bulkMessageTemplateSetting?.value, bulkMessageTemplateLoaded]);
 
   
   const handleSaveGmailSettings = async () => {
@@ -322,6 +345,11 @@ export default function Settings() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: botAccessValue })
+        }),
+        fetch("/api/settings/bulkMessageTemplate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: bulkMessageTemplate })
         })
       ];
 
@@ -734,6 +762,38 @@ export default function Settings() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              <div className="border-t pt-6">
+                <div className="space-y-4">
+                  <div className="space-y-0.5">
+                    <Label>Toplu Bildirim Mesaj Şablonu</Label>
+                    <p className="text-sm text-muted-foreground">Toplu WhatsApp bildirimi gönderirken kullanılacak varsayılan mesaj şablonu</p>
+                  </div>
+                  
+                  <div className="space-y-2 bg-muted/50 p-4 rounded-lg">
+                    <Textarea 
+                      id="bulkMessageTemplate"
+                      value={bulkMessageTemplate}
+                      onChange={(e) => setBulkMessageTemplate(e.target.value)}
+                      placeholder="Toplu bildirim mesaj şablonunuzu yazın..."
+                      className="min-h-[120px]"
+                      data-testid="input-bulk-message-template"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Desteklenen değişkenler:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                      <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
+                      <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
+                      <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktivite{'}'}</code> - Aktivite adı</div>
+                      <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saat{'}'}</code> - Rezervasyon saati</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Tek rezervasyon seçildiğinde değişkenler otomatik doldurulur. Birden fazla seçildiğinde genel mesaj kullanılır.
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
