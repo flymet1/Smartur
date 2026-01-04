@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ReservationTableProps {
   reservations: Reservation[];
@@ -288,33 +287,40 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>İşlemler</TooltipContent>
-                          </Tooltip>
+                          <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {res.trackingToken ? (
-                            <DropdownMenuItem 
-                              onClick={() => copyExistingLink(res.trackingToken!, res.id)}
-                              data-testid={`copy-tracking-${res.id}`}
-                            >
-                              {copiedId === res.id ? (
-                                <>
-                                  <Check className="h-4 w-4 mr-2 text-green-600" />
-                                  Kopyalandı
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="h-4 w-4 mr-2" />
-                                  Takip Linkini Kopyala
-                                </>
-                              )}
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem 
+                                onClick={() => copyExistingLink(res.trackingToken!, res.id)}
+                                data-testid={`copy-tracking-${res.id}`}
+                              >
+                                {copiedId === res.id ? (
+                                  <>
+                                    <Check className="h-4 w-4 mr-2 text-green-600" />
+                                    Kopyalandı
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Takip Linkini Kopyala
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  const trackingUrl = `${window.location.origin}/takip/${res.trackingToken}`;
+                                  window.open(trackingUrl, '_blank');
+                                }}
+                                data-testid={`open-tracking-${res.id}`}
+                              >
+                                <Link2 className="h-4 w-4 mr-2" />
+                                Takip Sayfasını Aç
+                              </DropdownMenuItem>
+                            </>
                           ) : (
                             <DropdownMenuItem 
                               onClick={() => trackingMutation.mutate(res.id)}
