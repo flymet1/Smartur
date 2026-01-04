@@ -1802,14 +1802,15 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
           ) : (
             <div className="space-y-3">
               {(() => {
-                const packageGroups = new Map<number, Reservation[]>();
+                const packageGroups = new Map<string, Reservation[]>();
                 const standaloneReservations: Reservation[] = [];
                 
                 dayReservations.forEach(r => {
                   if (r.packageTourId) {
-                    const existing = packageGroups.get(r.packageTourId) || [];
+                    const groupKey = `${r.packageTourId}-${r.orderNumber || r.customerName}`;
+                    const existing = packageGroups.get(groupKey) || [];
                     existing.push(r);
-                    packageGroups.set(r.packageTourId, existing);
+                    packageGroups.set(groupKey, existing);
                   } else {
                     standaloneReservations.push(r);
                   }
@@ -1817,16 +1818,19 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                 
                 const elements: JSX.Element[] = [];
                 
-                packageGroups.forEach((groupReservations, packageTourId) => {
+                packageGroups.forEach((groupReservations, groupKey) => {
+                  const firstRes = groupReservations[0];
                   elements.push(
-                    <div key={`package-${packageTourId}`} className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-2">
-                      <div className="flex items-center gap-2 mb-2 px-1">
+                    <div key={`package-${groupKey}`} className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-2">
+                      <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
                         <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                         <span className="font-medium text-purple-700 dark:text-purple-300">
-                          {getPackageName(packageTourId)}
+                          {getPackageName(firstRes.packageTourId)}
                         </span>
+                        <span className="text-sm text-muted-foreground">-</span>
+                        <span className="text-sm font-medium">{firstRes.customerName}</span>
                         <Badge variant="secondary" className="text-xs">
-                          {groupReservations.length} rezervasyon
+                          {groupReservations.length} aktivite
                         </Badge>
                       </div>
                       <div className="space-y-1">
