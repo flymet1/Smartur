@@ -439,16 +439,20 @@ function BigCalendar({
   };
 
   const getActivityColor = (activityId: number | null) => {
-    if (!activityId) return "bg-gray-100 text-gray-700";
-    const colors = [
-      "bg-blue-100 text-blue-700 border-blue-200",
-      "bg-purple-100 text-purple-700 border-purple-200",
-      "bg-green-100 text-green-700 border-green-200",
-      "bg-orange-100 text-orange-700 border-orange-200",
-      "bg-pink-100 text-pink-700 border-pink-200",
-      "bg-cyan-100 text-cyan-700 border-cyan-200",
-    ];
-    return colors[activityId % colors.length];
+    if (!activityId) return "bg-gray-100 text-gray-700 border-gray-200";
+    const activity = activities.find(a => a.id === activityId);
+    const colorName = (activity as any)?.color || "blue";
+    const colorMap: Record<string, string> = {
+      blue: "bg-blue-100 text-blue-700 border-blue-200",
+      purple: "bg-purple-100 text-purple-700 border-purple-200",
+      green: "bg-green-100 text-green-700 border-green-200",
+      orange: "bg-orange-100 text-orange-700 border-orange-200",
+      pink: "bg-pink-100 text-pink-700 border-pink-200",
+      cyan: "bg-cyan-100 text-cyan-700 border-cyan-200",
+      red: "bg-red-100 text-red-700 border-red-200",
+      yellow: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    };
+    return colorMap[colorName] || colorMap.blue;
   };
 
   const getPackageTourName = (packageTourId: number | null) => {
