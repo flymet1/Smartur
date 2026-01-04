@@ -30,7 +30,6 @@ import { format, parse, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDay
 import { tr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type CalendarView = "day" | "week" | "month";
 
@@ -1717,8 +1716,6 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
   
   const dayReservations = reservations.filter(r => r.date === selectedDateStr);
   
-  const activityReservations = dayReservations.filter(r => r.activityId && !r.packageTourId);
-  const packageReservations = dayReservations.filter(r => r.packageTourId);
   
   const getActivityName = (activityId: number | null) => 
     activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
@@ -1798,87 +1795,45 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="activities" className="w-full">
-            <TabsList className="w-full">
-              <TabsTrigger value="activities" className="flex-1" data-testid="tab-activities">
-                <Bus className="h-4 w-4 mr-2" />
-                Aktiviteler ({activityReservations.length})
-              </TabsTrigger>
-              <TabsTrigger value="packages" className="flex-1" data-testid="tab-packages">
-                <Package className="h-4 w-4 mr-2" />
-                Paket Turlar ({packageReservations.length})
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="activities" className="mt-4">
-              {activityReservations.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Bu tarihte aktivite rezervasyonu yok
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {activityReservations.map(reservation => {
-                    const status = getStatusInfo(reservation.status);
-                    return (
-                      <div 
-                        key={reservation.id}
-                        onClick={() => onReservationSelect(reservation)}
-                        className={`p-3 rounded-md border cursor-pointer hover-elevate ${getActivityColor(reservation.activityId)}`}
-                        data-testid={`mini-reservation-${reservation.id}`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{reservation.customerName}</div>
-                            <div className="text-sm opacity-80">{getActivityName(reservation.activityId)}</div>
-                            <div className="text-xs opacity-70 mt-1">
-                              {reservation.time} - {reservation.quantity} kişi
-                            </div>
-                          </div>
-                          <Badge className={status.className}>{status.label}</Badge>
+          {dayReservations.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Bu tarihte rezervasyon yok
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {dayReservations.map(reservation => {
+                const status = getStatusInfo(reservation.status);
+                const isPackage = !!reservation.packageTourId;
+                return (
+                  <div 
+                    key={reservation.id}
+                    onClick={() => onReservationSelect(reservation)}
+                    className={`p-3 rounded-md border cursor-pointer hover-elevate ${getActivityColor(reservation.activityId)}`}
+                    data-testid={`mini-reservation-${reservation.id}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{reservation.customerName}</div>
+                        <div className="text-sm opacity-80 flex items-center gap-1">
+                          {isPackage && <Package className="h-3 w-3 text-purple-600 dark:text-purple-400" />}
+                          {getActivityName(reservation.activityId)}
+                          {isPackage && (
+                            <span className="text-purple-600 dark:text-purple-400">
+                              ({getPackageName(reservation.packageTourId)})
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs opacity-70 mt-1">
+                          {reservation.time} - {reservation.quantity} kişi
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="packages" className="mt-4">
-              {packageReservations.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Bu tarihte paket tur rezervasyonu yok
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {packageReservations.map(reservation => {
-                    const status = getStatusInfo(reservation.status);
-                    return (
-                      <div 
-                        key={reservation.id}
-                        onClick={() => onReservationSelect(reservation)}
-                        className="p-3 rounded-md border cursor-pointer hover-elevate bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-300"
-                        data-testid={`mini-reservation-${reservation.id}`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{reservation.customerName}</div>
-                            <div className="text-sm opacity-80 flex items-center gap-1">
-                              <Package className="h-3 w-3" />
-                              {getPackageName(reservation.packageTourId)}
-                            </div>
-                            <div className="text-xs opacity-70 mt-1">
-                              {reservation.time} - {reservation.quantity} kişi
-                            </div>
-                          </div>
-                          <Badge className={status.className}>{status.label}</Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+                      <Badge className={status.className}>{status.label}</Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
