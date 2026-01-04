@@ -701,6 +701,16 @@ export default function Reservations() {
                   {analytics.today.revenueUsd > 0 && ` / $${analytics.today.revenueUsd}`}
                 </p>
               )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-0 h-auto mt-2 text-xs text-primary"
+                onClick={() => setLocation(`/calendar?date=${format(new Date(), 'yyyy-MM-dd')}`)}
+                data-testid="button-today-calendar"
+              >
+                <Calendar className="h-3 w-3 mr-1" />
+                Günün Kapasitesini Gör
+              </Button>
             </Card>
             <Card className="p-4">
               <div className="flex items-center justify-between gap-2">
@@ -728,10 +738,8 @@ export default function Reservations() {
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Bu Ay Gelir</p>
-                  <p className="text-2xl font-bold">{analytics.thisMonth.revenueTl.toLocaleString('tr-TR')} <span className="text-sm font-normal">TL</span></p>
-                  {analytics.thisMonth.revenueUsd > 0 && (
-                    <p className="text-xs text-muted-foreground">${analytics.thisMonth.revenueUsd.toLocaleString('en-US')}</p>
-                  )}
+                  <p className="text-xl font-bold">{analytics.thisMonth.revenueTl.toLocaleString('tr-TR')} <span className="text-sm font-normal">TL</span></p>
+                  <p className="text-lg font-semibold text-muted-foreground">${analytics.thisMonth.revenueUsd.toLocaleString('en-US')} <span className="text-xs font-normal">USD</span></p>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                   <Banknote className="h-5 w-5 text-purple-600 dark:text-purple-400" />
