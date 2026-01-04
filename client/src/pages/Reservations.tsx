@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -21,7 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useActivities } from "@/hooks/use-activities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { PackageTour, Activity, Reservation } from "@shared/schema";
@@ -346,20 +346,26 @@ export default function Reservations() {
         ) : viewMode === "list" ? (
           <ReservationTable reservations={filteredReservations} />
         ) : (
-          <BigCalendar 
-            reservations={reservations || []}
-            activities={activities || []}
-            view={calendarView}
-            currentDate={currentDate}
-            onViewChange={setCalendarView}
-            onNavigate={navigateCalendar}
-            onGoToToday={goToToday}
-            onDateClick={handleAddReservationForDate}
-            onDateSelect={setCurrentDate}
-            statusFilter={statusFilter}
-            activityFilter={activityFilter}
-            onActivityFilterChange={setActivityFilter}
-          />
+          <>
+            <BigCalendar 
+              reservations={reservations || []}
+              activities={activities || []}
+              view={calendarView}
+              currentDate={currentDate}
+              onViewChange={setCalendarView}
+              onNavigate={navigateCalendar}
+              onGoToToday={goToToday}
+              onDateClick={handleAddReservationForDate}
+              onDateSelect={setCurrentDate}
+              statusFilter={statusFilter}
+              activityFilter={activityFilter}
+              onActivityFilterChange={setActivityFilter}
+            />
+            <RecentReservations 
+              reservations={reservations || []} 
+              activities={activities || []}
+            />
+          </>
         )}
       </main>
     </div>
@@ -711,7 +717,31 @@ function BigCalendar({
             const dayReservations = getReservationsForDate(dateStr);
             const { totalPeople, activityOccupancy } = getOccupancyForDate(dateStr);
 
-            const hours = Array.from({ length: 14 }, (_, i) => i + 7);
+            const allDefaultTimes = new Set<string>();
+            const filteredActivities = activityFilter === 'all' 
+              ? activities 
+              : activities.filter(a => a.id.toString() === activityFilter);
+            
+            filteredActivities.forEach(activity => {
+              if (activity.defaultTimes) {
+                try {
+                  const times = typeof activity.defaultTimes === 'string' 
+                    ? JSON.parse(activity.defaultTimes) 
+                    : activity.defaultTimes;
+                  if (Array.isArray(times)) {
+                    times.forEach((time: string) => allDefaultTimes.add(time));
+                  }
+                } catch (e) {
+                  console.error('Error parsing defaultTimes:', e);
+                }
+              }
+            });
+            
+            const sortedTimes = Array.from(allDefaultTimes).sort((a, b) => {
+              const [aH, aM] = a.split(':').map(Number);
+              const [bH, bM] = b.split(':').map(Number);
+              return aH * 60 + aM - (bH * 60 + bM);
+            });
 
             return (
               <div key={idx}>
@@ -741,35 +771,37 @@ function BigCalendar({
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  {hours.map(hour => {
-                    const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-                    const hourReservations = dayReservations.filter(r => {
-                      const resHour = parseInt(r.time?.split(':')[0] || '0');
-                      return resHour === hour;
-                    });
+                {sortedTimes.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Seçili aktiviteler için varsayılan saat tanımlanmamış
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {sortedTimes.map(timeSlot => {
+                      const slotReservations = dayReservations.filter(r => r.time === timeSlot);
 
-                    return (
-                      <div key={hour} className="flex border-b">
-                        <div className="w-16 py-3 text-sm text-muted-foreground flex-shrink-0">
-                          {timeStr}
+                      return (
+                        <div key={timeSlot} className="flex border-b">
+                          <div className="w-16 py-3 text-sm text-muted-foreground flex-shrink-0">
+                            {timeSlot}
+                          </div>
+                          <div className="flex-1 py-1 min-h-[50px] flex flex-wrap gap-2">
+                            {slotReservations.map(res => (
+                              <ReservationCard 
+                                key={res.id} 
+                                reservation={res} 
+                                activityName={getActivityName(res.activityId)}
+                                activityColor={getActivityColor(res.activityId)}
+                                onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                                expanded
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex-1 py-1 min-h-[50px] flex flex-wrap gap-2">
-                          {hourReservations.map(res => (
-                            <ReservationCard 
-                              key={res.id} 
-                              reservation={res} 
-                              activityName={getActivityName(res.activityId)}
-                              activityColor={getActivityColor(res.activityId)}
-                              onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
-                              expanded
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1300,5 +1332,129 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface RecentReservationsProps {
+  reservations: Reservation[];
+  activities: Activity[];
+}
+
+function RecentReservations({ reservations, activities }: RecentReservationsProps) {
+  const { toast } = useToast();
+  
+  const recentReservations = useMemo(() => {
+    return [...reservations]
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date);
+        const dateB = new Date(b.createdAt || b.date);
+        return dateB.getTime() - dateA.getTime();
+      })
+      .slice(0, 10);
+  }, [reservations]);
+
+  const getActivityName = (activityId: number | null) => {
+    if (!activityId) return "Bilinmiyor";
+    const activity = activities.find(a => a.id === activityId);
+    return activity?.name || "Bilinmiyor";
+  };
+
+  const statusConfig = {
+    confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
+    pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
+    cancelled: { label: "İptal", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+  };
+
+  const copyTrackingLink = (token: string) => {
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/takip/${token}`;
+    navigator.clipboard.writeText(link);
+    toast({
+      title: "Link kopyalandı",
+      description: "Takip linki panoya kopyalandı.",
+    });
+  };
+
+  const openTrackingLink = (token: string) => {
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/takip/${token}`;
+    window.open(link, '_blank');
+  };
+
+  if (recentReservations.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card className="mt-4">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-medium flex items-center gap-2">
+          <CalendarDays className="h-4 w-4" />
+          Son Rezervasyonlar
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="divide-y">
+          {recentReservations.map((reservation) => {
+            const status = statusConfig[reservation.status as keyof typeof statusConfig] || { label: reservation.status, className: "" };
+            
+            return (
+              <div 
+                key={reservation.id} 
+                className="flex items-center justify-between gap-4 px-4 py-3 hover-elevate"
+                data-testid={`recent-reservation-${reservation.id}`}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm truncate">{reservation.customerName}</span>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {reservation.quantity} kişi
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                    <span>{getActivityName(reservation.activityId)}</span>
+                    <span>-</span>
+                    <span>{format(new Date(reservation.date), 'd MMM', { locale: tr })}</span>
+                    {reservation.time && <span>{reservation.time}</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={`${status.className} text-[10px]`}>
+                    {status.label}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" data-testid={`button-menu-${reservation.id}`}>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {reservation.trackingToken && (
+                        <>
+                          <DropdownMenuItem onClick={() => copyTrackingLink(reservation.trackingToken!)}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            Takip Linkini Kopyala
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openTrackingLink(reservation.trackingToken!)}>
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Takip Sayfasını Aç
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {!reservation.trackingToken && (
+                        <DropdownMenuItem disabled>
+                          <LinkIcon className="h-4 w-4 mr-2" />
+                          Takip linki yok
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
