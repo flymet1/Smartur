@@ -292,10 +292,11 @@ export default function UserGuide() {
                 features={[
                   "Saat değişikliği, iptal ve diğer talepler",
                   "Talep onaylama/reddetme",
-                  "Otomatik WhatsApp bildirim gönderme",
+                  "Otomatik WhatsApp bildirim gönderme (şablon seçilebilir)",
                   "Acentayı bilgilendirme özelliği",
                   "Yeni talep sayısı badge göstergesi",
-                  "30 saniyede otomatik yenileme"
+                  "30 saniyede otomatik yenileme",
+                  "Mesaj şablonları yönetimi (Ayarlar > WhatsApp > Şablonlar)"
                 ]}
               />
 
@@ -333,6 +334,7 @@ export default function UserGuide() {
                   "Logo yükleme",
                   "Bot prompt ve erişim ayarları",
                   "Otomatik yanıt kuralları (TR/EN)",
+                  "Müşteri talep mesaj şablonları (onay/beklemede/red)",
                   "Kara liste yönetimi",
                   "Tatil/bayram tanımları",
                   "Gmail entegrasyonu",
@@ -408,6 +410,10 @@ export default function UserGuide() {
                     title="Takip Sayfası" 
                     description="Müşteriye takip linki bilgisi verir"
                   />
+                  <CapabilityItem 
+                    title="Talep Durumu Farkındalığı" 
+                    description="Müşterinin bekleyen/onaylanan/reddedilen taleplerini otomatik algılar ve bilgilendirir"
+                  />
                 </div>
               </div>
 
@@ -480,6 +486,85 @@ export default function UserGuide() {
                     "Sayın {'{isim}'}, {'{aktivite}'} rezervasyonunuz {'{tarih}'} tarihinde saat {'{saat}'} için onaylanmıştır. 
                     Rezervasyonunuzu takip etmek için: {'{takip_linki}'} Teşekkür ederiz."
                   </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-amber-500" />
+                  Müşteri Talep Mesaj Şablonları
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Müşteri taleplerini onaylarken veya reddederken gönderilecek WhatsApp mesajları için 
+                  şablonlar tanımlayabilirsiniz. Ayarlar &gt; WhatsApp &gt; Şablonlar sekmesinden yönetilir.
+                </p>
+                <div className="grid md:grid-cols-3 gap-3 mb-4">
+                  <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/20">
+                    <p className="text-sm font-medium text-green-600">Onaylandı</p>
+                    <p className="text-xs text-muted-foreground">Talep onaylandığında gönderilir</p>
+                  </div>
+                  <div className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
+                    <p className="text-sm font-medium text-amber-600">Değerlendirmede</p>
+                    <p className="text-xs text-muted-foreground">Talep alındığında bilgilendirme</p>
+                  </div>
+                  <div className="bg-red-500/10 rounded-lg p-3 border border-red-500/20">
+                    <p className="text-sm font-medium text-red-600">Reddedildi</p>
+                    <p className="text-xs text-muted-foreground">Talep reddedildiğinde gönderilir</p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium mb-2">Kullanılabilir Değişkenler:</p>
+                <div className="grid md:grid-cols-2 gap-2">
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="text-xs font-medium font-mono">{'{musteri_adi}'}</p>
+                    <p className="text-xs text-muted-foreground">Müşterinin adı</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="text-xs font-medium font-mono">{'{talep_turu}'}</p>
+                    <p className="text-xs text-muted-foreground">Talep türü (Saat Değişikliği, İptal vb.)</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="text-xs font-medium font-mono">{'{yeni_saat}'}</p>
+                    <p className="text-xs text-muted-foreground">İstenen yeni saat (saat değişikliği için)</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <p className="text-xs font-medium font-mono">{'{red_sebebi}'}</p>
+                    <p className="text-xs text-muted-foreground">Red sebebi (reddedildiğinde)</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-cyan-500" />
+                  Bot Talep Durumu Farkındalığı
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  WhatsApp botu, müşterinin telefon numarasına göre bekleyen veya işlenmiş taleplerini otomatik 
+                  olarak algılar ve bilgilendirir.
+                </p>
+                <div className="space-y-2">
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-sm font-medium">Bekleyen Talep Varsa:</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      "Talebiniz şu anda değerlendirme aşamasındadır. Ekibimiz en kısa sürede sizinle iletişime geçecektir."
+                    </p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-sm font-medium">Onaylanmış Talep Varsa:</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      "Son talebiniz onaylanmıştır. Size daha önce bilgilendirme mesajı gönderilmiş olmalı."
+                    </p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-sm font-medium">Reddedilmiş Talep Varsa:</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      "Maalesef son talebiniz reddedilmiştir. Detaylı bilgi için size gönderilen mesajı kontrol edebilirsiniz."
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1005,6 +1090,18 @@ export default function UserGuide() {
                 En son eklenen özellikler ve iyileştirmeler:
               </p>
               
+              <UpdateEntry 
+                date="04.01.2026"
+                title="Müşteri Talep Mesaj Şablonları"
+                description="Talep onay/red bildirimlerinde kullanılacak WhatsApp mesaj şablonları yönetimi. Dinamik değişken desteği ({musteri_adi}, {talep_turu}, {yeni_saat}, {red_sebebi})."
+                type="ozellik"
+              />
+              <UpdateEntry 
+                date="04.01.2026"
+                title="Bot Talep Durumu Farkındalığı"
+                description="WhatsApp botu artık müşterinin bekleyen/onaylanan/reddedilen taleplerini otomatik algılayarak bilgilendiriyor."
+                type="iyilestirme"
+              />
               <UpdateEntry 
                 date="02.01.2026"
                 title="Lisans ve Üyelik Sistemi"
