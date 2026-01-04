@@ -125,15 +125,15 @@ export function Sidebar() {
       } else {
         return { 
           text: `Aktif / ${daysRemaining} Gun Kaldi`, 
-          color: 'text-green-600', 
-          bgColor: 'bg-green-500',
+          color: 'text-accent-foreground', 
+          bgColor: 'bg-accent',
           isActive: true,
           isLoading: false
         };
       }
     }
     
-    return { text: 'Aktif', color: 'text-green-600', bgColor: 'bg-green-500', isActive: true, isLoading: false };
+    return { text: 'Aktif', color: 'text-accent-foreground', bgColor: 'bg-accent', isActive: true, isLoading: false };
   };
 
   const licenseStatusInfo = getLicenseStatusInfo();
@@ -145,7 +145,12 @@ export function Sidebar() {
         {logoUrl ? (
           <img src={logoUrl} alt="Logo" className="h-8 w-auto" data-testid="img-sidebar-logo-mobile" />
         ) : (
-          <div className="font-display font-bold text-xl text-primary">Smartur</div>
+          <div className="font-display font-bold text-xl text-primary flex items-center gap-1.5">
+            <span className="w-6 h-6 rounded bg-accent flex items-center justify-center text-accent-foreground">
+              <Activity className="h-4 w-4" />
+            </span>
+            Smartur
+          </div>
         )}
         <Sheet>
           <Tooltip>
@@ -230,7 +235,7 @@ export function Sidebar() {
             <img src={logoUrl} alt="Logo" className="h-10 w-auto" data-testid="img-sidebar-logo" />
           ) : (
             <div className="font-display font-bold text-2xl text-primary flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+              <span className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-accent-foreground">
                 <Activity className="h-5 w-5" />
               </span>
               Smartur
@@ -310,9 +315,10 @@ export function Sidebar() {
         <div className="p-4 border-t space-y-3">
           <div className="bg-muted/50 rounded-lg p-3">
             <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sistem Durumu</div>
-            <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              WhatsApp Bot Aktif
+            <div className="flex items-center gap-2 text-sm font-medium text-accent-foreground">
+              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-foreground">WhatsApp Bot</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-accent text-accent-foreground font-semibold">Aktif</span>
             </div>
             <Link href="/settings?tab=license">
               <div 
