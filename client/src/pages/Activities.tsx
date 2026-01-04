@@ -163,6 +163,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [priceUsd, setPriceUsd] = useState(
     activity ? (activity as any).priceUsd || 0 : 0
   );
+  const [color, setColor] = useState(
+    activity ? (activity as any).color || "blue" : "blue"
+  );
   const [reservationLink, setReservationLink] = useState(
     activity ? (activity as any).reservationLink || "" : ""
   );
@@ -249,6 +252,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       dailyFrequency: Number(frequency),
       defaultTimes: JSON.stringify(times),
       defaultCapacity: Number(defaultCapacity),
+      color: color,
       confirmationMessage: formData.get("confirmationMessage") as string,
       agencyPhone: agencyPhone || null,
       adminPhone: adminPhone || null,
@@ -421,6 +425,36 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     placeholder="10"
                   />
                   <p className="text-xs text-muted-foreground">Her zaman dilimi için kaç kişi rezervasyon yapabilir</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Takvim Rengi</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "blue", label: "Mavi", bg: "bg-blue-500" },
+                      { value: "purple", label: "Mor", bg: "bg-purple-500" },
+                      { value: "green", label: "Yeşil", bg: "bg-green-500" },
+                      { value: "orange", label: "Turuncu", bg: "bg-orange-500" },
+                      { value: "pink", label: "Pembe", bg: "bg-pink-500" },
+                      { value: "cyan", label: "Camgöbeği", bg: "bg-cyan-500" },
+                      { value: "red", label: "Kırmızı", bg: "bg-red-500" },
+                      { value: "yellow", label: "Sarı", bg: "bg-yellow-500" },
+                    ].map((c) => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onClick={() => setColor(c.value)}
+                        className={`w-8 h-8 rounded-md ${c.bg} transition-all ${
+                          color === c.value 
+                            ? "ring-2 ring-offset-2 ring-primary scale-110" 
+                            : "opacity-60 hover:opacity-100"
+                        }`}
+                        title={c.label}
+                        data-testid={`color-${c.value}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Takvimde bu aktivitenin rezervasyonları seçilen renkte görünecek</p>
                 </div>
 
                 <div className="space-y-2">

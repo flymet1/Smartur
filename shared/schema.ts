@@ -16,6 +16,7 @@ export const activities = pgTable("activities", {
   dailyFrequency: integer("daily_frequency").default(1), // 1, 3, or 5 times per day
   defaultTimes: text("default_times").default("[]"), // JSON array of time strings like ["09:00", "14:00"]
   defaultCapacity: integer("default_capacity").default(10), // Default available slots per time slot
+  color: text("color").default("blue"), // Calendar color: blue, purple, green, orange, pink, cyan, red, yellow
   confirmationMessage: text("confirmation_message").default("Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."),
   reservationLink: text("reservation_link"), // External reservation page URL (Turkish)
   reservationLinkEn: text("reservation_link_en"), // External reservation page URL (English)
