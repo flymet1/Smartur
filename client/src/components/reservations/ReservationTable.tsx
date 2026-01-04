@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ReservationTableProps {
   reservations: Reservation[];
@@ -287,9 +288,14 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>İşlemler</TooltipContent>
+                          </Tooltip>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {res.trackingToken ? (

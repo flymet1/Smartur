@@ -20,6 +20,7 @@ import type { Activity } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FaqEditor, FaqItem, parseFaq, stringifyFaq } from "@/components/FaqEditor";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
@@ -104,13 +105,23 @@ function ActivityCard({ activity, onDelete }: { activity: Activity; onDelete: ()
 
         <div className="flex gap-2 pt-4 border-t mt-auto">
           <ActivityDialog activity={activity} trigger={
-            <Button variant="outline" className="flex-1">
-              <Edit className="w-4 h-4 mr-2" /> Düzenle
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" className="flex-1">
+                  <Edit className="w-4 h-4 mr-2" /> Düzenle
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Aktiviteyi düzenle</TooltipContent>
+            </Tooltip>
           } />
-          <Button variant="destructive" size="icon" onClick={onDelete}>
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="destructive" size="icon" onClick={onDelete}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Aktiviteyi sil</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>
@@ -290,9 +301,14 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
-            <Plus className="w-4 h-4 mr-2" /> Yeni Aktivite
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
+                <Plus className="w-4 h-4 mr-2" /> Yeni Aktivite
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Yeni aktivite ekle</TooltipContent>
+          </Tooltip>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-hidden flex flex-col">

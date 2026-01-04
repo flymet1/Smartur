@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import type { SupportRequest, CustomerRequest } from "@shared/schema";
 
@@ -147,11 +148,16 @@ export function Sidebar() {
           <div className="font-display font-bold text-xl text-primary">My Smartur</div>
         )}
         <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-6 w-6" />
-            </Button>
-          </SheetTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Menüyü aç</TooltipContent>
+          </Tooltip>
           <SheetContent side="left" className="w-[240px] sm:w-[300px]">
             <nav className="flex flex-col gap-2 mt-8">
               {/* Quick Access Buttons for Mobile */}

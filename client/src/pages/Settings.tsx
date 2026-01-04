@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -511,16 +512,21 @@ export default function Settings() {
                           placeholder={adminCredentialsLoaded ? "Yeni şifre girin" : "Şifre belirleyin"}
                           data-testid="input-admin-password"
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowPassword(!showPassword)}
-                          data-testid="button-toggle-password"
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-0 top-0 h-full px-3"
+                              onClick={() => setShowPassword(!showPassword)}
+                              data-testid="button-toggle-password"
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{showPassword ? "Şifreyi gizle" : "Şifreyi göster"}</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -577,28 +583,38 @@ export default function Settings() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={handleTestGmailConnection}
-                      disabled={isTestingGmail}
-                      data-testid="button-test-gmail"
-                    >
-                      {isTestingGmail ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Mail className="h-4 w-4 mr-2" />
-                      )}
-                      Bağlantıyı Test Et
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={handleDisconnectGmail}
-                      className="text-destructive"
-                      data-testid="button-disconnect-gmail"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Bağlantıyı Kaldır
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          onClick={handleTestGmailConnection}
+                          disabled={isTestingGmail}
+                          data-testid="button-test-gmail"
+                        >
+                          {isTestingGmail ? (
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4 mr-2" />
+                          )}
+                          Bağlantıyı Test Et
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Gmail bağlantısını test et</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          onClick={handleDisconnectGmail}
+                          className="text-destructive"
+                          data-testid="button-disconnect-gmail"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Bağlantıyı Kaldır
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Gmail bağlantısını kaldır</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               ) : (
@@ -636,16 +652,21 @@ export default function Settings() {
                           placeholder="16 karakterlik uygulama şifresi"
                           data-testid="input-gmail-password"
                         />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowGmailPassword(!showGmailPassword)}
-                          data-testid="button-toggle-gmail-password"
-                        >
-                          {showGmailPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-0 top-0 h-full px-3"
+                              onClick={() => setShowGmailPassword(!showGmailPassword)}
+                              data-testid="button-toggle-gmail-password"
+                            >
+                              {showGmailPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{showGmailPassword ? "Şifreyi gizle" : "Şifreyi göster"}</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   </div>
@@ -671,18 +692,23 @@ export default function Settings() {
                     </ol>
                   </div>
                   
-                  <Button
-                    onClick={handleSaveGmailSettings}
-                    disabled={isSavingGmail || !gmailUser || !gmailPassword}
-                    data-testid="button-save-gmail"
-                  >
-                    {isSavingGmail ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Mail className="h-4 w-4 mr-2" />
-                    )}
-                    Gmail'i Bağla
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleSaveGmailSettings}
+                        disabled={isSavingGmail || !gmailUser || !gmailPassword}
+                        data-testid="button-save-gmail"
+                      >
+                        {isSavingGmail ? (
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Mail className="h-4 w-4 mr-2" />
+                        )}
+                        Gmail'i Bağla
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Gmail hesabını bağla ve kaydet</TooltipContent>
+                  </Tooltip>
                 </div>
               )}
             </CardContent>
@@ -719,24 +745,34 @@ export default function Settings() {
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => logoInputRef.current?.click()}
-                      disabled={isUploadingLogo}
-                      data-testid="button-change-logo"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Degistir
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={handleRemoveLogo}
-                      className="text-destructive"
-                      data-testid="button-remove-logo"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Kaldir
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="outline"
+                          onClick={() => logoInputRef.current?.click()}
+                          disabled={isUploadingLogo}
+                          data-testid="button-change-logo"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Degistir
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Logoyu değiştir</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          onClick={handleRemoveLogo}
+                          className="text-destructive"
+                          data-testid="button-remove-logo"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Kaldir
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Logoyu kaldır</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               ) : (
@@ -885,16 +921,21 @@ export default function Settings() {
                             <QrCode className="w-5 h-5 text-muted-foreground" />
                             <span className="font-medium">QR Kod ile Bağlan</span>
                           </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={handleRefreshQR}
-                            disabled={isRefreshingQR}
-                            data-testid="button-refresh-qr"
-                          >
-                            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshingQR ? 'animate-spin' : ''}`} />
-                            Yenile
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={handleRefreshQR}
+                                disabled={isRefreshingQR}
+                                data-testid="button-refresh-qr"
+                              >
+                                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshingQR ? 'animate-spin' : ''}`} />
+                                Yenile
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>QR kodu yenile</TooltipContent>
+                          </Tooltip>
                         </div>
                         
                         <div className="bg-white dark:bg-zinc-900 p-4 rounded-lg border flex items-center justify-center min-h-[200px]">
@@ -1248,15 +1289,20 @@ export default function Settings() {
             <p className="text-sm text-muted-foreground hidden sm:block">
               Değişikliklerinizi kaydetmeyi unutmayın
             </p>
-            <Button 
-              onClick={handleSaveSettings} 
-              disabled={isSaving}
-              size="lg"
-              className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all ml-auto"
-              data-testid="button-save-all"
-            >
-              {isSaving ? "Kaydediliyor..." : "Tüm Ayarları Kaydet"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleSaveSettings} 
+                  disabled={isSaving}
+                  size="lg"
+                  className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all ml-auto"
+                  data-testid="button-save-all"
+                >
+                  {isSaving ? "Kaydediliyor..." : "Tüm Ayarları Kaydet"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Tüm ayarları kaydet</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </main>
@@ -1415,23 +1461,33 @@ function WooCommerceCard() {
               <Label>Webhook URL</Label>
               <div className="flex gap-2">
                 <Input readOnly value={webhookUrl} className="bg-muted" data-testid="input-webhook-url" />
-                <Button variant="outline" onClick={copyToClipboard} data-testid="button-copy-webhook">
-                  Kopyala
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={copyToClipboard} data-testid="button-copy-webhook">
+                      Kopyala
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Webhook URL'i panoya kopyala</TooltipContent>
+                </Tooltip>
               </div>
               <p className="text-xs text-muted-foreground">
                 Bu URL'i WooCommerce ayarlariniza ekleyin (WooCommerce &gt; Settings &gt; Advanced &gt; Webhooks).
               </p>
             </div>
 
-            <Button 
-              variant="destructive" 
-              onClick={handleDisconnect}
-              disabled={isDisconnecting}
-              data-testid="button-disconnect-woo"
-            >
-              {isDisconnecting ? "Kaldiriliyor..." : "Baglantiyi Kaldir"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDisconnect}
+                  disabled={isDisconnecting}
+                  data-testid="button-disconnect-woo"
+                >
+                  {isDisconnecting ? "Kaldiriliyor..." : "Baglantiyi Kaldir"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>WooCommerce bağlantısını kaldır</TooltipContent>
+            </Tooltip>
           </>
         ) : (
           <>
@@ -1473,13 +1529,18 @@ function WooCommerceCard() {
               WooCommerce &gt; Settings &gt; Advanced &gt; REST API bölümünden API anahtarlarınızı oluşturabilirsiniz.
             </p>
 
-            <Button 
-              onClick={handleConnect}
-              disabled={isConnecting}
-              data-testid="button-connect-woo"
-            >
-              {isConnecting ? "Baglaniyor..." : "WooCommerce'e Baglan"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                  data-testid="button-connect-woo"
+                >
+                  {isConnecting ? "Baglaniyor..." : "WooCommerce'e Baglan"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>WooCommerce mağazasına bağlan</TooltipContent>
+            </Tooltip>
           </>
         )}
       </CardContent>
@@ -1896,10 +1957,15 @@ function AutoResponsesCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-end">
-          <Button onClick={() => handleOpenDialog()} data-testid="button-add-auto-response">
-            <Plus className="w-4 h-4 mr-2" />
-            Yeni Kural Ekle
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={() => handleOpenDialog()} data-testid="button-add-auto-response">
+                <Plus className="w-4 h-4 mr-2" />
+                Yeni Kural Ekle
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Yeni otomatik yanıt kuralı ekle</TooltipContent>
+          </Tooltip>
         </div>
 
         {isLoading ? (
@@ -1935,22 +2001,32 @@ function AutoResponsesCard() {
                       <Badge variant="outline">Oncelik: {item.priority || 0}</Badge>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleOpenDialog(item)}
-                        data-testid={`button-edit-${item.id}`}
-                      >
-                        <Shield className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(item.id)}
-                        data-testid={`button-delete-${item.id}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(item)}
+                            data-testid={`button-edit-${item.id}`}
+                          >
+                            <Shield className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Kuralı düzenle</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(item.id)}
+                            data-testid={`button-delete-${item.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Kuralı sil</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -2479,14 +2555,24 @@ function HolidaysSection() {
         </div>
         <div className="flex gap-2">
           {holidays.length === 0 && (
-            <Button variant="outline" size="sm" onClick={handleImportPresets} data-testid="button-import-holidays">
-              2026 Tatillerini Ekle
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={handleImportPresets} data-testid="button-import-holidays">
+                  2026 Tatillerini Ekle
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Hazır tatil listesini içe aktar</TooltipContent>
+            </Tooltip>
           )}
-          <Button size="sm" onClick={() => { resetForm(); setIsDialogOpen(true); }} data-testid="button-add-holiday">
-            <Plus className="h-4 w-4 mr-1" />
-            Yeni Tatil
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" onClick={() => { resetForm(); setIsDialogOpen(true); }} data-testid="button-add-holiday">
+                <Plus className="h-4 w-4 mr-1" />
+                Yeni Tatil
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Yeni tatil ekle</TooltipContent>
+          </Tooltip>
         </div>
       </CardHeader>
       <CardContent>
@@ -2517,12 +2603,22 @@ function HolidaysSection() {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(holiday)} data-testid={`button-edit-holiday-${holiday.id}`}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(holiday.id)} data-testid={`button-delete-holiday-${holiday.id}`}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(holiday)} data-testid={`button-edit-holiday-${holiday.id}`}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Tatili düzenle</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(holiday.id)} data-testid={`button-delete-holiday-${holiday.id}`}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Tatili sil</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               );
@@ -2576,9 +2672,14 @@ function HolidaysSection() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Iptal</Button>
-            <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending}>
-              {createMutation.isPending || updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending}>
+                  {createMutation.isPending || updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Tatili kaydet</TooltipContent>
+            </Tooltip>
           </DialogFooter>
         </DialogContent>
       </Dialog>

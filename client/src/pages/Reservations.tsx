@@ -243,12 +243,17 @@ export default function Reservations() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" data-testid="button-export">
-                  <Download className="h-4 w-4 mr-2" />
-                  Dışa Aktar
-                </Button>
-              </DropdownMenuTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" data-testid="button-export">
+                      <Download className="h-4 w-4 mr-2" />
+                      Dışa Aktar
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Rezervasyonları dışa aktar</TooltipContent>
+              </Tooltip>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={exportToCSV} data-testid="button-export-csv">
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
@@ -292,15 +297,20 @@ export default function Reservations() {
                   {filteredReservations.length} rezervasyon
                 </Badge>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={clearDateFilter}
-                data-testid="button-clear-date-filter"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Filtreyi Kaldır
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearDateFilter}
+                    data-testid="button-clear-date-filter"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Filtreyi Kaldır
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Tarih filtresini temizle</TooltipContent>
+              </Tooltip>
             </div>
           </Card>
         )}
@@ -329,33 +339,48 @@ export default function Reservations() {
                 </SelectContent>
               </Select>
               <div className="flex border rounded-md">
-                <Button
-                  variant={viewMode === "calendar" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("calendar")}
-                  className="rounded-r-none"
-                  data-testid="button-view-calendar"
-                >
-                  <Calendar className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "mini" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("mini")}
-                  className="rounded-none border-x"
-                  data-testid="button-view-mini"
-                >
-                  <CalendarDays className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                  className="rounded-l-none"
-                  data-testid="button-view-list"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === "calendar" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("calendar")}
+                      className="rounded-r-none"
+                      data-testid="button-view-calendar"
+                    >
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Takvim görünümü</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === "mini" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("mini")}
+                      className="rounded-none border-x"
+                      data-testid="button-view-mini"
+                    >
+                      <CalendarDays className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Mini takvim görünümü</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === "list" ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setViewMode("list")}
+                      className="rounded-l-none"
+                      data-testid="button-view-list"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Liste görünümü</TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </Card>
@@ -574,23 +599,43 @@ function BigCalendar({
       <div className="p-4 border-b space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="icon" onClick={() => onNavigate('prev')} data-testid="button-calendar-prev">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => onNavigate('next')} data-testid="button-calendar-next">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" onClick={onGoToToday} data-testid="button-today">
-              Bugün
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={() => onNavigate('prev')} data-testid="button-calendar-prev">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Önceki {view === 'month' ? 'ay' : view === 'week' ? 'hafta' : 'gün'}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={() => onNavigate('next')} data-testid="button-calendar-next">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Sonraki {view === 'month' ? 'ay' : view === 'week' ? 'hafta' : 'gün'}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" onClick={onGoToToday} data-testid="button-today">
+                  Bugün
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Bugüne git</TooltipContent>
+            </Tooltip>
             
             <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2" data-testid="button-date-picker">
-                  <CalendarDays className="h-4 w-4" />
-                  <span className="capitalize font-semibold">{headerTitle}</span>
-                </Button>
-              </PopoverTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="gap-2" data-testid="button-date-picker">
+                      <CalendarDays className="h-4 w-4" />
+                      <span className="capitalize font-semibold">{headerTitle}</span>
+                    </Button>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Tarih seç</TooltipContent>
+              </Tooltip>
               <PopoverContent className="w-auto p-0" align="start">
                 <CalendarPicker
                   mode="single"
@@ -643,33 +688,48 @@ function BigCalendar({
               </SelectContent>
             </Select>
             <div className="flex border rounded-md">
-              <Button
-                variant={view === "day" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onViewChange("day")}
-                className="rounded-r-none"
-                data-testid="button-view-day"
-              >
-                Gün
-              </Button>
-              <Button
-                variant={view === "week" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onViewChange("week")}
-                className="rounded-none border-x"
-                data-testid="button-view-week"
-              >
-                Hafta
-              </Button>
-              <Button
-                variant={view === "month" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onViewChange("month")}
-                className="rounded-l-none"
-                data-testid="button-view-month"
-              >
-                Ay
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={view === "day" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => onViewChange("day")}
+                    className="rounded-r-none"
+                    data-testid="button-view-day"
+                  >
+                    Gün
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Günlük görünüm</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={view === "week" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => onViewChange("week")}
+                    className="rounded-none border-x"
+                    data-testid="button-view-week"
+                  >
+                    Hafta
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Haftalık görünüm</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={view === "month" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => onViewChange("month")}
+                    className="rounded-l-none"
+                    data-testid="button-view-month"
+                  >
+                    Ay
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Aylık görünüm</TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </div>

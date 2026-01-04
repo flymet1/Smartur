@@ -19,6 +19,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Dashboard() {
   const [reservationsDialogOpen, setReservationsDialogOpen] = useState(false);
@@ -133,10 +134,15 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-3">
             <Link href={`/reservations?date=${format(new Date(), "yyyy-MM-dd")}`}>
-              <Button variant="outline" data-testid="button-today-reservations">
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Bugünün Rezervasyonları
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" data-testid="button-today-reservations">
+                    <ClipboardList className="w-4 h-4 mr-2" />
+                    Bugünün Rezervasyonları
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Bugünün rezervasyonlarını görüntüle</TooltipContent>
+              </Tooltip>
             </Link>
             <div 
               className={`flex items-center gap-2 text-sm px-4 py-2 rounded-full border shadow-sm hover-elevate cursor-pointer ${
@@ -160,10 +166,15 @@ export default function Dashboard() {
             Tüm rezervasyonlarınızı takvim görünümünde görmek ve yönetmek için Rezervasyonlar sayfasına gidin.
           </p>
           <Link href="/reservations">
-            <Button size="lg" data-testid="button-go-to-reservations">
-              <ClipboardList className="w-4 h-4 mr-2" />
-              Rezervasyonlara Git
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="lg" data-testid="button-go-to-reservations">
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Rezervasyonlara Git
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Tüm rezervasyonları görüntüle</TooltipContent>
+            </Tooltip>
           </Link>
         </div>
 
@@ -225,11 +236,21 @@ export default function Dashboard() {
                 );
               })}
               <div className="flex justify-between items-center pt-4 border-t">
-                <Button variant="outline" onClick={markReservationsAsViewed} data-testid="button-mark-viewed">
-                  Tümünü Görüldü İşaretle
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={markReservationsAsViewed} data-testid="button-mark-viewed">
+                      Tümünü Görüldü İşaretle
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Tüm yeni rezervasyonları görüldü olarak işaretle</TooltipContent>
+                </Tooltip>
                 <Link href="/reservations">
-                  <Button data-testid="button-view-all">Tüm Rezervasyonlar</Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button data-testid="button-view-all">Tüm Rezervasyonlar</Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Tüm rezervasyonları görüntüle</TooltipContent>
+                  </Tooltip>
                 </Link>
               </div>
             </div>
