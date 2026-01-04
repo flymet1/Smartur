@@ -3,7 +3,9 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useState, useEffect, useMemo } from "react";
 import {
@@ -353,7 +355,10 @@ export default function Reservations() {
             onNavigate={navigateCalendar}
             onGoToToday={goToToday}
             onDateClick={handleAddReservationForDate}
+            onDateSelect={setCurrentDate}
             statusFilter={statusFilter}
+            activityFilter={activityFilter}
+            onActivityFilterChange={setActivityFilter}
           />
         )}
       </main>
@@ -370,7 +375,10 @@ interface BigCalendarProps {
   onNavigate: (direction: 'prev' | 'next') => void;
   onGoToToday: () => void;
   onDateClick: (dateStr: string) => void;
+  onDateSelect: (date: Date) => void;
   statusFilter: string;
+  activityFilter: string;
+  onActivityFilterChange: (value: string) => void;
 }
 
 function BigCalendar({ 
@@ -382,8 +390,12 @@ function BigCalendar({
   onNavigate, 
   onGoToToday,
   onDateClick,
-  statusFilter
+  onDateSelect,
+  statusFilter,
+  activityFilter,
+  onActivityFilterChange
 }: BigCalendarProps) {
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       return apiRequest('PATCH', `/api/reservations/${id}/status`, { status });
@@ -411,9 +423,11 @@ function BigCalendar({
     return colors[activityId % colors.length];
   };
 
-  const filteredReservations = statusFilter === "all" 
-    ? reservations 
-    : reservations.filter(r => r.status === statusFilter);
+  const filteredReservations = reservations.filter(r => {
+    const matchesStatus = statusFilter === "all" || r.status === statusFilter;
+    const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
+    return matchesStatus && matchesActivity;
+  });
 
   const getReservationsForDate = (dateStr: string) => {
     return filteredReservations.filter(r => r.date === dateStr);
@@ -474,47 +488,84 @@ function BigCalendar({
 
   return (
     <Card className="overflow-hidden">
-      <div className="p-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => onNavigate('prev')} data-testid="button-calendar-prev">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => onNavigate('next')} data-testid="button-calendar-next">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" onClick={onGoToToday} data-testid="button-today">
-            Bugün
-          </Button>
-          <h2 className="text-lg font-semibold capitalize" data-testid="text-calendar-title">{headerTitle}</h2>
-        </div>
-        <div className="flex border rounded-md">
-          <Button
-            variant={view === "day" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewChange("day")}
-            className="rounded-r-none"
-            data-testid="button-view-day"
-          >
-            Gün
-          </Button>
-          <Button
-            variant={view === "week" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewChange("week")}
-            className="rounded-none border-x"
-            data-testid="button-view-week"
-          >
-            Hafta
-          </Button>
-          <Button
-            variant={view === "month" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewChange("month")}
-            className="rounded-l-none"
-            data-testid="button-view-month"
-          >
-            Ay
-          </Button>
+      <div className="p-4 border-b space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="icon" onClick={() => onNavigate('prev')} data-testid="button-calendar-prev">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => onNavigate('next')} data-testid="button-calendar-next">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" onClick={onGoToToday} data-testid="button-today">
+              Bugün
+            </Button>
+            
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2" data-testid="button-date-picker">
+                  <CalendarDays className="h-4 w-4" />
+                  <span className="capitalize font-semibold">{headerTitle}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarPicker
+                  mode="single"
+                  selected={currentDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      onDateSelect(date);
+                      setDatePickerOpen(false);
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={activityFilter} onValueChange={onActivityFilterChange}>
+              <SelectTrigger className="w-40" data-testid="select-calendar-activity">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Aktivite" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm Aktiviteler</SelectItem>
+                {activities.map(a => (
+                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex border rounded-md">
+              <Button
+                variant={view === "day" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => onViewChange("day")}
+                className="rounded-r-none"
+                data-testid="button-view-day"
+              >
+                Gün
+              </Button>
+              <Button
+                variant={view === "week" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => onViewChange("week")}
+                className="rounded-none border-x"
+                data-testid="button-view-week"
+              >
+                Hafta
+              </Button>
+              <Button
+                variant={view === "month" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => onViewChange("month")}
+                className="rounded-l-none"
+                data-testid="button-view-month"
+              >
+                Ay
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -560,14 +611,26 @@ function BigCalendar({
                           {totalPeople}
                         </Badge>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="text-xs space-y-1">
-                          {Object.entries(activityOccupancy).map(([id, data]) => (
-                            <div key={id} className="flex justify-between gap-3">
-                              <span>{data.name}:</span>
-                              <span className="font-medium">{data.count}/{data.total}</span>
-                            </div>
-                          ))}
+                      <TooltipContent side="right" className="max-w-[200px]">
+                        <div className="text-xs space-y-2">
+                          <div className="font-semibold border-b pb-1 mb-1 flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            Toplam {totalPeople} kişi rezervasyon
+                          </div>
+                          <div className="text-muted-foreground text-[10px] mb-1">
+                            Aktivite bazlı doluluk oranları:
+                          </div>
+                          {Object.entries(activityOccupancy).map(([id, data]) => {
+                            const percentage = Math.round((data.count / data.total) * 100);
+                            return (
+                              <div key={id} className="flex justify-between gap-3 items-center">
+                                <span className="truncate flex-1">{data.name}:</span>
+                                <span className={`font-medium ${percentage >= 80 ? 'text-red-600' : percentage >= 50 ? 'text-amber-600' : 'text-green-600'}`}>
+                                  {data.count}/{data.total} (%{percentage})
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </TooltipContent>
                     </Tooltip>
