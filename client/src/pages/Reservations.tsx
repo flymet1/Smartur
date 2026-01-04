@@ -56,10 +56,10 @@ export default function Reservations() {
   const { data: holidays = [] } = useQuery<Holiday[]>({
     queryKey: ['/api/holidays']
   });
-  const { data: bulkMessageTemplateSetting } = useQuery<{ key: string; value: string | null }>({
-    queryKey: ['/api/settings', 'bulkMessageTemplate'],
+  const { data: bulkTemplatesSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'bulkMessageTemplates'],
     queryFn: async () => {
-      const res = await fetch('/api/settings/bulkMessageTemplate');
+      const res = await fetch('/api/settings/bulkMessageTemplates');
       return res.json();
     },
   });
@@ -88,6 +88,7 @@ export default function Reservations() {
   const [bulkWhatsAppOpen, setBulkWhatsAppOpen] = useState(false);
   const [bulkWhatsAppMessage, setBulkWhatsAppMessage] = useState("");
   const [bulkWhatsAppSending, setBulkWhatsAppSending] = useState(false);
+  const [bulkTemplateType, setBulkTemplateType] = useState<"confirmed" | "pending" | "cancelled">("confirmed");
   const { toast } = useToast();
 
   const statusMutation = useMutation({
@@ -978,8 +979,20 @@ export default function Reservations() {
                       toast({ title: "Uyarı", description: "Seçili rezervasyon bulunamadı.", variant: "destructive" });
                       return;
                     }
-                    // Generate default message from template
-                    const template = bulkMessageTemplateSetting?.value || "Merhaba {isim},\n\nRezervasyon bilgilendirmesi:\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz.";
+                    // Set initial template type based on first selected reservation's status
+                    const firstStatus = selected[0]?.status || "confirmed";
+                    const templateType = firstStatus === "cancelled" ? "cancelled" : firstStatus === "pending" ? "pending" : "confirmed";
+                    setBulkTemplateType(templateType);
+                    
+                    // Generate message from appropriate template
+                    const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
+                    const defaultTemplates = {
+                      confirmed: "Merhaba {isim},\n\nRezervasyon onaylandı!\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz.",
+                      pending: "Merhaba {isim},\n\nRezervasyon talebiniz değerlendiriliyor.\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nEn kısa sürede bilgilendirme yapılacaktır.",
+                      cancelled: "Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nSorularınız için bizimle iletişime geçebilirsiniz."
+                    };
+                    const template = templates?.[templateType] || defaultTemplates[templateType];
+                    
                     let defaultMsg: string;
                     if (selected.length === 1) {
                       const r = selected[0];
@@ -1490,6 +1503,75 @@ export default function Reservations() {
                       ))}
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <Label>Mesaj Şablonu</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={bulkTemplateType === "confirmed" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setBulkTemplateType("confirmed");
+                          const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
+                          const template = templates?.confirmed || "Merhaba {isim},\n\nRezervasyon onaylandı!\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz.";
+                          if (selected.length === 1) {
+                            const r = selected[0];
+                            const activityName = activities?.find(a => a.id === r.activityId)?.name || "";
+                            setBulkWhatsAppMessage(template.replace(/{isim}/g, r.customerName).replace(/{tarih}/g, format(new Date(r.date), "d MMMM yyyy", { locale: tr })).replace(/{saat}/g, r.time || "").replace(/{aktivite}/g, activityName));
+                          } else {
+                            setBulkWhatsAppMessage(template.replace(/{isim}/g, "").replace(/{tarih}/g, "").replace(/{saat}/g, "").replace(/{aktivite}/g, "").replace(/Aktivite:\s*\n/g, "").replace(/Tarih:\s*\n/g, "").replace(/Saat:\s*\n/g, "").replace(/\n\n+/g, "\n\n").trim());
+                          }
+                        }}
+                        className="flex-1"
+                        data-testid="button-template-confirmed"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
+                        Onaylandı
+                      </Button>
+                      <Button
+                        variant={bulkTemplateType === "pending" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setBulkTemplateType("pending");
+                          const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
+                          const template = templates?.pending || "Merhaba {isim},\n\nRezervasyon talebiniz değerlendiriliyor.\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nEn kısa sürede bilgilendirme yapılacaktır.";
+                          if (selected.length === 1) {
+                            const r = selected[0];
+                            const activityName = activities?.find(a => a.id === r.activityId)?.name || "";
+                            setBulkWhatsAppMessage(template.replace(/{isim}/g, r.customerName).replace(/{tarih}/g, format(new Date(r.date), "d MMMM yyyy", { locale: tr })).replace(/{saat}/g, r.time || "").replace(/{aktivite}/g, activityName));
+                          } else {
+                            setBulkWhatsAppMessage(template.replace(/{isim}/g, "").replace(/{tarih}/g, "").replace(/{saat}/g, "").replace(/{aktivite}/g, "").replace(/Aktivite:\s*\n/g, "").replace(/Tarih:\s*\n/g, "").replace(/Saat:\s*\n/g, "").replace(/\n\n+/g, "\n\n").trim());
+                          }
+                        }}
+                        className="flex-1"
+                        data-testid="button-template-pending"
+                      >
+                        <Clock className="h-4 w-4 mr-1 text-yellow-600" />
+                        Beklemede
+                      </Button>
+                      <Button
+                        variant={bulkTemplateType === "cancelled" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setBulkTemplateType("cancelled");
+                          const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
+                          const template = templates?.cancelled || "Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nSorularınız için bizimle iletişime geçebilirsiniz.";
+                          if (selected.length === 1) {
+                            const r = selected[0];
+                            const activityName = activities?.find(a => a.id === r.activityId)?.name || "";
+                            setBulkWhatsAppMessage(template.replace(/{isim}/g, r.customerName).replace(/{tarih}/g, format(new Date(r.date), "d MMMM yyyy", { locale: tr })).replace(/{saat}/g, r.time || "").replace(/{aktivite}/g, activityName));
+                          } else {
+                            setBulkWhatsAppMessage(template.replace(/{isim}/g, "").replace(/{tarih}/g, "").replace(/{saat}/g, "").replace(/{aktivite}/g, "").replace(/Aktivite:\s*\n/g, "").replace(/Tarih:\s*\n/g, "").replace(/Saat:\s*\n/g, "").replace(/\n\n+/g, "\n\n").trim());
+                          }
+                        }}
+                        className="flex-1"
+                        data-testid="button-template-cancelled"
+                      >
+                        <XCircle className="h-4 w-4 mr-1 text-red-600" />
+                        İptal
+                      </Button>
+                    </div>
+                  </div>
 
                   <div className="space-y-2">
                     <Label>Mesaj İçeriği</Label>

@@ -68,11 +68,17 @@ export default function Settings() {
   const [isTestingGmail, setIsTestingGmail] = useState(false);
   const [isSavingGmail, setIsSavingGmail] = useState(false);
   
-  // Bulk WhatsApp Message Template
-  const [bulkMessageTemplate, setBulkMessageTemplate] = useState(
-    "Merhaba {isim},\n\nRezervasyon bilgilendirmesi:\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz."
+  // Bulk WhatsApp Message Templates (by status)
+  const [bulkTemplateConfirmed, setBulkTemplateConfirmed] = useState(
+    "Merhaba {isim},\n\nRezervasyon onaylandı!\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz."
   );
-  const [bulkMessageTemplateLoaded, setBulkMessageTemplateLoaded] = useState(false);
+  const [bulkTemplatePending, setBulkTemplatePending] = useState(
+    "Merhaba {isim},\n\nRezervasyon talebiniz değerlendiriliyor.\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nEn kısa sürede bilgilendirme yapılacaktır."
+  );
+  const [bulkTemplateCancelled, setBulkTemplateCancelled] = useState(
+    "Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nSorularınız için bizimle iletişime geçebilirsiniz."
+  );
+  const [bulkTemplatesLoaded, setBulkTemplatesLoaded] = useState(false);
 
   
   // Load bot access settings
@@ -105,11 +111,11 @@ export default function Settings() {
   // State to track if bot prompt has been loaded
   const [botPromptLoaded, setBotPromptLoaded] = useState(false);
 
-  // Load bulk message template
-  const { data: bulkMessageTemplateSetting } = useQuery<{ key: string; value: string | null }>({
-    queryKey: ['/api/settings', 'bulkMessageTemplate'],
+  // Load bulk message templates
+  const { data: bulkTemplatesSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'bulkMessageTemplates'],
     queryFn: async () => {
-      const res = await fetch('/api/settings/bulkMessageTemplate');
+      const res = await fetch('/api/settings/bulkMessageTemplates');
       return res.json();
     },
   });
@@ -167,13 +173,18 @@ export default function Settings() {
     }
   }, [botPromptSetting?.value, botPromptLoaded]);
 
-  // Apply loaded bulk message template when data arrives
+  // Apply loaded bulk message templates when data arrives
   useEffect(() => {
-    if (bulkMessageTemplateSetting?.value && !bulkMessageTemplateLoaded) {
-      setBulkMessageTemplate(bulkMessageTemplateSetting.value);
-      setBulkMessageTemplateLoaded(true);
+    if (bulkTemplatesSetting?.value && !bulkTemplatesLoaded) {
+      try {
+        const templates = JSON.parse(bulkTemplatesSetting.value);
+        if (templates.confirmed) setBulkTemplateConfirmed(templates.confirmed);
+        if (templates.pending) setBulkTemplatePending(templates.pending);
+        if (templates.cancelled) setBulkTemplateCancelled(templates.cancelled);
+        setBulkTemplatesLoaded(true);
+      } catch {}
     }
-  }, [bulkMessageTemplateSetting?.value, bulkMessageTemplateLoaded]);
+  }, [bulkTemplatesSetting?.value, bulkTemplatesLoaded]);
 
   
   const handleSaveGmailSettings = async () => {
@@ -346,10 +357,14 @@ export default function Settings() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: botAccessValue })
         }),
-        fetch("/api/settings/bulkMessageTemplate", {
+        fetch("/api/settings/bulkMessageTemplates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ value: bulkMessageTemplate })
+          body: JSON.stringify({ value: JSON.stringify({
+            confirmed: bulkTemplateConfirmed,
+            pending: bulkTemplatePending,
+            cancelled: bulkTemplateCancelled
+          }) })
         })
       ];
 
@@ -767,32 +782,67 @@ export default function Settings() {
               <div className="border-t pt-6">
                 <div className="space-y-4">
                   <div className="space-y-0.5">
-                    <Label>Toplu Bildirim Mesaj Şablonu</Label>
-                    <p className="text-sm text-muted-foreground">Toplu WhatsApp bildirimi gönderirken kullanılacak varsayılan mesaj şablonu</p>
+                    <Label>Toplu Bildirim Mesaj Şablonları</Label>
+                    <p className="text-sm text-muted-foreground">Rezervasyon durumuna göre farklı mesaj şablonları tanımlayın</p>
                   </div>
                   
-                  <div className="space-y-2 bg-muted/50 p-4 rounded-lg">
-                    <Textarea 
-                      id="bulkMessageTemplate"
-                      value={bulkMessageTemplate}
-                      onChange={(e) => setBulkMessageTemplate(e.target.value)}
-                      placeholder="Toplu bildirim mesaj şablonunuzu yazın..."
-                      className="min-h-[120px]"
-                      data-testid="input-bulk-message-template"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Desteklenen değişkenler:
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                  <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
+                    <p className="font-medium">Kullanılabilir Değişkenler:</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
                       <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
                       <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
                       <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktivite{'}'}</code> - Aktivite adı</div>
                       <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saat{'}'}</code> - Rezervasyon saati</div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Tek rezervasyon seçildiğinde değişkenler otomatik doldurulur. Birden fazla seçildiğinde genel mesaj kullanılır.
-                    </p>
                   </div>
+
+                  <div className="space-y-4">
+                    <Card className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Onaylandı</Badge>
+                        <span className="text-sm text-muted-foreground">Onaylanan rezervasyonlar için</span>
+                      </div>
+                      <Textarea 
+                        value={bulkTemplateConfirmed}
+                        onChange={(e) => setBulkTemplateConfirmed(e.target.value)}
+                        placeholder="Onay mesajı şablonu..."
+                        className="min-h-[100px]"
+                        data-testid="input-bulk-template-confirmed"
+                      />
+                    </Card>
+
+                    <Card className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">Beklemede</Badge>
+                        <span className="text-sm text-muted-foreground">Değerlendirilen rezervasyonlar için</span>
+                      </div>
+                      <Textarea 
+                        value={bulkTemplatePending}
+                        onChange={(e) => setBulkTemplatePending(e.target.value)}
+                        placeholder="Beklemede mesajı şablonu..."
+                        className="min-h-[100px]"
+                        data-testid="input-bulk-template-pending"
+                      />
+                    </Card>
+
+                    <Card className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">İptal</Badge>
+                        <span className="text-sm text-muted-foreground">İptal edilen rezervasyonlar için</span>
+                      </div>
+                      <Textarea 
+                        value={bulkTemplateCancelled}
+                        onChange={(e) => setBulkTemplateCancelled(e.target.value)}
+                        placeholder="İptal mesajı şablonu..."
+                        className="min-h-[100px]"
+                        data-testid="input-bulk-template-cancelled"
+                      />
+                    </Card>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Tek rezervasyon seçildiğinde değişkenler otomatik doldurulur. Birden fazla seçildiğinde genel mesaj kullanılır.
+                  </p>
                 </div>
               </div>
             </CardContent>
