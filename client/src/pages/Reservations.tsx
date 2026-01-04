@@ -495,10 +495,13 @@ export default function Reservations() {
 
   const filteredReservations = (reservations || [])
     .filter(r => {
+      const searchLower = search.toLowerCase();
       const matchesSearch = 
-        r.customerName.toLowerCase().includes(search.toLowerCase()) || 
-        r.customerPhone.includes(search) ||
-        (r.orderNumber && r.orderNumber.toLowerCase().includes(search.toLowerCase()));
+        r.customerName.toLowerCase().includes(searchLower) || 
+        r.customerPhone.toLowerCase().includes(searchLower) ||
+        (r.orderNumber && r.orderNumber.toLowerCase().includes(searchLower)) ||
+        (r.hotelName && r.hotelName.toLowerCase().includes(searchLower)) ||
+        (r.customerEmail && r.customerEmail.toLowerCase().includes(searchLower));
       const matchesStatus = statusFilter === "all" || r.status === statusFilter;
       const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
       const matchesSource = sourceFilter === "all" || r.source === sourceFilter;
