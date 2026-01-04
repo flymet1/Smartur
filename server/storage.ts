@@ -22,6 +22,7 @@ import {
   autoResponses,
   customerRequests,
   license,
+  requestMessageTemplates,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -66,6 +67,8 @@ import {
   type InsertCustomerRequest,
   type License,
   type InsertLicense,
+  type RequestMessageTemplate,
+  type InsertRequestMessageTemplate,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -227,6 +230,14 @@ export interface IStorage {
     canWrite?: boolean;
   }>;
   getLicenseUsage(): Promise<{ activitiesUsed: number; reservationsThisMonth: number }>;
+
+  // Request Message Templates
+  getRequestMessageTemplates(): Promise<RequestMessageTemplate[]>;
+  getRequestMessageTemplate(id: number): Promise<RequestMessageTemplate | undefined>;
+  createRequestMessageTemplate(template: InsertRequestMessageTemplate): Promise<RequestMessageTemplate>;
+  updateRequestMessageTemplate(id: number, template: Partial<InsertRequestMessageTemplate>): Promise<RequestMessageTemplate>;
+  deleteRequestMessageTemplate(id: number): Promise<void>;
+  seedDefaultRequestMessageTemplates(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1627,6 +1638,81 @@ export class DatabaseStorage implements IStorage {
       activitiesUsed: activeActivities.length,
       reservationsThisMonth: monthlyReservations.length
     };
+  }
+
+  // Request Message Templates
+  async getRequestMessageTemplates(): Promise<RequestMessageTemplate[]> {
+    return await db.select().from(requestMessageTemplates).orderBy(requestMessageTemplates.name);
+  }
+
+  async getRequestMessageTemplate(id: number): Promise<RequestMessageTemplate | undefined> {
+    const [template] = await db.select().from(requestMessageTemplates).where(eq(requestMessageTemplates.id, id));
+    return template;
+  }
+
+  async createRequestMessageTemplate(template: InsertRequestMessageTemplate): Promise<RequestMessageTemplate> {
+    const [newTemplate] = await db.insert(requestMessageTemplates).values(template).returning();
+    return newTemplate;
+  }
+
+  async updateRequestMessageTemplate(id: number, template: Partial<InsertRequestMessageTemplate>): Promise<RequestMessageTemplate> {
+    const [updated] = await db.update(requestMessageTemplates).set(template).where(eq(requestMessageTemplates.id, id)).returning();
+    return updated;
+  }
+
+  async deleteRequestMessageTemplate(id: number): Promise<void> {
+    await db.delete(requestMessageTemplates).where(eq(requestMessageTemplates.id, id));
+  }
+
+  async seedDefaultRequestMessageTemplates(): Promise<void> {
+    const existing = await this.getRequestMessageTemplates();
+    if (existing.length > 0) return;
+
+    const defaultTemplates = [
+      {
+        name: "Onaylandı",
+        templateType: "approved",
+        messageContent: `Merhaba {musteri_adi},
+
+{talep_turu} talebiniz onaylanmıştır.{yeni_saat}
+
+Sorularınız için bize ulaşabilirsiniz.
+
+Sky Fethiye`,
+        isDefault: true,
+        isActive: true
+      },
+      {
+        name: "Değerlendiriliyor",
+        templateType: "pending",
+        messageContent: `Merhaba {musteri_adi},
+
+{talep_turu} talebiniz alınmıştır ve değerlendirilmektedir.
+
+En kısa sürede size dönüş yapacağız.
+
+Sky Fethiye`,
+        isDefault: true,
+        isActive: true
+      },
+      {
+        name: "Reddedildi",
+        templateType: "rejected",
+        messageContent: `Merhaba {musteri_adi},
+
+Üzgünüz, {talep_turu} talebinizi maalesef karşılayamıyoruz.{red_sebebi}
+
+Anlayışınız için teşekkür ederiz.
+
+Sky Fethiye`,
+        isDefault: true,
+        isActive: true
+      }
+    ];
+
+    for (const template of defaultTemplates) {
+      await this.createRequestMessageTemplate(template);
+    }
   }
 }
 

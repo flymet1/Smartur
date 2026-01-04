@@ -468,3 +468,21 @@ export type InsertAutoResponse = z.infer<typeof insertAutoResponseSchema>;
 export const insertLicenseSchema = createInsertSchema(license).omit({ id: true, createdAt: true, updatedAt: true, lastVerifiedAt: true });
 export type License = typeof license.$inferSelect;
 export type InsertLicense = z.infer<typeof insertLicenseSchema>;
+
+// === REQUEST MESSAGE TEMPLATES ===
+
+// Müşteri Talepleri için hazır mesaj şablonları
+export const requestMessageTemplates = pgTable("request_message_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Şablon adı (örn: "Onaylandı", "Değerlendiriliyor", "İptal Edildi")
+  templateType: text("template_type").notNull(), // approved, pending, rejected
+  messageContent: text("message_content").notNull(), // Dinamik mesaj içeriği
+  isDefault: boolean("is_default").default(false), // Varsayılan şablon mu
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === REQUEST MESSAGE TEMPLATE SCHEMAS & TYPES ===
+export const insertRequestMessageTemplateSchema = createInsertSchema(requestMessageTemplates).omit({ id: true, createdAt: true });
+export type RequestMessageTemplate = typeof requestMessageTemplates.$inferSelect;
+export type InsertRequestMessageTemplate = z.infer<typeof insertRequestMessageTemplateSchema>;
