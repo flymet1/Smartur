@@ -744,12 +744,13 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="connection" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="connection" data-testid="tab-whatsapp-connection">
                     <Smartphone className="w-4 h-4 mr-2" />
                     Baglanti
                   </TabsTrigger>
                   <TabsTrigger value="bot" data-testid="tab-whatsapp-bot">Bot Ayarlari</TabsTrigger>
+                  <TabsTrigger value="templates" data-testid="tab-whatsapp-templates">Sablonlar</TabsTrigger>
                   <TabsTrigger value="bot-test" data-testid="tab-whatsapp-bot-test">Bot Test</TabsTrigger>
                   <TabsTrigger value="support" data-testid="tab-whatsapp-support">Destek</TabsTrigger>
                 </TabsList>
@@ -1111,6 +1112,10 @@ export default function Settings() {
                       Müşteri destek talebinin gelmesi gereken e-posta adresi. Bot çözemediği sorular için bu adrese bildirim gönderilecek.
                     </p>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="templates" className="space-y-6 mt-4">
+                  <RequestMessageTemplatesSection />
                 </TabsContent>
 
                 <TabsContent value="bot-test" className="space-y-6 mt-4">
@@ -2827,6 +2832,170 @@ function LicenseSection() {
         </CardContent>
       </Card>
     </>
+  );
+}
+
+// === REQUEST MESSAGE TEMPLATES SECTION ===
+interface RequestMessageTemplate {
+  id: number;
+  name: string;
+  templateType: string;
+  messageContent: string;
+  isDefault: boolean | null;
+  isActive: boolean | null;
+  createdAt: string | null;
+}
+
+function RequestMessageTemplatesSection() {
+  const { toast } = useToast();
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { data: templates, refetch } = useQuery<RequestMessageTemplate[]>({
+    queryKey: ['/api/request-message-templates'],
+  });
+
+  const handleEdit = (template: RequestMessageTemplate) => {
+    setEditingId(template.id);
+    setEditName(template.name);
+    setEditType(template.templateType);
+    setEditContent(template.messageContent);
+  };
+
+  const handleSave = async () => {
+    if (!editingId) return;
+    setIsSaving(true);
+    try {
+      await apiRequest('PATCH', `/api/request-message-templates/${editingId}`, {
+        name: editName,
+        templateType: editType,
+        messageContent: editContent
+      });
+      toast({ title: "Başarılı", description: "Şablon güncellendi." });
+      setEditingId(null);
+      refetch();
+    } catch (err) {
+      toast({ title: "Hata", description: "Şablon güncellenemedi.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditType("");
+    setEditContent("");
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'approved': return 'Onaylandı';
+      case 'pending': return 'Değerlendiriliyor';
+      case 'rejected': return 'Reddedildi';
+      default: return type;
+    }
+  };
+
+  const getTypeBadgeClass = (type: string) => {
+    switch (type) {
+      case 'approved': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
+      case 'pending': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300';
+      case 'rejected': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+      default: return '';
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h4 className="font-medium">Talep Mesaj Şablonları</h4>
+        <p className="text-sm text-muted-foreground">
+          Müşteri taleplerine yanıt verirken kullanılacak hazır mesaj şablonları
+        </p>
+      </div>
+
+      <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
+        <p className="font-medium">Kullanılabilir Değişkenler:</p>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}musteri_adi{'}'}</code> - Müşteri adı</div>
+          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}talep_turu{'}'}</code> - Talep türü</div>
+          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}yeni_saat{'}'}</code> - Yeni saat (saat değişikliği için)</div>
+          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}red_sebebi{'}'}</code> - Ret sebebi</div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {templates?.map((template) => (
+          <Card key={template.id} className="p-4">
+            {editingId === template.id ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Şablon Adı</Label>
+                    <Input 
+                      value={editName} 
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Şablon adı"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Şablon Tipi</Label>
+                    <Select value={editType} onValueChange={setEditType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="approved">Onaylandı</SelectItem>
+                        <SelectItem value="pending">Değerlendiriliyor</SelectItem>
+                        <SelectItem value="rejected">Reddedildi</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Mesaj İçeriği</Label>
+                  <Textarea 
+                    value={editContent} 
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="min-h-[150px]"
+                    placeholder="Mesaj içeriği..."
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={handleCancel} disabled={isSaving}>
+                    İptal
+                  </Button>
+                  <Button size="sm" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? "Kaydediliyor..." : "Kaydet"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{template.name}</span>
+                    <Badge className={getTypeBadgeClass(template.templateType)}>
+                      {getTypeLabel(template.templateType)}
+                    </Badge>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => handleEdit(template)}>
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <pre className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-lg">
+                  {template.messageContent}
+                </pre>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }
 
