@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -59,6 +59,15 @@ export default function Reservations() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [showNewReservations, setShowNewReservations] = useState(false);
   const { toast } = useToast();
+
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+    },
+  });
 
   const lastViewedKey = "lastViewedReservationsAt";
   const lastViewedAt = useMemo(() => {
@@ -2379,11 +2388,15 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                                   </div>
                                 </div>
                                 <DropdownMenu>
-                                  <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} data-testid={`mini-status-dropdown-${reservation.id}`}>
-                                    <Badge className={`${status.className} text-xs cursor-pointer`}>
+                                  <DropdownMenuTrigger asChild>
+                                    <button 
+                                      onClick={(e) => e.stopPropagation()} 
+                                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium cursor-pointer ${status.className}`}
+                                      data-testid={`mini-status-dropdown-${reservation.id}`}
+                                    >
                                       {status.label}
                                       <ChevronDown className="h-3 w-3 ml-1" />
-                                    </Badge>
+                                    </button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem 
@@ -2438,11 +2451,15 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                           </div>
                         </div>
                         <DropdownMenu>
-                          <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} data-testid={`mini-status-dropdown-${reservation.id}`}>
-                            <Badge className={`${status.className} cursor-pointer`}>
+                          <DropdownMenuTrigger asChild>
+                            <button 
+                              onClick={(e) => e.stopPropagation()} 
+                              className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium cursor-pointer ${status.className}`}
+                              data-testid={`mini-status-dropdown-${reservation.id}`}
+                            >
                               {status.label}
                               <ChevronDown className="h-3 w-3 ml-1" />
-                            </Badge>
+                            </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
