@@ -3911,6 +3911,88 @@ Sky Fethiye`;
     }
   });
 
+  // === REQUEST MESSAGE TEMPLATES ===
+  
+  // Get all request message templates
+  app.get("/api/request-message-templates", async (req, res) => {
+    try {
+      // Seed default templates if none exist
+      await storage.seedDefaultRequestMessageTemplates();
+      const templates = await storage.getRequestMessageTemplates();
+      res.json(templates);
+    } catch (err) {
+      console.error("Mesaj sablonlari alinamadi:", err);
+      res.status(500).json({ error: "Mesaj sablonlari alinamadi" });
+    }
+  });
+
+  // Get single request message template
+  app.get("/api/request-message-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getRequestMessageTemplate(Number(req.params.id));
+      if (!template) {
+        return res.status(404).json({ error: "Sablon bulunamadi" });
+      }
+      res.json(template);
+    } catch (err) {
+      res.status(500).json({ error: "Sablon alinamadi" });
+    }
+  });
+
+  // Create request message template
+  app.post("/api/request-message-templates", async (req, res) => {
+    try {
+      const { name, templateType, messageContent, isDefault, isActive } = req.body;
+      
+      if (!name || !templateType || !messageContent) {
+        return res.status(400).json({ error: "Sablon adi, tipi ve icerik zorunlu" });
+      }
+      
+      const template = await storage.createRequestMessageTemplate({
+        name,
+        templateType,
+        messageContent,
+        isDefault: isDefault ?? false,
+        isActive: isActive ?? true
+      });
+      res.status(201).json(template);
+    } catch (err) {
+      console.error("Sablon olusturma hatasi:", err);
+      res.status(400).json({ error: "Sablon olusturulamadi" });
+    }
+  });
+
+  // Update request message template
+  app.patch("/api/request-message-templates/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { name, templateType, messageContent, isDefault, isActive } = req.body;
+      
+      const updateData: Record<string, unknown> = {};
+      if (name !== undefined) updateData.name = name;
+      if (templateType !== undefined) updateData.templateType = templateType;
+      if (messageContent !== undefined) updateData.messageContent = messageContent;
+      if (isDefault !== undefined) updateData.isDefault = isDefault;
+      if (isActive !== undefined) updateData.isActive = isActive;
+      
+      const updated = await storage.updateRequestMessageTemplate(id, updateData);
+      res.json(updated);
+    } catch (err) {
+      console.error("Sablon guncelleme hatasi:", err);
+      res.status(400).json({ error: "Sablon guncellenemedi" });
+    }
+  });
+
+  // Delete request message template
+  app.delete("/api/request-message-templates/:id", async (req, res) => {
+    try {
+      await storage.deleteRequestMessageTemplate(Number(req.params.id));
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ error: "Sablon silinemedi" });
+    }
+  });
+
   // === LICENSE & SUBSCRIPTION ===
   
   // Get current license
