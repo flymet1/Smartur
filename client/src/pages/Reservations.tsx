@@ -52,6 +52,7 @@ export default function Reservations() {
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [packageTourFilter, setPackageTourFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>(urlDate || "");
+  const [dateRangeFilter, setDateRangeFilter] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name">("date-desc");
   const [selectedDateForNew, setSelectedDateForNew] = useState<string>("");
   const [newReservationOpen, setNewReservationOpen] = useState(false);
@@ -203,7 +204,17 @@ export default function Reservations() {
         (r.orderNumber && r.orderNumber.toLowerCase().includes(search.toLowerCase()));
       const matchesStatus = statusFilter === "all" || r.status === statusFilter;
       const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
-      const matchesDate = !dateFilter || r.date === dateFilter;
+      const matchesDate = (() => {
+        if (dateRangeFilter.from || dateRangeFilter.to) {
+          const reservationDate = new Date(r.date);
+          if (dateRangeFilter.from && dateRangeFilter.to) {
+            return reservationDate >= dateRangeFilter.from && reservationDate <= dateRangeFilter.to;
+          } else if (dateRangeFilter.from) {
+            return reservationDate >= dateRangeFilter.from;
+          }
+        }
+        return !dateFilter || r.date === dateFilter;
+      })();
       return matchesSearch && matchesStatus && matchesActivity && matchesDate;
     })
     .sort((a, b) => {
@@ -355,17 +366,21 @@ export default function Reservations() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <Button 
-                        variant={dateFilter ? "default" : "outline"} 
+                        variant={(dateRangeFilter.from || dateRangeFilter.to) ? "default" : "outline"} 
                         size="sm"
                         className="gap-2"
                         data-testid="button-list-date-picker"
                       >
                         <Calendar className="h-4 w-4" />
-                        {dateFilter ? format(parse(dateFilter, 'yyyy-MM-dd', new Date()), 'd MMM', { locale: tr }) : 'Tarih'}
+                        {dateRangeFilter.from && dateRangeFilter.to ? (
+                          `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} - ${format(dateRangeFilter.to, 'd MMM', { locale: tr })}`
+                        ) : dateRangeFilter.from ? (
+                          `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} -`
+                        ) : 'Tarih Aralığı'}
                       </Button>
                     </PopoverTrigger>
                   </TooltipTrigger>
-                  <TooltipContent>Tarih seç</TooltipContent>
+                  <TooltipContent>Tarih aralığı seç</TooltipContent>
                 </Tooltip>
                 <PopoverContent className="w-auto p-0" align="end">
                   <div className="p-2 border-b">
@@ -373,19 +388,24 @@ export default function Reservations() {
                       variant="ghost" 
                       size="sm" 
                       className="w-full justify-start"
-                      onClick={() => setDateFilter("")}
+                      onClick={() => {
+                        setDateRangeFilter({ from: undefined, to: undefined });
+                        setDateFilter("");
+                      }}
                     >
                       Tüm tarihler
                     </Button>
                   </div>
                   <CalendarPicker
-                    mode="single"
-                    selected={dateFilter ? parse(dateFilter, 'yyyy-MM-dd', new Date()) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        setDateFilter(format(date, 'yyyy-MM-dd'));
+                    mode="range"
+                    selected={dateRangeFilter}
+                    onSelect={(range) => {
+                      if (range) {
+                        setDateRangeFilter({ from: range.from, to: range.to });
+                        setDateFilter("");
                       }
                     }}
+                    numberOfMonths={2}
                     initialFocus
                   />
                 </PopoverContent>
