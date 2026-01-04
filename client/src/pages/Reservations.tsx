@@ -338,6 +338,18 @@ export default function Reservations() {
                   <SelectItem value="cancelled">İptal</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={activityFilter} onValueChange={setActivityFilter}>
+                <SelectTrigger className="min-w-[140px] w-auto max-w-[220px]" data-testid="select-list-activity">
+                  <Filter className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <SelectValue placeholder="Aktivite" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Aktiviteler</SelectItem>
+                  {(activities || []).map(a => (
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Popover>
                 <Tooltip>
                   <TooltipTrigger asChild>
