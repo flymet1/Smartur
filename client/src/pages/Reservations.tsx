@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -70,7 +70,10 @@ export default function Reservations() {
   const [packageTourFilter, setPackageTourFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>(urlDate || "");
   const [dateRangeFilter, setDateRangeFilter] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
-  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name">("date-desc");
+  const [sortBy, setSortBy] = useState<string>(() => {
+    const saved = localStorage.getItem("reservationListSort");
+    return saved || "date-desc";
+  });
   const [selectedDateForNew, setSelectedDateForNew] = useState<string>("");
   const [newReservationOpen, setNewReservationOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
@@ -103,6 +106,11 @@ export default function Reservations() {
   const markReservationsAsSeen = () => {
     localStorage.setItem(lastViewedKey, new Date().toISOString());
     setShowNewReservations(false);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    localStorage.setItem("reservationListSort", value);
   };
 
   useEffect(() => {
@@ -516,10 +524,41 @@ export default function Reservations() {
       return matchesSearch && matchesStatus && matchesActivity && matchesDate && matchesSource && matchesAgency && matchesPrice;
     })
     .sort((a, b) => {
-      if (sortBy === "date-desc") return new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (sortBy === "date-asc") return new Date(a.date).getTime() - new Date(b.date).getTime();
-      if (sortBy === "name") return a.customerName.localeCompare(b.customerName, 'tr');
-      return 0;
+      const getActivityName = (id: number | null) => activities?.find(act => act.id === id)?.name || '';
+      
+      switch (sortBy) {
+        case "date-desc":
+          return new Date(b.date).getTime() - new Date(a.date).getTime() || 
+                 (a.time || '').localeCompare(b.time || '');
+        case "date-asc":
+          return new Date(a.date).getTime() - new Date(b.date).getTime() || 
+                 (a.time || '').localeCompare(b.time || '');
+        case "name-asc":
+          return a.customerName.localeCompare(b.customerName, 'tr');
+        case "name-desc":
+          return b.customerName.localeCompare(a.customerName, 'tr');
+        case "activity-asc":
+          return getActivityName(a.activityId).localeCompare(getActivityName(b.activityId), 'tr') ||
+                 new Date(b.date).getTime() - new Date(a.date).getTime();
+        case "activity-desc":
+          return getActivityName(b.activityId).localeCompare(getActivityName(a.activityId), 'tr') ||
+                 new Date(b.date).getTime() - new Date(a.date).getTime();
+        case "status":
+          const statusOrder = { confirmed: 1, pending: 2, cancelled: 3 };
+          return (statusOrder[a.status as keyof typeof statusOrder] || 4) - 
+                 (statusOrder[b.status as keyof typeof statusOrder] || 4) ||
+                 new Date(b.date).getTime() - new Date(a.date).getTime();
+        case "price-desc":
+          return (b.priceTl || 0) - (a.priceTl || 0);
+        case "price-asc":
+          return (a.priceTl || 0) - (b.priceTl || 0);
+        case "created-desc":
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        case "created-asc":
+          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+        default:
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
     });
 
   const handleAddReservationForDate = (dateStr: string) => {
@@ -983,6 +1022,25 @@ export default function Reservations() {
                   <SelectItem value="pending">Beklemede</SelectItem>
                   <SelectItem value="confirmed">Onaylı</SelectItem>
                   <SelectItem value="cancelled">İptal</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={handleSortChange}>
+                <SelectTrigger className="w-auto min-w-[140px]" data-testid="select-sort-by">
+                  <ArrowUpDown className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <SelectValue placeholder="Sıralama" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date-desc">Tarih (Yeni-Eski)</SelectItem>
+                  <SelectItem value="date-asc">Tarih (Eski-Yeni)</SelectItem>
+                  <SelectItem value="name-asc">Müşteri (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Müşteri (Z-A)</SelectItem>
+                  <SelectItem value="activity-asc">Aktivite (A-Z)</SelectItem>
+                  <SelectItem value="activity-desc">Aktivite (Z-A)</SelectItem>
+                  <SelectItem value="status">Durum</SelectItem>
+                  <SelectItem value="price-desc">Fiyat (Yüksek-Düşük)</SelectItem>
+                  <SelectItem value="price-asc">Fiyat (Düşük-Yüksek)</SelectItem>
+                  <SelectItem value="created-desc">Oluşturma (Yeni-Eski)</SelectItem>
+                  <SelectItem value="created-asc">Oluşturma (Eski-Yeni)</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={activityFilter} onValueChange={setActivityFilter}>
