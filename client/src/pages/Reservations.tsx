@@ -66,7 +66,6 @@ export default function Reservations() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activityFilter, setActivityFilter] = useState<string>("all");
-  const [occupancyFilter, setOccupancyFilter] = useState<string>("all");
   const [packageTourFilter, setPackageTourFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>(urlDate || "");
   const [dateRangeFilter, setDateRangeFilter] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
@@ -986,28 +985,53 @@ export default function Reservations() {
                 </SelectContent>
               </Select>
               <Select value={activityFilter} onValueChange={setActivityFilter}>
-                <SelectTrigger className="min-w-[140px] w-auto max-w-[220px]" data-testid="select-list-activity">
-                  <Filter className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <SelectValue placeholder="Aktivite" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tüm Aktiviteler</SelectItem>
-                  {(activities || []).map(a => (
-                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={occupancyFilter} onValueChange={setOccupancyFilter}>
-                <SelectTrigger className="min-w-[140px] w-auto max-w-[180px]" data-testid="select-occupancy-filter">
+                <SelectTrigger className="min-w-[160px] w-auto max-w-[260px]" data-testid="select-list-activity">
                   <TrendingUp className="h-4 w-4 mr-2 flex-shrink-0" />
                   <SelectValue placeholder="Doluluk Oranı" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tüm Doluluk</SelectItem>
-                  <SelectItem value="low">%0-50 (Düşük)</SelectItem>
-                  <SelectItem value="medium">%50-80 (Orta)</SelectItem>
-                  <SelectItem value="high">%80-100 (Yüksek)</SelectItem>
-                  <SelectItem value="full">%100 (Dolu)</SelectItem>
+                  <SelectItem value="all">Tüm Aktiviteler</SelectItem>
+                  {(activities || []).map(a => {
+                    // Calculate occupancy for current month for this activity
+                    const monthStart = startOfMonth(currentDate);
+                    const monthEnd = endOfMonth(currentDate);
+                    const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+                    
+                    let totalCapacity = 0;
+                    let totalBooked = 0;
+                    const capacity = (a as any)?.defaultCapacity || 10;
+                    
+                    monthDays.forEach(day => {
+                      const dateStr = format(day, 'yyyy-MM-dd');
+                      const dayReservations = (reservations || []).filter(
+                        r => r.date === dateStr && r.activityId === a.id && r.status !== 'cancelled'
+                      );
+                      const booked = dayReservations.reduce((sum, r) => sum + r.quantity, 0);
+                      totalCapacity += capacity;
+                      totalBooked += booked;
+                    });
+                    
+                    const occupancy = totalCapacity > 0 ? Math.round((totalBooked / totalCapacity) * 100) : 0;
+                    
+                    return (
+                      <SelectItem key={a.id} value={String(a.id)}>
+                        <div className="flex items-center justify-between gap-3 w-full">
+                          <span>{a.name}</span>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ml-2 ${
+                              occupancy >= 100 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                              occupancy >= 80 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                              occupancy >= 50 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                              'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            }`}
+                          >
+                            %{occupancy}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <Popover>
