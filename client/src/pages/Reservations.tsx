@@ -338,6 +338,46 @@ export default function Reservations() {
                   <SelectItem value="cancelled">İptal</SelectItem>
                 </SelectContent>
               </Select>
+              <Popover>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant={dateFilter ? "default" : "outline"} 
+                        size="sm"
+                        className="gap-2"
+                        data-testid="button-list-date-picker"
+                      >
+                        <Calendar className="h-4 w-4" />
+                        {dateFilter ? format(parse(dateFilter, 'yyyy-MM-dd', new Date()), 'd MMM', { locale: tr }) : 'Tarih'}
+                      </Button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Tarih seç</TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <div className="p-2 border-b">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start"
+                      onClick={() => setDateFilter("")}
+                    >
+                      Tüm tarihler
+                    </Button>
+                  </div>
+                  <CalendarPicker
+                    mode="single"
+                    selected={dateFilter ? parse(dateFilter, 'yyyy-MM-dd', new Date()) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        setDateFilter(format(date, 'yyyy-MM-dd'));
+                      }
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <div className="flex border rounded-md">
                 <Tooltip>
                   <TooltipTrigger asChild>
