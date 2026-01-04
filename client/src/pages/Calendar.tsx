@@ -1084,7 +1084,7 @@ export default function CalendarPage() {
       <main className="flex-1 md:ml-64 p-4 md:p-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold" data-testid="text-page-title">Takvim & Kapasite</h1>
+            <h1 className="text-3xl font-bold" data-testid="text-page-title">Kapasite</h1>
             <p className="text-muted-foreground mt-1">Müsaitlik durumunu yönetin</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">

@@ -27,7 +27,7 @@ import type { SupportRequest, CustomerRequest } from "@shared/schema";
 
 const navItems = [
   { href: "/", label: "Rezervasyonlar", icon: Ticket },
-  { href: "/calendar", label: "Takvim & Kapasite", icon: Calendar },
+  { href: "/calendar", label: "Kapasite", icon: Calendar },
   { href: "/activities", label: "Aktiviteler", icon: Activity },
   { href: "/package-tours", label: "Paket Turlar", icon: Package },
   { href: "/finance", label: "Finans", icon: Calculator },
