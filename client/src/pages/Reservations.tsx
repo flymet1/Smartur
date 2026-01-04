@@ -1381,8 +1381,9 @@ function BigCalendar({
   const [overflowDialogDate, setOverflowDialogDate] = useState<string | null>(null);
   const [draggedReservation, setDraggedReservation] = useState<Reservation | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
-  const [pendingMove, setPendingMove] = useState<{ reservation: Reservation; newDate: string; isPackage?: boolean; packageCount?: number } | null>(null);
-  const [showMoveNotification, setShowMoveNotification] = useState<{ reservation: Reservation; oldDate: string; newDate: string; movedCount?: number } | null>(null);
+  const [dragOverTime, setDragOverTime] = useState<string | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ reservation: Reservation; newDate: string; newTime?: string; isPackage?: boolean; packageCount?: number } | null>(null);
+  const [showMoveNotification, setShowMoveNotification] = useState<{ reservation: Reservation; oldDate: string; newDate: string; oldTime?: string; newTime?: string; movedCount?: number } | null>(null);
   const { toast } = useToast();
   
   const statusMutation = useMutation({
@@ -1395,21 +1396,29 @@ function BigCalendar({
   });
 
   const moveMutation = useMutation({
-    mutationFn: async ({ id, newDate, oldDate, reservation }: { id: number; newDate: string; oldDate: string; reservation: Reservation }) => {
-      return apiRequest('PATCH', `/api/reservations/${id}`, { date: newDate });
+    mutationFn: async ({ id, newDate, oldDate, newTime, oldTime, reservation }: { id: number; newDate: string; oldDate: string; newTime?: string; oldTime?: string; reservation: Reservation }) => {
+      const updates: { date?: string; time?: string } = {};
+      if (newDate !== oldDate) updates.date = newDate;
+      if (newTime && newTime !== oldTime) updates.time = newTime;
+      return apiRequest('PATCH', `/api/reservations/${id}`, updates);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
-      toast({ title: "Başarılı", description: "Rezervasyon tarihi güncellendi." });
+      const description = variables.newTime && variables.newTime !== variables.oldTime 
+        ? `Rezervasyon ${variables.newDate !== variables.oldDate ? 'tarihi ve ' : ''}saati güncellendi.`
+        : "Rezervasyon tarihi güncellendi.";
+      toast({ title: "Başarılı", description });
       setShowMoveNotification({ 
         reservation: variables.reservation, 
         oldDate: variables.oldDate, 
-        newDate: variables.newDate 
+        newDate: variables.newDate,
+        oldTime: variables.oldTime,
+        newTime: variables.newTime
       });
       setPendingMove(null);
     },
     onError: () => {
-      toast({ title: "Hata", description: "Tarih güncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Güncelleme yapılamadı.", variant: "destructive" });
       setPendingMove(null);
     },
   });
@@ -1424,9 +1433,9 @@ function BigCalendar({
     }) => {
       return apiRequest('POST', '/api/package-reservations/shift', { packageTourId, orderNumber, offsetDays });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
-      toast({ title: "Başarılı", description: `${data.reservations?.length || 0} rezervasyon taşındı.` });
+      toast({ title: "Başarılı", description: `${data?.reservations?.length || 0} rezervasyon taşındı.` });
       
       const oldDate = variables.reservation.date;
       const newDate = new Date(oldDate);
@@ -1436,7 +1445,7 @@ function BigCalendar({
         reservation: variables.reservation, 
         oldDate: oldDate, 
         newDate: newDate.toISOString().split('T')[0],
-        movedCount: data.reservations?.length
+        movedCount: data?.reservations?.length
       });
       setPendingMove(null);
     },
@@ -1490,50 +1499,80 @@ function BigCalendar({
     e.dataTransfer.setData('text/plain', String(reservation.id));
   };
 
-  const handleDragOver = (e: React.DragEvent, dateStr: string) => {
+  const handleDragOver = (e: React.DragEvent, dateStr: string, timeStr?: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverDate(dateStr);
+    setDragOverTime(timeStr || null);
   };
 
   const handleDragLeave = () => {
     setDragOverDate(null);
+    setDragOverTime(null);
   };
 
-  const handleDrop = (e: React.DragEvent, dateStr: string) => {
+  const handleDrop = (e: React.DragEvent, dateStr: string, timeStr?: string) => {
     e.preventDefault();
     setDragOverDate(null);
+    setDragOverTime(null);
     
-    if (draggedReservation && draggedReservation.date !== dateStr) {
-      // Check if this is a package tour reservation
-      if (draggedReservation.packageTourId) {
-        // Package tour requires order number for proper grouping
-        if (!draggedReservation.orderNumber) {
-          toast({ 
-            title: "Taşıma Yapılamıyor", 
-            description: "Paket tur rezervasyonlarını taşımak için sipariş numarası gerekli. Lütfen önce sipariş numarası ekleyin.", 
-            variant: "destructive" 
-          });
-          setDraggedReservation(null);
-          return;
-        }
-        
-        // Count how many reservations are in this package group - ONLY by packageTourId + orderNumber
-        const packageReservations = reservations.filter(r => 
-          r.packageTourId === draggedReservation.packageTourId && 
-          r.orderNumber === draggedReservation.orderNumber
-        );
-        
-        setPendingMove({ 
-          reservation: draggedReservation, 
-          newDate: dateStr, 
-          isPackage: true, 
-          packageCount: packageReservations.length 
+    if (!draggedReservation) {
+      return;
+    }
+    
+    const dateChanged = draggedReservation.date !== dateStr;
+    // Time changed only if we're dropping on a specific time slot AND it's different from current time
+    const timeChanged = timeStr !== undefined && draggedReservation.time !== timeStr;
+    
+    // For date-only drops (no timeStr), only check date change
+    // For time slot drops (with timeStr), check either date or time changed
+    if (!dateChanged && (timeStr === undefined || !timeChanged)) {
+      setDraggedReservation(null);
+      return;
+    }
+    
+    // Check if this is a package tour reservation
+    if (draggedReservation.packageTourId) {
+      // Package tour requires order number for proper grouping
+      if (!draggedReservation.orderNumber) {
+        toast({ 
+          title: "Taşıma Yapılamıyor", 
+          description: "Paket tur rezervasyonlarını taşımak için sipariş numarası gerekli. Lütfen önce sipariş numarası ekleyin.", 
+          variant: "destructive" 
         });
-      } else {
-        // Single reservation move
-        setPendingMove({ reservation: draggedReservation, newDate: dateStr });
+        setDraggedReservation(null);
+        return;
       }
+      
+      // For package tours, only date changes are supported (time changes for individual items don't make sense)
+      if (!dateChanged && timeChanged) {
+        toast({ 
+          title: "Bilgi", 
+          description: "Paket tur rezervasyonlarında saat değişikliği için rezervasyon detaylarından düzenleme yapın.", 
+        });
+        setDraggedReservation(null);
+        return;
+      }
+      
+      // Count how many reservations are in this package group - ONLY by packageTourId + orderNumber
+      const packageReservations = reservations.filter(r => 
+        r.packageTourId === draggedReservation.packageTourId && 
+        r.orderNumber === draggedReservation.orderNumber
+      );
+      
+      setPendingMove({ 
+        reservation: draggedReservation, 
+        newDate: dateStr, 
+        isPackage: true, 
+        packageCount: packageReservations.length 
+      });
+    } else {
+      // Single reservation move (date and/or time)
+      setPendingMove({ 
+        reservation: draggedReservation, 
+        newDate: dateStr,
+        newTime: timeStr
+      });
     }
     setDraggedReservation(null);
   };
@@ -1559,6 +1598,8 @@ function BigCalendar({
           id: pendingMove.reservation.id, 
           newDate: pendingMove.newDate,
           oldDate: pendingMove.reservation.date,
+          newTime: pendingMove.newTime,
+          oldTime: pendingMove.reservation.time,
           reservation: pendingMove.reservation
         });
       }
@@ -1572,6 +1613,7 @@ function BigCalendar({
   const handleDragEnd = () => {
     setDraggedReservation(null);
     setDragOverDate(null);
+    setDragOverTime(null);
   };
 
   const getActivityName = (activityId: number | null) => {
@@ -2235,19 +2277,29 @@ function BigCalendar({
                   <div className="space-y-1">
                     {sortedTimes.map(timeSlot => {
                       const slotReservations = dayReservations.filter(r => r.time === timeSlot);
+                      const isDropTarget = dragOverDate === dateStr && dragOverTime === timeSlot;
 
                       return (
-                        <div key={timeSlot} className="group/slot flex border-b hover:bg-muted/30 cursor-pointer" onClick={() => onDateClick(dateStr)}>
-                          <div className="w-16 py-3 text-sm text-muted-foreground flex-shrink-0">
+                        <div 
+                          key={timeSlot} 
+                          className={`group/slot flex border-b cursor-pointer transition-colors ${isDropTarget ? 'bg-primary/20 ring-2 ring-primary ring-inset' : 'hover:bg-muted/30'}`}
+                          onClick={() => onDateClick(dateStr)}
+                          onDragOver={(e) => handleDragOver(e, dateStr, timeSlot)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, dateStr, timeSlot)}
+                          data-testid={`timeslot-${dateStr}-${timeSlot}`}
+                        >
+                          <div className="w-16 py-3 text-sm text-muted-foreground flex-shrink-0 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
                             {timeSlot}
                           </div>
                           <div className="flex-1 py-1 min-h-[50px] flex flex-wrap gap-2 items-center">
                             {slotReservations.length === 0 && (
-                              <div className="invisible group-hover/slot:visible flex items-center gap-1 text-muted-foreground">
+                              <div className={`flex items-center gap-1 text-muted-foreground ${isDropTarget ? 'visible' : 'invisible group-hover/slot:visible'}`}>
                                 <div className="w-6 h-6 rounded-full border border-dashed border-muted-foreground/50 flex items-center justify-center">
                                   <Plus className="h-3 w-3" />
                                 </div>
-                                <span className="text-xs">Rezervasyon Ekle</span>
+                                <span className="text-xs">{isDropTarget ? 'Buraya Bırak' : 'Rezervasyon Ekle'}</span>
                               </div>
                             )}
                             {(() => {
@@ -2257,7 +2309,13 @@ function BigCalendar({
                               packageGroups.forEach((groupRes, groupKey) => {
                                 const firstRes = groupRes[0];
                                 elements.push(
-                                  <div key={`pkg-${groupKey}`} className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-2">
+                                  <div 
+                                    key={`pkg-${groupKey}`} 
+                                    className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-2 cursor-grab active:cursor-grabbing"
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, firstRes)}
+                                    onDragEnd={handleDragEnd}
+                                  >
                                     <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
                                       <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                                       <span className="font-medium text-purple-700 dark:text-purple-300">
@@ -2293,6 +2351,8 @@ function BigCalendar({
                                     onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                                     onSelect={onReservationSelect}
                                     expanded
+                                    draggable
+                                    onDragStart={handleDragStart}
                                   />
                                 );
                               });
@@ -2427,7 +2487,11 @@ function BigCalendar({
               <p className="text-sm text-muted-foreground">
                 {pendingMove.isPackage 
                   ? `Bu paket turdaki tüm ${pendingMove.packageCount} rezervasyon aynı gün farkıyla taşınacak.`
-                  : "Bu rezervasyonu taşımak istediğinizden emin misiniz?"
+                  : pendingMove.newTime && pendingMove.newTime !== pendingMove.reservation.time
+                    ? (pendingMove.newDate !== pendingMove.reservation.date 
+                        ? "Bu rezervasyonun tarih ve saatini değiştirmek istediğinizden emin misiniz?"
+                        : "Bu rezervasyonun saatini değiştirmek istediğinizden emin misiniz?")
+                    : "Bu rezervasyonu taşımak istediğinizden emin misiniz?"
                 }
               </p>
               <Card className={`p-3 ${pendingMove.isPackage ? 'border-purple-300 dark:border-purple-700' : ''}`}>
@@ -2448,18 +2512,40 @@ function BigCalendar({
                     <span className="text-sm font-medium">{getActivityName(pendingMove.reservation.activityId)}</span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Eski Tarih:</span>
-                    <Badge variant="outline" className="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
-                      {format(new Date(pendingMove.reservation.date), "d MMMM yyyy", { locale: tr })}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">Yeni Tarih:</span>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
-                      {format(new Date(pendingMove.newDate), "d MMMM yyyy", { locale: tr })}
-                    </Badge>
-                  </div>
+                  {pendingMove.newDate !== pendingMove.reservation.date && (
+                    <>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">Eski Tarih:</span>
+                        <Badge variant="outline" className="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                          {format(new Date(pendingMove.reservation.date), "d MMMM yyyy", { locale: tr })}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">Yeni Tarih:</span>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                          {format(new Date(pendingMove.newDate), "d MMMM yyyy", { locale: tr })}
+                        </Badge>
+                      </div>
+                    </>
+                  )}
+                  {pendingMove.newTime && pendingMove.newTime !== pendingMove.reservation.time && (
+                    <>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">Eski Saat:</span>
+                        <Badge variant="outline" className="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {pendingMove.reservation.time}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">Yeni Saat:</span>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {pendingMove.newTime}
+                        </Badge>
+                      </div>
+                    </>
+                  )}
                 </div>
               </Card>
               <div className="flex gap-2 justify-end">
@@ -2467,7 +2553,7 @@ function BigCalendar({
                   İptal
                 </Button>
                 <Button onClick={confirmMove} disabled={moveMutation.isPending || packageShiftMutation.isPending}>
-                  {(moveMutation.isPending || packageShiftMutation.isPending) ? "Taşınıyor..." : "Onayla"}
+                  {(moveMutation.isPending || packageShiftMutation.isPending) ? "Güncelleniyor..." : "Onayla"}
                 </Button>
               </div>
             </div>
@@ -2766,19 +2852,19 @@ function ReservationDetailDialog({ reservation, activities, onClose }: Reservati
             </div>
           </div>
 
-          {(reservation.priceTl > 0 || reservation.priceUsd > 0) && (
+          {((reservation.priceTl ?? 0) > 0 || (reservation.priceUsd ?? 0) > 0) && (
             <div className="border-t pt-4">
               <div className="grid grid-cols-2 gap-4">
-                {reservation.priceTl > 0 && (
+                {(reservation.priceTl ?? 0) > 0 && (
                   <div>
                     <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
-                    <div className="font-medium">{reservation.priceTl.toLocaleString('tr-TR')} ₺</div>
+                    <div className="font-medium">{(reservation.priceTl ?? 0).toLocaleString('tr-TR')} ₺</div>
                   </div>
                 )}
-                {reservation.priceUsd > 0 && (
+                {(reservation.priceUsd ?? 0) > 0 && (
                   <div>
                     <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
-                    <div className="font-medium">${reservation.priceUsd}</div>
+                    <div className="font-medium">${reservation.priceUsd ?? 0}</div>
                   </div>
                 )}
               </div>
