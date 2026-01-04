@@ -26,9 +26,10 @@ import { useState } from "react";
 
 interface ReservationTableProps {
   reservations: Reservation[];
+  onReservationSelect?: (reservation: Reservation) => void;
 }
 
-export function ReservationTable({ reservations }: ReservationTableProps) {
+export function ReservationTable({ reservations, onReservationSelect }: ReservationTableProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<number | null>(null);
   
@@ -175,7 +176,11 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
             </TableRow>
           ) : (
             reservations.map((res) => (
-              <TableRow key={res.id} className="hover:bg-muted/50">
+              <TableRow 
+                key={res.id} 
+                className={`hover:bg-muted/50 ${onReservationSelect ? 'cursor-pointer' : ''}`}
+                onClick={() => onReservationSelect?.(res)}
+              >
                 <TableCell>
                   {res.orderNumber ? (
                     <Badge variant="outline" className="font-mono text-xs">
@@ -234,11 +239,11 @@ export function ReservationTable({ reservations }: ReservationTableProps) {
                     <span className="capitalize text-sm">{res.source || 'Manuel'}</span>
                   </div>
                 </TableCell>
-                <TableCell>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
                 <TableCell className="text-right font-medium">
                   ₺{(res.quantity * 1500).toLocaleString('tr-TR')} {/* Mock price logic */}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>

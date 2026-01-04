@@ -354,7 +354,10 @@ export default function Reservations() {
             <div className="h-[600px] bg-muted rounded animate-pulse" />
           </div>
         ) : viewMode === "list" ? (
-          <ReservationTable reservations={filteredReservations} />
+          <ReservationTable 
+            reservations={filteredReservations} 
+            onReservationSelect={setSelectedReservation}
+          />
         ) : (
           <>
             <BigCalendar 
@@ -693,10 +696,13 @@ function BigCalendar({
                   {dayReservations.slice(0, 3).map(res => (
                     <div 
                       key={res.id}
-                      className={`text-[10px] px-1 py-0.5 rounded truncate border ${getActivityColor(res.activityId)} ${
+                      className={`text-[10px] px-1 py-0.5 rounded truncate border cursor-pointer hover:opacity-80 ${getActivityColor(res.activityId)} ${
                         res.status === 'cancelled' ? 'opacity-50 line-through' : ''
                       }`}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReservationSelect(res);
+                      }}
                       data-testid={`reservation-${res.id}`}
                     >
                       {res.time} {res.customerName.split(' ')[0]}
