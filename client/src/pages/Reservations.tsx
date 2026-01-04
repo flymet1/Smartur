@@ -31,6 +31,7 @@ import { format, parse, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDay
 import { tr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
 
 type CalendarView = "day" | "week" | "month";
 
@@ -1342,20 +1343,18 @@ function BigCalendar({
   });
 
   const moveMutation = useMutation({
-    mutationFn: async ({ id, newDate, oldDate }: { id: number; newDate: string; oldDate: string }) => {
+    mutationFn: async ({ id, newDate, oldDate, reservation }: { id: number; newDate: string; oldDate: string; reservation: Reservation }) => {
       return apiRequest('PATCH', `/api/reservations/${id}`, { date: newDate });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       toast({ title: "Başarılı", description: "Rezervasyon tarihi güncellendi." });
-      // Show notification dialog
-      if (pendingMove) {
-        setShowMoveNotification({ 
-          reservation: pendingMove.reservation, 
-          oldDate: pendingMove.reservation.date, 
-          newDate: variables.newDate 
-        });
-      }
+      // Show notification dialog using variables instead of pendingMove state
+      setShowMoveNotification({ 
+        reservation: variables.reservation, 
+        oldDate: variables.oldDate, 
+        newDate: variables.newDate 
+      });
       setPendingMove(null);
     },
     onError: () => {
@@ -1396,7 +1395,8 @@ function BigCalendar({
       moveMutation.mutate({ 
         id: pendingMove.reservation.id, 
         newDate: pendingMove.newDate,
-        oldDate: pendingMove.reservation.date
+        oldDate: pendingMove.reservation.date,
+        reservation: pendingMove.reservation
       });
     }
   };
