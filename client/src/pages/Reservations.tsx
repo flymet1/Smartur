@@ -439,69 +439,73 @@ export default function Reservations() {
                   ))}
                 </SelectContent>
               </Select>
-              <Popover>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant={(dateRangeFilter.from || dateRangeFilter.to) ? "default" : "outline"} 
-                        size="sm"
-                        className="gap-2"
-                        data-testid="button-list-date-picker"
-                      >
-                        <Calendar className="h-4 w-4" />
-                        {dateRangeFilter.from && dateRangeFilter.to ? (
-                          `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} - ${format(dateRangeFilter.to, 'd MMM', { locale: tr })}`
-                        ) : dateRangeFilter.from ? (
-                          `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} -`
-                        ) : 'Tarih Aralığı'}
-                      </Button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>Tarih aralığı seç</TooltipContent>
-                </Tooltip>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <div className="p-2 border-b">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start"
+              {viewMode === "list" && (
+                <>
+                  <Popover>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant={(dateRangeFilter.from || dateRangeFilter.to) ? "default" : "outline"} 
+                            size="sm"
+                            className="gap-2"
+                            data-testid="button-list-date-picker"
+                          >
+                            <Calendar className="h-4 w-4" />
+                            {dateRangeFilter.from && dateRangeFilter.to ? (
+                              `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} - ${format(dateRangeFilter.to, 'd MMM', { locale: tr })}`
+                            ) : dateRangeFilter.from ? (
+                              `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} -`
+                            ) : 'Tarih Aralığı'}
+                          </Button>
+                        </PopoverTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>Tarih aralığı seç</TooltipContent>
+                    </Tooltip>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <div className="p-2 border-b">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setDateRangeFilter({ from: undefined, to: undefined });
+                            setDateFilter("");
+                          }}
+                        >
+                          Tüm tarihler
+                        </Button>
+                      </div>
+                      <CalendarPicker
+                        mode="range"
+                        selected={dateRangeFilter}
+                        onSelect={(range) => {
+                          if (range) {
+                            setDateRangeFilter({ from: range.from, to: range.to });
+                            setDateFilter("");
+                          }
+                        }}
+                        numberOfMonths={2}
+                        locale={tr}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {(dateRangeFilter.from || dateRangeFilter.to) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => {
                         setDateRangeFilter({ from: undefined, to: undefined });
                         setDateFilter("");
                       }}
+                      className="text-muted-foreground"
+                      data-testid="button-clear-date-filter"
                     >
-                      Tüm tarihler
+                      <X className="h-4 w-4" />
                     </Button>
-                  </div>
-                  <CalendarPicker
-                    mode="range"
-                    selected={dateRangeFilter}
-                    onSelect={(range) => {
-                      if (range) {
-                        setDateRangeFilter({ from: range.from, to: range.to });
-                        setDateFilter("");
-                      }
-                    }}
-                    numberOfMonths={2}
-                    locale={tr}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {(dateRangeFilter.from || dateRangeFilter.to) && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setDateRangeFilter({ from: undefined, to: undefined });
-                    setDateFilter("");
-                  }}
-                  className="text-muted-foreground"
-                  data-testid="button-clear-date-filter"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                  )}
+                </>
               )}
               <div className="flex border rounded-md">
                 <Tooltip>
