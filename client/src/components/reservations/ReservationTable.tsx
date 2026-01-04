@@ -22,7 +22,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface ReservationTableProps {
   reservations: Reservation[];
@@ -151,6 +151,34 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
     }
   };
 
+  const groupedReservations = useMemo(() => {
+    const packageGroups = new Map<string, Reservation[]>();
+    const standaloneReservations: Reservation[] = [];
+    
+    reservations.forEach(r => {
+      if (r.packageTourId) {
+        const groupKey = `${r.packageTourId}-${r.orderNumber || r.customerName}`;
+        const existing = packageGroups.get(groupKey) || [];
+        existing.push(r);
+        packageGroups.set(groupKey, existing);
+      } else {
+        standaloneReservations.push(r);
+      }
+    });
+    
+    const result: { type: 'group' | 'single'; groupKey?: string; reservations: Reservation[] }[] = [];
+    
+    packageGroups.forEach((groupRes, groupKey) => {
+      result.push({ type: 'group', groupKey, reservations: groupRes });
+    });
+    
+    standaloneReservations.forEach(res => {
+      result.push({ type: 'single', reservations: [res] });
+    });
+    
+    return result;
+  }, [reservations]);
+
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
       <Table>
@@ -175,113 +203,128 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
               </TableCell>
             </TableRow>
           ) : (
-            reservations.map((res) => (
-              <TableRow 
-                key={res.id} 
-                className={`hover:bg-muted/50 ${onReservationSelect ? 'cursor-pointer' : ''}`}
-                onClick={() => onReservationSelect?.(res)}
-              >
-                <TableCell>
-                  {res.orderNumber ? (
-                    <Badge variant="outline" className="font-mono text-xs">
-                      #{res.orderNumber}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="font-medium">{res.customerName}</div>
-                  <div className="text-xs text-muted-foreground">{res.customerPhone}</div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{getActivityName(res.activityId)}</span>
-                    {res.packageTourId && (
-                      <Badge variant="outline" className="text-xs text-purple-600 border-purple-300 bg-purple-50 dark:bg-purple-900/20 flex items-center gap-1">
-                        <Package className="w-3 h-3" />
-                        {getPackageTourName(res.packageTourId) || 'Paket'}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {format(new Date(res.date), "d MMMM yyyy", { locale: tr })} • {res.time}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {res.hotelName ? (
-                    <div className="flex items-center gap-2">
-                      {res.hasTransfer && (
-                        <span title="Transfer Istedi">
-                          <Bus className="h-4 w-4 text-blue-600" />
+            groupedReservations.map((group, groupIdx) => (
+              <>
+                {group.type === 'group' && (
+                  <TableRow key={`header-${group.groupKey}`} className="bg-purple-50 dark:bg-purple-900/20 border-t-2 border-purple-300 dark:border-purple-600">
+                    <TableCell colSpan={9} className="py-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <span className="font-medium text-purple-700 dark:text-purple-300">
+                          {getPackageTourName(group.reservations[0].packageTourId)}
                         </span>
-                      )}
-                      <div>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Hotel className="h-3 w-3 text-muted-foreground" />
-                          <span>{res.hotelName}</span>
-                        </div>
+                        <span className="text-muted-foreground">-</span>
+                        <span className="font-medium">{group.reservations[0].customerName}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {group.reservations.length} aktivite
+                        </Badge>
                       </div>
-                    </div>
-                  ) : res.hasTransfer ? (
-                    <div className="flex items-center gap-1 text-blue-600" title="Transfer Istedi">
-                      <Bus className="h-4 w-4" />
-                      <span className="text-xs">Transfer</span>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">-</span>
-                  )}
-                </TableCell>
-                <TableCell>{res.quantity} Kişi</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {getSourceIcon(res.source)}
-                    <span className="capitalize text-sm">{res.source || 'Manuel'}</span>
-                  </div>
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
-                <TableCell className="text-right font-medium">
-                  ₺{(res.quantity * 1500).toLocaleString('tr-TR')} {/* Mock price logic */}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {res.trackingToken ? (
-                        <DropdownMenuItem 
-                          onClick={() => copyExistingLink(res.trackingToken!, res.id)}
-                          data-testid={`copy-tracking-${res.id}`}
-                        >
-                          {copiedId === res.id ? (
-                            <>
-                              <Check className="h-4 w-4 mr-2 text-green-600" />
-                              Kopyalandı
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-4 w-4 mr-2" />
-                              Takip Linkini Kopyala
-                            </>
-                          )}
-                        </DropdownMenuItem>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {group.reservations.map((res) => (
+                  <TableRow 
+                    key={res.id} 
+                    className={`hover:bg-muted/50 ${onReservationSelect ? 'cursor-pointer' : ''} ${group.type === 'group' ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}`}
+                    onClick={() => onReservationSelect?.(res)}
+                  >
+                    <TableCell>
+                      {res.orderNumber ? (
+                        <Badge variant="outline" className="font-mono text-xs">
+                          #{res.orderNumber}
+                        </Badge>
                       ) : (
-                        <DropdownMenuItem 
-                          onClick={() => trackingMutation.mutate(res.id)}
-                          disabled={trackingMutation.isPending}
-                          data-testid={`generate-tracking-${res.id}`}
-                        >
-                          <Link2 className="h-4 w-4 mr-2" />
-                          Takip Linki Oluştur
-                        </DropdownMenuItem>
+                        <span className="text-muted-foreground text-xs">-</span>
                       )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{res.customerName}</div>
+                      <div className="text-xs text-muted-foreground">{res.customerPhone}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{getActivityName(res.activityId)}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {format(new Date(res.date), "d MMMM yyyy", { locale: tr })} • {res.time}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {res.hotelName ? (
+                        <div className="flex items-center gap-2">
+                          {res.hasTransfer && (
+                            <span title="Transfer Istedi">
+                              <Bus className="h-4 w-4 text-blue-600" />
+                            </span>
+                          )}
+                          <div>
+                            <div className="flex items-center gap-1 text-sm">
+                              <Hotel className="h-3 w-3 text-muted-foreground" />
+                              <span>{res.hotelName}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : res.hasTransfer ? (
+                        <div className="flex items-center gap-1 text-blue-600" title="Transfer Istedi">
+                          <Bus className="h-4 w-4" />
+                          <span className="text-xs">Transfer</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{res.quantity} Kişi</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getSourceIcon(res.source)}
+                        <span className="capitalize text-sm">{res.source || 'Manuel'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      ₺{(res.quantity * 1500).toLocaleString('tr-TR')}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {res.trackingToken ? (
+                            <DropdownMenuItem 
+                              onClick={() => copyExistingLink(res.trackingToken!, res.id)}
+                              data-testid={`copy-tracking-${res.id}`}
+                            >
+                              {copiedId === res.id ? (
+                                <>
+                                  <Check className="h-4 w-4 mr-2 text-green-600" />
+                                  Kopyalandı
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Takip Linkini Kopyala
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem 
+                              onClick={() => trackingMutation.mutate(res.id)}
+                              disabled={trackingMutation.isPending}
+                              data-testid={`generate-tracking-${res.id}`}
+                            >
+                              <Link2 className="h-4 w-4 mr-2" />
+                              Takip Linki Oluştur
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
             ))
           )}
         </TableBody>

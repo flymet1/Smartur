@@ -498,6 +498,24 @@ function BigCalendar({
     return filteredReservations.filter(r => r.date === dateStr);
   };
 
+  const groupReservations = (reservationList: Reservation[]) => {
+    const packageGroups = new Map<string, Reservation[]>();
+    const standaloneReservations: Reservation[] = [];
+    
+    reservationList.forEach(r => {
+      if (r.packageTourId) {
+        const groupKey = `${r.packageTourId}-${r.orderNumber || r.customerName}`;
+        const existing = packageGroups.get(groupKey) || [];
+        existing.push(r);
+        packageGroups.set(groupKey, existing);
+      } else {
+        standaloneReservations.push(r);
+      }
+    });
+    
+    return { packageGroups, standaloneReservations };
+  };
+
   const getOccupancyForDate = (dateStr: string) => {
     const dayReservations = reservations.filter(r => r.date === dateStr && r.status !== 'cancelled');
     const totalPeople = dayReservations.reduce((sum, r) => sum + r.quantity, 0);
@@ -768,18 +786,55 @@ function BigCalendar({
                     </Badge>
                   )}
                 </div>
-                <div className="space-y-1 overflow-y-auto max-h-[350px]">
-                  {dayReservations.map(res => (
-                    <ReservationCard 
-                      key={res.id} 
-                      reservation={res} 
-                      activityName={getActivityName(res.activityId)}
-                      activityColor={getActivityColor(res.activityId)}
-                      onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
-                      onSelect={onReservationSelect}
-                      packageTourName={getPackageTourName(res.packageTourId)}
-                    />
-                  ))}
+                <div className="space-y-2 overflow-y-auto max-h-[350px]">
+                  {(() => {
+                    const { packageGroups, standaloneReservations } = groupReservations(dayReservations);
+                    const elements: JSX.Element[] = [];
+                    
+                    packageGroups.forEach((groupRes, groupKey) => {
+                      const firstRes = groupRes[0];
+                      elements.push(
+                        <div key={`pkg-${groupKey}`} className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-1.5">
+                          <div className="flex items-center gap-1 mb-1 px-1">
+                            <Package className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                            <span className="text-xs font-medium text-purple-700 dark:text-purple-300 truncate">
+                              {getPackageTourName(firstRes.packageTourId)}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground px-1 mb-1 truncate">
+                            {firstRes.customerName}
+                          </div>
+                          <div className="space-y-1">
+                            {groupRes.map(res => (
+                              <ReservationCard 
+                                key={res.id} 
+                                reservation={res} 
+                                activityName={getActivityName(res.activityId)}
+                                activityColor={getActivityColor(res.activityId)}
+                                onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                                onSelect={onReservationSelect}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    });
+                    
+                    standaloneReservations.forEach(res => {
+                      elements.push(
+                        <ReservationCard 
+                          key={res.id} 
+                          reservation={res} 
+                          activityName={getActivityName(res.activityId)}
+                          activityColor={getActivityColor(res.activityId)}
+                          onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                          onSelect={onReservationSelect}
+                        />
+                      );
+                    });
+                    
+                    return elements;
+                  })()}
                 </div>
               </div>
             );
@@ -863,18 +918,55 @@ function BigCalendar({
                             {timeSlot}
                           </div>
                           <div className="flex-1 py-1 min-h-[50px] flex flex-wrap gap-2">
-                            {slotReservations.map(res => (
-                              <ReservationCard 
-                                key={res.id} 
-                                reservation={res} 
-                                activityName={getActivityName(res.activityId)}
-                                activityColor={getActivityColor(res.activityId)}
-                                onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
-                                onSelect={onReservationSelect}
-                                packageTourName={getPackageTourName(res.packageTourId)}
-                                expanded
-                              />
-                            ))}
+                            {(() => {
+                              const { packageGroups, standaloneReservations } = groupReservations(slotReservations);
+                              const elements: JSX.Element[] = [];
+                              
+                              packageGroups.forEach((groupRes, groupKey) => {
+                                const firstRes = groupRes[0];
+                                elements.push(
+                                  <div key={`pkg-${groupKey}`} className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-2">
+                                    <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
+                                      <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                      <span className="font-medium text-purple-700 dark:text-purple-300">
+                                        {getPackageTourName(firstRes.packageTourId)}
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">-</span>
+                                      <span className="text-sm font-medium">{firstRes.customerName}</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {groupRes.map(res => (
+                                        <ReservationCard 
+                                          key={res.id} 
+                                          reservation={res} 
+                                          activityName={getActivityName(res.activityId)}
+                                          activityColor={getActivityColor(res.activityId)}
+                                          onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                                          onSelect={onReservationSelect}
+                                          expanded
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              });
+                              
+                              standaloneReservations.forEach(res => {
+                                elements.push(
+                                  <ReservationCard 
+                                    key={res.id} 
+                                    reservation={res} 
+                                    activityName={getActivityName(res.activityId)}
+                                    activityColor={getActivityColor(res.activityId)}
+                                    onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                                    onSelect={onReservationSelect}
+                                    expanded
+                                  />
+                                );
+                              });
+                              
+                              return elements;
+                            })()}
                           </div>
                         </div>
                       );
