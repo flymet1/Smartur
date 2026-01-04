@@ -30,6 +30,7 @@ import { format, parse, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDay
 import { tr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type CalendarView = "day" | "week" | "month";
 
@@ -44,7 +45,8 @@ export default function Reservations() {
   const urlDate = new URLSearchParams(searchParams).get("date");
   
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "list" | "mini">("calendar");
+  const [miniSelectedDate, setMiniSelectedDate] = useState<Date>(urlDate ? new Date(urlDate) : new Date());
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -61,6 +63,7 @@ export default function Reservations() {
     if (urlDate) {
       setDateFilter(urlDate);
       setCurrentDate(new Date(urlDate));
+      setMiniSelectedDate(new Date(urlDate));
     }
   }, [urlDate]);
 
@@ -332,14 +335,25 @@ export default function Reservations() {
                   size="sm"
                   onClick={() => setViewMode("calendar")}
                   className="rounded-r-none"
+                  data-testid="button-view-calendar"
                 >
                   <Calendar className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "mini" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("mini")}
+                  className="rounded-none border-x"
+                  data-testid="button-view-mini"
+                >
+                  <CalendarDays className="h-4 w-4" />
                 </Button>
                 <Button
                   variant={viewMode === "list" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("list")}
                   className="rounded-l-none"
+                  data-testid="button-view-list"
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -356,6 +370,15 @@ export default function Reservations() {
         ) : viewMode === "list" ? (
           <ReservationTable 
             reservations={filteredReservations} 
+            onReservationSelect={setSelectedReservation}
+          />
+        ) : viewMode === "mini" ? (
+          <MiniCalendarView 
+            reservations={reservations || []}
+            activities={activities || []}
+            packageTours={packageTours}
+            selectedDate={miniSelectedDate}
+            onDateSelect={setMiniSelectedDate}
             onReservationSelect={setSelectedReservation}
           />
         ) : (
@@ -1669,5 +1692,195 @@ function RecentReservations({ reservations, activities }: RecentReservationsProp
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+interface MiniCalendarViewProps {
+  reservations: Reservation[];
+  activities: Activity[];
+  packageTours: PackageTour[];
+  selectedDate: Date;
+  onDateSelect: (date: Date) => void;
+  onReservationSelect: (reservation: Reservation) => void;
+}
+
+function MiniCalendarView({ reservations, activities, packageTours, selectedDate, onDateSelect, onReservationSelect }: MiniCalendarViewProps) {
+  const [currentMonth, setCurrentMonth] = useState(selectedDate);
+  
+  useEffect(() => {
+    if (!isSameMonth(currentMonth, selectedDate)) {
+      setCurrentMonth(selectedDate);
+    }
+  }, [selectedDate]);
+  
+  const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
+  
+  const dayReservations = reservations.filter(r => r.date === selectedDateStr);
+  
+  const activityReservations = dayReservations.filter(r => r.activityId && !r.packageTourId);
+  const packageReservations = dayReservations.filter(r => r.packageTourId);
+  
+  const getActivityName = (activityId: number | null) => 
+    activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
+  
+  const getPackageName = (packageTourId: number | null) =>
+    packageTours.find(p => p.id === packageTourId)?.name || "Bilinmiyor";
+  
+  const getActivityColor = (activityId: number | null) => {
+    const activity = activities.find(a => a.id === activityId);
+    const colorMap: Record<string, string> = {
+      blue: "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300",
+      purple: "bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-300",
+      green: "bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300",
+      orange: "bg-orange-100 border-orange-300 text-orange-800 dark:bg-orange-900/30 dark:border-orange-700 dark:text-orange-300",
+      pink: "bg-pink-100 border-pink-300 text-pink-800 dark:bg-pink-900/30 dark:border-pink-700 dark:text-pink-300",
+      cyan: "bg-cyan-100 border-cyan-300 text-cyan-800 dark:bg-cyan-900/30 dark:border-cyan-700 dark:text-cyan-300",
+      red: "bg-red-100 border-red-300 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300",
+      yellow: "bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300",
+    };
+    return colorMap[activity?.color || "blue"] || colorMap.blue;
+  };
+  
+  const getStatusInfo = (status: string | null) => {
+    if (status === "confirmed") return { label: "Onaylı", className: "bg-green-500/10 text-green-700 dark:text-green-400" };
+    if (status === "cancelled") return { label: "İptal", className: "bg-red-500/10 text-red-700 dark:text-red-400" };
+    return { label: "Beklemede", className: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400" };
+  };
+  
+  const datesWithReservations = useMemo(() => {
+    const dates = new Set<string>();
+    reservations.forEach(r => {
+      if (r.date) dates.add(r.date);
+    });
+    return dates;
+  }, [reservations]);
+  
+  return (
+    <div className="flex flex-col lg:flex-row gap-4">
+      <Card className="lg:w-80">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <CardTitle className="text-base">
+              {format(currentMonth, "MMMM yyyy", { locale: tr })}
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <CalendarPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => date && onDateSelect(date)}
+            month={currentMonth}
+            onMonthChange={setCurrentMonth}
+            locale={tr}
+            modifiers={{
+              hasReservation: (date) => datesWithReservations.has(format(date, "yyyy-MM-dd"))
+            }}
+            modifiersClassNames={{
+              hasReservation: "bg-primary/10 font-semibold"
+            }}
+            className="rounded-md"
+          />
+        </CardContent>
+      </Card>
+      
+      <Card className="flex-1">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="activities" className="w-full">
+            <TabsList className="w-full">
+              <TabsTrigger value="activities" className="flex-1" data-testid="tab-activities">
+                <Bus className="h-4 w-4 mr-2" />
+                Aktiviteler ({activityReservations.length})
+              </TabsTrigger>
+              <TabsTrigger value="packages" className="flex-1" data-testid="tab-packages">
+                <Package className="h-4 w-4 mr-2" />
+                Paket Turlar ({packageReservations.length})
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="activities" className="mt-4">
+              {activityReservations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Bu tarihte aktivite rezervasyonu yok
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {activityReservations.map(reservation => {
+                    const status = getStatusInfo(reservation.status);
+                    return (
+                      <div 
+                        key={reservation.id}
+                        onClick={() => onReservationSelect(reservation)}
+                        className={`p-3 rounded-md border cursor-pointer hover-elevate ${getActivityColor(reservation.activityId)}`}
+                        data-testid={`mini-reservation-${reservation.id}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{reservation.customerName}</div>
+                            <div className="text-sm opacity-80">{getActivityName(reservation.activityId)}</div>
+                            <div className="text-xs opacity-70 mt-1">
+                              {reservation.time} - {reservation.quantity} kişi
+                            </div>
+                          </div>
+                          <Badge className={status.className}>{status.label}</Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="packages" className="mt-4">
+              {packageReservations.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Bu tarihte paket tur rezervasyonu yok
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {packageReservations.map(reservation => {
+                    const status = getStatusInfo(reservation.status);
+                    return (
+                      <div 
+                        key={reservation.id}
+                        onClick={() => onReservationSelect(reservation)}
+                        className="p-3 rounded-md border cursor-pointer hover-elevate bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-300"
+                        data-testid={`mini-reservation-${reservation.id}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{reservation.customerName}</div>
+                            <div className="text-sm opacity-80 flex items-center gap-1">
+                              <Package className="h-3 w-3" />
+                              {getPackageName(reservation.packageTourId)}
+                            </div>
+                            <div className="text-xs opacity-70 mt-1">
+                              {reservation.time} - {reservation.quantity} kişi
+                            </div>
+                          </div>
+                          <Badge className={status.className}>{status.label}</Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
