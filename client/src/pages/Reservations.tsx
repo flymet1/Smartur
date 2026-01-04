@@ -495,12 +495,23 @@ export default function Reservations() {
 
   const filteredReservations = (reservations || [])
     .filter(r => {
-      const searchLower = search.toLowerCase();
+      // Turkish-aware lowercase conversion
+      const turkishLower = (str: string) => str
+        .replace(/İ/g, 'i')
+        .replace(/I/g, 'ı')
+        .replace(/Ş/g, 'ş')
+        .replace(/Ğ/g, 'ğ')
+        .replace(/Ü/g, 'ü')
+        .replace(/Ö/g, 'ö')
+        .replace(/Ç/g, 'ç')
+        .toLowerCase();
+      
+      const searchLower = turkishLower(search);
       const matchesSearch = 
-        r.customerName.toLowerCase().includes(searchLower) || 
+        turkishLower(r.customerName).includes(searchLower) || 
         r.customerPhone.toLowerCase().includes(searchLower) ||
         (r.orderNumber && r.orderNumber.toLowerCase().includes(searchLower)) ||
-        (r.hotelName && r.hotelName.toLowerCase().includes(searchLower)) ||
+        (r.hotelName && turkishLower(r.hotelName).includes(searchLower)) ||
         (r.customerEmail && r.customerEmail.toLowerCase().includes(searchLower));
       const matchesStatus = statusFilter === "all" || r.status === statusFilter;
       const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
