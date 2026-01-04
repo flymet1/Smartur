@@ -172,7 +172,7 @@ export function Sidebar() {
                     <div className={cn(
                       "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                       pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
-                        ? "bg-blue-600 text-white border-blue-600"
+                        ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
                         : location === item.href 
                           ? "bg-primary text-primary-foreground border-primary" 
                           : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
@@ -181,7 +181,8 @@ export function Sidebar() {
                       {item.label}
                       {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
                         <Badge 
-                          className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1 bg-accent text-accent-foreground border-0"
+                          variant="destructive" 
+                          className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
                         >
                           {pendingCustomerRequestsCount}
                         </Badge>
@@ -193,14 +194,15 @@ export function Sidebar() {
                   <div className={cn(
                     "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                     openSupportCount > 0 
-                      ? "bg-blue-600 text-white border-blue-600" 
+                      ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
                       : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
                   )}>
                     <Bell className="h-3.5 w-3.5" />
                     Destek
                     {openSupportCount > 0 && (
                       <Badge 
-                        className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1 bg-accent text-accent-foreground border-0"
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
                       >
                         {openSupportCount}
                       </Badge>
@@ -249,7 +251,7 @@ export function Sidebar() {
                 <div className={cn(
                   "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                   pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
-                    ? "bg-blue-600 text-white border-blue-600"
+                    ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
                     : location === item.href 
                       ? "bg-primary text-primary-foreground border-primary shadow-sm" 
                       : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
@@ -258,7 +260,8 @@ export function Sidebar() {
                   {item.label}
                   {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
                     <Badge 
-                      className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1 bg-accent text-accent-foreground border-0"
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
                       data-testid="badge-customer-requests"
                     >
                       {pendingCustomerRequestsCount}
@@ -271,14 +274,15 @@ export function Sidebar() {
               <div className={cn(
                 "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                 openSupportCount > 0 
-                  ? "bg-blue-600 text-white border-blue-600" 
+                  ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
                   : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
               )} data-testid="button-support-notifications">
                 <Bell className="h-3.5 w-3.5" />
                 Destek
                 {openSupportCount > 0 && (
                   <Badge 
-                    className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1 bg-accent text-accent-foreground border-0"
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
                     data-testid="badge-support-open"
                   >
                     {openSupportCount}
