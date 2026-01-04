@@ -786,18 +786,58 @@ export default function Reservations() {
         {/* Conflict Warnings */}
         {customerConflicts.length > 0 && (
           <Card className="p-3 bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
-            <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-orange-800 dark:text-orange-200">Çakışma Uyarısı</p>
-                <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                  {customerConflicts.length} müşterinin aynı gün farklı aktivitelerde rezervasyonu var.
-                  {customerConflicts.slice(0, 2).map((c, i) => (
-                    <span key={i}> {c.customer} ({c.reservations.length} rez.)</span>
-                  ))}
-                  {customerConflicts.length > 2 && <span> ve {customerConflicts.length - 2} diğer...</span>}
-                </p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-orange-800 dark:text-orange-200">Çakışma Uyarısı</p>
+                  <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                    {customerConflicts.length} müşterinin aynı gün farklı aktivitelerde rezervasyonu var.
+                    {customerConflicts.slice(0, 2).map((c, i) => (
+                      <span key={i}> {c.customer} ({c.reservations.length} rez.)</span>
+                    ))}
+                    {customerConflicts.length > 2 && <span> ve {customerConflicts.length - 2} diğer...</span>}
+                  </p>
+                </div>
               </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-shrink-0 bg-white dark:bg-background">
+                    Çakışmaları Gör
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Çakışan Rezervasyonlar</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    {customerConflicts.map((conflict, idx) => (
+                      <Card key={idx} className="p-3">
+                        <p className="font-medium text-sm mb-2">{conflict.customer}</p>
+                        <div className="space-y-2">
+                          {conflict.reservations.map((r) => (
+                            <div 
+                              key={r.id} 
+                              className="flex items-center justify-between gap-2 p-2 rounded bg-muted/50 cursor-pointer hover-elevate"
+                              onClick={() => setSelectedReservation(r)}
+                            >
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{r.customerName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {activities?.find(a => a.id === r.activityId)?.name} - {format(new Date(r.date), "d MMM yyyy", { locale: tr })} {r.time}
+                                </p>
+                              </div>
+                              <Badge variant={r.status === 'confirmed' ? 'default' : r.status === 'cancelled' ? 'destructive' : 'secondary'} className="text-[10px]">
+                                {r.status === 'confirmed' ? 'Onaylı' : r.status === 'cancelled' ? 'İptal' : 'Beklemede'}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </Card>
         )}
