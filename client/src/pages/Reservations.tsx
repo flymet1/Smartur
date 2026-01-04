@@ -597,10 +597,20 @@ function BigCalendar({
                   selected={currentDate}
                   onSelect={(date) => {
                     if (date) {
-                      onDateSelect(date);
+                      if (view === 'week') {
+                        onDateSelect(startOfWeek(date, { weekStartsOn: 1 }));
+                      } else {
+                        onDateSelect(date);
+                      }
                       setDatePickerOpen(false);
                     }
                   }}
+                  modifiers={view === 'week' ? {
+                    weekStart: (date) => date.getDay() === 1
+                  } : undefined}
+                  modifiersClassNames={view === 'week' ? {
+                    weekStart: "font-bold text-primary"
+                  } : undefined}
                   initialFocus
                 />
               </PopoverContent>
