@@ -2735,18 +2735,19 @@ function BigCalendar({
                       <p className="text-xs text-muted-foreground">Acentayı seçin ve bildirim gönderin</p>
                     </div>
                   </div>
-                  <Select value={moveSelectedAgencyId} onValueChange={setMoveSelectedAgencyId}>
-                    <SelectTrigger data-testid="select-move-agency">
-                      <SelectValue placeholder="Acenta seçin..." />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="z-[9999]">
-                      {agencies?.map((agency) => (
-                        <SelectItem key={agency.id} value={String(agency.id)}>
-                          {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(İletişim bilgisi yok)'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    value={moveSelectedAgencyId}
+                    onChange={(e) => setMoveSelectedAgencyId(e.target.value)}
+                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    data-testid="select-move-agency"
+                  >
+                    <option value="">Acenta seçin...</option>
+                    {agencies?.map((agency) => (
+                      <option key={agency.id} value={String(agency.id)}>
+                        {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(İletişim bilgisi yok)'}
+                      </option>
+                    ))}
+                  </select>
                   <Textarea
                     value={moveAgencyMessage}
                     onChange={(e) => setMoveAgencyMessage(e.target.value)}
