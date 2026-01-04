@@ -50,6 +50,7 @@ export default function Reservations() {
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name">("date-desc");
   const [selectedDateForNew, setSelectedDateForNew] = useState<string>("");
   const [newReservationOpen, setNewReservationOpen] = useState(false);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -258,6 +259,11 @@ export default function Reservations() {
               onOpenChange={setNewReservationOpen}
               defaultDate={selectedDateForNew}
             />
+            <ReservationDetailDialog
+              reservation={selectedReservation}
+              activities={activities || []}
+              onClose={() => setSelectedReservation(null)}
+            />
           </div>
         </div>
 
@@ -357,6 +363,7 @@ export default function Reservations() {
               onGoToToday={goToToday}
               onDateClick={handleAddReservationForDate}
               onDateSelect={setCurrentDate}
+              onReservationSelect={setSelectedReservation}
               statusFilter={statusFilter}
               activityFilter={activityFilter}
               onActivityFilterChange={setActivityFilter}
@@ -382,6 +389,7 @@ interface BigCalendarProps {
   onGoToToday: () => void;
   onDateClick: (dateStr: string) => void;
   onDateSelect: (date: Date) => void;
+  onReservationSelect: (reservation: Reservation) => void;
   statusFilter: string;
   activityFilter: string;
   onActivityFilterChange: (value: string) => void;
@@ -397,6 +405,7 @@ function BigCalendar({
   onGoToToday,
   onDateClick,
   onDateSelect,
+  onReservationSelect,
   statusFilter,
   activityFilter,
   onActivityFilterChange
@@ -701,6 +710,7 @@ function BigCalendar({
                       activityName={getActivityName(res.activityId)}
                       activityColor={getActivityColor(res.activityId)}
                       onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                      onSelect={onReservationSelect}
                     />
                   ))}
                 </div>
@@ -793,6 +803,7 @@ function BigCalendar({
                                 activityName={getActivityName(res.activityId)}
                                 activityColor={getActivityColor(res.activityId)}
                                 onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                                onSelect={onReservationSelect}
                                 expanded
                               />
                             ))}
@@ -816,10 +827,11 @@ interface ReservationCardProps {
   activityName: string;
   activityColor: string;
   onStatusChange: (status: string) => void;
+  onSelect?: (reservation: Reservation) => void;
   expanded?: boolean;
 }
 
-function ReservationCard({ reservation, activityName, activityColor, onStatusChange, expanded }: ReservationCardProps) {
+function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded }: ReservationCardProps) {
   const statusConfig = {
     confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 border-green-200" },
     pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
@@ -829,7 +841,11 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
 
   if (expanded) {
     return (
-      <Card className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''}`}>
+      <Card 
+        className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate`}
+        onClick={() => onSelect?.(reservation)}
+        data-testid={`card-reservation-${reservation.id}`}
+      >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm truncate">{reservation.customerName}</div>
@@ -840,7 +856,10 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className={`${status.className} text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1`}>
+              <button 
+                className={`${status.className} text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1`}
+                onClick={(e) => e.stopPropagation()}
+              >
                 {status.label}
                 <ChevronDown className="h-3 w-3" />
               </button>
@@ -863,7 +882,11 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
   }
 
   return (
-    <Card className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''}`}>
+    <Card 
+      className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate`}
+      onClick={() => onSelect?.(reservation)}
+      data-testid={`card-reservation-${reservation.id}`}
+    >
       <div className="font-medium truncate">{reservation.customerName}</div>
       <div className="text-muted-foreground truncate">{activityName}</div>
       <div className="flex items-center justify-between mt-1">
@@ -885,6 +908,140 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
         </DropdownMenu>
       </div>
     </Card>
+  );
+}
+
+interface ReservationDetailDialogProps {
+  reservation: Reservation | null;
+  activities: Activity[];
+  onClose: () => void;
+}
+
+function ReservationDetailDialog({ reservation, activities, onClose }: ReservationDetailDialogProps) {
+  const { toast } = useToast();
+  
+  if (!reservation) return null;
+  
+  const activity = activities.find(a => a.id === reservation.activityId);
+  const statusConfig = {
+    confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700" },
+    pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700" },
+    cancelled: { label: "İptal", className: "bg-red-100 text-red-700" },
+  };
+  const status = statusConfig[reservation.status as keyof typeof statusConfig] || { label: reservation.status, className: "" };
+
+  const copyTrackingLink = () => {
+    if (reservation.trackingToken) {
+      const link = `${window.location.origin}/takip/${reservation.trackingToken}`;
+      navigator.clipboard.writeText(link);
+      toast({ title: "Kopyalandı", description: "Takip linki panoya kopyalandı." });
+    }
+  };
+
+  return (
+    <Dialog open={!!reservation} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            Rezervasyon Detayı
+            <Badge className={status.className}>{status.label}</Badge>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Müşteri</Label>
+              <div className="font-medium" data-testid="text-customer-name">{reservation.customerName}</div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Telefon</Label>
+              <div className="font-medium" data-testid="text-customer-phone">{reservation.customerPhone}</div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">E-posta</Label>
+              <div className="font-medium" data-testid="text-customer-email">{reservation.customerEmail || "-"}</div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Kişi Sayısı</Label>
+              <div className="font-medium" data-testid="text-quantity">{reservation.quantity} kişi</div>
+            </div>
+          </div>
+          
+          <div className="border-t pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-muted-foreground text-xs">Aktivite</Label>
+                <div className="font-medium" data-testid="text-activity">{activity?.name || "Bilinmiyor"}</div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-xs">Kaynak</Label>
+                <div className="font-medium">{reservation.source === 'manual' ? 'Manuel' : reservation.source === 'woocommerce' ? 'WooCommerce' : reservation.source}</div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-xs">Tarih</Label>
+                <div className="font-medium" data-testid="text-date">{reservation.date}</div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-xs">Saat</Label>
+                <div className="font-medium" data-testid="text-time">{reservation.time}</div>
+              </div>
+            </div>
+          </div>
+
+          {(reservation.priceTl > 0 || reservation.priceUsd > 0) && (
+            <div className="border-t pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                {reservation.priceTl > 0 && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
+                    <div className="font-medium">{reservation.priceTl.toLocaleString('tr-TR')} ₺</div>
+                  </div>
+                )}
+                {reservation.priceUsd > 0 && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
+                    <div className="font-medium">${reservation.priceUsd}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {reservation.orderNumber && (
+            <div className="border-t pt-4">
+              <Label className="text-muted-foreground text-xs">Sipariş No</Label>
+              <div className="font-medium">{reservation.orderNumber}</div>
+            </div>
+          )}
+
+          {reservation.hotelName && (
+            <div className="border-t pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground text-xs">Otel</Label>
+                  <div className="font-medium">{reservation.hotelName}</div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Transfer</Label>
+                  <div className="font-medium">{reservation.hasTransfer ? "Var" : "Yok"}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter className="gap-2">
+          {reservation.trackingToken && (
+            <Button variant="outline" size="sm" onClick={copyTrackingLink} data-testid="button-copy-tracking">
+              <Copy className="h-4 w-4 mr-1" />
+              Takip Linki
+            </Button>
+          )}
+          <Button variant="outline" onClick={onClose} data-testid="button-close-detail">
+            Kapat
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
