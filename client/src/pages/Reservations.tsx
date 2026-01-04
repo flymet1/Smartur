@@ -66,6 +66,7 @@ export default function Reservations() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activityFilter, setActivityFilter] = useState<string>("all");
+  const [occupancyFilter, setOccupancyFilter] = useState<string>("all");
   const [packageTourFilter, setPackageTourFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>(urlDate || "");
   const [dateRangeFilter, setDateRangeFilter] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
@@ -994,6 +995,19 @@ export default function Reservations() {
                   {(activities || []).map(a => (
                     <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              <Select value={occupancyFilter} onValueChange={setOccupancyFilter}>
+                <SelectTrigger className="min-w-[140px] w-auto max-w-[180px]" data-testid="select-occupancy-filter">
+                  <TrendingUp className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <SelectValue placeholder="Doluluk Oranı" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Doluluk</SelectItem>
+                  <SelectItem value="low">%0-50 (Düşük)</SelectItem>
+                  <SelectItem value="medium">%50-80 (Orta)</SelectItem>
+                  <SelectItem value="high">%80-100 (Yüksek)</SelectItem>
+                  <SelectItem value="full">%100 (Dolu)</SelectItem>
                 </SelectContent>
               </Select>
               <Popover>
