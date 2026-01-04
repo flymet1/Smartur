@@ -1624,13 +1624,8 @@ export async function registerRoutes(
         const packageTour = await storage.getPackageTour(reservation.packageTourId);
         if (packageTour) {
           activityName = packageTour.name + " (Paket Tur)";
-          // Parse defaultTimes from JSON string if needed
-          try {
-            const times = packageTour.defaultTimes;
-            defaultTimes = typeof times === 'string' ? JSON.parse(times) : (times || []);
-          } catch {
-            defaultTimes = [];
-          }
+          // Package tours don't have defaultTimes, leave as empty array
+          defaultTimes = [];
         }
       }
       
@@ -3644,7 +3639,7 @@ Sky Fethiye`;
       const packageJsonPath = path.resolve(process.cwd(), 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
       
-      let gitInfo = { commit: null, branch: null };
+      let gitInfo: { commit: string | null, branch: string | null } = { commit: null, branch: null };
       try {
         const { execSync } = await import('child_process');
         gitInfo.commit = execSync('git rev-parse --short HEAD', { encoding: 'utf8', timeout: 5000 }).trim();
@@ -3735,11 +3730,11 @@ Sky Fethiye`;
         
         data: {
           activities: activities.map(a => ({
-            id: a.id, name: a.name, priceTl: a.priceTl, priceUsd: a.priceUsd, 
+            id: a.id, name: a.name, price: a.price, priceUsd: a.priceUsd, 
             defaultTimes: a.defaultTimes, defaultCapacity: a.defaultCapacity, active: a.active
           })),
           packageTours: packageTours.map(p => ({
-            id: p.id, name: p.name, priceTl: p.priceTl, priceUsd: p.priceUsd, active: p.active
+            id: p.id, name: p.name, price: p.price, priceUsd: p.priceUsd, active: p.active
           })),
           reservations: recentReservations.slice(0, 50).map(r => ({
             id: r.id, activityId: r.activityId, date: r.date, time: r.time, 
@@ -3757,8 +3752,8 @@ Sky Fethiye`;
         },
         
         settings: {
-          botRulesConfigured: !!botRules?.value,
-          botAccess: botAccess?.value ? JSON.parse(botAccess.value) : null,
+          botRulesConfigured: !!botRules,
+          botAccess: botAccess ? (() => { try { return JSON.parse(botAccess); } catch { return null; } })() : null,
         }
       };
       
