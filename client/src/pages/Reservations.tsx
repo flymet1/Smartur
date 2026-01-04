@@ -474,6 +474,7 @@ function BigCalendar({
   onPackageTourFilterChange
 }: BigCalendarProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [overflowDialogDate, setOverflowDialogDate] = useState<string | null>(null);
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       return apiRequest('PATCH', `/api/reservations/${id}/status`, { status });
@@ -803,26 +804,80 @@ function BigCalendar({
                   )}
                 </div>
                 <div className="space-y-0.5 overflow-hidden max-h-[80px]">
-                  {dayReservations.slice(0, 3).map(res => (
-                    <div 
-                      key={res.id}
-                      className={`text-[10px] px-1 py-0.5 rounded truncate border cursor-pointer hover:opacity-80 ${getActivityColor(res.activityId)} ${
-                        res.status === 'cancelled' ? 'opacity-50 line-through' : ''
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onReservationSelect(res);
-                      }}
-                      data-testid={`reservation-${res.id}`}
-                    >
-                      {res.time} {res.customerName.split(' ')[0]}
-                    </div>
-                  ))}
-                  {dayReservations.length > 3 && (
-                    <div className="text-[10px] text-muted-foreground px-1">
-                      +{dayReservations.length - 3} daha
-                    </div>
-                  )}
+                  {(() => {
+                    const { packageGroups, standaloneReservations } = groupReservations(dayReservations);
+                    const maxVisible = 3;
+                    
+                    type DisplayEntry = { type: 'package'; key: string; reservations: Reservation[]; time: string } | { type: 'standalone'; reservation: Reservation; time: string };
+                    const entries: DisplayEntry[] = [];
+                    
+                    packageGroups.forEach((groupRes, groupKey) => {
+                      const earliestTime = groupRes.reduce((min, r) => r.time < min ? r.time : min, groupRes[0].time);
+                      entries.push({ type: 'package', key: groupKey, reservations: groupRes, time: earliestTime });
+                    });
+                    
+                    standaloneReservations.forEach(res => {
+                      entries.push({ type: 'standalone', reservation: res, time: res.time });
+                    });
+                    
+                    entries.sort((a, b) => a.time.localeCompare(b.time));
+                    
+                    const visibleEntries = entries.slice(0, maxVisible);
+                    const remaining = Math.max(0, entries.length - maxVisible);
+                    
+                    return (
+                      <>
+                        {visibleEntries.map((entry, idx) => {
+                          if (entry.type === 'package') {
+                            const firstRes = entry.reservations[0];
+                            return (
+                              <div 
+                                key={`pkg-${entry.key}`}
+                                className="text-[10px] px-1 py-0.5 rounded truncate border-2 border-purple-400 bg-purple-50 dark:bg-purple-900/30 cursor-pointer hover:opacity-80 flex items-center gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onReservationSelect(firstRes);
+                                }}
+                              >
+                                <Package className="h-3 w-3 text-purple-600 flex-shrink-0" />
+                                <span className="text-purple-700 dark:text-purple-300 truncate">
+                                  {firstRes.customerName.split(' ')[0]} ({entry.reservations.length})
+                                </span>
+                              </div>
+                            );
+                          } else {
+                            const res = entry.reservation;
+                            return (
+                              <div 
+                                key={res.id}
+                                className={`text-[10px] px-1 py-0.5 rounded truncate border cursor-pointer hover:opacity-80 ${getActivityColor(res.activityId)} ${
+                                  res.status === 'cancelled' ? 'opacity-50 line-through' : ''
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onReservationSelect(res);
+                                }}
+                                data-testid={`reservation-${res.id}`}
+                              >
+                                {res.time} {res.customerName.split(' ')[0]}
+                              </div>
+                            );
+                          }
+                        })}
+                        {remaining > 0 && (
+                          <button 
+                            className="text-[10px] text-primary hover:underline px-1 text-left"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOverflowDialogDate(dateStr);
+                            }}
+                          >
+                            +{remaining} daha
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 {dayReservations.length === 0 && (
                   <div className="invisible group-hover/cell:visible absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1081,6 +1136,109 @@ function BigCalendar({
           })}
         </div>
       )}
+
+      <Dialog open={!!overflowDialogDate} onOpenChange={(open) => !open && setOverflowDialogDate(null)}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              {overflowDialogDate && format(new Date(overflowDialogDate), 'd MMMM yyyy, EEEE', { locale: tr })}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {overflowDialogDate && (() => {
+              const dayReservations = getReservationsForDate(overflowDialogDate);
+              const { packageGroups, standaloneReservations } = groupReservations(dayReservations);
+              
+              type DisplayEntry = { type: 'package'; key: string; reservations: Reservation[]; time: string } | { type: 'standalone'; reservation: Reservation; time: string };
+              const entries: DisplayEntry[] = [];
+              
+              packageGroups.forEach((groupRes, groupKey) => {
+                const earliestTime = groupRes.reduce((min, r) => r.time < min ? r.time : min, groupRes[0].time);
+                entries.push({ type: 'package', key: groupKey, reservations: groupRes, time: earliestTime });
+              });
+              
+              standaloneReservations.forEach(res => {
+                entries.push({ type: 'standalone', reservation: res, time: res.time });
+              });
+              
+              entries.sort((a, b) => a.time.localeCompare(b.time));
+              
+              if (entries.length === 0) {
+                return (
+                  <div className="text-center text-muted-foreground py-4">
+                    Bu tarihte rezervasyon yok
+                  </div>
+                );
+              }
+              
+              return entries.map((entry) => {
+                if (entry.type === 'package') {
+                  const firstRes = entry.reservations[0];
+                  return (
+                    <div key={`pkg-${entry.key}`} className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-3">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <span className="font-medium text-purple-700 dark:text-purple-300">
+                          {getPackageTourName(firstRes.packageTourId)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">-</span>
+                        <span className="text-sm font-medium">{firstRes.customerName}</span>
+                        <Badge variant="secondary" className="text-xs">{entry.reservations.length} aktivite</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {entry.reservations.sort((a, b) => a.time.localeCompare(b.time)).map(res => (
+                          <div 
+                            key={res.id}
+                            className={`p-2 rounded border cursor-pointer hover:opacity-80 ${getActivityColor(res.activityId)} ${
+                              res.status === 'cancelled' ? 'opacity-50 line-through' : ''
+                            }`}
+                            onClick={() => {
+                              setOverflowDialogDate(null);
+                              onReservationSelect(res);
+                            }}
+                          >
+                            <div className="flex justify-between items-center gap-2">
+                              <span className="font-medium text-sm">{getActivityName(res.activityId)}</span>
+                              <Badge variant="outline" className="text-xs">{res.time}</Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {res.quantity} kişi
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  const res = entry.reservation;
+                  return (
+                    <div 
+                      key={res.id}
+                      className={`p-3 rounded border cursor-pointer hover:opacity-80 ${getActivityColor(res.activityId)} ${
+                        res.status === 'cancelled' ? 'opacity-50 line-through' : ''
+                      }`}
+                      onClick={() => {
+                        setOverflowDialogDate(null);
+                        onReservationSelect(res);
+                      }}
+                    >
+                      <div className="flex justify-between items-center gap-2 flex-wrap">
+                        <span className="font-medium">{res.customerName}</span>
+                        <Badge variant="outline">{res.time}</Badge>
+                      </div>
+                      <div className="text-sm mt-1">{getActivityName(res.activityId)}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {res.quantity} kişi
+                      </div>
+                    </div>
+                  );
+                }
+              });
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

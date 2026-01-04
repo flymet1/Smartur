@@ -30,6 +30,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 04.01.2026: Ay Görünümü Paket Tur Gruplama ve Taşma Dialogu - Aylık takvim görünümünde paket turlar artık mor kenarlıklı ve Package ikonu ile gruplu gösteriliyor. Gün hücrelerinde 3'ten fazla kayıt olduğunda "+X daha" butonu ile taşma dialogu açılıyor. Dialog içinde tüm rezervasyonlar saate göre sıralı, paket turlar ve tekil rezervasyonlar ayrı stillerle gösteriliyor. Tıklanarak detay açılabiliyor.
 - 04.01.2026: Paket Tur Gruplama - Aynı paket tura ait rezervasyonlar haftalık/günlük görünümde ve liste tablosunda gruplandı. Mor kenarlıklı konteyner içinde Package ikonu ve müşteri adı başlığı ile gösteriliyor. Gruplama anahtarı: packageTourId + orderNumber/customerName.
 - 04.01.2026: Mini Takvim Görünümü - Rezervasyonlar sayfasına üçüncü görünüm modu eklendi (CalendarDays ikonu). Kompakt aylık takvim + Aktiviteler/Paket Turlar sekmeli liste. Rezervasyonu olan günler vurgulanıyor. Seçili güne ait rezervasyonlar renk kodlu kartlarla gösteriliyor. Tıklayarak detay dialogu açılıyor.
 - 04.01.2026: Paket Tur Filtresi ve Görsel İyileştirme - Takvime paket tur filtresi eklendi (Tüm Paketler / Paket Yok / belirli paket seçimi). Aktivite ve paket tur filtreleri birlikte çalışıyor. Gün ve hafta görünümünde rezervasyon kartlarında paket tur bilgisi mor Package ikonu ile gösteriliyor. Genişletilmiş kartlarda paket tur adı açıkça görüntüleniyor.
