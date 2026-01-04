@@ -2,7 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
+import { useState, useRef, useEffect } from "react";
 import { 
   BookOpen, 
   Bot, 
@@ -61,11 +63,55 @@ import {
   Activity,
   TrendingUp,
   PieChart,
-  ArrowRight
+  ArrowRight,
+  X
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 
+const searchableContent = [
+  { id: "genel-bakis", keywords: ["genel", "bakis", "woocommerce", "whatsapp", "takvim", "kapasite", "finans", "musteri", "acenta"], title: "Genel Bakis" },
+  { id: "panel-sayfalari", keywords: ["panel", "sayfa", "dashboard", "takvim", "rezervasyon", "aktivite", "paket", "finans", "acenta", "mesaj", "talep", "destek", "bot", "test", "ayar", "gelistirici", "tatil", "sunum"], title: "Panel Sayfalari" },
+  { id: "whatsapp-bot", keywords: ["whatsapp", "bot", "mesaj", "onay", "sablon", "template", "eskalasyon", "bilgi", "musaitlik", "tarih", "bayram", "tatil", "rezervasyon", "cok", "dil", "sss", "fallback", "takip", "talep", "toplu", "bildirim"], title: "WhatsApp Bot" },
+  { id: "rezervasyon-yonetimi", keywords: ["rezervasyon", "yonetim", "durum", "onay", "iptal", "beklemede", "paket", "tur", "siparis", "filtre", "takvim", "liste"], title: "Rezervasyon Yonetimi" },
+  { id: "musteri-takip", keywords: ["musteri", "takip", "link", "token", "talep", "iptal", "saat", "degisiklik", "bildirim", "whatsapp", "acenta"], title: "Musteri Takip" },
+  { id: "finans", keywords: ["finans", "acenta", "odeme", "sevk", "dispatch", "payout", "kdv", "fatura", "rapor", "hesaplasma"], title: "Finans" },
+  { id: "ayarlar", keywords: ["ayar", "guvenlik", "whatsapp", "entegrasyon", "sistem", "sifre", "logo", "prompt", "otomatik", "yanit", "kara", "liste", "tatil", "gmail", "guncelleme", "hata", "sablon", "toplu", "bildirim"], title: "Ayarlar" },
+  { id: "lisans", keywords: ["lisans", "uyelik", "plan", "trial", "basic", "professional", "enterprise", "sure", "limit"], title: "Lisans" },
+  { id: "sorun-giderme", keywords: ["sorun", "hata", "problem", "mesaj", "siparis", "bot", "kapasite", "bildirim"], title: "Sorun Giderme" },
+  { id: "guncellemeler", keywords: ["guncelleme", "yeni", "ozellik", "iyilestirme", "degisiklik", "versiyon"], title: "Guncellemeler" },
+];
+
 export default function UserGuide() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<typeof searchableContent>([]);
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const query = searchQuery.toLowerCase().replace(/[iI]/g, 'i').replace(/[Ii]/g, 'i');
+    const results = searchableContent.filter(item => 
+      item.keywords.some(keyword => keyword.includes(query)) ||
+      item.title.toLowerCase().includes(query)
+    );
+    setSearchResults(results);
+  }, [searchQuery]);
+
+  const handleSearchResultClick = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+      setTimeout(() => {
+        element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+      }, 2000);
+    }
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
@@ -79,6 +125,53 @@ export default function UserGuide() {
             Smartur Rezervasyon ve Operasyon Yönetim Sistemi - Kapsamlı Kullanım Rehberi
           </p>
         </div>
+
+        <Card className="border-primary/20">
+          <CardContent className="py-4">
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input
+                  type="text"
+                  placeholder="Kılavuzda ara... (örn: whatsapp, rezervasyon, şablon)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-9"
+                  data-testid="input-guide-search"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg z-50 max-h-64 overflow-auto">
+                  {searchResults.map((result) => (
+                    <button
+                      key={result.id}
+                      onClick={() => handleSearchResultClick(result.id)}
+                      className="w-full text-left px-4 py-2 hover:bg-muted flex items-center gap-2 transition-colors"
+                    >
+                      <ChevronRight className="h-4 w-4 text-primary" />
+                      <span>{result.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchQuery.length >= 2 && searchResults.length === 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-md shadow-lg z-50 p-4 text-center text-muted-foreground text-sm">
+                  Sonuç bulunamadı
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
           <CardContent className="py-4">
@@ -515,6 +608,46 @@ export default function UserGuide() {
                     Rezervasyonunuzu takip etmek için: {'{takip_linki}'} Teşekkür ederiz."
                   </p>
                 </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Send className="h-4 w-4 text-purple-500" />
+                  Toplu Bildirim Mesaj Şablonları
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Rezervasyonlar sayfasından seçilen rezervasyonlara toplu WhatsApp bildirimi gönderirken 
+                  durum bazlı şablonlar kullanabilirsiniz. Ayarlar &gt; WhatsApp &gt; Şablonlar sekmesinden yönetilir.
+                </p>
+                <div className="grid md:grid-cols-3 gap-3 mb-4">
+                  <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/20">
+                    <p className="text-sm font-medium text-green-600">Onaylandı</p>
+                    <p className="text-xs text-muted-foreground">Onaylanan rezervasyonlar için</p>
+                  </div>
+                  <div className="bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
+                    <p className="text-sm font-medium text-amber-600">Beklemede</p>
+                    <p className="text-xs text-muted-foreground">Değerlendirilen rezervasyonlar için</p>
+                  </div>
+                  <div className="bg-red-500/10 rounded-lg p-3 border border-red-500/20">
+                    <p className="text-sm font-medium text-red-600">İptal</p>
+                    <p className="text-xs text-muted-foreground">İptal edilen rezervasyonlar için</p>
+                  </div>
+                </div>
+                <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2 mb-3">
+                  <p className="font-medium">Kullanılabilir Değişkenler:</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
+                    <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
+                    <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktivite{'}'}</code> - Aktivite adı</div>
+                    <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saat{'}'}</code> - Rezervasyon saati</div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Tek rezervasyon seçildiğinde değişkenler otomatik doldurulur. Birden fazla seçildiğinde genel mesaj kullanılır. 
+                  Şablon seçimi yapılırken ilk seçilen rezervasyonun durumuna göre uygun şablon otomatik önerilir.
+                </p>
               </div>
 
               <Separator />
@@ -1118,6 +1251,12 @@ export default function UserGuide() {
                 En son eklenen özellikler ve iyileştirmeler:
               </p>
               
+              <UpdateEntry 
+                date="04.01.2026"
+                title="Toplu Bildirim Mesaj Şablonları"
+                description="Rezervasyon durumuna göre (Onaylandı/Beklemede/İptal) farklı mesaj şablonları. Dinamik değişken desteği ({isim}, {tarih}, {aktivite}, {saat}). Kılavuz içi arama özelliği eklendi."
+                type="ozellik"
+              />
               <UpdateEntry 
                 date="04.01.2026"
                 title="Müşteri Talep Mesaj Şablonları"
