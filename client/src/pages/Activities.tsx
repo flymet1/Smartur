@@ -20,7 +20,6 @@ import type { Activity } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FaqEditor, FaqItem, parseFaq, stringifyFaq } from "@/components/FaqEditor";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
@@ -105,23 +104,13 @@ function ActivityCard({ activity, onDelete }: { activity: Activity; onDelete: ()
 
         <div className="flex gap-2 pt-4 border-t mt-auto">
           <ActivityDialog activity={activity} trigger={
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" className="flex-1">
-                  <Edit className="w-4 h-4 mr-2" /> Düzenle
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Aktiviteyi düzenle</TooltipContent>
-            </Tooltip>
+            <Button variant="outline" className="flex-1" data-testid={`button-edit-activity-${activity.id}`}>
+              <Edit className="w-4 h-4 mr-2" /> Düzenle
+            </Button>
           } />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="destructive" size="icon" onClick={onDelete}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Aktiviteyi sil</TooltipContent>
-          </Tooltip>
+          <Button variant="destructive" size="icon" onClick={onDelete} data-testid={`button-delete-activity-${activity.id}`}>
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </div>
@@ -301,14 +290,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all">
-                <Plus className="w-4 h-4 mr-2" /> Yeni Aktivite
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Yeni aktivite ekle</TooltipContent>
-          </Tooltip>
+          <Button className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all" data-testid="button-add-activity">
+            <Plus className="w-4 h-4 mr-2" /> Yeni Aktivite
+          </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-hidden flex flex-col">
