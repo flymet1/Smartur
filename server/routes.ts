@@ -2868,7 +2868,7 @@ Sky Fethiye`;
           const emailHtml = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-                Yeni Destek Talebi - My Smartur
+                Yeni Destek Talebi - Smartur
               </h2>
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
@@ -2889,13 +2889,13 @@ Sky Fethiye`;
                 <p style="white-space: pre-wrap; margin: 0;">${message}</p>
               </div>
               <p style="margin-top: 20px; font-size: 12px; color: #666;">
-                Bu e-posta My Smartur destek sistemi tarafından otomatik olarak gönderilmiştir.
+                Bu e-posta Smartur destek sistemi tarafından otomatik olarak gönderilmiştir.
               </p>
             </div>
           `;
 
           await transporter.sendMail({
-            from: `"My Smartur Destek" <${gmailCreds.user}>`,
+            from: `"Smartur Destek" <${gmailCreds.user}>`,
             to: developerEmail,
             replyTo: senderEmail || undefined,
             subject: `[Destek] ${requestTypeLabels[requestType] || requestType}: ${subject}`,

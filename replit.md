@@ -1,7 +1,7 @@
-# My Smartur - WhatsApp Reservation & Operations System
+# Smartur - WhatsApp Reservation & Operations System
 
 ## Overview
-My Smartur is a modern reservation and operations management system developed with Node.js/TypeScript. It leverages Replit's built-in PostgreSQL database for reliability and scalability, and integrates Google Gemini AI for an intelligent response system.
+Smartur is a modern reservation and operations management system developed with Node.js/TypeScript. It leverages Replit's built-in PostgreSQL database for reliability and scalability, and integrates Google Gemini AI for an intelligent response system.
 
 **Key Capabilities:**
 - **Activity Management**: Define tours/activities, set pricing and duration.

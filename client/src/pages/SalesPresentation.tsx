@@ -97,7 +97,7 @@ function CoverPage() {
           </div>
         </div>
         
-        <h1 className="text-5xl font-bold mb-4">My Smartur</h1>
+        <h1 className="text-5xl font-bold mb-4">Smartur</h1>
         <p className="text-2xl font-light mb-8 text-blue-100">
           Akıllı Rezervasyon ve Operasyon Yönetim Sistemi
         </p>
@@ -138,13 +138,13 @@ function ExecutiveSummary() {
       <SectionHeader 
         icon={<FileText className="w-8 h-8" />}
         title="Yönetici Özeti"
-        subtitle="My Smartur Nedir?"
+        subtitle="Smartur Nedir?"
       />
 
       <div className="grid md:grid-cols-2 gap-8 mt-8">
         <div className="space-y-6">
           <p className="text-lg text-gray-700 leading-relaxed">
-            <strong>My Smartur</strong>, tur operatörleri, kuaförler, güzellik salonları ve 
+            <strong>Smartur</strong>, tur operatörleri, kuaförler, güzellik salonları ve 
             oteller için geliştirilmiş kapsamlı bir rezervasyon ve operasyon yönetim sistemidir.
           </p>
           
@@ -247,7 +247,7 @@ function ValueProposition() {
       <SectionHeader 
         icon={<Star className="w-8 h-8" />}
         title="Değer Önerimiz"
-        subtitle="Neden My Smartur?"
+        subtitle="Neden Smartur?"
       />
 
       <div className="grid md:grid-cols-3 gap-6 mt-8">
@@ -975,7 +975,7 @@ function CallToAction() {
         </h2>
         
         <p className="text-xl text-blue-100 mb-12">
-          14 günlük ücretsiz deneme ile My Smartur'u risksiz deneyin.
+          14 günlük ücretsiz deneme ile Smartur'u risksiz deneyin.
           Kredi kartı gerekmez.
         </p>
 
@@ -1017,7 +1017,7 @@ function CallToAction() {
       </div>
 
       <div className="absolute bottom-8 text-sm text-blue-200">
-        My Smartur - Akıllı Rezervasyon ve Operasyon Yönetim Sistemi
+        Smartur - Akıllı Rezervasyon ve Operasyon Yönetim Sistemi
       </div>
     </div>
   );

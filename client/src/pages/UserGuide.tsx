@@ -76,7 +76,7 @@ export default function UserGuide() {
             Kullanım Kılavuzu
           </h1>
           <p className="text-muted-foreground mt-2">
-            My Smartur Rezervasyon ve Operasyon Yönetim Sistemi - Kapsamlı Kullanım Rehberi
+            Smartur Rezervasyon ve Operasyon Yönetim Sistemi - Kapsamlı Kullanım Rehberi
           </p>
         </div>
 
@@ -108,7 +108,7 @@ export default function UserGuide() {
             id="genel-bakis"
           >
             <p className="text-muted-foreground mb-6">
-              My Smartur, tur operatörleri ve aktivite sağlayıcıları için geliştirilmiş profesyonel bir 
+              Smartur, tur operatörleri ve aktivite sağlayıcıları için geliştirilmiş profesyonel bir 
               rezervasyon ve operasyon yönetim sistemidir. Web sitenizden gelen siparişler otomatik olarak 
               sisteme aktarılır, WhatsApp botunuz müşterilerinize 7/24 hizmet verir.
             </p>
@@ -1046,7 +1046,7 @@ export default function UserGuide() {
         </div>
 
         <div className="text-center text-sm text-muted-foreground pt-8 border-t space-y-2">
-          <p>My Smartur Rezervasyon ve Operasyon Yönetim Sistemi</p>
+          <p>Smartur Rezervasyon ve Operasyon Yönetim Sistemi</p>
           <p>Sorularınız için destek ekibimizle iletişime geçebilirsiniz.</p>
           <NavLink href="/support" label="Destek Talebi Oluştur" icon={<Headphones className="h-4 w-4" />} />
         </div>

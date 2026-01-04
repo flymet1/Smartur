@@ -556,7 +556,7 @@ export default function Settings() {
               </div>
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                 <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Bu bilgiler My Smartur yönetim paneline giriş için kullanılacaktır. Şifreyi güvenli bir yerde saklayın.
+                  Bu bilgiler Smartur yönetim paneline giriş için kullanılacaktır. Şifreyi güvenli bir yerde saklayın.
                 </p>
               </div>
             </CardContent>
@@ -687,7 +687,7 @@ export default function Settings() {
                       </li>
                       <li>2 Adımlı Doğrulama'yı açın (açık değilse)</li>
                       <li>"Uygulama şifreleri" bölümüne gidin</li>
-                      <li>"My Smartur" adıyla yeni şifre oluşturun</li>
+                      <li>"Smartur" adıyla yeni şifre oluşturun</li>
                       <li>16 karakterlik şifreyi kopyalayın</li>
                     </ol>
                   </div>
