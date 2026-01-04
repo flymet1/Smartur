@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useMemo } from "react";
-import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search } from "lucide-react";
+import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search, ExternalLink } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useSearch } from "wouter";
@@ -89,15 +90,42 @@ export default function Messages() {
     if (!conversations) return [];
     if (!searchQuery.trim()) return conversations;
     
-    const normalizedSearch = searchQuery.replace(/\D/g, '').toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
+    const normalizedSearch = searchQuery.replace(/\D/g, '');
+    
     return conversations.filter(conv => {
       const normalizedPhone = conv.phone.replace(/\D/g, '');
       const customerName = conv.reservationInfo?.customerName?.toLowerCase() || '';
-      return normalizedPhone.includes(normalizedSearch) || 
-             conv.phone.includes(searchQuery) ||
-             customerName.includes(searchQuery.toLowerCase());
+      
+      // Phone number search (if query contains digits)
+      if (normalizedSearch.length > 0) {
+        if (normalizedPhone.includes(normalizedSearch)) return true;
+      }
+      
+      // Name search
+      if (customerName.includes(query)) return true;
+      
+      // Exact phone match
+      if (conv.phone.toLowerCase().includes(query)) return true;
+      
+      return false;
     });
   }, [conversations, searchQuery]);
+
+  const openWhatsApp = (phone: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Format phone for WhatsApp - remove all non-digits and ensure country code
+    let formattedPhone = phone.replace(/\D/g, '');
+    // If starts with 0, replace with Turkey code
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '90' + formattedPhone.substring(1);
+    }
+    // If doesn't have country code, add Turkey code
+    if (!formattedPhone.startsWith('90') && formattedPhone.length === 10) {
+      formattedPhone = '90' + formattedPhone;
+    }
+    window.open(`https://wa.me/${formattedPhone}`, '_blank');
+  };
 
   const resolveMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -230,7 +258,16 @@ export default function Messages() {
                         <Phone className="w-5 h-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-bold" data-testid={`text-phone-${conv.phone}`}>{conv.phone}</h3>
+                        <h3 
+                          className="font-bold flex items-center gap-1.5 text-green-600 hover:text-green-700 hover:underline cursor-pointer" 
+                          data-testid={`text-phone-${conv.phone}`}
+                          onClick={(e) => openWhatsApp(conv.phone, e)}
+                          title="WhatsApp'ta aç"
+                        >
+                          <SiWhatsapp className="w-4 h-4" />
+                          {conv.phone}
+                          <ExternalLink className="w-3 h-3 opacity-50" />
+                        </h3>
                         <p className="text-xs text-muted-foreground">{formatDate(conv.lastMessageTime)}</p>
                       </div>
                     </div>
@@ -310,7 +347,15 @@ export default function Messages() {
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Phone className="w-5 h-5" />
-              {selectedConversation?.phone}
+              <span 
+                className="flex items-center gap-1.5 text-green-600 hover:text-green-700 hover:underline cursor-pointer"
+                onClick={(e) => selectedConversation && openWhatsApp(selectedConversation.phone, e)}
+                title="WhatsApp'ta aç"
+              >
+                <SiWhatsapp className="w-4 h-4" />
+                {selectedConversation?.phone}
+                <ExternalLink className="w-3 h-3 opacity-50" />
+              </span>
             </DialogTitle>
           </DialogHeader>
           
