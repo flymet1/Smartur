@@ -355,6 +355,34 @@ export default function UserGuide() {
                   "Teknik yapılandırma"
                 ]}
               />
+
+              <PageGuideCard 
+                icon={<CalendarDays className="h-5 w-5 text-pink-500" />}
+                title="Tatil Yönetimi"
+                path="/holidays"
+                features={[
+                  "Resmi tatil, dini bayram ve özel gün tanımları",
+                  "2026 yılı hazır tatil şablonları ile hızlı kurulum",
+                  "Bot'un 'bayramda müsait misiniz?' sorularını anlaması için anahtar kelimeler",
+                  "Tatil başlangıç ve bitiş tarihleri",
+                  "Tatil türü seçimi (Resmi/Dini/Özel)",
+                  "Aktif/pasif durumu ile geçici devre dışı bırakma"
+                ]}
+              />
+
+              <PageGuideCard 
+                icon={<FileText className="h-5 w-5 text-indigo-500" />}
+                title="Satış Sunumu"
+                path="/sales-presentation"
+                features={[
+                  "Smartur'un tüm özelliklerini gösteren profesyonel sunum",
+                  "PDF olarak kaydetme ve yazdırma",
+                  "Potansiyel müşterilere göstermek için hazır materyal",
+                  "Fiyatlandırma planları ve özellik karşılaştırması",
+                  "Sektörel kullanım senaryoları (Tur, Kuaför, Otel)",
+                  "Değer önerisi ve avantajlar"
+                ]}
+              />
             </div>
           </Section>
 
