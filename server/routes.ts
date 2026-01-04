@@ -1539,6 +1539,34 @@ export async function registerRoutes(
     }
   });
 
+  // General reservation update (date, time, etc.)
+  app.patch("/api/reservations/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { date, time } = req.body;
+    
+    try {
+      const reservations = await storage.getReservations();
+      const reservation = reservations.find(r => r.id === id);
+      if (!reservation) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadı" });
+      }
+      
+      const updates: { date?: string; time?: string } = {};
+      if (date) updates.date = date;
+      if (time) updates.time = time;
+      
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: "Güncellenecek alan belirtilmedi" });
+      }
+      
+      const updated = await storage.updateReservation(id, updates);
+      res.json(updated);
+    } catch (error) {
+      console.error("Reservation update error:", error);
+      res.status(500).json({ error: "Rezervasyon güncellenemedi" });
+    }
+  });
+
   // Update reservation status
   app.patch("/api/reservations/:id/status", async (req, res) => {
     const id = parseInt(req.params.id);

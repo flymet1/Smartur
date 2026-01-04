@@ -51,7 +51,7 @@ export default function Reservations() {
     queryKey: ['/api/package-tours']
   });
   const { data: agencies = [] } = useQuery<Agency[]>({
-    queryKey: ['/api/agencies']
+    queryKey: ['/api/finance/agencies']
   });
   const { data: holidays = [] } = useQuery<Holiday[]>({
     queryKey: ['/api/holidays']
