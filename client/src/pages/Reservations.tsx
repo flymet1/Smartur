@@ -1800,36 +1800,88 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
               Bu tarihte rezervasyon yok
             </div>
           ) : (
-            <div className="space-y-2">
-              {dayReservations.map(reservation => {
-                const status = getStatusInfo(reservation.status);
-                const isPackage = !!reservation.packageTourId;
-                return (
-                  <div 
-                    key={reservation.id}
-                    onClick={() => onReservationSelect(reservation)}
-                    className={`p-3 rounded-md border cursor-pointer hover-elevate ${getActivityColor(reservation.activityId)}`}
-                    data-testid={`mini-reservation-${reservation.id}`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{reservation.customerName}</div>
-                        <div className="text-sm opacity-80">{getActivityName(reservation.activityId)}</div>
-                        {isPackage && (
-                          <div className="text-xs flex items-center gap-1 mt-0.5 text-purple-600 dark:text-purple-400">
-                            <Package className="h-3 w-3" />
-                            <span className="font-medium">{getPackageName(reservation.packageTourId)}</span>
-                          </div>
-                        )}
-                        <div className="text-xs opacity-70 mt-1">
-                          {reservation.time} - {reservation.quantity} kişi
-                        </div>
+            <div className="space-y-3">
+              {(() => {
+                const packageGroups = new Map<number, Reservation[]>();
+                const standaloneReservations: Reservation[] = [];
+                
+                dayReservations.forEach(r => {
+                  if (r.packageTourId) {
+                    const existing = packageGroups.get(r.packageTourId) || [];
+                    existing.push(r);
+                    packageGroups.set(r.packageTourId, existing);
+                  } else {
+                    standaloneReservations.push(r);
+                  }
+                });
+                
+                const elements: JSX.Element[] = [];
+                
+                packageGroups.forEach((groupReservations, packageTourId) => {
+                  elements.push(
+                    <div key={`package-${packageTourId}`} className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-2">
+                      <div className="flex items-center gap-2 mb-2 px-1">
+                        <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <span className="font-medium text-purple-700 dark:text-purple-300">
+                          {getPackageName(packageTourId)}
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {groupReservations.length} rezervasyon
+                        </Badge>
                       </div>
-                      <Badge className={status.className}>{status.label}</Badge>
+                      <div className="space-y-1">
+                        {groupReservations.map(reservation => {
+                          const status = getStatusInfo(reservation.status);
+                          return (
+                            <div 
+                              key={reservation.id}
+                              onClick={() => onReservationSelect(reservation)}
+                              className={`p-2 rounded-md border cursor-pointer hover-elevate ${getActivityColor(reservation.activityId)}`}
+                              data-testid={`mini-reservation-${reservation.id}`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm truncate">{reservation.customerName}</div>
+                                  <div className="text-xs opacity-80">{getActivityName(reservation.activityId)}</div>
+                                  <div className="text-xs opacity-70">
+                                    {reservation.time} - {reservation.quantity} kişi
+                                  </div>
+                                </div>
+                                <Badge className={`${status.className} text-xs`}>{status.label}</Badge>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+                
+                standaloneReservations.forEach(reservation => {
+                  const status = getStatusInfo(reservation.status);
+                  elements.push(
+                    <div 
+                      key={reservation.id}
+                      onClick={() => onReservationSelect(reservation)}
+                      className={`p-3 rounded-md border cursor-pointer hover-elevate ${getActivityColor(reservation.activityId)}`}
+                      data-testid={`mini-reservation-${reservation.id}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{reservation.customerName}</div>
+                          <div className="text-sm opacity-80">{getActivityName(reservation.activityId)}</div>
+                          <div className="text-xs opacity-70 mt-1">
+                            {reservation.time} - {reservation.quantity} kişi
+                          </div>
+                        </div>
+                        <Badge className={status.className}>{status.label}</Badge>
+                      </div>
+                    </div>
+                  );
+                });
+                
+                return elements;
+              })()}
             </div>
           )}
         </CardContent>
