@@ -708,11 +708,15 @@ export default function Reservations() {
                 variant="ghost" 
                 size="sm" 
                 className="p-0 h-auto mt-2 text-xs text-primary"
-                onClick={() => setLocation(`/calendar?date=${format(new Date(), 'yyyy-MM-dd')}`)}
-                data-testid="button-today-calendar"
+                onClick={() => {
+                  setViewMode("list");
+                  setCurrentDate(new Date());
+                  setSearch("");
+                }}
+                data-testid="button-today-reservations"
               >
-                <Calendar className="h-3 w-3 mr-1" />
-                Günün Kapasitesini Gör
+                <List className="h-3 w-3 mr-1" />
+                Bugünün Rezervasyonlarını Gör
               </Button>
             </Card>
             <Card className="p-4">
