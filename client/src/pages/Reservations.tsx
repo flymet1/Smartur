@@ -1281,6 +1281,10 @@ function BigCalendar({
 }: BigCalendarProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [overflowDialogDate, setOverflowDialogDate] = useState<string | null>(null);
+  const [draggedReservation, setDraggedReservation] = useState<Reservation | null>(null);
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const { toast } = useToast();
+  
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       return apiRequest('PATCH', `/api/reservations/${id}/status`, { status });
@@ -1289,6 +1293,50 @@ function BigCalendar({
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
     },
   });
+
+  const moveMutation = useMutation({
+    mutationFn: async ({ id, newDate }: { id: number; newDate: string }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}`, { date: newDate });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      toast({ title: "Başarılı", description: "Rezervasyon tarihi güncellendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Tarih güncellenemedi.", variant: "destructive" });
+    },
+  });
+
+  const handleDragStart = (e: React.DragEvent, reservation: Reservation) => {
+    setDraggedReservation(reservation);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(reservation.id));
+  };
+
+  const handleDragOver = (e: React.DragEvent, dateStr: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverDate(dateStr);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverDate(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dateStr: string) => {
+    e.preventDefault();
+    setDragOverDate(null);
+    
+    if (draggedReservation && draggedReservation.date !== dateStr) {
+      moveMutation.mutate({ id: draggedReservation.id, newDate: dateStr });
+    }
+    setDraggedReservation(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedReservation(null);
+    setDragOverDate(null);
+  };
 
   const getActivityName = (activityId: number | null) => {
     if (!activityId) return "Bilinmiyor";
@@ -1567,9 +1615,12 @@ function BigCalendar({
                 key={idx}
                 className={`group/cell min-h-[120px] border-b border-r p-1 ${
                   !isCurrentMonth ? 'bg-muted/20' : ''
-                } ${isDayToday ? 'bg-primary/5' : ''} hover:bg-muted/30 cursor-pointer transition-colors relative`}
+                } ${isDayToday ? 'bg-primary/5' : ''} ${dragOverDate === dateStr ? 'bg-primary/20 ring-2 ring-primary ring-inset' : 'hover:bg-muted/30'} cursor-pointer transition-colors relative`}
                 onClick={() => onDateClick(dateStr)}
                 data-testid={`calendar-day-${dateStr}`}
+                onDragOver={(e) => handleDragOver(e, dateStr)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, dateStr)}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className={`text-sm font-medium ${
@@ -1657,7 +1708,7 @@ function BigCalendar({
                             return (
                               <div 
                                 key={res.id}
-                                className={`text-[10px] px-1 py-0.5 rounded truncate border cursor-pointer hover:opacity-80 ${getActivityColor(res.activityId)} ${
+                                className={`text-[10px] px-1 py-0.5 rounded truncate border cursor-grab active:cursor-grabbing hover:opacity-80 ${getActivityColor(res.activityId)} ${
                                   res.status === 'cancelled' ? 'opacity-50 line-through' : ''
                                 }`}
                                 onClick={(e) => {
@@ -1665,6 +1716,8 @@ function BigCalendar({
                                   onReservationSelect(res);
                                 }}
                                 data-testid={`reservation-${res.id}`}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, res)}
                               >
                                 {res.time} {res.customerName.split(' ')[0]}
                               </div>
@@ -1710,9 +1763,12 @@ function BigCalendar({
             return (
               <div 
                 key={idx}
-                className={`group min-h-[400px] border-r p-2 ${isDayToday ? 'bg-primary/5' : ''} hover:bg-muted/30 cursor-pointer relative`}
+                className={`group min-h-[400px] border-r p-2 ${isDayToday ? 'bg-primary/5' : ''} ${dragOverDate === dateStr ? 'bg-primary/20 ring-2 ring-primary ring-inset' : 'hover:bg-muted/30'} cursor-pointer relative transition-colors`}
                 onClick={() => onDateClick(dateStr)}
                 data-testid={`calendar-week-day-${dateStr}`}
+                onDragOver={(e) => handleDragOver(e, dateStr)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, dateStr)}
               >
                 <div className="text-center pb-2 border-b mb-2">
                   <div className="text-xs text-muted-foreground">{format(day, 'EEE', { locale: tr })}</div>
@@ -1752,6 +1808,8 @@ function BigCalendar({
                                 activityColor={getActivityColor(res.activityId)}
                                 onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                                 onSelect={onReservationSelect}
+                                draggable
+                                onDragStart={handleDragStart}
                               />
                             ))}
                           </div>
@@ -1768,6 +1826,8 @@ function BigCalendar({
                           activityColor={getActivityColor(res.activityId)}
                           onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                           onSelect={onReservationSelect}
+                          draggable
+                          onDragStart={handleDragStart}
                         />
                       );
                     });
@@ -2058,9 +2118,11 @@ interface ReservationCardProps {
   onSelect?: (reservation: Reservation) => void;
   expanded?: boolean;
   packageTourName?: string | null;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent, reservation: Reservation) => void;
 }
 
-function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded, packageTourName }: ReservationCardProps) {
+function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded, packageTourName, draggable, onDragStart }: ReservationCardProps) {
   const statusConfig = {
     confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 border-green-200" },
     pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
@@ -2068,12 +2130,20 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
   };
   const status = statusConfig[reservation.status as keyof typeof statusConfig] || { label: reservation.status, className: "" };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    if (draggable && onDragStart) {
+      onDragStart(e, reservation);
+    }
+  };
+
   if (expanded) {
     return (
       <Card 
-        className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate`}
+        className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
         onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
         data-testid={`card-reservation-${reservation.id}`}
+        draggable={draggable}
+        onDragStart={handleDragStart}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -2118,9 +2188,11 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
 
   return (
     <Card 
-      className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate`}
+      className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
       onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
       data-testid={`card-reservation-${reservation.id}`}
+      draggable={draggable}
+      onDragStart={handleDragStart}
     >
       <div className="font-medium truncate">{reservation.customerName}</div>
       <div className="flex items-center gap-1">
