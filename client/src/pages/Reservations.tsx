@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import type { PackageTour, Activity, Reservation, Agency } from "@shared/schema";
+import type { PackageTour, Activity, Reservation, Agency, Holiday } from "@shared/schema";
 import { useSearch, useLocation } from "wouter";
 import { format, parse, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, addWeeks, subWeeks, isSameMonth, isSameDay, isToday, eachDayOfInterval, subDays, isWithinInterval, differenceInDays } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -43,6 +43,9 @@ export default function Reservations() {
   });
   const { data: agencies = [] } = useQuery<Agency[]>({
     queryKey: ['/api/agencies']
+  });
+  const { data: holidays = [] } = useQuery<Holiday[]>({
+    queryKey: ['/api/holidays']
   });
   const searchParams = useSearch();
   const [, setLocation] = useLocation();
@@ -1217,6 +1220,7 @@ export default function Reservations() {
               reservations={reservations || []}
               activities={activities || []}
               packageTours={packageTours}
+              holidays={holidays}
               view={calendarView}
               currentDate={currentDate}
               onViewChange={setCalendarView}
@@ -1246,6 +1250,7 @@ interface BigCalendarProps {
   reservations: Reservation[];
   activities: Activity[];
   packageTours: PackageTour[];
+  holidays: Holiday[];
   view: CalendarView;
   currentDate: Date;
   onViewChange: (view: CalendarView) => void;
@@ -1265,6 +1270,7 @@ function BigCalendar({
   reservations, 
   activities, 
   packageTours,
+  holidays,
   view, 
   currentDate, 
   onViewChange, 
@@ -1417,6 +1423,29 @@ function BigCalendar({
     });
 
     return { totalPeople, activityOccupancy };
+  };
+
+  const getHolidayForDate = (dateStr: string): Holiday | null => {
+    return holidays.find(h => {
+      const holidayStart = h.startDate;
+      const holidayEnd = h.endDate || h.startDate;
+      return dateStr >= holidayStart && dateStr <= holidayEnd;
+    }) || null;
+  };
+
+  const getCapacityPercentage = (dateStr: string): number => {
+    const dayReservations = reservations.filter(r => r.date === dateStr && r.status !== 'cancelled');
+    let totalCapacity = 0;
+    let totalBooked = 0;
+    
+    activities.forEach(activity => {
+      const capacity = (activity as any)?.defaultCapacity || 10;
+      const booked = dayReservations.filter(r => r.activityId === activity.id).reduce((sum, r) => sum + r.quantity, 0);
+      totalCapacity += capacity;
+      totalBooked += booked;
+    });
+    
+    return totalCapacity > 0 ? Math.round((totalBooked / totalCapacity) * 100) : 0;
   };
 
   const calendarDays = useMemo(() => {
@@ -1609,13 +1638,15 @@ function BigCalendar({
             const { totalPeople, activityOccupancy } = getOccupancyForDate(dateStr);
             const isCurrentMonth = isSameMonth(day, currentDate);
             const isDayToday = isToday(day);
+            const holiday = getHolidayForDate(dateStr);
+            const capacityPct = getCapacityPercentage(dateStr);
 
             return (
               <div 
                 key={idx}
                 className={`group/cell min-h-[120px] border-b border-r p-1 ${
                   !isCurrentMonth ? 'bg-muted/20' : ''
-                } ${isDayToday ? 'bg-primary/5' : ''} ${dragOverDate === dateStr ? 'bg-primary/20 ring-2 ring-primary ring-inset' : 'hover:bg-muted/30'} cursor-pointer transition-colors relative`}
+                } ${isDayToday ? 'bg-primary/5' : ''} ${holiday ? 'bg-red-50 dark:bg-red-900/20' : ''} ${dragOverDate === dateStr ? 'bg-primary/20 ring-2 ring-primary ring-inset' : 'hover:bg-muted/30'} cursor-pointer transition-colors relative`}
                 onClick={() => onDateClick(dateStr)}
                 data-testid={`calendar-day-${dateStr}`}
                 onDragOver={(e) => handleDragOver(e, dateStr)}
@@ -1623,11 +1654,23 @@ function BigCalendar({
                 onDrop={(e) => handleDrop(e, dateStr)}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`text-sm font-medium ${
-                    isDayToday ? 'bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center' : ''
-                  } ${!isCurrentMonth ? 'text-muted-foreground' : ''}`}>
-                    {format(day, 'd')}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-sm font-medium ${
+                      isDayToday ? 'bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center' : ''
+                    } ${!isCurrentMonth ? 'text-muted-foreground' : ''} ${holiday ? 'text-red-600 dark:text-red-400' : ''}`}>
+                      {format(day, 'd')}
+                    </span>
+                    {holiday && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-[9px] text-red-600 dark:text-red-400 truncate max-w-[50px]">
+                            {holiday.name}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>{holiday.name}</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   {totalPeople > 0 && (
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1746,6 +1789,14 @@ function BigCalendar({
                     </div>
                   </div>
                 )}
+                {capacityPct > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1">
+                    <div 
+                      className={`h-full transition-all ${capacityPct >= 80 ? 'bg-red-500' : capacityPct >= 50 ? 'bg-amber-500' : 'bg-green-500'}`}
+                      style={{ width: `${Math.min(capacityPct, 100)}%` }}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1759,11 +1810,13 @@ function BigCalendar({
             const dayReservations = getReservationsForDate(dateStr);
             const { totalPeople, activityOccupancy } = getOccupancyForDate(dateStr);
             const isDayToday = isToday(day);
+            const holiday = getHolidayForDate(dateStr);
+            const capacityPct = getCapacityPercentage(dateStr);
 
             return (
               <div 
                 key={idx}
-                className={`group min-h-[400px] border-r p-2 ${isDayToday ? 'bg-primary/5' : ''} ${dragOverDate === dateStr ? 'bg-primary/20 ring-2 ring-primary ring-inset' : 'hover:bg-muted/30'} cursor-pointer relative transition-colors`}
+                className={`group min-h-[400px] border-r p-2 ${isDayToday ? 'bg-primary/5' : ''} ${holiday ? 'bg-red-50 dark:bg-red-900/20' : ''} ${dragOverDate === dateStr ? 'bg-primary/20 ring-2 ring-primary ring-inset' : 'hover:bg-muted/30'} cursor-pointer relative transition-colors`}
                 onClick={() => onDateClick(dateStr)}
                 data-testid={`calendar-week-day-${dateStr}`}
                 onDragOver={(e) => handleDragOver(e, dateStr)}
@@ -1772,9 +1825,14 @@ function BigCalendar({
               >
                 <div className="text-center pb-2 border-b mb-2">
                   <div className="text-xs text-muted-foreground">{format(day, 'EEE', { locale: tr })}</div>
-                  <div className={`text-lg font-semibold ${isDayToday ? 'text-primary' : ''}`}>
+                  <div className={`text-lg font-semibold ${isDayToday ? 'text-primary' : ''} ${holiday ? 'text-red-600 dark:text-red-400' : ''}`}>
                     {format(day, 'd')}
                   </div>
+                  {holiday && (
+                    <div className="text-[9px] text-red-600 dark:text-red-400 truncate">
+                      {holiday.name}
+                    </div>
+                  )}
                   {totalPeople > 0 && (
                     <Badge variant="secondary" className="text-[10px] mt-1">
                       {totalPeople} kişi
@@ -1846,11 +1904,26 @@ function BigCalendar({
                   </div>
                 )}
                 {dayReservations.length > 0 && (
-                  <div className="invisible group-hover:visible absolute bottom-2 left-1/2 -translate-x-1/2">
+                  <div className="invisible group-hover:visible absolute bottom-8 left-1/2 -translate-x-1/2">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md border">
                       <Plus className="h-3 w-3" />
                       <span>Ekle</span>
                     </div>
+                  </div>
+                )}
+                {capacityPct > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-2 bg-muted/30">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className={`h-full transition-all cursor-help ${capacityPct >= 80 ? 'bg-red-500' : capacityPct >= 50 ? 'bg-amber-500' : 'bg-green-500'}`}
+                          style={{ width: `${Math.min(capacityPct, 100)}%` }}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Doluluk: %{capacityPct}
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 )}
               </div>
@@ -2123,6 +2196,7 @@ interface ReservationCardProps {
 }
 
 function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded, packageTourName, draggable, onDragStart }: ReservationCardProps) {
+  const { toast } = useToast();
   const statusConfig = {
     confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 border-green-200" },
     pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
@@ -2136,88 +2210,130 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
     }
   };
 
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Kopyalandı", description: `${label} kopyalandı.` });
+    } catch {
+      toast({ title: "Hata", description: "Kopyalama başarısız oldu.", variant: "destructive" });
+    }
+  };
+
+  const contextMenuContent = (
+    <>
+      <ContextMenuItem onClick={() => copyToClipboard(reservation.customerName, "Müşteri adı")}>
+        <Copy className="h-3 w-3 mr-2" /> İsmi Kopyala
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => copyToClipboard(reservation.customerPhone, "Telefon")}>
+        <Phone className="h-3 w-3 mr-2" /> Telefonu Kopyala
+      </ContextMenuItem>
+      {reservation.customerEmail && (
+        <ContextMenuItem onClick={() => copyToClipboard(reservation.customerEmail!, "E-posta")}>
+          <Mail className="h-3 w-3 mr-2" /> E-postayı Kopyala
+        </ContextMenuItem>
+      )}
+      <ContextMenuSeparator />
+      <ContextMenuItem onClick={() => onStatusChange('confirmed')} className="text-green-600">
+        <CheckCircle className="h-3 w-3 mr-2" /> Onayla
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => onStatusChange('cancelled')} className="text-red-600">
+        <XCircle className="h-3 w-3 mr-2" /> İptal Et
+      </ContextMenuItem>
+    </>
+  );
+
   if (expanded) {
     return (
-      <Card 
-        className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-        onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
-        data-testid={`card-reservation-${reservation.id}`}
-        draggable={draggable}
-        onDragStart={handleDragStart}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm truncate">{reservation.customerName}</div>
-            <div className="text-xs text-muted-foreground">{activityName}</div>
-            {packageTourName && (
-              <div className="flex items-center gap-1 mt-0.5">
-                <Package className="h-3 w-3 text-purple-500" />
-                <span className="text-xs text-purple-600 dark:text-purple-400 truncate">{packageTourName}</span>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <Card 
+            className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
+            data-testid={`card-reservation-${reservation.id}`}
+            draggable={draggable}
+            onDragStart={handleDragStart}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm truncate">{reservation.customerName}</div>
+                <div className="text-xs text-muted-foreground">{activityName}</div>
+                {packageTourName && (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Package className="h-3 w-3 text-purple-500" />
+                    <span className="text-xs text-purple-600 dark:text-purple-400 truncate">{packageTourName}</span>
+                  </div>
+                )}
+                <div className="text-xs mt-1">
+                  {reservation.time} - {reservation.quantity} kişi
+                </div>
               </div>
-            )}
-            <div className="text-xs mt-1">
-              {reservation.time} - {reservation.quantity} kişi
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button 
+                    className={`${status.className} text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {status.label}
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onStatusChange('pending')} className="text-yellow-700">
+                    Beklemede
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onStatusChange('confirmed')} className="text-green-700">
+                    Onaylı
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onStatusChange('cancelled')} className="text-red-700">
+                    İptal
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                className={`${status.className} text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {status.label}
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onStatusChange('pending')} className="text-yellow-700">
-                Beklemede
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onStatusChange('confirmed')} className="text-green-700">
-                Onaylı
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onStatusChange('cancelled')} className="text-red-700">
-                İptal
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </Card>
+          </Card>
+        </ContextMenuTrigger>
+        <ContextMenuContent>{contextMenuContent}</ContextMenuContent>
+      </ContextMenu>
     );
   }
 
   return (
-    <Card 
-      className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-      onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
-      data-testid={`card-reservation-${reservation.id}`}
-      draggable={draggable}
-      onDragStart={handleDragStart}
-    >
-      <div className="font-medium truncate">{reservation.customerName}</div>
-      <div className="flex items-center gap-1">
-        <span className="text-muted-foreground truncate">{activityName}</span>
-        {packageTourName && <Package className="h-3 w-3 text-purple-500 flex-shrink-0" />}
-      </div>
-      <div className="flex items-center justify-between mt-1">
-        <span>{reservation.time} - {reservation.quantity}p</span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button 
-              className={`${status.className} text-[10px] px-1 py-0.5 rounded border`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {status.label}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onStatusChange('pending')}>Beklemede</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusChange('confirmed')}>Onaylı</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusChange('cancelled')}>İptal</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </Card>
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <Card 
+          className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
+          data-testid={`card-reservation-${reservation.id}`}
+          draggable={draggable}
+          onDragStart={handleDragStart}
+        >
+          <div className="font-medium truncate">{reservation.customerName}</div>
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground truncate">{activityName}</span>
+            {packageTourName && <Package className="h-3 w-3 text-purple-500 flex-shrink-0" />}
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span>{reservation.time} - {reservation.quantity}p</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  className={`${status.className} text-[10px] px-1 py-0.5 rounded border`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {status.label}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onStatusChange('pending')}>Beklemede</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange('confirmed')}>Onaylı</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatusChange('cancelled')}>İptal</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </Card>
+      </ContextMenuTrigger>
+      <ContextMenuContent>{contextMenuContent}</ContextMenuContent>
+    </ContextMenu>
   );
 }
 
