@@ -2379,8 +2379,8 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                                   </div>
                                 </div>
                                 <DropdownMenu>
-                                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                    <Badge className={`${status.className} text-xs cursor-pointer`} data-testid={`mini-status-dropdown-${reservation.id}`}>
+                                  <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} data-testid={`mini-status-dropdown-${reservation.id}`}>
+                                    <Badge className={`${status.className} text-xs cursor-pointer`}>
                                       {status.label}
                                       <ChevronDown className="h-3 w-3 ml-1" />
                                     </Badge>
@@ -2438,8 +2438,8 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                           </div>
                         </div>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Badge className={`${status.className} cursor-pointer`} data-testid={`mini-status-dropdown-${reservation.id}`}>
+                          <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} data-testid={`mini-status-dropdown-${reservation.id}`}>
+                            <Badge className={`${status.className} cursor-pointer`}>
                               {status.label}
                               <ChevronDown className="h-3 w-3 ml-1" />
                             </Badge>
