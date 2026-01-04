@@ -697,9 +697,9 @@ function BigCalendar({
             return (
               <div 
                 key={idx}
-                className={`min-h-[120px] border-b border-r p-1 ${
+                className={`group/cell min-h-[120px] border-b border-r p-1 ${
                   !isCurrentMonth ? 'bg-muted/20' : ''
-                } ${isDayToday ? 'bg-primary/5' : ''} hover:bg-muted/30 cursor-pointer transition-colors`}
+                } ${isDayToday ? 'bg-primary/5' : ''} hover:bg-muted/30 cursor-pointer transition-colors relative`}
                 onClick={() => onDateClick(dateStr)}
                 data-testid={`calendar-day-${dateStr}`}
               >
@@ -764,6 +764,13 @@ function BigCalendar({
                     </div>
                   )}
                 </div>
+                {dayReservations.length === 0 && (
+                  <div className="invisible group-hover/cell:visible absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground/40 flex items-center justify-center bg-background/80">
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -781,7 +788,7 @@ function BigCalendar({
             return (
               <div 
                 key={idx}
-                className={`min-h-[400px] border-r p-2 ${isDayToday ? 'bg-primary/5' : ''} hover:bg-muted/30 cursor-pointer`}
+                className={`group min-h-[400px] border-r p-2 ${isDayToday ? 'bg-primary/5' : ''} hover:bg-muted/30 cursor-pointer relative`}
                 onClick={() => onDateClick(dateStr)}
                 data-testid={`calendar-week-day-${dateStr}`}
               >
@@ -846,6 +853,24 @@ function BigCalendar({
                     return elements;
                   })()}
                 </div>
+                {dayReservations.length === 0 && (
+                  <div className="flex-1 flex items-center justify-center min-h-[200px]">
+                    <div className="invisible group-hover:visible flex flex-col items-center gap-2 text-muted-foreground">
+                      <div className="w-10 h-10 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center">
+                        <Plus className="h-5 w-5" />
+                      </div>
+                      <span className="text-xs">Rezervasyon Ekle</span>
+                    </div>
+                  </div>
+                )}
+                {dayReservations.length > 0 && (
+                  <div className="invisible group-hover:visible absolute bottom-2 left-1/2 -translate-x-1/2">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md border">
+                      <Plus className="h-3 w-3" />
+                      <span>Ekle</span>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -923,11 +948,19 @@ function BigCalendar({
                       const slotReservations = dayReservations.filter(r => r.time === timeSlot);
 
                       return (
-                        <div key={timeSlot} className="flex border-b">
+                        <div key={timeSlot} className="group/slot flex border-b hover:bg-muted/30 cursor-pointer" onClick={() => onDateClick(dateStr)}>
                           <div className="w-16 py-3 text-sm text-muted-foreground flex-shrink-0">
                             {timeSlot}
                           </div>
-                          <div className="flex-1 py-1 min-h-[50px] flex flex-wrap gap-2">
+                          <div className="flex-1 py-1 min-h-[50px] flex flex-wrap gap-2 items-center">
+                            {slotReservations.length === 0 && (
+                              <div className="invisible group-hover/slot:visible flex items-center gap-1 text-muted-foreground">
+                                <div className="w-6 h-6 rounded-full border border-dashed border-muted-foreground/50 flex items-center justify-center">
+                                  <Plus className="h-3 w-3" />
+                                </div>
+                                <span className="text-xs">Rezervasyon Ekle</span>
+                              </div>
+                            )}
                             {(() => {
                               const { packageGroups, standaloneReservations } = groupReservations(slotReservations);
                               const elements: JSX.Element[] = [];
