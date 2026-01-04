@@ -2666,11 +2666,7 @@ function BigCalendar({
 
       {/* Move Notification Dialog */}
       <Dialog open={!!showMoveNotification} onOpenChange={(open) => !open && setShowMoveNotification(null)}>
-        <DialogContent 
-          className="max-w-xl"
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
-        >
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Bilgilendirme Gönder</DialogTitle>
           </DialogHeader>
@@ -2735,19 +2731,18 @@ function BigCalendar({
                       <p className="text-xs text-muted-foreground">Acentayı seçin ve bildirim gönderin</p>
                     </div>
                   </div>
-                  <select
-                    value={moveSelectedAgencyId}
-                    onChange={(e) => setMoveSelectedAgencyId(e.target.value)}
-                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    data-testid="select-move-agency"
-                  >
-                    <option value="">Acenta seçin...</option>
-                    {agencies?.map((agency) => (
-                      <option key={agency.id} value={String(agency.id)}>
-                        {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(İletişim bilgisi yok)'}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={moveSelectedAgencyId} onValueChange={setMoveSelectedAgencyId}>
+                    <SelectTrigger data-testid="select-move-agency">
+                      <SelectValue placeholder="Acenta seçin..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agencies?.map((agency) => (
+                        <SelectItem key={agency.id} value={String(agency.id)}>
+                          {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(İletişim bilgisi yok)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Textarea
                     value={moveAgencyMessage}
                     onChange={(e) => setMoveAgencyMessage(e.target.value)}
