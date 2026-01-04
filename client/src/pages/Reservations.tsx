@@ -2821,7 +2821,10 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-sm truncate">{reservation.customerName}</div>
+            <div className="font-medium text-sm truncate flex items-center gap-1">
+              {reservation.customerName}
+              {reservation.hasTransfer && <Bus className="h-3 w-3 text-blue-500 flex-shrink-0" />}
+            </div>
             <div className="text-xs text-muted-foreground">{activityName}</div>
             {packageTourName && (
               <div className="flex items-center gap-1 mt-0.5">
@@ -2868,7 +2871,10 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
       draggable={draggable}
       onDragStart={handleDragStart}
     >
-      <div className="font-medium truncate">{reservation.customerName}</div>
+      <div className="font-medium truncate flex items-center gap-1">
+        {reservation.customerName}
+        {reservation.hasTransfer && <Bus className="h-3 w-3 text-blue-500 flex-shrink-0" />}
+      </div>
       <div className="flex items-center gap-1">
         <span className="text-muted-foreground truncate">{activityName}</span>
         {packageTourName && <Package className="h-3 w-3 text-purple-500 flex-shrink-0" />}
@@ -3820,7 +3826,10 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                                   className="flex-1 min-w-0 cursor-pointer"
                                   onClick={() => onReservationSelect(reservation)}
                                 >
-                                  <div className="font-medium text-sm truncate">{reservation.customerName}</div>
+                                  <div className="font-medium text-sm truncate flex items-center gap-1">
+                                    {reservation.customerName}
+                                    {reservation.hasTransfer && <Bus className="h-3 w-3 text-blue-500 flex-shrink-0" />}
+                                  </div>
                                   <div className="text-xs opacity-80">{getActivityName(reservation.activityId)}</div>
                                   <div className="text-xs opacity-70">
                                     {reservation.time} - {reservation.quantity} kişi
@@ -3883,7 +3892,10 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
                           className="flex-1 min-w-0 cursor-pointer"
                           onClick={() => onReservationSelect(reservation)}
                         >
-                          <div className="font-medium truncate">{reservation.customerName}</div>
+                          <div className="font-medium truncate flex items-center gap-1">
+                            {reservation.customerName}
+                            {reservation.hasTransfer && <Bus className="h-3 w-3 text-blue-500 flex-shrink-0" />}
+                          </div>
                           <div className="text-sm opacity-80">{getActivityName(reservation.activityId)}</div>
                           <div className="text-xs opacity-70 mt-1">
                             {reservation.time} - {reservation.quantity} kişi
