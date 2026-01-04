@@ -2249,6 +2249,7 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
           <Card 
             className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
             onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
+            onContextMenu={(e) => e.preventDefault()}
             data-testid={`card-reservation-${reservation.id}`}
             draggable={draggable}
             onDragStart={handleDragStart}
@@ -2303,6 +2304,7 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
         <Card 
           className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
           onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
+          onContextMenu={(e) => e.preventDefault()}
           data-testid={`card-reservation-${reservation.id}`}
           draggable={draggable}
           onDragStart={handleDragStart}
