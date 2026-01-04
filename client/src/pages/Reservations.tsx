@@ -2665,7 +2665,7 @@ function BigCalendar({
       </Dialog>
 
       {/* Move Notification Dialog */}
-      <Dialog open={!!showMoveNotification} onOpenChange={(open) => !open && setShowMoveNotification(null)}>
+      <Dialog open={!!showMoveNotification} onOpenChange={(open) => !open && setShowMoveNotification(null)} modal={false}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Bilgilendirme Gönder</DialogTitle>
