@@ -664,8 +664,8 @@ function BigCalendar({
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={activityFilter} onValueChange={onActivityFilterChange}>
-              <SelectTrigger className="w-40" data-testid="select-calendar-activity">
-                <Filter className="h-4 w-4 mr-2" />
+              <SelectTrigger className="min-w-[180px] w-auto max-w-[280px]" data-testid="select-calendar-activity">
+                <Filter className="h-4 w-4 mr-2 flex-shrink-0" />
                 <SelectValue placeholder="Aktivite" />
               </SelectTrigger>
               <SelectContent>
@@ -676,8 +676,8 @@ function BigCalendar({
               </SelectContent>
             </Select>
             <Select value={packageTourFilter} onValueChange={onPackageTourFilterChange}>
-              <SelectTrigger className="w-40" data-testid="select-calendar-package">
-                <Package className="h-4 w-4 mr-2" />
+              <SelectTrigger className="min-w-[180px] w-auto max-w-[280px]" data-testid="select-calendar-package">
+                <Package className="h-4 w-4 mr-2 flex-shrink-0" />
                 <SelectValue placeholder="Paket Tur" />
               </SelectTrigger>
               <SelectContent>
