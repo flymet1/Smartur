@@ -1,12 +1,11 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useReservations, useCreateReservation } from "@/hooks/use-reservations";
 import { ReservationTable } from "@/components/reservations/ReservationTable";
-import { ReservationCalendar } from "@/components/reservations/ReservationCalendar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,13 +19,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useActivities } from "@/hooks/use-activities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
-import type { PackageTour, Activity } from "@shared/schema";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import type { PackageTour, Activity, Reservation } from "@shared/schema";
 import { useSearch, useLocation } from "wouter";
-import { format, parse } from "date-fns";
+import { format, parse, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, addWeeks, subWeeks, isSameMonth, isSameDay, isToday, eachDayOfInterval } from "date-fns";
 import { tr } from "date-fns/locale";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+type CalendarView = "day" | "week" | "month";
 
 export default function Reservations() {
   const { data: reservations, isLoading } = useReservations();
@@ -36,20 +39,24 @@ export default function Reservations() {
   const urlDate = new URLSearchParams(searchParams).get("date");
   
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [calendarView, setCalendarView] = useState<CalendarView>("month");
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>(urlDate || "");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name">("date-desc");
+  const [selectedDateForNew, setSelectedDateForNew] = useState<string>("");
+  const [newReservationOpen, setNewReservationOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (urlDate) {
       setDateFilter(urlDate);
+      setCurrentDate(new Date(urlDate));
     }
   }, [urlDate]);
 
-  // Export to CSV
   const exportToCSV = () => {
     if (!filteredReservations.length) {
       toast({ title: "Hata", description: "Dışa aktarılacak veri yok.", variant: "destructive" });
@@ -91,7 +98,6 @@ export default function Reservations() {
     toast({ title: "Başarılı", description: "CSV dosyası indirildi." });
   };
 
-  // Export to PDF (simple HTML-based)
   const exportToPDF = () => {
     if (!filteredReservations.length) {
       toast({ title: "Hata", description: "Dışa aktarılacak veri yok.", variant: "destructive" });
@@ -180,7 +186,6 @@ export default function Reservations() {
     setLocation("/reservations");
   };
 
-  // Filter ve sort
   const filteredReservations = (reservations || [])
     .filter(r => {
       const matchesSearch = 
@@ -199,10 +204,29 @@ export default function Reservations() {
       return 0;
     });
 
+  const handleAddReservationForDate = (dateStr: string) => {
+    setSelectedDateForNew(dateStr);
+    setNewReservationOpen(true);
+  };
+
+  const navigateCalendar = (direction: 'prev' | 'next') => {
+    if (calendarView === 'month') {
+      setCurrentDate(direction === 'prev' ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
+    } else if (calendarView === 'week') {
+      setCurrentDate(direction === 'prev' ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(direction === 'prev' ? addDays(currentDate, -1) : addDays(currentDate, 1));
+    }
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 md:ml-64 p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+      <main className="flex-1 md:ml-64 p-4 md:p-6 space-y-4 max-w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold font-display">Rezervasyonlar</h1>
@@ -227,11 +251,14 @@ export default function Reservations() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <NewReservationDialog />
+            <NewReservationDialog 
+              open={newReservationOpen} 
+              onOpenChange={setNewReservationOpen}
+              defaultDate={selectedDateForNew}
+            />
           </div>
         </div>
 
-        {/* Tarih Filtresi Göstergesi */}
         {dateFilter && (
           <Card className="p-3 bg-primary/5 border-primary/20">
             <div className="flex items-center justify-between gap-4">
@@ -264,26 +291,20 @@ export default function Reservations() {
           </Card>
         )}
 
-        {/* Arama Barı */}
-        <Card className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Müşteri adı, telefon veya sipariş numarası ile ara..." 
-              className="pl-9 w-full" 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </Card>
-
-        {/* Filtreler */}
-        <Card className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Durum</Label>
+        <div className="flex flex-col lg:flex-row gap-4">
+          <Card className="p-3 flex-1">
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Ara..." 
+                  className="pl-9" 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -293,79 +314,496 @@ export default function Reservations() {
                   <SelectItem value="cancelled">İptal</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Aktivite</Label>
-              <Select value={activityFilter} onValueChange={setActivityFilter}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tümü</SelectItem>
-                  {activities?.map(a => (
-                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Sıralama</Label>
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date-desc">En Yeni</SelectItem>
-                  <SelectItem value="date-asc">En Eski</SelectItem>
-                  <SelectItem value="name">Müşteri Adı (A-Z)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-muted-foreground">Görünüm</Label>
-              <div className="flex gap-2">
+              <div className="flex border rounded-md">
                 <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                  className="flex-1 h-9"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "calendar" ? "default" : "outline"}
+                  variant={viewMode === "calendar" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("calendar")}
-                  className="flex-1 h-9"
+                  className="rounded-r-none"
                 >
                   <Calendar className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className="rounded-l-none"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
 
-        {/* İçerik */}
         {isLoading ? (
           <div className="space-y-4">
             <div className="h-12 bg-muted rounded animate-pulse" />
-            <div className="h-64 bg-muted rounded animate-pulse" />
+            <div className="h-[600px] bg-muted rounded animate-pulse" />
           </div>
         ) : viewMode === "list" ? (
           <ReservationTable reservations={filteredReservations} />
         ) : (
-          <ReservationCalendar reservations={filteredReservations} />
+          <BigCalendar 
+            reservations={reservations || []}
+            activities={activities || []}
+            view={calendarView}
+            currentDate={currentDate}
+            onViewChange={setCalendarView}
+            onNavigate={navigateCalendar}
+            onGoToToday={goToToday}
+            onDateClick={handleAddReservationForDate}
+            statusFilter={statusFilter}
+          />
         )}
       </main>
     </div>
   );
 }
 
-function NewReservationDialog() {
-  const [open, setOpen] = useState(false);
+interface BigCalendarProps {
+  reservations: Reservation[];
+  activities: Activity[];
+  view: CalendarView;
+  currentDate: Date;
+  onViewChange: (view: CalendarView) => void;
+  onNavigate: (direction: 'prev' | 'next') => void;
+  onGoToToday: () => void;
+  onDateClick: (dateStr: string) => void;
+  statusFilter: string;
+}
+
+function BigCalendar({ 
+  reservations, 
+  activities, 
+  view, 
+  currentDate, 
+  onViewChange, 
+  onNavigate, 
+  onGoToToday,
+  onDateClick,
+  statusFilter
+}: BigCalendarProps) {
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+    },
+  });
+
+  const getActivityName = (activityId: number | null) => {
+    if (!activityId) return "Bilinmiyor";
+    return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
+  };
+
+  const getActivityColor = (activityId: number | null) => {
+    if (!activityId) return "bg-gray-100 text-gray-700";
+    const colors = [
+      "bg-blue-100 text-blue-700 border-blue-200",
+      "bg-purple-100 text-purple-700 border-purple-200",
+      "bg-green-100 text-green-700 border-green-200",
+      "bg-orange-100 text-orange-700 border-orange-200",
+      "bg-pink-100 text-pink-700 border-pink-200",
+      "bg-cyan-100 text-cyan-700 border-cyan-200",
+    ];
+    return colors[activityId % colors.length];
+  };
+
+  const filteredReservations = statusFilter === "all" 
+    ? reservations 
+    : reservations.filter(r => r.status === statusFilter);
+
+  const getReservationsForDate = (dateStr: string) => {
+    return filteredReservations.filter(r => r.date === dateStr);
+  };
+
+  const getOccupancyForDate = (dateStr: string) => {
+    const dayReservations = reservations.filter(r => r.date === dateStr && r.status !== 'cancelled');
+    const totalPeople = dayReservations.reduce((sum, r) => sum + r.quantity, 0);
+    
+    const activityOccupancy: Record<number, { name: string; count: number; total: number }> = {};
+    
+    dayReservations.forEach(r => {
+      if (r.activityId) {
+        if (!activityOccupancy[r.activityId]) {
+          const activity = activities.find(a => a.id === r.activityId);
+          activityOccupancy[r.activityId] = {
+            name: activity?.name || "Aktivite",
+            count: 0,
+            total: (activity as any)?.defaultCapacity || 10
+          };
+        }
+        activityOccupancy[r.activityId].count += r.quantity;
+      }
+    });
+
+    return { totalPeople, activityOccupancy };
+  };
+
+  const calendarDays = useMemo(() => {
+    if (view === 'month') {
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
+      const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+      const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+    } else if (view === 'week') {
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start: weekStart, end: weekEnd });
+    } else {
+      return [currentDate];
+    }
+  }, [currentDate, view]);
+
+  const headerTitle = useMemo(() => {
+    if (view === 'month') {
+      return format(currentDate, 'MMMM yyyy', { locale: tr });
+    } else if (view === 'week') {
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+      return `${format(weekStart, 'd MMM', { locale: tr })} - ${format(weekEnd, 'd MMM yyyy', { locale: tr })}`;
+    } else {
+      return format(currentDate, 'd MMMM yyyy, EEEE', { locale: tr });
+    }
+  }, [currentDate, view]);
+
+  const weekDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="p-4 border-b flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" onClick={() => onNavigate('prev')} data-testid="button-calendar-prev">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => onNavigate('next')} data-testid="button-calendar-next">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" onClick={onGoToToday} data-testid="button-today">
+            Bugün
+          </Button>
+          <h2 className="text-lg font-semibold capitalize" data-testid="text-calendar-title">{headerTitle}</h2>
+        </div>
+        <div className="flex border rounded-md">
+          <Button
+            variant={view === "day" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => onViewChange("day")}
+            className="rounded-r-none"
+            data-testid="button-view-day"
+          >
+            Gün
+          </Button>
+          <Button
+            variant={view === "week" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => onViewChange("week")}
+            className="rounded-none border-x"
+            data-testid="button-view-week"
+          >
+            Hafta
+          </Button>
+          <Button
+            variant={view === "month" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => onViewChange("month")}
+            className="rounded-l-none"
+            data-testid="button-view-month"
+          >
+            Ay
+          </Button>
+        </div>
+      </div>
+
+      {view === 'month' && (
+        <div className="grid grid-cols-7 border-b">
+          {weekDays.map(day => (
+            <div key={day} className="p-2 text-center text-xs font-medium text-muted-foreground bg-muted/30">
+              {day}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {view === 'month' && (
+        <div className="grid grid-cols-7">
+          {calendarDays.map((day, idx) => {
+            const dateStr = format(day, 'yyyy-MM-dd');
+            const dayReservations = getReservationsForDate(dateStr);
+            const { totalPeople, activityOccupancy } = getOccupancyForDate(dateStr);
+            const isCurrentMonth = isSameMonth(day, currentDate);
+            const isDayToday = isToday(day);
+
+            return (
+              <div 
+                key={idx}
+                className={`min-h-[120px] border-b border-r p-1 ${
+                  !isCurrentMonth ? 'bg-muted/20' : ''
+                } ${isDayToday ? 'bg-primary/5' : ''} hover:bg-muted/30 cursor-pointer transition-colors`}
+                onClick={() => onDateClick(dateStr)}
+                data-testid={`calendar-day-${dateStr}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-sm font-medium ${
+                    isDayToday ? 'bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center' : ''
+                  } ${!isCurrentMonth ? 'text-muted-foreground' : ''}`}>
+                    {format(day, 'd')}
+                  </span>
+                  {totalPeople > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="secondary" className="text-[10px] h-5 px-1">
+                          <Users className="h-3 w-3 mr-0.5" />
+                          {totalPeople}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="text-xs space-y-1">
+                          {Object.entries(activityOccupancy).map(([id, data]) => (
+                            <div key={id} className="flex justify-between gap-3">
+                              <span>{data.name}:</span>
+                              <span className="font-medium">{data.count}/{data.total}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <div className="space-y-0.5 overflow-hidden max-h-[80px]">
+                  {dayReservations.slice(0, 3).map(res => (
+                    <div 
+                      key={res.id}
+                      className={`text-[10px] px-1 py-0.5 rounded truncate border ${getActivityColor(res.activityId)} ${
+                        res.status === 'cancelled' ? 'opacity-50 line-through' : ''
+                      }`}
+                      onClick={(e) => e.stopPropagation()}
+                      data-testid={`reservation-${res.id}`}
+                    >
+                      {res.time} {res.customerName.split(' ')[0]}
+                    </div>
+                  ))}
+                  {dayReservations.length > 3 && (
+                    <div className="text-[10px] text-muted-foreground px-1">
+                      +{dayReservations.length - 3} daha
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {view === 'week' && (
+        <div className="grid grid-cols-7">
+          {calendarDays.map((day, idx) => {
+            const dateStr = format(day, 'yyyy-MM-dd');
+            const dayReservations = getReservationsForDate(dateStr);
+            const { totalPeople, activityOccupancy } = getOccupancyForDate(dateStr);
+            const isDayToday = isToday(day);
+
+            return (
+              <div 
+                key={idx}
+                className={`min-h-[400px] border-r p-2 ${isDayToday ? 'bg-primary/5' : ''} hover:bg-muted/30 cursor-pointer`}
+                onClick={() => onDateClick(dateStr)}
+                data-testid={`calendar-week-day-${dateStr}`}
+              >
+                <div className="text-center pb-2 border-b mb-2">
+                  <div className="text-xs text-muted-foreground">{format(day, 'EEE', { locale: tr })}</div>
+                  <div className={`text-lg font-semibold ${isDayToday ? 'text-primary' : ''}`}>
+                    {format(day, 'd')}
+                  </div>
+                  {totalPeople > 0 && (
+                    <Badge variant="secondary" className="text-[10px] mt-1">
+                      {totalPeople} kişi
+                    </Badge>
+                  )}
+                </div>
+                <div className="space-y-1 overflow-y-auto max-h-[350px]">
+                  {dayReservations.map(res => (
+                    <ReservationCard 
+                      key={res.id} 
+                      reservation={res} 
+                      activityName={getActivityName(res.activityId)}
+                      activityColor={getActivityColor(res.activityId)}
+                      onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {view === 'day' && (
+        <div className="p-4">
+          {calendarDays.map((day, idx) => {
+            const dateStr = format(day, 'yyyy-MM-dd');
+            const dayReservations = getReservationsForDate(dateStr);
+            const { totalPeople, activityOccupancy } = getOccupancyForDate(dateStr);
+
+            const hours = Array.from({ length: 14 }, (_, i) => i + 7);
+
+            return (
+              <div key={idx}>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="text-lg font-semibold">{format(day, 'd MMMM, EEEE', { locale: tr })}</div>
+                  {totalPeople > 0 && (
+                    <Badge variant="secondary">Toplam {totalPeople} kişi</Badge>
+                  )}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => onDateClick(dateStr)}
+                    data-testid="button-add-reservation-day"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Yeni Rezervasyon
+                  </Button>
+                </div>
+
+                {Object.entries(activityOccupancy).length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {Object.entries(activityOccupancy).map(([id, data]) => (
+                      <Badge key={id} variant="outline" className="text-xs">
+                        {data.name}: {data.count}/{data.total} ({Math.round((data.count / data.total) * 100)}%)
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  {hours.map(hour => {
+                    const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+                    const hourReservations = dayReservations.filter(r => {
+                      const resHour = parseInt(r.time?.split(':')[0] || '0');
+                      return resHour === hour;
+                    });
+
+                    return (
+                      <div key={hour} className="flex border-b">
+                        <div className="w-16 py-3 text-sm text-muted-foreground flex-shrink-0">
+                          {timeStr}
+                        </div>
+                        <div className="flex-1 py-1 min-h-[50px] flex flex-wrap gap-2">
+                          {hourReservations.map(res => (
+                            <ReservationCard 
+                              key={res.id} 
+                              reservation={res} 
+                              activityName={getActivityName(res.activityId)}
+                              activityColor={getActivityColor(res.activityId)}
+                              onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
+                              expanded
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+interface ReservationCardProps {
+  reservation: Reservation;
+  activityName: string;
+  activityColor: string;
+  onStatusChange: (status: string) => void;
+  expanded?: boolean;
+}
+
+function ReservationCard({ reservation, activityName, activityColor, onStatusChange, expanded }: ReservationCardProps) {
+  const statusConfig = {
+    confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 border-green-200" },
+    pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+    cancelled: { label: "İptal", className: "bg-red-100 text-red-700 border-red-200" },
+  };
+  const status = statusConfig[reservation.status as keyof typeof statusConfig] || { label: reservation.status, className: "" };
+
+  if (expanded) {
+    return (
+      <Card className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''}`}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm truncate">{reservation.customerName}</div>
+            <div className="text-xs text-muted-foreground">{activityName}</div>
+            <div className="text-xs mt-1">
+              {reservation.time} - {reservation.quantity} kişi
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`${status.className} text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1`}>
+                {status.label}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onStatusChange('pending')} className="text-yellow-700">
+                Beklemede
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusChange('confirmed')} className="text-green-700">
+                Onaylı
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusChange('cancelled')} className="text-red-700">
+                İptal
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''}`}>
+      <div className="font-medium truncate">{reservation.customerName}</div>
+      <div className="text-muted-foreground truncate">{activityName}</div>
+      <div className="flex items-center justify-between mt-1">
+        <span>{reservation.time} - {reservation.quantity}p</span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button 
+              className={`${status.className} text-[10px] px-1 py-0.5 rounded border`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {status.label}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onStatusChange('pending')}>Beklemede</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onStatusChange('confirmed')}>Onaylı</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onStatusChange('cancelled')}>İptal</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </Card>
+  );
+}
+
+interface NewReservationDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultDate?: string;
+}
+
+function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate }: NewReservationDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
+  
   const [reservationType, setReservationType] = useState<"activity" | "package">("activity");
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
   const [selectedPackageId, setSelectedPackageId] = useState<string>("");
@@ -448,8 +886,6 @@ function NewReservationDialog() {
           setIsSendingNotification(true);
           try {
             const selectedPackage = packageTours.find(p => String(p.id) === selectedPackageId);
-            // Note: For package tours, tracking token is per-activity reservation
-            // We send notification without tracking link for package tours
             const response = await fetch('/api/send-whatsapp-notification', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -497,7 +933,6 @@ function NewReservationDialog() {
         if (notifyCustomer && customerPhone) {
           setIsSendingNotification(true);
           try {
-            // Generate tracking token for this reservation
             let trackingToken: string | undefined;
             if (createdReservation?.id) {
               const tokenResponse = await fetch(`/api/reservations/${createdReservation.id}/generate-tracking`, {
@@ -557,11 +992,13 @@ function NewReservationDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="w-full md:w-auto shadow-lg shadow-primary/20">
-          <Plus className="h-4 w-4 mr-2" /> Yeni Rezervasyon
-        </Button>
-      </DialogTrigger>
+      {!controlledOpen && (
+        <DialogTrigger asChild>
+          <Button className="w-full md:w-auto shadow-lg shadow-primary/20" data-testid="button-new-reservation">
+            <Plus className="h-4 w-4 mr-2" /> Yeni Rezervasyon
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Yeni Rezervasyon Oluştur</DialogTitle>
@@ -731,7 +1168,13 @@ function NewReservationDialog() {
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Tarih</Label>
-              <Input name="date" type="date" required data-testid="input-date" />
+              <Input 
+                name="date" 
+                type="date" 
+                required 
+                defaultValue={defaultDate || ""} 
+                data-testid="input-date" 
+              />
             </div>
             {reservationType === "activity" && (
               <div className="space-y-2">
@@ -777,7 +1220,7 @@ function NewReservationDialog() {
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <Label htmlFor="notifyCustomer" className="text-sm cursor-pointer">
-                Musteriyi WhatsApp ile bilgilendir
+                Müşteriyi WhatsApp ile bilgilendir
               </Label>
             </div>
           </div>
@@ -788,7 +1231,7 @@ function NewReservationDialog() {
               disabled={createMutation.isPending || isSendingNotification || (reservationType === "package" && !selectedPackageId)}
               data-testid="button-submit-reservation"
             >
-              {createMutation.isPending ? "Olusturuluyor..." : isSendingNotification ? "Bildirim gonderiliyor..." : "Olustur"}
+              {createMutation.isPending ? "Oluşturuluyor..." : isSendingNotification ? "Bildirim gönderiliyor..." : "Oluştur"}
             </Button>
           </DialogFooter>
         </form>

@@ -25,9 +25,8 @@ import { useQuery } from "@tanstack/react-query";
 import type { SupportRequest, CustomerRequest } from "@shared/schema";
 
 const navItems = [
-  { href: "/", label: "Genel Bakış", icon: LayoutDashboard },
+  { href: "/", label: "Rezervasyonlar", icon: Ticket },
   { href: "/calendar", label: "Takvim & Kapasite", icon: Calendar },
-  { href: "/reservations", label: "Rezervasyonlar", icon: Ticket },
   { href: "/activities", label: "Aktiviteler", icon: Activity },
   { href: "/package-tours", label: "Paket Turlar", icon: Package },
   { href: "/finance", label: "Finans", icon: Calculator },

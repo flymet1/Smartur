@@ -25,7 +25,8 @@ import SalesPresentation from "@/pages/SalesPresentation";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={Reservations} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/activities" component={Activities} />
       <Route path="/package-tours" component={PackageTours} />
       <Route path="/holidays" component={Holidays} />
