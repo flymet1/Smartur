@@ -172,7 +172,7 @@ export function Sidebar() {
                     <div className={cn(
                       "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                       pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
-                        ? "bg-primary/70 text-primary-foreground border-primary/70"
+                        ? "bg-primary/90 text-primary-foreground border-primary/90"
                         : location === item.href 
                           ? "bg-primary text-primary-foreground border-primary" 
                           : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
@@ -193,7 +193,7 @@ export function Sidebar() {
                   <div className={cn(
                     "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                     openSupportCount > 0 
-                      ? "bg-primary/70 text-primary-foreground border-primary/70" 
+                      ? "bg-primary/90 text-primary-foreground border-primary/90" 
                       : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
                   )}>
                     <Bell className="h-3.5 w-3.5" />
@@ -249,7 +249,7 @@ export function Sidebar() {
                 <div className={cn(
                   "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                   pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
-                    ? "bg-primary/70 text-primary-foreground border-primary/70"
+                    ? "bg-primary/90 text-primary-foreground border-primary/90"
                     : location === item.href 
                       ? "bg-primary text-primary-foreground border-primary shadow-sm" 
                       : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
@@ -271,7 +271,7 @@ export function Sidebar() {
               <div className={cn(
                 "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                 openSupportCount > 0 
-                  ? "bg-primary/70 text-primary-foreground border-primary/70" 
+                  ? "bg-primary/90 text-primary-foreground border-primary/90" 
                   : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
               )} data-testid="button-support-notifications">
                 <Bell className="h-3.5 w-3.5" />
