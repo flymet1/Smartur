@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquare, Check, X, Clock, RefreshCw, ArrowLeft, Send, Building2 } from "lucide-react";
+import { MessageSquare, Check, X, Clock, RefreshCw, ArrowLeft, Send, Building2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
@@ -46,7 +46,6 @@ export default function CustomerRequests() {
   const [isSendingNotification, setIsSendingNotification] = useState(false);
   
   // Agency notification state
-  const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>("");
   const [agencyMessage, setAgencyMessage] = useState("");
   const [isSendingAgencyNotification, setIsSendingAgencyNotification] = useState(false);
@@ -118,6 +117,8 @@ export default function CustomerRequests() {
   const openNotifyDialog = (request: CustomerRequest) => {
     setSelectedRequest(request);
     setNotifyMessage(generateDefaultMessage(request));
+    setAgencyMessage(generateAgencyMessage(request));
+    setSelectedAgencyId("");
     setNotifyDialogOpen(true);
   };
 
@@ -178,13 +179,6 @@ export default function CustomerRequests() {
     
     message += `\nSky Fethiye`;
     return message;
-  };
-
-  const openAgencyDialog = (request: CustomerRequest) => {
-    setSelectedRequest(request);
-    setAgencyMessage(generateAgencyMessage(request));
-    setSelectedAgencyId("");
-    setAgencyDialogOpen(true);
   };
 
   const sendAgencyNotification = async () => {
@@ -367,27 +361,15 @@ export default function CustomerRequests() {
                             </Button>
                           </>
                         )}
-                        {request.customerPhone && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-blue-600 border-blue-200 dark:border-blue-800"
-                            onClick={() => openNotifyDialog(request)}
-                            data-testid={`button-notify-${request.id}`}
-                          >
-                            <Send className="w-4 h-4 mr-1" />
-                            Bilgilendir
-                          </Button>
-                        )}
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-orange-600 border-orange-200 dark:border-orange-800"
-                          onClick={() => openAgencyDialog(request)}
-                          data-testid={`button-notify-agency-${request.id}`}
+                          className="text-blue-600 border-blue-200 dark:border-blue-800"
+                          onClick={() => openNotifyDialog(request)}
+                          data-testid={`button-notify-${request.id}`}
                         >
-                          <Building2 className="w-4 h-4 mr-1" />
-                          Acentayı Bilgilendir
+                          <Send className="w-4 h-4 mr-1" />
+                          Bilgilendir
                         </Button>
                       </div>
                     </div>
@@ -398,127 +380,103 @@ export default function CustomerRequests() {
           </CardContent>
         </Card>
 
+        {/* Combined Notification Dialog - Customer & Agency */}
         <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="max-w-xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Send className="w-5 h-5 text-blue-600" />
-                Müşteriyi Bilgilendir
-              </DialogTitle>
+              <DialogTitle>Bilgilendirme Gönder</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              {selectedRequest && (
-                <div className="text-sm space-y-1 p-3 bg-muted/50 rounded-lg">
-                  <p><span className="text-muted-foreground">Müşteri:</span> {selectedRequest.customerName}</p>
-                  <p><span className="text-muted-foreground">Telefon:</span> {selectedRequest.customerPhone}</p>
-                  <p><span className="text-muted-foreground">Talep:</span> {getRequestTypeText(selectedRequest.requestType)}</p>
-                  <p><span className="text-muted-foreground">Durum:</span> {selectedRequest.status === 'approved' ? 'Onaylandı' : selectedRequest.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}</p>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="notifyMessage">WhatsApp Mesajı</Label>
-                <Textarea
-                  id="notifyMessage"
-                  value={notifyMessage}
-                  onChange={(e) => setNotifyMessage(e.target.value)}
-                  rows={8}
-                  className="resize-none"
-                  placeholder="Müşteriye gönderilecek mesaj..."
-                  data-testid="textarea-notify-message"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Mesajı düzenleyebilir veya varsayılan metni kullanabilirsiniz.
+            {selectedRequest && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Talep işlendi. Aşağıdaki kişilere bildirim göndermek ister misiniz?
                 </p>
-              </div>
-            </div>
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setNotifyDialogOpen(false)}
-                disabled={isSendingNotification}
-              >
-                İptal
-              </Button>
-              <Button
-                onClick={sendWhatsAppNotification}
-                disabled={isSendingNotification || !notifyMessage.trim()}
-                data-testid="button-send-notification"
-              >
-                {isSendingNotification ? "Gönderiliyor..." : "WhatsApp ile Gönder"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                
+                {/* Customer Notification Section */}
+                <Card className="p-4 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
+                        <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Müşteri Bildirimi</p>
+                        <p className="text-xs text-muted-foreground">{selectedRequest.customerName} - {selectedRequest.customerPhone || 'Telefon yok'}</p>
+                      </div>
+                    </div>
+                    <Textarea
+                      value={notifyMessage}
+                      onChange={(e) => setNotifyMessage(e.target.value)}
+                      className="min-h-[120px] text-sm"
+                      placeholder="Müşteriye gönderilecek mesaj..."
+                      data-testid="textarea-notify-message"
+                    />
+                    <div className="flex justify-end">
+                      <Button 
+                        size="sm"
+                        disabled={isSendingNotification || !selectedRequest.customerPhone || !notifyMessage.trim()}
+                        onClick={sendWhatsAppNotification}
+                        data-testid="button-send-notification"
+                      >
+                        <Send className="h-4 w-4 mr-1" />
+                        {isSendingNotification ? "Gönderiliyor..." : "Müşteriye Gönder"}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
 
-        <Dialog open={agencyDialogOpen} onOpenChange={setAgencyDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-orange-600" />
-                Acentayı Bilgilendir
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              {selectedRequest && (
-                <div className="text-sm space-y-1 p-3 bg-muted/50 rounded-lg">
-                  <p><span className="text-muted-foreground">Müşteri:</span> {selectedRequest.customerName}</p>
-                  <p><span className="text-muted-foreground">Talep:</span> {getRequestTypeText(selectedRequest.requestType)}</p>
-                  <p><span className="text-muted-foreground">Durum:</span> {selectedRequest.status === 'approved' ? 'Onaylandı' : selectedRequest.status === 'rejected' ? 'Reddedildi' : 'Beklemede'}</p>
+                {/* Agency Notification Section */}
+                <Card className="p-4 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">Acenta Bildirimi</p>
+                        <p className="text-xs text-muted-foreground">Acentayı seçin ve bildirim gönderin</p>
+                      </div>
+                    </div>
+                    <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
+                      <SelectTrigger data-testid="select-agency">
+                        <SelectValue placeholder="Acenta seçin..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {agencies?.map((agency) => (
+                          <SelectItem key={agency.id} value={String(agency.id)}>
+                            {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(İletişim bilgisi yok)'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Textarea
+                      value={agencyMessage}
+                      onChange={(e) => setAgencyMessage(e.target.value)}
+                      className="min-h-[100px] text-sm"
+                      placeholder="Acentaya gönderilecek mesaj..."
+                      data-testid="textarea-agency-message"
+                    />
+                    <div className="flex justify-end">
+                      <Button 
+                        size="sm"
+                        disabled={isSendingAgencyNotification || !selectedAgencyId || !agencyMessage.trim()}
+                        onClick={sendAgencyNotification}
+                        data-testid="button-send-agency-notification"
+                      >
+                        <Send className="h-4 w-4 mr-1" />
+                        {isSendingAgencyNotification ? "Gönderiliyor..." : "Acentaya Gönder"}
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={() => setNotifyDialogOpen(false)}>
+                    Kapat
+                  </Button>
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="agencySelect">Acenta Seçin</Label>
-                <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
-                  <SelectTrigger data-testid="select-agency">
-                    <SelectValue placeholder="Acenta seçin..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agencies?.map((agency) => (
-                      <SelectItem key={agency.id} value={String(agency.id)}>
-                        {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(iletişim bilgisi yok)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {(!agencies || agencies.length === 0) && (
-                  <p className="text-xs text-orange-600">Sistemde kayıtlı acenta bulunamadı. Önce Finans sayfasından acenta ekleyin.</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Not: Acentanın iletişim bilgisi (telefon numarası) Finans sayfasında tanımlanmalıdır.
-                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="agencyMessage">WhatsApp Mesajı</Label>
-                <Textarea
-                  id="agencyMessage"
-                  value={agencyMessage}
-                  onChange={(e) => setAgencyMessage(e.target.value)}
-                  rows={8}
-                  className="resize-none"
-                  placeholder="Acentaya gonderilecek mesaj..."
-                  data-testid="textarea-agency-message"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Mesajı düzenleyebilir veya varsayılan metni kullanabilirsiniz.
-                </p>
-              </div>
-            </div>
-            <DialogFooter className="gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setAgencyDialogOpen(false)}
-                disabled={isSendingAgencyNotification}
-              >
-                İptal
-              </Button>
-              <Button
-                onClick={sendAgencyNotification}
-                disabled={isSendingAgencyNotification || !agencyMessage.trim() || !selectedAgencyId}
-                data-testid="button-send-agency-notification"
-              >
-                {isSendingAgencyNotification ? "Gonderiliyor..." : "WhatsApp ile Gonder"}
-              </Button>
-            </DialogFooter>
+            )}
           </DialogContent>
         </Dialog>
       </main>
