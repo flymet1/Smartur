@@ -1501,6 +1501,93 @@ export async function registerRoutes(
     }
   });
 
+  // Update reservation time
+  app.patch("/api/reservations/:id/time", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { time } = req.body;
+    
+    if (!time || !/^\d{2}:\d{2}$/.test(time)) {
+      return res.status(400).json({ error: "Geçersiz saat formatı. HH:MM formatında olmalı." });
+    }
+    
+    try {
+      const reservations = await storage.getReservations();
+      const reservation = reservations.find(r => r.id === id);
+      if (!reservation) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadı" });
+      }
+      
+      // Update reservation with new time
+      const updated = await storage.updateReservation(id, { time });
+      res.json(updated);
+    } catch (error) {
+      console.error("Time update error:", error);
+      res.status(500).json({ error: "Saat güncellenemedi" });
+    }
+  });
+
+  // Shift all reservations in a package tour by offset days
+  app.post("/api/package-reservations/shift", async (req, res) => {
+    const { packageTourId, orderNumber, offsetDays } = req.body;
+    
+    if (!packageTourId || offsetDays === undefined) {
+      return res.status(400).json({ error: "packageTourId ve offsetDays gerekli" });
+    }
+    
+    // orderNumber is required for proper package grouping
+    if (!orderNumber) {
+      return res.status(400).json({ error: "Paket tur taşımak için sipariş numarası gerekli" });
+    }
+    
+    try {
+      // License check using established guard
+      const licenseCheck = await checkLicenseForWrite();
+      if (!licenseCheck.allowed) {
+        return res.status(403).json({ error: licenseCheck.message });
+      }
+      
+      const allReservations = await storage.getReservations();
+      
+      // Find all reservations in this package group - ONLY match by packageTourId AND orderNumber
+      const packageReservations = allReservations.filter(r => 
+        r.packageTourId === packageTourId && r.orderNumber === orderNumber
+      );
+      
+      if (packageReservations.length === 0) {
+        return res.status(404).json({ error: "Paket tur rezervasyonları bulunamadı" });
+      }
+      
+      // Shift each reservation's date by offsetDays using manual date math (avoid UTC drift)
+      const updatedReservations = [];
+      for (const reservation of packageReservations) {
+        // Parse the date string manually to avoid timezone issues
+        const [year, month, day] = reservation.date.split('-').map(Number);
+        const newDay = day + offsetDays;
+        
+        // Create date and adjust - use UTC to avoid timezone drift
+        const dateObj = new Date(Date.UTC(year, month - 1, newDay));
+        
+        // Format as YYYY-MM-DD manually
+        const newYear = dateObj.getUTCFullYear();
+        const newMonth = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+        const newDayStr = String(dateObj.getUTCDate()).padStart(2, '0');
+        const newDate = `${newYear}-${newMonth}-${newDayStr}`;
+        
+        const updated = await storage.updateReservation(reservation.id, { date: newDate });
+        updatedReservations.push(updated);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `${updatedReservations.length} rezervasyon güncellendi`,
+        reservations: updatedReservations 
+      });
+    } catch (error) {
+      console.error("Package shift error:", error);
+      res.status(500).json({ error: "Paket tur rezervasyonları güncellenemedi" });
+    }
+  });
+
   // === Customer Tracking ===
   
   // Get reservation by tracking token (public endpoint for customers)

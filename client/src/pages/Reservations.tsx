@@ -1357,8 +1357,8 @@ function BigCalendar({
   const [overflowDialogDate, setOverflowDialogDate] = useState<string | null>(null);
   const [draggedReservation, setDraggedReservation] = useState<Reservation | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
-  const [pendingMove, setPendingMove] = useState<{ reservation: Reservation; newDate: string } | null>(null);
-  const [showMoveNotification, setShowMoveNotification] = useState<{ reservation: Reservation; oldDate: string; newDate: string } | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ reservation: Reservation; newDate: string; isPackage?: boolean; packageCount?: number } | null>(null);
+  const [showMoveNotification, setShowMoveNotification] = useState<{ reservation: Reservation; oldDate: string; newDate: string; movedCount?: number } | null>(null);
   const { toast } = useToast();
   
   const statusMutation = useMutation({
@@ -1377,7 +1377,6 @@ function BigCalendar({
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       toast({ title: "Başarılı", description: "Rezervasyon tarihi güncellendi." });
-      // Show notification dialog using variables instead of pendingMove state
       setShowMoveNotification({ 
         reservation: variables.reservation, 
         oldDate: variables.oldDate, 
@@ -1389,6 +1388,76 @@ function BigCalendar({
       toast({ title: "Hata", description: "Tarih güncellenemedi.", variant: "destructive" });
       setPendingMove(null);
     },
+  });
+
+  // Package tour shift mutation - moves all reservations in the package
+  const packageShiftMutation = useMutation({
+    mutationFn: async ({ packageTourId, orderNumber, offsetDays, reservation }: { 
+      packageTourId: number; 
+      orderNumber: string; 
+      offsetDays: number;
+      reservation: Reservation;
+    }) => {
+      return apiRequest('POST', '/api/package-reservations/shift', { packageTourId, orderNumber, offsetDays });
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      toast({ title: "Başarılı", description: `${data.reservations?.length || 0} rezervasyon taşındı.` });
+      
+      const oldDate = variables.reservation.date;
+      const newDate = new Date(oldDate);
+      newDate.setDate(newDate.getDate() + variables.offsetDays);
+      
+      setShowMoveNotification({ 
+        reservation: variables.reservation, 
+        oldDate: oldDate, 
+        newDate: newDate.toISOString().split('T')[0],
+        movedCount: data.reservations?.length
+      });
+      setPendingMove(null);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Paket tur taşınamadı.", variant: "destructive" });
+      setPendingMove(null);
+    },
+  });
+
+  // WhatsApp customer notification mutation
+  const customerNotificationMutation = useMutation({
+    mutationFn: async ({ phone, oldDate, newDate, customerName }: { phone: string; oldDate: string; newDate: string; customerName: string }) => {
+      const message = `Merhaba ${customerName},\n\nRezervasyonunuzun tarihi değiştirilmiştir.\n\nEski tarih: ${oldDate}\nYeni tarih: ${newDate}\n\nSorularınız için bize bu numaradan yazabilirsiniz.\n\nSky Fethiye`;
+      return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
+    },
+    onSuccess: () => {
+      toast({ title: "Başarılı", description: "Müşteriye WhatsApp bildirimi gönderildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "WhatsApp mesajı gönderilemedi.", variant: "destructive" });
+    }
+  });
+
+  // WhatsApp agency notification mutation
+  const agencyNotificationMutation = useMutation({
+    mutationFn: async ({ agencyId, oldDate, newDate, customerName }: { agencyId: number; oldDate: string; newDate: string; customerName: string }) => {
+      // Get agency contact info
+      const agencyRes = await fetch(`/api/agencies/${agencyId}`);
+      if (!agencyRes.ok) throw new Error('Acenta bilgisi alınamadı');
+      const agency = await agencyRes.json();
+      
+      if (!agency.contactInfo) {
+        throw new Error('Acenta iletişim bilgisi bulunamadı');
+      }
+      
+      const message = `Rezervasyon Değişikliği Bildirimi\n\nMüşteri: ${customerName}\nEski Tarih: ${oldDate}\nYeni Tarih: ${newDate}\n\nSky Fethiye`;
+      return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone: agency.contactInfo, message });
+    },
+    onSuccess: () => {
+      toast({ title: "Başarılı", description: "Acentaya bildirim gönderildi." });
+    },
+    onError: (err) => {
+      const errorMsg = err instanceof Error ? err.message : 'WhatsApp mesajı gönderilemedi';
+      toast({ title: "Hata", description: errorMsg, variant: "destructive" });
+    }
   });
 
   const handleDragStart = (e: React.DragEvent, reservation: Reservation) => {
@@ -1412,20 +1481,63 @@ function BigCalendar({
     setDragOverDate(null);
     
     if (draggedReservation && draggedReservation.date !== dateStr) {
-      // Show confirmation dialog instead of direct mutation
-      setPendingMove({ reservation: draggedReservation, newDate: dateStr });
+      // Check if this is a package tour reservation
+      if (draggedReservation.packageTourId) {
+        // Package tour requires order number for proper grouping
+        if (!draggedReservation.orderNumber) {
+          toast({ 
+            title: "Taşıma Yapılamıyor", 
+            description: "Paket tur rezervasyonlarını taşımak için sipariş numarası gerekli. Lütfen önce sipariş numarası ekleyin.", 
+            variant: "destructive" 
+          });
+          setDraggedReservation(null);
+          return;
+        }
+        
+        // Count how many reservations are in this package group - ONLY by packageTourId + orderNumber
+        const packageReservations = reservations.filter(r => 
+          r.packageTourId === draggedReservation.packageTourId && 
+          r.orderNumber === draggedReservation.orderNumber
+        );
+        
+        setPendingMove({ 
+          reservation: draggedReservation, 
+          newDate: dateStr, 
+          isPackage: true, 
+          packageCount: packageReservations.length 
+        });
+      } else {
+        // Single reservation move
+        setPendingMove({ reservation: draggedReservation, newDate: dateStr });
+      }
     }
     setDraggedReservation(null);
   };
 
   const confirmMove = () => {
     if (pendingMove) {
-      moveMutation.mutate({ 
-        id: pendingMove.reservation.id, 
-        newDate: pendingMove.newDate,
-        oldDate: pendingMove.reservation.date,
-        reservation: pendingMove.reservation
-      });
+      if (pendingMove.isPackage && pendingMove.reservation.packageTourId && pendingMove.reservation.orderNumber) {
+        // Calculate offset days using UTC to avoid timezone issues
+        const [oldYear, oldMonth, oldDay] = pendingMove.reservation.date.split('-').map(Number);
+        const [newYear, newMonth, newDay] = pendingMove.newDate.split('-').map(Number);
+        const oldDateUtc = Date.UTC(oldYear, oldMonth - 1, oldDay);
+        const newDateUtc = Date.UTC(newYear, newMonth - 1, newDay);
+        const offsetDays = Math.round((newDateUtc - oldDateUtc) / (1000 * 60 * 60 * 24));
+        
+        packageShiftMutation.mutate({
+          packageTourId: pendingMove.reservation.packageTourId,
+          orderNumber: pendingMove.reservation.orderNumber,
+          offsetDays,
+          reservation: pendingMove.reservation
+        });
+      } else {
+        moveMutation.mutate({ 
+          id: pendingMove.reservation.id, 
+          newDate: pendingMove.newDate,
+          oldDate: pendingMove.reservation.date,
+          reservation: pendingMove.reservation
+        });
+      }
     }
   };
 
@@ -2282,15 +2394,27 @@ function BigCalendar({
       <Dialog open={!!pendingMove} onOpenChange={(open) => !open && cancelMove()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rezervasyon Taşıma Onayı</DialogTitle>
+            <DialogTitle>
+              {pendingMove?.isPackage ? "Paket Tur Taşıma Onayı" : "Rezervasyon Taşıma Onayı"}
+            </DialogTitle>
           </DialogHeader>
           {pendingMove && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Bu rezervasyonu taşımak istediğinizden emin misiniz?
+                {pendingMove.isPackage 
+                  ? `Bu paket turdaki tüm ${pendingMove.packageCount} rezervasyon aynı gün farkıyla taşınacak.`
+                  : "Bu rezervasyonu taşımak istediğinizden emin misiniz?"
+                }
               </p>
-              <Card className="p-3">
+              <Card className={`p-3 ${pendingMove.isPackage ? 'border-purple-300 dark:border-purple-700' : ''}`}>
                 <div className="space-y-2">
+                  {pendingMove.isPackage && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="h-4 w-4 text-purple-600" />
+                      <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Paket Tur</span>
+                      <Badge variant="secondary" className="text-xs">{pendingMove.packageCount} aktivite</Badge>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-2">
                     <span className="text-sm text-muted-foreground">Müşteri:</span>
                     <span className="text-sm font-medium">{pendingMove.reservation.customerName}</span>
@@ -2318,8 +2442,8 @@ function BigCalendar({
                 <Button variant="outline" onClick={cancelMove}>
                   İptal
                 </Button>
-                <Button onClick={confirmMove} disabled={moveMutation.isPending}>
-                  {moveMutation.isPending ? "Taşınıyor..." : "Onayla"}
+                <Button onClick={confirmMove} disabled={moveMutation.isPending || packageShiftMutation.isPending}>
+                  {(moveMutation.isPending || packageShiftMutation.isPending) ? "Taşınıyor..." : "Onayla"}
                 </Button>
               </div>
             </div>
@@ -2336,7 +2460,10 @@ function BigCalendar({
           {showMoveNotification && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Rezervasyon başarıyla taşındı. Aşağıdaki kişilere bildirim göndermek ister misiniz?
+                {showMoveNotification.movedCount 
+                  ? `${showMoveNotification.movedCount} rezervasyon başarıyla taşındı.`
+                  : "Rezervasyon başarıyla taşındı."
+                } Aşağıdaki kişilere bildirim göndermek ister misiniz?
               </p>
               
               {/* Customer Notification Card */}
@@ -2359,12 +2486,20 @@ function BigCalendar({
                     size="sm" 
                     variant="outline"
                     className="flex-shrink-0"
+                    disabled={customerNotificationMutation.isPending || !showMoveNotification.reservation.customerPhone}
                     onClick={() => {
-                      toast({ title: "Bildirim Gönderildi", description: "Müşteriye WhatsApp bildirimi gönderildi." });
+                      if (showMoveNotification.reservation.customerPhone) {
+                        customerNotificationMutation.mutate({
+                          phone: showMoveNotification.reservation.customerPhone,
+                          oldDate: format(new Date(showMoveNotification.oldDate), "d MMMM yyyy", { locale: tr }),
+                          newDate: format(new Date(showMoveNotification.newDate), "d MMMM yyyy", { locale: tr }),
+                          customerName: showMoveNotification.reservation.customerName
+                        });
+                      }
                     }}
                   >
                     <MessageCircle className="h-4 w-4 mr-1" />
-                    Gönder
+                    {customerNotificationMutation.isPending ? "Gönderiliyor..." : "Gönder"}
                   </Button>
                 </div>
               </Card>
@@ -2389,12 +2524,18 @@ function BigCalendar({
                       size="sm" 
                       variant="outline"
                       className="flex-shrink-0"
+                      disabled={agencyNotificationMutation.isPending}
                       onClick={() => {
-                        toast({ title: "Bildirim Gönderildi", description: "Acentaya bildirim gönderildi." });
+                        agencyNotificationMutation.mutate({
+                          agencyId: showMoveNotification.reservation.agencyId!,
+                          oldDate: format(new Date(showMoveNotification.oldDate), "d MMMM yyyy", { locale: tr }),
+                          newDate: format(new Date(showMoveNotification.newDate), "d MMMM yyyy", { locale: tr }),
+                          customerName: showMoveNotification.reservation.customerName
+                        });
                       }}
                     >
                       <MessageCircle className="h-4 w-4 mr-1" />
-                      Gönder
+                      {agencyNotificationMutation.isPending ? "Gönderiliyor..." : "Gönder"}
                     </Button>
                   </div>
                 </Card>
