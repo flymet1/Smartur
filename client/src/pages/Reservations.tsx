@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -57,7 +57,27 @@ export default function Reservations() {
   const [selectedDateForNew, setSelectedDateForNew] = useState<string>("");
   const [newReservationOpen, setNewReservationOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [showNewReservations, setShowNewReservations] = useState(false);
   const { toast } = useToast();
+
+  const lastViewedKey = "lastViewedReservationsAt";
+  const lastViewedAt = useMemo(() => {
+    const stored = localStorage.getItem(lastViewedKey);
+    return stored ? new Date(stored) : null;
+  }, []);
+
+  const unseenReservations = useMemo(() => {
+    if (!reservations || !lastViewedAt) return reservations || [];
+    return reservations.filter(r => {
+      const createdAt = r.createdAt ? new Date(r.createdAt) : null;
+      return createdAt && createdAt > lastViewedAt;
+    });
+  }, [reservations, lastViewedAt]);
+
+  const markReservationsAsSeen = () => {
+    localStorage.setItem(lastViewedKey, new Date().toISOString());
+    setShowNewReservations(false);
+  };
 
   useEffect(() => {
     if (urlDate) {
@@ -253,6 +273,64 @@ export default function Reservations() {
             <p className="text-muted-foreground mt-1">Tüm rezervasyonları görüntüleyin ve yönetin</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Popover open={showNewReservations} onOpenChange={setShowNewReservations}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="relative"
+                  data-testid="button-new-reservations"
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  Yeni Rezervasyonlar
+                  {unseenReservations.length > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px]"
+                    >
+                      {unseenReservations.length}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="p-3 border-b flex items-center justify-between gap-2">
+                  <span className="font-medium text-sm">Yeni Rezervasyonlar</span>
+                  {unseenReservations.length > 0 && (
+                    <Button variant="ghost" size="sm" onClick={markReservationsAsSeen}>
+                      Tümünü Gördüm
+                    </Button>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {unseenReservations.length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground text-sm">
+                      Yeni rezervasyon yok
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {unseenReservations.slice(0, 10).map(r => (
+                        <div 
+                          key={r.id} 
+                          className="p-3 hover-elevate cursor-pointer"
+                          onClick={() => {
+                            setSelectedReservation(r);
+                            setShowNewReservations(false);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{r.customerName}</span>
+                            <Badge variant="secondary" className="text-[10px]">{r.quantity} kişi</Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {activities?.find(a => a.id === r.activityId)?.name || "Bilinmiyor"} - {format(new Date(r.date), 'd MMM', { locale: tr })} {r.time}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -406,10 +484,25 @@ export default function Reservations() {
                       }
                     }}
                     numberOfMonths={2}
+                    locale={tr}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
+              {(dateRangeFilter.from || dateRangeFilter.to) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setDateRangeFilter({ from: undefined, to: undefined });
+                    setDateFilter("");
+                  }}
+                  className="text-muted-foreground"
+                  data-testid="button-clear-date-filter"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
               <div className="flex border rounded-md">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -729,6 +822,7 @@ function BigCalendar({
                   modifiersClassNames={view === 'week' ? {
                     weekStart: "font-bold text-primary"
                   } : undefined}
+                  locale={tr}
                   initialFocus
                 />
               </PopoverContent>
