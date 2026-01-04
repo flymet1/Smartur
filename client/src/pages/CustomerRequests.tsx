@@ -21,6 +21,15 @@ interface Agency {
   notes: string | null;
 }
 
+interface RequestMessageTemplate {
+  id: number;
+  name: string;
+  templateType: string;
+  messageContent: string;
+  isDefault: boolean | null;
+  isActive: boolean | null;
+}
+
 interface CustomerRequest {
   id: number;
   reservationId: number;
@@ -61,6 +70,10 @@ export default function CustomerRequests() {
 
   const { data: agencies } = useQuery<Agency[]>({
     queryKey: ['/api/finance/agencies'],
+  });
+
+  const { data: messageTemplates } = useQuery<RequestMessageTemplate[]>({
+    queryKey: ['/api/request-message-templates'],
   });
 
   const [pendingNotification, setPendingNotification] = useState<{ id: number; status: string } | null>(null);
@@ -114,12 +127,45 @@ export default function CustomerRequests() {
     return message;
   };
 
+  const applyTemplateVariables = (template: string, request: CustomerRequest) => {
+    const requestTypeText = getRequestTypeText(request.requestType);
+    return template
+      .replace(/{musteri_adi}/g, request.customerName)
+      .replace(/{talep_turu}/g, requestTypeText)
+      .replace(/{yeni_saat}/g, request.preferredTime || '')
+      .replace(/{red_sebebi}/g, request.adminNotes || 'Belirtilmedi');
+  };
+
+  const getTemplateByStatus = (status: string): RequestMessageTemplate | undefined => {
+    if (!messageTemplates) return undefined;
+    let templateType = 'approved';
+    if (status === 'pending') templateType = 'pending';
+    else if (status === 'rejected') templateType = 'rejected';
+    return messageTemplates.find(t => t.templateType === templateType && t.isActive !== false);
+  };
+
   const openNotifyDialog = (request: CustomerRequest) => {
     setSelectedRequest(request);
-    setNotifyMessage(generateDefaultMessage(request));
+    
+    // Try to use template, fallback to default message
+    const template = getTemplateByStatus(request.status);
+    if (template) {
+      setNotifyMessage(applyTemplateVariables(template.messageContent, request));
+    } else {
+      setNotifyMessage(generateDefaultMessage(request));
+    }
+    
     setAgencyMessage(generateAgencyMessage(request));
     setSelectedAgencyId("");
     setNotifyDialogOpen(true);
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    if (!selectedRequest) return;
+    const template = messageTemplates?.find(t => t.id === Number(templateId));
+    if (template) {
+      setNotifyMessage(applyTemplateVariables(template.messageContent, selectedRequest));
+    }
   };
 
   const sendWhatsAppNotification = async () => {
@@ -210,7 +256,7 @@ export default function CustomerRequests() {
       }
       
       toast({ title: "Başarılı", description: `${selectedAgency.name} acentasına bildirim gönderildi.` });
-      setAgencyDialogOpen(false);
+      setNotifyDialogOpen(false);
       setSelectedRequest(null);
       setSelectedAgencyId("");
     } catch (err) {
@@ -395,14 +441,30 @@ export default function CustomerRequests() {
                 {/* Customer Notification Section */}
                 <Card className="p-4 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
-                        <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
+                          <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Müşteri Bildirimi</p>
+                          <p className="text-xs text-muted-foreground">{selectedRequest.customerName} - {selectedRequest.customerPhone || 'Telefon yok'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">Müşteri Bildirimi</p>
-                        <p className="text-xs text-muted-foreground">{selectedRequest.customerName} - {selectedRequest.customerPhone || 'Telefon yok'}</p>
-                      </div>
+                      {messageTemplates && messageTemplates.length > 0 && (
+                        <Select onValueChange={handleTemplateSelect}>
+                          <SelectTrigger className="w-[160px]" data-testid="select-template">
+                            <SelectValue placeholder="Şablon seç..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {messageTemplates.map((template) => (
+                              <SelectItem key={template.id} value={String(template.id)}>
+                                {template.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
                     <Textarea
                       value={notifyMessage}
