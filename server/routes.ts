@@ -666,7 +666,11 @@ Eğer müşteri talebinin durumunu sorarsa, talebinin "DEĞERLENDİRME AŞAMASIN
 Sabırları için teşekkür et.`;
   } else if (context.customerRequests && context.customerRequests.length > 0) {
     // Customer has processed requests (approved or rejected)
-    const latestRequest = context.customerRequests[0];
+    // Sort by createdAt descending to get the latest request
+    const sortedRequests = [...context.customerRequests].sort((a: any, b: any) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const latestRequest = sortedRequests[0];
     if (latestRequest.status === 'approved' || latestRequest.status === 'rejected') {
       const statusText = latestRequest.status === 'approved' ? 'ONAYLANDI' : 'REDDEDİLDİ';
       customerRequestContext = `
@@ -793,10 +797,14 @@ ${context.botRules || DEFAULT_BOT_RULES}`;
   
   // Check for request status queries
   if (lastUserMessage.includes("talep") || lastUserMessage.includes("başvuru") || lastUserMessage.includes("durumu") || lastUserMessage.includes("ne oldu")) {
-    if (context.pendingRequests && context.pendingRequests.length > 0) {
+    if (context?.pendingRequests && context.pendingRequests.length > 0) {
       return `Merhaba! Talebiniz şu anda değerlendirme aşamasındadır. Ekibimiz en kısa sürede sizinle iletişime geçecektir. Sabırınız için teşekkür ederiz.`;
-    } else if (context.customerRequests && context.customerRequests.length > 0) {
-      const latestRequest = context.customerRequests[0];
+    } else if (context?.customerRequests && context.customerRequests.length > 0) {
+      // Sort by createdAt descending to get the latest request
+      const sortedRequests = [...context.customerRequests].sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const latestRequest = sortedRequests[0];
       if (latestRequest.status === 'approved') {
         return `Merhaba! Son talebiniz onaylanmıştır. Size daha önce bilgilendirme mesajı gönderilmiş olmalı. Başka bir konuda yardımcı olabilir miyim?`;
       } else if (latestRequest.status === 'rejected') {
