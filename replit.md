@@ -30,6 +30,7 @@ Google Gemini AI entegrasyonu ile akıllı yanıt sistemi eklenmiştir.
 - **Akıllı Fallback**: AI erişilemezse kullanıcı niyetine göre akıllı yanıt (fiyat, müsaitlik, rezervasyon, iptal)
 
 ## Son Değişiklikler
+- 04.01.2026: Ana Sayfa Yeniden Tasarımı - Rezervasyonlar artık ana sayfa ("/"). Büyük takvim bileşeni eklendi: günlük/haftalık/aylık görünüm geçişi, takvim navigasyonu, tarih tıklayarak yeni rezervasyon oluşturma, aktivite doluluk oranları (tooltip ile detay), renk kodlu aktiviteler, hızlı durum değiştirme dropdown'ları. Dashboard sadeleştirildi - sadece bildirimler ve Rezervasyonlar sayfasına yönlendirme CTA'sı gösteriyor. Sidebar navigasyonu güncellendi.
 - 03.01.2026: Takip Linki Şablon Desteği - Onay mesajı şablonlarında {takip_linki} yer tutucusu kullanılabilir. Manuel rezervasyon oluşturulup WhatsApp bildirimi gönderildiğinde takip tokeni otomatik oluşturulur ve mesaja eklenir.
 - 03.01.2026: Müşteri Takip Dinamik Saat Seçimi - Saat değişikliği talebinde artık sadece ilgili aktivitenin varsayılan saatleri gösteriliyor. Backend'den defaultTimes çekiliyor, aktivite/paket tur bazında dinamik seçenekler sunuluyor.
 - 02.01.2026: Profesyonel Satış Sunumu - /sales-presentation sayfası oluşturuldu. 14 bölümlü kapsamlı satış dökümanı: Kapak, Yönetici Özeti, Karşılaşılan Zorluklar, Değer Önerisi, Dashboard, Rezervasyon, Takvim, WhatsApp Bot, Müşteri Takip, Finans, Entegrasyonlar, Sektörel Çözümler, Fiyatlandırma ve İletişim. PDF export butonu ile yazdırılabilir A4 format. Lucide-react ikonları, print-optimized CSS styling.
