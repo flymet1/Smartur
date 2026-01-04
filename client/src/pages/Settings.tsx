@@ -779,72 +779,6 @@ export default function Settings() {
                 )}
               </div>
 
-              <div className="border-t pt-6">
-                <div className="space-y-4">
-                  <div className="space-y-0.5">
-                    <Label>Toplu Bildirim Mesaj Şablonları</Label>
-                    <p className="text-sm text-muted-foreground">Rezervasyon durumuna göre farklı mesaj şablonları tanımlayın</p>
-                  </div>
-                  
-                  <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
-                    <p className="font-medium">Kullanılabilir Değişkenler:</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
-                      <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
-                      <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktivite{'}'}</code> - Aktivite adı</div>
-                      <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saat{'}'}</code> - Rezervasyon saati</div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <Card className="p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Onaylandı</Badge>
-                        <span className="text-sm text-muted-foreground">Onaylanan rezervasyonlar için</span>
-                      </div>
-                      <Textarea 
-                        value={bulkTemplateConfirmed}
-                        onChange={(e) => setBulkTemplateConfirmed(e.target.value)}
-                        placeholder="Onay mesajı şablonu..."
-                        className="min-h-[100px]"
-                        data-testid="input-bulk-template-confirmed"
-                      />
-                    </Card>
-
-                    <Card className="p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">Beklemede</Badge>
-                        <span className="text-sm text-muted-foreground">Değerlendirilen rezervasyonlar için</span>
-                      </div>
-                      <Textarea 
-                        value={bulkTemplatePending}
-                        onChange={(e) => setBulkTemplatePending(e.target.value)}
-                        placeholder="Beklemede mesajı şablonu..."
-                        className="min-h-[100px]"
-                        data-testid="input-bulk-template-pending"
-                      />
-                    </Card>
-
-                    <Card className="p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">İptal</Badge>
-                        <span className="text-sm text-muted-foreground">İptal edilen rezervasyonlar için</span>
-                      </div>
-                      <Textarea 
-                        value={bulkTemplateCancelled}
-                        onChange={(e) => setBulkTemplateCancelled(e.target.value)}
-                        placeholder="İptal mesajı şablonu..."
-                        className="min-h-[100px]"
-                        data-testid="input-bulk-template-cancelled"
-                      />
-                    </Card>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    Tek rezervasyon seçildiğinde değişkenler otomatik doldurulur. Birden fazla seçildiğinde genel mesaj kullanılır.
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
@@ -1226,6 +1160,73 @@ export default function Settings() {
 
                 <TabsContent value="templates" className="space-y-6 mt-4">
                   <RequestMessageTemplatesSection />
+                  
+                  <div className="border-t pt-6">
+                    <div className="space-y-4">
+                      <div className="space-y-0.5">
+                        <h4 className="font-medium">Toplu Bildirim Mesaj Şablonları</h4>
+                        <p className="text-sm text-muted-foreground">Rezervasyon durumuna göre farklı mesaj şablonları tanımlayın</p>
+                      </div>
+                      
+                      <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
+                        <p className="font-medium">Kullanılabilir Değişkenler:</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktivite{'}'}</code> - Aktivite adı</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saat{'}'}</code> - Rezervasyon saati</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <Card className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Onaylandı</Badge>
+                            <span className="text-sm text-muted-foreground">Onaylanan rezervasyonlar için</span>
+                          </div>
+                          <Textarea 
+                            value={bulkTemplateConfirmed}
+                            onChange={(e) => setBulkTemplateConfirmed(e.target.value)}
+                            placeholder="Onay mesajı şablonu..."
+                            className="min-h-[100px]"
+                            data-testid="input-bulk-template-confirmed"
+                          />
+                        </Card>
+
+                        <Card className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">Beklemede</Badge>
+                            <span className="text-sm text-muted-foreground">Değerlendirilen rezervasyonlar için</span>
+                          </div>
+                          <Textarea 
+                            value={bulkTemplatePending}
+                            onChange={(e) => setBulkTemplatePending(e.target.value)}
+                            placeholder="Beklemede mesajı şablonu..."
+                            className="min-h-[100px]"
+                            data-testid="input-bulk-template-pending"
+                          />
+                        </Card>
+
+                        <Card className="p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">İptal</Badge>
+                            <span className="text-sm text-muted-foreground">İptal edilen rezervasyonlar için</span>
+                          </div>
+                          <Textarea 
+                            value={bulkTemplateCancelled}
+                            onChange={(e) => setBulkTemplateCancelled(e.target.value)}
+                            placeholder="İptal mesajı şablonu..."
+                            className="min-h-[100px]"
+                            data-testid="input-bulk-template-cancelled"
+                          />
+                        </Card>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        Tek rezervasyon seçildiğinde değişkenler otomatik doldurulur. Birden fazla seçildiğinde genel mesaj kullanılır.
+                      </p>
+                    </div>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="bot-test" className="space-y-6 mt-4">
