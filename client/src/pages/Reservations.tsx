@@ -7,7 +7,6 @@ import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Pack
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu";
 import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
@@ -2196,7 +2195,6 @@ interface ReservationCardProps {
 }
 
 function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded, packageTourName, draggable, onDragStart }: ReservationCardProps) {
-  const { toast } = useToast();
   const statusConfig = {
     confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 border-green-200" },
     pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
@@ -2210,132 +2208,88 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
     }
   };
 
-  const copyToClipboard = async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({ title: "Kopyalandı", description: `${label} kopyalandı.` });
-    } catch {
-      toast({ title: "Hata", description: "Kopyalama başarısız oldu.", variant: "destructive" });
-    }
-  };
-
-  const contextMenuContent = (
-    <>
-      <ContextMenuItem onClick={() => copyToClipboard(reservation.customerName, "Müşteri adı")}>
-        <Copy className="h-3 w-3 mr-2" /> İsmi Kopyala
-      </ContextMenuItem>
-      <ContextMenuItem onClick={() => copyToClipboard(reservation.customerPhone, "Telefon")}>
-        <Phone className="h-3 w-3 mr-2" /> Telefonu Kopyala
-      </ContextMenuItem>
-      {reservation.customerEmail && (
-        <ContextMenuItem onClick={() => copyToClipboard(reservation.customerEmail!, "E-posta")}>
-          <Mail className="h-3 w-3 mr-2" /> E-postayı Kopyala
-        </ContextMenuItem>
-      )}
-      <ContextMenuSeparator />
-      <ContextMenuItem onClick={() => onStatusChange('confirmed')} className="text-green-600">
-        <CheckCircle className="h-3 w-3 mr-2" /> Onayla
-      </ContextMenuItem>
-      <ContextMenuItem onClick={() => onStatusChange('cancelled')} className="text-red-600">
-        <XCircle className="h-3 w-3 mr-2" /> İptal Et
-      </ContextMenuItem>
-    </>
-  );
-
   if (expanded) {
     return (
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <Card 
-            className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-            onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
-            onContextMenu={(e) => e.preventDefault()}
-            data-testid={`card-reservation-${reservation.id}`}
-            draggable={draggable}
-            onDragStart={handleDragStart}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">{reservation.customerName}</div>
-                <div className="text-xs text-muted-foreground">{activityName}</div>
-                {packageTourName && (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Package className="h-3 w-3 text-purple-500" />
-                    <span className="text-xs text-purple-600 dark:text-purple-400 truncate">{packageTourName}</span>
-                  </div>
-                )}
-                <div className="text-xs mt-1">
-                  {reservation.time} - {reservation.quantity} kişi
-                </div>
+      <Card 
+        className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
+        data-testid={`card-reservation-${reservation.id}`}
+        draggable={draggable}
+        onDragStart={handleDragStart}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm truncate">{reservation.customerName}</div>
+            <div className="text-xs text-muted-foreground">{activityName}</div>
+            {packageTourName && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Package className="h-3 w-3 text-purple-500" />
+                <span className="text-xs text-purple-600 dark:text-purple-400 truncate">{packageTourName}</span>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button 
-                    className={`${status.className} text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {status.label}
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onStatusChange('pending')} className="text-yellow-700">
-                    Beklemede
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatusChange('confirmed')} className="text-green-700">
-                    Onaylı
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatusChange('cancelled')} className="text-red-700">
-                    İptal
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            )}
+            <div className="text-xs mt-1">
+              {reservation.time} - {reservation.quantity} kişi
             </div>
-          </Card>
-        </ContextMenuTrigger>
-        <ContextMenuContent>{contextMenuContent}</ContextMenuContent>
-      </ContextMenu>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                className={`${status.className} text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {status.label}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onStatusChange('pending')} className="text-yellow-700">
+                Beklemede
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusChange('confirmed')} className="text-green-700">
+                Onaylı
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onStatusChange('cancelled')} className="text-red-700">
+                İptal
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </Card>
     );
   }
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <Card 
-          className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-          onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
-          onContextMenu={(e) => e.preventDefault()}
-          data-testid={`card-reservation-${reservation.id}`}
-          draggable={draggable}
-          onDragStart={handleDragStart}
-        >
-          <div className="font-medium truncate">{reservation.customerName}</div>
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground truncate">{activityName}</span>
-            {packageTourName && <Package className="h-3 w-3 text-purple-500 flex-shrink-0" />}
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <span>{reservation.time} - {reservation.quantity}p</span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button 
-                  className={`${status.className} text-[10px] px-1 py-0.5 rounded border`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {status.label}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onStatusChange('pending')}>Beklemede</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange('confirmed')}>Onaylı</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onStatusChange('cancelled')}>İptal</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </Card>
-      </ContextMenuTrigger>
-      <ContextMenuContent>{contextMenuContent}</ContextMenuContent>
-    </ContextMenu>
+    <Card 
+      className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
+      data-testid={`card-reservation-${reservation.id}`}
+      draggable={draggable}
+      onDragStart={handleDragStart}
+    >
+      <div className="font-medium truncate">{reservation.customerName}</div>
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground truncate">{activityName}</span>
+        {packageTourName && <Package className="h-3 w-3 text-purple-500 flex-shrink-0" />}
+      </div>
+      <div className="flex items-center justify-between mt-1">
+        <span>{reservation.time} - {reservation.quantity}p</span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button 
+              className={`${status.className} text-[10px] px-1 py-0.5 rounded border`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {status.label}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onStatusChange('pending')}>Beklemede</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onStatusChange('confirmed')}>Onaylı</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onStatusChange('cancelled')}>İptal</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </Card>
   );
 }
 
