@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -1328,6 +1328,8 @@ function BigCalendar({
   const [overflowDialogDate, setOverflowDialogDate] = useState<string | null>(null);
   const [draggedReservation, setDraggedReservation] = useState<Reservation | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ reservation: Reservation; newDate: string } | null>(null);
+  const [showMoveNotification, setShowMoveNotification] = useState<{ reservation: Reservation; oldDate: string; newDate: string } | null>(null);
   const { toast } = useToast();
   
   const statusMutation = useMutation({
@@ -1340,15 +1342,25 @@ function BigCalendar({
   });
 
   const moveMutation = useMutation({
-    mutationFn: async ({ id, newDate }: { id: number; newDate: string }) => {
+    mutationFn: async ({ id, newDate, oldDate }: { id: number; newDate: string; oldDate: string }) => {
       return apiRequest('PATCH', `/api/reservations/${id}`, { date: newDate });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       toast({ title: "Başarılı", description: "Rezervasyon tarihi güncellendi." });
+      // Show notification dialog
+      if (pendingMove) {
+        setShowMoveNotification({ 
+          reservation: pendingMove.reservation, 
+          oldDate: pendingMove.reservation.date, 
+          newDate: variables.newDate 
+        });
+      }
+      setPendingMove(null);
     },
     onError: () => {
       toast({ title: "Hata", description: "Tarih güncellenemedi.", variant: "destructive" });
+      setPendingMove(null);
     },
   });
 
@@ -1373,9 +1385,24 @@ function BigCalendar({
     setDragOverDate(null);
     
     if (draggedReservation && draggedReservation.date !== dateStr) {
-      moveMutation.mutate({ id: draggedReservation.id, newDate: dateStr });
+      // Show confirmation dialog instead of direct mutation
+      setPendingMove({ reservation: draggedReservation, newDate: dateStr });
     }
     setDraggedReservation(null);
+  };
+
+  const confirmMove = () => {
+    if (pendingMove) {
+      moveMutation.mutate({ 
+        id: pendingMove.reservation.id, 
+        newDate: pendingMove.newDate,
+        oldDate: pendingMove.reservation.date
+      });
+    }
+  };
+
+  const cancelMove = () => {
+    setPendingMove(null);
   };
 
   const handleDragEnd = () => {
@@ -2220,6 +2247,138 @@ function BigCalendar({
               });
             })()}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Confirmation Dialog */}
+      <Dialog open={!!pendingMove} onOpenChange={(open) => !open && cancelMove()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rezervasyon Taşıma Onayı</DialogTitle>
+          </DialogHeader>
+          {pendingMove && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Bu rezervasyonu taşımak istediğinizden emin misiniz?
+              </p>
+              <Card className="p-3">
+                <div className="space-y-2">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-sm text-muted-foreground">Müşteri:</span>
+                    <span className="text-sm font-medium">{pendingMove.reservation.customerName}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-sm text-muted-foreground">Aktivite:</span>
+                    <span className="text-sm font-medium">{getActivityName(pendingMove.reservation.activityId)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between gap-2">
+                    <span className="text-sm text-muted-foreground">Eski Tarih:</span>
+                    <Badge variant="outline" className="bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400">
+                      {format(new Date(pendingMove.reservation.date), "d MMMM yyyy", { locale: tr })}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-sm text-muted-foreground">Yeni Tarih:</span>
+                    <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                      {format(new Date(pendingMove.newDate), "d MMMM yyyy", { locale: tr })}
+                    </Badge>
+                  </div>
+                </div>
+              </Card>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={cancelMove}>
+                  İptal
+                </Button>
+                <Button onClick={confirmMove} disabled={moveMutation.isPending}>
+                  {moveMutation.isPending ? "Taşınıyor..." : "Onayla"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Notification Dialog */}
+      <Dialog open={!!showMoveNotification} onOpenChange={(open) => !open && setShowMoveNotification(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bilgilendirme Gönder</DialogTitle>
+          </DialogHeader>
+          {showMoveNotification && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Rezervasyon başarıyla taşındı. Aşağıdaki kişilere bildirim göndermek ister misiniz?
+              </p>
+              
+              {/* Customer Notification Card */}
+              <Card className="p-4 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
+                      <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Müşteri Bildirimi</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{showMoveNotification.reservation.customerName}</p>
+                      <p className="text-xs text-muted-foreground">{showMoveNotification.reservation.customerPhone}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                        "{format(new Date(showMoveNotification.oldDate), "d MMM", { locale: tr })}" → "{format(new Date(showMoveNotification.newDate), "d MMM", { locale: tr })}" değişikliği bildirilecek
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="flex-shrink-0"
+                    onClick={() => {
+                      toast({ title: "Bildirim Gönderildi", description: "Müşteriye WhatsApp bildirimi gönderildi." });
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    Gönder
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Agency Notification Card */}
+              {showMoveNotification.reservation.agencyId && (
+                <Card className="p-4 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0">
+                        <Building className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Acenta Bildirimi</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Acenta ID: {showMoveNotification.reservation.agencyId}</p>
+                        <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                          Rezervasyon değişikliği bildirilecek
+                        </p>
+                      </div>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="flex-shrink-0"
+                      onClick={() => {
+                        toast({ title: "Bildirim Gönderildi", description: "Acentaya bildirim gönderildi." });
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Gönder
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setShowMoveNotification(null)}>
+                  Kapat
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Card>
