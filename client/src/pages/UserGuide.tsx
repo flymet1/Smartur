@@ -642,7 +642,14 @@ export default function UserGuide() {
                     <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
                     <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktivite{'}'}</code> - Aktivite adı</div>
                     <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saat{'}'}</code> - Rezervasyon saati</div>
+                    <div><code className="bg-background px-1.5 py-1 rounded border border-primary/30">{'{'}takip_linki{'}'}</code> - Takip sayfası linki</div>
                   </div>
+                </div>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-3">
+                  <p className="text-xs font-medium text-amber-600 mb-1">Takip Linki Süresi</p>
+                  <p className="text-xs text-muted-foreground">
+                    Takip linkleri aktivite tarih ve saatinden 24 saat sonra otomatik olarak silinir.
+                  </p>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Tek rezervasyon seçildiğinde değişkenler otomatik doldurulur. Birden fazla seçildiğinde genel mesaj kullanılır. 

@@ -1389,17 +1389,27 @@ export class DatabaseStorage implements IStorage {
     const crypto = await import('crypto');
     const token = crypto.randomBytes(16).toString('hex');
     
-    // Get the reservation to calculate expiry date (activity date + 1 day)
+    // Get the reservation to calculate expiry date (activity date/time + 24 hours)
     const [reservation] = await db.select().from(reservations).where(eq(reservations.id, reservationId));
     if (!reservation) {
       throw new Error('Rezervasyon bulunamadi');
     }
     
-    // Calculate expiry: activity date + 1 day at 23:59:59
+    // Calculate expiry: activity date + time + 24 hours
     const activityDate = new Date(reservation.date);
-    const expiryDate = new Date(activityDate);
-    expiryDate.setDate(expiryDate.getDate() + 1);
-    expiryDate.setHours(23, 59, 59, 999);
+    
+    // Parse the time if available (format: "HH:MM" or "HH:MM:SS")
+    if (reservation.time) {
+      const timeParts = reservation.time.split(':');
+      if (timeParts.length >= 2) {
+        activityDate.setHours(parseInt(timeParts[0], 10) || 0);
+        activityDate.setMinutes(parseInt(timeParts[1], 10) || 0);
+        activityDate.setSeconds(timeParts.length > 2 ? parseInt(timeParts[2], 10) || 0 : 0);
+      }
+    }
+    
+    // Add 24 hours to the activity date/time
+    const expiryDate = new Date(activityDate.getTime() + 24 * 60 * 60 * 1000);
     
     // Update reservation with tracking token
     await db.update(reservations)
