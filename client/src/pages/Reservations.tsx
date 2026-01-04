@@ -32,6 +32,7 @@ import { tr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 
 type CalendarView = "day" | "week" | "month";
 
@@ -1313,6 +1314,7 @@ export default function Reservations() {
               activities={activities || []}
               packageTours={packageTours}
               holidays={holidays}
+              agencies={agencies}
               view={calendarView}
               currentDate={currentDate}
               onViewChange={setCalendarView}
@@ -1343,6 +1345,7 @@ interface BigCalendarProps {
   activities: Activity[];
   packageTours: PackageTour[];
   holidays: Holiday[];
+  agencies: Agency[];
   view: CalendarView;
   currentDate: Date;
   onViewChange: (view: CalendarView) => void;
@@ -1363,6 +1366,7 @@ function BigCalendar({
   activities, 
   packageTours,
   holidays,
+  agencies,
   view, 
   currentDate, 
   onViewChange, 
@@ -1384,7 +1388,48 @@ function BigCalendar({
   const [dragOverTime, setDragOverTime] = useState<string | null>(null);
   const [pendingMove, setPendingMove] = useState<{ reservation: Reservation; newDate: string; newTime?: string; isPackage?: boolean; packageCount?: number } | null>(null);
   const [showMoveNotification, setShowMoveNotification] = useState<{ reservation: Reservation; oldDate: string; newDate: string; oldTime?: string; newTime?: string; movedCount?: number } | null>(null);
+  const [moveCustomerMessage, setMoveCustomerMessage] = useState("");
+  const [moveAgencyMessage, setMoveAgencyMessage] = useState("");
+  const [moveSelectedAgencyId, setMoveSelectedAgencyId] = useState<string>("");
   const { toast } = useToast();
+
+  // Helper function to generate customer notification message
+  const generateCustomerMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
+    const oldDateFormatted = format(new Date(oldDate), "d MMMM yyyy", { locale: tr });
+    const newDateFormatted = format(new Date(newDate), "d MMMM yyyy", { locale: tr });
+    let message = `Merhaba ${customerName},\n\nRezervasyonunuz guncellenmistir.\n\n`;
+    if (oldDate !== newDate) {
+      message += `Eski tarih: ${oldDateFormatted}\nYeni tarih: ${newDateFormatted}\n`;
+    }
+    if (oldTime && newTime && oldTime !== newTime) {
+      message += `Eski saat: ${oldTime}\nYeni saat: ${newTime}\n`;
+    }
+    message += `\nSorulariniz icin bize bu numaradan yazabilirsiniz.\n\nSky Fethiye`;
+    return message;
+  };
+
+  // Helper function to generate agency notification message
+  const generateAgencyMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
+    const oldDateFormatted = format(new Date(oldDate), "d MMMM yyyy", { locale: tr });
+    const newDateFormatted = format(new Date(newDate), "d MMMM yyyy", { locale: tr });
+    let message = `Rezervasyon Degisikligi Bildirimi\n\nMusteri: ${customerName}\n`;
+    if (oldDate !== newDate) {
+      message += `Eski Tarih: ${oldDateFormatted}\nYeni Tarih: ${newDateFormatted}\n`;
+    }
+    if (oldTime && newTime && oldTime !== newTime) {
+      message += `Eski Saat: ${oldTime}\nYeni Saat: ${newTime}\n`;
+    }
+    message += `\nSky Fethiye`;
+    return message;
+  };
+
+  // Helper to open move notification dialog with default messages
+  const openMoveNotificationDialog = (reservation: Reservation, oldDate: string, newDate: string, oldTime?: string, newTime?: string, movedCount?: number) => {
+    setMoveCustomerMessage(generateCustomerMessage(reservation.customerName, oldDate, newDate, oldTime, newTime));
+    setMoveAgencyMessage(generateAgencyMessage(reservation.customerName, oldDate, newDate, oldTime, newTime));
+    setMoveSelectedAgencyId(reservation.agencyId ? String(reservation.agencyId) : "");
+    setShowMoveNotification({ reservation, oldDate, newDate, oldTime, newTime, movedCount });
+  };
   
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -1408,13 +1453,13 @@ function BigCalendar({
         ? `Rezervasyon ${variables.newDate !== variables.oldDate ? 'tarihi ve ' : ''}saati güncellendi.`
         : "Rezervasyon tarihi güncellendi.";
       toast({ title: "Başarılı", description });
-      setShowMoveNotification({ 
-        reservation: variables.reservation, 
-        oldDate: variables.oldDate, 
-        newDate: variables.newDate,
-        oldTime: variables.oldTime,
-        newTime: variables.newTime
-      });
+      openMoveNotificationDialog(
+        variables.reservation,
+        variables.oldDate,
+        variables.newDate,
+        variables.oldTime,
+        variables.newTime
+      );
       setPendingMove(null);
     },
     onError: () => {
@@ -1441,12 +1486,14 @@ function BigCalendar({
       const newDate = new Date(oldDate);
       newDate.setDate(newDate.getDate() + variables.offsetDays);
       
-      setShowMoveNotification({ 
-        reservation: variables.reservation, 
-        oldDate: oldDate, 
-        newDate: newDate.toISOString().split('T')[0],
-        movedCount: data?.reservations?.length
-      });
+      openMoveNotificationDialog(
+        variables.reservation,
+        oldDate,
+        newDate.toISOString().split('T')[0],
+        undefined,
+        undefined,
+        data?.reservations?.length
+      );
       setPendingMove(null);
     },
     onError: () => {
@@ -1457,8 +1504,7 @@ function BigCalendar({
 
   // WhatsApp customer notification mutation
   const customerNotificationMutation = useMutation({
-    mutationFn: async ({ phone, oldDate, newDate, customerName }: { phone: string; oldDate: string; newDate: string; customerName: string }) => {
-      const message = `Merhaba ${customerName},\n\nRezervasyonunuzun tarihi değiştirilmiştir.\n\nEski tarih: ${oldDate}\nYeni tarih: ${newDate}\n\nSorularınız için bize bu numaradan yazabilirsiniz.\n\nSky Fethiye`;
+    mutationFn: async ({ phone, message }: { phone: string; message: string }) => {
       return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
     },
     onSuccess: () => {
@@ -1471,7 +1517,7 @@ function BigCalendar({
 
   // WhatsApp agency notification mutation
   const agencyNotificationMutation = useMutation({
-    mutationFn: async ({ agencyId, oldDate, newDate, customerName }: { agencyId: number; oldDate: string; newDate: string; customerName: string }) => {
+    mutationFn: async ({ agencyId, message }: { agencyId: number; message: string }) => {
       // Get agency contact info
       const agencyRes = await fetch(`/api/agencies/${agencyId}`);
       if (!agencyRes.ok) throw new Error('Acenta bilgisi alınamadı');
@@ -1481,7 +1527,6 @@ function BigCalendar({
         throw new Error('Acenta iletişim bilgisi bulunamadı');
       }
       
-      const message = `Rezervasyon Değişikliği Bildirimi\n\nMüşteri: ${customerName}\nEski Tarih: ${oldDate}\nYeni Tarih: ${newDate}\n\nSky Fethiye`;
       return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone: agency.contactInfo, message });
     },
     onSuccess: () => {
@@ -2563,7 +2608,7 @@ function BigCalendar({
 
       {/* Move Notification Dialog */}
       <Dialog open={!!showMoveNotification} onOpenChange={(open) => !open && setShowMoveNotification(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-xl">
           <DialogHeader>
             <DialogTitle>Bilgilendirme Gönder</DialogTitle>
           </DialogHeader>
@@ -2576,80 +2621,97 @@ function BigCalendar({
                 } Aşağıdaki kişilere bildirim göndermek ister misiniz?
               </p>
               
-              {/* Customer Notification Card */}
+              {/* Customer Notification Section */}
               <Card className="p-4 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
                       <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
                       <p className="font-medium text-sm">Müşteri Bildirimi</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{showMoveNotification.reservation.customerName}</p>
-                      <p className="text-xs text-muted-foreground">{showMoveNotification.reservation.customerPhone}</p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                        "{format(new Date(showMoveNotification.oldDate), "d MMM", { locale: tr })}" → "{format(new Date(showMoveNotification.newDate), "d MMM", { locale: tr })}" değişikliği bildirilecek
-                      </p>
+                      <p className="text-xs text-muted-foreground">{showMoveNotification.reservation.customerName} - {showMoveNotification.reservation.customerPhone}</p>
                     </div>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="flex-shrink-0"
-                    disabled={customerNotificationMutation.isPending || !showMoveNotification.reservation.customerPhone}
-                    onClick={() => {
-                      if (showMoveNotification.reservation.customerPhone) {
-                        customerNotificationMutation.mutate({
-                          phone: showMoveNotification.reservation.customerPhone,
-                          oldDate: format(new Date(showMoveNotification.oldDate), "d MMMM yyyy", { locale: tr }),
-                          newDate: format(new Date(showMoveNotification.newDate), "d MMMM yyyy", { locale: tr }),
-                          customerName: showMoveNotification.reservation.customerName
-                        });
-                      }
-                    }}
-                  >
-                    <MessageCircle className="h-4 w-4 mr-1" />
-                    {customerNotificationMutation.isPending ? "Gönderiliyor..." : "Gönder"}
-                  </Button>
+                  <Textarea
+                    value={moveCustomerMessage}
+                    onChange={(e) => setMoveCustomerMessage(e.target.value)}
+                    className="min-h-[120px] text-sm"
+                    placeholder="Müşteriye gönderilecek mesaj..."
+                    data-testid="textarea-move-customer-message"
+                  />
+                  <div className="flex justify-end">
+                    <Button 
+                      size="sm"
+                      disabled={customerNotificationMutation.isPending || !showMoveNotification.reservation.customerPhone || !moveCustomerMessage.trim()}
+                      onClick={() => {
+                        if (showMoveNotification.reservation.customerPhone) {
+                          customerNotificationMutation.mutate({
+                            phone: showMoveNotification.reservation.customerPhone,
+                            message: moveCustomerMessage
+                          });
+                        }
+                      }}
+                      data-testid="button-send-move-customer-notification"
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      {customerNotificationMutation.isPending ? "Gönderiliyor..." : "Müşteriye Gönder"}
+                    </Button>
+                  </div>
                 </div>
               </Card>
 
-              {/* Agency Notification Card */}
-              {showMoveNotification.reservation.agencyId && (
-                <Card className="p-4 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0">
-                        <Building className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Acenta Bildirimi</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Acenta ID: {showMoveNotification.reservation.agencyId}</p>
-                        <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                          Rezervasyon değişikliği bildirilecek
-                        </p>
-                      </div>
+              {/* Agency Notification Section */}
+              <Card className="p-4 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0">
+                      <Building className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                     </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Acenta Bildirimi</p>
+                      <p className="text-xs text-muted-foreground">Acentayı seçin ve bildirim gönderin</p>
+                    </div>
+                  </div>
+                  <Select value={moveSelectedAgencyId} onValueChange={setMoveSelectedAgencyId}>
+                    <SelectTrigger data-testid="select-move-agency">
+                      <SelectValue placeholder="Acenta seçin..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agencies?.map((agency) => (
+                        <SelectItem key={agency.id} value={String(agency.id)}>
+                          {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : '(İletişim bilgisi yok)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Textarea
+                    value={moveAgencyMessage}
+                    onChange={(e) => setMoveAgencyMessage(e.target.value)}
+                    className="min-h-[100px] text-sm"
+                    placeholder="Acentaya gönderilecek mesaj..."
+                    data-testid="textarea-move-agency-message"
+                  />
+                  <div className="flex justify-end">
                     <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="flex-shrink-0"
-                      disabled={agencyNotificationMutation.isPending}
+                      size="sm"
+                      disabled={agencyNotificationMutation.isPending || !moveSelectedAgencyId || !moveAgencyMessage.trim()}
                       onClick={() => {
-                        agencyNotificationMutation.mutate({
-                          agencyId: showMoveNotification.reservation.agencyId!,
-                          oldDate: format(new Date(showMoveNotification.oldDate), "d MMMM yyyy", { locale: tr }),
-                          newDate: format(new Date(showMoveNotification.newDate), "d MMMM yyyy", { locale: tr }),
-                          customerName: showMoveNotification.reservation.customerName
-                        });
+                        if (moveSelectedAgencyId) {
+                          agencyNotificationMutation.mutate({
+                            agencyId: parseInt(moveSelectedAgencyId),
+                            message: moveAgencyMessage
+                          });
+                        }
                       }}
+                      data-testid="button-send-move-agency-notification"
                     >
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      {agencyNotificationMutation.isPending ? "Gönderiliyor..." : "Gönder"}
+                      <Send className="h-4 w-4 mr-1" />
+                      {agencyNotificationMutation.isPending ? "Gönderiliyor..." : "Acentaya Gönder"}
                     </Button>
                   </div>
-                </Card>
-              )}
+                </div>
+              </Card>
 
               <div className="flex justify-end">
                 <Button variant="outline" onClick={() => setShowMoveNotification(null)}>
