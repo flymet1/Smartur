@@ -362,14 +362,16 @@ async function getCapacityWithVirtualSlots(dates: string[]): Promise<Array<{
     // Track which slots exist in DB
     const existingSlots = new Set(dbCapacity.map(c => `${c.activityId}-${c.time}`));
     
-    // Add DB capacity
+    // Add DB capacity with actual reservation counts
     for (const cap of dbCapacity) {
+      const slotKey = `${cap.activityId}-${cap.time}`;
+      const bookedFromReservations = reservationCounts[slotKey] || 0;
       result.push({
         activityId: cap.activityId,
         date: cap.date,
         time: cap.time,
         totalSlots: cap.totalSlots,
-        bookedSlots: cap.bookedSlots || 0,
+        bookedSlots: bookedFromReservations, // Use actual reservation count instead of stored value
         isVirtual: false
       });
     }
@@ -1166,6 +1168,177 @@ export async function registerRoutes(
     const input = api.capacity.create.input.parse(req.body);
     const item = await storage.createCapacity(input);
     res.status(201).json(item);
+  });
+
+  // Monthly capacity aggregation endpoint
+  app.get("/api/capacity/monthly", async (req, res) => {
+    try {
+      const { month, year, activityId } = req.query;
+      const targetMonth = month ? Number(month) : new Date().getMonth();
+      const targetYear = year ? Number(year) : new Date().getFullYear();
+      const actId = activityId ? Number(activityId) : undefined;
+      
+      // Get all dates in the month using timezone-safe formatting
+      const dates: string[] = [];
+      const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const y = targetYear;
+        const m = String(targetMonth + 1).padStart(2, '0');
+        const d = String(day).padStart(2, '0');
+        dates.push(`${y}-${m}-${d}`);
+      }
+      
+      // Get capacity with virtual slots for all dates
+      const allCapacity = await getCapacityWithVirtualSlots(dates);
+      
+      // Filter by activity if specified
+      const filteredCapacity = actId 
+        ? allCapacity.filter(c => c.activityId === actId)
+        : allCapacity;
+      
+      // Aggregate by date
+      const dailyStats: Record<string, { totalSlots: number; bookedSlots: number; occupancy: number }> = {};
+      
+      for (const dateStr of dates) {
+        const dayCapacity = filteredCapacity.filter(c => c.date === dateStr);
+        const totalSlots = dayCapacity.reduce((sum, c) => sum + c.totalSlots, 0);
+        const bookedSlots = dayCapacity.reduce((sum, c) => sum + c.bookedSlots, 0);
+        const occupancy = totalSlots > 0 ? Math.round((bookedSlots / totalSlots) * 100) : 0;
+        
+        dailyStats[dateStr] = { totalSlots, bookedSlots, occupancy };
+      }
+      
+      res.json({ month: targetMonth, year: targetYear, dailyStats });
+    } catch (err) {
+      res.status(500).json({ error: "Aylık kapasite alınamadı" });
+    }
+  });
+
+  // Bulk capacity create endpoint
+  app.post("/api/capacity/bulk", async (req, res) => {
+    try {
+      const licenseCheck = await checkLicenseForWrite();
+      if (!licenseCheck.allowed) {
+        return res.status(403).json({ error: licenseCheck.message });
+      }
+      
+      const { activityId, dates, time, totalSlots } = req.body;
+      
+      if (!activityId || !dates || !Array.isArray(dates) || !time || !totalSlots) {
+        return res.status(400).json({ error: "Eksik parametreler" });
+      }
+      
+      const created: any[] = [];
+      const existingCapacity = await storage.getCapacity();
+      
+      for (const date of dates) {
+        // Check if slot already exists
+        const exists = existingCapacity.some(c => 
+          c.activityId === activityId && c.date === date && c.time === time
+        );
+        
+        if (!exists) {
+          const item = await storage.createCapacity({
+            activityId,
+            date,
+            time,
+            totalSlots
+          });
+          created.push(item);
+        }
+      }
+      
+      res.status(201).json({ created: created.length, items: created });
+    } catch (err) {
+      res.status(500).json({ error: "Toplu kapasite oluşturulamadı" });
+    }
+  });
+
+  // Quick capacity adjustment endpoint
+  app.patch("/api/capacity/:id/adjust", async (req, res) => {
+    try {
+      const { adjustment } = req.body; // +1 or -1
+      const id = Number(req.params.id);
+      
+      const allCapacity = await storage.getCapacity();
+      const slot = allCapacity.find(c => c.id === id);
+      
+      if (!slot) {
+        return res.status(404).json({ error: "Slot bulunamadı" });
+      }
+      
+      const newTotal = Math.max(1, slot.totalSlots + adjustment);
+      const item = await storage.updateCapacity(id, newTotal);
+      res.json(item);
+    } catch (err) {
+      res.status(400).json({ error: "Kapasite ayarlanamadı" });
+    }
+  });
+
+  // Historical comparison endpoint
+  app.get("/api/capacity/compare", async (req, res) => {
+    try {
+      const { month, year } = req.query;
+      const targetMonth = month ? Number(month) : new Date().getMonth();
+      const targetYear = year ? Number(year) : new Date().getFullYear();
+      
+      // Helper to generate timezone-safe date strings for a month
+      const generateMonthDates = (yr: number, mo: number): string[] => {
+        const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+        const dates: string[] = [];
+        for (let day = 1; day <= daysInMonth; day++) {
+          const m = String(mo + 1).padStart(2, '0');
+          const d = String(day).padStart(2, '0');
+          dates.push(`${yr}-${m}-${d}`);
+        }
+        return dates;
+      };
+      
+      // Get dates for current period and last year
+      const currentDates = generateMonthDates(targetYear, targetMonth);
+      const lastYearDates = generateMonthDates(targetYear - 1, targetMonth);
+      
+      // Get reservations for both periods
+      const allReservations = await storage.getReservations();
+      
+      const currentReservations = allReservations.filter(r => 
+        currentDates.includes(r.date) && r.status !== 'cancelled'
+      );
+      const lastYearReservations = allReservations.filter(r => 
+        lastYearDates.includes(r.date) && r.status !== 'cancelled'
+      );
+      
+      const currentStats = {
+        totalReservations: currentReservations.length,
+        totalGuests: currentReservations.reduce((sum, r) => sum + r.quantity, 0),
+        totalRevenueTl: currentReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0),
+        totalRevenueUsd: currentReservations.reduce((sum, r) => sum + (r.priceUsd || 0), 0),
+      };
+      
+      const lastYearStats = {
+        totalReservations: lastYearReservations.length,
+        totalGuests: lastYearReservations.reduce((sum, r) => sum + r.quantity, 0),
+        totalRevenueTl: lastYearReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0),
+        totalRevenueUsd: lastYearReservations.reduce((sum, r) => sum + (r.priceUsd || 0), 0),
+      };
+      
+      const growth = {
+        reservations: lastYearStats.totalReservations > 0 
+          ? Math.round(((currentStats.totalReservations - lastYearStats.totalReservations) / lastYearStats.totalReservations) * 100)
+          : 0,
+        guests: lastYearStats.totalGuests > 0
+          ? Math.round(((currentStats.totalGuests - lastYearStats.totalGuests) / lastYearStats.totalGuests) * 100)
+          : 0,
+        revenueTl: lastYearStats.totalRevenueTl > 0
+          ? Math.round(((currentStats.totalRevenueTl - lastYearStats.totalRevenueTl) / lastYearStats.totalRevenueTl) * 100)
+          : 0,
+      };
+      
+      res.json({ current: currentStats, lastYear: lastYearStats, growth, month: targetMonth, year: targetYear });
+    } catch (err) {
+      res.status(500).json({ error: "Karşılaştırma alınamadı" });
+    }
   });
 
   // === Reservations ===
