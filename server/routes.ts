@@ -644,6 +644,37 @@ Eğer müşteri mevcut bir rezervasyon hakkında soru soruyorsa, kibarca SİPAR�
 "Sipariş numaranızı paylaşır mısınız?" şeklinde sor.
 Yeni rezervasyon yapmak istiyorlarsa normal şekilde yardımcı ol.`;
   }
+
+  // Build customer request context
+  let customerRequestContext = "";
+  if (context.pendingRequests && context.pendingRequests.length > 0) {
+    customerRequestContext = `
+=== MÜŞTERİ TALEP DURUMU ===
+Bu müşterinin DEĞERLENDİRME AŞAMASINDA olan talepleri var:
+`;
+    for (const req of context.pendingRequests) {
+      const requestType = req.requestType === 'time_change' ? 'Saat Değişikliği' : 
+                          req.requestType === 'cancellation' ? 'İptal Talebi' : 'Diğer Talep';
+      const createdDate = new Date(req.createdAt).toLocaleDateString('tr-TR');
+      customerRequestContext += `- ${requestType} (${createdDate}): ${req.requestDetails || 'Detay yok'}\n`;
+      if (req.preferredTime) {
+        customerRequestContext += `  İstenen yeni saat: ${req.preferredTime}\n`;
+      }
+    }
+    customerRequestContext += `
+Eğer müşteri talebinin durumunu sorarsa, talebinin "DEĞERLENDİRME AŞAMASINDA" olduğunu ve ekibimizin en kısa sürede geri döneceğini söyle.
+Sabırları için teşekkür et.`;
+  } else if (context.customerRequests && context.customerRequests.length > 0) {
+    // Customer has processed requests (approved or rejected)
+    const latestRequest = context.customerRequests[0];
+    if (latestRequest.status === 'approved' || latestRequest.status === 'rejected') {
+      const statusText = latestRequest.status === 'approved' ? 'ONAYLANDI' : 'REDDEDİLDİ';
+      customerRequestContext = `
+=== MÜŞTERİ TALEP DURUMU ===
+Bu müşterinin son talebi ${statusText}.
+Eğer müşteri talebinin durumunu sorarsa, bu bilgiyi paylaş.`;
+    }
+  }
   
   // Use custom prompt from settings if available, otherwise use default
   const basePrompt = customPrompt || `Sen bir TURİZM REZERVASYONLARI DANIŞMANI'sın. 
@@ -666,6 +697,7 @@ ${dateContext}
 ${activityDescriptions}
 ${packageToursSection}${capacityInfo}
 ${reservationContext}
+${customerRequestContext}
 
 === ÖNEMLİ KURALLAR ===
 ${context.botRules || DEFAULT_BOT_RULES}`;
@@ -757,6 +789,21 @@ ${context.botRules || DEFAULT_BOT_RULES}`;
   
   if (lastUserMessage.includes("iptal") || lastUserMessage.includes("değişiklik") || lastUserMessage.includes("tarih")) {
     return `Merhaba! Rezervasyon değişikliği veya iptal talepleriniz için size gönderdiğimiz takip linkini kullanabilirsiniz. Takip linkiniz yoksa veya süresi dolmuşsa, lütfen sipariş numaranızı paylaşın, size yeni link gönderelim.`;
+  }
+  
+  // Check for request status queries
+  if (lastUserMessage.includes("talep") || lastUserMessage.includes("başvuru") || lastUserMessage.includes("durumu") || lastUserMessage.includes("ne oldu")) {
+    if (context.pendingRequests && context.pendingRequests.length > 0) {
+      return `Merhaba! Talebiniz şu anda değerlendirme aşamasındadır. Ekibimiz en kısa sürede sizinle iletişime geçecektir. Sabırınız için teşekkür ederiz.`;
+    } else if (context.customerRequests && context.customerRequests.length > 0) {
+      const latestRequest = context.customerRequests[0];
+      if (latestRequest.status === 'approved') {
+        return `Merhaba! Son talebiniz onaylanmıştır. Size daha önce bilgilendirme mesajı gönderilmiş olmalı. Başka bir konuda yardımcı olabilir miyim?`;
+      } else if (latestRequest.status === 'rejected') {
+        return `Merhaba! Maalesef son talebiniz reddedilmiştir. Detaylı bilgi için size gönderilen mesajı kontrol edebilirsiniz. Başka bir konuda yardımcı olabilir miyim?`;
+      }
+    }
+    return `Merhaba! Talebinizin durumunu kontrol edebilmem için lütfen sipariş numaranızı paylaşır mısınız?`;
   }
   
   // Default fallback with activity list
@@ -2166,6 +2213,10 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
       const userReservation = await storage.findReservationByPhoneOrOrder(From, potentialOrderId);
 
+      // Check if user has any pending customer requests
+      const customerRequestsForPhone = await storage.getCustomerRequestsByPhone(From);
+      const pendingRequests = customerRequestsForPhone.filter(r => r.status === 'pending');
+
       // Get history
       const history = await storage.getMessages(From, 5);
       
@@ -2221,7 +2272,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       // Get custom bot rules from settings
       const botRules = await storage.getSetting('botRules');
       
-      // Generate AI response with reservation context, capacity data, package tours, and custom prompt
+      // Generate AI response with reservation context, capacity data, package tours, customer requests, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
         activities: botAccess.activities ? activities : [], 
         packageTours: botAccess.packageTours ? packageTours : [],
@@ -2229,6 +2280,8 @@ Bu talep musteri takip sayfasindan gonderilmistir.
         hasReservation: !!userReservation,
         reservation: userReservation,
         askForOrderNumber: !userReservation,
+        customerRequests: customerRequestsForPhone,
+        pendingRequests: pendingRequests,
         botAccess,
         botRules
       }, botPrompt || undefined);

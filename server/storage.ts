@@ -213,6 +213,7 @@ export interface IStorage {
   createCustomerRequest(request: InsertCustomerRequest): Promise<CustomerRequest>;
   getCustomerRequests(): Promise<CustomerRequest[]>;
   getCustomerRequest(id: number): Promise<CustomerRequest | undefined>;
+  getCustomerRequestsByPhone(phone: string): Promise<CustomerRequest[]>;
   updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest>;
 
   // License
@@ -1442,6 +1443,25 @@ export class DatabaseStorage implements IStorage {
   async getCustomerRequest(id: number): Promise<CustomerRequest | undefined> {
     const [request] = await db.select().from(customerRequests).where(eq(customerRequests.id, id));
     return request;
+  }
+
+  async getCustomerRequestsByPhone(phone: string): Promise<CustomerRequest[]> {
+    // Normalize phone number for matching (remove spaces, dashes, etc.)
+    const normalizedPhone = phone.replace(/[\s\-\(\)]/g, '');
+    
+    // Search in customerPhone field - handle both exact match and partial match
+    const requests = await db.select()
+      .from(customerRequests)
+      .where(
+        or(
+          eq(customerRequests.customerPhone, phone),
+          eq(customerRequests.customerPhone, normalizedPhone),
+          sql`REPLACE(REPLACE(REPLACE(REPLACE(${customerRequests.customerPhone}, ' ', ''), '-', ''), '(', ''), ')', '') = ${normalizedPhone}`
+        )
+      )
+      .orderBy(desc(customerRequests.createdAt));
+    
+    return requests;
   }
 
   async updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest> {
