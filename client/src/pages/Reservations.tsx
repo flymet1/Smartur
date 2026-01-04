@@ -36,6 +36,9 @@ type CalendarView = "day" | "week" | "month";
 export default function Reservations() {
   const { data: reservations, isLoading } = useReservations();
   const { data: activities } = useActivities();
+  const { data: packageTours = [] } = useQuery<PackageTour[]>({
+    queryKey: ['/api/package-tours']
+  });
   const searchParams = useSearch();
   const [, setLocation] = useLocation();
   const urlDate = new URLSearchParams(searchParams).get("date");
@@ -46,6 +49,7 @@ export default function Reservations() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activityFilter, setActivityFilter] = useState<string>("all");
+  const [packageTourFilter, setPackageTourFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState<string>(urlDate || "");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "name">("date-desc");
   const [selectedDateForNew, setSelectedDateForNew] = useState<string>("");
@@ -356,6 +360,7 @@ export default function Reservations() {
             <BigCalendar 
               reservations={reservations || []}
               activities={activities || []}
+              packageTours={packageTours}
               view={calendarView}
               currentDate={currentDate}
               onViewChange={setCalendarView}
@@ -367,6 +372,8 @@ export default function Reservations() {
               statusFilter={statusFilter}
               activityFilter={activityFilter}
               onActivityFilterChange={setActivityFilter}
+              packageTourFilter={packageTourFilter}
+              onPackageTourFilterChange={setPackageTourFilter}
             />
             <RecentReservations 
               reservations={reservations || []} 
@@ -382,6 +389,7 @@ export default function Reservations() {
 interface BigCalendarProps {
   reservations: Reservation[];
   activities: Activity[];
+  packageTours: PackageTour[];
   view: CalendarView;
   currentDate: Date;
   onViewChange: (view: CalendarView) => void;
@@ -393,11 +401,14 @@ interface BigCalendarProps {
   statusFilter: string;
   activityFilter: string;
   onActivityFilterChange: (value: string) => void;
+  packageTourFilter: string;
+  onPackageTourFilterChange: (value: string) => void;
 }
 
 function BigCalendar({ 
   reservations, 
   activities, 
+  packageTours,
   view, 
   currentDate, 
   onViewChange, 
@@ -408,7 +419,9 @@ function BigCalendar({
   onReservationSelect,
   statusFilter,
   activityFilter,
-  onActivityFilterChange
+  onActivityFilterChange,
+  packageTourFilter,
+  onPackageTourFilterChange
 }: BigCalendarProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const statusMutation = useMutation({
@@ -438,10 +451,18 @@ function BigCalendar({
     return colors[activityId % colors.length];
   };
 
+  const getPackageTourName = (packageTourId: number | null) => {
+    if (!packageTourId) return null;
+    return packageTours.find(p => p.id === packageTourId)?.name || null;
+  };
+
   const filteredReservations = reservations.filter(r => {
     const matchesStatus = statusFilter === "all" || r.status === statusFilter;
     const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
-    return matchesStatus && matchesActivity;
+    const matchesPackageTour = packageTourFilter === "all" || 
+      (packageTourFilter === "none" && !r.packageTourId) ||
+      String(r.packageTourId) === packageTourFilter;
+    return matchesStatus && matchesActivity && matchesPackageTour;
   });
 
   const getReservationsForDate = (dateStr: string) => {
@@ -548,6 +569,19 @@ function BigCalendar({
                 <SelectItem value="all">Tüm Aktiviteler</SelectItem>
                 {activities.map(a => (
                   <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={packageTourFilter} onValueChange={onPackageTourFilterChange}>
+              <SelectTrigger className="w-40" data-testid="select-calendar-package">
+                <Package className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Paket Tur" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm Paketler</SelectItem>
+                <SelectItem value="none">Paket Yok</SelectItem>
+                {packageTours.map(p => (
+                  <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -711,6 +745,7 @@ function BigCalendar({
                       activityColor={getActivityColor(res.activityId)}
                       onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                       onSelect={onReservationSelect}
+                      packageTourName={getPackageTourName(res.packageTourId)}
                     />
                   ))}
                 </div>
@@ -804,6 +839,7 @@ function BigCalendar({
                                 activityColor={getActivityColor(res.activityId)}
                                 onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                                 onSelect={onReservationSelect}
+                                packageTourName={getPackageTourName(res.packageTourId)}
                                 expanded
                               />
                             ))}
@@ -829,9 +865,10 @@ interface ReservationCardProps {
   onStatusChange: (status: string) => void;
   onSelect?: (reservation: Reservation) => void;
   expanded?: boolean;
+  packageTourName?: string | null;
 }
 
-function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded }: ReservationCardProps) {
+function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded, packageTourName }: ReservationCardProps) {
   const statusConfig = {
     confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 border-green-200" },
     pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
@@ -850,6 +887,12 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm truncate">{reservation.customerName}</div>
             <div className="text-xs text-muted-foreground">{activityName}</div>
+            {packageTourName && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Package className="h-3 w-3 text-purple-500" />
+                <span className="text-xs text-purple-600 dark:text-purple-400 truncate">{packageTourName}</span>
+              </div>
+            )}
             <div className="text-xs mt-1">
               {reservation.time} - {reservation.quantity} kişi
             </div>
@@ -888,7 +931,10 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
       data-testid={`card-reservation-${reservation.id}`}
     >
       <div className="font-medium truncate">{reservation.customerName}</div>
-      <div className="text-muted-foreground truncate">{activityName}</div>
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground truncate">{activityName}</span>
+        {packageTourName && <Package className="h-3 w-3 text-purple-500 flex-shrink-0" />}
+      </div>
       <div className="flex items-center justify-between mt-1">
         <span>{reservation.time} - {reservation.quantity}p</span>
         <DropdownMenu>
