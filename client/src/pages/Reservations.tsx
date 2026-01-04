@@ -78,6 +78,9 @@ export default function Reservations() {
   const [newReservationOpen, setNewReservationOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [showNewReservations, setShowNewReservations] = useState(false);
+  const [bulkWhatsAppOpen, setBulkWhatsAppOpen] = useState(false);
+  const [bulkWhatsAppMessage, setBulkWhatsAppMessage] = useState("");
+  const [bulkWhatsAppSending, setBulkWhatsAppSending] = useState(false);
   const { toast } = useToast();
 
   const statusMutation = useMutation({
@@ -964,11 +967,18 @@ export default function Reservations() {
                   onClick={() => {
                     const selected = reservations?.filter(r => selectedIds.has(r.id)) || [];
                     const phones = Array.from(new Set(selected.map(r => r.customerPhone)));
-                    toast({ 
-                      title: "WhatsApp Bildirimi", 
-                      description: `${phones.length} numaraya mesaj gönderilecek.`
-                    });
+                    if (phones.length === 0) {
+                      toast({ title: "Uyarı", description: "Seçili rezervasyon bulunamadı.", variant: "destructive" });
+                      return;
+                    }
+                    // Generate default message
+                    const defaultMsg = selected.length === 1 
+                      ? `Merhaba ${selected[0].customerName},\n\nRezervasyon bilgilendirmesi:\nTarih: ${format(new Date(selected[0].date), "d MMMM yyyy", { locale: tr })}\nSaat: ${selected[0].time}\n\nİyi günler dileriz.`
+                      : `Merhaba,\n\nRezervasyon bilgilendirmesi.\n\nİyi günler dileriz.`;
+                    setBulkWhatsAppMessage(defaultMsg);
+                    setBulkWhatsAppOpen(true);
                   }}
+                  data-testid="button-bulk-whatsapp"
                 >
                   <Send className="h-4 w-4 mr-1" />
                   WhatsApp Bildir
@@ -1407,6 +1417,128 @@ export default function Reservations() {
             />
           </>
         )}
+
+        {/* Bulk WhatsApp Notification Dialog */}
+        <Dialog open={bulkWhatsAppOpen} onOpenChange={(open) => {
+          if (!open) {
+            setBulkWhatsAppOpen(false);
+            setBulkWhatsAppMessage("");
+          }
+        }}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5 text-green-600" />
+                Toplu WhatsApp Bildirimi
+              </DialogTitle>
+              <DialogDescription>
+                Seçilen rezervasyonlardaki müşterilere WhatsApp mesajı gönderin
+              </DialogDescription>
+            </DialogHeader>
+            
+            {(() => {
+              const selected = reservations?.filter(r => selectedIds.has(r.id)) || [];
+              const uniquePhones = Array.from(new Set(selected.map(r => r.customerPhone)));
+              
+              return (
+                <div className="space-y-4">
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span><strong>{selected.length}</strong> rezervasyon seçildi</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm mt-1">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span><strong>{uniquePhones.length}</strong> farklı numaraya gönderilecek</span>
+                    </div>
+                  </div>
+
+                  {uniquePhones.length > 0 && uniquePhones.length <= 5 && (
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      {selected.map((r) => (
+                        <div key={r.id} className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{r.customerPhone}</Badge>
+                          <span>{r.customerName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>Mesaj İçeriği</Label>
+                    <Textarea
+                      value={bulkWhatsAppMessage}
+                      onChange={(e) => setBulkWhatsAppMessage(e.target.value)}
+                      className="min-h-[150px]"
+                      placeholder="Müşterilere gönderilecek mesajı yazın..."
+                      data-testid="textarea-bulk-whatsapp-message"
+                    />
+                  </div>
+
+                  <DialogFooter className="gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setBulkWhatsAppOpen(false);
+                        setBulkWhatsAppMessage("");
+                      }}
+                    >
+                      İptal
+                    </Button>
+                    <Button 
+                      onClick={async () => {
+                        if (!bulkWhatsAppMessage.trim()) {
+                          toast({ title: "Hata", description: "Mesaj içeriği boş olamaz.", variant: "destructive" });
+                          return;
+                        }
+                        
+                        setBulkWhatsAppSending(true);
+                        let successCount = 0;
+                        let errorCount = 0;
+                        
+                        for (const phone of uniquePhones) {
+                          try {
+                            await apiRequest('POST', '/api/send-whatsapp-custom-message', {
+                              phone,
+                              message: bulkWhatsAppMessage
+                            });
+                            successCount++;
+                          } catch {
+                            errorCount++;
+                          }
+                        }
+                        
+                        setBulkWhatsAppSending(false);
+                        setBulkWhatsAppOpen(false);
+                        setBulkWhatsAppMessage("");
+                        setSelectedIds(new Set());
+                        
+                        if (errorCount === 0) {
+                          toast({ 
+                            title: "Başarılı", 
+                            description: `${successCount} kişiye WhatsApp bildirimi gönderildi.`
+                          });
+                        } else {
+                          toast({ 
+                            title: "Kısmen Başarılı", 
+                            description: `${successCount} başarılı, ${errorCount} başarısız gönderim.`,
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                      disabled={bulkWhatsAppSending || !bulkWhatsAppMessage.trim()}
+                      className="bg-green-600 hover:bg-green-700"
+                      data-testid="button-send-bulk-whatsapp"
+                    >
+                      <Send className="h-4 w-4 mr-1" />
+                      {bulkWhatsAppSending ? "Gönderiliyor..." : `${uniquePhones.length} Kişiye Gönder`}
+                    </Button>
+                  </DialogFooter>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
