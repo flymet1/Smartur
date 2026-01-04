@@ -1004,7 +1004,7 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
     return (
       <Card 
         className={`p-3 border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate`}
-        onClick={() => onSelect?.(reservation)}
+        onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
         data-testid={`card-reservation-${reservation.id}`}
       >
         <div className="flex items-start justify-between gap-2">
@@ -1051,7 +1051,7 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
   return (
     <Card 
       className={`p-2 text-xs border ${activityColor} ${reservation.status === 'cancelled' ? 'opacity-50' : ''} cursor-pointer hover-elevate`}
-      onClick={() => onSelect?.(reservation)}
+      onClick={(e) => { e.stopPropagation(); onSelect?.(reservation); }}
       data-testid={`card-reservation-${reservation.id}`}
     >
       <div className="font-medium truncate">{reservation.customerName}</div>
