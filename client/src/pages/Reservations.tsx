@@ -711,6 +711,8 @@ export default function Reservations() {
                 onClick={() => {
                   setViewMode("list");
                   setCurrentDate(new Date());
+                  setDateFilter(format(new Date(), 'yyyy-MM-dd'));
+                  setDateRangeFilter({ from: undefined, to: undefined });
                   setSearch("");
                 }}
                 data-testid="button-today-reservations"
