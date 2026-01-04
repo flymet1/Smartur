@@ -35,6 +35,14 @@ import { Separator } from "@/components/ui/separator";
 
 type CalendarView = "day" | "week" | "month";
 
+function getOccupancyColor(occupancy: number): string {
+  if (occupancy >= 100) return 'bg-red-600 dark:bg-red-700';
+  if (occupancy >= 80) return 'bg-orange-500 dark:bg-orange-600';
+  if (occupancy >= 50) return 'bg-yellow-500 dark:bg-yellow-600';
+  if (occupancy > 0) return 'bg-green-500 dark:bg-green-600';
+  return 'bg-muted';
+}
+
 export default function Reservations() {
   const { data: reservations, isLoading } = useReservations();
   const { data: activities } = useActivities();
@@ -3220,6 +3228,15 @@ interface MiniCalendarViewProps {
 function MiniCalendarView({ reservations, activities, packageTours, selectedDate, onDateSelect, onReservationSelect, onStatusChange }: MiniCalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(selectedDate);
   
+  // Fetch monthly capacity data for occupancy display
+  const { data: monthlyData } = useQuery<{ dailyStats: Record<string, { totalSlots: number; bookedSlots: number; occupancy: number }> }>({
+    queryKey: ['/api/capacity/monthly', currentMonth.getMonth(), currentMonth.getFullYear()],
+    queryFn: async () => {
+      const res = await fetch(`/api/capacity/monthly?month=${currentMonth.getMonth()}&year=${currentMonth.getFullYear()}`);
+      return res.json();
+    }
+  });
+  
   useEffect(() => {
     if (!isSameMonth(currentMonth, selectedDate)) {
       setCurrentMonth(selectedDate);
@@ -3258,13 +3275,13 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
     return { label: "Beklemede", className: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400" };
   };
   
-  const datesWithReservations = useMemo(() => {
-    const dates = new Set<string>();
-    reservations.forEach(r => {
-      if (r.date) dates.add(r.date);
-    });
-    return dates;
-  }, [reservations]);
+  // Build calendar grid
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const startPadding = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1;
+  const paddedDays = Array(startPadding).fill(null).concat(days);
+  const weekDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
   
   return (
     <div className="flex flex-col lg:flex-row gap-4">
@@ -3282,22 +3299,79 @@ function MiniCalendarView({ reservations, activities, packageTours, selectedDate
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <CalendarPicker
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => date && onDateSelect(date)}
-            month={currentMonth}
-            onMonthChange={setCurrentMonth}
-            locale={tr}
-            modifiers={{
-              hasReservation: (date) => datesWithReservations.has(format(date, "yyyy-MM-dd"))
-            }}
-            modifiersClassNames={{
-              hasReservation: "bg-primary/10 font-semibold"
-            }}
-            className="rounded-md"
-          />
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-7 gap-1">
+            {weekDays.map(day => (
+              <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1">
+                {day}
+              </div>
+            ))}
+            
+            {paddedDays.map((day, index) => {
+              if (!day) {
+                return <div key={`empty-${index}`} className="aspect-square" />;
+              }
+              
+              const dateStr = format(day, 'yyyy-MM-dd');
+              const stats = monthlyData?.dailyStats?.[dateStr];
+              const occupancy = stats?.occupancy || 0;
+              const isSelected = selectedDateStr === dateStr;
+              const isTodayDate = isToday(day);
+              
+              return (
+                <Tooltip key={dateStr}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onDateSelect(day)}
+                      className={`aspect-square rounded-md flex flex-col items-center justify-center text-sm transition-all relative ${
+                        isSelected 
+                          ? 'ring-2 ring-primary ring-offset-2' 
+                          : ''
+                      } ${isTodayDate ? 'font-bold' : ''}`}
+                      data-testid={`button-mini-month-day-${dateStr}`}
+                    >
+                      <span className={isTodayDate ? 'text-primary' : ''}>{format(day, 'd')}</span>
+                      {stats && stats.totalSlots > 0 && (
+                        <div className={`w-3 h-1.5 rounded-full mt-0.5 ${getOccupancyColor(occupancy)}`} />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-center">
+                      <p className="font-medium">{format(day, 'd MMMM', { locale: tr })}</p>
+                      {stats ? (
+                        <>
+                          <p className="text-xs">Doluluk: %{occupancy}</p>
+                          <p className="text-xs">{stats.bookedSlots}/{stats.totalSlots} kişi</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Veri yok</p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+          
+          <div className="flex items-center justify-center gap-3 text-xs pt-2 border-t">
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-green-500" />
+              <span>%0-50</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-yellow-500" />
+              <span>%50-80</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-orange-500" />
+              <span>%80+</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-red-600" />
+              <span>Dolu</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
       
