@@ -8,10 +8,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -23,15 +24,28 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ReservationTableProps {
   reservations: Reservation[];
   onReservationSelect?: (reservation: Reservation) => void;
+  selectedIds?: Set<number>;
+  onToggleSelection?: (id: number) => void;
+  onSelectAll?: () => void;
+  onCustomerClick?: (phone: string, name: string) => void;
 }
 
-export function ReservationTable({ reservations, onReservationSelect }: ReservationTableProps) {
+export function ReservationTable({ 
+  reservations, 
+  onReservationSelect, 
+  selectedIds, 
+  onToggleSelection, 
+  onSelectAll,
+  onCustomerClick 
+}: ReservationTableProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const hasSelection = selectedIds !== undefined && onToggleSelection !== undefined;
   
   const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities']
@@ -184,6 +198,15 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
       <Table>
         <TableHeader className="bg-muted/50">
           <TableRow>
+            {hasSelection && (
+              <TableHead className="w-10">
+                <Checkbox 
+                  checked={selectedIds.size === reservations.length && reservations.length > 0}
+                  onCheckedChange={onSelectAll}
+                  data-testid="checkbox-select-all"
+                />
+              </TableHead>
+            )}
             <TableHead>Sipariş No</TableHead>
             <TableHead>Müşteri</TableHead>
             <TableHead>Aktivite & Tarih</TableHead>
@@ -198,7 +221,7 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
         <TableBody>
           {reservations.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={hasSelection ? 10 : 9} className="h-24 text-center text-muted-foreground">
                 Henüz rezervasyon bulunmuyor.
               </TableCell>
             </TableRow>
@@ -207,7 +230,7 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
               <>
                 {group.type === 'group' && (
                   <TableRow key={`header-${group.groupKey}`} className="bg-purple-50 dark:bg-purple-900/20 border-t-2 border-purple-300 dark:border-purple-600">
-                    <TableCell colSpan={9} className="py-2">
+                    <TableCell colSpan={hasSelection ? 10 : 9} className="py-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                         <span className="font-medium text-purple-700 dark:text-purple-300">
@@ -225,9 +248,18 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
                 {group.reservations.map((res) => (
                   <TableRow 
                     key={res.id} 
-                    className={`hover:bg-muted/50 ${onReservationSelect ? 'cursor-pointer' : ''} ${group.type === 'group' ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''}`}
+                    className={`hover:bg-muted/50 ${onReservationSelect ? 'cursor-pointer' : ''} ${group.type === 'group' ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5' : ''}`}
                     onClick={() => onReservationSelect?.(res)}
                   >
+                    {hasSelection && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox 
+                          checked={selectedIds.has(res.id)}
+                          onCheckedChange={() => onToggleSelection(res.id)}
+                          data-testid={`checkbox-reservation-${res.id}`}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       {res.orderNumber ? (
                         <Badge variant="outline" className="font-mono text-xs">
@@ -237,9 +269,29 @@ export function ReservationTable({ reservations, onReservationSelect }: Reservat
                         <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{res.customerName}</div>
-                      <div className="text-xs text-muted-foreground">{res.customerPhone}</div>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <div className="font-medium">{res.customerName}</div>
+                          <div className="text-xs text-muted-foreground">{res.customerPhone}</div>
+                        </div>
+                        {onCustomerClick && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-6 w-6"
+                                onClick={() => onCustomerClick(res.customerPhone, res.customerName)}
+                                data-testid={`button-customer-history-${res.id}`}
+                              >
+                                <History className="h-3 w-3" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Müşteri Geçmişi</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

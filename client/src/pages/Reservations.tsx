@@ -3,10 +3,11 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu";
 import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
@@ -15,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,9 +26,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import type { PackageTour, Activity, Reservation } from "@shared/schema";
+import type { PackageTour, Activity, Reservation, Agency } from "@shared/schema";
 import { useSearch, useLocation } from "wouter";
-import { format, parse, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, addWeeks, subWeeks, isSameMonth, isSameDay, isToday, eachDayOfInterval } from "date-fns";
+import { format, parse, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, addWeeks, subWeeks, isSameMonth, isSameDay, isToday, eachDayOfInterval, subDays, isWithinInterval, differenceInDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -38,6 +40,9 @@ export default function Reservations() {
   const { data: activities } = useActivities();
   const { data: packageTours = [] } = useQuery<PackageTour[]>({
     queryKey: ['/api/package-tours']
+  });
+  const { data: agencies = [] } = useQuery<Agency[]>({
+    queryKey: ['/api/agencies']
   });
   const searchParams = useSearch();
   const [, setLocation] = useLocation();
@@ -95,6 +100,249 @@ export default function Reservations() {
       setMiniSelectedDate(new Date(urlDate));
     }
   }, [urlDate]);
+
+  // Analytics calculations
+  const analytics = useMemo(() => {
+    if (!reservations) return null;
+    
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+    const thisWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const thisWeekEnd = endOfWeek(today, { weekStartsOn: 1 });
+    const lastWeekStart = subDays(thisWeekStart, 7);
+    const lastWeekEnd = subDays(thisWeekEnd, 7);
+    const thisMonthStart = startOfMonth(today);
+    const thisMonthEnd = endOfMonth(today);
+    const lastMonthStart = startOfMonth(subMonths(today, 1));
+    const lastMonthEnd = endOfMonth(subMonths(today, 1));
+
+    const confirmedReservations = reservations.filter(r => r.status === 'confirmed' || r.status === 'pending');
+    
+    // Today's stats
+    const todayReservations = confirmedReservations.filter(r => r.date === todayStr);
+    const todayRevenueTl = todayReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0);
+    const todayRevenueUsd = todayReservations.reduce((sum, r) => sum + (r.priceUsd || 0), 0);
+    const todayGuests = todayReservations.reduce((sum, r) => sum + r.quantity, 0);
+
+    // This week's stats
+    const thisWeekReservations = confirmedReservations.filter(r => {
+      const date = new Date(r.date);
+      return isWithinInterval(date, { start: thisWeekStart, end: thisWeekEnd });
+    });
+    const thisWeekRevenueTl = thisWeekReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0);
+    const thisWeekRevenueUsd = thisWeekReservations.reduce((sum, r) => sum + (r.priceUsd || 0), 0);
+    const thisWeekGuests = thisWeekReservations.reduce((sum, r) => sum + r.quantity, 0);
+
+    // Last week's stats (for comparison)
+    const lastWeekReservations = confirmedReservations.filter(r => {
+      const date = new Date(r.date);
+      return isWithinInterval(date, { start: lastWeekStart, end: lastWeekEnd });
+    });
+    const lastWeekRevenueTl = lastWeekReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0);
+    const lastWeekGuests = lastWeekReservations.reduce((sum, r) => sum + r.quantity, 0);
+
+    // This month's stats
+    const thisMonthReservations = confirmedReservations.filter(r => {
+      const date = new Date(r.date);
+      return isWithinInterval(date, { start: thisMonthStart, end: thisMonthEnd });
+    });
+    const thisMonthRevenueTl = thisMonthReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0);
+    const thisMonthRevenueUsd = thisMonthReservations.reduce((sum, r) => sum + (r.priceUsd || 0), 0);
+    const thisMonthGuests = thisMonthReservations.reduce((sum, r) => sum + r.quantity, 0);
+
+    // Last month (for comparison)
+    const lastMonthReservations = confirmedReservations.filter(r => {
+      const date = new Date(r.date);
+      return isWithinInterval(date, { start: lastMonthStart, end: lastMonthEnd });
+    });
+    const lastMonthRevenueTl = lastMonthReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0);
+
+    // Pending count
+    const pendingCount = reservations.filter(r => r.status === 'pending').length;
+
+    // Week comparison percentage
+    const weekGrowth = lastWeekRevenueTl > 0 
+      ? ((thisWeekRevenueTl - lastWeekRevenueTl) / lastWeekRevenueTl * 100).toFixed(0)
+      : thisWeekRevenueTl > 0 ? '100' : '0';
+
+    const monthGrowth = lastMonthRevenueTl > 0
+      ? ((thisMonthRevenueTl - lastMonthRevenueTl) / lastMonthRevenueTl * 100).toFixed(0)
+      : thisMonthRevenueTl > 0 ? '100' : '0';
+
+    return {
+      today: { count: todayReservations.length, revenueTl: todayRevenueTl, revenueUsd: todayRevenueUsd, guests: todayGuests },
+      thisWeek: { count: thisWeekReservations.length, revenueTl: thisWeekRevenueTl, revenueUsd: thisWeekRevenueUsd, guests: thisWeekGuests, growth: parseInt(weekGrowth) },
+      thisMonth: { count: thisMonthReservations.length, revenueTl: thisMonthRevenueTl, revenueUsd: thisMonthRevenueUsd, guests: thisMonthGuests, growth: parseInt(monthGrowth) },
+      pendingCount,
+    };
+  }, [reservations]);
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
+
+  const toggleSelection = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === filteredReservations.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredReservations.map(r => r.id)));
+    }
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // Bulk actions mutations
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: number[]; status: string }) => {
+      await Promise.all(ids.map(id => apiRequest('PATCH', `/api/reservations/${id}/status`, { status })));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      clearSelection();
+      toast({ title: "Başarılı", description: "Seçili rezervasyonların durumu güncellendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "İşlem başarısız oldu.", variant: "destructive" });
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      await Promise.all(ids.map(id => apiRequest('DELETE', `/api/reservations/${id}`)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      clearSelection();
+      toast({ title: "Başarılı", description: "Seçili rezervasyonlar silindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Silme işlemi başarısız oldu.", variant: "destructive" });
+    },
+  });
+
+  // Advanced filters
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [agencyFilter, setAgencyFilter] = useState<string>("all");
+  const [priceMinFilter, setPriceMinFilter] = useState<string>("");
+  const [priceMaxFilter, setPriceMaxFilter] = useState<string>("");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Saved filter profiles
+  const [savedFilters, setSavedFilters] = useState<Array<{ name: string; filters: any }>>(() => {
+    const stored = localStorage.getItem("savedReservationFilters");
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  const saveCurrentFilter = (name: string) => {
+    const newFilter = {
+      name,
+      filters: { statusFilter, activityFilter, sourceFilter, agencyFilter, priceMinFilter, priceMaxFilter, packageTourFilter }
+    };
+    const updated = [...savedFilters.filter(f => f.name !== name), newFilter];
+    setSavedFilters(updated);
+    localStorage.setItem("savedReservationFilters", JSON.stringify(updated));
+    toast({ title: "Kaydedildi", description: `"${name}" filtresi kaydedildi.` });
+  };
+
+  const loadSavedFilter = (filter: any) => {
+    setStatusFilter(filter.filters.statusFilter || "all");
+    setActivityFilter(filter.filters.activityFilter || "all");
+    setSourceFilter(filter.filters.sourceFilter || "all");
+    setAgencyFilter(filter.filters.agencyFilter || "all");
+    setPriceMinFilter(filter.filters.priceMinFilter || "");
+    setPriceMaxFilter(filter.filters.priceMaxFilter || "");
+    setPackageTourFilter(filter.filters.packageTourFilter || "all");
+    toast({ title: "Yüklendi", description: `"${filter.name}" filtresi uygulandı.` });
+  };
+
+  const deleteSavedFilter = (name: string) => {
+    const updated = savedFilters.filter(f => f.name !== name);
+    setSavedFilters(updated);
+    localStorage.setItem("savedReservationFilters", JSON.stringify(updated));
+  };
+
+  // Customer conflict detection
+  const customerConflicts = useMemo(() => {
+    if (!reservations) return [];
+    const conflicts: Array<{ customer: string; reservations: Reservation[] }> = [];
+    const customerMap = new Map<string, Reservation[]>();
+    
+    reservations.filter(r => r.status !== 'cancelled').forEach(r => {
+      const key = r.customerPhone;
+      if (!customerMap.has(key)) customerMap.set(key, []);
+      customerMap.get(key)!.push(r);
+    });
+
+    customerMap.forEach((resos, customer) => {
+      // Check for same-day different activities
+      const dateGroups = new Map<string, Reservation[]>();
+      resos.forEach(r => {
+        if (!dateGroups.has(r.date)) dateGroups.set(r.date, []);
+        dateGroups.get(r.date)!.push(r);
+      });
+      dateGroups.forEach((dayResos) => {
+        if (dayResos.length > 1) {
+          const uniqueActivities = new Set(dayResos.map(r => r.activityId));
+          if (uniqueActivities.size > 1) {
+            conflicts.push({ customer: dayResos[0].customerName, reservations: dayResos });
+          }
+        }
+      });
+    });
+    return conflicts;
+  }, [reservations]);
+
+  // Customer history state
+  const [customerHistoryPhone, setCustomerHistoryPhone] = useState<string | null>(null);
+  const [customerHistoryName, setCustomerHistoryName] = useState<string>("");
+
+  const customerHistory = useMemo(() => {
+    if (!customerHistoryPhone || !reservations) return [];
+    return reservations.filter(r => r.customerPhone === customerHistoryPhone).sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }, [customerHistoryPhone, reservations]);
+
+  // Right-click context reservation
+  const [contextReservation, setContextReservation] = useState<Reservation | null>(null);
+
+  // Copy reservation to new date
+  const copyReservationMutation = useMutation({
+    mutationFn: async ({ reservation, newDate }: { reservation: Reservation; newDate: string }) => {
+      const newRes = {
+        activityId: reservation.activityId,
+        packageTourId: reservation.packageTourId,
+        customerName: reservation.customerName,
+        customerPhone: reservation.customerPhone,
+        customerEmail: reservation.customerEmail,
+        date: newDate,
+        time: reservation.time,
+        quantity: reservation.quantity,
+        priceTl: reservation.priceTl,
+        priceUsd: reservation.priceUsd,
+        currency: reservation.currency,
+        status: 'pending',
+        source: 'manual',
+      };
+      return apiRequest('POST', '/api/reservations', newRes);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      toast({ title: "Başarılı", description: "Rezervasyon kopyalandı." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Kopyalama başarısız.", variant: "destructive" });
+    },
+  });
 
   const exportToCSV = () => {
     if (!filteredReservations.length) {
@@ -233,6 +481,15 @@ export default function Reservations() {
         (r.orderNumber && r.orderNumber.toLowerCase().includes(search.toLowerCase()));
       const matchesStatus = statusFilter === "all" || r.status === statusFilter;
       const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
+      const matchesSource = sourceFilter === "all" || r.source === sourceFilter;
+      const matchesAgency = agencyFilter === "all" || String(r.agencyId) === agencyFilter;
+      const matchesPrice = (() => {
+        if (!priceMinFilter && !priceMaxFilter) return true;
+        const price = r.priceTl || 0;
+        const min = priceMinFilter ? parseInt(priceMinFilter) : 0;
+        const max = priceMaxFilter ? parseInt(priceMaxFilter) : Infinity;
+        return price >= min && price <= max;
+      })();
       const matchesDate = (() => {
         if (dateRangeFilter.from || dateRangeFilter.to) {
           const reservationDate = new Date(r.date);
@@ -244,7 +501,7 @@ export default function Reservations() {
         }
         return !dateFilter || r.date === dateFilter;
       })();
-      return matchesSearch && matchesStatus && matchesActivity && matchesDate;
+      return matchesSearch && matchesStatus && matchesActivity && matchesDate && matchesSource && matchesAgency && matchesPrice;
     })
     .sort((a, b) => {
       if (sortBy === "date-desc") return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -373,8 +630,234 @@ export default function Reservations() {
               activities={activities || []}
               onClose={() => setSelectedReservation(null)}
             />
+
+            {/* Customer History Dialog */}
+            <Dialog open={!!customerHistoryPhone} onOpenChange={() => setCustomerHistoryPhone(null)}>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    Müşteri Geçmişi: {customerHistoryName}
+                  </DialogTitle>
+                  <DialogDescription>{customerHistoryPhone}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3 mt-4">
+                  {customerHistory.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">Kayıt bulunamadı.</p>
+                  ) : (
+                    customerHistory.map((r) => (
+                      <Card key={r.id} className={`p-3 ${r.status === 'cancelled' ? 'opacity-50' : ''}`}>
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={r.status === 'confirmed' ? 'default' : r.status === 'cancelled' ? 'destructive' : 'secondary'}>
+                              {r.status === 'confirmed' ? 'Onaylı' : r.status === 'cancelled' ? 'İptal' : 'Beklemede'}
+                            </Badge>
+                            <span className="font-medium">{activities?.find(a => a.id === r.activityId)?.name || 'Aktivite'}</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(r.date), "d MMMM yyyy", { locale: tr })} • {r.time}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 mt-2 text-sm">
+                          <span>{r.quantity} kişi</span>
+                          <span className="text-muted-foreground">
+                            {r.priceTl ? `${r.priceTl.toLocaleString('tr-TR')} TL` : ''}
+                            {r.priceTl && r.priceUsd ? ' / ' : ''}
+                            {r.priceUsd ? `$${r.priceUsd}` : ''}
+                          </span>
+                        </div>
+                      </Card>
+                    ))
+                  )}
+                </div>
+                <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
+                  <p>Toplam {customerHistory.length} rezervasyon</p>
+                  <p>Onaylı: {customerHistory.filter(r => r.status === 'confirmed').length} • 
+                     Beklemede: {customerHistory.filter(r => r.status === 'pending').length} • 
+                     İptal: {customerHistory.filter(r => r.status === 'cancelled').length}</p>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
+
+        {/* Analytics Cards */}
+        {analytics && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Bugün</p>
+                  <p className="text-2xl font-bold">{analytics.today.count}</p>
+                  <p className="text-xs text-muted-foreground">{analytics.today.guests} kişi</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <CalendarCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+              {analytics.today.revenueTl > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {analytics.today.revenueTl.toLocaleString('tr-TR')} TL
+                  {analytics.today.revenueUsd > 0 && ` / $${analytics.today.revenueUsd}`}
+                </p>
+              )}
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Bu Hafta</p>
+                  <p className="text-2xl font-bold">{analytics.thisWeek.count}</p>
+                  <p className="text-xs text-muted-foreground">{analytics.thisWeek.guests} kişi</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+              </div>
+              <div className="flex items-center gap-1 mt-2">
+                {analytics.thisWeek.growth >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-600" />
+                )}
+                <span className={`text-xs ${analytics.thisWeek.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {analytics.thisWeek.growth >= 0 ? '+' : ''}{analytics.thisWeek.growth}% geçen haftaya göre
+                </span>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Bu Ay Gelir</p>
+                  <p className="text-2xl font-bold">{analytics.thisMonth.revenueTl.toLocaleString('tr-TR')} <span className="text-sm font-normal">TL</span></p>
+                  {analytics.thisMonth.revenueUsd > 0 && (
+                    <p className="text-xs text-muted-foreground">${analytics.thisMonth.revenueUsd.toLocaleString('en-US')}</p>
+                  )}
+                </div>
+                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <Banknote className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+              </div>
+              <div className="flex items-center gap-1 mt-2">
+                {analytics.thisMonth.growth >= 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-600" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-600" />
+                )}
+                <span className={`text-xs ${analytics.thisMonth.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {analytics.thisMonth.growth >= 0 ? '+' : ''}{analytics.thisMonth.growth}% geçen aya göre
+                </span>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Onay Bekleyen</p>
+                  <p className="text-2xl font-bold">{analytics.pendingCount}</p>
+                  <p className="text-xs text-muted-foreground">rezervasyon</p>
+                </div>
+                <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+              </div>
+              {analytics.pendingCount > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="p-0 h-auto mt-2 text-xs text-primary"
+                  onClick={() => setStatusFilter("pending")}
+                >
+                  Bekleyenleri göster
+                </Button>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {/* Conflict Warnings */}
+        {customerConflicts.length > 0 && (
+          <Card className="p-3 bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-orange-800 dark:text-orange-200">Çakışma Uyarısı</p>
+                <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                  {customerConflicts.length} müşterinin aynı gün farklı aktivitelerde rezervasyonu var.
+                  {customerConflicts.slice(0, 2).map((c, i) => (
+                    <span key={i}> {c.customer} ({c.reservations.length} rez.)</span>
+                  ))}
+                  {customerConflicts.length > 2 && <span> ve {customerConflicts.length - 2} diğer...</span>}
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Bulk Actions Bar */}
+        {selectedIds.size > 0 && (
+          <Card className="p-3 bg-primary/5 border-primary/20 sticky top-0 z-40">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  checked={selectedIds.size === filteredReservations.length}
+                  onCheckedChange={selectAll}
+                />
+                <span className="text-sm font-medium">{selectedIds.size} seçili</span>
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
+                  <X className="h-3 w-3 mr-1" />
+                  Temizle
+                </Button>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => bulkStatusMutation.mutate({ ids: Array.from(selectedIds), status: 'confirmed' })}
+                  disabled={bulkStatusMutation.isPending}
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  Onayla
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => bulkStatusMutation.mutate({ ids: Array.from(selectedIds), status: 'cancelled' })}
+                  disabled={bulkStatusMutation.isPending}
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  İptal Et
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    if (confirm(`${selectedIds.size} rezervasyonu silmek istediğinize emin misiniz?`)) {
+                      bulkDeleteMutation.mutate(Array.from(selectedIds));
+                    }
+                  }}
+                  disabled={bulkDeleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Sil
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const selected = reservations?.filter(r => selectedIds.has(r.id)) || [];
+                    const phones = Array.from(new Set(selected.map(r => r.customerPhone)));
+                    toast({ 
+                      title: "WhatsApp Bildirimi", 
+                      description: `${phones.length} numaraya mesaj gönderilecek.`
+                    });
+                  }}
+                >
+                  <Send className="h-4 w-4 mr-1" />
+                  WhatsApp Bildir
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {dateFilter && (
           <Card className="p-3 bg-primary/5 border-primary/20">
@@ -448,6 +931,135 @@ export default function Reservations() {
                   ))}
                 </SelectContent>
               </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant={showAdvancedFilters || sourceFilter !== 'all' || agencyFilter !== 'all' || priceMinFilter || priceMaxFilter ? "default" : "outline"} 
+                    size="sm"
+                  >
+                    <MoreVertical className="h-4 w-4 mr-1" />
+                    Filtreler
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-3" align="end">
+                  <div className="space-y-3">
+                    <div className="font-medium text-sm">Gelişmiş Filtreler</div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Kaynak</Label>
+                      <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tümü</SelectItem>
+                          <SelectItem value="manual">Manuel</SelectItem>
+                          <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                          <SelectItem value="web">WooCommerce</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Acenta</Label>
+                      <Select value={agencyFilter} onValueChange={setAgencyFilter}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tümü</SelectItem>
+                          {agencies.map(a => (
+                            <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Fiyat Aralığı (TL)</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type="number" 
+                          placeholder="Min" 
+                          value={priceMinFilter}
+                          onChange={(e) => setPriceMinFilter(e.target.value)}
+                          className="h-8"
+                        />
+                        <Input 
+                          type="number" 
+                          placeholder="Max" 
+                          value={priceMaxFilter}
+                          onChange={(e) => setPriceMaxFilter(e.target.value)}
+                          className="h-8"
+                        />
+                      </div>
+                    </div>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium">Kayıtlı Filtreler</span>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 text-xs">
+                              <Plus className="h-3 w-3 mr-1" />
+                              Kaydet
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-sm">
+                            <DialogHeader>
+                              <DialogTitle>Filtreyi Kaydet</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={(e) => {
+                              e.preventDefault();
+                              const name = (e.target as any).filterName.value;
+                              if (name) saveCurrentFilter(name);
+                            }}>
+                              <Input name="filterName" placeholder="Filtre adı" className="mb-4" />
+                              <DialogFooter>
+                                <Button type="submit" size="sm">Kaydet</Button>
+                              </DialogFooter>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      {savedFilters.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Kayıtlı filtre yok</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {savedFilters.map((f, i) => (
+                            <div key={i} className="flex items-center justify-between hover-elevate rounded p-1">
+                              <button 
+                                type="button"
+                                className="text-xs text-left flex-1"
+                                onClick={() => loadSavedFilter(f)}
+                              >
+                                {f.name}
+                              </button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-5 w-5"
+                                onClick={() => deleteSavedFilter(f.name)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        setSourceFilter("all");
+                        setAgencyFilter("all");
+                        setPriceMinFilter("");
+                        setPriceMaxFilter("");
+                      }}
+                    >
+                      Filtreleri Temizle
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
               {viewMode === "list" && (
                 <>
                   <Popover>
@@ -573,6 +1185,13 @@ export default function Reservations() {
           <ReservationTable 
             reservations={filteredReservations} 
             onReservationSelect={setSelectedReservation}
+            selectedIds={selectedIds}
+            onToggleSelection={toggleSelection}
+            onSelectAll={selectAll}
+            onCustomerClick={(phone, name) => {
+              setCustomerHistoryPhone(phone);
+              setCustomerHistoryName(name);
+            }}
           />
         ) : viewMode === "mini" ? (
           <MiniCalendarView 
