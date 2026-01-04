@@ -273,7 +273,15 @@ export function ReservationTable({
                       <div className="flex items-center gap-2">
                         <div>
                           <div className="font-medium">{res.customerName}</div>
-                          <div className="text-xs text-muted-foreground">{res.customerPhone}</div>
+                          <div 
+                            className="text-xs text-primary hover:underline cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.location.href = `/messages?phone=${encodeURIComponent(res.customerPhone)}`;
+                            }}
+                          >
+                            {res.customerPhone}
+                          </div>
                         </div>
                         {onCustomerClick && (
                           <Tooltip>

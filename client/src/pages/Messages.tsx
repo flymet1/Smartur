@@ -2,12 +2,14 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useState } from "react";
-import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useSearch } from "wouter";
 import {
   Select,
   SelectContent,
@@ -53,7 +55,9 @@ interface Conversation {
 export default function Messages() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+  const searchParams = useSearch();
 
   const { data: conversations, isLoading } = useQuery<Conversation[]>({
     queryKey: ['/api/conversations', filter],
@@ -62,6 +66,38 @@ export default function Messages() {
       return res.json();
     }
   });
+
+  useEffect(() => {
+    if (conversations && searchParams) {
+      const params = new URLSearchParams(searchParams);
+      const phoneParam = params.get('phone');
+      if (phoneParam) {
+        const normalizedParam = phoneParam.replace(/\D/g, '');
+        const foundConv = conversations.find(c => {
+          const normalizedPhone = c.phone.replace(/\D/g, '');
+          return normalizedPhone.includes(normalizedParam) || normalizedParam.includes(normalizedPhone);
+        });
+        if (foundConv) {
+          setSelectedConversation(foundConv);
+          setSearchQuery(phoneParam);
+        }
+      }
+    }
+  }, [conversations, searchParams]);
+
+  const filteredConversations = useMemo(() => {
+    if (!conversations) return [];
+    if (!searchQuery.trim()) return conversations;
+    
+    const normalizedSearch = searchQuery.replace(/\D/g, '').toLowerCase();
+    return conversations.filter(conv => {
+      const normalizedPhone = conv.phone.replace(/\D/g, '');
+      const customerName = conv.reservationInfo?.customerName?.toLowerCase() || '';
+      return normalizedPhone.includes(normalizedSearch) || 
+             conv.phone.includes(searchQuery) ||
+             customerName.includes(searchQuery.toLowerCase());
+    });
+  }, [conversations, searchQuery]);
 
   const resolveMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -140,18 +176,30 @@ export default function Messages() {
             <p className="text-muted-foreground mt-1">WhatsApp bot görüşmeleri</p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <Select value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
-              <SelectTrigger className="w-[200px]" data-testid="select-message-filter">
-                <SelectValue placeholder="Filtre seç" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tüm Mesajlar</SelectItem>
-                <SelectItem value="with_reservation">Rezervasyonlu Müşteriler</SelectItem>
-                <SelectItem value="human_intervention">Müdahale Gerekiyor</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Telefon veya isim ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-[200px]"
+                data-testid="input-search-messages"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <Select value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
+                <SelectTrigger className="w-[200px]" data-testid="select-message-filter">
+                  <SelectValue placeholder="Filtre seç" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Mesajlar</SelectItem>
+                  <SelectItem value="with_reservation">Rezervasyonlu Müşteriler</SelectItem>
+                  <SelectItem value="human_intervention">Müdahale Gerekiyor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -159,14 +207,16 @@ export default function Messages() {
           <div className="space-y-4">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
           </div>
-        ) : conversations?.length === 0 ? (
+        ) : filteredConversations.length === 0 ? (
           <Card className="p-12 text-center">
             <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">Henüz mesaj yok</p>
+            <p className="text-muted-foreground">
+              {searchQuery ? "Arama sonucu bulunamadı" : "Henüz mesaj yok"}
+            </p>
           </Card>
         ) : (
           <div className="grid gap-4">
-            {conversations?.map((conv) => (
+            {filteredConversations.map((conv) => (
               <Card 
                 key={conv.phone} 
                 className="p-6 hover-elevate cursor-pointer"

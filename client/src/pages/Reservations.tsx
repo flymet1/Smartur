@@ -2688,7 +2688,17 @@ function BigCalendar({
                     </div>
                     <div>
                       <p className="font-medium text-sm">Müşteri Bildirimi</p>
-                      <p className="text-xs text-muted-foreground">{showMoveNotification.reservation.customerName} - {showMoveNotification.reservation.customerPhone}</p>
+                      <p className="text-xs text-muted-foreground">
+                      {showMoveNotification.reservation.customerName} - {' '}
+                      <span 
+                        className="text-primary hover:underline cursor-pointer"
+                        onClick={() => {
+                          window.location.href = `/messages?phone=${encodeURIComponent(showMoveNotification.reservation.customerPhone)}`;
+                        }}
+                      >
+                        {showMoveNotification.reservation.customerPhone}
+                      </span>
+                    </p>
                     </div>
                   </div>
                   <Textarea
@@ -2945,7 +2955,16 @@ function ReservationDetailDialog({ reservation, activities, onClose }: Reservati
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">Telefon</Label>
-              <div className="font-medium" data-testid="text-customer-phone">{reservation.customerPhone}</div>
+              <div 
+                className="font-medium text-primary hover:underline cursor-pointer flex items-center gap-1" 
+                data-testid="text-customer-phone"
+                onClick={() => {
+                  window.location.href = `/messages?phone=${encodeURIComponent(reservation.customerPhone)}`;
+                }}
+              >
+                <MessageCircle className="h-3 w-3" />
+                {reservation.customerPhone}
+              </div>
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">E-posta</Label>
