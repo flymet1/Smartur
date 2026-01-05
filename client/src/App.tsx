@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -22,6 +23,8 @@ import CustomerRequests from "@/pages/CustomerRequests";
 import Agencies from "@/pages/Agencies";
 import SalesPresentation from "@/pages/SalesPresentation";
 import Subscription from "@/pages/Subscription";
+import SuperAdmin from "@/pages/SuperAdmin";
+import Developer from "@/pages/Developer";
 
 function Router() {
   return (
@@ -45,15 +48,36 @@ function Router() {
       <Route path="/customer-requests" component={CustomerRequests} />
       <Route path="/sales-presentation" component={SalesPresentation} />
       <Route path="/subscription" component={Subscription} />
+      <Route path="/super-admin" component={SuperAdmin} />
+      <Route path="/developer" component={Developer} />
       <Route component={NotFound} />
     </Switch>
   );
+}
+
+function KeyboardShortcuts() {
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === '0') {
+        e.preventDefault();
+        setLocation('/super-admin');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setLocation]);
+
+  return null;
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <KeyboardShortcuts />
         <Toaster />
         <Router />
       </TooltipProvider>
