@@ -444,6 +444,17 @@ export function Sidebar() {
               Destek
             </div>
           </Link>
+          <Link href="/developer">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+              location === "/developer"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )} data-testid="link-developer">
+              <Code className="h-4 w-4" />
+              Gelistirici
+            </div>
+          </Link>
           <Link href="/super-admin">
             <div className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
@@ -452,7 +463,7 @@ export function Sidebar() {
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )} data-testid="link-super-admin">
               <Crown className="h-4 w-4" />
-              Süper Admin
+              Super Admin
             </div>
           </Link>
         </div>
