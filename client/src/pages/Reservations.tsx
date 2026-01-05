@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown, Pencil, Save } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -3174,6 +3174,31 @@ interface ReservationDetailDialogProps {
 
 function ReservationDetailDialog({ reservation, activities, onClose }: ReservationDetailDialogProps) {
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
+  
+  useEffect(() => {
+    if (reservation) {
+      setEditDate(reservation.date);
+      setEditTime(reservation.time);
+      setIsEditing(false);
+    }
+  }, [reservation]);
+  
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, date, time }: { id: number; date: string; time: string }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}`, { date, time });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      toast({ title: "Başarılı", description: "Tarih ve saat güncellendi." });
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Güncelleme başarısız.", variant: "destructive" });
+    },
+  });
   
   if (!reservation) return null;
   
@@ -3185,6 +3210,14 @@ function ReservationDetailDialog({ reservation, activities, onClose }: Reservati
   };
   const status = statusConfig[reservation.status as keyof typeof statusConfig] || { label: reservation.status, className: "" };
 
+  const availableTimes = activity ? (() => {
+    try {
+      return JSON.parse((activity as any).defaultTimes || "[]");
+    } catch {
+      return [];
+    }
+  })() : [];
+
   const copyTrackingLink = () => {
     if (reservation.trackingToken) {
       const link = `${window.location.origin}/takip/${reservation.trackingToken}`;
@@ -3193,8 +3226,22 @@ function ReservationDetailDialog({ reservation, activities, onClose }: Reservati
     }
   };
 
+  const handleSave = () => {
+    if (!editDate || !editTime) {
+      toast({ title: "Hata", description: "Tarih ve saat seçiniz.", variant: "destructive" });
+      return;
+    }
+    updateMutation.mutate({ id: reservation.id, date: editDate, time: editTime });
+  };
+
+  const handleCancel = () => {
+    setEditDate(reservation.date);
+    setEditTime(reservation.time);
+    setIsEditing(false);
+  };
+
   return (
-    <Dialog open={!!reservation} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={!!reservation} onOpenChange={(open) => { if (!open) { handleCancel(); onClose(); } }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -3242,14 +3289,83 @@ function ReservationDetailDialog({ reservation, activities, onClose }: Reservati
                 <div className="font-medium">{reservation.source === 'manual' ? 'Manuel' : reservation.source === 'woocommerce' ? 'WooCommerce' : reservation.source}</div>
               </div>
               <div>
-                <Label className="text-muted-foreground text-xs">Tarih</Label>
-                <div className="font-medium" data-testid="text-date">{reservation.date}</div>
+                <Label className="text-muted-foreground text-xs flex items-center gap-1">
+                  Tarih
+                  {!isEditing && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 p-0 ml-1"
+                      onClick={() => setIsEditing(true)}
+                      data-testid="button-edit-datetime"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  )}
+                </Label>
+                {isEditing ? (
+                  <Input 
+                    type="date" 
+                    value={editDate} 
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="h-8 text-sm"
+                    data-testid="input-edit-date"
+                  />
+                ) : (
+                  <div className="font-medium" data-testid="text-date">{reservation.date}</div>
+                )}
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Saat</Label>
-                <div className="font-medium" data-testid="text-time">{reservation.time}</div>
+                {isEditing ? (
+                  availableTimes.length > 0 ? (
+                    <Select value={editTime} onValueChange={setEditTime}>
+                      <SelectTrigger className="h-8 text-sm" data-testid="select-edit-time">
+                        <SelectValue placeholder="Saat seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTimes.map((t: string) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input 
+                      type="time" 
+                      value={editTime} 
+                      onChange={(e) => setEditTime(e.target.value)}
+                      className="h-8 text-sm"
+                      data-testid="input-edit-time"
+                    />
+                  )
+                ) : (
+                  <div className="font-medium" data-testid="text-time">{reservation.time}</div>
+                )}
               </div>
             </div>
+            
+            {isEditing && (
+              <div className="flex items-center gap-2 mt-3">
+                <Button 
+                  size="sm" 
+                  onClick={handleSave}
+                  disabled={updateMutation.isPending}
+                  data-testid="button-save-datetime"
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  Kaydet
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCancel}
+                  disabled={updateMutation.isPending}
+                  data-testid="button-cancel-edit"
+                >
+                  Vazgeç
+                </Button>
+              </div>
+            )}
           </div>
 
           {((reservation.priceTl ?? 0) > 0 || (reservation.priceUsd ?? 0) > 0) && (
@@ -3300,7 +3416,7 @@ function ReservationDetailDialog({ reservation, activities, onClose }: Reservati
               Takip Linki
             </Button>
           )}
-          <Button variant="outline" onClick={onClose} data-testid="button-close-detail">
+          <Button variant="outline" onClick={() => { handleCancel(); onClose(); }} data-testid="button-close-detail">
             Kapat
           </Button>
         </DialogFooter>
