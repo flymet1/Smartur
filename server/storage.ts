@@ -100,6 +100,12 @@ import {
   agencyNotes,
   platformSupportTickets,
   ticketResponses,
+  appUsers,
+  roles,
+  permissions,
+  rolePermissions,
+  userRoles,
+  userLoginLogs,
   type AppVersion,
   type InsertAppVersion,
   type PlatformAdmin,
@@ -112,6 +118,18 @@ import {
   type InsertPlatformSupportTicket,
   type TicketResponse,
   type InsertTicketResponse,
+  type AppUser,
+  type InsertAppUser,
+  type Role,
+  type InsertRole,
+  type Permission,
+  type InsertPermission,
+  type RolePermission,
+  type InsertRolePermission,
+  type UserRole,
+  type InsertUserRole,
+  type UserLoginLog,
+  type InsertUserLoginLog,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -387,6 +405,43 @@ export interface IStorage {
   getMonthlyRevenue(year: number): Promise<any>;
   getOverdueInvoices(): Promise<Invoice[]>;
   generateInvoice(licenseId: number, periodStart: string, periodEnd: string): Promise<Invoice>;
+
+  // App Users (Application Users - Login with username/password)
+  getAppUsers(): Promise<AppUser[]>;
+  getAppUser(id: number): Promise<AppUser | undefined>;
+  getAppUserByUsername(username: string): Promise<AppUser | undefined>;
+  getAppUserByEmail(email: string): Promise<AppUser | undefined>;
+  createAppUser(user: InsertAppUser): Promise<AppUser>;
+  updateAppUser(id: number, user: Partial<InsertAppUser>): Promise<AppUser>;
+  deleteAppUser(id: number): Promise<void>;
+  updateAppUserLoginTime(id: number): Promise<void>;
+
+  // Roles
+  getRoles(): Promise<Role[]>;
+  getRole(id: number): Promise<Role | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: number, role: Partial<InsertRole>): Promise<Role>;
+  deleteRole(id: number): Promise<void>;
+
+  // Permissions
+  getPermissions(): Promise<Permission[]>;
+  createPermission(permission: InsertPermission): Promise<Permission>;
+  deletePermission(id: number): Promise<void>;
+  initializeDefaultPermissions(): Promise<void>;
+
+  // Role Permissions
+  getRolePermissions(roleId: number): Promise<RolePermission[]>;
+  setRolePermissions(roleId: number, permissionIds: number[]): Promise<void>;
+
+  // User Roles
+  getUserRoles(userId: number): Promise<UserRole[]>;
+  assignUserRole(assignment: InsertUserRole): Promise<UserRole>;
+  removeUserRole(userId: number, roleId: number): Promise<void>;
+  getUserPermissions(userId: number): Promise<Permission[]>;
+
+  // User Login Logs
+  getUserLoginLogs(userId?: number, limit?: number): Promise<UserLoginLog[]>;
+  createUserLoginLog(log: InsertUserLoginLog): Promise<UserLoginLog>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2649,6 +2704,231 @@ Sky Fethiye`,
       dueDate: dueDate.toISOString().split('T')[0],
     }).returning();
 
+    return created;
+  }
+
+  // === APP USER MANAGEMENT ===
+
+  async getAppUsers(): Promise<AppUser[]> {
+    return db.select().from(appUsers).orderBy(desc(appUsers.createdAt));
+  }
+
+  async getAppUser(id: number): Promise<AppUser | undefined> {
+    const [user] = await db.select().from(appUsers).where(eq(appUsers.id, id));
+    return user;
+  }
+
+  async getAppUserByUsername(username: string): Promise<AppUser | undefined> {
+    const [user] = await db.select().from(appUsers).where(eq(appUsers.username, username));
+    return user;
+  }
+
+  async getAppUserByEmail(email: string): Promise<AppUser | undefined> {
+    const [user] = await db.select().from(appUsers).where(eq(appUsers.email, email));
+    return user;
+  }
+
+  async createAppUser(user: InsertAppUser): Promise<AppUser> {
+    const [created] = await db.insert(appUsers).values(user).returning();
+    return created;
+  }
+
+  async updateAppUser(id: number, user: Partial<InsertAppUser>): Promise<AppUser> {
+    const [updated] = await db.update(appUsers)
+      .set({ ...user, updatedAt: new Date() })
+      .where(eq(appUsers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAppUser(id: number): Promise<void> {
+    await db.delete(userRoles).where(eq(userRoles.userId, id));
+    await db.delete(userLoginLogs).where(eq(userLoginLogs.userId, id));
+    await db.delete(appUsers).where(eq(appUsers.id, id));
+  }
+
+  async updateAppUserLoginTime(id: number): Promise<void> {
+    await db.update(appUsers)
+      .set({ 
+        lastLoginAt: new Date(),
+        loginCount: sql`${appUsers.loginCount} + 1`
+      })
+      .where(eq(appUsers.id, id));
+  }
+
+  // === ROLES ===
+
+  async getRoles(): Promise<Role[]> {
+    return db.select().from(roles).orderBy(roles.name);
+  }
+
+  async getRole(id: number): Promise<Role | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    return role;
+  }
+
+  async createRole(role: InsertRole): Promise<Role> {
+    const [created] = await db.insert(roles).values(role).returning();
+    return created;
+  }
+
+  async updateRole(id: number, role: Partial<InsertRole>): Promise<Role> {
+    const [updated] = await db.update(roles)
+      .set({ ...role, updatedAt: new Date() })
+      .where(eq(roles.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteRole(id: number): Promise<void> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    if (role?.isSystem) {
+      throw new Error('Sistem rolleri silinemez');
+    }
+    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
+    await db.delete(userRoles).where(eq(userRoles.roleId, id));
+    await db.delete(roles).where(eq(roles.id, id));
+  }
+
+  // === PERMISSIONS ===
+
+  async getPermissions(): Promise<Permission[]> {
+    return db.select().from(permissions).orderBy(permissions.category, permissions.sortOrder);
+  }
+
+  async createPermission(permission: InsertPermission): Promise<Permission> {
+    const [created] = await db.insert(permissions).values(permission).returning();
+    return created;
+  }
+
+  async deletePermission(id: number): Promise<void> {
+    await db.delete(rolePermissions).where(eq(rolePermissions.permissionId, id));
+    await db.delete(permissions).where(eq(permissions.id, id));
+  }
+
+  async initializeDefaultPermissions(): Promise<void> {
+    const defaultPermissions = [
+      { key: 'dashboard.view', name: 'Dashboard Goruntule', category: 'dashboard', sortOrder: 1 },
+      { key: 'reservations.view', name: 'Rezervasyonlari Goruntule', category: 'reservations', sortOrder: 1 },
+      { key: 'reservations.create', name: 'Rezervasyon Olustur', category: 'reservations', sortOrder: 2 },
+      { key: 'reservations.edit', name: 'Rezervasyon Duzenle', category: 'reservations', sortOrder: 3 },
+      { key: 'reservations.delete', name: 'Rezervasyon Sil', category: 'reservations', sortOrder: 4 },
+      { key: 'activities.view', name: 'Aktiviteleri Goruntule', category: 'activities', sortOrder: 1 },
+      { key: 'activities.manage', name: 'Aktiviteleri Yonet', category: 'activities', sortOrder: 2 },
+      { key: 'calendar.view', name: 'Takvimi Goruntule', category: 'calendar', sortOrder: 1 },
+      { key: 'calendar.manage', name: 'Takvimi Yonet', category: 'calendar', sortOrder: 2 },
+      { key: 'reports.view', name: 'Raporlari Goruntule', category: 'reports', sortOrder: 1 },
+      { key: 'reports.export', name: 'Rapor Indir', category: 'reports', sortOrder: 2 },
+      { key: 'finance.view', name: 'Finans Goruntule', category: 'finance', sortOrder: 1 },
+      { key: 'finance.manage', name: 'Finans Yonet', category: 'finance', sortOrder: 2 },
+      { key: 'settings.view', name: 'Ayarlari Goruntule', category: 'settings', sortOrder: 1 },
+      { key: 'settings.manage', name: 'Ayarlari Yonet', category: 'settings', sortOrder: 2 },
+      { key: 'users.view', name: 'Kullanicilari Goruntule', category: 'users', sortOrder: 1 },
+      { key: 'users.manage', name: 'Kullanicilari Yonet', category: 'users', sortOrder: 2 },
+      { key: 'whatsapp.view', name: 'WhatsApp Goruntule', category: 'whatsapp', sortOrder: 1 },
+      { key: 'whatsapp.manage', name: 'WhatsApp Yonet', category: 'whatsapp', sortOrder: 2 },
+    ];
+
+    for (const perm of defaultPermissions) {
+      const existing = await db.select().from(permissions).where(eq(permissions.key, perm.key));
+      if (existing.length === 0) {
+        await db.insert(permissions).values(perm);
+      }
+    }
+
+    // Create default roles if they don't exist
+    const defaultRoles = [
+      { name: 'admin', displayName: 'Yonetici', description: 'Tam yetkili yonetici', color: 'red', isSystem: true },
+      { name: 'operator', displayName: 'Operator', description: 'Rezervasyon ve aktivite islemleri', color: 'blue', isSystem: true },
+      { name: 'viewer', displayName: 'Izleyici', description: 'Sadece goruntuleme yetkisi', color: 'gray', isSystem: true },
+    ];
+
+    for (const role of defaultRoles) {
+      const existing = await db.select().from(roles).where(eq(roles.name, role.name));
+      if (existing.length === 0) {
+        await db.insert(roles).values(role);
+      }
+    }
+  }
+
+  // === ROLE PERMISSIONS ===
+
+  async getRolePermissions(roleId: number): Promise<RolePermission[]> {
+    return db.select().from(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+  }
+
+  async setRolePermissions(roleId: number, permissionIds: number[]): Promise<void> {
+    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+    if (permissionIds.length > 0) {
+      const values = permissionIds.map(permissionId => ({ roleId, permissionId }));
+      await db.insert(rolePermissions).values(values);
+    }
+  }
+
+  // === USER ROLES ===
+
+  async getUserRoles(userId: number): Promise<UserRole[]> {
+    return db.select().from(userRoles).where(eq(userRoles.userId, userId));
+  }
+
+  async assignUserRole(assignment: InsertUserRole): Promise<UserRole> {
+    const existing = await db.select().from(userRoles).where(
+      and(
+        eq(userRoles.userId, assignment.userId),
+        eq(userRoles.roleId, assignment.roleId)
+      )
+    );
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    const [created] = await db.insert(userRoles).values(assignment).returning();
+    return created;
+  }
+
+  async removeUserRole(userId: number, roleId: number): Promise<void> {
+    await db.delete(userRoles).where(
+      and(
+        eq(userRoles.userId, userId),
+        eq(userRoles.roleId, roleId)
+      )
+    );
+  }
+
+  async getUserPermissions(userId: number): Promise<Permission[]> {
+    const userRoleList = await this.getUserRoles(userId);
+    if (userRoleList.length === 0) return [];
+
+    const roleIds = userRoleList.map(ur => ur.roleId);
+    const allRolePermissions: RolePermission[] = [];
+    
+    for (const roleId of roleIds) {
+      const rp = await this.getRolePermissions(roleId);
+      allRolePermissions.push(...rp);
+    }
+
+    const permissionIds = [...new Set(allRolePermissions.map(rp => rp.permissionId))];
+    if (permissionIds.length === 0) return [];
+
+    const allPermissions = await this.getPermissions();
+    return allPermissions.filter(p => permissionIds.includes(p.id));
+  }
+
+  // === USER LOGIN LOGS ===
+
+  async getUserLoginLogs(userId?: number, limit: number = 100): Promise<UserLoginLog[]> {
+    if (userId) {
+      return db.select().from(userLoginLogs)
+        .where(eq(userLoginLogs.userId, userId))
+        .orderBy(desc(userLoginLogs.createdAt))
+        .limit(limit);
+    }
+    return db.select().from(userLoginLogs)
+      .orderBy(desc(userLoginLogs.createdAt))
+      .limit(limit);
+  }
+
+  async createUserLoginLog(log: InsertUserLoginLog): Promise<UserLoginLog> {
+    const [created] = await db.insert(userLoginLogs).values(log).returning();
     return created;
   }
 }

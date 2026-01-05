@@ -759,6 +759,110 @@ export const insertTicketResponseSchema = createInsertSchema(ticketResponses).om
 export type TicketResponse = typeof ticketResponses.$inferSelect;
 export type InsertTicketResponse = z.infer<typeof insertTicketResponseSchema>;
 
+// === APP USER MANAGEMENT (Login with Username/Password) ===
+
+// Uygulama Kullanicilari (Lisans yerine kullanici adi/sifre ile giris)
+export const appUsers = pgTable("app_users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  companyName: text("company_name"), // Acenta/sirket adi
+  membershipType: text("membership_type").default("trial"), // trial, monthly, yearly
+  membershipStartDate: timestamp("membership_start_date"),
+  membershipEndDate: timestamp("membership_end_date"),
+  planId: integer("plan_id").references(() => subscriptionPlans.id),
+  isActive: boolean("is_active").default(true),
+  isSuspended: boolean("is_suspended").default(false),
+  suspendReason: text("suspend_reason"),
+  maxActivities: integer("max_activities").default(5),
+  maxReservationsPerMonth: integer("max_reservations_per_month").default(100),
+  lastLoginAt: timestamp("last_login_at"),
+  loginCount: integer("login_count").default(0),
+  createdBy: integer("created_by").references(() => platformAdmins.id),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Roller (Super Admin tarafindan tanimlanan roller)
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(), // admin, operator, viewer, etc.
+  displayName: text("display_name").notNull(), // "Yonetici", "Operator", "Izleyici"
+  description: text("description"),
+  color: text("color").default("blue"), // Badge rengi
+  isSystem: boolean("is_system").default(false), // Sistem rolu mu (silinemez)
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Izinler (Sistemde tanimli izinler)
+export const permissions = pgTable("permissions", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(), // reservations.view, reservations.create, activities.manage, etc.
+  name: text("name").notNull(), // "Rezervasyonlari Goruntule"
+  description: text("description"),
+  category: text("category").default("general"), // reservations, activities, reports, settings, finance
+  sortOrder: integer("sort_order").default(0),
+});
+
+// Rol-Izin Iliskisi (Hangi rol hangi izinlere sahip)
+export const rolePermissions = pgTable("role_permissions", {
+  id: serial("id").primaryKey(),
+  roleId: integer("role_id").references(() => roles.id).notNull(),
+  permissionId: integer("permission_id").references(() => permissions.id).notNull(),
+});
+
+// Kullanici-Rol Iliskisi (Kullaniciya atanan roller)
+export const userRoles = pgTable("user_roles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => appUsers.id).notNull(),
+  roleId: integer("role_id").references(() => roles.id).notNull(),
+  assignedBy: integer("assigned_by").references(() => platformAdmins.id),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+});
+
+// Kullanici Giris Loglari
+export const userLoginLogs = pgTable("user_login_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => appUsers.id),
+  username: text("username").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  status: text("status").notNull(), // success, failed, blocked
+  failureReason: text("failure_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === APP USER SCHEMAS & TYPES ===
+export const insertAppUserSchema = createInsertSchema(appUsers).omit({ id: true, createdAt: true, updatedAt: true, lastLoginAt: true, loginCount: true });
+export type AppUser = typeof appUsers.$inferSelect;
+export type InsertAppUser = z.infer<typeof insertAppUserSchema>;
+
+export const insertRoleSchema = createInsertSchema(roles).omit({ id: true, createdAt: true, updatedAt: true });
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+
+export const insertPermissionSchema = createInsertSchema(permissions).omit({ id: true });
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({ id: true });
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({ id: true, assignedAt: true });
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
+
+export const insertUserLoginLogSchema = createInsertSchema(userLoginLogs).omit({ id: true, createdAt: true });
+export type UserLoginLog = typeof userLoginLogs.$inferSelect;
+export type InsertUserLoginLog = z.infer<typeof insertUserLoginLogSchema>;
+
 // === APPLICATION VERSION MANAGEMENT ===
 
 // Uygulama Surumleri - Guncelleme ve Geri Alma Takibi
