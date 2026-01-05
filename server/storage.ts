@@ -380,6 +380,7 @@ export interface IStorage {
 
   // Platform Admins
   getPlatformAdmins(): Promise<PlatformAdmin[]>;
+  getPlatformAdminByEmail(email: string): Promise<PlatformAdmin | undefined>;
   createPlatformAdmin(admin: InsertPlatformAdmin): Promise<PlatformAdmin>;
   updatePlatformAdmin(id: number, admin: Partial<InsertPlatformAdmin>): Promise<PlatformAdmin>;
   deletePlatformAdmin(id: number): Promise<void>;
@@ -2484,6 +2485,11 @@ Sky Fethiye`,
   // Platform Admins
   async getPlatformAdmins(): Promise<PlatformAdmin[]> {
     return db.select().from(platformAdmins).orderBy(desc(platformAdmins.createdAt));
+  }
+
+  async getPlatformAdminByEmail(email: string): Promise<PlatformAdmin | undefined> {
+    const [admin] = await db.select().from(platformAdmins).where(eq(platformAdmins.email, email));
+    return admin;
   }
 
   async createPlatformAdmin(admin: InsertPlatformAdmin): Promise<PlatformAdmin> {

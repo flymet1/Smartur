@@ -3980,6 +3980,7 @@ export default function SuperAdmin() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
@@ -4024,7 +4025,8 @@ export default function SuperAdmin() {
       const res = await fetch('/api/bot-rules/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        credentials: 'include',
+        body: JSON.stringify({ email: loginEmail, password })
       });
       const data = await res.json();
       
@@ -4033,7 +4035,7 @@ export default function SuperAdmin() {
         setIsAuthenticated(true);
         toast({ title: "Giris Basarili", description: "Super Admin paneline hos geldiniz." });
       } else {
-        toast({ title: "Hata", description: data.error || "Şifre yanlış", variant: "destructive" });
+        toast({ title: "Hata", description: data.error || "E-posta veya şifre yanlış", variant: "destructive" });
       }
     } catch {
       toast({ title: "Hata", description: "Giriş yapılamadı", variant: "destructive" });
@@ -4044,6 +4046,7 @@ export default function SuperAdmin() {
     setIsAuthenticated(false);
     localStorage.removeItem('superAdminToken');
     setPassword("");
+    setLoginEmail("");
   };
 
   const { data: plans = [], isLoading } = useQuery<SubscriptionPlan[]>({
@@ -4175,11 +4178,23 @@ export default function SuperAdmin() {
             </div>
             <CardTitle>Süper Admin Girişi</CardTitle>
             <CardDescription>
-              Bu panele erişmek için şifrenizi girin
+              Bu panele erişmek için giriş bilgilerinizi girin
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="loginEmail">E-posta</Label>
+                <Input
+                  id="loginEmail"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="admin@smartur.com"
+                  required
+                  data-testid="input-super-admin-email"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Şifre</Label>
                 <div className="relative">

@@ -2781,13 +2781,31 @@ Sky Fethiye`;
   
   app.post("/api/bot-rules/login", async (req, res) => {
     try {
-      const { password } = req.body;
+      const { email, password } = req.body;
       
       if (!password) {
         return res.status(400).json({ success: false, error: "Şifre gerekli" });
       }
       
-      // Verify against hashed password
+      // Check if email is provided - use platform_admins table
+      if (email) {
+        const platformAdmin = await storage.getPlatformAdminByEmail(email);
+        if (platformAdmin && platformAdmin.isActive && verifyPassword(password, platformAdmin.password)) {
+          // Create session for platform admin
+          req.session.userId = platformAdmin.id;
+          req.session.platformAdminId = platformAdmin.id;
+          req.session.isPlatformAdmin = true;
+          
+          // Generate token for backward compatibility
+          const token = crypto.randomBytes(32).toString('hex');
+          await storage.setSetting('botRulesSessionToken', token);
+          
+          return res.json({ success: true, token, isPlatformAdmin: true });
+        }
+        return res.status(401).json({ success: false, error: "Geçersiz e-posta veya şifre" });
+      }
+      
+      // Legacy: Verify against fixed password if no email provided
       if (verifyPassword(password, BOT_RULES_PASSWORD_HASH)) {
         // Generate a session token for bot rules
         const token = crypto.randomBytes(32).toString('hex');
