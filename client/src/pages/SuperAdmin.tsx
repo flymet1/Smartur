@@ -1649,6 +1649,310 @@ function PlanFeaturesSection() {
   );
 }
 
+// Branding Settings Interface
+interface BrandSettings {
+  primaryColor: string;
+  accentColor: string;
+  logoUrl: string;
+  companyName: string;
+}
+
+function BrandingSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [primaryColor, setPrimaryColor] = useState("#673DE7");
+  const [accentColor, setAccentColor] = useState("#CCFF00");
+  const [companyName, setCompanyName] = useState("Smartur");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  
+  // Load existing brand settings
+  const { data: brandSettings } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'brandSettings'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/brandSettings');
+      return res.json();
+    },
+  });
+  
+  // Apply loaded settings
+  useEffect(() => {
+    if (brandSettings?.value && !settingsLoaded) {
+      try {
+        const settings: BrandSettings = JSON.parse(brandSettings.value);
+        setPrimaryColor(settings.primaryColor || "#673DE7");
+        setAccentColor(settings.accentColor || "#CCFF00");
+        setCompanyName(settings.companyName || "Smartur");
+        setLogoUrl(settings.logoUrl || "");
+        setSettingsLoaded(true);
+      } catch {}
+    }
+  }, [brandSettings, settingsLoaded]);
+  
+  const saveMutation = useMutation({
+    mutationFn: async (settings: BrandSettings) => {
+      return apiRequest("POST", "/api/settings/brandSettings", { value: JSON.stringify(settings) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings', 'brandSettings'] });
+      toast({ title: "Basarili", description: "Marka ayarlari kaydedildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Marka ayarlari kaydedilemedi.", variant: "destructive" });
+    },
+  });
+  
+  const handleSave = () => {
+    saveMutation.mutate({
+      primaryColor,
+      accentColor,
+      companyName,
+      logoUrl,
+    });
+  };
+  
+  // Convert hex to HSL for preview
+  const hexToHsl = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+  };
+  
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            Marka Ayarlari
+          </CardTitle>
+          <CardDescription>
+            Rezervasyon asistani icin renk paleti ve logo ayarlari
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Company Name */}
+          <div className="space-y-2">
+            <Label htmlFor="companyName">Sirket/Marka Adi</Label>
+            <Input
+              id="companyName"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Smartur"
+              data-testid="input-company-name"
+            />
+          </div>
+          
+          {/* Colors Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Primary Color */}
+            <div className="space-y-3">
+              <Label>Ana Renk (Primary)</Label>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
+                  style={{ backgroundColor: primaryColor }}
+                  onClick={() => document.getElementById('primaryColorInput')?.click()}
+                />
+                <input
+                  type="color"
+                  id="primaryColorInput"
+                  value={primaryColor}
+                  onChange={(e) => setPrimaryColor(e.target.value)}
+                  className="sr-only"
+                  data-testid="input-primary-color"
+                />
+                <div className="flex-1">
+                  <Input
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    placeholder="#673DE7"
+                    className="font-mono"
+                    data-testid="input-primary-color-hex"
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    HSL: {hexToHsl(primaryColor)}
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Butonlar, vurgular ve ana UI elemanlarinda kullanilir
+              </p>
+            </div>
+            
+            {/* Accent Color */}
+            <div className="space-y-3">
+              <Label>Vurgu Rengi (Accent)</Label>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
+                  style={{ backgroundColor: accentColor }}
+                  onClick={() => document.getElementById('accentColorInput')?.click()}
+                />
+                <input
+                  type="color"
+                  id="accentColorInput"
+                  value={accentColor}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="sr-only"
+                  data-testid="input-accent-color"
+                />
+                <div className="flex-1">
+                  <Input
+                    value={accentColor}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    placeholder="#CCFF00"
+                    className="font-mono"
+                    data-testid="input-accent-color-hex"
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    HSL: {hexToHsl(accentColor)}
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Ozel vurgular ve dikkat cekici elemanlarda kullanilir
+              </p>
+            </div>
+          </div>
+          
+          {/* Logo URL */}
+          <div className="space-y-2">
+            <Label htmlFor="logoUrl">Logo URL</Label>
+            <Input
+              id="logoUrl"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="https://example.com/logo.png"
+              data-testid="input-logo-url"
+            />
+            <p className="text-xs text-muted-foreground">
+              Sidebar ve diger alanlarda gosterilecek logo URL'si
+            </p>
+            {logoUrl && (
+              <div className="mt-3 p-4 bg-muted/50 rounded-lg">
+                <Label className="text-xs text-muted-foreground">Logo Onizleme:</Label>
+                <div className="mt-2 flex items-center justify-center">
+                  <img 
+                    src={logoUrl} 
+                    alt="Logo preview" 
+                    className="max-h-16 max-w-48 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Preview Section */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <Label className="text-sm font-medium">Canli Onizleme</Label>
+            <div className="flex items-center gap-4 flex-wrap">
+              <Button 
+                style={{ 
+                  backgroundColor: primaryColor,
+                  borderColor: primaryColor,
+                }}
+                className="text-white"
+              >
+                Primary Buton
+              </Button>
+              <Button 
+                variant="outline"
+                style={{ 
+                  borderColor: primaryColor,
+                  color: primaryColor,
+                }}
+              >
+                Outline Buton
+              </Button>
+              <Badge 
+                style={{ 
+                  backgroundColor: accentColor,
+                  color: '#000',
+                }}
+              >
+                Accent Badge
+              </Badge>
+              <div 
+                className="px-4 py-2 rounded-lg text-white text-sm"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {companyName}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+        <CardContent className="pt-0">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPrimaryColor("#673DE7");
+                setAccentColor("#CCFF00");
+                setCompanyName("Smartur");
+                setLogoUrl("");
+              }}
+              data-testid="button-reset-branding"
+            >
+              Varsayilana Don
+            </Button>
+            <Button 
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+              data-testid="button-save-branding"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Kaydediliyor...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Kaydet
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Usage Instructions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            Kullanim Bilgisi
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>Bu ayarlar kaydedildikten sonra rezervasyon asistani arayuzunde uygulanir.</p>
+            <p>Degisikliklerin gorunmesi icin sayfayi yenilemeniz gerekebilir.</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function AnalyticsSection() {
   const { data: platformAnalytics, isLoading: platformLoading } = useQuery<PlatformAnalytics>({
     queryKey: ['/api/analytics/platform'],
@@ -3414,6 +3718,10 @@ export default function SuperAdmin() {
   const [isNewPlan, setIsNewPlan] = useState(false);
   const [planForm, setPlanForm] = useState<Partial<SubscriptionPlan>>({});
   
+  // Navigation state (must be before conditionals)
+  const [activeCategory, setActiveCategory] = useState("overview");
+  const [activeSubTab, setActiveSubTab] = useState("analytics");
+  
   // Check for existing session token
   useEffect(() => {
     const verifyExistingToken = async () => {
@@ -3636,375 +3944,347 @@ export default function SuperAdmin() {
     );
   }
 
+  const mainCategories = [
+    { id: "overview", label: "Genel Bakis", icon: BarChart3 },
+    { id: "billing", label: "Uyelik & Faturalama", icon: CreditCard },
+    { id: "users", label: "Kullanicilar", icon: Users },
+    { id: "system", label: "Sistem", icon: Server },
+    { id: "communications", label: "Iletisim", icon: MessageSquare },
+    { id: "configuration", label: "Yapilandirma", icon: Settings2 },
+  ];
+
+  const subTabs: Record<string, { id: string; label: string; icon: React.ComponentType<{ className?: string }> }[]> = {
+    overview: [
+      { id: "analytics", label: "Analitik", icon: BarChart3 },
+      { id: "revenue", label: "Gelir", icon: TrendingUp },
+      { id: "api-status", label: "API Izleme", icon: Radio },
+    ],
+    billing: [
+      { id: "plans", label: "Planlar", icon: Package },
+      { id: "features", label: "Ozellikler", icon: Settings2 },
+      { id: "subscriptions", label: "Abonelikler", icon: Users },
+      { id: "payments", label: "Odemeler", icon: CreditCard },
+      { id: "invoices", label: "Faturalar", icon: Receipt },
+    ],
+    users: [
+      { id: "users", label: "Kullanicilar", icon: Users },
+      { id: "roles", label: "Roller ve Izinler", icon: KeyRound },
+      { id: "agencies", label: "Ajanslar", icon: Building2 },
+      { id: "platform-admins", label: "Platform Yoneticileri", icon: UserCog },
+    ],
+    system: [
+      { id: "system", label: "Sistem Durumu", icon: Server },
+      { id: "updates", label: "Guncellemeler", icon: RefreshCw },
+      { id: "security", label: "Guvenlik", icon: Shield },
+      { id: "bulk-ops", label: "Toplu Islem", icon: Layers },
+    ],
+    communications: [
+      { id: "announcements", label: "Duyurular", icon: Megaphone },
+      { id: "support", label: "Destek Talepleri", icon: HeadphonesIcon },
+    ],
+    configuration: [
+      { id: "branding", label: "Marka Ayarlari", icon: Palette },
+    ],
+  };
+
+  const handleCategoryChange = (categoryId: string) => {
+    setActiveCategory(categoryId);
+    const firstSubTab = subTabs[categoryId]?.[0]?.id;
+    if (firstSubTab) {
+      setActiveSubTab(firstSubTab);
+    }
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Crown className="h-6 w-6 text-primary" />
-            Süper Admin
+    <div className="flex h-[calc(100vh-4rem)]">
+      <div className="w-56 border-r bg-muted/30 flex flex-col">
+        <div className="p-4 border-b">
+          <h1 className="text-lg font-bold flex items-center gap-2">
+            <Crown className="h-5 w-5 text-primary" />
+            Super Admin
           </h1>
-          <p className="text-muted-foreground">Abonelik planları ve sistem yönetimi</p>
         </div>
-        <Button variant="ghost" onClick={handleLogout} data-testid="button-super-admin-logout">
-          Çıkış
-        </Button>
+        <ScrollArea className="flex-1">
+          <div className="p-2 space-y-1">
+            {mainCategories.map((category) => {
+              const Icon = category.icon;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategoryChange(category.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors text-left",
+                    activeCategory === category.id
+                      ? "bg-primary text-primary-foreground"
+                      : "hover-elevate"
+                  )}
+                  data-testid={`nav-category-${category.id}`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{category.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </ScrollArea>
+        <div className="p-2 border-t">
+          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleLogout} data-testid="button-super-admin-logout">
+            <X className="h-4 w-4 mr-2" />
+            Cikis
+          </Button>
+        </div>
       </div>
 
-      <Tabs defaultValue="plans">
-        <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="plans" data-testid="tab-plans">
-            <Package className="h-4 w-4 mr-2" />
-            Planlar
-          </TabsTrigger>
-          <TabsTrigger value="features" data-testid="tab-features">
-            <Settings2 className="h-4 w-4 mr-2" />
-            Ozellikler
-          </TabsTrigger>
-          <TabsTrigger value="subscriptions" data-testid="tab-subscriptions">
-            <Users className="h-4 w-4 mr-2" />
-            Abonelikler
-          </TabsTrigger>
-          <TabsTrigger value="payments" data-testid="tab-payments">
-            <CreditCard className="h-4 w-4 mr-2" />
-            Ödemeler
-          </TabsTrigger>
-          <TabsTrigger value="agencies" data-testid="tab-agencies">
-            <Building2 className="h-4 w-4 mr-2" />
-            Ajanslar
-          </TabsTrigger>
-          <TabsTrigger value="announcements" data-testid="tab-announcements">
-            <Megaphone className="h-4 w-4 mr-2" />
-            Duyurular
-          </TabsTrigger>
-          <TabsTrigger value="analytics" data-testid="tab-analytics">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Analitik
-          </TabsTrigger>
-          <TabsTrigger value="invoices" data-testid="tab-invoices">
-            <Receipt className="h-4 w-4 mr-2" />
-            Faturalar
-          </TabsTrigger>
-          <TabsTrigger value="api-status" data-testid="tab-api-status">
-            <Radio className="h-4 w-4 mr-2" />
-            API Izleme
-          </TabsTrigger>
-          <TabsTrigger value="support" data-testid="tab-support">
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Destek
-          </TabsTrigger>
-          <TabsTrigger value="platform-admins" data-testid="tab-platform-admins">
-            <UserCog className="h-4 w-4 mr-2" />
-            Yoneticiler
-          </TabsTrigger>
-          <TabsTrigger value="security" data-testid="tab-security">
-            <Shield className="h-4 w-4 mr-2" />
-            Guvenlik
-          </TabsTrigger>
-          <TabsTrigger value="bulk-ops" data-testid="tab-bulk-ops">
-            <Layers className="h-4 w-4 mr-2" />
-            Toplu Islem
-          </TabsTrigger>
-          <TabsTrigger value="system" data-testid="tab-system">
-            <Server className="h-4 w-4 mr-2" />
-            Sistem
-          </TabsTrigger>
-          <TabsTrigger value="revenue" data-testid="tab-revenue">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Gelir
-          </TabsTrigger>
-          <TabsTrigger value="updates" data-testid="tab-updates">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Guncellemeler
-          </TabsTrigger>
-          <TabsTrigger value="users" data-testid="tab-users">
-            <Users className="h-4 w-4 mr-2" />
-            Kullanicilar
-          </TabsTrigger>
-          <TabsTrigger value="roles" data-testid="tab-roles">
-            <KeyRound className="h-4 w-4 mr-2" />
-            Roller ve Izinler
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="plans" className="space-y-4 mt-4">
-          <div className="flex justify-end">
-            <Button onClick={openNewDialog} data-testid="button-new-plan">
-              <Plus className="h-4 w-4 mr-2" />
-              Yeni Plan
-            </Button>
-          </div>
-
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {plans.map((plan) => (
-                <Card 
-                  key={plan.id} 
-                  className={`relative ${plan.isPopular ? "border-primary border-2" : ""} ${!plan.isActive ? "opacity-60" : ""}`}
-                  data-testid={`card-plan-${plan.id}`}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="border-b bg-background">
+          <div className="flex items-center gap-1 p-2 overflow-x-auto">
+            {subTabs[activeCategory]?.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <Button
+                  key={tab.id}
+                  variant={activeSubTab === tab.id ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveSubTab(tab.id)}
+                  data-testid={`tab-${tab.id}`}
                 >
-                  {plan.isPopular && (
-                    <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Star className="h-3 w-3 mr-1" />
-                      En Popüler
-                    </Badge>
-                  )}
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-lg">{plan.name}</CardTitle>
-                      <div className="flex items-center gap-1">
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          onClick={() => openEditDialog(plan)}
-                          data-testid={`button-edit-plan-${plan.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          onClick={() => deletePlanMutation.mutate(plan.id)}
-                          data-testid={`button-delete-plan-${plan.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                    <CardDescription>{plan.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <div className="text-2xl font-bold">
-                        {formatPrice(plan.priceTl)} TL
-                        <span className="text-sm font-normal text-muted-foreground">/ay</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        ${formatPrice(plan.priceUsd)}/ay
-                      </div>
-                    </div>
+                  <Icon className="h-4 w-4 mr-2" />
+                  {tab.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
 
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                        <span>{plan.maxActivities === 9999 ? "Sınırsız" : plan.maxActivities} aktivite</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{plan.maxReservationsPerMonth === 99999 ? "Sınırsız" : plan.maxReservationsPerMonth} rez./ay</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                        <span>{plan.maxWhatsappNumbers} WhatsApp</span>
-                      </div>
-                    </div>
+        <ScrollArea className="flex-1">
+          <div className="p-6 space-y-4">
+            {activeSubTab === "analytics" && <AnalyticsSection />}
+            {activeSubTab === "revenue" && <RevenueSection />}
+            {activeSubTab === "api-status" && <ApiMonitoringSection />}
 
-                    <div className="pt-2 border-t space-y-1">
-                      {getPlanFeatures(plan).slice(0, 4).map((f: string) => {
-                        const feature = planFeatures.find((o) => o.key === f) || FEATURE_OPTIONS.find((o) => o.key === f);
-                        return feature ? (
-                          <div key={f} className="flex items-center gap-2 text-xs">
-                            <Check className="h-3 w-3 text-green-600" />
-                            <span>{feature.label}</span>
+            {activeSubTab === "plans" && (
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <Button onClick={openNewDialog} data-testid="button-new-plan">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Yeni Plan
+                  </Button>
+                </div>
+                {isLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {plans.map((plan) => (
+                      <Card 
+                        key={plan.id} 
+                        className={`relative ${plan.isPopular ? "border-primary border-2" : ""} ${!plan.isActive ? "opacity-60" : ""}`}
+                        data-testid={`card-plan-${plan.id}`}
+                      >
+                        {plan.isPopular && (
+                          <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <Star className="h-3 w-3 mr-1" />
+                            En Populer
+                          </Badge>
+                        )}
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <CardTitle className="text-lg">{plan.name}</CardTitle>
+                            <div className="flex items-center gap-1">
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                onClick={() => openEditDialog(plan)}
+                                data-testid={`button-edit-plan-${plan.id}`}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                onClick={() => deletePlanMutation.mutate(plan.id)}
+                                data-testid={`button-delete-plan-${plan.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </div>
-                        ) : null;
-                      })}
-                      {getPlanFeatures(plan).length > 4 && (
-                        <div className="text-xs text-muted-foreground">
-                          +{getPlanFeatures(plan).length - 4} daha fazla
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2">
-                      <Badge variant={plan.isActive ? "default" : "secondary"}>
-                        {plan.isActive ? "Aktif" : "Pasif"}
-                      </Badge>
-                      <Badge variant="outline">{plan.code}</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="features" className="space-y-4 mt-4">
-          <PlanFeaturesSection />
-        </TabsContent>
-
-        <TabsContent value="subscriptions" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Aktif Abonelikler</CardTitle>
-              <CardDescription>Sistemdeki tüm acenta abonelikleri</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {subscriptionsData.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Henüz abonelik bulunmuyor.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Plan</TableHead>
-                      <TableHead>Durum</TableHead>
-                      <TableHead>Dönem</TableHead>
-                      <TableHead>Sonraki Ödeme</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subscriptionsData.map((sub) => (
-                      <TableRow key={sub.id} data-testid={`row-subscription-${sub.id}`}>
-                        <TableCell>{sub.id}</TableCell>
-                        <TableCell>
-                          {plans.find((p) => p.id === sub.planId)?.name || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={sub.status === "active" ? "default" : sub.status === "trial" ? "secondary" : "destructive"}>
-                            {sub.status === "active" ? "Aktif" : 
-                             sub.status === "trial" ? "Deneme" : 
-                             sub.status === "cancelled" ? "İptal" : sub.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{sub.billingCycle === "yearly" ? "Yıllık" : "Aylık"}</TableCell>
-                        <TableCell>
-                          {sub.nextPaymentAt ? new Date(sub.nextPaymentAt).toLocaleDateString("tr-TR") : "-"}
-                        </TableCell>
-                      </TableRow>
+                          <CardDescription>{plan.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <div className="text-2xl font-bold">
+                              {formatPrice(plan.priceTl)} TL
+                              <span className="text-sm font-normal text-muted-foreground">/ay</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              ${formatPrice(plan.priceUsd)}/ay
+                            </div>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Activity className="h-4 w-4 text-muted-foreground" />
+                              <span>{plan.maxActivities === 9999 ? "Sinirsiz" : plan.maxActivities} aktivite</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <span>{plan.maxReservationsPerMonth === 99999 ? "Sinirsiz" : plan.maxReservationsPerMonth} rez./ay</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                              <span>{plan.maxWhatsappNumbers} WhatsApp</span>
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t space-y-1">
+                            {getPlanFeatures(plan).slice(0, 4).map((f: string) => {
+                              const feature = planFeatures.find((o) => o.key === f) || FEATURE_OPTIONS.find((o) => o.key === f);
+                              return feature ? (
+                                <div key={f} className="flex items-center gap-2 text-xs">
+                                  <Check className="h-3 w-3 text-green-600" />
+                                  <span>{feature.label}</span>
+                                </div>
+                              ) : null;
+                            })}
+                            {getPlanFeatures(plan).length > 4 && (
+                              <div className="text-xs text-muted-foreground">
+                                +{getPlanFeatures(plan).length - 4} daha fazla
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 pt-2">
+                            <Badge variant={plan.isActive ? "default" : "secondary"}>
+                              {plan.isActive ? "Aktif" : "Pasif"}
+                            </Badge>
+                            <Badge variant="outline">{plan.code}</Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  </div>
+                )}
+              </div>
+            )}
 
-        <TabsContent value="payments" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ödeme Geçmişi</CardTitle>
-              <CardDescription>Tüm abonelik ödemeleri</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {paymentsData.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Henüz ödeme bulunmuyor.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Abonelik</TableHead>
-                      <TableHead>Tutar</TableHead>
-                      <TableHead>Durum</TableHead>
-                      <TableHead>Tarih</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paymentsData.map((payment) => (
-                      <TableRow key={payment.id} data-testid={`row-payment-${payment.id}`}>
-                        <TableCell>{payment.id}</TableCell>
-                        <TableCell>#{payment.subscriptionId}</TableCell>
-                        <TableCell>
-                          {payment.currency === "TRY" 
-                            ? `${formatPrice(payment.amountTl)} TL`
-                            : `$${formatPrice(payment.amountUsd)}`}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={payment.status === "completed" ? "default" : payment.status === "pending" ? "secondary" : "destructive"}>
-                            {payment.status === "completed" ? "Tamamlandı" : 
-                             payment.status === "pending" ? "Beklemede" : 
-                             payment.status === "failed" ? "Başarısız" : payment.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {payment.paidAt ? new Date(payment.paidAt).toLocaleDateString("tr-TR") : "-"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            {activeSubTab === "features" && <PlanFeaturesSection />}
 
-        {/* Agencies Tab */}
-        <TabsContent value="agencies" className="space-y-4 mt-4">
-          <AgenciesSection />
-        </TabsContent>
+            {activeSubTab === "subscriptions" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Aktif Abonelikler</CardTitle>
+                  <CardDescription>Sistemdeki tum acenta abonelikleri</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {subscriptionsData.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Henuz abonelik bulunmuyor.
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Plan</TableHead>
+                          <TableHead>Durum</TableHead>
+                          <TableHead>Donem</TableHead>
+                          <TableHead>Sonraki Odeme</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {subscriptionsData.map((sub) => (
+                          <TableRow key={sub.id} data-testid={`row-subscription-${sub.id}`}>
+                            <TableCell>{sub.id}</TableCell>
+                            <TableCell>
+                              {plans.find((p) => p.id === sub.planId)?.name || "-"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={sub.status === "active" ? "default" : sub.status === "trial" ? "secondary" : "destructive"}>
+                                {sub.status === "active" ? "Aktif" : 
+                                 sub.status === "trial" ? "Deneme" : 
+                                 sub.status === "cancelled" ? "Iptal" : sub.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{sub.billingCycle === "yearly" ? "Yillik" : "Aylik"}</TableCell>
+                            <TableCell>
+                              {sub.nextPaymentAt ? new Date(sub.nextPaymentAt).toLocaleDateString("tr-TR") : "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Announcements Tab */}
-        <TabsContent value="announcements" className="space-y-4 mt-4">
-          <AnnouncementsSection />
-        </TabsContent>
+            {activeSubTab === "payments" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Odeme Gecmisi</CardTitle>
+                  <CardDescription>Tum abonelik odemeleri</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {paymentsData.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Henuz odeme bulunmuyor.
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Abonelik</TableHead>
+                          <TableHead>Tutar</TableHead>
+                          <TableHead>Durum</TableHead>
+                          <TableHead>Tarih</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paymentsData.map((payment) => (
+                          <TableRow key={payment.id} data-testid={`row-payment-${payment.id}`}>
+                            <TableCell>{payment.id}</TableCell>
+                            <TableCell>#{payment.subscriptionId}</TableCell>
+                            <TableCell>
+                              {payment.currency === "TRY" 
+                                ? `${formatPrice(payment.amountTl)} TL`
+                                : `$${formatPrice(payment.amountUsd)}`}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={payment.status === "completed" ? "default" : payment.status === "pending" ? "secondary" : "destructive"}>
+                                {payment.status === "completed" ? "Tamamlandi" : 
+                                 payment.status === "pending" ? "Beklemede" : 
+                                 payment.status === "failed" ? "Basarisiz" : payment.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {payment.paidAt ? new Date(payment.paidAt).toLocaleDateString("tr-TR") : "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-4 mt-4">
-          <AnalyticsSection />
-        </TabsContent>
+            {activeSubTab === "invoices" && <InvoicesSection />}
 
-        {/* Invoices Tab */}
-        <TabsContent value="invoices" className="space-y-4 mt-4">
-          <InvoicesSection />
-        </TabsContent>
+            {activeSubTab === "users" && <UserManagementSection />}
+            {activeSubTab === "roles" && <RolesPermissionsSection />}
+            {activeSubTab === "agencies" && <AgenciesSection />}
+            {activeSubTab === "platform-admins" && <PlatformAdminsSection />}
 
-        {/* API Status Tab */}
-        <TabsContent value="api-status" className="space-y-4 mt-4">
-          <ApiMonitoringSection />
-        </TabsContent>
+            {activeSubTab === "system" && <SystemMonitoringSection />}
+            {activeSubTab === "updates" && <ApplicationUpdatesSection />}
+            {activeSubTab === "security" && <SecuritySection />}
+            {activeSubTab === "bulk-ops" && <BulkOperationsSection />}
 
-        {/* Support Tab - Agency Form Requests Only */}
-        <TabsContent value="support" className="space-y-4 mt-4">
-          <AgencySupportSection />
-        </TabsContent>
+            {activeSubTab === "announcements" && <AnnouncementsSection />}
+            {activeSubTab === "support" && <AgencySupportSection />}
 
-        {/* Platform Admins Tab */}
-        <TabsContent value="platform-admins" className="space-y-4 mt-4">
-          <PlatformAdminsSection />
-        </TabsContent>
-
-        {/* Security Tab */}
-        <TabsContent value="security" className="space-y-4 mt-4">
-          <SecuritySection />
-        </TabsContent>
-
-        {/* Bulk Operations Tab */}
-        <TabsContent value="bulk-ops" className="space-y-4 mt-4">
-          <BulkOperationsSection />
-        </TabsContent>
-
-        {/* System Monitoring Tab */}
-        <TabsContent value="system" className="space-y-4 mt-4">
-          <SystemMonitoringSection />
-        </TabsContent>
-
-        {/* Revenue Tab */}
-        <TabsContent value="revenue" className="space-y-4 mt-4">
-          <RevenueSection />
-        </TabsContent>
-
-        {/* Updates Tab */}
-        <TabsContent value="updates" className="space-y-4 mt-4">
-          <ApplicationUpdatesSection />
-        </TabsContent>
-
-        {/* Users Tab */}
-        <TabsContent value="users" className="space-y-4 mt-4">
-          <UserManagementSection />
-        </TabsContent>
-
-        {/* Roles & Permissions Tab */}
-        <TabsContent value="roles" className="space-y-4 mt-4">
-          <RolesPermissionsSection />
-        </TabsContent>
-      </Tabs>
+            {activeSubTab === "branding" && <BrandingSection />}
+          </div>
+        </ScrollArea>
+      </div>
 
       <Dialog open={!!editingPlan} onOpenChange={(open) => !open && setEditingPlan(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">

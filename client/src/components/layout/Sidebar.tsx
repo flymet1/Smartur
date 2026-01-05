@@ -115,6 +115,63 @@ export function Sidebar() {
     staleTime: 60000,
   });
 
+  // Load brand settings
+  const { data: brandSettings } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'brandSettings'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/brandSettings');
+      return res.json();
+    },
+    staleTime: 60000,
+  });
+
+  // Apply brand colors to CSS custom properties
+  useEffect(() => {
+    if (brandSettings?.value) {
+      try {
+        const settings = JSON.parse(brandSettings.value);
+        
+        // Validate hex color format
+        const isValidHex = (hex: string) => /^#[0-9A-Fa-f]{6}$/.test(hex);
+        
+        // Convert hex to HSL for CSS custom property
+        const hexToHsl = (hex: string) => {
+          if (!isValidHex(hex)) return null;
+          const r = parseInt(hex.slice(1, 3), 16) / 255;
+          const g = parseInt(hex.slice(3, 5), 16) / 255;
+          const b = parseInt(hex.slice(5, 7), 16) / 255;
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          let h = 0, s = 0;
+          const l = (max + min) / 2;
+          if (max !== min) {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+              case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+              case g: h = ((b - r) / d + 2) / 6; break;
+              case b: h = ((r - g) / d + 4) / 6; break;
+            }
+          }
+          return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+        };
+        
+        if (settings.primaryColor) {
+          const hsl = hexToHsl(settings.primaryColor);
+          if (hsl) {
+            document.documentElement.style.setProperty('--primary', hsl);
+          }
+        }
+        if (settings.accentColor) {
+          const hsl = hexToHsl(settings.accentColor);
+          if (hsl) {
+            document.documentElement.style.setProperty('--accent', hsl);
+          }
+        }
+      } catch {}
+    }
+  }, [brandSettings]);
+
   const { data: supportSummary } = useQuery<SupportSummary>({
     queryKey: ['/api/support-requests/summary'],
     refetchInterval: 30000,
@@ -185,6 +242,32 @@ export function Sidebar() {
   const openSupportCount = supportSummary?.openCount || 0;
   const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
   const logoUrl = logoSetting?.value;
+  
+  // Get company name from brand settings
+  const brandCompanyName = (() => {
+    if (brandSettings?.value) {
+      try {
+        const settings = JSON.parse(brandSettings.value);
+        return settings.companyName || "Smartur";
+      } catch {
+        return "Smartur";
+      }
+    }
+    return "Smartur";
+  })();
+  
+  // Get brand logo URL if set
+  const brandLogoUrl = (() => {
+    if (brandSettings?.value) {
+      try {
+        const settings = JSON.parse(brandSettings.value);
+        return settings.logoUrl || null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  })();
 
   // License status helper
   const getLicenseStatusInfo = () => {
@@ -237,14 +320,14 @@ export function Sidebar() {
     <>
       {/* Mobile Menu */}
       <div className="md:hidden p-4 border-b flex items-center justify-between bg-white dark:bg-card">
-        {logoUrl ? (
-          <img src={logoUrl} alt="Logo" className="h-8 w-auto" data-testid="img-sidebar-logo-mobile" />
+        {(brandLogoUrl || logoUrl) ? (
+          <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-8 w-auto" data-testid="img-sidebar-logo-mobile" />
         ) : (
           <div className="font-display font-bold text-xl text-primary flex items-center gap-1.5">
             <span className="w-6 h-6 rounded bg-accent flex items-center justify-center text-accent-foreground">
               <Activity className="h-4 w-4" />
             </span>
-            Smartur
+            {brandCompanyName}
           </div>
         )}
         <Sheet>
@@ -357,14 +440,14 @@ export function Sidebar() {
       {/* Desktop Sidebar */}
       <div className="hidden md:flex flex-col w-64 border-r bg-card h-screen fixed left-0 top-0">
         <div className="p-6">
-          {logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="h-10 w-auto" data-testid="img-sidebar-logo" />
+          {(brandLogoUrl || logoUrl) ? (
+            <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-10 w-auto" data-testid="img-sidebar-logo" />
           ) : (
             <div className="font-display font-bold text-2xl text-primary flex items-center gap-2">
               <span className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-accent-foreground">
                 <Activity className="h-5 w-5" />
               </span>
-              Smartur
+              {brandCompanyName}
             </div>
           )}
         </div>
