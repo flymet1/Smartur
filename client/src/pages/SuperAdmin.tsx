@@ -1314,113 +1314,6 @@ function RolesPermissionsSection() {
   );
 }
 
-function AgenciesSection() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const { data: licenses = [], isLoading } = useQuery<License[]>({
-    queryKey: ['/api/licenses'],
-  });
-
-  const suspendMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('POST', `/api/licenses/${id}/suspend`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
-      toast({ title: "Basarili", description: "Lisans askiya alindi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Lisans askiya alinamadi.", variant: "destructive" });
-    }
-  });
-
-  const activateMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('POST', `/api/licenses/${id}/activate`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
-      toast({ title: "Basarili", description: "Lisans aktif edildi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Lisans aktif edilemedi.", variant: "destructive" });
-    }
-  });
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Ajans Yonetimi
-        </CardTitle>
-        <CardDescription>Tum ajanslari ve lisanslarini yonetin</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
-        ) : licenses.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">Henuz ajans bulunmuyor.</div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Sirket Adi</TableHead>
-                <TableHead>Sahip</TableHead>
-                <TableHead>E-posta</TableHead>
-                <TableHead>Durum</TableHead>
-                <TableHead>Son Kullanma</TableHead>
-                <TableHead>Islemler</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {licenses.map((lic) => (
-                <TableRow key={lic.id} data-testid={`row-license-${lic.id}`}>
-                  <TableCell>{lic.id}</TableCell>
-                  <TableCell className="font-medium">{lic.companyName}</TableCell>
-                  <TableCell>{lic.ownerName || "-"}</TableCell>
-                  <TableCell>{lic.email || "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant={lic.isActive ? "default" : "destructive"}>
-                      {lic.isActive ? "Aktif" : "Askida"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {lic.expiryDate ? new Date(lic.expiryDate).toLocaleDateString("tr-TR") : "-"}
-                  </TableCell>
-                  <TableCell>
-                    {lic.isActive ? (
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => suspendMutation.mutate(lic.id)}
-                        disabled={suspendMutation.isPending}
-                        data-testid={`button-suspend-${lic.id}`}
-                      >
-                        <Ban className="h-4 w-4 mr-1" />
-                        Askiya Al
-                      </Button>
-                    ) : (
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => activateMutation.mutate(lic.id)}
-                        disabled={activateMutation.isPending}
-                        data-testid={`button-activate-${lic.id}`}
-                      >
-                        <PlayCircle className="h-4 w-4 mr-1" />
-                        Aktif Et
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 function AnnouncementsSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -4211,7 +4104,6 @@ export default function SuperAdmin() {
     users: [
       { id: "users", label: "Kullanicilar", icon: Users },
       { id: "roles", label: "Roller ve Izinler", icon: KeyRound },
-      { id: "agencies", label: "Ajanslar", icon: Building2 },
       { id: "platform-admins", label: "Platform Yoneticileri", icon: UserCog },
     ],
     system: [
@@ -4515,7 +4407,6 @@ export default function SuperAdmin() {
 
             {activeSubTab === "users" && <UserManagementSection />}
             {activeSubTab === "roles" && <RolesPermissionsSection />}
-            {activeSubTab === "agencies" && <AgenciesSection />}
             {activeSubTab === "platform-admins" && <PlatformAdminsSection />}
 
             {activeSubTab === "system" && <SystemMonitoringSection />}
