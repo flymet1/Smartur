@@ -672,6 +672,93 @@ export const insertBotQualityScoreSchema = createInsertSchema(botQualityScores).
 export type BotQualityScore = typeof botQualityScores.$inferSelect;
 export type InsertBotQualityScore = z.infer<typeof insertBotQualityScoreSchema>;
 
+// === PLATFORM ADMIN MANAGEMENT ===
+
+// Platform Yoneticileri
+export const platformAdmins = pgTable("platform_admins", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  role: text("role").default("support"), // super_admin, finance, support
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Giris Loglari (Guvenlik)
+export const loginLogs = pgTable("login_logs", {
+  id: serial("id").primaryKey(),
+  adminId: integer("admin_id").references(() => platformAdmins.id),
+  email: text("email").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  status: text("status").notNull(), // success, failed, blocked
+  failureReason: text("failure_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Ajans Notlari
+export const agencyNotes = pgTable("agency_notes", {
+  id: serial("id").primaryKey(),
+  licenseId: integer("license_id").references(() => license.id).notNull(),
+  adminId: integer("admin_id").references(() => platformAdmins.id),
+  content: text("content").notNull(),
+  noteType: text("note_type").default("general"), // general, billing, support, warning
+  isImportant: boolean("is_important").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Destek Talepleri (Platform seviyesi - tum ajanslarin talepleri)
+export const platformSupportTickets = pgTable("platform_support_tickets", {
+  id: serial("id").primaryKey(),
+  licenseId: integer("license_id").references(() => license.id),
+  agencyName: text("agency_name"),
+  agencyEmail: text("agency_email"),
+  subject: text("subject").notNull(),
+  description: text("description").notNull(),
+  priority: text("priority").default("normal"), // low, normal, high, urgent
+  status: text("status").default("open"), // open, in_progress, waiting, resolved, closed
+  category: text("category").default("general"), // general, billing, technical, feature_request
+  assignedTo: integer("assigned_to").references(() => platformAdmins.id),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Destek Talep Yanitlari
+export const ticketResponses = pgTable("ticket_responses", {
+  id: serial("id").primaryKey(),
+  ticketId: integer("ticket_id").references(() => platformSupportTickets.id).notNull(),
+  responderId: integer("responder_id").references(() => platformAdmins.id),
+  responderName: text("responder_name"),
+  content: text("content").notNull(),
+  isInternal: boolean("is_internal").default(false), // Dahili not mu (musteri gormez)
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === PLATFORM ADMIN SCHEMAS & TYPES ===
+export const insertPlatformAdminSchema = createInsertSchema(platformAdmins).omit({ id: true, createdAt: true, updatedAt: true, lastLoginAt: true });
+export type PlatformAdmin = typeof platformAdmins.$inferSelect;
+export type InsertPlatformAdmin = z.infer<typeof insertPlatformAdminSchema>;
+
+export const insertLoginLogSchema = createInsertSchema(loginLogs).omit({ id: true, createdAt: true });
+export type LoginLog = typeof loginLogs.$inferSelect;
+export type InsertLoginLog = z.infer<typeof insertLoginLogSchema>;
+
+export const insertAgencyNoteSchema = createInsertSchema(agencyNotes).omit({ id: true, createdAt: true });
+export type AgencyNote = typeof agencyNotes.$inferSelect;
+export type InsertAgencyNote = z.infer<typeof insertAgencyNoteSchema>;
+
+export const insertPlatformSupportTicketSchema = createInsertSchema(platformSupportTickets).omit({ id: true, createdAt: true, updatedAt: true, resolvedAt: true });
+export type PlatformSupportTicket = typeof platformSupportTickets.$inferSelect;
+export type InsertPlatformSupportTicket = z.infer<typeof insertPlatformSupportTicketSchema>;
+
+export const insertTicketResponseSchema = createInsertSchema(ticketResponses).omit({ id: true, createdAt: true });
+export type TicketResponse = typeof ticketResponses.$inferSelect;
+export type InsertTicketResponse = z.infer<typeof insertTicketResponseSchema>;
+
 // === APPLICATION VERSION MANAGEMENT ===
 
 // Uygulama Surumleri - Guncelleme ve Geri Alma Takibi
