@@ -2818,7 +2818,14 @@ Sky Fethiye`;
           const token = crypto.randomBytes(32).toString('hex');
           await storage.setSetting('botRulesSessionToken', token);
           
-          return res.json({ success: true, token, isPlatformAdmin: true });
+          // Save session explicitly
+          return req.session.save((err) => {
+            if (err) {
+              console.error('Session save error:', err);
+              return res.status(500).json({ success: false, error: "Oturum oluşturulamadı" });
+            }
+            return res.json({ success: true, token, isPlatformAdmin: true });
+          });
         }
         return res.status(401).json({ success: false, error: "Geçersiz e-posta veya şifre" });
       }
