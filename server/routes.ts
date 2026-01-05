@@ -5053,12 +5053,6 @@ Sky Fethiye`;
   // Delete tenant
   app.delete("/api/tenants/:id", async (req, res) => {
     try {
-      // Check if this is the default tenant - prevent deletion
-      const tenant = await storage.getTenant(Number(req.params.id));
-      if (tenant?.slug === "default") {
-        return res.status(400).json({ error: "Varsayilan tenant silinemez" });
-      }
-      
       await storage.deleteTenant(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
