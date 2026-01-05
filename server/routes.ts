@@ -2898,124 +2898,126 @@ Sky Fethiye`;
     });
   });
 
-  // === Gmail Settings ===
-  app.get("/api/gmail-settings", async (req, res) => {
+  // === Tenant Integrations API (Multi-tenant: Twilio, WooCommerce, Gmail) ===
+  
+  // Get all integrations for current tenant
+  app.get("/api/tenant-integrations", async (req, res) => {
     try {
-      const gmailUser = await storage.getSetting('gmailUser');
-      const gmailPasswordEncrypted = await storage.getSetting('gmailPasswordEncrypted');
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const integration = await storage.getTenantIntegration(tenantId);
       
       res.json({
-        gmailUser: gmailUser || '',
-        isConfigured: !!(gmailUser && gmailPasswordEncrypted),
+        // Twilio
+        twilioAccountSid: integration?.twilioAccountSid || '',
+        twilioWhatsappNumber: integration?.twilioWhatsappNumber || '',
+        twilioConfigured: integration?.twilioConfigured || false,
+        twilioWebhookUrl: integration?.twilioWebhookUrl || '',
+        
+        // WooCommerce
+        woocommerceStoreUrl: integration?.woocommerceStoreUrl || '',
+        woocommerceConsumerKey: integration?.woocommerceConsumerKey || '',
+        woocommerceConfigured: integration?.woocommerceConfigured || false,
+        
+        // Gmail
+        gmailUser: integration?.gmailUser || '',
+        gmailFromName: integration?.gmailFromName || '',
+        gmailConfigured: integration?.gmailConfigured || false,
       });
     } catch (err) {
-      res.status(500).json({ error: "Gmail ayarları alınamadı" });
+      console.error("Get tenant integrations error:", err);
+      res.status(500).json({ error: "Entegrasyon ayarlari alinamadi" });
     }
   });
-
-  app.post("/api/gmail-settings", async (req, res) => {
+  
+  // Save Twilio settings
+  app.post("/api/tenant-integrations/twilio", async (req, res) => {
     try {
-      const { gmailUser, gmailPassword } = req.body;
-      
-      if (!gmailUser || !gmailPassword) {
-        return res.status(400).json({ error: "Gmail adresi ve uygulama şifresi gerekli" });
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       
-      // Encrypt the password before storing
-      const encryptedPassword = encrypt(gmailPassword);
+      const { accountSid, authToken, whatsappNumber } = req.body;
       
-      await storage.setSetting('gmailUser', gmailUser);
-      await storage.setSetting('gmailPasswordEncrypted', encryptedPassword);
-      
-      res.json({ success: true, message: "Gmail ayarları kaydedildi" });
-    } catch (err) {
-      console.error("Gmail settings save error:", err);
-      res.status(500).json({ error: "Gmail ayarları kaydedilemedi" });
-    }
-  });
-
-  app.post("/api/gmail-settings/test", async (req, res) => {
-    try {
-      const gmailUser = await storage.getSetting('gmailUser');
-      const gmailPasswordEncrypted = await storage.getSetting('gmailPasswordEncrypted');
-      
-      if (!gmailUser || !gmailPasswordEncrypted) {
-        return res.status(400).json({ success: false, error: "Gmail ayarları yapılandırılmamış" });
+      if (!accountSid || !authToken || !whatsappNumber) {
+        return res.status(400).json({ error: "Account SID, Auth Token ve WhatsApp numarasi gerekli" });
       }
       
-      let gmailPassword: string;
-      try {
-        gmailPassword = decrypt(gmailPasswordEncrypted);
-      } catch (decryptErr) {
-        return res.status(400).json({ success: false, error: "Şifre çözme hatası. Lütfen Gmail şifresini yeniden girin." });
-      }
+      // Encrypt the auth token
+      const encryptedToken = encrypt(authToken);
       
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: gmailUser,
-          pass: gmailPassword,
-        },
+      // Generate webhook URL for this tenant
+      const tenant = await storage.getTenant(tenantId);
+      const webhookUrl = `/api/webhooks/whatsapp/${tenant?.slug || tenantId}`;
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        twilioAccountSid: accountSid,
+        twilioAuthTokenEncrypted: encryptedToken,
+        twilioWhatsappNumber: whatsappNumber,
+        twilioWebhookUrl: webhookUrl,
+        twilioConfigured: true,
       });
       
-      // Verify SMTP connection
-      await transporter.verify();
-      
-      res.json({ success: true, message: "Gmail bağlantısı başarılı!" });
-    } catch (err: any) {
-      console.error("Gmail test error:", err);
-      let errorMessage = "Gmail bağlantısı başarısız";
-      if (err.code === 'EAUTH') {
-        errorMessage = "Kimlik doğrulama hatası. Lütfen Gmail adresinizi ve uygulama şifrenizi kontrol edin.";
-      } else if (err.message) {
-        errorMessage = err.message;
+      res.json({ success: true, message: "Twilio ayarlari kaydedildi", webhookUrl });
+    } catch (err) {
+      console.error("Twilio settings save error:", err);
+      res.status(500).json({ error: "Twilio ayarlari kaydedilemedi" });
+    }
+  });
+  
+  // Delete Twilio settings
+  app.delete("/api/tenant-integrations/twilio", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
       }
-      res.status(400).json({ success: false, error: errorMessage });
-    }
-  });
-
-  app.delete("/api/gmail-settings", async (req, res) => {
-    try {
-      await storage.setSetting('gmailUser', '');
-      await storage.setSetting('gmailPasswordEncrypted', '');
       
-      res.json({ success: true, message: "Gmail bağlantısı kaldırıldı" });
-    } catch (err) {
-      res.status(500).json({ error: "Gmail ayarları silinemedi" });
-    }
-  });
-
-  // WooCommerce Settings endpoints
-  app.get("/api/woocommerce-settings", async (req, res) => {
-    try {
-      const storeUrl = await storage.getSetting('woocommerceStoreUrl');
-      const consumerKey = await storage.getSetting('woocommerceConsumerKey');
-      const consumerSecretEncrypted = await storage.getSetting('woocommerceConsumerSecretEncrypted');
-      
-      res.json({
-        storeUrl: storeUrl || '',
-        consumerKey: consumerKey || '',
-        isConfigured: !!(storeUrl && consumerKey && consumerSecretEncrypted),
+      await storage.upsertTenantIntegration(tenantId, {
+        twilioAccountSid: null,
+        twilioAuthTokenEncrypted: null,
+        twilioWhatsappNumber: null,
+        twilioWebhookUrl: null,
+        twilioConfigured: false,
       });
+      
+      res.json({ success: true, message: "Twilio baglantisi kaldirildi" });
     } catch (err) {
-      res.status(500).json({ error: "WooCommerce ayarlari alinamadi" });
+      res.status(500).json({ error: "Twilio ayarlari silinemedi" });
     }
   });
-
-  app.post("/api/woocommerce-settings", async (req, res) => {
+  
+  // Save WooCommerce settings
+  app.post("/api/tenant-integrations/woocommerce", async (req, res) => {
     try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
       const { storeUrl, consumerKey, consumerSecret } = req.body;
       
       if (!storeUrl || !consumerKey || !consumerSecret) {
         return res.status(400).json({ error: "Magaza URL, Consumer Key ve Consumer Secret gerekli" });
       }
       
-      // Encrypt the consumer secret before storing
+      // Encrypt the consumer secret
       const encryptedSecret = encrypt(consumerSecret);
       
-      await storage.setSetting('woocommerceStoreUrl', storeUrl);
-      await storage.setSetting('woocommerceConsumerKey', consumerKey);
-      await storage.setSetting('woocommerceConsumerSecretEncrypted', encryptedSecret);
+      // Generate webhook secret for verification
+      const webhookSecret = crypto.randomBytes(32).toString('hex');
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        woocommerceStoreUrl: storeUrl,
+        woocommerceConsumerKey: consumerKey,
+        woocommerceConsumerSecretEncrypted: encryptedSecret,
+        woocommerceWebhookSecret: webhookSecret,
+        woocommerceConfigured: true,
+      });
       
       res.json({ success: true, message: "WooCommerce ayarlari kaydedildi" });
     } catch (err) {
@@ -3023,31 +3025,141 @@ Sky Fethiye`;
       res.status(500).json({ error: "WooCommerce ayarlari kaydedilemedi" });
     }
   });
-
-  app.delete("/api/woocommerce-settings", async (req, res) => {
+  
+  // Delete WooCommerce settings
+  app.delete("/api/tenant-integrations/woocommerce", async (req, res) => {
     try {
-      await storage.setSetting('woocommerceStoreUrl', '');
-      await storage.setSetting('woocommerceConsumerKey', '');
-      await storage.setSetting('woocommerceConsumerSecretEncrypted', '');
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        woocommerceStoreUrl: null,
+        woocommerceConsumerKey: null,
+        woocommerceConsumerSecretEncrypted: null,
+        woocommerceWebhookSecret: null,
+        woocommerceConfigured: false,
+      });
       
       res.json({ success: true, message: "WooCommerce baglantisi kaldirildi" });
     } catch (err) {
       res.status(500).json({ error: "WooCommerce ayarlari silinemedi" });
     }
   });
-
-  // Helper function to get Gmail credentials from DB or env vars
-  async function getGmailCredentials(): Promise<{ user: string; password: string } | null> {
-    // First check database settings
-    const gmailUser = await storage.getSetting('gmailUser');
-    const gmailPasswordEncrypted = await storage.getSetting('gmailPasswordEncrypted');
-    
-    if (gmailUser && gmailPasswordEncrypted) {
+  
+  // Save Gmail settings
+  app.post("/api/tenant-integrations/gmail", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { gmailUser, gmailPassword, gmailFromName } = req.body;
+      
+      if (!gmailUser || !gmailPassword) {
+        return res.status(400).json({ error: "Gmail adresi ve uygulama sifresi gerekli" });
+      }
+      
+      // Encrypt the password
+      const encryptedPassword = encrypt(gmailPassword);
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        gmailUser: gmailUser,
+        gmailAppPasswordEncrypted: encryptedPassword,
+        gmailFromName: gmailFromName || gmailUser,
+        gmailConfigured: true,
+      });
+      
+      res.json({ success: true, message: "Gmail ayarlari kaydedildi" });
+    } catch (err) {
+      console.error("Gmail settings save error:", err);
+      res.status(500).json({ error: "Gmail ayarlari kaydedilemedi" });
+    }
+  });
+  
+  // Test Gmail connection
+  app.post("/api/tenant-integrations/gmail/test", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const integration = await storage.getTenantIntegration(tenantId);
+      
+      if (!integration?.gmailUser || !integration?.gmailAppPasswordEncrypted) {
+        return res.status(400).json({ success: false, error: "Gmail ayarlari yapilandirmamis" });
+      }
+      
+      let gmailPassword: string;
       try {
-        const gmailPassword = decrypt(gmailPasswordEncrypted);
-        return { user: gmailUser, password: gmailPassword };
-      } catch {
-        // Decryption failed, fall through to env vars
+        gmailPassword = decrypt(integration.gmailAppPasswordEncrypted);
+      } catch (decryptErr) {
+        return res.status(400).json({ success: false, error: "Sifre cozme hatasi. Lutfen Gmail sifresini yeniden girin." });
+      }
+      
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: integration.gmailUser,
+          pass: gmailPassword,
+        },
+      });
+      
+      await transporter.verify();
+      
+      res.json({ success: true, message: "Gmail baglantisi basarili!" });
+    } catch (err: any) {
+      console.error("Gmail test error:", err);
+      let errorMessage = "Gmail baglantisi basarisiz";
+      if (err.code === 'EAUTH') {
+        errorMessage = "Kimlik dogrulama hatasi. Lutfen Gmail adresinizi ve uygulama sifrenizi kontrol edin.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      res.status(400).json({ success: false, error: errorMessage });
+    }
+  });
+  
+  // Delete Gmail settings
+  app.delete("/api/tenant-integrations/gmail", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        gmailUser: null,
+        gmailAppPasswordEncrypted: null,
+        gmailFromName: null,
+        gmailConfigured: false,
+      });
+      
+      res.json({ success: true, message: "Gmail baglantisi kaldirildi" });
+    } catch (err) {
+      res.status(500).json({ error: "Gmail ayarlari silinemedi" });
+    }
+  });
+  
+  // Helper function to get Gmail credentials for a tenant
+  async function getGmailCredentials(tenantId?: number): Promise<{ user: string; password: string; fromName?: string } | null> {
+    // If tenantId provided, get from tenant integrations
+    if (tenantId) {
+      const integration = await storage.getTenantIntegration(tenantId);
+      if (integration?.gmailUser && integration?.gmailAppPasswordEncrypted) {
+        try {
+          const gmailPassword = decrypt(integration.gmailAppPasswordEncrypted);
+          return { 
+            user: integration.gmailUser, 
+            password: gmailPassword,
+            fromName: integration.gmailFromName || undefined
+          };
+        } catch {
+          // Decryption failed, fall through to env vars
+        }
       }
     }
     
@@ -3057,6 +3169,35 @@ Sky Fethiye`;
     
     if (envUser && envPassword) {
       return { user: envUser, password: envPassword };
+    }
+    
+    return null;
+  }
+  
+  // Helper function to get Twilio credentials for a tenant
+  async function getTwilioCredentials(tenantId: number): Promise<{ accountSid: string; authToken: string; whatsappNumber: string } | null> {
+    const integration = await storage.getTenantIntegration(tenantId);
+    
+    if (integration?.twilioAccountSid && integration?.twilioAuthTokenEncrypted && integration?.twilioWhatsappNumber) {
+      try {
+        const authToken = decrypt(integration.twilioAuthTokenEncrypted);
+        return {
+          accountSid: integration.twilioAccountSid,
+          authToken: authToken,
+          whatsappNumber: integration.twilioWhatsappNumber,
+        };
+      } catch {
+        return null;
+      }
+    }
+    
+    // Fallback to environment variables (for backward compatibility)
+    const envSid = process.env.TWILIO_ACCOUNT_SID;
+    const envToken = process.env.TWILIO_AUTH_TOKEN;
+    const envNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+    
+    if (envSid && envToken && envNumber) {
+      return { accountSid: envSid, authToken: envToken, whatsappNumber: envNumber };
     }
     
     return null;

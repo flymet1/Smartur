@@ -116,21 +116,39 @@ export default function Settings() {
     },
   });
 
-  // Load Gmail settings
-  const { data: gmailSettings, refetch: refetchGmailSettings } = useQuery<{ gmailUser: string; isConfigured: boolean }>({
-    queryKey: ['/api/gmail-settings'],
+  // Load Tenant Integrations (Twilio, WooCommerce, Gmail)
+  const { data: tenantIntegrations, refetch: refetchTenantIntegrations } = useQuery<{
+    twilioAccountSid: string;
+    twilioWhatsappNumber: string;
+    twilioConfigured: boolean;
+    twilioWebhookUrl: string;
+    woocommerceStoreUrl: string;
+    woocommerceConsumerKey: string;
+    woocommerceConfigured: boolean;
+    gmailUser: string;
+    gmailFromName: string;
+    gmailConfigured: boolean;
+  }>({
+    queryKey: ['/api/tenant-integrations'],
     queryFn: async () => {
-      const res = await fetch('/api/gmail-settings');
+      const res = await fetch('/api/tenant-integrations');
+      if (!res.ok) {
+        return {
+          twilioAccountSid: '', twilioWhatsappNumber: '', twilioConfigured: false, twilioWebhookUrl: '',
+          woocommerceStoreUrl: '', woocommerceConsumerKey: '', woocommerceConfigured: false,
+          gmailUser: '', gmailFromName: '', gmailConfigured: false,
+        };
+      }
       return res.json();
     },
   });
 
-  // Apply loaded Gmail settings
+  // Apply loaded Gmail settings from tenant integrations
   useEffect(() => {
-    if (gmailSettings?.gmailUser) {
-      setGmailUser(gmailSettings.gmailUser);
+    if (tenantIntegrations?.gmailUser) {
+      setGmailUser(tenantIntegrations.gmailUser);
     }
-  }, [gmailSettings?.gmailUser]);
+  }, [tenantIntegrations?.gmailUser]);
 
   // Apply loaded bot access settings when data arrives (using useEffect)
   useEffect(() => {
@@ -197,28 +215,28 @@ export default function Settings() {
   
   const handleSaveGmailSettings = async () => {
     if (!gmailUser || !gmailPassword) {
-      toast({ title: "Hata", description: "Gmail adresi ve uygulama şifresi gerekli.", variant: "destructive" });
+      toast({ title: "Hata", description: "Gmail adresi ve uygulama sifresi gerekli.", variant: "destructive" });
       return;
     }
     
     setIsSavingGmail(true);
     try {
-      const res = await fetch('/api/gmail-settings', {
+      const res = await fetch('/api/tenant-integrations/gmail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gmailUser, gmailPassword })
+        body: JSON.stringify({ gmailUser, gmailPassword, gmailFromName: gmailUser })
       });
       const data = await res.json();
       
       if (res.ok) {
-        toast({ title: "Başarılı", description: data.message || "Gmail ayarları kaydedildi." });
+        toast({ title: "Basarili", description: data.message || "Gmail ayarlari kaydedildi." });
         setGmailPassword("");
-        await refetchGmailSettings();
+        await refetchTenantIntegrations();
       } else {
-        toast({ title: "Hata", description: data.error || "Gmail ayarları kaydedilemedi.", variant: "destructive" });
+        toast({ title: "Hata", description: data.error || "Gmail ayarlari kaydedilemedi.", variant: "destructive" });
       }
     } catch (err) {
-      toast({ title: "Hata", description: "Gmail ayarları kaydedilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Gmail ayarlari kaydedilemedi.", variant: "destructive" });
     } finally {
       setIsSavingGmail(false);
     }
@@ -227,16 +245,16 @@ export default function Settings() {
   const handleTestGmailConnection = async () => {
     setIsTestingGmail(true);
     try {
-      const res = await fetch('/api/gmail-settings/test', { method: 'POST' });
+      const res = await fetch('/api/tenant-integrations/gmail/test', { method: 'POST' });
       const data = await res.json();
       
       if (data.success) {
-        toast({ title: "Başarılı", description: data.message || "Gmail bağlantısı başarılı!" });
+        toast({ title: "Basarili", description: data.message || "Gmail baglantisi basarili!" });
       } else {
-        toast({ title: "Hata", description: data.error || "Gmail bağlantısı başarısız.", variant: "destructive" });
+        toast({ title: "Hata", description: data.error || "Gmail baglantisi basarisiz.", variant: "destructive" });
       }
     } catch (err) {
-      toast({ title: "Hata", description: "Gmail bağlantısı test edilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Gmail baglantisi test edilemedi.", variant: "destructive" });
     } finally {
       setIsTestingGmail(false);
     }
@@ -244,15 +262,15 @@ export default function Settings() {
 
   const handleDisconnectGmail = async () => {
     try {
-      const res = await fetch('/api/gmail-settings', { method: 'DELETE' });
+      const res = await fetch('/api/tenant-integrations/gmail', { method: 'DELETE' });
       if (res.ok) {
-        toast({ title: "Başarılı", description: "Gmail bağlantısı kaldırıldı." });
+        toast({ title: "Basarili", description: "Gmail baglantisi kaldirildi." });
         setGmailUser("");
         setGmailPassword("");
-        await refetchGmailSettings();
+        await refetchTenantIntegrations();
       }
     } catch (err) {
-      toast({ title: "Hata", description: "Gmail bağlantısı kaldırılamadı.", variant: "destructive" });
+      toast({ title: "Hata", description: "Gmail baglantisi kaldirilamadi.", variant: "destructive" });
     }
   };
 
@@ -614,13 +632,13 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {gmailSettings?.isConfigured ? (
+              {tenantIntegrations?.gmailConfigured ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
                     <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                     <div className="flex-1">
-                      <p className="font-medium text-green-800 dark:text-green-300">Gmail Bağlı</p>
-                      <p className="text-sm text-green-700 dark:text-green-400">{gmailSettings.gmailUser}</p>
+                      <p className="font-medium text-green-800 dark:text-green-300">Gmail Bagli</p>
+                      <p className="text-sm text-green-700 dark:text-green-400">{tenantIntegrations.gmailUser}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1365,11 +1383,16 @@ function WooCommerceCard() {
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   const { data: wooSettings, isLoading, refetch } = useQuery<{
-    storeUrl: string;
-    consumerKey: string;
-    isConfigured: boolean;
+    woocommerceStoreUrl: string;
+    woocommerceConsumerKey: string;
+    woocommerceConfigured: boolean;
   }>({
-    queryKey: ['/api/woocommerce-settings'],
+    queryKey: ['/api/tenant-integrations'],
+    queryFn: async () => {
+      const res = await fetch('/api/tenant-integrations');
+      if (!res.ok) return { woocommerceStoreUrl: '', woocommerceConsumerKey: '', woocommerceConfigured: false };
+      return res.json();
+    },
   });
 
   const webhookUrl = typeof window !== 'undefined' 
@@ -1380,7 +1403,7 @@ function WooCommerceCard() {
     if (!storeUrl || !consumerKey || !consumerSecret) {
       toast({
         title: "Hata",
-        description: "Tüm alanları doldurun",
+        description: "Tum alanlari doldurun",
         variant: "destructive",
       });
       return;
@@ -1388,7 +1411,7 @@ function WooCommerceCard() {
 
     setIsConnecting(true);
     try {
-      const response = await fetch('/api/woocommerce-settings', {
+      const response = await fetch('/api/tenant-integrations/woocommerce', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ storeUrl, consumerKey, consumerSecret }),
@@ -1396,8 +1419,8 @@ function WooCommerceCard() {
 
       if (response.ok) {
         toast({
-          title: "Başarılı",
-          description: "WooCommerce bağlantısı kuruldu",
+          title: "Basarili",
+          description: "WooCommerce baglantisi kuruldu",
         });
         setStoreUrl("");
         setConsumerKey("");
@@ -1407,14 +1430,14 @@ function WooCommerceCard() {
         const data = await response.json();
         toast({
           title: "Hata",
-          description: data.error || "Bağlantı kurulamadı",
+          description: data.error || "Baglanti kurulamadi",
           variant: "destructive",
         });
       }
     } catch (error) {
       toast({
         title: "Hata",
-        description: "Bağlantı hatası",
+        description: "Baglanti hatasi",
         variant: "destructive",
       });
     } finally {
@@ -1425,21 +1448,21 @@ function WooCommerceCard() {
   const handleDisconnect = async () => {
     setIsDisconnecting(true);
     try {
-      const response = await fetch('/api/woocommerce-settings', {
+      const response = await fetch('/api/tenant-integrations/woocommerce', {
         method: 'DELETE',
       });
 
       if (response.ok) {
         toast({
-          title: "Başarılı",
-          description: "WooCommerce bağlantısı kaldırıldı",
+          title: "Basarili",
+          description: "WooCommerce baglantisi kaldirildi",
         });
         refetch();
       }
     } catch (error) {
       toast({
         title: "Hata",
-        description: "Bağlantı kaldırılamadı",
+        description: "Baglanti kaldirilamadi",
         variant: "destructive",
       });
     } finally {
@@ -1476,7 +1499,7 @@ function WooCommerceCard() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
           <span>WooCommerce Entegrasyonu</span>
-          {wooSettings?.isConfigured ? (
+          {wooSettings?.woocommerceConfigured ? (
             <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 gap-1">
               <CheckCircle className="w-3 h-3" />
               Bagli
@@ -1490,14 +1513,14 @@ function WooCommerceCard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {wooSettings?.isConfigured ? (
+        {wooSettings?.woocommerceConfigured ? (
           <>
             <div className="p-4 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
               <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
                 <CheckCircle className="w-5 h-5" />
                 <div>
                   <p className="font-medium">WooCommerce Baglantisi Aktif</p>
-                  <p className="text-sm opacity-80">Magaza: {wooSettings.storeUrl}</p>
+                  <p className="text-sm opacity-80">Magaza: {wooSettings.woocommerceStoreUrl}</p>
                 </div>
               </div>
             </div>

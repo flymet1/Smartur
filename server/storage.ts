@@ -133,6 +133,9 @@ import {
   type InsertUserLoginLog,
   type Tenant,
   type InsertTenant,
+  tenantIntegrations,
+  type TenantIntegration,
+  type InsertTenantIntegration,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -181,9 +184,14 @@ export interface IStorage {
   resolveSupportRequest(id: number): Promise<SupportRequest>;
   getAllSupportRequests(status?: 'open' | 'resolved'): Promise<SupportRequest[]>;
 
-  // Settings
-  getSetting(key: string): Promise<string | undefined>;
-  setSetting(key: string, value: string): Promise<Settings>;
+  // Settings (tenant-scoped)
+  getSetting(key: string, tenantId?: number): Promise<string | undefined>;
+  setSetting(key: string, value: string, tenantId?: number): Promise<Settings>;
+  
+  // Tenant Integrations (Twilio, WooCommerce, Gmail)
+  getTenantIntegration(tenantId: number): Promise<TenantIntegration | undefined>;
+  upsertTenantIntegration(tenantId: number, data: Partial<InsertTenantIntegration>): Promise<TenantIntegration>;
+  deleteTenantIntegration(tenantId: number): Promise<void>;
 
   // Blacklist
   getBlacklist(): Promise<Blacklist[]>;
@@ -985,25 +993,79 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(supportRequests).orderBy(desc(supportRequests.createdAt));
   }
 
-  // Settings
-  async getSetting(key: string): Promise<string | undefined> {
-    const [result] = await db.select().from(settings).where(eq(settings.key, key));
-    return result?.value ?? undefined;
+  // Settings (tenant-scoped)
+  async getSetting(key: string, tenantId?: number): Promise<string | undefined> {
+    if (tenantId) {
+      const [result] = await db.select().from(settings)
+        .where(and(eq(settings.key, key), eq(settings.tenantId, tenantId)));
+      return result?.value ?? undefined;
+    } else {
+      // Fallback to global setting (no tenant)
+      const [result] = await db.select().from(settings)
+        .where(and(eq(settings.key, key), isNull(settings.tenantId)));
+      return result?.value ?? undefined;
+    }
   }
 
-  async setSetting(key: string, value: string): Promise<Settings> {
-    const existing = await db.select().from(settings).where(eq(settings.key, key));
-    if (existing.length > 0) {
+  async setSetting(key: string, value: string, tenantId?: number): Promise<Settings> {
+    if (tenantId) {
+      const existing = await db.select().from(settings)
+        .where(and(eq(settings.key, key), eq(settings.tenantId, tenantId)));
+      if (existing.length > 0) {
+        const [updated] = await db
+          .update(settings)
+          .set({ value })
+          .where(and(eq(settings.key, key), eq(settings.tenantId, tenantId)))
+          .returning();
+        return updated;
+      } else {
+        const [created] = await db.insert(settings).values({ key, value, tenantId }).returning();
+        return created;
+      }
+    } else {
+      // Global setting (no tenant)
+      const existing = await db.select().from(settings)
+        .where(and(eq(settings.key, key), isNull(settings.tenantId)));
+      if (existing.length > 0) {
+        const [updated] = await db
+          .update(settings)
+          .set({ value })
+          .where(and(eq(settings.key, key), isNull(settings.tenantId)))
+          .returning();
+        return updated;
+      } else {
+        const [created] = await db.insert(settings).values({ key, value }).returning();
+        return created;
+      }
+    }
+  }
+  
+  // Tenant Integrations (Twilio, WooCommerce, Gmail)
+  async getTenantIntegration(tenantId: number): Promise<TenantIntegration | undefined> {
+    const [result] = await db.select().from(tenantIntegrations)
+      .where(eq(tenantIntegrations.tenantId, tenantId));
+    return result;
+  }
+  
+  async upsertTenantIntegration(tenantId: number, data: Partial<InsertTenantIntegration>): Promise<TenantIntegration> {
+    const existing = await this.getTenantIntegration(tenantId);
+    if (existing) {
       const [updated] = await db
-        .update(settings)
-        .set({ value })
-        .where(eq(settings.key, key))
+        .update(tenantIntegrations)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(tenantIntegrations.tenantId, tenantId))
         .returning();
       return updated;
     } else {
-      const [created] = await db.insert(settings).values({ key, value }).returning();
+      const [created] = await db.insert(tenantIntegrations)
+        .values({ tenantId, ...data })
+        .returning();
       return created;
     }
+  }
+  
+  async deleteTenantIntegration(tenantId: number): Promise<void> {
+    await db.delete(tenantIntegrations).where(eq(tenantIntegrations.tenantId, tenantId));
   }
 
   // Blacklist

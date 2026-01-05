@@ -710,6 +710,42 @@ export const botQualityScores = pgTable("bot_quality_scores", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// === TENANT INTEGRATION SETTINGS ===
+// Acenta bazli entegrasyon ayarlari (Twilio, WooCommerce, Gmail)
+export const tenantIntegrations = pgTable("tenant_integrations", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull().unique(),
+  
+  // Twilio / WhatsApp Settings
+  twilioAccountSid: text("twilio_account_sid"),
+  twilioAuthTokenEncrypted: text("twilio_auth_token_encrypted"), // Sifrelenmis
+  twilioWhatsappNumber: text("twilio_whatsapp_number"), // +90... formatinda
+  twilioWebhookUrl: text("twilio_webhook_url"), // Otomatik olusturulur
+  twilioConfigured: boolean("twilio_configured").default(false),
+  
+  // WooCommerce Settings
+  woocommerceStoreUrl: text("woocommerce_store_url"),
+  woocommerceConsumerKey: text("woocommerce_consumer_key"),
+  woocommerceConsumerSecretEncrypted: text("woocommerce_consumer_secret_encrypted"), // Sifrelenmis
+  woocommerceWebhookSecret: text("woocommerce_webhook_secret"), // Webhook dogrulama
+  woocommerceConfigured: boolean("woocommerce_configured").default(false),
+  
+  // Gmail / Email Settings
+  gmailUser: text("gmail_user"), // Gmail adresi
+  gmailAppPasswordEncrypted: text("gmail_app_password_encrypted"), // Sifrelenmis uygulama sifresi
+  gmailFromName: text("gmail_from_name"), // Gonderici adi (örn: "Sky Fethiye Tur")
+  gmailConfigured: boolean("gmail_configured").default(false),
+  
+  // Meta
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// === TENANT INTEGRATION SCHEMAS & TYPES ===
+export const insertTenantIntegrationSchema = createInsertSchema(tenantIntegrations).omit({ id: true, createdAt: true, updatedAt: true });
+export type TenantIntegration = typeof tenantIntegrations.$inferSelect;
+export type InsertTenantIntegration = z.infer<typeof insertTenantIntegrationSchema>;
+
 // === SUPER ADMIN SCHEMAS & TYPES ===
 export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true });
 export type Announcement = typeof announcements.$inferSelect;
