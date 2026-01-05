@@ -621,7 +621,7 @@ export function Sidebar() {
         <div className="p-4 border-t space-y-3">
           <div className="bg-muted/50 rounded-lg p-3">
             <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sistem Durumu</div>
-            <Link href="/settings">
+            <Link href="/settings?tab=whatsapp">
               <div className="flex items-center gap-2 text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity" data-testid="link-whatsapp-bot-status">
                 <div className={cn(
                   "w-2 h-2 rounded-full",
@@ -636,7 +636,7 @@ export function Sidebar() {
                 </span>
               </div>
             </Link>
-            <Link href="/settings">
+            <Link href="/settings?tab=license">
               <div 
                 className={cn(
                   "flex items-center gap-2 text-sm font-medium mt-1 cursor-pointer hover:opacity-80 transition-opacity",

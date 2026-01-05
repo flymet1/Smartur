@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +13,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown } from "lucide-react";
 import { Link } from "wouter";
 import type { Holiday } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -2536,6 +2537,21 @@ interface UserData {
   maxReservationsPerMonth?: number;
 }
 
+interface SubscriptionPlan {
+  id: number;
+  name: string;
+  code: string;
+  priceTryMonthly: number | null;
+  priceTryYearly: number | null;
+  priceUsdMonthly: number | null;
+  priceUsdYearly: number | null;
+  maxActivities: number;
+  maxReservationsPerMonth: number;
+  maxUsers: number;
+  features: string | null;
+  isActive: boolean | null;
+}
+
 function LicenseSection() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
 
@@ -2553,6 +2569,10 @@ function LicenseSection() {
 
   const { data: licenseData, isLoading } = useQuery<LicenseData>({
     queryKey: ['/api/license']
+  });
+
+  const { data: subscriptionPlans } = useQuery<SubscriptionPlan[]>({
+    queryKey: ['/api/subscription-plans']
   });
 
   // Calculate user-specific membership status
@@ -2747,6 +2767,89 @@ function LicenseSection() {
                 <p className="font-bold text-orange-700 dark:text-orange-300">Uyelik Bulunamadi</p>
                 <p className="text-sm text-orange-600 dark:text-orange-400">Uyelik bilgileriniz icin yonetici ile iletisime gecin.</p>
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Subscription Plans */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Crown className="h-5 w-5" />
+            Abonelik Planlari
+          </CardTitle>
+          <CardDescription>Mevcut abonelik secenekleri ve ozellikleri</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {subscriptionPlans && subscriptionPlans.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {subscriptionPlans.filter(plan => plan.isActive).map((plan) => {
+                const features = plan.features ? JSON.parse(plan.features) : [];
+                const isCurrentPlan = userMembership?.membershipType === plan.code;
+                return (
+                  <div 
+                    key={plan.id} 
+                    className={cn(
+                      "p-4 rounded-lg border-2 transition-all",
+                      isCurrentPlan 
+                        ? "border-primary bg-primary/5" 
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-lg">{plan.name}</h4>
+                      {isCurrentPlan && (
+                        <Badge variant="default">Mevcut Plan</Badge>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      {plan.priceTryMonthly !== null && plan.priceTryMonthly > 0 && (
+                        <div className="text-sm">
+                          <span className="text-2xl font-bold">{plan.priceTryMonthly.toLocaleString('tr-TR')}</span>
+                          <span className="text-muted-foreground"> TL/ay</span>
+                        </div>
+                      )}
+                      {plan.priceTryYearly !== null && plan.priceTryYearly > 0 && (
+                        <div className="text-sm text-muted-foreground">
+                          Yillik: {plan.priceTryYearly.toLocaleString('tr-TR')} TL
+                        </div>
+                      )}
+                      {plan.priceTryMonthly === null && plan.priceTryYearly === null && (
+                        <div className="text-sm text-muted-foreground">Ucretsiz</div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span>{plan.maxActivities} Aktivite</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span>{plan.maxReservationsPerMonth} Rezervasyon/Ay</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span>{plan.maxUsers} Kullanici</span>
+                      </div>
+                      {features.length > 0 && features.map((feature: string, idx: number) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Crown className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>Henuz abonelik plani tanimlanmamis.</p>
+              <p className="text-sm">Yonetici ile iletisime gecin.</p>
             </div>
           )}
         </CardContent>
