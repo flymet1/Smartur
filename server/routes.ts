@@ -10,6 +10,10 @@ import nodemailer from "nodemailer";
 import { encrypt, decrypt } from "./encryption";
 import { logError, logWarn, logInfo, attachLogsToSupportRequest, getSupportRequestLogs, getRecentLogs } from "./logger";
 
+// Module-level exchange rate cache (persists between requests)
+let exchangeRateCache: { rates: any; lastUpdated: Date | null } = { rates: null, lastUpdated: null };
+const EXCHANGE_RATE_CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache
+
 // Simple password hashing using SHA-256 with salt
 function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -3044,17 +3048,13 @@ Sky Fethiye`;
   });
 
   // === Exchange Rates (from Frankfurter API) ===
-  // Simple in-memory cache for exchange rates
-  let exchangeRateCache: { rates: any; lastUpdated: Date | null } = { rates: null, lastUpdated: null };
-  const CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache
-
   app.get("/api/finance/exchange-rates", async (req, res) => {
     try {
       const now = new Date();
       
       // Return cached data if still valid
       if (exchangeRateCache.rates && exchangeRateCache.lastUpdated && 
-          (now.getTime() - exchangeRateCache.lastUpdated.getTime()) < CACHE_DURATION) {
+          (now.getTime() - exchangeRateCache.lastUpdated.getTime()) < EXCHANGE_RATE_CACHE_DURATION) {
         return res.json(exchangeRateCache.rates);
       }
 
