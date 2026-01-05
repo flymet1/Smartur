@@ -671,3 +671,26 @@ export type InsertApiStatusLog = z.infer<typeof insertApiStatusLogSchema>;
 export const insertBotQualityScoreSchema = createInsertSchema(botQualityScores).omit({ id: true, createdAt: true });
 export type BotQualityScore = typeof botQualityScores.$inferSelect;
 export type InsertBotQualityScore = z.infer<typeof insertBotQualityScoreSchema>;
+
+// === APPLICATION VERSION MANAGEMENT ===
+
+// Uygulama Surumleri - Guncelleme ve Geri Alma Takibi
+export const appVersions = pgTable("app_versions", {
+  id: serial("id").primaryKey(),
+  version: text("version").notNull(), // Surum numarasi (örn: "1.0.0")
+  fileName: text("file_name").notNull(), // Yuklenen dosya adi
+  fileSize: integer("file_size").default(0), // Dosya boyutu (bytes)
+  checksum: text("checksum"), // SHA256 hash
+  status: text("status").default("pending"), // pending, active, inactive, failed
+  notes: text("notes"), // Surum notlari
+  uploadedBy: text("uploaded_by").default("super_admin"),
+  backupFileName: text("backup_file_name"), // Onceki surumun yedegi
+  isRollbackTarget: boolean("is_rollback_target").default(false), // Geri alinabilir mi
+  activatedAt: timestamp("activated_at"), // Aktif edilme zamani
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === APP VERSION SCHEMAS & TYPES ===
+export const insertAppVersionSchema = createInsertSchema(appVersions).omit({ id: true, createdAt: true, activatedAt: true });
+export type AppVersion = typeof appVersions.$inferSelect;
+export type InsertAppVersion = z.infer<typeof insertAppVersionSchema>;
