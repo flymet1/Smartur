@@ -977,3 +977,27 @@ export const appVersions = pgTable("app_versions", {
 export const insertAppVersionSchema = createInsertSchema(appVersions).omit({ id: true, createdAt: true, activatedAt: true });
 export type AppVersion = typeof appVersions.$inferSelect;
 export type InsertAppVersion = z.infer<typeof insertAppVersionSchema>;
+
+// === DATABASE BACKUP MANAGEMENT ===
+
+// Veritabani Yedekleme Kayitlari
+export const databaseBackups = pgTable("database_backups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size").default(0),
+  tableCount: integer("table_count").default(0),
+  rowCount: integer("row_count").default(0),
+  status: text("status").default("completed"), // in_progress, completed, failed, restored
+  backupType: text("backup_type").default("manual"), // manual, scheduled, auto
+  createdBy: text("created_by").default("super_admin"),
+  restoredAt: timestamp("restored_at"),
+  restoredBy: text("restored_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === DATABASE BACKUP SCHEMAS & TYPES ===
+export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups).omit({ id: true, createdAt: true, restoredAt: true });
+export type DatabaseBackup = typeof databaseBackups.$inferSelect;
+export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;

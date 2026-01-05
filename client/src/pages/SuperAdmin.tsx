@@ -3561,6 +3561,242 @@ function BulkOperationsSection() {
   );
 }
 
+function DatabaseBackupSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [backupName, setBackupName] = useState("");
+  const [backupDescription, setBackupDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  const { data: backups, isLoading, refetch } = useQuery<any[]>({
+    queryKey: ['/api/database-backups'],
+  });
+
+  const handleCreateBackup = async () => {
+    if (!backupName.trim()) {
+      toast({ title: "Hata", description: "Yedek adi gerekli", variant: "destructive" });
+      return;
+    }
+    setIsCreating(true);
+    try {
+      const res = await fetch('/api/database-backups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: backupName, description: backupDescription })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({ title: "Basarili", description: data.message || "Yedek olusturuldu" });
+        setBackupName("");
+        setBackupDescription("");
+        refetch();
+      } else {
+        toast({ title: "Hata", description: data.error || "Yedek olusturulamadi", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Yedek olusturulamadi", variant: "destructive" });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDownload = async (id: number, fileName: string) => {
+    try {
+      const res = await fetch(`/api/database-backups/${id}/download`);
+      if (!res.ok) throw new Error('Download failed');
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "Basarili", description: "Yedek indirildi" });
+    } catch (err) {
+      toast({ title: "Hata", description: "Yedek indirilemedi", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Bu yedegi silmek istediginizden emin misiniz?')) return;
+    try {
+      const res = await fetch(`/api/database-backups/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast({ title: "Basarili", description: "Yedek silindi" });
+        refetch();
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Yedek silinemedi", variant: "destructive" });
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Database className="h-5 w-5" />
+          Veritabani Yedekleme
+        </h3>
+        <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-refresh-backups">
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Yenile
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Yeni Yedek Olustur</CardTitle>
+          <CardDescription>Veritabaninin tam bir yedeğini alin</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="backup-name">Yedek Adi</Label>
+              <Input
+                id="backup-name"
+                value={backupName}
+                onChange={(e) => setBackupName(e.target.value)}
+                placeholder="Ornek: Haftalik Yedek"
+                data-testid="input-backup-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="backup-desc">Aciklama (Opsiyonel)</Label>
+              <Input
+                id="backup-desc"
+                value={backupDescription}
+                onChange={(e) => setBackupDescription(e.target.value)}
+                placeholder="Yedek hakkinda notlar"
+                data-testid="input-backup-description"
+              />
+            </div>
+          </div>
+          <Button onClick={handleCreateBackup} disabled={isCreating} data-testid="button-create-backup">
+            {isCreating ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Yedekleniyor...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Yedek Olustur
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Yedek Gecmisi</CardTitle>
+          <CardDescription>Onceki yedeklerinizi goruntuleyin ve yonetin</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-muted-foreground">Yukleniyor...</div>
+          ) : !backups || backups.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Database className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Henuz yedek yok</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ad</TableHead>
+                  <TableHead>Tarih</TableHead>
+                  <TableHead>Tablo</TableHead>
+                  <TableHead>Kayit</TableHead>
+                  <TableHead>Boyut</TableHead>
+                  <TableHead>Durum</TableHead>
+                  <TableHead className="text-right">Islem</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {backups.map((backup: any) => (
+                  <TableRow key={backup.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{backup.name}</div>
+                        {backup.description && (
+                          <div className="text-xs text-muted-foreground">{backup.description}</div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(backup.createdAt).toLocaleDateString('tr-TR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </TableCell>
+                    <TableCell>{backup.tableCount}</TableCell>
+                    <TableCell>{backup.rowCount?.toLocaleString()}</TableCell>
+                    <TableCell>{formatFileSize(backup.fileSize || 0)}</TableCell>
+                    <TableCell>
+                      <Badge variant={backup.status === 'completed' ? 'default' : 'secondary'}>
+                        {backup.status === 'completed' ? 'Tamamlandi' : backup.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDownload(backup.id, backup.fileName)}
+                          data-testid={`button-download-backup-${backup.id}`}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive"
+                          onClick={() => handleDelete(backup.id)}
+                          data-testid={`button-delete-backup-${backup.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+        <CardContent className="pt-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-300">Onemli Bilgi</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Yedekler JSON formatinda indirilir. Geri yukleme islemleri icin Replit'in dahili 
+                checkpoint sistemini kullanmanizi oneririz - bu daha guvenli ve otomatiktir.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function SystemMonitoringSection() {
   const { data: dbStats, isLoading: dbLoading, refetch: refetchDb } = useQuery<any>({
     queryKey: ['/api/system/db-stats'],
@@ -4108,6 +4344,7 @@ export default function SuperAdmin() {
     ],
     system: [
       { id: "system", label: "Sistem Durumu", icon: Server },
+      { id: "backup", label: "Yedekleme", icon: Database },
       { id: "updates", label: "Guncellemeler", icon: RefreshCw },
       { id: "security", label: "Guvenlik", icon: Shield },
       { id: "bulk-ops", label: "Toplu Islem", icon: Layers },
@@ -4410,6 +4647,7 @@ export default function SuperAdmin() {
             {activeSubTab === "platform-admins" && <PlatformAdminsSection />}
 
             {activeSubTab === "system" && <SystemMonitoringSection />}
+            {activeSubTab === "backup" && <DatabaseBackupSection />}
             {activeSubTab === "updates" && <ApplicationUpdatesSection />}
             {activeSubTab === "security" && <SecuritySection />}
             {activeSubTab === "bulk-ops" && <BulkOperationsSection />}

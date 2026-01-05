@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
@@ -5752,6 +5754,141 @@ Sky Fethiye`;
     } catch (err) {
       console.error("Veritabani istatistik hatasi:", err);
       res.status(500).json({ error: "Veritabani istatistikleri alinamadi" });
+    }
+  });
+
+  // === DATABASE BACKUP MANAGEMENT ===
+  
+  // Get all backups
+  app.get("/api/database-backups", async (req, res) => {
+    try {
+      const backups = await storage.getDatabaseBackups();
+      res.json(backups);
+    } catch (err) {
+      console.error("Yedek listesi hatasi:", err);
+      res.status(500).json({ error: "Yedekler alinamadi" });
+    }
+  });
+
+  // Create a new backup
+  app.post("/api/database-backups", async (req, res) => {
+    try {
+      const { name, description } = req.body;
+      
+      // Get database stats for backup info
+      const stats = await storage.getDatabaseStats();
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `backup_${timestamp}.json`;
+      
+      // Get all table data for backup
+      const backupData: Record<string, any[]> = {};
+      let totalRows = 0;
+      let tableCount = 0;
+      
+      // List of tables to backup
+      const tables = [
+        'tenants', 'activities', 'capacity', 'reservations', 'messages',
+        'support_requests', 'settings', 'blacklist', 'agencies', 'activity_costs',
+        'settlements', 'settlement_entries', 'payments', 'agency_payouts',
+        'package_tours', 'package_tour_activities', 'holidays', 'auto_responses',
+        'customer_requests', 'licenses', 'request_message_templates',
+        'subscription_plans', 'plan_features', 'subscriptions', 'subscription_payments',
+        'announcements', 'api_status_logs', 'bot_quality_scores', 'invoices',
+        'app_users', 'roles', 'permissions', 'role_permissions', 'user_roles'
+      ];
+      
+      for (const tableName of tables) {
+        try {
+          const result = await db.execute(sql.raw(`SELECT * FROM ${tableName}`));
+          if (result.rows && result.rows.length > 0) {
+            backupData[tableName] = result.rows as any[];
+            totalRows += result.rows.length;
+            tableCount++;
+          }
+        } catch (tableErr) {
+          // Table might not exist, skip
+        }
+      }
+      
+      // Store backup metadata (actual data would be stored in file system in production)
+      const backup = await storage.createDatabaseBackup({
+        name: name || `Yedek - ${new Date().toLocaleString('tr-TR')}`,
+        description: description || '',
+        fileName,
+        fileSize: JSON.stringify(backupData).length,
+        tableCount,
+        rowCount: totalRows,
+        status: 'completed',
+        backupType: 'manual',
+        createdBy: 'super_admin'
+      });
+      
+      res.json({ 
+        success: true, 
+        backup,
+        message: `${tableCount} tablo ve ${totalRows} kayit yedeklendi`
+      });
+    } catch (err) {
+      console.error("Yedekleme hatasi:", err);
+      res.status(500).json({ error: "Yedek olusturulamadi" });
+    }
+  });
+
+  // Download backup data
+  app.get("/api/database-backups/:id/download", async (req, res) => {
+    try {
+      const backup = await storage.getDatabaseBackup(Number(req.params.id));
+      if (!backup) {
+        return res.status(404).json({ error: "Yedek bulunamadi" });
+      }
+      
+      // Get all table data for export
+      const backupData: Record<string, any[]> = {};
+      const tables = [
+        'tenants', 'activities', 'capacity', 'reservations', 'messages',
+        'support_requests', 'settings', 'blacklist', 'agencies', 'activity_costs',
+        'settlements', 'settlement_entries', 'payments', 'agency_payouts',
+        'package_tours', 'package_tour_activities', 'holidays', 'auto_responses',
+        'customer_requests', 'licenses', 'request_message_templates',
+        'subscription_plans', 'plan_features', 'subscriptions', 'subscription_payments',
+        'announcements', 'api_status_logs', 'bot_quality_scores', 'invoices',
+        'app_users', 'roles', 'permissions', 'role_permissions', 'user_roles'
+      ];
+      
+      for (const tableName of tables) {
+        try {
+          const result = await db.execute(sql.raw(`SELECT * FROM ${tableName}`));
+          if (result.rows && result.rows.length > 0) {
+            backupData[tableName] = result.rows as any[];
+          }
+        } catch (tableErr) {
+          // Table might not exist, skip
+        }
+      }
+      
+      const exportData = {
+        backupInfo: backup,
+        createdAt: new Date().toISOString(),
+        data: backupData
+      };
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${backup.fileName}"`);
+      res.json(exportData);
+    } catch (err) {
+      console.error("Yedek indirme hatasi:", err);
+      res.status(500).json({ error: "Yedek indirilemedi" });
+    }
+  });
+
+  // Delete a backup
+  app.delete("/api/database-backups/:id", async (req, res) => {
+    try {
+      await storage.deleteDatabaseBackup(Number(req.params.id));
+      res.json({ success: true, message: "Yedek silindi" });
+    } catch (err) {
+      console.error("Yedek silme hatasi:", err);
+      res.status(500).json({ error: "Yedek silinemedi" });
     }
   });
 

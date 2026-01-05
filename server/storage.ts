@@ -109,6 +109,9 @@ import {
   userLoginLogs,
   type AppVersion,
   type InsertAppVersion,
+  databaseBackups,
+  type DatabaseBackup,
+  type InsertDatabaseBackup,
   type PlatformAdmin,
   type InsertPlatformAdmin,
   type LoginLog,
@@ -385,6 +388,13 @@ export interface IStorage {
   updateAppVersion(id: number, version: Partial<InsertAppVersion>): Promise<AppVersion>;
   activateAppVersion(id: number): Promise<AppVersion>;
   rollbackToVersion(id: number): Promise<AppVersion>;
+
+  // Database Backup Management
+  getDatabaseBackups(): Promise<DatabaseBackup[]>;
+  getDatabaseBackup(id: number): Promise<DatabaseBackup | undefined>;
+  createDatabaseBackup(backup: InsertDatabaseBackup): Promise<DatabaseBackup>;
+  updateDatabaseBackup(id: number, backup: Partial<InsertDatabaseBackup>): Promise<DatabaseBackup>;
+  deleteDatabaseBackup(id: number): Promise<void>;
 
   // Platform Admins
   getPlatformAdmins(): Promise<PlatformAdmin[]>;
@@ -2542,6 +2552,33 @@ Sky Fethiye`,
       .where(eq(appVersions.id, id))
       .returning();
     return activated;
+  }
+
+  // Database Backup Management
+  async getDatabaseBackups(): Promise<DatabaseBackup[]> {
+    return db.select().from(databaseBackups).orderBy(desc(databaseBackups.createdAt));
+  }
+
+  async getDatabaseBackup(id: number): Promise<DatabaseBackup | undefined> {
+    const [backup] = await db.select().from(databaseBackups).where(eq(databaseBackups.id, id));
+    return backup;
+  }
+
+  async createDatabaseBackup(backup: InsertDatabaseBackup): Promise<DatabaseBackup> {
+    const [created] = await db.insert(databaseBackups).values(backup).returning();
+    return created;
+  }
+
+  async updateDatabaseBackup(id: number, backup: Partial<InsertDatabaseBackup>): Promise<DatabaseBackup> {
+    const [updated] = await db.update(databaseBackups)
+      .set(backup)
+      .where(eq(databaseBackups.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDatabaseBackup(id: number): Promise<void> {
+    await db.delete(databaseBackups).where(eq(databaseBackups.id, id));
   }
 
   // Platform Admins
