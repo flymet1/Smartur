@@ -254,6 +254,11 @@ function TenantManagementSection() {
     timezone: "Europe/Istanbul",
     language: "tr",
     isActive: true,
+    // Admin user fields (only for new tenant)
+    adminUsername: "",
+    adminEmail: "",
+    adminPassword: "",
+    adminName: "",
   });
 
   const { data: tenants = [], isLoading } = useQuery<Tenant[]>({
@@ -310,6 +315,10 @@ function TenantManagementSection() {
       timezone: "Europe/Istanbul",
       language: "tr",
       isActive: true,
+      adminUsername: "",
+      adminEmail: "",
+      adminPassword: "",
+      adminName: "",
     });
   };
 
@@ -332,6 +341,10 @@ function TenantManagementSection() {
       timezone: tenant.timezone || "Europe/Istanbul",
       language: tenant.language || "tr",
       isActive: tenant.isActive,
+      adminUsername: "",
+      adminEmail: "",
+      adminPassword: "",
+      adminName: "",
     });
     setIsNewTenant(false);
     setEditingTenant(tenant);
@@ -599,6 +612,67 @@ function TenantManagementSection() {
               />
               <Label htmlFor="isActive">Aktif</Label>
             </div>
+
+            {/* Admin User Section - Only for new tenant */}
+            {isNewTenant && (
+              <div className="border-t pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Users className="h-5 w-5 text-primary" />
+                  <div>
+                    <h4 className="font-medium">Yonetici Hesabi</h4>
+                    <p className="text-sm text-muted-foreground">Acenta icin yonetici kullanicisi olustur</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="adminUsername">Kullanici Adi *</Label>
+                    <Input
+                      id="adminUsername"
+                      value={tenantForm.adminUsername}
+                      onChange={(e) => setTenantForm({ ...tenantForm, adminUsername: e.target.value })}
+                      placeholder="ornek: kapadokya_admin"
+                      data-testid="input-admin-username"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="adminEmail">E-posta *</Label>
+                    <Input
+                      id="adminEmail"
+                      type="email"
+                      value={tenantForm.adminEmail}
+                      onChange={(e) => setTenantForm({ ...tenantForm, adminEmail: e.target.value })}
+                      placeholder="admin@acenta.com"
+                      data-testid="input-admin-email"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="adminName">Ad Soyad</Label>
+                    <Input
+                      id="adminName"
+                      value={tenantForm.adminName}
+                      onChange={(e) => setTenantForm({ ...tenantForm, adminName: e.target.value })}
+                      placeholder="Yonetici Ad Soyad"
+                      data-testid="input-admin-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="adminPassword">Sifre *</Label>
+                    <Input
+                      id="adminPassword"
+                      type="password"
+                      value={tenantForm.adminPassword}
+                      onChange={(e) => setTenantForm({ ...tenantForm, adminPassword: e.target.value })}
+                      placeholder="Guclu bir sifre girin"
+                      data-testid="input-admin-password"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -607,7 +681,11 @@ function TenantManagementSection() {
             </Button>
             <Button 
               onClick={handleSaveTenant}
-              disabled={!tenantForm.name || !tenantForm.slug || createTenantMutation.isPending || updateTenantMutation.isPending}
+              disabled={
+                !tenantForm.name || !tenantForm.slug || 
+                createTenantMutation.isPending || updateTenantMutation.isPending ||
+                (isNewTenant && (!tenantForm.adminUsername || !tenantForm.adminEmail || !tenantForm.adminPassword))
+              }
               data-testid="button-save-tenant"
             >
               {(createTenantMutation.isPending || updateTenantMutation.isPending) ? "Kaydediliyor..." : "Kaydet"}
@@ -694,36 +772,10 @@ function TenantStatsSection() {
 }
 
 function UserManagementSection() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
-  const [isNewUser, setIsNewUser] = useState(false);
   const [showLoginHistory, setShowLoginHistory] = useState<number | null>(null);
-  const [userForm, setUserForm] = useState({
-    username: "",
-    email: "",
-    password: "",
-    name: "",
-    phone: "",
-    companyName: "",
-    membershipType: "trial",
-    membershipEndDate: "",
-    planId: null as number | null,
-    tenantId: null as number | null,
-    roleIds: [] as number[],
-    notes: ""
-  });
 
   const { data: users = [], isLoading } = useQuery<AppUser[]>({
     queryKey: ['/api/app-users'],
-  });
-
-  const { data: roles = [] } = useQuery<Role[]>({
-    queryKey: ['/api/roles'],
-  });
-
-  const { data: plans = [] } = useQuery<{ id: number; name: string }[]>({
-    queryKey: ['/api/subscription-plans'],
   });
 
   const { data: tenants = [] } = useQuery<Tenant[]>({
@@ -735,118 +787,6 @@ function UserManagementSection() {
     enabled: showLoginHistory !== null,
   });
 
-  const createUserMutation = useMutation({
-    mutationFn: (data: typeof userForm) => apiRequest('POST', '/api/app-users', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/app-users'] });
-      setEditingUser(null);
-      setIsNewUser(false);
-      resetForm();
-      toast({ title: "Basarili", description: "Kullanici olusturuldu." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Kullanici olusturulamadi.", variant: "destructive" });
-    }
-  });
-
-  const updateUserMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<typeof userForm> }) => 
-      apiRequest('PATCH', `/api/app-users/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/app-users'] });
-      setEditingUser(null);
-      resetForm();
-      toast({ title: "Basarili", description: "Kullanici guncellendi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Kullanici guncellenemedi.", variant: "destructive" });
-    }
-  });
-
-  const deleteUserMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/app-users/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/app-users'] });
-      toast({ title: "Basarili", description: "Kullanici silindi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Kullanici silinemedi.", variant: "destructive" });
-    }
-  });
-
-  const suspendUserMutation = useMutation({
-    mutationFn: ({ id, suspend }: { id: number; suspend: boolean }) => 
-      apiRequest('PATCH', `/api/app-users/${id}`, { isSuspended: suspend }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/app-users'] });
-      toast({ title: "Basarili", description: "Kullanici durumu guncellendi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Islem basarisiz.", variant: "destructive" });
-    }
-  });
-
-  const resetForm = () => {
-    setUserForm({
-      username: "",
-      email: "",
-      password: "",
-      name: "",
-      phone: "",
-      companyName: "",
-      membershipType: "trial",
-      membershipEndDate: "",
-      planId: null,
-      tenantId: null,
-      roleIds: [],
-      notes: ""
-    });
-  };
-
-  const openNewUserDialog = () => {
-    resetForm();
-    setIsNewUser(true);
-    setEditingUser({ id: 0 } as AppUser);
-  };
-
-  const openEditUserDialog = (user: AppUser) => {
-    setUserForm({
-      username: user.username,
-      email: user.email,
-      password: "",
-      name: user.name || "",
-      phone: user.phone || "",
-      companyName: user.companyName || "",
-      membershipType: user.membershipType || "trial",
-      membershipEndDate: user.membershipEndDate || "",
-      planId: user.planId,
-      tenantId: user.tenantId || null,
-      roleIds: user.roles?.map(r => r.id) || [],
-      notes: user.notes || ""
-    });
-    setIsNewUser(false);
-    setEditingUser(user);
-  };
-
-  const handleSaveUser = () => {
-    if (isNewUser) {
-      createUserMutation.mutate(userForm);
-    } else if (editingUser) {
-      const { password, ...dataWithoutPassword } = userForm;
-      const updateData = password ? userForm : dataWithoutPassword;
-      updateUserMutation.mutate({ id: editingUser.id, data: updateData });
-    }
-  };
-
-  const toggleRole = (roleId: number) => {
-    setUserForm(prev => ({
-      ...prev,
-      roleIds: prev.roleIds.includes(roleId)
-        ? prev.roleIds.filter(id => id !== roleId)
-        : [...prev.roleIds, roleId]
-    }));
-  };
-
   const getMembershipLabel = (type: string | null) => {
     switch (type) {
       case "trial": return "Deneme";
@@ -856,21 +796,39 @@ function UserManagementSection() {
     }
   };
 
+  const getTenantName = (tenantId: number | null) => {
+    if (!tenantId) return "-";
+    const tenant = tenants.find(t => t.id === tenantId);
+    return tenant?.name || "-";
+  };
+
   return (
     <div className="space-y-4">
+      {/* Info Banner */}
+      <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div>
+              <h4 className="font-medium text-blue-900 dark:text-blue-100">Kullanici Yonetimi Degisti</h4>
+              <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                Her acenta artik kendi kullanicilarini <strong>Ayarlar &gt; Kullanicilar</strong> sayfasindan yonetiyor.
+                Bu sayfa sadece izleme amaciyla kullanilmaktadir.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
+        <CardHeader>
           <div>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Kullanici Yonetimi
+              Tum Kullanicilar (Izleme)
             </CardTitle>
-            <CardDescription>Tum uygulama kullanicilarini yonetin</CardDescription>
+            <CardDescription>Platformdaki tum kullanicilari goruntuleyin</CardDescription>
           </div>
-          <Button onClick={openNewUserDialog} data-testid="button-new-user">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Yeni Kullanici
-          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -882,24 +840,27 @@ function UserManagementSection() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Kullanici Adi</TableHead>
-                  <TableHead>E-posta</TableHead>
-                  <TableHead>Isim</TableHead>
-                  <TableHead>Sirket</TableHead>
+                  <TableHead>Kullanici</TableHead>
+                  <TableHead>Acenta</TableHead>
                   <TableHead>Uyelik</TableHead>
                   <TableHead>Roller</TableHead>
                   <TableHead>Durum</TableHead>
-                  <TableHead>Islemler</TableHead>
+                  <TableHead>Giris Gecmisi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                     <TableCell>{user.id}</TableCell>
-                    <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.name || "-"}</TableCell>
-                    <TableCell>{user.companyName || "-"}</TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{user.name || user.username}</div>
+                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{getTenantName(user.tenantId)}</Badge>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <Badge variant="outline" className="w-fit">
@@ -935,51 +896,14 @@ function UserManagementSection() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button 
-                          size="icon" 
-                          variant="ghost"
-                          onClick={() => openEditUserDialog(user)}
-                          data-testid={`button-edit-user-${user.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost"
-                          onClick={() => setShowLoginHistory(user.id)}
-                          data-testid={`button-login-history-${user.id}`}
-                        >
-                          <History className="h-4 w-4" />
-                        </Button>
-                        {user.isSuspended ? (
-                          <Button 
-                            size="icon" 
-                            variant="ghost"
-                            onClick={() => suspendUserMutation.mutate({ id: user.id, suspend: false })}
-                            data-testid={`button-unsuspend-${user.id}`}
-                          >
-                            <PlayCircle className="h-4 w-4 text-green-600" />
-                          </Button>
-                        ) : (
-                          <Button 
-                            size="icon" 
-                            variant="ghost"
-                            onClick={() => suspendUserMutation.mutate({ id: user.id, suspend: true })}
-                            data-testid={`button-suspend-${user.id}`}
-                          >
-                            <Ban className="h-4 w-4 text-orange-600" />
-                          </Button>
-                        )}
-                        <Button 
-                          size="icon" 
-                          variant="ghost"
-                          onClick={() => deleteUserMutation.mutate(user.id)}
-                          data-testid={`button-delete-user-${user.id}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost"
+                        onClick={() => setShowLoginHistory(user.id)}
+                        data-testid={`button-login-history-${user.id}`}
+                      >
+                        <History className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -988,185 +912,6 @@ function UserManagementSection() {
           )}
         </CardContent>
       </Card>
-
-      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>{isNewUser ? "Yeni Kullanici Olustur" : "Kullaniciyi Duzenle"}</DialogTitle>
-            <DialogDescription>
-              Kullanici bilgilerini girin veya guncelleyin.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Kullanici Adi</Label>
-                <Input
-                  value={userForm.username}
-                  onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-                  placeholder="kullanici_adi"
-                  data-testid="input-user-username"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>E-posta</Label>
-                <Input
-                  type="email"
-                  value={userForm.email}
-                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                  placeholder="ornek@email.com"
-                  data-testid="input-user-email"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Sifre {!isNewUser && "(bos birakirsaniz degismez)"}</Label>
-                <Input
-                  type="password"
-                  value={userForm.password}
-                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  placeholder={isNewUser ? "Sifre" : "Yeni sifre (opsiyonel)"}
-                  data-testid="input-user-password"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Isim</Label>
-                <Input
-                  value={userForm.name}
-                  onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
-                  placeholder="Ad Soyad"
-                  data-testid="input-user-name"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Telefon</Label>
-                <Input
-                  value={userForm.phone}
-                  onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
-                  placeholder="+90 5XX XXX XXXX"
-                  data-testid="input-user-phone"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Sirket Adi</Label>
-                <Input
-                  value={userForm.companyName}
-                  onChange={(e) => setUserForm({ ...userForm, companyName: e.target.value })}
-                  placeholder="Sirket Adi"
-                  data-testid="input-user-company"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Bagli Oldugu Acenta</Label>
-              <select
-                className="w-full h-9 px-3 rounded-md border bg-background"
-                value={userForm.tenantId || ""}
-                onChange={(e) => setUserForm({ ...userForm, tenantId: e.target.value ? Number(e.target.value) : null })}
-                data-testid="select-user-tenant"
-              >
-                <option value="">Acenta Secin</option>
-                {tenants.map(tenant => (
-                  <option key={tenant.id} value={tenant.id}>{tenant.name}</option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">Kullanicinin hangi acentaya ait oldugunu secin</p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Uyelik Tipi</Label>
-                <select
-                  className="w-full h-9 px-3 rounded-md border bg-background"
-                  value={userForm.membershipType}
-                  onChange={(e) => setUserForm({ ...userForm, membershipType: e.target.value })}
-                  data-testid="select-user-membership"
-                >
-                  <option value="trial">Deneme</option>
-                  <option value="monthly">Aylik</option>
-                  <option value="yearly">Yillik</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Uyelik Bitis Tarihi</Label>
-                <Input
-                  type="date"
-                  value={userForm.membershipEndDate}
-                  onChange={(e) => setUserForm({ ...userForm, membershipEndDate: e.target.value })}
-                  data-testid="input-user-membership-end"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Plan</Label>
-                <select
-                  className="w-full h-9 px-3 rounded-md border bg-background"
-                  value={userForm.planId || ""}
-                  onChange={(e) => setUserForm({ ...userForm, planId: e.target.value ? Number(e.target.value) : null })}
-                  data-testid="select-user-plan"
-                >
-                  <option value="">Plan Secin</option>
-                  {plans.map(plan => (
-                    <option key={plan.id} value={plan.id}>{plan.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Roller</Label>
-              <div className="flex flex-wrap gap-2 p-3 border rounded-md">
-                {roles.length === 0 ? (
-                  <span className="text-muted-foreground text-sm">Henuz rol tanimlanmamis</span>
-                ) : (
-                  roles.map(role => (
-                    <Badge 
-                      key={role.id}
-                      variant={userForm.roleIds.includes(role.id) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      style={userForm.roleIds.includes(role.id) ? { backgroundColor: role.color || undefined } : undefined}
-                      onClick={() => toggleRole(role.id)}
-                      data-testid={`toggle-role-${role.id}`}
-                    >
-                      {userForm.roleIds.includes(role.id) && <Check className="h-3 w-3 mr-1" />}
-                      {role.displayName}
-                    </Badge>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notlar</Label>
-              <Textarea
-                value={userForm.notes}
-                onChange={(e) => setUserForm({ ...userForm, notes: e.target.value })}
-                placeholder="Kullanici hakkinda notlar..."
-                data-testid="textarea-user-notes"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingUser(null)}>
-              Iptal
-            </Button>
-            <Button 
-              onClick={handleSaveUser}
-              disabled={createUserMutation.isPending || updateUserMutation.isPending || !userForm.username || !userForm.email}
-              data-testid="button-save-user"
-            >
-              {createUserMutation.isPending || updateUserMutation.isPending ? "Kaydediliyor..." : "Kaydet"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showLoginHistory !== null} onOpenChange={(open) => !open && setShowLoginHistory(null)}>
         <DialogContent className="max-w-xl">

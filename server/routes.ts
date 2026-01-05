@@ -4773,10 +4773,10 @@ Sky Fethiye`;
     }
   });
 
-  // Create tenant
+  // Create tenant with admin user
   app.post("/api/tenants", async (req, res) => {
     try {
-      const { name, slug, contactEmail, contactPhone, address, logoUrl, primaryColor, accentColor, timezone, language } = req.body;
+      const { name, slug, contactEmail, contactPhone, address, logoUrl, primaryColor, accentColor, timezone, language, adminUsername, adminEmail, adminPassword, adminName } = req.body;
       
       if (!name || !slug) {
         return res.status(400).json({ error: "Tenant adi ve slug zorunludur" });
@@ -4786,6 +4786,22 @@ Sky Fethiye`;
       const existingTenant = await storage.getTenantBySlug(slug);
       if (existingTenant) {
         return res.status(400).json({ error: "Bu slug zaten kullaniliyor" });
+      }
+
+      // Validate admin user info if provided
+      if (adminUsername || adminEmail || adminPassword) {
+        if (!adminUsername || !adminEmail || !adminPassword) {
+          return res.status(400).json({ error: "Admin kullanici icin username, email ve password zorunludur" });
+        }
+        // Check if username or email already exists
+        const existingUsername = await storage.getAppUserByUsername(adminUsername);
+        if (existingUsername) {
+          return res.status(400).json({ error: "Bu kullanici adi zaten kullaniliyor" });
+        }
+        const existingEmail = await storage.getAppUserByEmail(adminEmail);
+        if (existingEmail) {
+          return res.status(400).json({ error: "Bu e-posta zaten kullaniliyor" });
+        }
       }
 
       const tenant = await storage.createTenant({
@@ -4801,7 +4817,38 @@ Sky Fethiye`;
         language: language || "tr",
         isActive: true,
       });
-      res.json(tenant);
+
+      // Create admin user for this tenant if provided
+      let adminUser = null;
+      if (adminUsername && adminEmail && adminPassword) {
+        const passwordHash = hashPassword(adminPassword);
+        adminUser = await storage.createAppUser({
+          tenantId: tenant.id,
+          username: adminUsername,
+          email: adminEmail,
+          passwordHash,
+          name: adminName || name + " Admin",
+          phone: contactPhone || null,
+          companyName: name,
+          membershipType: 'professional',
+          membershipStartDate: new Date(),
+          membershipEndDate: null,
+          planId: null,
+          maxActivities: 50,
+          maxReservationsPerMonth: 1000,
+          notes: `${name} acentasi yonetici hesabi`,
+          isActive: true,
+        });
+
+        // Find and assign "admin" role to this user
+        const roles = await storage.getRoles();
+        const adminRole = roles.find(r => r.name.toLowerCase() === 'admin' || r.name.toLowerCase() === 'yonetici');
+        if (adminRole) {
+          await storage.assignUserRole({ userId: adminUser.id, roleId: adminRole.id });
+        }
+      }
+
+      res.json({ tenant, adminUser });
     } catch (err) {
       console.error("Tenant olusturma hatasi:", err);
       res.status(500).json({ error: "Tenant olusturulamadi" });
@@ -5403,7 +5450,177 @@ Sky Fethiye`;
     }
   });
 
-  // === APP USER MANAGEMENT (Super Admin creates users) ===
+  // === TENANT USER MANAGEMENT (Agencies manage their own users) ===
+  // SECURITY: All endpoints use the authenticated session tenant ID, NOT client-provided values
+
+  // Get users for current tenant (for agency settings page)
+  app.get("/api/tenant-users", async (req, res) => {
+    try {
+      // SECURITY: Get tenant ID from authenticated session
+      const tenantId = (req.session as any)?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+      }
+
+      const allUsers = await storage.getAppUsers();
+      const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
+      res.json(tenantUsers);
+    } catch (err) {
+      console.error("Tenant kullanici listesi hatasi:", err);
+      res.status(500).json({ error: "Kullanicilar alinamadi" });
+    }
+  });
+
+  // Create user for current tenant (agency creates their own users)
+  app.post("/api/tenant-users", async (req, res) => {
+    try {
+      // SECURITY: Get tenant ID from authenticated session, ignore client-provided value
+      const tenantId = (req.session as any)?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+      }
+
+      const { username, email, password, name, phone, roleIds } = req.body;
+
+      // Check user limit for this tenant based on subscription plan
+      const allUsers = await storage.getAppUsers();
+      const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
+      
+      // Get tenant's subscription to check user limit
+      const subscriptions = await storage.getSubscriptions();
+      const tenantSub = subscriptions.find((s: any) => s.tenantId === tenantId && s.status === 'active');
+      const userLimit = (tenantSub as any)?.plan?.maxUsers || 5; // Default 5 if no plan
+      
+      if (tenantUsers.length >= userLimit) {
+        return res.status(400).json({ error: `Kullanici limitine ulastiiniz (${userLimit}). Daha fazla kullanici eklemek icin planinizi yukseltiniz.` });
+      }
+
+      // Check if username or email already exists
+      const existingUsername = await storage.getAppUserByUsername(username);
+      if (existingUsername) {
+        return res.status(400).json({ error: "Bu kullanici adi zaten kullaniliyor" });
+      }
+      const existingEmail = await storage.getAppUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({ error: "Bu e-posta zaten kullaniliyor" });
+      }
+
+      // Get tenant info
+      const tenant = await storage.getTenant(tenantId);
+      if (!tenant) {
+        return res.status(400).json({ error: "Tenant bulunamadi" });
+      }
+
+      const passwordHash = hashPassword(password);
+
+      const user = await storage.createAppUser({
+        tenantId,
+        username,
+        email,
+        passwordHash,
+        name,
+        phone: phone || null,
+        companyName: tenant.name,
+        membershipType: 'professional',
+        membershipStartDate: new Date(),
+        membershipEndDate: null,
+        planId: null,
+        maxActivities: 50,
+        maxReservationsPerMonth: 1000,
+        notes: `${tenant.name} acentasi kullanicisi`,
+        isActive: true,
+      });
+
+      // Assign roles if provided
+      if (roleIds && roleIds.length > 0) {
+        for (const roleId of roleIds) {
+          await storage.assignUserRole({ userId: user.id, roleId });
+        }
+      }
+
+      res.json(user);
+    } catch (err) {
+      console.error("Tenant kullanici olusturma hatasi:", err);
+      res.status(500).json({ error: "Kullanici olusturulamadi" });
+    }
+  });
+
+  // Update user for current tenant
+  app.patch("/api/tenant-users/:id", async (req, res) => {
+    try {
+      // SECURITY: Get tenant ID from authenticated session
+      const tenantId = (req.session as any)?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+      }
+
+      const id = Number(req.params.id);
+      
+      // SECURITY: Verify the user being updated belongs to the current tenant
+      const existingUser = await storage.getAppUser(id);
+      if (!existingUser || existingUser.tenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu kullaniciyi duzenleme yetkiniz yok" });
+      }
+
+      const { password, roleIds, ...updateData } = req.body;
+
+      if (password) {
+        updateData.passwordHash = hashPassword(password);
+      }
+
+      const user = await storage.updateAppUser(id, updateData);
+
+      // Update roles if provided
+      if (roleIds !== undefined) {
+        const currentRoles = await storage.getUserRoles(id);
+        const currentRoleIds = currentRoles.map(r => r.roleId);
+
+        for (const roleId of currentRoleIds) {
+          if (!roleIds.includes(roleId)) {
+            await storage.removeUserRole(id, roleId);
+          }
+        }
+
+        for (const roleId of roleIds) {
+          if (!currentRoleIds.includes(roleId)) {
+            await storage.assignUserRole({ userId: id, roleId });
+          }
+        }
+      }
+
+      res.json(user);
+    } catch (err) {
+      console.error("Tenant kullanici guncelleme hatasi:", err);
+      res.status(500).json({ error: "Kullanici guncellenemedi" });
+    }
+  });
+
+  // Delete user for current tenant
+  app.delete("/api/tenant-users/:id", async (req, res) => {
+    try {
+      // SECURITY: Get tenant ID from authenticated session
+      const tenantId = (req.session as any)?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+      }
+
+      const id = Number(req.params.id);
+      
+      // SECURITY: Verify the user being deleted belongs to the current tenant
+      const existingUser = await storage.getAppUser(id);
+      if (!existingUser || existingUser.tenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu kullaniciyi silme yetkiniz yok" });
+      }
+
+      await storage.deleteAppUser(id);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Tenant kullanici silme hatasi:", err);
+      res.status(500).json({ error: "Kullanici silinemedi" });
+    }
+  });
+
+  // === APP USER MANAGEMENT (Super Admin - view only) ===
 
   app.get("/api/app-users", async (req, res) => {
     try {
@@ -5543,12 +5760,19 @@ Sky Fethiye`;
       const user = await storage.getAppUserByUsername(username);
 
       // Log login attempt
-      const logEntry = {
+      const logEntry: {
+        userId: number | null;
+        username: string;
+        ipAddress: string;
+        userAgent: string;
+        status: 'success' | 'failed' | 'blocked';
+        failureReason: string;
+      } = {
         userId: user?.id || null,
         username,
         ipAddress: req.ip || req.socket.remoteAddress || '',
         userAgent: req.headers['user-agent'] || '',
-        status: 'failed' as const,
+        status: 'failed',
         failureReason: '',
       };
 

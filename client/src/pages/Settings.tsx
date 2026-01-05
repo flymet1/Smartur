@@ -13,7 +13,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -439,7 +439,7 @@ export default function Settings() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['security', 'license', 'whatsapp', 'integrations', 'holidays', 'system'].includes(tab)) {
+    if (tab && ['security', 'license', 'whatsapp', 'integrations', 'holidays', 'system', 'users'].includes(tab)) {
       setSettingsTab(tab);
     }
   }, [location]);
@@ -455,10 +455,14 @@ export default function Settings() {
 
         {/* Settings Navigation Tabs */}
         <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 mb-6">
             <TabsTrigger value="security" data-testid="tab-security">
               <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
               Guvenlik
+            </TabsTrigger>
+            <TabsTrigger value="users" data-testid="tab-users">
+              <Users className="w-4 h-4 mr-2 hidden sm:inline" />
+              Kullanicilar
             </TabsTrigger>
             <TabsTrigger value="license" data-testid="tab-license">
               <CreditCard className="w-4 h-4 mr-2 hidden sm:inline" />
@@ -1296,6 +1300,11 @@ export default function Settings() {
           <WooCommerceCard />
 
           <AutoResponsesCard />
+          </TabsContent>
+
+          {/* USERS TAB */}
+          <TabsContent value="users" className="space-y-6">
+            <UserManagementSection />
           </TabsContent>
 
           {/* HOLIDAYS TAB */}
@@ -3211,5 +3220,314 @@ function BotTestSection() {
         )}
       </div>
     </div>
+  );
+}
+
+// === USER MANAGEMENT SECTION ===
+interface TenantUser {
+  id: number;
+  tenantId: number | null;
+  username: string;
+  email: string;
+  name: string | null;
+  phone: string | null;
+  isActive: boolean;
+  roles?: { roleId: number; role?: { name: string } }[];
+}
+
+interface Role {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+function UserManagementSection() {
+  const { toast } = useToast();
+  const [editingUser, setEditingUser] = useState<TenantUser | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [userForm, setUserForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    name: "",
+    phone: "",
+    roleIds: [] as number[],
+  });
+
+  // SECURITY: We use the session tenant ID on the server, not client-provided values
+  const { data: users = [], isLoading, refetch } = useQuery<TenantUser[]>({
+    queryKey: ['/api/tenant-users'],
+  });
+
+  const { data: roles = [] } = useQuery<Role[]>({
+    queryKey: ['/api/roles'],
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: async (data: typeof userForm) => {
+      const res = await apiRequest('POST', '/api/tenant-users', data);
+      return res;
+    },
+    onSuccess: () => {
+      refetch();
+      setEditingUser(null);
+      setIsNewUser(false);
+      toast({ title: "Basarili", description: "Kullanici olusturuldu" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Kullanici olusturulamadi", variant: "destructive" });
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<typeof userForm> }) => {
+      const res = await apiRequest('PATCH', `/api/tenant-users/${id}`, data);
+      return res;
+    },
+    onSuccess: () => {
+      refetch();
+      setEditingUser(null);
+      toast({ title: "Basarili", description: "Kullanici guncellendi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Kullanici guncellenemedi", variant: "destructive" });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/tenant-users/${id}`),
+    onSuccess: () => {
+      refetch();
+      toast({ title: "Basarili", description: "Kullanici silindi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Kullanici silinemedi", variant: "destructive" });
+    }
+  });
+
+  const resetForm = () => {
+    setUserForm({
+      username: "",
+      email: "",
+      password: "",
+      name: "",
+      phone: "",
+      roleIds: [],
+    });
+  };
+
+  const openNewUserDialog = () => {
+    resetForm();
+    setIsNewUser(true);
+    setEditingUser({ id: 0 } as TenantUser);
+  };
+
+  const openEditUserDialog = (user: TenantUser) => {
+    setUserForm({
+      username: user.username,
+      email: user.email,
+      password: "",
+      name: user.name || "",
+      phone: user.phone || "",
+      roleIds: user.roles?.map(r => r.roleId) || [],
+    });
+    setIsNewUser(false);
+    setEditingUser(user);
+  };
+
+  const handleSaveUser = () => {
+    if (isNewUser) {
+      createUserMutation.mutate({ ...userForm });
+    } else if (editingUser?.id) {
+      const updateData: any = { ...userForm };
+      if (!updateData.password) {
+        delete updateData.password;
+      }
+      updateUserMutation.mutate({ id: editingUser.id, data: updateData });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Kullanici Yonetimi
+          </CardTitle>
+          <CardDescription>
+            Acentaniz icin kullanici hesaplarini yonetin
+          </CardDescription>
+        </div>
+        <Button onClick={openNewUserDialog} data-testid="button-new-user">
+          <UserPlus className="h-4 w-4 mr-2" />
+          Yeni Kullanici
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+        ) : users.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Henuz kullanici bulunmuyor. Yeni kullanici eklemek icin butona tiklayin.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                data-testid={`user-row-${user.id}`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-medium">{user.name || user.username}</div>
+                    <div className="text-sm text-muted-foreground">{user.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={user.isActive ? "default" : "secondary"}>
+                    {user.isActive ? "Aktif" : "Pasif"}
+                  </Badge>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => openEditUserDialog(user)}
+                    data-testid={`button-edit-user-${user.id}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      if (confirm(`"${user.name || user.username}" kullanicisini silmek istediginizden emin misiniz?`)) {
+                        deleteUserMutation.mutate(user.id);
+                      }
+                    }}
+                    data-testid={`button-delete-user-${user.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{isNewUser ? "Yeni Kullanici Ekle" : "Kullanici Duzenle"}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Kullanici Adi *</Label>
+                <Input
+                  id="username"
+                  value={userForm.username}
+                  onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                  placeholder="Kullanici adi"
+                  disabled={!isNewUser}
+                  data-testid="input-user-username"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">E-posta *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                  placeholder="ornek@email.com"
+                  data-testid="input-user-email"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="name">Ad Soyad</Label>
+                <Input
+                  id="name"
+                  value={userForm.name}
+                  onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                  placeholder="Ad Soyad"
+                  data-testid="input-user-name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefon</Label>
+                <Input
+                  id="phone"
+                  value={userForm.phone}
+                  onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
+                  placeholder="+90 5XX XXX XX XX"
+                  data-testid="input-user-phone"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">{isNewUser ? "Sifre *" : "Yeni Sifre (bos birakilabilir)"}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={userForm.password}
+                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                  placeholder={isNewUser ? "Sifre girin" : "Degistirmek icin yeni sifre"}
+                  data-testid="input-user-password"
+                />
+              </div>
+
+              {roles.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Roller</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {roles.map((role) => (
+                      <Badge
+                        key={role.id}
+                        variant={userForm.roleIds.includes(role.id) ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() => {
+                          if (userForm.roleIds.includes(role.id)) {
+                            setUserForm({ ...userForm, roleIds: userForm.roleIds.filter(id => id !== role.id) });
+                          } else {
+                            setUserForm({ ...userForm, roleIds: [...userForm.roleIds, role.id] });
+                          }
+                        }}
+                        data-testid={`badge-role-${role.id}`}
+                      >
+                        {role.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingUser(null)}>
+                Iptal
+              </Button>
+              <Button
+                onClick={handleSaveUser}
+                disabled={
+                  !userForm.username || !userForm.email ||
+                  (isNewUser && !userForm.password) ||
+                  createUserMutation.isPending || updateUserMutation.isPending
+                }
+                data-testid="button-save-user"
+              >
+                {(createUserMutation.isPending || updateUserMutation.isPending) ? "Kaydediliyor..." : "Kaydet"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 }
