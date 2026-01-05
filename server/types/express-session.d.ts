@@ -7,6 +7,8 @@ declare module "express-session" {
     username?: string;
     roles?: number[];
     permissions?: string[];
+    platformAdminId?: number;
+    isPlatformAdmin?: boolean;
   }
 }
 

@@ -48,14 +48,32 @@ function formatUptime(seconds: number): string {
 import type { Request, Response, NextFunction } from "express";
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
+  // Allow platform admins (Super Admin)
+  if (req.session?.isPlatformAdmin && req.session?.platformAdminId) {
+    return next();
+  }
+  // Regular tenant users need both userId and tenantId
   if (!req.session?.userId || !req.session?.tenantId) {
     return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
   }
   next();
 }
 
+// Middleware for platform admin only routes
+function requirePlatformAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.session?.isPlatformAdmin || !req.session?.platformAdminId) {
+    return res.status(401).json({ error: "Platform yoneticisi girisi gerekiyor" });
+  }
+  next();
+}
+
 function requirePermission(...requiredPermissions: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Platform admins have all permissions
+    if (req.session?.isPlatformAdmin && req.session?.platformAdminId) {
+      return next();
+    }
+    
     if (!req.session?.userId || !req.session?.tenantId) {
       return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
     }
@@ -2790,7 +2808,7 @@ Sky Fethiye`;
       // Check if email is provided - use platform_admins table
       if (email) {
         const platformAdmin = await storage.getPlatformAdminByEmail(email);
-        if (platformAdmin && platformAdmin.isActive && verifyPassword(password, platformAdmin.password)) {
+        if (platformAdmin && platformAdmin.isActive && verifyPassword(password, platformAdmin.passwordHash)) {
           // Create session for platform admin
           req.session.userId = platformAdmin.id;
           req.session.platformAdminId = platformAdmin.id;
