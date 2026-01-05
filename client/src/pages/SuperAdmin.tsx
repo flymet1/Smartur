@@ -41,7 +41,13 @@ import {
   AlertTriangle,
   Info,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Megaphone,
+  Building2,
+  BarChart3,
+  Radio,
+  Ban,
+  PlayCircle
 } from "lucide-react";
 import type { SubscriptionPlan, Subscription, SubscriptionPayment } from "@shared/schema";
 
@@ -75,6 +81,416 @@ interface SystemLog {
   details: string | null;
   phone: string | null;
   createdAt: string;
+}
+
+interface License {
+  id: number;
+  companyName: string;
+  ownerName: string | null;
+  email: string | null;
+  isActive: boolean;
+  expiryDate: string | null;
+  createdAt: string | null;
+}
+
+interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  type: string;
+  targetAudience: string;
+  isActive: boolean;
+  expiresAt: string | null;
+  createdAt: string | null;
+}
+
+interface PlatformAnalytics {
+  totalAgencies: number;
+  activeAgencies: number;
+  trialAgencies: number;
+  paidAgencies: number;
+  mrrTl: number;
+  mrrUsd: number;
+  churnRate: number;
+  totalReservationsThisMonth: number;
+  avgReservationsPerAgency: number;
+}
+
+interface WhatsAppStats {
+  totalMessagesThisMonth: number;
+  userMessages: number;
+  botResponses: number;
+  escalatedConversations: number;
+  escalationRate: number;
+  uniqueCustomers: number;
+  avgResponseTimeMs: number;
+  botSuccessRate: number;
+}
+
+function AgenciesSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: licenses = [], isLoading } = useQuery<License[]>({
+    queryKey: ['/api/licenses'],
+  });
+
+  const suspendMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/licenses/${id}/suspend`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
+      toast({ title: "Basarili", description: "Lisans askiya alindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Lisans askiya alinamadi.", variant: "destructive" });
+    }
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/licenses/${id}/activate`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
+      toast({ title: "Basarili", description: "Lisans aktif edildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Lisans aktif edilemedi.", variant: "destructive" });
+    }
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Ajans Yonetimi
+        </CardTitle>
+        <CardDescription>Tum ajanslari ve lisanslarini yonetin</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+        ) : licenses.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Henuz ajans bulunmuyor.</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Sirket Adi</TableHead>
+                <TableHead>Sahip</TableHead>
+                <TableHead>E-posta</TableHead>
+                <TableHead>Durum</TableHead>
+                <TableHead>Son Kullanma</TableHead>
+                <TableHead>Islemler</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {licenses.map((lic) => (
+                <TableRow key={lic.id} data-testid={`row-license-${lic.id}`}>
+                  <TableCell>{lic.id}</TableCell>
+                  <TableCell className="font-medium">{lic.companyName}</TableCell>
+                  <TableCell>{lic.ownerName || "-"}</TableCell>
+                  <TableCell>{lic.email || "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant={lic.isActive ? "default" : "destructive"}>
+                      {lic.isActive ? "Aktif" : "Askida"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {lic.expiryDate ? new Date(lic.expiryDate).toLocaleDateString("tr-TR") : "-"}
+                  </TableCell>
+                  <TableCell>
+                    {lic.isActive ? (
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => suspendMutation.mutate(lic.id)}
+                        disabled={suspendMutation.isPending}
+                        data-testid={`button-suspend-${lic.id}`}
+                      >
+                        <Ban className="h-4 w-4 mr-1" />
+                        Askiya Al
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => activateMutation.mutate(lic.id)}
+                        disabled={activateMutation.isPending}
+                        data-testid={`button-activate-${lic.id}`}
+                      >
+                        <PlayCircle className="h-4 w-4 mr-1" />
+                        Aktif Et
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AnnouncementsSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: "", content: "", type: "info" });
+  
+  const { data: announcements = [], isLoading } = useQuery<Announcement[]>({
+    queryKey: ['/api/announcements'],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: { title: string; content: string; type: string }) => 
+      apiRequest('/api/announcements', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/announcements'] });
+      setNewAnnouncement({ title: "", content: "", type: "info" });
+      toast({ title: "Basarili", description: "Duyuru olusturuldu." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Duyuru olusturulamadi.", variant: "destructive" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest(`/api/announcements/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/announcements'] });
+      toast({ title: "Basarili", description: "Duyuru silindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Duyuru silinemedi.", variant: "destructive" });
+    }
+  });
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Megaphone className="h-5 w-5" />
+            Yeni Duyuru Olustur
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Baslik</Label>
+              <Input 
+                value={newAnnouncement.title}
+                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                placeholder="Duyuru basligi..."
+                data-testid="input-announcement-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tur</Label>
+              <select 
+                className="w-full h-9 px-3 rounded-md border bg-background"
+                value={newAnnouncement.type}
+                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, type: e.target.value })}
+                data-testid="select-announcement-type"
+              >
+                <option value="info">Bilgi</option>
+                <option value="warning">Uyari</option>
+                <option value="maintenance">Bakim</option>
+                <option value="update">Guncelleme</option>
+              </select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Icerik</Label>
+            <Textarea
+              value={newAnnouncement.content}
+              onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
+              placeholder="Duyuru icerigi..."
+              data-testid="textarea-announcement-content"
+            />
+          </div>
+          <Button 
+            onClick={() => createMutation.mutate(newAnnouncement)}
+            disabled={!newAnnouncement.title || !newAnnouncement.content || createMutation.isPending}
+            data-testid="button-create-announcement"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Duyuru Olustur
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Mevcut Duyurular</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : announcements.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Henuz duyuru bulunmuyor.</div>
+          ) : (
+            <div className="space-y-3">
+              {announcements.map((ann) => (
+                <div 
+                  key={ann.id} 
+                  className="flex items-start justify-between gap-4 p-3 border rounded-lg"
+                  data-testid={`card-announcement-${ann.id}`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant={ann.type === "warning" ? "destructive" : ann.type === "maintenance" ? "secondary" : "outline"}>
+                        {ann.type === "info" ? "Bilgi" : ann.type === "warning" ? "Uyari" : ann.type === "maintenance" ? "Bakim" : "Guncelleme"}
+                      </Badge>
+                      <span className="font-medium">{ann.title}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{ann.content}</p>
+                    <span className="text-xs text-muted-foreground">
+                      {ann.createdAt ? new Date(ann.createdAt).toLocaleString("tr-TR") : "-"}
+                    </span>
+                  </div>
+                  <Button 
+                    size="icon" 
+                    variant="ghost"
+                    onClick={() => deleteMutation.mutate(ann.id)}
+                    data-testid={`button-delete-announcement-${ann.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AnalyticsSection() {
+  const { data: platformAnalytics, isLoading: platformLoading } = useQuery<PlatformAnalytics>({
+    queryKey: ['/api/analytics/platform'],
+  });
+
+  const { data: whatsappStats, isLoading: whatsappLoading } = useQuery<WhatsAppStats>({
+    queryKey: ['/api/analytics/whatsapp'],
+  });
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return currency === "TL" 
+      ? `${(amount / 100).toFixed(2)} TL`
+      : `$${(amount / 100).toFixed(2)}`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Platform Analitikleri
+          </CardTitle>
+          <CardDescription>Genel platform istatistikleri</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {platformLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : platformAnalytics ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{platformAnalytics.totalAgencies}</div>
+                <div className="text-sm text-muted-foreground">Toplam Ajans</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-green-600">{platformAnalytics.activeAgencies}</div>
+                <div className="text-sm text-muted-foreground">Aktif Ajans</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-blue-600">{platformAnalytics.trialAgencies}</div>
+                <div className="text-sm text-muted-foreground">Deneme Surecinde</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-primary">{platformAnalytics.paidAgencies}</div>
+                <div className="text-sm text-muted-foreground">Odeme Yapan</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{formatCurrency(platformAnalytics.mrrTl, "TL")}</div>
+                <div className="text-sm text-muted-foreground">Aylik Gelir (TL)</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{formatCurrency(platformAnalytics.mrrUsd, "USD")}</div>
+                <div className="text-sm text-muted-foreground">Aylik Gelir (USD)</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{platformAnalytics.totalReservationsThisMonth}</div>
+                <div className="text-sm text-muted-foreground">Bu Ay Rezervasyon</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{platformAnalytics.avgReservationsPerAgency}</div>
+                <div className="text-sm text-muted-foreground">Ortalama/Ajans</div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">Veri yok</div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            WhatsApp Istatistikleri
+          </CardTitle>
+          <CardDescription>Son 30 gunluk WhatsApp mesaj istatistikleri</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {whatsappLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : whatsappStats ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{whatsappStats.totalMessagesThisMonth}</div>
+                <div className="text-sm text-muted-foreground">Toplam Mesaj</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-blue-600">{whatsappStats.userMessages}</div>
+                <div className="text-sm text-muted-foreground">Musteri Mesaji</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-green-600">{whatsappStats.botResponses}</div>
+                <div className="text-sm text-muted-foreground">Bot Yaniti</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-orange-600">{whatsappStats.escalatedConversations}</div>
+                <div className="text-sm text-muted-foreground">Yonlendirilen</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{whatsappStats.escalationRate}%</div>
+                <div className="text-sm text-muted-foreground">Yonlendirme Orani</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{whatsappStats.uniqueCustomers}</div>
+                <div className="text-sm text-muted-foreground">Benzersiz Musteri</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold">{whatsappStats.avgResponseTimeMs}ms</div>
+                <div className="text-sm text-muted-foreground">Ort. Yanit Suresi</div>
+              </div>
+              <div className="p-4 border rounded-lg text-center">
+                <div className="text-2xl font-bold text-green-600">{whatsappStats.botSuccessRate.toFixed(1)}%</div>
+                <div className="text-sm text-muted-foreground">Bot Basari Orani</div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">Veri yok</div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default function SuperAdmin() {
@@ -407,7 +823,7 @@ export default function SuperAdmin() {
       </div>
 
       <Tabs defaultValue="plans">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="plans" data-testid="tab-plans">
             <Package className="h-4 w-4 mr-2" />
             Planlar
@@ -419,6 +835,18 @@ export default function SuperAdmin() {
           <TabsTrigger value="payments" data-testid="tab-payments">
             <CreditCard className="h-4 w-4 mr-2" />
             Ödemeler
+          </TabsTrigger>
+          <TabsTrigger value="agencies" data-testid="tab-agencies">
+            <Building2 className="h-4 w-4 mr-2" />
+            Ajanslar
+          </TabsTrigger>
+          <TabsTrigger value="announcements" data-testid="tab-announcements">
+            <Megaphone className="h-4 w-4 mr-2" />
+            Duyurular
+          </TabsTrigger>
+          <TabsTrigger value="analytics" data-testid="tab-analytics">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analitik
           </TabsTrigger>
           <TabsTrigger value="developer" data-testid="tab-developer">
             <Shield className="h-4 w-4 mr-2" />
@@ -628,6 +1056,21 @@ export default function SuperAdmin() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Agencies Tab */}
+        <TabsContent value="agencies" className="space-y-4 mt-4">
+          <AgenciesSection />
+        </TabsContent>
+
+        {/* Announcements Tab */}
+        <TabsContent value="announcements" className="space-y-4 mt-4">
+          <AnnouncementsSection />
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-4 mt-4">
+          <AnalyticsSection />
         </TabsContent>
 
         {/* Developer Tab */}
