@@ -914,6 +914,7 @@ export async function registerRoutes(
     '/customer-requests/submit',
     '/tenants/by-slug',
     '/bot-rules/verify',
+    '/bot-rules/login',
     '/health',
     '/settings/sidebarLogo',
     '/settings/brandSettings',
