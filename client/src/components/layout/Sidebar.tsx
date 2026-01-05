@@ -39,7 +39,7 @@ const navItems = [
   { href: "/package-tours", label: "Paket Turlar", icon: Package },
   { href: "/finance", label: "Finans", icon: Calculator },
   { href: "/agencies", label: "Acentalar", icon: Building2 },
-  { href: "/messages", label: "Mesaj Geçmişi", icon: MessageCircle },
+  { href: "/messages", label: "WhatsApp", icon: MessageCircle },
   { href: "/settings", label: "Ayarlar", icon: Settings },
 ];
 
