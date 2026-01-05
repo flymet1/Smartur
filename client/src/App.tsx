@@ -25,6 +25,7 @@ import SalesPresentation from "@/pages/SalesPresentation";
 import Subscription from "@/pages/Subscription";
 import SuperAdmin from "@/pages/SuperAdmin";
 import Developer from "@/pages/Developer";
+import Login from "@/pages/Login";
 
 function Router() {
   return (
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/subscription" component={Subscription} />
       <Route path="/super-admin" component={SuperAdmin} />
       <Route path="/developer" component={Developer} />
+      <Route path="/login" component={Login} />
       <Route component={NotFound} />
     </Switch>
   );
