@@ -884,8 +884,8 @@ export default function Reservations() {
                             disabled={!moveAgencyId}
                             onClick={async () => {
                               const agency = agencies.find(a => a.id === Number(moveAgencyId));
-                              if (!agency?.phone) {
-                                toast({ title: "Hata", description: "Acenta telefon numarası bulunamadı.", variant: "destructive" });
+                              if (!agency?.contactInfo) {
+                                toast({ title: "Hata", description: "Acenta iletisim bilgisi bulunamadi.", variant: "destructive" });
                                 return;
                               }
                               try {
@@ -893,7 +893,7 @@ export default function Reservations() {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
-                                    to: agency.phone,
+                                    to: agency.contactInfo,
                                     message: moveAgencyMsg
                                   })
                                 });
