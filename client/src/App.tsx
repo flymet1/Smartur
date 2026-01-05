@@ -21,9 +21,7 @@ import CustomerTracking from "@/pages/CustomerTracking";
 import CustomerRequests from "@/pages/CustomerRequests";
 import Agencies from "@/pages/Agencies";
 import SalesPresentation from "@/pages/SalesPresentation";
-import SuperAdmin from "@/pages/SuperAdmin";
 import Subscription from "@/pages/Subscription";
-import Developer from "@/pages/Developer";
 
 function Router() {
   return (
@@ -46,9 +44,7 @@ function Router() {
       <Route path="/takip/:token" component={CustomerTracking} />
       <Route path="/customer-requests" component={CustomerRequests} />
       <Route path="/sales-presentation" component={SalesPresentation} />
-      <Route path="/super-admin" component={SuperAdmin} />
       <Route path="/subscription" component={Subscription} />
-      <Route path="/developer" component={Developer} />
       <Route component={NotFound} />
     </Switch>
   );
