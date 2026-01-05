@@ -471,7 +471,7 @@ export default function Settings() {
 
         {/* Settings Navigation Tabs */}
         <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 mb-6">
             <TabsTrigger value="security" data-testid="tab-security">
               <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
               Guvenlik
@@ -491,10 +491,6 @@ export default function Settings() {
             <TabsTrigger value="holidays" data-testid="tab-holidays">
               <CalendarHeart className="w-4 h-4 mr-2 hidden sm:inline" />
               Tatiller
-            </TabsTrigger>
-            <TabsTrigger value="system" data-testid="tab-system">
-              <Server className="w-4 h-4 mr-2 hidden sm:inline" />
-              Sistem
             </TabsTrigger>
           </TabsList>
 
@@ -1330,11 +1326,6 @@ export default function Settings() {
           <TabsContent value="holidays" className="space-y-6">
             <HolidaysSection />
           </TabsContent>
-
-          {/* SYSTEM TAB */}
-          <TabsContent value="system" className="space-y-6">
-          <UpdatesCard />
-          </TabsContent>
         </Tabs>
 
         {/* Save Button at the end of content */}
@@ -1596,257 +1587,6 @@ function WooCommerceCard() {
               <TooltipContent>WooCommerce mağazasına bağlan</TooltipContent>
             </Tooltip>
           </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// Updates Card Component
-function UpdatesCard() {
-  const { toast } = useToast();
-  const [isChecking, setIsChecking] = useState(false);
-
-  // Get current version info
-  const { data: versionInfo, isLoading: versionLoading, refetch: refetchVersion } = useQuery<{
-    version: string;
-    gitCommit: string | null;
-    gitBranch: string | null;
-    nodeVersion: string;
-    environment: string;
-    uptime: number;
-    lastChecked: string;
-  }>({
-    queryKey: ['/api/system/version'],
-  });
-
-  // Check for updates
-  const { data: updateInfo, refetch: refetchUpdates } = useQuery<{
-    currentVersion: string;
-    localCommit: string | null;
-    remoteCommit: string | null;
-    behindCount: number;
-    hasUpdates: boolean;
-    lastChecked: string;
-    error: string | null;
-  }>({
-    queryKey: ['/api/system/check-updates'],
-    enabled: false, // Only fetch on demand
-  });
-
-  const handleCheckUpdates = async () => {
-    setIsChecking(true);
-    try {
-      const result = await refetchUpdates();
-      await refetchVersion();
-      
-      if (result.data?.error) {
-        toast({
-          title: "Uyarı",
-          description: `Güncelleme kontrolü kısmen başarısız: ${result.data.error}`,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Güncelleme kontrolü tamamlandı",
-          description: result.data?.hasUpdates 
-            ? `${result.data.behindCount} yeni güncelleme bulundu.`
-            : "Sistem güncel.",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Hata",
-        description: "Güncelleme kontrolü yapılamadı. Sunucu erişilemez olabilir.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  const formatUptime = (seconds: number) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (days > 0) return `${days} gün ${hours} saat`;
-    if (hours > 0) return `${hours} saat ${minutes} dakika`;
-    return `${minutes} dakika`;
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Download className="w-5 h-5" />
-          Güncellemeler
-        </CardTitle>
-        <CardDescription>
-          Sistem sürümü ve güncelleme bilgileri
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Current Version Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Server className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Sürüm:</span>
-              <Badge variant="secondary" data-testid="text-version">
-                {versionLoading ? "..." : `v${versionInfo?.version || "1.0.0"}`}
-              </Badge>
-            </div>
-            
-            {versionInfo?.gitCommit && (
-              <div className="flex items-center gap-2">
-                <GitBranch className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Commit:</span>
-                <code className="text-xs bg-muted px-2 py-1 rounded" data-testid="text-commit">
-                  {versionInfo.gitCommit}
-                </code>
-              </div>
-            )}
-            
-            {versionInfo?.uptime !== undefined && (
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Çalışma Süresi:</span>
-                <span className="text-sm" data-testid="text-uptime">
-                  {formatUptime(versionInfo.uptime)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            {versionInfo?.environment && (
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Ortam:</span>
-                <Badge variant={versionInfo.environment === 'production' ? 'default' : 'outline'} data-testid="text-environment">
-                  {versionInfo.environment === 'production' ? 'Üretim' : 'Geliştirme'}
-                </Badge>
-              </div>
-            )}
-            
-            {versionInfo?.nodeVersion && (
-              <div className="flex items-center gap-2">
-                <Server className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Node.js:</span>
-                <span className="text-sm" data-testid="text-node-version">
-                  {versionInfo.nodeVersion}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Update Status */}
-        {updateInfo && (
-          <div className={`p-4 rounded-lg border ${updateInfo.hasUpdates ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800' : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'}`}>
-            {updateInfo.hasUpdates ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span className="font-medium text-amber-800 dark:text-amber-300">
-                    {updateInfo.behindCount} yeni güncelleme mevcut
-                  </span>
-                </div>
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  Yerel: <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{updateInfo.localCommit}</code>
-                  {" → "}
-                  Uzak: <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">{updateInfo.remoteCommit}</code>
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                <span className="font-medium text-green-800 dark:text-green-300">
-                  Sistem güncel
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Check Updates Button */}
-        <div className="flex items-center gap-4">
-          <Button 
-            onClick={handleCheckUpdates} 
-            disabled={isChecking}
-            variant="outline"
-            data-testid="button-check-updates"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isChecking ? 'animate-spin' : ''}`} />
-            {isChecking ? "Kontrol Ediliyor..." : "Güncelleme Kontrol Et"}
-          </Button>
-          
-          {updateInfo?.lastChecked && (
-            <span className="text-xs text-muted-foreground">
-              Son kontrol: {new Date(updateInfo.lastChecked).toLocaleString('tr-TR')}
-            </span>
-          )}
-        </div>
-
-        {/* Update Instructions */}
-        {updateInfo?.hasUpdates && (
-          <div className="space-y-3 pt-4 border-t">
-            <h4 className="font-medium text-sm">Güncelleme Talimatları</h4>
-            <div className="bg-muted p-4 rounded-lg space-y-2">
-              <p className="text-sm text-muted-foreground mb-3">
-                VPS sunucunuzda aşağıdaki komutları çalıştırın:
-              </p>
-              <code className="block text-xs bg-background p-2 rounded border">
-                cd /path/to/my-smartur
-              </code>
-              <code className="block text-xs bg-background p-2 rounded border">
-                git pull origin main
-              </code>
-              <code className="block text-xs bg-background p-2 rounded border">
-                npm install
-              </code>
-              <code className="block text-xs bg-background p-2 rounded border">
-                npm run db:push
-              </code>
-              <code className="block text-xs bg-background p-2 rounded border">
-                pm2 reload my-smartur
-              </code>
-            </div>
-          </div>
-        )}
-
-        {/* Always Show Update Instructions */}
-        {!updateInfo?.hasUpdates && (
-          <div className="space-y-3 pt-4 border-t">
-            <h4 className="font-medium text-sm">VPS Güncelleme Talimatları</h4>
-            <p className="text-sm text-muted-foreground">
-              Yeni güncellemeler olduğunda VPS sunucunuzda aşağıdaki komutları çalıştırın:
-            </p>
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-xs whitespace-pre-wrap">
-{`# Proje klasörüne git
-cd /path/to/my-smartur
-
-# Güncellemeleri çek
-git pull origin main
-
-# Yeni paketleri kur
-npm install
-
-# Veritabanı değişikliklerini uygula
-npm run db:push
-
-# Uygulamayı yeniden başlat
-pm2 reload my-smartur`}
-              </pre>
-            </div>
-            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <p className="text-xs text-blue-800 dark:text-blue-300">
-                PM2 ile <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">reload</code> komutu kullanarak kesintisiz güncelleme yapabilirsiniz.
-              </p>
-            </div>
-          </div>
         )}
       </CardContent>
     </Card>
