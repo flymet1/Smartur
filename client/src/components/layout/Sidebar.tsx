@@ -621,20 +621,22 @@ export function Sidebar() {
         <div className="p-4 border-t space-y-3">
           <div className="bg-muted/50 rounded-lg p-3">
             <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sistem Durumu</div>
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                isBotEnabled ? "bg-accent animate-pulse" : "bg-muted-foreground"
-              )} />
-              <span className="text-foreground">WhatsApp Bot</span>
-              <span className={cn(
-                "text-xs px-1.5 py-0.5 rounded font-semibold",
-                isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
-              )}>
-                {isBotEnabled ? "Aktif" : "Kapali"}
-              </span>
-            </div>
-            <Link href="/subscription">
+            <Link href="/settings">
+              <div className="flex items-center gap-2 text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity" data-testid="link-whatsapp-bot-status">
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  isBotEnabled ? "bg-accent animate-pulse" : "bg-muted-foreground"
+                )} />
+                <span className="text-foreground">WhatsApp Bot</span>
+                <span className={cn(
+                  "text-xs px-1.5 py-0.5 rounded font-semibold",
+                  isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+                )}>
+                  {isBotEnabled ? "Aktif" : "Kapali"}
+                </span>
+              </div>
+            </Link>
+            <Link href="/settings">
               <div 
                 className={cn(
                   "flex items-center gap-2 text-sm font-medium mt-1 cursor-pointer hover:opacity-80 transition-opacity",

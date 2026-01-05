@@ -2537,10 +2537,6 @@ interface UserData {
 }
 
 function LicenseSection() {
-  const { toast } = useToast();
-  const [licenseKey, setLicenseKey] = useState("");
-  const [agencyName, setAgencyName] = useState("");
-  const [isActivating, setIsActivating] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
 
   // Check for logged in user
@@ -2555,7 +2551,7 @@ function LicenseSection() {
     }
   }, []);
 
-  const { data: licenseData, isLoading, refetch } = useQuery<LicenseData>({
+  const { data: licenseData, isLoading } = useQuery<LicenseData>({
     queryKey: ['/api/license']
   });
 
@@ -2579,56 +2575,6 @@ function LicenseSection() {
   };
 
   const userMembership = getUserMembershipStatus();
-
-  const handleActivateLicense = async () => {
-    if (!licenseKey.trim()) {
-      toast({ title: "Hata", description: "Lisans kodu gerekli.", variant: "destructive" });
-      return;
-    }
-    if (!agencyName.trim()) {
-      toast({ title: "Hata", description: "Acenta/işletme adı gerekli.", variant: "destructive" });
-      return;
-    }
-
-    setIsActivating(true);
-    try {
-      const res = await fetch('/api/license/activate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ licenseKey, agencyName })
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        toast({ title: "Başarılı", description: "Lisans aktive edildi." });
-        setLicenseKey("");
-        setAgencyName("");
-        await refetch();
-        queryClient.invalidateQueries({ queryKey: ['/api/license'] });
-      } else {
-        toast({ title: "Hata", description: data.error || "Lisans aktive edilemedi.", variant: "destructive" });
-      }
-    } catch (err) {
-      toast({ title: "Hata", description: "Lisans aktive edilemedi.", variant: "destructive" });
-    } finally {
-      setIsActivating(false);
-    }
-  };
-
-  const handleDeactivateLicense = async () => {
-    if (!confirm("Lisansı kaldırmak istediğinize emin misiniz?")) return;
-
-    try {
-      const res = await fetch('/api/license', { method: 'DELETE' });
-      if (res.ok) {
-        toast({ title: "Başarılı", description: "Lisans kaldırıldı." });
-        await refetch();
-        queryClient.invalidateQueries({ queryKey: ['/api/license'] });
-      }
-    } catch (err) {
-      toast({ title: "Hata", description: "Lisans kaldırılamadı.", variant: "destructive" });
-    }
-  };
 
   return (
     <>
@@ -2793,67 +2739,16 @@ function LicenseSection() {
               {licenseData.status.message && (
                 <p className="text-sm text-muted-foreground">{licenseData.status.message}</p>
               )}
-
-              <div className="flex justify-end">
-                <Button variant="destructive" size="sm" onClick={handleDeactivateLicense} data-testid="button-deactivate-license">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Lisansi Kaldir
-                </Button>
-              </div>
             </div>
-          ) : (
+          ) : !userMembership && (
             <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
               <AlertTriangle className="w-8 h-8 text-orange-500 shrink-0" />
               <div>
-                <p className="font-bold text-orange-700 dark:text-orange-300">Lisans Bulunamadi</p>
-                <p className="text-sm text-orange-600 dark:text-orange-400">Asagidaki formu kullanarak lisansinizi aktive edin.</p>
+                <p className="font-bold text-orange-700 dark:text-orange-300">Uyelik Bulunamadi</p>
+                <p className="text-sm text-orange-600 dark:text-orange-400">Uyelik bilgileriniz icin yonetici ile iletisime gecin.</p>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* License Activation */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5" />
-            {licenseData?.license ? 'Lisans Degistir' : 'Lisans Aktive Et'}
-          </CardTitle>
-          <CardDescription>Lisans kodunuzu girerek sistemi aktive edin</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="agencyName">Acenta / Isletme Adi *</Label>
-            <Input
-              id="agencyName"
-              value={agencyName}
-              onChange={(e) => setAgencyName(e.target.value)}
-              placeholder="Ornegin: Sky Fethiye"
-              data-testid="input-agency-name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="licenseKey">Lisans Kodu *</Label>
-            <Input
-              id="licenseKey"
-              value={licenseKey}
-              onChange={(e) => setLicenseKey(e.target.value)}
-              placeholder="XXXX-XXXX-XXXX-XXXX"
-              className="font-mono"
-              data-testid="input-license-key"
-            />
-            <p className="text-xs text-muted-foreground">
-              Lisans kodunuz yoksa destek@smartur.com adresine e-posta gonderin.
-            </p>
-          </div>
-          <Button 
-            onClick={handleActivateLicense} 
-            disabled={isActivating}
-            data-testid="button-activate-license"
-          >
-            {isActivating ? 'Aktive Ediliyor...' : 'Lisansi Aktive Et'}
-          </Button>
         </CardContent>
       </Card>
     </>
