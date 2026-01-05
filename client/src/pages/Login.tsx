@@ -16,6 +16,15 @@ interface BrandSettings {
   logoUrl?: string;
 }
 
+interface TenantInfo {
+  id: number;
+  name: string;
+  slug: string;
+  primaryColor: string | null;
+  accentColor: string | null;
+  logoUrl: string | null;
+}
+
 interface LoginResponse {
   user: {
     id: number;
@@ -25,9 +34,11 @@ interface LoginResponse {
     companyName: string;
     membershipType: string;
     membershipEndDate: string | null;
+    tenantId: number | null;
   };
   permissions: string[];
   roles: number[];
+  tenant: TenantInfo | null;
 }
 
 export default function Login() {
@@ -56,6 +67,11 @@ export default function Login() {
       localStorage.setItem("userData", JSON.stringify(data.user));
       localStorage.setItem("userPermissions", JSON.stringify(data.permissions));
       localStorage.setItem("userRoles", JSON.stringify(data.roles));
+      
+      // Store tenant information for multi-tenant context
+      if (data.tenant) {
+        localStorage.setItem("tenantData", JSON.stringify(data.tenant));
+      }
       
       toast({
         title: "Giris Basarili",

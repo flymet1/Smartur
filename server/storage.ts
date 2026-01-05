@@ -1,5 +1,6 @@
 import { db } from "./db";
 import {
+  tenants,
   activities,
   capacity,
   reservations,
@@ -130,12 +131,24 @@ import {
   type InsertUserRole,
   type UserLoginLog,
   type InsertUserLoginLog,
+  type Tenant,
+  type InsertTenant,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
 export interface IStorage {
-  // Activities
-  getActivities(): Promise<Activity[]>;
+  // Tenants
+  getTenants(): Promise<Tenant[]>;
+  getTenant(id: number): Promise<Tenant | undefined>;
+  getTenantBySlug(slug: string): Promise<Tenant | undefined>;
+  createTenant(tenant: InsertTenant): Promise<Tenant>;
+  updateTenant(id: number, tenant: Partial<InsertTenant>): Promise<Tenant>;
+  deleteTenant(id: number): Promise<void>;
+  getDefaultTenant(): Promise<Tenant | undefined>;
+  createDefaultTenantIfNotExists(): Promise<Tenant>;
+
+  // Activities (tenant-scoped)
+  getActivities(tenantId?: number): Promise<Activity[]>;
   getActivity(id: number): Promise<Activity | undefined>;
   createActivity(activity: InsertActivity): Promise<Activity>;
   updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity>;
@@ -445,8 +458,60 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Activities
-  async getActivities(): Promise<Activity[]> {
+  // Tenants
+  async getTenants(): Promise<Tenant[]> {
+    return await db.select().from(tenants);
+  }
+
+  async getTenant(id: number): Promise<Tenant | undefined> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, id));
+    return tenant;
+  }
+
+  async getTenantBySlug(slug: string): Promise<Tenant | undefined> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.slug, slug));
+    return tenant;
+  }
+
+  async createTenant(tenant: InsertTenant): Promise<Tenant> {
+    const [newTenant] = await db.insert(tenants).values(tenant).returning();
+    return newTenant;
+  }
+
+  async updateTenant(id: number, tenant: Partial<InsertTenant>): Promise<Tenant> {
+    const [updated] = await db.update(tenants).set({
+      ...tenant,
+      updatedAt: new Date()
+    }).where(eq(tenants.id, id)).returning();
+    return updated;
+  }
+
+  async deleteTenant(id: number): Promise<void> {
+    await db.delete(tenants).where(eq(tenants.id, id));
+  }
+
+  async getDefaultTenant(): Promise<Tenant | undefined> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.slug, "default"));
+    return tenant;
+  }
+
+  async createDefaultTenantIfNotExists(): Promise<Tenant> {
+    const existing = await this.getDefaultTenant();
+    if (existing) return existing;
+    
+    return await this.createTenant({
+      name: "Default Agency",
+      slug: "default",
+      contactEmail: "admin@smartur.com",
+      isActive: true
+    });
+  }
+
+  // Activities (tenant-scoped)
+  async getActivities(tenantId?: number): Promise<Activity[]> {
+    if (tenantId) {
+      return await db.select().from(activities).where(eq(activities.tenantId, tenantId));
+    }
     return await db.select().from(activities);
   }
 

@@ -4746,6 +4746,110 @@ Sky Fethiye`;
     }
   });
 
+  // === TENANTS (Multi-Tenant Management) ===
+
+  // Get all tenants
+  app.get("/api/tenants", async (req, res) => {
+    try {
+      const allTenants = await storage.getTenants();
+      res.json(allTenants);
+    } catch (err) {
+      console.error("Tenant listesi hatasi:", err);
+      res.status(500).json({ error: "Tenant listesi alinamadi" });
+    }
+  });
+
+  // Get single tenant
+  app.get("/api/tenants/:id", async (req, res) => {
+    try {
+      const tenant = await storage.getTenant(Number(req.params.id));
+      if (!tenant) {
+        return res.status(404).json({ error: "Tenant bulunamadi" });
+      }
+      res.json(tenant);
+    } catch (err) {
+      console.error("Tenant detay hatasi:", err);
+      res.status(500).json({ error: "Tenant alinamadi" });
+    }
+  });
+
+  // Create tenant
+  app.post("/api/tenants", async (req, res) => {
+    try {
+      const { name, slug, contactEmail, contactPhone, address, logoUrl, primaryColor, accentColor, timezone, language } = req.body;
+      
+      if (!name || !slug) {
+        return res.status(400).json({ error: "Tenant adi ve slug zorunludur" });
+      }
+
+      // Check if slug is unique
+      const existingTenant = await storage.getTenantBySlug(slug);
+      if (existingTenant) {
+        return res.status(400).json({ error: "Bu slug zaten kullaniliyor" });
+      }
+
+      const tenant = await storage.createTenant({
+        name,
+        slug,
+        contactEmail: contactEmail || null,
+        contactPhone: contactPhone || null,
+        address: address || null,
+        logoUrl: logoUrl || null,
+        primaryColor: primaryColor || "262 83% 58%",
+        accentColor: accentColor || "142 76% 36%",
+        timezone: timezone || "Europe/Istanbul",
+        language: language || "tr",
+        isActive: true,
+      });
+      res.json(tenant);
+    } catch (err) {
+      console.error("Tenant olusturma hatasi:", err);
+      res.status(500).json({ error: "Tenant olusturulamadi" });
+    }
+  });
+
+  // Update tenant
+  app.patch("/api/tenants/:id", async (req, res) => {
+    try {
+      const tenant = await storage.updateTenant(Number(req.params.id), req.body);
+      res.json(tenant);
+    } catch (err) {
+      console.error("Tenant guncelleme hatasi:", err);
+      res.status(500).json({ error: "Tenant guncellenemedi" });
+    }
+  });
+
+  // Delete tenant
+  app.delete("/api/tenants/:id", async (req, res) => {
+    try {
+      // Check if this is the default tenant - prevent deletion
+      const tenant = await storage.getTenant(Number(req.params.id));
+      if (tenant?.slug === "default") {
+        return res.status(400).json({ error: "Varsayilan tenant silinemez" });
+      }
+      
+      await storage.deleteTenant(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Tenant silme hatasi:", err);
+      res.status(500).json({ error: "Tenant silinemedi" });
+    }
+  });
+
+  // Get tenant by slug
+  app.get("/api/tenants/by-slug/:slug", async (req, res) => {
+    try {
+      const tenant = await storage.getTenantBySlug(req.params.slug);
+      if (!tenant) {
+        return res.status(404).json({ error: "Tenant bulunamadi" });
+      }
+      res.json(tenant);
+    } catch (err) {
+      console.error("Tenant slug sorgu hatasi:", err);
+      res.status(500).json({ error: "Tenant alinamadi" });
+    }
+  });
+
   // === PLAN FEATURES ===
 
   // Get all plan features
@@ -5489,6 +5593,12 @@ Sky Fethiye`;
       // Get user permissions
       const permissions = await storage.getUserPermissions(user.id);
       const roles = await storage.getUserRoles(user.id);
+      
+      // Get tenant information
+      let tenant = null;
+      if (user.tenantId) {
+        tenant = await storage.getTenant(user.tenantId);
+      }
 
       // Don't send password hash
       const { passwordHash: _, ...safeUser } = user;
@@ -5497,6 +5607,14 @@ Sky Fethiye`;
         user: safeUser,
         permissions: permissions.map(p => p.key),
         roles: roles.map(r => r.roleId),
+        tenant: tenant ? {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+          primaryColor: tenant.primaryColor,
+          accentColor: tenant.accentColor,
+          logoUrl: tenant.logoUrl,
+        } : null,
       });
     } catch (err) {
       console.error("Giris hatasi:", err);
@@ -5518,6 +5636,12 @@ Sky Fethiye`;
 
       const permissions = await storage.getUserPermissions(user.id);
       const roles = await storage.getUserRoles(user.id);
+      
+      // Get tenant information
+      let tenant = null;
+      if (user.tenantId) {
+        tenant = await storage.getTenant(user.tenantId);
+      }
 
       const { passwordHash: _, ...safeUser } = user;
 
@@ -5525,6 +5649,14 @@ Sky Fethiye`;
         user: safeUser,
         permissions: permissions.map(p => p.key),
         roles: roles.map(r => r.roleId),
+        tenant: tenant ? {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+          primaryColor: tenant.primaryColor,
+          accentColor: tenant.accentColor,
+          logoUrl: tenant.logoUrl,
+        } : null,
       });
     } catch (err) {
       console.error("Oturum kontrol hatasi:", err);

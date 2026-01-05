@@ -3,9 +3,36 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
+// === MULTI-TENANT SUPPORT ===
+
+// Tenants (Her acenta/sirket icin ayri veri alani)
+export const tenants = pgTable("tenants", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Acenta/sirket adi
+  slug: text("slug").notNull().unique(), // URL-friendly unique identifier
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  address: text("address"),
+  // Marka ayarlari (tenant bazinda)
+  logoUrl: text("logo_url"),
+  primaryColor: text("primary_color").default("262 83% 58%"), // HSL format
+  accentColor: text("accent_color").default("142 76% 36%"), // HSL format
+  // WhatsApp ayarlari (tenant bazinda)
+  twilioAccountSid: text("twilio_account_sid"),
+  twilioAuthToken: text("twilio_auth_token"),
+  twilioWhatsappNumber: text("twilio_whatsapp_number"),
+  // Diger ayarlar
+  timezone: text("timezone").default("Europe/Istanbul"),
+  language: text("language").default("tr"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // === TABLE DEFINITIONS ===
 
 export const activities = pgTable("activities", {
+  tenantId: integer("tenant_id").references(() => tenants.id),
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   nameAliases: text("name_aliases").default("[]"), // JSON array of alternative names (multilingual: ["paragliding fethiye", "Fethiye yamaç paraşütü"])
@@ -36,6 +63,7 @@ export const activities = pgTable("activities", {
 
 export const capacity = pgTable("capacity", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   activityId: integer("activity_id").references(() => activities.id).notNull(),
   date: text("date").notNull(), // YYYY-MM-DD
   time: text("time").notNull(), // HH:mm
@@ -45,6 +73,7 @@ export const capacity = pgTable("capacity", {
 
 export const reservations = pgTable("reservations", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   activityId: integer("activity_id").references(() => activities.id),
   packageTourId: integer("package_tour_id"), // Paket tur rezervasyonu ise (null değilse bu bir paket tur ana kaydı)
   parentReservationId: integer("parent_reservation_id"), // Paket tur alt rezervasyonu ise ana rezervasyon ID'si
@@ -75,6 +104,7 @@ export const reservations = pgTable("reservations", {
 
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   phone: text("phone").notNull(),
   content: text("content").notNull(),
   role: text("role").notNull(), // user, assistant, system
@@ -84,6 +114,7 @@ export const messages = pgTable("messages", {
 
 export const supportRequests = pgTable("support_requests", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   phone: text("phone").notNull(),
   description: text("description"), // Kullanıcının girdiği sorun açıklaması
   status: text("status").default("open"), // open, resolved
@@ -95,6 +126,7 @@ export const supportRequests = pgTable("support_requests", {
 // Sistem logları - hata ayıklama için
 export const systemLogs = pgTable("system_logs", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   level: text("level").notNull(), // error, warn, info
   source: text("source").notNull(), // whatsapp, ai, webhook, system
   message: text("message").notNull(),
@@ -115,6 +147,7 @@ export const supportRequestLogs = pgTable("support_request_logs", {
 // Müşteri Talepleri (Takip sayfasından gelen talepler)
 export const customerRequests = pgTable("customer_requests", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   reservationId: integer("reservation_id").references(() => reservations.id).notNull(),
   requestType: text("request_type").notNull(), // time_change, cancellation, other
   requestDetails: text("request_details"), // Talep detayları
@@ -131,13 +164,15 @@ export const customerRequests = pgTable("customer_requests", {
 
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
-  key: text("key").notNull().unique(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
+  key: text("key").notNull(),
   value: text("value"),
 });
 
 export const blacklist = pgTable("blacklist", {
   id: serial("id").primaryKey(),
-  phone: text("phone").notNull().unique(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
+  phone: text("phone").notNull(),
   reason: text("reason"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -147,6 +182,7 @@ export const blacklist = pgTable("blacklist", {
 // Tedarikçiler (Suppliers) - Aktivite sağlayıcı firmalar (örn: UP Firma, Dalış Şirketi)
 export const agencies = pgTable("agencies", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   name: text("name").notNull(),
   contactInfo: text("contact_info"),
   defaultPayoutPerGuest: integer("default_payout_per_guest").default(0), // Kişi başı ödeme (TL)
@@ -158,6 +194,7 @@ export const agencies = pgTable("agencies", {
 // Aktivite bazlı acenta ödeme koşulları
 export const agencyActivityTerms = pgTable("agency_activity_terms", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   agencyId: integer("agency_id").references(() => agencies.id).notNull(),
   activityId: integer("activity_id").references(() => activities.id).notNull(),
   payoutPerGuest: integer("payout_per_guest").default(0), // Kişi başı ödeme (TL)
@@ -167,6 +204,7 @@ export const agencyActivityTerms = pgTable("agency_activity_terms", {
 // Aktivite maliyetleri (aylık)
 export const activityCosts = pgTable("activity_costs", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   activityId: integer("activity_id").references(() => activities.id).notNull(),
   month: text("month").notNull(), // YYYY-MM
   fixedCost: integer("fixed_cost").default(0), // Sabit maliyet (TL)
@@ -177,6 +215,7 @@ export const activityCosts = pgTable("activity_costs", {
 // Hesaplaşma dönemleri
 export const settlements = pgTable("settlements", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   agencyId: integer("agency_id").references(() => agencies.id).notNull(),
   periodStart: text("period_start").notNull(), // YYYY-MM-DD
   periodEnd: text("period_end").notNull(), // YYYY-MM-DD
@@ -199,6 +238,7 @@ export const settlements = pgTable("settlements", {
 // Hesaplaşma detayları (rezervasyon bazlı)
 export const settlementEntries = pgTable("settlement_entries", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   settlementId: integer("settlement_id").references(() => settlements.id).notNull(),
   reservationId: integer("reservation_id").references(() => reservations.id),
   activityId: integer("activity_id").references(() => activities.id),
@@ -211,6 +251,7 @@ export const settlementEntries = pgTable("settlement_entries", {
 // Ödemeler
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   settlementId: integer("settlement_id").references(() => settlements.id),
   amountTl: integer("amount_tl").notNull(),
   method: text("method"), // cash, bank, etc.
@@ -222,6 +263,7 @@ export const payments = pgTable("payments", {
 // Acenta Ödemeleri (Manuel Kayıtlar)
 export const agencyPayouts = pgTable("agency_payouts", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   agencyId: integer("agency_id").references(() => agencies.id).notNull(),
   periodStart: text("period_start").notNull(), // YYYY-MM-DD
   periodEnd: text("period_end").notNull(), // YYYY-MM-DD
@@ -241,6 +283,7 @@ export const agencyPayouts = pgTable("agency_payouts", {
 // Tedarikçi Gönderimleri (Günlük aktivite gönderimi takibi)
 export const supplierDispatches = pgTable("supplier_dispatches", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   agencyId: integer("agency_id").references(() => agencies.id).notNull(),
   activityId: integer("activity_id").references(() => activities.id),
   dispatchDate: text("dispatch_date").notNull(), // YYYY-MM-DD
@@ -257,6 +300,7 @@ export const supplierDispatches = pgTable("supplier_dispatches", {
 // Tedarikçi Ödeme Tarifeleri (Dönemsel ücretler)
 export const agencyActivityRates = pgTable("agency_activity_rates", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   agencyId: integer("agency_id").references(() => agencies.id).notNull(),
   activityId: integer("activity_id").references(() => activities.id),
   validFrom: text("valid_from").notNull(), // YYYY-MM-DD başlangıç tarihi
@@ -274,6 +318,7 @@ export const agencyActivityRates = pgTable("agency_activity_rates", {
 // Resmi Tatiller ve Bayramlar
 export const holidays = pgTable("holidays", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   name: text("name").notNull(), // Tatil adı (örn: "Ramazan Bayramı", "29 Ekim Cumhuriyet Bayramı")
   startDate: text("start_date").notNull(), // YYYY-MM-DD
   endDate: text("end_date").notNull(), // YYYY-MM-DD (tek günlük tatil için aynı tarih)
@@ -288,6 +333,7 @@ export const holidays = pgTable("holidays", {
 // Paket Turlar
 export const packageTours = pgTable("package_tours", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   name: text("name").notNull(),
   nameAliases: text("name_aliases").default("[]"), // JSON array of alternative names (multilingual)
   description: text("description"),
@@ -305,6 +351,7 @@ export const packageTours = pgTable("package_tours", {
 // Paket Tur Aktiviteleri (Hangi aktiviteler dahil, varsayılan saat/offset)
 export const packageTourActivities = pgTable("package_tour_activities", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   packageTourId: integer("package_tour_id").references(() => packageTours.id).notNull(),
   activityId: integer("activity_id").references(() => activities.id).notNull(),
   dayOffset: integer("day_offset").default(0), // Paket başlangıcından kaç gün sonra (0=aynı gün, 1=ertesi gün)
@@ -326,6 +373,11 @@ export const reservationRelations = relations(reservations, ({ one }) => ({
     references: [activities.id],
   }),
 }));
+
+// === TENANT SCHEMAS & TYPES ===
+export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
 
 // === BASE SCHEMAS ===
 export const insertActivitySchema = createInsertSchema(activities).omit({ id: true });
@@ -528,6 +580,7 @@ export const license = pgTable("license", {
 // Otomatik Yanıtlar (AI çağrısı yapmadan anahtar kelime eşleştirme ile yanıt)
 export const autoResponses = pgTable("auto_responses", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   name: text("name").notNull(), // Kural adı (örn: "Fiyat Sorgusu")
   keywords: text("keywords").notNull(), // JSON array of Turkish keywords ["fiyat", "ücret", "ne kadar"]
   keywordsEn: text("keywords_en").default("[]"), // JSON array of English keywords ["price", "cost", "how much"]
@@ -553,6 +606,7 @@ export type InsertLicense = z.infer<typeof insertLicenseSchema>;
 // Müşteri Talepleri için hazır mesaj şablonları
 export const requestMessageTemplates = pgTable("request_message_templates", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   name: text("name").notNull(), // Şablon adı (örn: "Onaylandı", "Değerlendiriliyor", "İptal Edildi")
   templateType: text("template_type").notNull(), // approved, pending, rejected
   messageContent: text("message_content").notNull(), // Dinamik mesaj içeriği
@@ -642,6 +696,7 @@ export const apiStatusLogs = pgTable("api_status_logs", {
 // Bot Kalite Skorları
 export const botQualityScores = pgTable("bot_quality_scores", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   messageId: integer("message_id").references(() => messages.id),
   phone: text("phone"),
   question: text("question"),
@@ -764,6 +819,7 @@ export type InsertTicketResponse = z.infer<typeof insertTicketResponseSchema>;
 // Uygulama Kullanicilari (Lisans yerine kullanici adi/sifre ile giris)
 export const appUsers = pgTable("app_users", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id), // Hangi tenant'a ait
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
