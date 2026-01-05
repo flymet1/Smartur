@@ -5299,6 +5299,365 @@ Sky Fethiye`;
     }
   });
 
+  // === APP USER MANAGEMENT (Super Admin creates users) ===
+
+  app.get("/api/app-users", async (req, res) => {
+    try {
+      const users = await storage.getAppUsers();
+      res.json(users);
+    } catch (err) {
+      console.error("Kullanici listesi hatasi:", err);
+      res.status(500).json({ error: "Kullanicilar alinamadi" });
+    }
+  });
+
+  app.get("/api/app-users/:id", async (req, res) => {
+    try {
+      const user = await storage.getAppUser(Number(req.params.id));
+      if (!user) {
+        return res.status(404).json({ error: "Kullanici bulunamadi" });
+      }
+      res.json(user);
+    } catch (err) {
+      console.error("Kullanici detay hatasi:", err);
+      res.status(500).json({ error: "Kullanici alinamadi" });
+    }
+  });
+
+  app.post("/api/app-users", async (req, res) => {
+    try {
+      const { username, email, password, name, phone, companyName, membershipType, membershipEndDate, planId, maxActivities, maxReservationsPerMonth, notes, roleIds } = req.body;
+      
+      // Check if username or email already exists
+      const existingUsername = await storage.getAppUserByUsername(username);
+      if (existingUsername) {
+        return res.status(400).json({ error: "Bu kullanici adi zaten kullaniliyor" });
+      }
+      const existingEmail = await storage.getAppUserByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({ error: "Bu e-posta zaten kullaniliyor" });
+      }
+
+      // Hash password
+      const crypto = await import('crypto');
+      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+
+      const user = await storage.createAppUser({
+        username,
+        email,
+        passwordHash,
+        name,
+        phone,
+        companyName,
+        membershipType: membershipType || 'trial',
+        membershipStartDate: new Date(),
+        membershipEndDate: membershipEndDate ? new Date(membershipEndDate) : null,
+        planId,
+        maxActivities: maxActivities || 5,
+        maxReservationsPerMonth: maxReservationsPerMonth || 100,
+        notes,
+        isActive: true,
+      });
+
+      // Assign roles if provided
+      if (roleIds && roleIds.length > 0) {
+        for (const roleId of roleIds) {
+          await storage.assignUserRole({ userId: user.id, roleId });
+        }
+      }
+
+      res.json(user);
+    } catch (err) {
+      console.error("Kullanici olusturma hatasi:", err);
+      res.status(500).json({ error: "Kullanici olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/app-users/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { password, roleIds, ...updateData } = req.body;
+
+      // If password is provided, hash it
+      if (password) {
+        const crypto = await import('crypto');
+        updateData.passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+      }
+
+      // Convert date strings to Date objects if provided
+      if (updateData.membershipEndDate) {
+        updateData.membershipEndDate = new Date(updateData.membershipEndDate);
+      }
+      if (updateData.membershipStartDate) {
+        updateData.membershipStartDate = new Date(updateData.membershipStartDate);
+      }
+
+      const user = await storage.updateAppUser(id, updateData);
+
+      // Update roles if provided
+      if (roleIds !== undefined) {
+        // Get current roles
+        const currentRoles = await storage.getUserRoles(id);
+        const currentRoleIds = currentRoles.map(r => r.roleId);
+
+        // Remove roles not in new list
+        for (const roleId of currentRoleIds) {
+          if (!roleIds.includes(roleId)) {
+            await storage.removeUserRole(id, roleId);
+          }
+        }
+
+        // Add new roles
+        for (const roleId of roleIds) {
+          if (!currentRoleIds.includes(roleId)) {
+            await storage.assignUserRole({ userId: id, roleId });
+          }
+        }
+      }
+
+      res.json(user);
+    } catch (err) {
+      console.error("Kullanici guncelleme hatasi:", err);
+      res.status(500).json({ error: "Kullanici guncellenemedi" });
+    }
+  });
+
+  app.delete("/api/app-users/:id", async (req, res) => {
+    try {
+      await storage.deleteAppUser(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Kullanici silme hatasi:", err);
+      res.status(500).json({ error: "Kullanici silinemedi" });
+    }
+  });
+
+  // === USER AUTHENTICATION ===
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      const crypto = await import('crypto');
+      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+
+      const user = await storage.getAppUserByUsername(username);
+
+      // Log login attempt
+      const logEntry = {
+        userId: user?.id || null,
+        username,
+        ipAddress: req.ip || req.socket.remoteAddress || '',
+        userAgent: req.headers['user-agent'] || '',
+        status: 'failed' as const,
+        failureReason: '',
+      };
+
+      if (!user) {
+        logEntry.failureReason = 'Kullanici bulunamadi';
+        await storage.createUserLoginLog(logEntry);
+        return res.status(401).json({ error: "Gecersiz kullanici adi veya sifre" });
+      }
+
+      if (!user.isActive) {
+        logEntry.failureReason = 'Hesap aktif degil';
+        await storage.createUserLoginLog(logEntry);
+        return res.status(401).json({ error: "Hesabiniz aktif degil" });
+      }
+
+      if (user.isSuspended) {
+        logEntry.failureReason = 'Hesap askiya alinmis';
+        await storage.createUserLoginLog(logEntry);
+        return res.status(401).json({ error: "Hesabiniz askiya alinmis: " + (user.suspendReason || '') });
+      }
+
+      if (user.passwordHash !== passwordHash) {
+        logEntry.failureReason = 'Yanlis sifre';
+        await storage.createUserLoginLog(logEntry);
+        return res.status(401).json({ error: "Gecersiz kullanici adi veya sifre" });
+      }
+
+      // Check membership expiration
+      if (user.membershipEndDate && new Date(user.membershipEndDate) < new Date()) {
+        logEntry.failureReason = 'Uyelik suresi dolmus';
+        await storage.createUserLoginLog(logEntry);
+        return res.status(401).json({ error: "Uyelik suresiz dolmus. Lutfen yenileyin." });
+      }
+
+      // Successful login
+      logEntry.status = 'success';
+      logEntry.failureReason = '';
+      await storage.createUserLoginLog(logEntry);
+      await storage.updateAppUserLoginTime(user.id);
+
+      // Get user permissions
+      const permissions = await storage.getUserPermissions(user.id);
+      const roles = await storage.getUserRoles(user.id);
+
+      // Don't send password hash
+      const { passwordHash: _, ...safeUser } = user;
+
+      res.json({
+        user: safeUser,
+        permissions: permissions.map(p => p.key),
+        roles: roles.map(r => r.roleId),
+      });
+    } catch (err) {
+      console.error("Giris hatasi:", err);
+      res.status(500).json({ error: "Giris yapilamadi" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'];
+      if (!userId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+
+      const user = await storage.getAppUser(Number(userId));
+      if (!user) {
+        return res.status(401).json({ error: "Kullanici bulunamadi" });
+      }
+
+      const permissions = await storage.getUserPermissions(user.id);
+      const roles = await storage.getUserRoles(user.id);
+
+      const { passwordHash: _, ...safeUser } = user;
+
+      res.json({
+        user: safeUser,
+        permissions: permissions.map(p => p.key),
+        roles: roles.map(r => r.roleId),
+      });
+    } catch (err) {
+      console.error("Oturum kontrol hatasi:", err);
+      res.status(500).json({ error: "Oturum kontrol edilemedi" });
+    }
+  });
+
+  // === ROLES ===
+
+  app.get("/api/roles", async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (err) {
+      console.error("Rol listesi hatasi:", err);
+      res.status(500).json({ error: "Roller alinamadi" });
+    }
+  });
+
+  app.post("/api/roles", async (req, res) => {
+    try {
+      const role = await storage.createRole(req.body);
+      res.json(role);
+    } catch (err) {
+      console.error("Rol olusturma hatasi:", err);
+      res.status(500).json({ error: "Rol olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/roles/:id", async (req, res) => {
+    try {
+      const role = await storage.updateRole(Number(req.params.id), req.body);
+      res.json(role);
+    } catch (err) {
+      console.error("Rol guncelleme hatasi:", err);
+      res.status(500).json({ error: "Rol guncellenemedi" });
+    }
+  });
+
+  app.delete("/api/roles/:id", async (req, res) => {
+    try {
+      await storage.deleteRole(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Rol silme hatasi:", err);
+      res.status(400).json({ error: err.message || "Rol silinemedi" });
+    }
+  });
+
+  // === PERMISSIONS ===
+
+  app.get("/api/permissions", async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (err) {
+      console.error("Izin listesi hatasi:", err);
+      res.status(500).json({ error: "Izinler alinamadi" });
+    }
+  });
+
+  app.post("/api/permissions/initialize", async (req, res) => {
+    try {
+      await storage.initializeDefaultPermissions();
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Izin baslat hatasi:", err);
+      res.status(500).json({ error: "Izinler baslatilamadi" });
+    }
+  });
+
+  // === ROLE PERMISSIONS ===
+
+  app.get("/api/roles/:id/permissions", async (req, res) => {
+    try {
+      const rolePermissions = await storage.getRolePermissions(Number(req.params.id));
+      res.json(rolePermissions);
+    } catch (err) {
+      console.error("Rol izinleri hatasi:", err);
+      res.status(500).json({ error: "Rol izinleri alinamadi" });
+    }
+  });
+
+  app.put("/api/roles/:id/permissions", async (req, res) => {
+    try {
+      const { permissionIds } = req.body;
+      await storage.setRolePermissions(Number(req.params.id), permissionIds || []);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Rol izinleri guncelleme hatasi:", err);
+      res.status(500).json({ error: "Rol izinleri guncellenemedi" });
+    }
+  });
+
+  // === USER ROLES ===
+
+  app.get("/api/app-users/:id/roles", async (req, res) => {
+    try {
+      const userRoles = await storage.getUserRoles(Number(req.params.id));
+      res.json(userRoles);
+    } catch (err) {
+      console.error("Kullanici rolleri hatasi:", err);
+      res.status(500).json({ error: "Kullanici rolleri alinamadi" });
+    }
+  });
+
+  app.get("/api/app-users/:id/permissions", async (req, res) => {
+    try {
+      const permissions = await storage.getUserPermissions(Number(req.params.id));
+      res.json(permissions);
+    } catch (err) {
+      console.error("Kullanici izinleri hatasi:", err);
+      res.status(500).json({ error: "Kullanici izinleri alinamadi" });
+    }
+  });
+
+  // === USER LOGIN LOGS ===
+
+  app.get("/api/user-login-logs", async (req, res) => {
+    try {
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : 100;
+      const logs = await storage.getUserLoginLogs(userId, limit);
+      res.json(logs);
+    } catch (err) {
+      console.error("Kullanici giris loglari hatasi:", err);
+      res.status(500).json({ error: "Giris loglari alinamadi" });
+    }
+  });
+
   return httpServer;
 }
 
@@ -5307,6 +5666,9 @@ async function seedDatabase() {
   // Seed default subscription plans and features
   await storage.seedDefaultSubscriptionPlans();
   await storage.seedDefaultPlanFeatures();
+  
+  // Initialize default roles and permissions for user management
+  await storage.initializeDefaultPermissions();
   
   const activities = await storage.getActivities();
   if (activities.length === 0) {
