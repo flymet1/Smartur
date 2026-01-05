@@ -72,12 +72,15 @@ import {
   subscriptionPlans,
   subscriptions,
   subscriptionPayments,
+  planFeatures,
   type SubscriptionPlan,
   type InsertSubscriptionPlan,
   type Subscription,
   type InsertSubscription,
   type SubscriptionPayment,
   type InsertSubscriptionPayment,
+  type PlanFeature,
+  type InsertPlanFeature,
   announcements,
   invoices,
   apiStatusLogs,
@@ -269,6 +272,14 @@ export interface IStorage {
   updateSubscriptionPlan(id: number, plan: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan>;
   deleteSubscriptionPlan(id: number): Promise<void>;
   seedDefaultSubscriptionPlans(): Promise<void>;
+
+  // Plan Features
+  getPlanFeatures(): Promise<PlanFeature[]>;
+  getPlanFeature(id: number): Promise<PlanFeature | undefined>;
+  createPlanFeature(feature: InsertPlanFeature): Promise<PlanFeature>;
+  updatePlanFeature(id: number, feature: Partial<InsertPlanFeature>): Promise<PlanFeature>;
+  deletePlanFeature(id: number): Promise<void>;
+  seedDefaultPlanFeatures(): Promise<void>;
 
   // Subscriptions
   getSubscriptions(): Promise<Subscription[]>;
@@ -1925,6 +1936,53 @@ Sky Fethiye`,
 
     for (const plan of defaultPlans) {
       await this.createSubscriptionPlan(plan);
+    }
+  }
+
+  // Plan Features
+  async getPlanFeatures(): Promise<PlanFeature[]> {
+    return await db.select().from(planFeatures).orderBy(planFeatures.sortOrder);
+  }
+
+  async getPlanFeature(id: number): Promise<PlanFeature | undefined> {
+    const [feature] = await db.select().from(planFeatures).where(eq(planFeatures.id, id));
+    return feature;
+  }
+
+  async createPlanFeature(feature: InsertPlanFeature): Promise<PlanFeature> {
+    const [newFeature] = await db.insert(planFeatures).values(feature).returning();
+    return newFeature;
+  }
+
+  async updatePlanFeature(id: number, feature: Partial<InsertPlanFeature>): Promise<PlanFeature> {
+    const [updated] = await db.update(planFeatures).set(feature).where(eq(planFeatures.id, id)).returning();
+    return updated;
+  }
+
+  async deletePlanFeature(id: number): Promise<void> {
+    await db.delete(planFeatures).where(eq(planFeatures.id, id));
+  }
+
+  async seedDefaultPlanFeatures(): Promise<void> {
+    const existing = await this.getPlanFeatures();
+    if (existing.length > 0) return;
+
+    const defaultFeatures: InsertPlanFeature[] = [
+      { key: "basic_calendar", label: "Temel Takvim", description: "Rezervasyon takvimi görüntüleme", icon: "Calendar", category: "core", sortOrder: 0 },
+      { key: "manual_reservations", label: "Manuel Rezervasyon", description: "Manuel rezervasyon oluşturma", icon: "ClipboardList", category: "core", sortOrder: 1 },
+      { key: "whatsapp_notifications", label: "WhatsApp Bildirimleri", description: "WhatsApp üzerinden bildirim gönderme", icon: "MessageCircle", category: "communication", sortOrder: 2 },
+      { key: "basic_reports", label: "Temel Raporlar", description: "Basit istatistik raporları", icon: "BarChart3", category: "analytics", sortOrder: 3 },
+      { key: "advanced_reports", label: "Gelişmiş Raporlar", description: "Detaylı analiz ve raporlama", icon: "TrendingUp", category: "analytics", sortOrder: 4 },
+      { key: "ai_bot", label: "AI Bot", description: "Yapay zeka destekli müşteri yanıtları", icon: "Bot", category: "automation", sortOrder: 5 },
+      { key: "woocommerce", label: "WooCommerce Entegrasyonu", description: "E-ticaret sitesi entegrasyonu", icon: "ShoppingCart", category: "integration", sortOrder: 6 },
+      { key: "package_tours", label: "Paket Turlar", description: "Çoklu aktivite paket turları", icon: "Package", category: "core", sortOrder: 7 },
+      { key: "api_access", label: "API Erişimi", description: "Dış sistemler için API erişimi", icon: "Code", category: "integration", sortOrder: 8 },
+      { key: "priority_support", label: "Öncelikli Destek", description: "7/24 öncelikli teknik destek", icon: "HeadphonesIcon", category: "support", sortOrder: 9 },
+      { key: "custom_branding", label: "Özel Marka", description: "Kendi logonuz ve renk temanız", icon: "Palette", category: "customization", sortOrder: 10 },
+    ];
+
+    for (const feature of defaultFeatures) {
+      await this.createPlanFeature(feature);
     }
   }
 

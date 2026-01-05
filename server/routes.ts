@@ -4419,6 +4419,52 @@ Sky Fethiye`;
     }
   });
 
+  // === PLAN FEATURES ===
+
+  // Get all plan features
+  app.get("/api/plan-features", async (req, res) => {
+    try {
+      const features = await storage.getPlanFeatures();
+      res.json(features);
+    } catch (err) {
+      console.error("Özellik listesi hatasi:", err);
+      res.status(500).json({ error: "Özellikler alinamadi" });
+    }
+  });
+
+  // Create plan feature
+  app.post("/api/plan-features", async (req, res) => {
+    try {
+      const feature = await storage.createPlanFeature(req.body);
+      res.json(feature);
+    } catch (err) {
+      console.error("Özellik oluşturma hatasi:", err);
+      res.status(500).json({ error: "Özellik oluşturulamadi" });
+    }
+  });
+
+  // Update plan feature
+  app.patch("/api/plan-features/:id", async (req, res) => {
+    try {
+      const feature = await storage.updatePlanFeature(Number(req.params.id), req.body);
+      res.json(feature);
+    } catch (err) {
+      console.error("Özellik güncelleme hatasi:", err);
+      res.status(500).json({ error: "Özellik güncellenemedi" });
+    }
+  });
+
+  // Delete plan feature
+  app.delete("/api/plan-features/:id", async (req, res) => {
+    try {
+      await storage.deletePlanFeature(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Özellik silme hatasi:", err);
+      res.status(500).json({ error: "Özellik silinemedi" });
+    }
+  });
+
   // === SUBSCRIPTIONS ===
 
   // Get all subscriptions
@@ -4641,8 +4687,9 @@ Sky Fethiye`;
 
 // Seed function
 async function seedDatabase() {
-  // Seed default subscription plans
+  // Seed default subscription plans and features
   await storage.seedDefaultSubscriptionPlans();
+  await storage.seedDefaultPlanFeatures();
   
   const activities = await storage.getActivities();
   if (activities.length === 0) {
