@@ -3238,7 +3238,9 @@ interface TenantUser {
 interface Role {
   id: number;
   name: string;
+  displayName: string;
   description: string | null;
+  color?: string;
 }
 
 function UserManagementSection() {
@@ -3259,9 +3261,15 @@ function UserManagementSection() {
     queryKey: ['/api/tenant-users'],
   });
 
-  const { data: roles = [] } = useQuery<Role[]>({
+  const { data: allRoles = [] } = useQuery<Role[]>({
     queryKey: ['/api/roles'],
   });
+
+  // Filter to only show tenant-specific roles (Manager and Operator)
+  // Owner role is only assigned automatically when tenant is created
+  const tenantRoles = allRoles.filter(r => 
+    r.name === 'tenant_manager' || r.name === 'tenant_operator'
+  );
 
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof userForm) => {
@@ -3483,11 +3491,14 @@ function UserManagementSection() {
                 />
               </div>
 
-              {roles.length > 0 && (
+              {tenantRoles.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Roller</Label>
+                  <Label>Rol</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Yonetici: Aktivite, bot, finans ve kullanici yonetimi. Operator: Rezervasyon ve mesajlar.
+                  </p>
                   <div className="flex flex-wrap gap-2">
-                    {roles.map((role) => (
+                    {tenantRoles.map((role) => (
                       <Badge
                         key={role.id}
                         variant={userForm.roleIds.includes(role.id) ? "default" : "outline"}
@@ -3501,7 +3512,7 @@ function UserManagementSection() {
                         }}
                         data-testid={`badge-role-${role.id}`}
                       >
-                        {role.name}
+                        {role.displayName || role.name}
                       </Badge>
                     ))}
                   </div>

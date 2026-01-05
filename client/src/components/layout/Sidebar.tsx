@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -32,16 +32,24 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import type { SupportRequest, CustomerRequest } from "@shared/schema";
+import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
 
-const navItems = [
-  { href: "/", label: "Rezervasyonlar", icon: Ticket },
-  { href: "/calendar", label: "Kapasite", icon: Calendar },
-  { href: "/activities", label: "Aktiviteler", icon: Activity },
-  { href: "/package-tours", label: "Paket Turlar", icon: Package },
-  { href: "/finance", label: "Finans", icon: Calculator },
-  { href: "/agencies", label: "Acentalar", icon: Building2 },
-  { href: "/messages", label: "WhatsApp", icon: MessageCircle },
-  { href: "/settings", label: "Ayarlar", icon: Settings },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  requiredPermission?: string;
+}
+
+const allNavItems: NavItem[] = [
+  { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
+  { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
+  { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
+  { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
+  { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
+  { href: "/agencies", label: "Acentalar", icon: Building2, requiredPermission: PERMISSION_KEYS.AGENCIES_VIEW },
+  { href: "/messages", label: "WhatsApp", icon: MessageCircle, requiredPermission: PERMISSION_KEYS.WHATSAPP_VIEW },
+  { href: "/settings", label: "Ayarlar", icon: Settings, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
 ];
 
 // Quick access buttons at the top (Talepler and Destek only)
@@ -77,6 +85,15 @@ export function Sidebar() {
   const [location, setLocation] = useLocation();
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<number[]>([]);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+  const { permissions } = usePermissions();
+
+  // Filter nav items based on user permissions
+  const navItems = useMemo(() => {
+    return allNavItems.filter(item => {
+      if (!item.requiredPermission) return true;
+      return permissions.includes(item.requiredPermission);
+    });
+  }, [permissions]);
 
   // Check for logged in user on mount and when localStorage changes
   useEffect(() => {

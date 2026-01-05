@@ -44,6 +44,63 @@ function formatUptime(seconds: number): string {
   return parts.join(' ');
 }
 
+// Permission middleware - checks if user has required permissions
+import type { Request, Response, NextFunction } from "express";
+
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.session?.userId || !req.session?.tenantId) {
+    return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+  }
+  next();
+}
+
+function requirePermission(...requiredPermissions: string[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.session?.userId || !req.session?.tenantId) {
+      return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+    }
+    
+    const userPermissions = req.session.permissions || [];
+    
+    // Check if user has ANY of the required permissions (OR logic)
+    const hasPermission = requiredPermissions.some(perm => userPermissions.includes(perm));
+    
+    if (!hasPermission) {
+      return res.status(403).json({ error: "Bu islemi yapmak icin yetkiniz yok" });
+    }
+    
+    next();
+  };
+}
+
+// Permission constants for type safety
+const PERMISSIONS = {
+  RESERVATIONS_VIEW: "reservations.view",
+  RESERVATIONS_CREATE: "reservations.create",
+  RESERVATIONS_EDIT: "reservations.edit",
+  RESERVATIONS_DELETE: "reservations.delete",
+  ACTIVITIES_VIEW: "activities.view",
+  ACTIVITIES_MANAGE: "activities.manage",
+  CALENDAR_VIEW: "calendar.view",
+  CALENDAR_MANAGE: "calendar.manage",
+  FINANCE_VIEW: "finance.view",
+  FINANCE_MANAGE: "finance.manage",
+  SETTINGS_VIEW: "settings.view",
+  SETTINGS_MANAGE: "settings.manage",
+  USERS_VIEW: "users.view",
+  USERS_MANAGE: "users.manage",
+  WHATSAPP_VIEW: "whatsapp.view",
+  WHATSAPP_MANAGE: "whatsapp.manage",
+  BOT_VIEW: "bot.view",
+  BOT_MANAGE: "bot.manage",
+  AGENCIES_VIEW: "agencies.view",
+  AGENCIES_MANAGE: "agencies.manage",
+  REPORTS_VIEW: "reports.view",
+  REPORTS_EXPORT: "reports.export",
+  SUBSCRIPTION_VIEW: "subscription.view",
+  SUBSCRIPTION_MANAGE: "subscription.manage",
+} as const;
+
 // License middleware - checks if write operations are allowed
 async function checkLicenseForWrite(): Promise<{ allowed: boolean; message: string; status?: string }> {
   const verification = await storage.verifyLicense();
@@ -843,6 +900,41 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Global authentication middleware for all /api/* routes
+  // Exempts public endpoints that don't require authentication
+  // NOTE: Paths here exclude the '/api' prefix since middleware is mounted at '/api'
+  const publicPaths = [
+    '/auth/login',
+    '/auth/logout',
+    '/whatsapp',
+    '/webhook',
+    '/tracking',
+    '/reservation-status',
+    '/customer-requests/submit',
+    '/tenants/by-slug',
+    '/bot-rules/verify',
+    '/health',
+  ];
+  
+  app.use('/api', (req, res, next) => {
+    // req.path doesn't include the base mount path '/api'
+    const routePath = req.path;
+    
+    // Check if path starts with any public path (prefix matching for subroutes)
+    const isPublic = publicPaths.some(p => routePath.startsWith(p) || routePath === p);
+    
+    if (isPublic) {
+      return next();
+    }
+    
+    // Require authentication for all other API routes
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+    }
+    
+    next();
+  });
+  
   // === Activities ===
   app.get(api.activities.list.path, async (req, res) => {
     const items = await storage.getActivities();
@@ -1560,7 +1652,7 @@ export async function registerRoutes(
   });
 
   // General reservation update (date, time, etc.)
-  app.patch("/api/reservations/:id", async (req, res) => {
+  app.patch("/api/reservations/:id", requirePermission(PERMISSIONS.RESERVATIONS_EDIT), async (req, res) => {
     const id = parseInt(req.params.id);
     const { date, time } = req.body;
     
@@ -1588,7 +1680,7 @@ export async function registerRoutes(
   });
 
   // Update reservation status
-  app.patch("/api/reservations/:id/status", async (req, res) => {
+  app.patch("/api/reservations/:id/status", requirePermission(PERMISSIONS.RESERVATIONS_EDIT), async (req, res) => {
     const id = parseInt(req.params.id);
     const { status } = req.body;
     
@@ -2542,7 +2634,7 @@ Sky Fethiye`;
   });
 
   // === Settings ===
-  app.get("/api/settings/:key", async (req, res) => {
+  app.get("/api/settings/:key", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
       const value = await storage.getSetting(req.params.key);
       res.json({ key: req.params.key, value });
@@ -2551,7 +2643,7 @@ Sky Fethiye`;
     }
   });
 
-  app.post("/api/settings/:key", async (req, res) => {
+  app.post("/api/settings/:key", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
       let { value } = req.body;
       const authHeader = req.headers.authorization;
@@ -4840,11 +4932,11 @@ Sky Fethiye`;
           isActive: true,
         });
 
-        // Find and assign "admin" role to this user
+        // Find and assign "tenant_owner" role to this user (Owner of the agency)
         const roles = await storage.getRoles();
-        const adminRole = roles.find(r => r.name.toLowerCase() === 'admin' || r.name.toLowerCase() === 'yonetici');
-        if (adminRole) {
-          await storage.assignUserRole({ userId: adminUser.id, roleId: adminRole.id });
+        const ownerRole = roles.find(r => r.name === 'tenant_owner');
+        if (ownerRole) {
+          await storage.assignUserRole({ userId: adminUser.id, roleId: ownerRole.id });
         }
       }
 
@@ -5452,12 +5544,13 @@ Sky Fethiye`;
 
   // === TENANT USER MANAGEMENT (Agencies manage their own users) ===
   // SECURITY: All endpoints use the authenticated session tenant ID, NOT client-provided values
+  // AUTHORIZATION: Requires users.view or users.manage permission
 
   // Get users for current tenant (for agency settings page)
-  app.get("/api/tenant-users", async (req, res) => {
+  app.get("/api/tenant-users", requirePermission(PERMISSIONS.USERS_VIEW, PERMISSIONS.USERS_MANAGE), async (req, res) => {
     try {
       // SECURITY: Get tenant ID from authenticated session
-      const tenantId = (req.session as any)?.tenantId;
+      const tenantId = req.session?.tenantId;
       if (!tenantId) {
         return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
       }
@@ -5472,10 +5565,10 @@ Sky Fethiye`;
   });
 
   // Create user for current tenant (agency creates their own users)
-  app.post("/api/tenant-users", async (req, res) => {
+  app.post("/api/tenant-users", requirePermission(PERMISSIONS.USERS_MANAGE), async (req, res) => {
     try {
       // SECURITY: Get tenant ID from authenticated session, ignore client-provided value
-      const tenantId = (req.session as any)?.tenantId;
+      const tenantId = req.session?.tenantId;
       if (!tenantId) {
         return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
       }
@@ -5546,10 +5639,10 @@ Sky Fethiye`;
   });
 
   // Update user for current tenant
-  app.patch("/api/tenant-users/:id", async (req, res) => {
+  app.patch("/api/tenant-users/:id", requirePermission(PERMISSIONS.USERS_MANAGE), async (req, res) => {
     try {
       // SECURITY: Get tenant ID from authenticated session
-      const tenantId = (req.session as any)?.tenantId;
+      const tenantId = req.session?.tenantId;
       if (!tenantId) {
         return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
       }
@@ -5596,10 +5689,10 @@ Sky Fethiye`;
   });
 
   // Delete user for current tenant
-  app.delete("/api/tenant-users/:id", async (req, res) => {
+  app.delete("/api/tenant-users/:id", requirePermission(PERMISSIONS.USERS_MANAGE), async (req, res) => {
     try {
       // SECURITY: Get tenant ID from authenticated session
-      const tenantId = (req.session as any)?.tenantId;
+      const tenantId = req.session?.tenantId;
       if (!tenantId) {
         return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
       }
@@ -5824,21 +5917,43 @@ Sky Fethiye`;
         tenant = await storage.getTenant(user.tenantId);
       }
 
-      // Don't send password hash
-      const { passwordHash: _, ...safeUser } = user;
+      // Regenerate session to prevent session fixation attacks
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({ error: "Giris yapilamadi" });
+        }
 
-      res.json({
-        user: safeUser,
-        permissions: permissions.map(p => p.key),
-        roles: roles.map(r => r.roleId),
-        tenant: tenant ? {
-          id: tenant.id,
-          name: tenant.name,
-          slug: tenant.slug,
-          primaryColor: tenant.primaryColor,
-          accentColor: tenant.accentColor,
-          logoUrl: tenant.logoUrl,
-        } : null,
+        // Store session data for server-side authorization
+        req.session.userId = user.id;
+        req.session.tenantId = user.tenantId || undefined;
+        req.session.username = user.username;
+        req.session.roles = roles.map(r => r.roleId);
+        req.session.permissions = permissions.map(p => p.key);
+
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return res.status(500).json({ error: "Giris yapilamadi" });
+          }
+
+          // Don't send password hash
+          const { passwordHash: _, ...safeUser } = user;
+
+          res.json({
+            user: safeUser,
+            permissions: permissions.map(p => p.key),
+            roles: roles.map(r => r.roleId),
+            tenant: tenant ? {
+              id: tenant.id,
+              name: tenant.name,
+              slug: tenant.slug,
+              primaryColor: tenant.primaryColor,
+              accentColor: tenant.accentColor,
+              logoUrl: tenant.logoUrl,
+            } : null,
+          });
+        });
       });
     } catch (err) {
       console.error("Giris hatasi:", err);
@@ -5848,13 +5963,16 @@ Sky Fethiye`;
 
   app.get("/api/auth/me", async (req, res) => {
     try {
-      const userId = req.headers['x-user-id'];
+      // SECURITY: Only use session-based authentication - no header fallback
+      const userId = req.session?.userId;
       if (!userId) {
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
 
       const user = await storage.getAppUser(Number(userId));
       if (!user) {
+        // Session has invalid user - destroy it
+        req.session.destroy(() => {});
         return res.status(401).json({ error: "Kullanici bulunamadi" });
       }
 
@@ -5888,9 +6006,35 @@ Sky Fethiye`;
     }
   });
 
-  // === ROLES ===
+  // Logout - destroy session and clear cookie
+  app.post("/api/auth/logout", (req, res) => {
+    // Clear session data first
+    req.session.userId = undefined;
+    req.session.tenantId = undefined;
+    req.session.username = undefined;
+    req.session.roles = undefined;
+    req.session.permissions = undefined;
+    
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ error: "Cikis yapilamadi" });
+      }
+      // Clear session cookie with same options used in session middleware
+      res.clearCookie('connect.sid', {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+      res.json({ success: true });
+    });
+  });
 
-  app.get("/api/roles", async (req, res) => {
+  // === ROLES ===
+  // AUTHORIZATION: Requires settings.view/manage permission
+
+  app.get("/api/roles", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
       const roles = await storage.getRoles();
       res.json(roles);
@@ -5900,7 +6044,7 @@ Sky Fethiye`;
     }
   });
 
-  app.post("/api/roles", async (req, res) => {
+  app.post("/api/roles", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
       const role = await storage.createRole(req.body);
       res.json(role);
@@ -5910,7 +6054,7 @@ Sky Fethiye`;
     }
   });
 
-  app.patch("/api/roles/:id", async (req, res) => {
+  app.patch("/api/roles/:id", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
       const role = await storage.updateRole(Number(req.params.id), req.body);
       res.json(role);
@@ -5920,7 +6064,7 @@ Sky Fethiye`;
     }
   });
 
-  app.delete("/api/roles/:id", async (req, res) => {
+  app.delete("/api/roles/:id", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
       await storage.deleteRole(Number(req.params.id));
       res.json({ success: true });

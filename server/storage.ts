@@ -2892,6 +2892,12 @@ Sky Fethiye`,
       { key: 'users.manage', name: 'Kullanicilari Yonet', category: 'users', sortOrder: 2 },
       { key: 'whatsapp.view', name: 'WhatsApp Goruntule', category: 'whatsapp', sortOrder: 1 },
       { key: 'whatsapp.manage', name: 'WhatsApp Yonet', category: 'whatsapp', sortOrder: 2 },
+      { key: 'bot.view', name: 'Bot Ayarlarini Goruntule', category: 'bot', sortOrder: 1 },
+      { key: 'bot.manage', name: 'Bot Ayarlarini Yonet', category: 'bot', sortOrder: 2 },
+      { key: 'agencies.view', name: 'Acentalari Goruntule', category: 'agencies', sortOrder: 1 },
+      { key: 'agencies.manage', name: 'Acentalari Yonet', category: 'agencies', sortOrder: 2 },
+      { key: 'subscription.view', name: 'Abonelik Goruntule', category: 'subscription', sortOrder: 1 },
+      { key: 'subscription.manage', name: 'Abonelik Yonet', category: 'subscription', sortOrder: 2 },
     ];
 
     for (const perm of defaultPermissions) {
@@ -2901,17 +2907,96 @@ Sky Fethiye`,
       }
     }
 
-    // Create default roles if they don't exist
-    const defaultRoles = [
-      { name: 'admin', displayName: 'Yonetici', description: 'Tam yetkili yonetici', color: 'red', isSystem: true },
-      { name: 'operator', displayName: 'Operator', description: 'Rezervasyon ve aktivite islemleri', color: 'blue', isSystem: true },
-      { name: 'viewer', displayName: 'Izleyici', description: 'Sadece goruntuleme yetkisi', color: 'gray', isSystem: true },
+    // Create tenant roles - Owner, Manager, Operator (3-tier system)
+    const tenantRoles = [
+      { 
+        name: 'tenant_owner', 
+        displayName: 'Sahip', 
+        description: 'Acenta sahibi - tam yetki (ayarlar, faturalar, kullanici yonetimi)', 
+        color: 'purple', 
+        isSystem: true 
+      },
+      { 
+        name: 'tenant_manager', 
+        displayName: 'Yonetici', 
+        description: 'Operasyonel yonetici - aktiviteler, bot, finans, rezervasyonlar', 
+        color: 'blue', 
+        isSystem: true 
+      },
+      { 
+        name: 'tenant_operator', 
+        displayName: 'Operator', 
+        description: 'Gunluk islemler - rezervasyon ve mesajlar', 
+        color: 'green', 
+        isSystem: true 
+      },
     ];
 
-    for (const role of defaultRoles) {
+    // Permission mappings for each tenant role
+    const rolePermissionMappings: { [key: string]: string[] } = {
+      'tenant_owner': [
+        'dashboard.view', 
+        'reservations.view', 'reservations.create', 'reservations.edit', 'reservations.delete',
+        'activities.view', 'activities.manage',
+        'calendar.view', 'calendar.manage',
+        'reports.view', 'reports.export',
+        'finance.view', 'finance.manage',
+        'settings.view', 'settings.manage',
+        'users.view', 'users.manage',
+        'whatsapp.view', 'whatsapp.manage',
+        'bot.view', 'bot.manage',
+        'agencies.view', 'agencies.manage',
+        'subscription.view', 'subscription.manage',
+      ],
+      'tenant_manager': [
+        'dashboard.view',
+        'reservations.view', 'reservations.create', 'reservations.edit', 'reservations.delete',
+        'activities.view', 'activities.manage',
+        'calendar.view', 'calendar.manage',
+        'reports.view', 'reports.export',
+        'finance.view', 'finance.manage',
+        'settings.view',
+        'users.view', 'users.manage',
+        'whatsapp.view', 'whatsapp.manage',
+        'bot.view', 'bot.manage',
+        'agencies.view', 'agencies.manage',
+      ],
+      'tenant_operator': [
+        'dashboard.view',
+        'reservations.view', 'reservations.create', 'reservations.edit',
+        'activities.view',
+        'calendar.view',
+        'reports.view',
+        'whatsapp.view',
+      ],
+    };
+
+    for (const role of tenantRoles) {
       const existing = await db.select().from(roles).where(eq(roles.name, role.name));
+      let roleId: number;
+      
       if (existing.length === 0) {
-        await db.insert(roles).values(role);
+        const [created] = await db.insert(roles).values(role).returning();
+        roleId = created.id;
+      } else {
+        roleId = existing[0].id;
+      }
+
+      // Assign permissions to role
+      const permKeys = rolePermissionMappings[role.name] || [];
+      for (const permKey of permKeys) {
+        const [perm] = await db.select().from(permissions).where(eq(permissions.key, permKey));
+        if (perm) {
+          const existingRolePerm = await db.select().from(rolePermissions).where(
+            and(
+              eq(rolePermissions.roleId, roleId),
+              eq(rolePermissions.permissionId, perm.id)
+            )
+          );
+          if (existingRolePerm.length === 0) {
+            await db.insert(rolePermissions).values({ roleId, permissionId: perm.id });
+          }
+        }
       }
     }
   }
@@ -2971,7 +3056,7 @@ Sky Fethiye`,
       allRolePermissions.push(...rp);
     }
 
-    const permissionIds = [...new Set(allRolePermissions.map(rp => rp.permissionId))];
+    const permissionIds = Array.from(new Set(allRolePermissions.map(rp => rp.permissionId)));
     if (permissionIds.length === 0) return [];
 
     const allPermissions = await this.getPermissions();
