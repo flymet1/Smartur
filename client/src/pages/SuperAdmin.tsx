@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,16 +80,6 @@ const DEFAULT_BOT_RULES = `1. Her zaman nazik ve profesyonel ol.
 3. Fiyat sorularına net cevap ver.
 4. Rezervasyon taleplerinde tarih, saat ve kişi sayısını sor.
 5. Karmaşık konularda yetkiliye yönlendir.`;
-
-interface SystemLog {
-  id: number;
-  level: string;
-  source: string;
-  message: string;
-  details: string | null;
-  phone: string | null;
-  createdAt: string;
-}
 
 interface License {
   id: number;
@@ -740,6 +731,131 @@ function ApiMonitoringSection() {
   );
 }
 
+interface SystemLog {
+  id: number;
+  level: string;
+  source: string;
+  message: string;
+  details: string | null;
+  phone: string | null;
+  createdAt: string;
+}
+
+function SupportRequestCard({ 
+  request, 
+  onResolve, 
+  isResolving 
+}: { 
+  request: SupportRequest; 
+  onResolve: (id: number) => void;
+  isResolving: boolean;
+}) {
+  const [showLogs, setShowLogs] = useState(false);
+  
+  const { data: logs = [], isLoading: logsLoading } = useQuery<SystemLog[]>({
+    queryKey: ['/api/support-requests', request.id, 'logs'],
+    queryFn: async () => {
+      const res = await fetch(`/api/support-requests/${request.id}/logs`);
+      return res.json();
+    },
+    enabled: showLogs,
+  });
+
+  const isOpen = request.status === 'open';
+
+  return (
+    <div 
+      className={cn(
+        "p-4 border rounded-lg",
+        isOpen 
+          ? "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20" 
+          : "opacity-60"
+      )}
+      data-testid={`card-support-request-${request.id}`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Badge variant={isOpen ? "secondary" : "outline"}>
+              {isOpen ? <Clock className="h-3 w-3 mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+              {isOpen ? "Acik" : "Cozuldu"}
+            </Badge>
+            <span className="text-sm font-medium">{request.phone}</span>
+            {request.reservationId && (
+              <Badge variant="outline">Rez #{request.reservationId}</Badge>
+            )}
+          </div>
+          <p className="text-sm">{request.description || "Aciklama yok"}</p>
+          <span className="text-xs text-muted-foreground">
+            {request.createdAt ? new Date(request.createdAt).toLocaleString("tr-TR") : "-"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            size="sm"
+            variant="outline"
+            onClick={() => setShowLogs(!showLogs)}
+            data-testid={`button-show-logs-${request.id}`}
+          >
+            <FileText className="h-4 w-4 mr-1" />
+            Loglar
+          </Button>
+          {isOpen && (
+            <Button 
+              size="sm"
+              onClick={() => onResolve(request.id)}
+              disabled={isResolving}
+              data-testid={`button-resolve-${request.id}`}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Cozuldu
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      {showLogs && (
+        <div className="mt-4 border-t pt-4">
+          <div className="text-sm font-medium mb-2">Sistem Loglari</div>
+          {logsLoading ? (
+            <div className="text-sm text-muted-foreground">Yuklenitor...</div>
+          ) : logs.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Bu talebe bagli log bulunamadi.</div>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {logs.map((log) => (
+                <div 
+                  key={log.id}
+                  className={cn(
+                    "p-2 rounded text-xs font-mono",
+                    log.level === 'error' && "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200",
+                    log.level === 'warn' && "bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-200",
+                    log.level === 'info' && "bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-200"
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="outline" className="text-xs">{log.level.toUpperCase()}</Badge>
+                    <span className="text-muted-foreground">{log.source}</span>
+                    <span className="text-muted-foreground">
+                      {new Date(log.createdAt).toLocaleString("tr-TR")}
+                    </span>
+                  </div>
+                  <div>{log.message}</div>
+                  {log.details && (
+                    <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap opacity-80">
+                      {log.details}
+                    </pre>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SupportRequestsSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -749,7 +865,7 @@ function SupportRequestsSection() {
   });
 
   const resolveMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('PATCH', `/api/support-requests/${id}`, { status: 'resolved' }),
+    mutationFn: (id: number) => apiRequest('POST', `/api/support-requests/${id}/resolve`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/support-requests'] });
       toast({ title: "Basarili", description: "Talep cozuldu olarak isaretlendi." });
@@ -775,7 +891,7 @@ function SupportRequestsSection() {
               )}
             </div>
           </CardTitle>
-          <CardDescription>Kullanicilarin destek talepleri ve sistem hatalari</CardDescription>
+          <CardDescription>Acentalardan gelen destek talepleri ve ilgili sistem loglari</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -785,37 +901,12 @@ function SupportRequestsSection() {
           ) : (
             <div className="space-y-3">
               {openRequests.map((req) => (
-                <div 
-                  key={req.id} 
-                  className="flex items-start justify-between gap-4 p-4 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 rounded-lg"
-                  data-testid={`card-support-request-${req.id}`}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="secondary">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Acik
-                      </Badge>
-                      <span className="text-sm font-medium">{req.phone}</span>
-                      {req.reservationId && (
-                        <Badge variant="outline">Rez #{req.reservationId}</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm">{req.description || "Aciklama yok"}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {req.createdAt ? new Date(req.createdAt).toLocaleString("tr-TR") : "-"}
-                    </span>
-                  </div>
-                  <Button 
-                    size="sm"
-                    onClick={() => resolveMutation.mutate(req.id)}
-                    disabled={resolveMutation.isPending}
-                    data-testid={`button-resolve-${req.id}`}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Cozuldu
-                  </Button>
-                </div>
+                <SupportRequestCard
+                  key={req.id}
+                  request={req}
+                  onResolve={(id) => resolveMutation.mutate(id)}
+                  isResolving={resolveMutation.isPending}
+                />
               ))}
               
               {resolvedRequests.length > 0 && (
@@ -824,22 +915,12 @@ function SupportRequestsSection() {
                     Cozulen Talepler ({resolvedRequests.length})
                   </div>
                   {resolvedRequests.slice(0, 5).map((req) => (
-                    <div 
-                      key={req.id} 
-                      className="flex items-start justify-between gap-4 p-3 border rounded-lg opacity-60"
-                      data-testid={`card-support-request-resolved-${req.id}`}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Cozuldu
-                          </Badge>
-                          <span className="text-sm">{req.phone}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{req.description || "Aciklama yok"}</p>
-                      </div>
-                    </div>
+                    <SupportRequestCard
+                      key={req.id}
+                      request={req}
+                      onResolve={(id) => resolveMutation.mutate(id)}
+                      isResolving={resolveMutation.isPending}
+                    />
                   ))}
                 </>
               )}
