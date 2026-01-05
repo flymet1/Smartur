@@ -3946,30 +3946,23 @@ export default function SuperAdmin() {
   const [activeCategory, setActiveCategory] = useState("overview");
   const [activeSubTab, setActiveSubTab] = useState("analytics");
   
-  // Check for existing session token
+  // Check for existing session (session-based auth, no localStorage)
   useEffect(() => {
-    const verifyExistingToken = async () => {
-      const token = localStorage.getItem('superAdminToken');
-      if (token) {
-        try {
-          const res = await fetch('/api/bot-rules/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token })
-          });
-          const data = await res.json();
-          if (data.valid) {
-            setIsAuthenticated(true);
-          } else {
-            localStorage.removeItem('superAdminToken');
-          }
-        } catch {
-          localStorage.removeItem('superAdminToken');
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/platform-admin/session', {
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
         }
+      } catch {
+        // Session check failed, stay logged out
       }
       setIsCheckingAuth(false);
     };
-    verifyExistingToken();
+    checkSession();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -3983,8 +3976,7 @@ export default function SuperAdmin() {
       });
       const data = await res.json();
       
-      if (data.success && data.token) {
-        localStorage.setItem('superAdminToken', data.token);
+      if (data.success) {
         setIsAuthenticated(true);
         toast({ title: "Giris Basarili", description: "Super Admin paneline hos geldiniz." });
       } else {
@@ -3995,9 +3987,16 @@ export default function SuperAdmin() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/platform-admin/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch {
+      // Ignore logout errors
+    }
     setIsAuthenticated(false);
-    localStorage.removeItem('superAdminToken');
     setPassword("");
     setLoginEmail("");
   };

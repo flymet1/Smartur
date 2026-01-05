@@ -933,6 +933,8 @@ export async function registerRoutes(
     '/tenants/by-slug',
     '/bot-rules/verify',
     '/bot-rules/login',
+    '/platform-admin/session',
+    '/platform-admin/logout',
     '/health',
     '/settings/sidebarLogo',
     '/settings/brandSettings',
@@ -2853,7 +2855,7 @@ Sky Fethiye`;
     }
   });
 
-  // Verify bot rules token
+  // Verify bot rules token (legacy, kept for backward compatibility)
   app.post("/api/bot-rules/verify", async (req, res) => {
     try {
       const { token } = req.body;
@@ -2875,6 +2877,25 @@ Sky Fethiye`;
     } catch (err) {
       res.status(500).json({ valid: false });
     }
+  });
+
+  // Platform admin session check (session-based, no localStorage)
+  app.get("/api/platform-admin/session", (req, res) => {
+    if (req.session?.isPlatformAdmin && req.session?.platformAdminId) {
+      return res.json({ authenticated: true, adminId: req.session.platformAdminId });
+    }
+    return res.json({ authenticated: false });
+  });
+
+  // Platform admin logout
+  app.post("/api/platform-admin/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Cikis yapilamadi" });
+      }
+      res.clearCookie('connect.sid');
+      return res.json({ success: true });
+    });
   });
 
   // === Gmail Settings ===
