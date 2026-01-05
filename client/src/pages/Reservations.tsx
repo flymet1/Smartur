@@ -89,7 +89,45 @@ export default function Reservations() {
   const [bulkWhatsAppMessage, setBulkWhatsAppMessage] = useState("");
   const [bulkWhatsAppSending, setBulkWhatsAppSending] = useState(false);
   const [bulkTemplateType, setBulkTemplateType] = useState<"confirmed" | "pending" | "cancelled">("confirmed");
+  const [moveNotification, setMoveNotification] = useState<{ reservation: Reservation; oldDate: string; newDate: string; oldTime?: string; newTime?: string } | null>(null);
+  const [moveCustomerMsg, setMoveCustomerMsg] = useState("");
+  const [moveAgencyMsg, setMoveAgencyMsg] = useState("");
+  const [moveAgencyId, setMoveAgencyId] = useState("");
   const { toast } = useToast();
+
+  const generateMoveCustomerMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
+    const oldDateFormatted = format(new Date(oldDate), "d MMMM yyyy", { locale: tr });
+    const newDateFormatted = format(new Date(newDate), "d MMMM yyyy", { locale: tr });
+    let message = `Merhaba ${customerName},\n\nRezervasyonunuz guncellenmistir.\n\n`;
+    if (oldDate !== newDate) {
+      message += `Eski tarih: ${oldDateFormatted}\nYeni tarih: ${newDateFormatted}\n`;
+    }
+    if (oldTime && newTime && oldTime !== newTime) {
+      message += `Eski saat: ${oldTime}\nYeni saat: ${newTime}\n`;
+    }
+    message += "\nIyi gunler dileriz.";
+    return message;
+  };
+
+  const generateMoveAgencyMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
+    const oldDateFormatted = format(new Date(oldDate), "d MMMM yyyy", { locale: tr });
+    const newDateFormatted = format(new Date(newDate), "d MMMM yyyy", { locale: tr });
+    let message = `Bilgilendirme: ${customerName} isimli müşterinin rezervasyonu güncellendi.\n\n`;
+    if (oldDate !== newDate) {
+      message += `Eski tarih: ${oldDateFormatted}\nYeni tarih: ${newDateFormatted}\n`;
+    }
+    if (oldTime && newTime && oldTime !== newTime) {
+      message += `Eski saat: ${oldTime}\nYeni saat: ${newTime}\n`;
+    }
+    return message;
+  };
+
+  const openMoveNotification = (reservation: Reservation, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
+    setMoveCustomerMsg(generateMoveCustomerMessage(reservation.customerName, oldDate, newDate, oldTime, newTime));
+    setMoveAgencyMsg(generateMoveAgencyMessage(reservation.customerName, oldDate, newDate, oldTime, newTime));
+    setMoveAgencyId(reservation.agencyId ? String(reservation.agencyId) : "");
+    setMoveNotification({ reservation, oldDate, newDate, oldTime, newTime });
+  };
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -705,6 +743,7 @@ export default function Reservations() {
               reservation={selectedReservation}
               activities={activities || []}
               onClose={() => setSelectedReservation(null)}
+              onMoveSuccess={openMoveNotification}
             />
 
             {/* Customer History Dialog */}
@@ -752,6 +791,132 @@ export default function Reservations() {
                      Beklemede: {customerHistory.filter(r => r.status === 'pending').length} • 
                      İptal: {customerHistory.filter(r => r.status === 'cancelled').length}</p>
                 </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Move Notification Dialog */}
+            <Dialog open={!!moveNotification} onOpenChange={(open) => !open && setMoveNotification(null)}>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Bilgilendirme Gönder</DialogTitle>
+                </DialogHeader>
+                {moveNotification && (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Rezervasyon başarıyla güncellendi. Müşteriye bildirim göndermek ister misiniz?
+                    </p>
+                    
+                    <Card className="p-4 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
+                            <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{moveNotification.reservation.customerName}</p>
+                            <p className="text-sm text-muted-foreground">{moveNotification.reservation.customerPhone}</p>
+                          </div>
+                        </div>
+                        <Textarea
+                          value={moveCustomerMsg}
+                          onChange={(e) => setMoveCustomerMsg(e.target.value)}
+                          rows={4}
+                          className="text-sm"
+                          placeholder="Müşteriye gönderilecek mesaj..."
+                        />
+                        <Button
+                          size="sm"
+                          className="w-full"
+                          onClick={async () => {
+                            try {
+                              await fetch('/api/whatsapp/send', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  to: moveNotification.reservation.customerPhone,
+                                  message: moveCustomerMsg
+                                })
+                              });
+                              toast({ title: "Gönderildi", description: "Müşteriye bildirim gönderildi." });
+                            } catch {
+                              toast({ title: "Hata", description: "Mesaj gönderilemedi.", variant: "destructive" });
+                            }
+                          }}
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Müşteriye Gönder
+                        </Button>
+                      </div>
+                    </Card>
+
+                    {agencies.length > 0 && (
+                      <Card className="p-4 border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0">
+                              <Building className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium">Acenta Bildirimi</p>
+                              <Select value={moveAgencyId} onValueChange={setMoveAgencyId}>
+                                <SelectTrigger className="w-48 h-8">
+                                  <SelectValue placeholder="Acenta seçin" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {agencies.map((a) => (
+                                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <Textarea
+                            value={moveAgencyMsg}
+                            onChange={(e) => setMoveAgencyMsg(e.target.value)}
+                            rows={3}
+                            className="text-sm"
+                            placeholder="Acentaya gönderilecek mesaj..."
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full"
+                            disabled={!moveAgencyId}
+                            onClick={async () => {
+                              const agency = agencies.find(a => a.id === Number(moveAgencyId));
+                              if (!agency?.phone) {
+                                toast({ title: "Hata", description: "Acenta telefon numarası bulunamadı.", variant: "destructive" });
+                                return;
+                              }
+                              try {
+                                await fetch('/api/whatsapp/send', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    to: agency.phone,
+                                    message: moveAgencyMsg
+                                  })
+                                });
+                                toast({ title: "Gönderildi", description: "Acentaya bildirim gönderildi." });
+                              } catch {
+                                toast({ title: "Hata", description: "Mesaj gönderilemedi.", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            <Send className="h-4 w-4 mr-2" />
+                            Acentaya Gönder
+                          </Button>
+                        </div>
+                      </Card>
+                    )}
+
+                    <div className="flex justify-end">
+                      <Button variant="outline" onClick={() => setMoveNotification(null)}>
+                        Kapat
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </DialogContent>
             </Dialog>
           </div>
@@ -1506,71 +1671,65 @@ export default function Reservations() {
 
                   <div className="space-y-2">
                     <Label>Mesaj Şablonu</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={bulkTemplateType === "confirmed" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setBulkTemplateType("confirmed");
-                          const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
-                          const template = templates?.confirmed || "Merhaba {isim},\n\nRezervasyon onaylandı!\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz.";
-                          if (selected.length === 1) {
-                            const r = selected[0];
-                            const activityName = activities?.find(a => a.id === r.activityId)?.name || "";
-                            setBulkWhatsAppMessage(template.replace(/{isim}/g, r.customerName).replace(/{tarih}/g, format(new Date(r.date), "d MMMM yyyy", { locale: tr })).replace(/{saat}/g, r.time || "").replace(/{aktivite}/g, activityName));
-                          } else {
-                            setBulkWhatsAppMessage(template.replace(/{isim}/g, "").replace(/{tarih}/g, "").replace(/{saat}/g, "").replace(/{aktivite}/g, "").replace(/Aktivite:\s*\n/g, "").replace(/Tarih:\s*\n/g, "").replace(/Saat:\s*\n/g, "").replace(/\n\n+/g, "\n\n").trim());
-                          }
-                        }}
-                        className="flex-1"
-                        data-testid="button-template-confirmed"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
-                        Onaylandı
-                      </Button>
-                      <Button
-                        variant={bulkTemplateType === "pending" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setBulkTemplateType("pending");
-                          const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
-                          const template = templates?.pending || "Merhaba {isim},\n\nRezervasyon talebiniz değerlendiriliyor.\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nEn kısa sürede bilgilendirme yapılacaktır.";
-                          if (selected.length === 1) {
-                            const r = selected[0];
-                            const activityName = activities?.find(a => a.id === r.activityId)?.name || "";
-                            setBulkWhatsAppMessage(template.replace(/{isim}/g, r.customerName).replace(/{tarih}/g, format(new Date(r.date), "d MMMM yyyy", { locale: tr })).replace(/{saat}/g, r.time || "").replace(/{aktivite}/g, activityName));
-                          } else {
-                            setBulkWhatsAppMessage(template.replace(/{isim}/g, "").replace(/{tarih}/g, "").replace(/{saat}/g, "").replace(/{aktivite}/g, "").replace(/Aktivite:\s*\n/g, "").replace(/Tarih:\s*\n/g, "").replace(/Saat:\s*\n/g, "").replace(/\n\n+/g, "\n\n").trim());
-                          }
-                        }}
-                        className="flex-1"
-                        data-testid="button-template-pending"
-                      >
-                        <Clock className="h-4 w-4 mr-1 text-yellow-600" />
-                        Beklemede
-                      </Button>
-                      <Button
-                        variant={bulkTemplateType === "cancelled" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setBulkTemplateType("cancelled");
-                          const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
-                          const template = templates?.cancelled || "Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nSorularınız için bizimle iletişime geçebilirsiniz.";
-                          if (selected.length === 1) {
-                            const r = selected[0];
-                            const activityName = activities?.find(a => a.id === r.activityId)?.name || "";
-                            setBulkWhatsAppMessage(template.replace(/{isim}/g, r.customerName).replace(/{tarih}/g, format(new Date(r.date), "d MMMM yyyy", { locale: tr })).replace(/{saat}/g, r.time || "").replace(/{aktivite}/g, activityName));
-                          } else {
-                            setBulkWhatsAppMessage(template.replace(/{isim}/g, "").replace(/{tarih}/g, "").replace(/{saat}/g, "").replace(/{aktivite}/g, "").replace(/Aktivite:\s*\n/g, "").replace(/Tarih:\s*\n/g, "").replace(/Saat:\s*\n/g, "").replace(/\n\n+/g, "\n\n").trim());
-                          }
-                        }}
-                        className="flex-1"
-                        data-testid="button-template-cancelled"
-                      >
-                        <XCircle className="h-4 w-4 mr-1 text-red-600" />
-                        İptal
-                      </Button>
-                    </div>
+                    {(() => {
+                      const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
+                      const defaultTemplates = {
+                        confirmed: { label: "Onaylandı", content: "Merhaba {isim},\n\nRezervasyon onaylandı!\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz." },
+                        pending: { label: "Beklemede", content: "Merhaba {isim},\n\nRezervasyon talebiniz değerlendiriliyor.\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nEn kısa sürede bilgilendirme yapılacaktır." },
+                        cancelled: { label: "İptal", content: "Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nSorularınız için bizimle iletişime geçebilirsiniz." }
+                      };
+                      const getTemplateData = (type: "confirmed" | "pending" | "cancelled") => {
+                        const t = templates?.[type];
+                        if (!t) return defaultTemplates[type];
+                        if (typeof t === 'string') return { label: defaultTemplates[type].label, content: t };
+                        return { label: t.label || defaultTemplates[type].label, content: t.content || defaultTemplates[type].content };
+                      };
+                      const applyTemplate = (type: "confirmed" | "pending" | "cancelled") => {
+                        setBulkTemplateType(type);
+                        const { content: template } = getTemplateData(type);
+                        if (selected.length === 1) {
+                          const r = selected[0];
+                          const activityName = activities?.find(a => a.id === r.activityId)?.name || "";
+                          setBulkWhatsAppMessage(template.replace(/{isim}/g, r.customerName).replace(/{tarih}/g, format(new Date(r.date), "d MMMM yyyy", { locale: tr })).replace(/{saat}/g, r.time || "").replace(/{aktivite}/g, activityName));
+                        } else {
+                          setBulkWhatsAppMessage(template.replace(/{isim}/g, "").replace(/{tarih}/g, "").replace(/{saat}/g, "").replace(/{aktivite}/g, "").replace(/Aktivite:\s*\n/g, "").replace(/Tarih:\s*\n/g, "").replace(/Saat:\s*\n/g, "").replace(/\n\n+/g, "\n\n").trim());
+                        }
+                      };
+                      return (
+                        <div className="flex gap-2">
+                          <Button
+                            variant={bulkTemplateType === "confirmed" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => applyTemplate("confirmed")}
+                            className="flex-1"
+                            data-testid="button-template-confirmed"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1 text-green-600" />
+                            {getTemplateData("confirmed").label}
+                          </Button>
+                          <Button
+                            variant={bulkTemplateType === "pending" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => applyTemplate("pending")}
+                            className="flex-1"
+                            data-testid="button-template-pending"
+                          >
+                            <Clock className="h-4 w-4 mr-1 text-yellow-600" />
+                            {getTemplateData("pending").label}
+                          </Button>
+                          <Button
+                            variant={bulkTemplateType === "cancelled" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => applyTemplate("cancelled")}
+                            className="flex-1"
+                            data-testid="button-template-cancelled"
+                          >
+                            <XCircle className="h-4 w-4 mr-1 text-red-600" />
+                            {getTemplateData("cancelled").label}
+                          </Button>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="space-y-2">
@@ -3170,9 +3329,10 @@ interface ReservationDetailDialogProps {
   reservation: Reservation | null;
   activities: Activity[];
   onClose: () => void;
+  onMoveSuccess?: (reservation: Reservation, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => void;
 }
 
-function ReservationDetailDialog({ reservation, activities, onClose }: ReservationDetailDialogProps) {
+function ReservationDetailDialog({ reservation, activities, onClose, onMoveSuccess }: ReservationDetailDialogProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editDate, setEditDate] = useState("");
@@ -3187,13 +3347,17 @@ function ReservationDetailDialog({ reservation, activities, onClose }: Reservati
   }, [reservation]);
   
   const updateMutation = useMutation({
-    mutationFn: async ({ id, date, time }: { id: number; date: string; time: string }) => {
+    mutationFn: async ({ id, date, time, oldDate, oldTime, res }: { id: number; date: string; time: string; oldDate: string; oldTime: string; res: Reservation }) => {
       return apiRequest('PATCH', `/api/reservations/${id}`, { date, time });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       toast({ title: "Başarılı", description: "Tarih ve saat güncellendi." });
       setIsEditing(false);
+      if (onMoveSuccess && (variables.date !== variables.oldDate || variables.time !== variables.oldTime)) {
+        onMoveSuccess(variables.res, variables.oldDate, variables.date, variables.oldTime, variables.time);
+        onClose();
+      }
     },
     onError: () => {
       toast({ title: "Hata", description: "Güncelleme başarısız.", variant: "destructive" });
@@ -3231,7 +3395,14 @@ function ReservationDetailDialog({ reservation, activities, onClose }: Reservati
       toast({ title: "Hata", description: "Tarih ve saat seçiniz.", variant: "destructive" });
       return;
     }
-    updateMutation.mutate({ id: reservation.id, date: editDate, time: editTime });
+    updateMutation.mutate({ 
+      id: reservation.id, 
+      date: editDate, 
+      time: editTime,
+      oldDate: reservation.date,
+      oldTime: reservation.time,
+      res: reservation
+    });
   };
 
   const handleCancel = () => {

@@ -68,7 +68,7 @@ export default function Settings() {
   const [isTestingGmail, setIsTestingGmail] = useState(false);
   const [isSavingGmail, setIsSavingGmail] = useState(false);
   
-  // Bulk WhatsApp Message Templates (by status)
+  // Bulk WhatsApp Message Templates (by status) - with labels and content
   const [bulkTemplateConfirmed, setBulkTemplateConfirmed] = useState(
     "Merhaba {isim},\n\nRezervasyon onaylandı!\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz."
   );
@@ -78,6 +78,9 @@ export default function Settings() {
   const [bulkTemplateCancelled, setBulkTemplateCancelled] = useState(
     "Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nDetaylar için: {takip_linki}\n\nSorularınız için bizimle iletişime geçebilirsiniz."
   );
+  const [bulkLabelConfirmed, setBulkLabelConfirmed] = useState("Onaylandı");
+  const [bulkLabelPending, setBulkLabelPending] = useState("Beklemede");
+  const [bulkLabelCancelled, setBulkLabelCancelled] = useState("İptal");
   const [bulkTemplatesLoaded, setBulkTemplatesLoaded] = useState(false);
 
   
@@ -173,14 +176,36 @@ export default function Settings() {
     }
   }, [botPromptSetting?.value, botPromptLoaded]);
 
-  // Apply loaded bulk message templates when data arrives
+  // Apply loaded bulk message templates when data arrives (with backwards compatibility)
   useEffect(() => {
     if (bulkTemplatesSetting?.value && !bulkTemplatesLoaded) {
       try {
         const templates = JSON.parse(bulkTemplatesSetting.value);
-        if (templates.confirmed) setBulkTemplateConfirmed(templates.confirmed);
-        if (templates.pending) setBulkTemplatePending(templates.pending);
-        if (templates.cancelled) setBulkTemplateCancelled(templates.cancelled);
+        // Support both old format (string) and new format ({ label, content })
+        if (templates.confirmed) {
+          if (typeof templates.confirmed === 'string') {
+            setBulkTemplateConfirmed(templates.confirmed);
+          } else {
+            if (templates.confirmed.content) setBulkTemplateConfirmed(templates.confirmed.content);
+            if (templates.confirmed.label) setBulkLabelConfirmed(templates.confirmed.label);
+          }
+        }
+        if (templates.pending) {
+          if (typeof templates.pending === 'string') {
+            setBulkTemplatePending(templates.pending);
+          } else {
+            if (templates.pending.content) setBulkTemplatePending(templates.pending.content);
+            if (templates.pending.label) setBulkLabelPending(templates.pending.label);
+          }
+        }
+        if (templates.cancelled) {
+          if (typeof templates.cancelled === 'string') {
+            setBulkTemplateCancelled(templates.cancelled);
+          } else {
+            if (templates.cancelled.content) setBulkTemplateCancelled(templates.cancelled.content);
+            if (templates.cancelled.label) setBulkLabelCancelled(templates.cancelled.label);
+          }
+        }
         setBulkTemplatesLoaded(true);
       } catch {}
     }
@@ -361,9 +386,9 @@ export default function Settings() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: JSON.stringify({
-            confirmed: bulkTemplateConfirmed,
-            pending: bulkTemplatePending,
-            cancelled: bulkTemplateCancelled
+            confirmed: { label: bulkLabelConfirmed, content: bulkTemplateConfirmed },
+            pending: { label: bulkLabelPending, content: bulkTemplatePending },
+            cancelled: { label: bulkLabelCancelled, content: bulkTemplateCancelled }
           }) })
         })
       ];
@@ -1181,7 +1206,14 @@ export default function Settings() {
                       <div className="space-y-4">
                         <Card className="p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">Onaylandı</Badge>
+                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">confirmed</Badge>
+                            <Input
+                              value={bulkLabelConfirmed}
+                              onChange={(e) => setBulkLabelConfirmed(e.target.value)}
+                              className="h-7 w-32 text-sm font-medium"
+                              placeholder="Şablon adı"
+                              data-testid="input-bulk-label-confirmed"
+                            />
                             <span className="text-sm text-muted-foreground">Onaylanan rezervasyonlar için</span>
                           </div>
                           <Textarea 
@@ -1195,7 +1227,14 @@ export default function Settings() {
 
                         <Card className="p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">Beklemede</Badge>
+                            <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">pending</Badge>
+                            <Input
+                              value={bulkLabelPending}
+                              onChange={(e) => setBulkLabelPending(e.target.value)}
+                              className="h-7 w-32 text-sm font-medium"
+                              placeholder="Şablon adı"
+                              data-testid="input-bulk-label-pending"
+                            />
                             <span className="text-sm text-muted-foreground">Değerlendirilen rezervasyonlar için</span>
                           </div>
                           <Textarea 
@@ -1209,7 +1248,14 @@ export default function Settings() {
 
                         <Card className="p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">İptal</Badge>
+                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">cancelled</Badge>
+                            <Input
+                              value={bulkLabelCancelled}
+                              onChange={(e) => setBulkLabelCancelled(e.target.value)}
+                              className="h-7 w-32 text-sm font-medium"
+                              placeholder="Şablon adı"
+                              data-testid="input-bulk-label-cancelled"
+                            />
                             <span className="text-sm text-muted-foreground">İptal edilen rezervasyonlar için</span>
                           </div>
                           <Textarea 
