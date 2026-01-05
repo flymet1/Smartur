@@ -2840,6 +2840,7 @@ Sky Fethiye`;
       
       return res.status(401).json({ success: false, error: "Geçersiz şifre" });
     } catch (err) {
+      console.error('Bot rules login error:', err);
       res.status(500).json({ success: false, error: "Giriş yapılamadı" });
     }
   });
