@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -56,19 +56,17 @@ function Router() {
 }
 
 function KeyboardShortcuts() {
-  const [, setLocation] = useLocation();
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === '0') {
         e.preventDefault();
-        setLocation('/super-admin');
+        window.open('/super-admin', '_blank');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setLocation]);
+  }, []);
 
   return null;
 }
