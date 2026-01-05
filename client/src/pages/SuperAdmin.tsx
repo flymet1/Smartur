@@ -61,7 +61,17 @@ import {
   Server,
   GitBranch,
   RotateCcw,
-  History
+  History,
+  UserCog,
+  LogIn,
+  Layers,
+  Database,
+  HeadphonesIcon,
+  DollarSign,
+  TrendingUp,
+  CalendarDays,
+  Cpu,
+  HardDrive
 } from "lucide-react";
 import type { SubscriptionPlan, Subscription, SubscriptionPayment, PlanFeature } from "@shared/schema";
 
@@ -1818,6 +1828,649 @@ function AgencySupportSection() {
   );
 }
 
+function PlatformAdminsSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ email: '', name: '', role: 'admin' });
+
+  const { data: admins = [], isLoading } = useQuery<any[]>({
+    queryKey: ['/api/platform-admins'],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (admin: any) => apiRequest('POST', '/api/platform-admins', admin),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-admins'] });
+      toast({ title: "Basarili", description: "Yonetici eklendi." });
+      setShowAddDialog(false);
+      setNewAdmin({ email: '', name: '', role: 'admin' });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Yonetici eklenemedi.", variant: "destructive" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/platform-admins/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/platform-admins'] });
+      toast({ title: "Basarili", description: "Yonetici silindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Yonetici silinemedi.", variant: "destructive" });
+    }
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <UserCog className="h-5 w-5" />
+            Platform Yoneticileri
+          </div>
+          <Button size="sm" onClick={() => setShowAddDialog(true)} data-testid="button-add-admin">
+            <Plus className="h-4 w-4 mr-1" />
+            Yonetici Ekle
+          </Button>
+        </CardTitle>
+        <CardDescription>Platform yoneticilerini yonetin</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+        ) : admins.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Henuz yonetici bulunmuyor.</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ad</TableHead>
+                <TableHead>E-posta</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Durum</TableHead>
+                <TableHead>Olusturma</TableHead>
+                <TableHead>Islemler</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {admins.map((admin) => (
+                <TableRow key={admin.id} data-testid={`row-admin-${admin.id}`}>
+                  <TableCell className="font-medium">{admin.name || "-"}</TableCell>
+                  <TableCell>{admin.email}</TableCell>
+                  <TableCell>
+                    <Badge variant={admin.role === 'super_admin' ? 'default' : 'secondary'}>
+                      {admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={admin.isActive ? 'default' : 'destructive'}>
+                      {admin.isActive ? 'Aktif' : 'Pasif'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString("tr-TR") : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => deleteMutation.mutate(admin.id)}
+                      disabled={deleteMutation.isPending || admin.role === 'super_admin'}
+                      data-testid={`button-delete-admin-${admin.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Yeni Yonetici Ekle</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Ad Soyad</Label>
+              <Input
+                value={newAdmin.name}
+                onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
+                placeholder="John Doe"
+                data-testid="input-admin-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>E-posta</Label>
+              <Input
+                type="email"
+                value={newAdmin.email}
+                onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                placeholder="admin@example.com"
+                data-testid="input-admin-email"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Iptal</Button>
+            <Button
+              onClick={() => createMutation.mutate(newAdmin)}
+              disabled={createMutation.isPending || !newAdmin.email}
+              data-testid="button-save-admin"
+            >
+              {createMutation.isPending ? "Ekleniyor..." : "Ekle"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+function SecuritySection() {
+  const { data: loginLogs = [], isLoading } = useQuery<any[]>({
+    queryKey: ['/api/login-logs'],
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shield className="h-5 w-5" />
+          Giris Kayitlari
+        </CardTitle>
+        <CardDescription>Son giris islemleri ve guvenlik kayitlari</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+        ) : loginLogs.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Henuz giris kaydi bulunmuyor.</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tarih</TableHead>
+                <TableHead>Kullanici</TableHead>
+                <TableHead>IP Adresi</TableHead>
+                <TableHead>Durum</TableHead>
+                <TableHead>Tarayici</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loginLogs.slice(0, 50).map((log) => (
+                <TableRow key={log.id} data-testid={`row-login-${log.id}`}>
+                  <TableCell>
+                    {log.createdAt ? new Date(log.createdAt).toLocaleString("tr-TR") : "-"}
+                  </TableCell>
+                  <TableCell className="font-medium">{log.email || log.userId || "-"}</TableCell>
+                  <TableCell>{log.ipAddress || "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant={log.success ? 'default' : 'destructive'}>
+                      {log.success ? 'Basarili' : 'Basarisiz'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                    {log.userAgent || "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BulkOperationsSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedLicenses, setSelectedLicenses] = useState<number[]>([]);
+  const [newPlanId, setNewPlanId] = useState<number | null>(null);
+  const [extensionDays, setExtensionDays] = useState(30);
+
+  const { data: licenses = [] } = useQuery<any[]>({
+    queryKey: ['/api/licenses'],
+  });
+
+  const { data: plans = [] } = useQuery<SubscriptionPlan[]>({
+    queryKey: ['/api/subscription-plans'],
+  });
+
+  const changePlanMutation = useMutation({
+    mutationFn: (data: { licenseIds: number[], planId: number }) =>
+      apiRequest('POST', '/api/bulk/plan-change', { licenseIds: data.licenseIds, newPlanId: data.planId }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
+      toast({ 
+        title: "Basarili", 
+        description: `${data.updated || 0} lisans guncellendi.` 
+      });
+      setSelectedLicenses([]);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Plan degistirilemedi.", variant: "destructive" });
+    }
+  });
+
+  const extendMutation = useMutation({
+    mutationFn: (data: { licenseIds: number[], days: number }) =>
+      apiRequest('POST', '/api/bulk/extend-license', data),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
+      toast({ 
+        title: "Basarili", 
+        description: `${data.updated || 0} lisans uzatildi.` 
+      });
+      setSelectedLicenses([]);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Lisans uzatilamadi.", variant: "destructive" });
+    }
+  });
+
+  const toggleLicense = (id: number) => {
+    setSelectedLicenses(prev =>
+      prev.includes(id) ? prev.filter(l => l !== id) : [...prev, id]
+    );
+  };
+
+  const selectAll = () => {
+    if (selectedLicenses.length === licenses.length) {
+      setSelectedLicenses([]);
+    } else {
+      setSelectedLicenses(licenses.map(l => l.id));
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Toplu Islemler
+          </CardTitle>
+          <CardDescription>Birden fazla lisans uzerinde toplu islem yapin</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={selectAll}
+              data-testid="button-select-all"
+            >
+              {selectedLicenses.length === licenses.length ? 'Tumunu Kaldir' : 'Tumunu Sec'}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {selectedLicenses.length} lisans secildi
+            </span>
+          </div>
+
+          <div className="border rounded-lg max-h-64 overflow-y-auto">
+            {licenses.map((lic) => (
+              <div
+                key={lic.id}
+                className={cn(
+                  "flex items-center gap-3 p-3 border-b last:border-b-0 cursor-pointer hover-elevate",
+                  selectedLicenses.includes(lic.id) && "bg-primary/10"
+                )}
+                onClick={() => toggleLicense(lic.id)}
+                data-testid={`checkbox-license-${lic.id}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedLicenses.includes(lic.id)}
+                  onChange={() => {}}
+                  className="h-4 w-4"
+                />
+                <div className="flex-1">
+                  <div className="font-medium">{lic.companyName}</div>
+                  <div className="text-sm text-muted-foreground">{lic.email}</div>
+                </div>
+                <Badge variant={lic.isActive ? 'default' : 'destructive'}>
+                  {lic.planType || 'trial'}
+                </Badge>
+              </div>
+            ))}
+          </div>
+
+          {selectedLicenses.length > 0 && (
+            <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Plan Degistir</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <select
+                    className="w-full p-2 border rounded-md"
+                    value={newPlanId || ''}
+                    onChange={(e) => setNewPlanId(Number(e.target.value) || null)}
+                    data-testid="select-bulk-plan"
+                  >
+                    <option value="">Plan Sec</option>
+                    {plans.filter(p => p.isActive).map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <Button
+                    onClick={() => newPlanId && changePlanMutation.mutate({
+                      licenseIds: selectedLicenses,
+                      planId: newPlanId
+                    })}
+                    disabled={!newPlanId || changePlanMutation.isPending}
+                    className="w-full"
+                    data-testid="button-bulk-change-plan"
+                  >
+                    {changePlanMutation.isPending ? "Guncelleniyor..." : "Plani Degistir"}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Lisans Uzat</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={extensionDays}
+                      onChange={(e) => setExtensionDays(Number(e.target.value))}
+                      min={1}
+                      max={365}
+                      className="w-24"
+                      data-testid="input-extension-days"
+                    />
+                    <span className="text-sm text-muted-foreground">gun</span>
+                  </div>
+                  <Button
+                    onClick={() => extendMutation.mutate({
+                      licenseIds: selectedLicenses,
+                      days: extensionDays
+                    })}
+                    disabled={extendMutation.isPending}
+                    className="w-full"
+                    data-testid="button-bulk-extend"
+                  >
+                    {extendMutation.isPending ? "Uzatiliyor..." : "Lisans Uzat"}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function SystemMonitoringSection() {
+  const { data: dbStats, isLoading: dbLoading, refetch: refetchDb } = useQuery<any>({
+    queryKey: ['/api/system/db-stats'],
+    refetchInterval: 30000,
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Server className="h-5 w-5" />
+          Sistem Izleme
+        </h3>
+        <Button variant="outline" size="sm" onClick={() => refetchDb()} data-testid="button-refresh-system">
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Yenile
+        </Button>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Veritabani
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {dbLoading ? (
+              <div className="text-muted-foreground">Yukleniyor...</div>
+            ) : dbStats ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Durum</span>
+                  <Badge variant={dbStats.status === 'connected' ? 'default' : 'destructive'}>
+                    {dbStats.status === 'connected' ? 'Bagli' : 'Bagli Degil'}
+                  </Badge>
+                </div>
+                {dbStats.tables && Object.entries(dbStats.tables).map(([table, count]) => (
+                  <div key={table} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground capitalize">{table}</span>
+                    <span className="font-medium">{String(count)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground">Veri yok</div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Cpu className="h-4 w-4" />
+              Sunucu
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Node.js</span>
+                <span className="text-sm font-medium">{typeof process !== 'undefined' ? 'Aktif' : 'N/A'}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Ortam</span>
+                <Badge variant="outline">Development</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <HardDrive className="h-4 w-4" />
+              Depolama
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Tip</span>
+                <span className="text-sm font-medium">PostgreSQL</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Provider</span>
+                <Badge variant="outline">Replit</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function RevenueSection() {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  const { data: summary, isLoading: summaryLoading } = useQuery<any>({
+    queryKey: ['/api/revenue/summary'],
+  });
+
+  const { data: monthlyData = [], isLoading: monthlyLoading } = useQuery<any[]>({
+    queryKey: ['/api/revenue/monthly', selectedYear],
+    queryFn: async () => {
+      const res = await fetch(`/api/revenue/monthly?year=${selectedYear}`);
+      if (!res.ok) throw new Error('Failed to fetch monthly revenue');
+      return res.json();
+    },
+  });
+
+  const { data: overdueInvoices = [] } = useQuery<any[]>({
+    queryKey: ['/api/invoices/overdue'],
+  });
+
+  const formatCurrency = (amount: number, currency: string = 'TRY') => {
+    return new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Toplam Gelir (TL)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summaryLoading ? '...' : formatCurrency(summary?.totalRevenueTl || 0)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Toplam Gelir (USD)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summaryLoading ? '...' : formatCurrency(summary?.totalRevenueUsd || 0, 'USD')}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tamamlanan Odemeler</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {summaryLoading ? '...' : summary?.completedPayments || 0}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Bekleyen Odemeler</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {summaryLoading ? '...' : summary?.pendingPayments || 0}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Aylik Gelir
+            </div>
+            <select
+              className="p-2 border rounded-md text-sm"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              data-testid="select-revenue-year"
+            >
+              {[currentYear - 1, currentYear, currentYear + 1].map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {monthlyLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ay</TableHead>
+                  <TableHead className="text-right">Gelir (TL)</TableHead>
+                  <TableHead className="text-right">Gelir (USD)</TableHead>
+                  <TableHead className="text-right">Islem Sayisi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {monthlyData.map((month: any) => (
+                  <TableRow key={month.month}>
+                    <TableCell className="font-medium">{month.monthName}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.tl)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(month.usd, 'USD')}</TableCell>
+                    <TableCell className="text-right">{month.count}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {overdueInvoices.length > 0 && (
+        <Card className="border-orange-200 dark:border-orange-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="h-5 w-5" />
+              Vadesi Gecmis Faturalar ({overdueInvoices.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fatura No</TableHead>
+                  <TableHead>Ajans</TableHead>
+                  <TableHead>Tutar</TableHead>
+                  <TableHead>Vade</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {overdueInvoices.map((inv: any) => (
+                  <TableRow key={inv.id} className="bg-orange-50 dark:bg-orange-950/20">
+                    <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>
+                    <TableCell>{inv.agencyName}</TableCell>
+                    <TableCell>{formatCurrency(inv.totalTl)}</TableCell>
+                    <TableCell className="text-orange-600">
+                      {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("tr-TR") : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 export default function SuperAdmin() {
   const { toast } = useToast();
   
@@ -2111,6 +2764,26 @@ export default function SuperAdmin() {
             <MessageSquare className="h-4 w-4 mr-2" />
             Destek
           </TabsTrigger>
+          <TabsTrigger value="platform-admins" data-testid="tab-platform-admins">
+            <UserCog className="h-4 w-4 mr-2" />
+            Yoneticiler
+          </TabsTrigger>
+          <TabsTrigger value="security" data-testid="tab-security">
+            <Shield className="h-4 w-4 mr-2" />
+            Guvenlik
+          </TabsTrigger>
+          <TabsTrigger value="bulk-ops" data-testid="tab-bulk-ops">
+            <Layers className="h-4 w-4 mr-2" />
+            Toplu Islem
+          </TabsTrigger>
+          <TabsTrigger value="system" data-testid="tab-system">
+            <Server className="h-4 w-4 mr-2" />
+            Sistem
+          </TabsTrigger>
+          <TabsTrigger value="revenue" data-testid="tab-revenue">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Gelir
+          </TabsTrigger>
           <TabsTrigger value="updates" data-testid="tab-updates">
             <RefreshCw className="h-4 w-4 mr-2" />
             Guncellemeler
@@ -2353,6 +3026,31 @@ export default function SuperAdmin() {
         {/* Support Tab - Agency Form Requests Only */}
         <TabsContent value="support" className="space-y-4 mt-4">
           <AgencySupportSection />
+        </TabsContent>
+
+        {/* Platform Admins Tab */}
+        <TabsContent value="platform-admins" className="space-y-4 mt-4">
+          <PlatformAdminsSection />
+        </TabsContent>
+
+        {/* Security Tab */}
+        <TabsContent value="security" className="space-y-4 mt-4">
+          <SecuritySection />
+        </TabsContent>
+
+        {/* Bulk Operations Tab */}
+        <TabsContent value="bulk-ops" className="space-y-4 mt-4">
+          <BulkOperationsSection />
+        </TabsContent>
+
+        {/* System Monitoring Tab */}
+        <TabsContent value="system" className="space-y-4 mt-4">
+          <SystemMonitoringSection />
+        </TabsContent>
+
+        {/* Revenue Tab */}
+        <TabsContent value="revenue" className="space-y-4 mt-4">
+          <RevenueSection />
         </TabsContent>
 
         {/* Updates Tab */}
