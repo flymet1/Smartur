@@ -2846,6 +2846,81 @@ Sky Fethiye`;
     }
   });
 
+  // Message Analytics Endpoint
+  app.get("/api/conversations/analytics", async (req, res) => {
+    try {
+      const period = (req.query.period as 'daily' | 'weekly' | 'monthly') || 'daily';
+      
+      // Calculate date range based on period
+      const now = new Date();
+      let startDate: Date;
+      
+      switch (period) {
+        case 'weekly':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'monthly':
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        default: // daily
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+      }
+      
+      // Get all conversations
+      const allConversations = await storage.getAllConversations('all');
+      
+      // Filter conversations within the period
+      const periodConversations = allConversations.filter(conv => {
+        if (!conv.lastMessageTime) return false;
+        const msgDate = new Date(conv.lastMessageTime);
+        return msgDate >= startDate && msgDate <= now;
+      });
+      
+      // Calculate metrics
+      const totalCustomers = periodConversations.length;
+      const conversionsToSales = periodConversations.filter(conv => conv.hasReservation).length;
+      const supportRequests = periodConversations.filter(conv => conv.supportRequest).length;
+      const pendingInterventions = periodConversations.filter(conv => conv.requiresHumanIntervention).length;
+      
+      // Calculate unique phone numbers (unique customers)
+      const uniquePhones = new Set(periodConversations.map(c => c.phone));
+      
+      // Calculate response rate (conversations that got bot response)
+      const conversationsWithBotResponse = periodConversations.filter(conv => 
+        conv.messages && conv.messages.some(m => m.role === 'assistant')
+      ).length;
+      
+      // Calculate conversion rate
+      const conversionRate = totalCustomers > 0 
+        ? ((conversionsToSales / totalCustomers) * 100).toFixed(1)
+        : '0';
+      
+      res.json({
+        period,
+        startDate: startDate.toISOString(),
+        endDate: now.toISOString(),
+        metrics: {
+          totalCustomers,
+          uniqueCustomers: uniquePhones.size,
+          conversionsToSales,
+          conversionRate: parseFloat(conversionRate),
+          supportRequests,
+          pendingInterventions,
+          conversationsWithBotResponse,
+          responseRate: totalCustomers > 0 
+            ? parseFloat(((conversationsWithBotResponse / totalCustomers) * 100).toFixed(1))
+            : 0
+        }
+      });
+    } catch (err) {
+      console.error('Analytics error:', err);
+      res.status(500).json({ error: "Analiz verileri alınamadı" });
+    }
+  });
+
   // === Support Requests ===
   app.get("/api/support-requests/summary", async (req, res) => {
     try {
