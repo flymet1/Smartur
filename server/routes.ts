@@ -5035,13 +5035,15 @@ Sky Fethiye`;
         const passwordHash = hashPassword(adminPassword);
         
         // Calculate membership end date based on licenseDuration (in days)
+        // 0 = unlimited (null), any positive number = that many days
         let membershipEndDate: Date | null = null;
-        const durationDays = parseInt(licenseDuration) || 30;
+        const parsedDuration = parseInt(licenseDuration);
+        const durationDays = isNaN(parsedDuration) ? 30 : parsedDuration; // Default 30 if not provided
         if (durationDays > 0) {
           membershipEndDate = new Date();
           membershipEndDate.setDate(membershipEndDate.getDate() + durationDays);
         }
-        // If durationDays is 0, membershipEndDate stays null (unlimited)
+        // If durationDays is 0 or less, membershipEndDate stays null (unlimited)
         
         adminUser = await storage.createAppUser({
           tenantId: tenant.id,
