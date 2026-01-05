@@ -1131,30 +1131,9 @@ export default function UserGuide() {
                   title="Sistem"
                   items={[
                     "Sürüm bilgisi ve güncelleme kontrolü",
-                    "Hata raporu (debug snapshot) oluşturma",
-                    "VPS güncelleme talimatları",
-                    "Sistem sağlığı durumu"
+                    "VPS güncelleme talimatları"
                   ]}
                 />
-              </div>
-
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <h4 className="font-semibold mb-2 flex items-center gap-2 text-blue-600">
-                  <Download className="h-4 w-4" />
-                  Hata Raporu (Debug Snapshot) Oluşturma
-                </h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Sorun yaşadığınızda Ayarlar &gt; Sistem sekmesindeki "Hata Ayıklama" kartından
-                  tek tıkla sistem raporu oluşturabilirsiniz.
-                </p>
-                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
-                  <li>Tüm aktiviteler, rezervasyonlar ve ayarlar toplanır</li>
-                  <li>Son sistem logları eklenir</li>
-                  <li>Sistem sağlığı otomatik kontrol edilir (AI hataları, webhook sorunları)</li>
-                  <li>Müşteri bilgileri (telefon, e-posta) otomatik gizlenir</li>
-                  <li>JSON formatında indirilebilir rapor oluşturulur</li>
-                  <li>Bu raporu geliştirici ile paylaşarak hızlı destek alabilirsiniz</li>
-                </ul>
               </div>
 
               <div className="mt-3">
