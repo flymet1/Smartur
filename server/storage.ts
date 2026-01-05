@@ -1861,13 +1861,13 @@ export class DatabaseStorage implements IStorage {
     
     if (!currentLicense) {
       // Trial mode: Allow writes when no license exists (for demo/development)
-      return { valid: true, message: "Deneme modu - lisans tanımlanmamis.", status: 'active', canWrite: true };
+      return { valid: true, message: "Deneme modu - lisans tanımlanmamış.", status: 'active', canWrite: true };
     }
 
     if (!currentLicense.isActive) {
       return { 
         valid: false, 
-        message: "Lisansiniz devre dışı birakilmis.", 
+        message: "Lisansınız devre dışı bırakılmış.", 
         license: currentLicense,
         status: 'suspended',
         canWrite: false
@@ -1887,7 +1887,7 @@ export class DatabaseStorage implements IStorage {
       if (now > graceEndDate) {
         return { 
           valid: false, 
-          message: "Lisansiniz ve ek sure dolmus. Lutfen yenileyin.", 
+          message: "Lisansınız ve ek süre dolmuş. Lütfen yenileyin.", 
           license: currentLicense,
           status: 'expired',
           daysRemaining: daysRemaining,
@@ -1900,7 +1900,7 @@ export class DatabaseStorage implements IStorage {
         const graceDaysRemaining = Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         return { 
           valid: false, 
-          message: `Lisansiniz dolmus. ${graceDaysRemaining} gun içinde yenileyin, aksi halde sisteme erisim kapanacak.`, 
+          message: `Lisansınız dolmuş. ${graceDaysRemaining} gün içinde yenileyin, aksi halde sisteme erişim kapanacak.`, 
           license: currentLicense,
           status: 'grace',
           daysRemaining: daysRemaining,
@@ -1917,7 +1917,7 @@ export class DatabaseStorage implements IStorage {
         if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
           return { 
             valid: false, 
-            message: `Aktivite limitini astiniz (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lutfen planinizi yukseltin.`,
+            message: `Aktivite limitini aştınız (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lütfen planınızı yükseltin.`,
             license: currentLicense,
             status: 'warning',
             daysRemaining: daysRemaining,
@@ -1928,7 +1928,7 @@ export class DatabaseStorage implements IStorage {
         if (currentLicense.maxReservationsPerMonth && usage.reservationsThisMonth > currentLicense.maxReservationsPerMonth) {
           return { 
             valid: false, 
-            message: `Aylık rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
+            message: `Aylık rezervasyon limitini aştınız (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lütfen planınızı yükseltin.`,
             license: currentLicense,
             status: 'warning',
             daysRemaining: daysRemaining,
@@ -1943,7 +1943,7 @@ export class DatabaseStorage implements IStorage {
 
         return { 
           valid: true, 
-          message: `Lisansinizin bitmesine ${daysRemaining} gun kaldi. Lutfen yenilemeyi unutmayin.`, 
+          message: `Lisansınızın bitmesine ${daysRemaining} gün kaldı. Lütfen yenilemeyi unutmayın.`, 
           license: currentLicense,
           status: 'warning',
           daysRemaining: daysRemaining,
@@ -1958,7 +1958,7 @@ export class DatabaseStorage implements IStorage {
     if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
       return { 
         valid: false, 
-        message: `Aktivite limitini astiniz (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lutfen planinizi yukseltin.`,
+        message: `Aktivite limitini aştınız (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lütfen planınızı yükseltin.`,
         license: currentLicense,
         status: 'active',
         canWrite: false
@@ -1968,7 +1968,7 @@ export class DatabaseStorage implements IStorage {
     if (currentLicense.maxReservationsPerMonth && usage.reservationsThisMonth > currentLicense.maxReservationsPerMonth) {
       return { 
         valid: false, 
-        message: `Aylık rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
+        message: `Aylık rezervasyon limitini aştınız (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lütfen planınızı yükseltin.`,
         license: currentLicense,
         status: 'active',
         canWrite: false

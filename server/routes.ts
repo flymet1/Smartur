@@ -129,11 +129,11 @@ async function checkLicenseForWrite(): Promise<{ allowed: boolean; message: stri
     let message = verification.message;
     
     if (verification.status === 'grace') {
-      message = `Lisansiniz dolmus (Ek sure: ${verification.graceDaysRemaining} gun). Salt okunur moddasiniz - yeni işlem yapamazsiniz.`;
+      message = `Lisansınız dolmuş (Ek süre: ${verification.graceDaysRemaining} gün). Salt okunur modasınız - yeni işlem yapamazsınız.`;
     } else if (verification.status === 'expired') {
-      message = "Lisansiniz tamamen dolmus. Sisteme erisim için lisansinizi yenileyin.";
+      message = "Lisansınız tamamen dolmuş. Sisteme erişim için lisansınızı yenileyin.";
     } else if (verification.status === 'suspended') {
-      message = "Lisansiniz askiya alınmış. Destek ile iletişime gecin.";
+      message = "Lisansınız askıya alınmış. Destek ile iletişime geçin.";
     }
     
     return { allowed: false, message, status: verification.status };
@@ -256,8 +256,8 @@ function parseDatesFromMessage(message: string): string[] {
   // Turkish month names to number mapping
   const monthMap: Record<string, number> = {
     'ocak': 0, 'subat': 1, 'şubat': 1, 'mart': 2, 'nisan': 3, 
-    'mayıs': 4, 'mayıs': 4, 'hazıran': 5, 'temmuz': 6, 'ağustos': 7, 'ağustos': 7,
-    'eylül': 8, 'eylül': 8, 'ekim': 9, 'kasım': 10, 'kasım': 10, 'aralık': 11, 'aralık': 11
+    'mayis': 4, 'mayıs': 4, 'haziran': 5, 'hazıran': 5, 'temmuz': 6, 'agustos': 7, 'ağustos': 7,
+    'eylul': 8, 'eylül': 8, 'ekim': 9, 'kasim': 10, 'kasım': 10, 'aralik': 11, 'aralık': 11
   };
   
   // Helper to format date as YYYY-MM-DD
