@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
   Crown,
   ArrowRight
 } from "lucide-react";
-import type { SubscriptionPlan, License } from "@shared/schema";
+import type { SubscriptionPlan } from "@shared/schema";
 
 const FEATURE_LABELS: Record<string, { label: string; icon: typeof Activity }> = {
   basic_calendar: { label: "Temel Takvim", icon: Activity },
@@ -35,22 +35,29 @@ const FEATURE_LABELS: Record<string, { label: string; icon: typeof Activity }> =
   custom_branding: { label: "Özel Marka", icon: Crown },
 };
 
+interface UserData {
+  membershipType?: string | null;
+}
+
 export default function Subscription() {
   const [isYearly, setIsYearly] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+
+  // Get current user's membership type from localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        setCurrentUser(JSON.parse(userData));
+      } catch {
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
   const { data: plans = [], isLoading } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/subscription-plans"],
-  });
-
-  type LicenseData = {
-    license: License | null;
-    usage: { activitiesUsed: number; reservationsThisMonth: number };
-    status: { valid: boolean; message: string };
-  };
-
-  const { data: licenseData } = useQuery<LicenseData>({
-    queryKey: ["/api/license"],
   });
 
   const activePlans = plans.filter(p => p.isActive && p.code !== "trial");
@@ -72,7 +79,7 @@ export default function Subscription() {
     setSelectedPlan(planId);
   };
 
-  const currentPlan = licenseData?.license?.planType;
+  const currentPlan = currentUser?.membershipType;
 
   return (
     <div className="flex min-h-screen bg-muted/20">

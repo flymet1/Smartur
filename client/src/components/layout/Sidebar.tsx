@@ -263,25 +263,6 @@ export function Sidebar() {
     }
   };
 
-  // License data for sidebar status
-  type LicenseData = {
-    license: unknown;
-    usage: unknown;
-    status: {
-      valid: boolean;
-      message: string;
-      status?: 'active' | 'warning' | 'grace' | 'suspended' | 'expired';
-      daysRemaining?: number;
-      graceDaysRemaining?: number;
-      canWrite?: boolean;
-    };
-  };
-  
-  const { data: licenseData, isLoading: isLicenseLoading } = useQuery<LicenseData>({
-    queryKey: ['/api/license'],
-    refetchInterval: 60000, // Check every minute
-  });
-
   const openSupportCount = supportSummary?.openCount || 0;
   const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
   const logoUrl = logoSetting?.value;
@@ -363,48 +344,8 @@ export function Sidebar() {
       }
     }
     
-    // Fallback to global license for non-logged-in users
-    // Show neutral state while loading
-    if (isLicenseLoading || !licenseData?.status) {
-      return { text: 'Uyelik Durumu', color: 'text-muted-foreground', bgColor: 'bg-muted-foreground', isActive: false, isLoading: true };
-    }
-    
-    const { valid, status, daysRemaining } = licenseData.status;
-    
-    if (!valid || status === 'expired' || status === 'suspended' || status === 'grace') {
-      return { text: 'Yenileme Gerekli', color: 'text-red-600', bgColor: 'bg-red-500', isActive: false, isLoading: false };
-    }
-    
-    // Active license - show days remaining with color coding
-    if (daysRemaining !== undefined) {
-      if (daysRemaining <= 7) {
-        return { 
-          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
-          color: 'text-red-600', 
-          bgColor: 'bg-red-500',
-          isActive: true,
-          isLoading: false
-        };
-      } else if (daysRemaining <= 14) {
-        return { 
-          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
-          color: 'text-amber-600', 
-          bgColor: 'bg-amber-500',
-          isActive: true,
-          isLoading: false
-        };
-      } else {
-        return { 
-          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
-          color: 'text-accent-foreground', 
-          bgColor: 'bg-accent',
-          isActive: true,
-          isLoading: false
-        };
-      }
-    }
-    
-    return { text: 'Aktif', color: 'text-accent-foreground', bgColor: 'bg-accent', isActive: true, isLoading: false };
+    // No user logged in - show neutral state
+    return { text: 'Giris Yapiniz', color: 'text-muted-foreground', bgColor: 'bg-muted', isActive: false, isLoading: false };
   };
 
   const licenseStatusInfo = getLicenseStatusInfo();
