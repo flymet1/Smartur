@@ -1,12 +1,13 @@
 import { Sidebar } from "@/components/layout/Sidebar";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useMemo } from "react";
-import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search, ExternalLink } from "lucide-react";
+import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search, ExternalLink, Users, TrendingUp, HeadphonesIcon, BarChart3, Bot, Percent } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +27,23 @@ import {
 } from "@/components/ui/dialog";
 
 type FilterType = 'all' | 'with_reservation' | 'human_intervention';
+type AnalyticsPeriod = 'daily' | 'weekly' | 'monthly';
+
+interface MessageAnalytics {
+  period: string;
+  startDate: string;
+  endDate: string;
+  metrics: {
+    totalCustomers: number;
+    uniqueCustomers: number;
+    conversionsToSales: number;
+    conversionRate: number;
+    supportRequests: number;
+    pendingInterventions: number;
+    conversationsWithBotResponse: number;
+    responseRate: number;
+  };
+}
 
 interface Conversation {
   phone: string;
@@ -57,8 +75,17 @@ export default function Messages() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>('daily');
   const { toast } = useToast();
   const searchParams = useSearch();
+
+  const { data: analytics, isLoading: analyticsLoading } = useQuery<MessageAnalytics>({
+    queryKey: ['/api/conversations/analytics', analyticsPeriod],
+    queryFn: async () => {
+      const res = await fetch(`/api/conversations/analytics?period=${analyticsPeriod}`);
+      return res.json();
+    }
+  });
 
   const { data: conversations, isLoading } = useQuery<Conversation[]>({
     queryKey: ['/api/conversations', filter],
@@ -228,6 +255,141 @@ export default function Messages() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </div>
+
+        {/* Analytics Section */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">Mesaj Analizi</h2>
+            </div>
+            <Tabs value={analyticsPeriod} onValueChange={(v) => setAnalyticsPeriod(v as AnalyticsPeriod)}>
+              <TabsList>
+                <TabsTrigger value="daily" data-testid="tab-analytics-daily">Gunluk</TabsTrigger>
+                <TabsTrigger value="weekly" data-testid="tab-analytics-weekly">Haftalik</TabsTrigger>
+                <TabsTrigger value="monthly" data-testid="tab-analytics-monthly">Aylik</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-sm font-medium">Yazan Musteri</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold" data-testid="text-total-customers">
+                      {analytics?.metrics.totalCustomers ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {analyticsPeriod === 'daily' ? 'Bugun' : analyticsPeriod === 'weekly' ? 'Son 7 gun' : 'Son 30 gun'}
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-sm font-medium">Satisa Donen</CardTitle>
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-green-600" data-testid="text-conversions">
+                      {analytics?.metrics.conversionsToSales ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Rezervasyon yapan</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-sm font-medium">Destek Talebi</CardTitle>
+                <HeadphonesIcon className="h-4 w-4 text-orange-500" />
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-orange-500" data-testid="text-support-requests">
+                      {analytics?.metrics.supportRequests ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Destek istegi</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-sm font-medium">Donusum Orani</CardTitle>
+                <Percent className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-primary" data-testid="text-conversion-rate">
+                      %{analytics?.metrics.conversionRate ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Satisa donusum</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-sm font-medium">Bot Yanit</CardTitle>
+                <Bot className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-blue-500" data-testid="text-bot-responses">
+                      {analytics?.metrics.conversationsWithBotResponse ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Yanit verilen</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                <CardTitle className="text-sm font-medium">Mudahale</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              </CardHeader>
+              <CardContent>
+                {analyticsLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold text-yellow-600" data-testid="text-pending-interventions">
+                      {analytics?.metrics.pendingInterventions ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Bekleyen</p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
 
