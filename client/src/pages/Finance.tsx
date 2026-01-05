@@ -37,7 +37,12 @@ import {
   Umbrella,
   UserCheck,
   TableProperties,
-  Send
+  Send,
+  RefreshCw,
+  ArrowRightLeft,
+  Euro,
+  Banknote,
+  Calculator
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate } from "@shared/schema";
 import { format } from "date-fns";
@@ -93,6 +98,40 @@ export default function Finance() {
     currency: 'TRY',
     notes: ''
   });
+
+  // Currency converter state
+  const [converterAmount, setConverterAmount] = useState<string>("100");
+  const [converterFrom, setConverterFrom] = useState<string>("USD");
+  const [converterTo, setConverterTo] = useState<string>("TRY");
+
+  // Exchange Rates
+  type ExchangeRates = {
+    USD: { TRY: number; EUR: number };
+    EUR: { TRY: number; USD: number };
+    TRY: { USD: number; EUR: number };
+    lastUpdated: string;
+    date: string;
+    stale?: boolean;
+  };
+  const { data: exchangeRates, isLoading: ratesLoading, refetch: refetchRates } = useQuery<ExchangeRates>({
+    queryKey: ['/api/finance/exchange-rates'],
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    refetchInterval: 1000 * 60 * 60, // 1 hour
+  });
+
+  // Convert currency
+  const convertCurrency = (amount: number, from: string, to: string): number => {
+    if (!exchangeRates || from === to) return amount;
+    const fromRates = exchangeRates[from as keyof typeof exchangeRates];
+    if (typeof fromRates === 'object' && to in fromRates) {
+      return amount * (fromRates as Record<string, number>)[to];
+    }
+    return amount;
+  };
+
+  const convertedAmount = converterAmount && !isNaN(parseFloat(converterAmount)) 
+    ? convertCurrency(parseFloat(converterAmount), converterFrom, converterTo)
+    : 0;
 
   // Tedarikçiler (Suppliers)
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery<Agency[]>({
@@ -342,6 +381,161 @@ export default function Finance() {
             />
           </div>
         </div>
+
+        {/* Currency Exchange Rates & Converter Widget */}
+        <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Banknote className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">Guncel Doviz Kurlari</CardTitle>
+                {exchangeRates?.stale && (
+                  <Badge variant="outline" className="text-xs">Eski veri</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {exchangeRates?.date && (
+                  <span className="text-xs text-muted-foreground">
+                    {exchangeRates.date}
+                  </span>
+                )}
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  onClick={() => refetchRates()}
+                  disabled={ratesLoading}
+                  data-testid="button-refresh-rates"
+                >
+                  <RefreshCw className={`h-4 w-4 ${ratesLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Current Rates Display */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Gunluk Kurlar</h4>
+                {ratesLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : exchangeRates ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-muted/50 border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <span className="text-xs font-medium text-muted-foreground">USD/TRY</span>
+                      </div>
+                      <div className="text-xl font-bold" data-testid="text-usd-try-rate">
+                        {exchangeRates.USD.TRY.toFixed(4)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">1 USD = {exchangeRates.USD.TRY.toFixed(2)} TL</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/50 border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Euro className="h-4 w-4 text-blue-600" />
+                        <span className="text-xs font-medium text-muted-foreground">EUR/TRY</span>
+                      </div>
+                      <div className="text-xl font-bold" data-testid="text-eur-try-rate">
+                        {exchangeRates.EUR.TRY.toFixed(4)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">1 EUR = {exchangeRates.EUR.TRY.toFixed(2)} TL</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/50 border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DollarSign className="h-4 w-4 text-green-600" />
+                        <span className="text-xs font-medium text-muted-foreground">USD/EUR</span>
+                      </div>
+                      <div className="text-xl font-bold" data-testid="text-usd-eur-rate">
+                        {exchangeRates.USD.EUR.toFixed(4)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">1 USD = {exchangeRates.USD.EUR.toFixed(4)} EUR</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/50 border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Euro className="h-4 w-4 text-blue-600" />
+                        <span className="text-xs font-medium text-muted-foreground">EUR/USD</span>
+                      </div>
+                      <div className="text-xl font-bold" data-testid="text-eur-usd-rate">
+                        {exchangeRates.EUR.USD.toFixed(4)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">1 EUR = {exchangeRates.EUR.USD.toFixed(4)} USD</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Kur bilgisi alinamadi
+                  </div>
+                )}
+              </div>
+
+              {/* Currency Converter */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-4 w-4 text-primary" />
+                  <h4 className="text-sm font-medium text-muted-foreground">Doviz Hesaplayici</h4>
+                </div>
+                <div className="p-4 rounded-lg border bg-background">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={converterAmount}
+                        onChange={(e) => setConverterAmount(e.target.value)}
+                        placeholder="Miktar"
+                        className="flex-1"
+                        data-testid="input-converter-amount"
+                      />
+                      <Select value={converterFrom} onValueChange={setConverterFrom}>
+                        <SelectTrigger className="w-24" data-testid="select-converter-from">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="TRY">TRY</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-center">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          const temp = converterFrom;
+                          setConverterFrom(converterTo);
+                          setConverterTo(temp);
+                        }}
+                        data-testid="button-swap-currencies"
+                      >
+                        <ArrowRightLeft className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 p-3 rounded-md bg-muted/50 border">
+                        <div className="text-xl font-bold" data-testid="text-converted-amount">
+                          {convertedAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
+                      <Select value={converterTo} onValueChange={setConverterTo}>
+                        <SelectTrigger className="w-24" data-testid="select-converter-to">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="TRY">TRY</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
