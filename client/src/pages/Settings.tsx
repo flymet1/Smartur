@@ -144,6 +144,7 @@ export default function Settings() {
     if (botAccessSettings?.value && !botAccessSettingsLoaded) {
       try {
         const settings = JSON.parse(botAccessSettings.value);
+        if (settings.enabled !== undefined) setBotEnabled(settings.enabled);
         if (settings.activities !== undefined) setBotAccessActivities(settings.activities);
         if (settings.packageTours !== undefined) setBotAccessPackageTours(settings.packageTours);
         if (settings.capacity !== undefined) setBotAccessCapacity(settings.capacity);
@@ -340,6 +341,7 @@ export default function Settings() {
     try {
       // Build bot access settings object
       const botAccessValue = JSON.stringify({
+        enabled: botEnabled,
         activities: botAccessActivities,
         packageTours: botAccessPackageTours,
         capacity: botAccessCapacity,

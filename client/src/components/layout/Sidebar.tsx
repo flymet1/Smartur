@@ -128,6 +128,29 @@ export function Sidebar() {
     staleTime: 60000,
   });
 
+  // Load bot access settings to check if bot is enabled
+  const { data: botAccessSettings } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'botAccess'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/botAccess');
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+
+  // Parse bot enabled status
+  const isBotEnabled = (() => {
+    if (botAccessSettings?.value) {
+      try {
+        const settings = JSON.parse(botAccessSettings.value);
+        return settings.enabled !== false; // Default to true if not set
+      } catch {
+        return true;
+      }
+    }
+    return true; // Default to true if no settings
+  })();
+
   // Apply brand colors to CSS custom properties
   useEffect(() => {
     if (brandSettings?.value) {
@@ -598,10 +621,18 @@ export function Sidebar() {
         <div className="p-4 border-t space-y-3">
           <div className="bg-muted/50 rounded-lg p-3">
             <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sistem Durumu</div>
-            <div className="flex items-center gap-2 text-sm font-medium text-accent-foreground">
-              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <div className={cn(
+                "w-2 h-2 rounded-full",
+                isBotEnabled ? "bg-accent animate-pulse" : "bg-muted-foreground"
+              )} />
               <span className="text-foreground">WhatsApp Bot</span>
-              <span className="text-xs px-1.5 py-0.5 rounded bg-accent text-accent-foreground font-semibold">Aktif</span>
+              <span className={cn(
+                "text-xs px-1.5 py-0.5 rounded font-semibold",
+                isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+              )}>
+                {isBotEnabled ? "Aktif" : "Kapali"}
+              </span>
             </div>
             <Link href="/subscription">
               <div 
