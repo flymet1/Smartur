@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { insertActivitySchema, insertCapacitySchema, insertReservationSchema } from "@shared/schema";
+import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
 import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
@@ -4337,11 +4337,131 @@ Sky Fethiye`;
     }
   });
 
+  // === SUBSCRIPTION PLANS (Super Admin) ===
+
+  // Get all subscription plans
+  app.get("/api/subscription-plans", async (req, res) => {
+    try {
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (err) {
+      console.error("Plan listesi hatasi:", err);
+      res.status(500).json({ error: "Planlar alinamadi" });
+    }
+  });
+
+  // Get single subscription plan
+  app.get("/api/subscription-plans/:id", async (req, res) => {
+    try {
+      const plan = await storage.getSubscriptionPlan(Number(req.params.id));
+      if (!plan) {
+        return res.status(404).json({ error: "Plan bulunamadi" });
+      }
+      res.json(plan);
+    } catch (err) {
+      console.error("Plan detay hatasi:", err);
+      res.status(500).json({ error: "Plan alinamadi" });
+    }
+  });
+
+  // Create subscription plan (with Zod validation)
+  app.post("/api/subscription-plans", async (req, res) => {
+    try {
+      // Validate features as JSON array string
+      const planSchema = insertSubscriptionPlanSchema.extend({
+        features: z.string().optional().refine((val) => {
+          if (!val) return true;
+          try { JSON.parse(val); return true; } catch { return false; }
+        }, { message: "features must be valid JSON array" }),
+      });
+      const parsed = planSchema.parse(req.body);
+      const plan = await storage.createSubscriptionPlan(parsed);
+      res.json(plan);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: err.errors });
+      }
+      console.error("Plan olusturma hatasi:", err);
+      res.status(500).json({ error: "Plan olusturulamadi" });
+    }
+  });
+
+  // Update subscription plan (with Zod validation)
+  app.patch("/api/subscription-plans/:id", async (req, res) => {
+    try {
+      // Validate features as JSON array string (partial for updates)
+      const updateSchema = insertSubscriptionPlanSchema.partial().extend({
+        features: z.string().optional().refine((val) => {
+          if (!val) return true;
+          try { JSON.parse(val); return true; } catch { return false; }
+        }, { message: "features must be valid JSON array" }),
+      });
+      const parsed = updateSchema.parse(req.body);
+      const plan = await storage.updateSubscriptionPlan(Number(req.params.id), parsed);
+      res.json(plan);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ error: "Validation failed", details: err.errors });
+      }
+      console.error("Plan guncelleme hatasi:", err);
+      res.status(500).json({ error: "Plan guncellenemedi" });
+    }
+  });
+
+  // Delete subscription plan
+  app.delete("/api/subscription-plans/:id", async (req, res) => {
+    try {
+      await storage.deleteSubscriptionPlan(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Plan silme hatasi:", err);
+      res.status(500).json({ error: "Plan silinemedi" });
+    }
+  });
+
+  // === SUBSCRIPTIONS ===
+
+  // Get all subscriptions
+  app.get("/api/subscriptions", async (req, res) => {
+    try {
+      const subs = await storage.getSubscriptions();
+      res.json(subs);
+    } catch (err) {
+      console.error("Abonelik listesi hatasi:", err);
+      res.status(500).json({ error: "Abonelikler alinamadi" });
+    }
+  });
+
+  // Get subscription payments
+  app.get("/api/subscription-payments", async (req, res) => {
+    try {
+      const payments = await storage.getSubscriptionPayments();
+      res.json(payments);
+    } catch (err) {
+      console.error("Odeme listesi hatasi:", err);
+      res.status(500).json({ error: "Odemeler alinamadi" });
+    }
+  });
+
+  // Create subscription payment (manual)
+  app.post("/api/subscription-payments", async (req, res) => {
+    try {
+      const payment = await storage.createSubscriptionPayment(req.body);
+      res.json(payment);
+    } catch (err) {
+      console.error("Odeme olusturma hatasi:", err);
+      res.status(500).json({ error: "Odeme olusturulamadi" });
+    }
+  });
+
   return httpServer;
 }
 
 // Seed function
 async function seedDatabase() {
+  // Seed default subscription plans
+  await storage.seedDefaultSubscriptionPlans();
+  
   const activities = await storage.getActivities();
   if (activities.length === 0) {
     await storage.createActivity({

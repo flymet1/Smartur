@@ -69,6 +69,15 @@ import {
   type InsertLicense,
   type RequestMessageTemplate,
   type InsertRequestMessageTemplate,
+  subscriptionPlans,
+  subscriptions,
+  subscriptionPayments,
+  type SubscriptionPlan,
+  type InsertSubscriptionPlan,
+  type Subscription,
+  type InsertSubscription,
+  type SubscriptionPayment,
+  type InsertSubscriptionPayment,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -239,6 +248,24 @@ export interface IStorage {
   updateRequestMessageTemplate(id: number, template: Partial<InsertRequestMessageTemplate>): Promise<RequestMessageTemplate>;
   deleteRequestMessageTemplate(id: number): Promise<void>;
   seedDefaultRequestMessageTemplates(): Promise<void>;
+
+  // Subscription Plans
+  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined>;
+  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+  updateSubscriptionPlan(id: number, plan: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan>;
+  deleteSubscriptionPlan(id: number): Promise<void>;
+  seedDefaultSubscriptionPlans(): Promise<void>;
+
+  // Subscriptions
+  getSubscriptions(): Promise<Subscription[]>;
+  getSubscription(id: number): Promise<Subscription | undefined>;
+  createSubscription(sub: InsertSubscription): Promise<Subscription>;
+  updateSubscription(id: number, sub: Partial<InsertSubscription>): Promise<Subscription>;
+
+  // Subscription Payments
+  getSubscriptionPayments(): Promise<SubscriptionPayment[]>;
+  createSubscriptionPayment(payment: InsertSubscriptionPayment): Promise<SubscriptionPayment>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1743,6 +1770,153 @@ Sky Fethiye`,
     for (const template of defaultTemplates) {
       await this.createRequestMessageTemplate(template);
     }
+  }
+
+  // Subscription Plans
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans).orderBy(subscriptionPlans.sortOrder);
+  }
+
+  async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return plan;
+  }
+
+  async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    const [newPlan] = await db.insert(subscriptionPlans).values(plan).returning();
+    return newPlan;
+  }
+
+  async updateSubscriptionPlan(id: number, plan: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan> {
+    const [updated] = await db.update(subscriptionPlans).set({
+      ...plan,
+      updatedAt: new Date()
+    }).where(eq(subscriptionPlans.id, id)).returning();
+    return updated;
+  }
+
+  async deleteSubscriptionPlan(id: number): Promise<void> {
+    await db.delete(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+  }
+
+  async seedDefaultSubscriptionPlans(): Promise<void> {
+    const existing = await this.getSubscriptionPlans();
+    if (existing.length > 0) return;
+
+    const defaultPlans: InsertSubscriptionPlan[] = [
+      {
+        code: "trial",
+        name: "Deneme",
+        description: "14 günlük ücretsiz deneme",
+        priceTl: 0,
+        priceUsd: 0,
+        yearlyPriceTl: 0,
+        yearlyPriceUsd: 0,
+        trialDays: 14,
+        maxActivities: 3,
+        maxReservationsPerMonth: 50,
+        maxUsers: 1,
+        maxWhatsappNumbers: 1,
+        features: JSON.stringify(["basic_calendar", "manual_reservations"]),
+        sortOrder: 0,
+        isActive: true,
+        isPopular: false,
+      },
+      {
+        code: "basic",
+        name: "Basic",
+        description: "Küçük işletmeler için temel paket",
+        priceTl: 99900, // 999 TL
+        priceUsd: 2900, // $29
+        yearlyPriceTl: 959000, // 9590 TL (20% indirim)
+        yearlyPriceUsd: 27900, // $279
+        yearlyDiscountPct: 20,
+        trialDays: 0,
+        maxActivities: 5,
+        maxReservationsPerMonth: 200,
+        maxUsers: 2,
+        maxWhatsappNumbers: 1,
+        features: JSON.stringify(["basic_calendar", "manual_reservations", "whatsapp_notifications", "basic_reports"]),
+        sortOrder: 1,
+        isActive: true,
+        isPopular: false,
+      },
+      {
+        code: "professional",
+        name: "Professional",
+        description: "Büyüyen işletmeler için gelişmiş özellikler",
+        priceTl: 249900, // 2499 TL
+        priceUsd: 6900, // $69
+        yearlyPriceTl: 2399000, // 23990 TL
+        yearlyPriceUsd: 66300, // $663
+        yearlyDiscountPct: 20,
+        trialDays: 0,
+        maxActivities: 20,
+        maxReservationsPerMonth: 1000,
+        maxUsers: 5,
+        maxWhatsappNumbers: 3,
+        features: JSON.stringify(["basic_calendar", "manual_reservations", "whatsapp_notifications", "advanced_reports", "ai_bot", "woocommerce", "package_tours"]),
+        sortOrder: 2,
+        isActive: true,
+        isPopular: true,
+      },
+      {
+        code: "enterprise",
+        name: "Enterprise",
+        description: "Büyük ölçekli operasyonlar için sınırsız erişim",
+        priceTl: 499900, // 4999 TL
+        priceUsd: 14900, // $149
+        yearlyPriceTl: 4799000, // 47990 TL
+        yearlyPriceUsd: 143000, // $1430
+        yearlyDiscountPct: 20,
+        trialDays: 0,
+        maxActivities: 9999,
+        maxReservationsPerMonth: 99999,
+        maxUsers: 99,
+        maxWhatsappNumbers: 10,
+        features: JSON.stringify(["basic_calendar", "manual_reservations", "whatsapp_notifications", "advanced_reports", "ai_bot", "woocommerce", "package_tours", "api_access", "priority_support", "custom_branding"]),
+        sortOrder: 3,
+        isActive: true,
+        isPopular: false,
+      },
+    ];
+
+    for (const plan of defaultPlans) {
+      await this.createSubscriptionPlan(plan);
+    }
+  }
+
+  // Subscriptions
+  async getSubscriptions(): Promise<Subscription[]> {
+    return await db.select().from(subscriptions).orderBy(desc(subscriptions.createdAt));
+  }
+
+  async getSubscription(id: number): Promise<Subscription | undefined> {
+    const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.id, id));
+    return sub;
+  }
+
+  async createSubscription(sub: InsertSubscription): Promise<Subscription> {
+    const [newSub] = await db.insert(subscriptions).values(sub).returning();
+    return newSub;
+  }
+
+  async updateSubscription(id: number, sub: Partial<InsertSubscription>): Promise<Subscription> {
+    const [updated] = await db.update(subscriptions).set({
+      ...sub,
+      updatedAt: new Date()
+    }).where(eq(subscriptions.id, id)).returning();
+    return updated;
+  }
+
+  // Subscription Payments
+  async getSubscriptionPayments(): Promise<SubscriptionPayment[]> {
+    return await db.select().from(subscriptionPayments).orderBy(desc(subscriptionPayments.createdAt));
+  }
+
+  async createSubscriptionPayment(payment: InsertSubscriptionPayment): Promise<SubscriptionPayment> {
+    const [newPayment] = await db.insert(subscriptionPayments).values(payment).returning();
+    return newPayment;
   }
 }
 

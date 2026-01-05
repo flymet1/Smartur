@@ -421,6 +421,72 @@ export const insertHolidaySchema = createInsertSchema(holidays).omit({ id: true 
 export type Holiday = typeof holidays.$inferSelect;
 export type InsertHoliday = z.infer<typeof insertHolidaySchema>;
 
+// === SUBSCRIPTION PLANS (Super Admin Managed) ===
+
+// Abonelik Planları (Süper admin tarafından yönetilir)
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(), // trial, basic, professional, enterprise
+  name: text("name").notNull(), // Plan görüntüleme adı
+  description: text("description"),
+  priceTl: integer("price_tl").default(0), // Aylık fiyat TL
+  priceUsd: integer("price_usd").default(0), // Aylık fiyat USD
+  yearlyPriceTl: integer("yearly_price_tl").default(0), // Yıllık fiyat TL
+  yearlyPriceUsd: integer("yearly_price_usd").default(0), // Yıllık fiyat USD
+  yearlyDiscountPct: integer("yearly_discount_pct").default(20), // Yıllık indirim oranı
+  trialDays: integer("trial_days").default(14), // Deneme süresi (gün)
+  maxActivities: integer("max_activities").default(5),
+  maxReservationsPerMonth: integer("max_reservations_per_month").default(100),
+  maxUsers: integer("max_users").default(1),
+  maxWhatsappNumbers: integer("max_whatsapp_numbers").default(1),
+  features: text("features").default("[]"), // JSON array: ["ai_bot", "reports", "api_access", "multi_user"]
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").default(true),
+  isPopular: boolean("is_popular").default(false), // "En Popüler" etiketi
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Abonelikler (Acentaların aktif abonelikleri)
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  licenseId: integer("license_id").references(() => license.id), // İlişkili lisans
+  planId: integer("plan_id").references(() => subscriptionPlans.id).notNull(),
+  status: text("status").default("trial"), // trial, active, past_due, cancelled, expired
+  billingCycle: text("billing_cycle").default("monthly"), // monthly, yearly
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  trialEnd: timestamp("trial_end"),
+  cancelledAt: timestamp("cancelled_at"),
+  cancelReason: text("cancel_reason"),
+  paymentProvider: text("payment_provider").default("paytr"), // paytr, stripe, manual
+  providerCustomerId: text("provider_customer_id"), // PayTR müşteri ID
+  providerSubscriptionId: text("provider_subscription_id"), // PayTR abonelik ID
+  lastPaymentAt: timestamp("last_payment_at"),
+  nextPaymentAt: timestamp("next_payment_at"),
+  failedPaymentCount: integer("failed_payment_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Abonelik Ödeme Geçmişi
+export const subscriptionPayments = pgTable("subscription_payments", {
+  id: serial("id").primaryKey(),
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id).notNull(),
+  amountTl: integer("amount_tl").default(0),
+  amountUsd: integer("amount_usd").default(0),
+  currency: text("currency").default("TRY"),
+  status: text("status").default("pending"), // pending, completed, failed, refunded
+  paymentMethod: text("payment_method"), // credit_card, bank_transfer, manual
+  providerPaymentId: text("provider_payment_id"), // PayTR ödeme ID
+  providerResponse: text("provider_response"), // JSON yanıt
+  invoiceNumber: text("invoice_number"),
+  invoiceUrl: text("invoice_url"),
+  failureReason: text("failure_reason"),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === LICENSE/SUBSCRIPTION ===
 
 // Lisans ve Üyelik Bilgileri
@@ -486,3 +552,16 @@ export const requestMessageTemplates = pgTable("request_message_templates", {
 export const insertRequestMessageTemplateSchema = createInsertSchema(requestMessageTemplates).omit({ id: true, createdAt: true });
 export type RequestMessageTemplate = typeof requestMessageTemplates.$inferSelect;
 export type InsertRequestMessageTemplate = z.infer<typeof insertRequestMessageTemplateSchema>;
+
+// === SUBSCRIPTION PLAN SCHEMAS & TYPES ===
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({ id: true, createdAt: true, updatedAt: true });
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, createdAt: true, updatedAt: true });
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+
+export const insertSubscriptionPaymentSchema = createInsertSchema(subscriptionPayments).omit({ id: true, createdAt: true });
+export type SubscriptionPayment = typeof subscriptionPayments.$inferSelect;
+export type InsertSubscriptionPayment = z.infer<typeof insertSubscriptionPaymentSchema>;

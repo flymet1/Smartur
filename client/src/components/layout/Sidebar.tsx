@@ -15,7 +15,8 @@ import {
   Code,
   Building2,
   Bell,
-  Shield
+  Shield,
+  Crown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -320,7 +321,7 @@ export function Sidebar() {
               <span className="text-foreground">WhatsApp Bot</span>
               <span className="text-xs px-1.5 py-0.5 rounded bg-accent text-accent-foreground font-semibold">Aktif</span>
             </div>
-            <Link href="/settings?tab=license">
+            <Link href="/subscription">
               <div 
                 className={cn(
                   "flex items-center gap-2 text-sm font-medium mt-1 cursor-pointer hover:opacity-80 transition-opacity",
@@ -365,6 +366,17 @@ export function Sidebar() {
             )} data-testid="link-developer-login">
               <Code className="h-4 w-4" />
               Geliştirici Girişi
+            </div>
+          </Link>
+          <Link href="/super-admin">
+            <div className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+              location === "/super-admin"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )} data-testid="link-super-admin">
+              <Crown className="h-4 w-4" />
+              Süper Admin
             </div>
           </Link>
         </div>
