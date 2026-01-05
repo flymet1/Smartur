@@ -60,7 +60,8 @@ function Router() {
 function KeyboardShortcuts() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === '0') {
+      // Ctrl+Shift+S for Super Admin panel
+      if (e.ctrlKey && e.shiftKey && e.key === 'S') {
         e.preventDefault();
         window.open('/super-admin', '_blank');
       }
