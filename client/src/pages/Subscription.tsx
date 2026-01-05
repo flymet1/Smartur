@@ -22,10 +22,10 @@ import {
 import type { SubscriptionPlan } from "@shared/schema";
 
 const FEATURE_LABELS: Record<string, { label: string; icon: typeof Activity }> = {
-  basic_calendar: { label: "Temel Takvim", icon: Activity },
+  başıc_calendar: { label: "Temel Takvim", icon: Activity },
   manual_reservations: { label: "Manuel Rezervasyon", icon: Activity },
   whatsapp_notifications: { label: "WhatsApp Bildirim", icon: MessageSquare },
-  basic_reports: { label: "Temel Raporlar", icon: Activity },
+  başıc_reports: { label: "Temel Raporlar", icon: Activity },
   advanced_reports: { label: "Gelişmiş Raporlar", icon: Activity },
   ai_bot: { label: "AI Bot", icon: Zap },
   woocommerce: { label: "WooCommerce", icon: CreditCard },

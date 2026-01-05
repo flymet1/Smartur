@@ -267,9 +267,9 @@ export default function Messages() {
             </div>
             <Tabs value={analyticsPeriod} onValueChange={(v) => setAnalyticsPeriod(v as AnalyticsPeriod)}>
               <TabsList>
-                <TabsTrigger value="daily" data-testid="tab-analytics-daily">Gunluk</TabsTrigger>
+                <TabsTrigger value="daily" data-testid="tab-analytics-daily">Günlük</TabsTrigger>
                 <TabsTrigger value="weekly" data-testid="tab-analytics-weekly">Haftalik</TabsTrigger>
-                <TabsTrigger value="monthly" data-testid="tab-analytics-monthly">Aylik</TabsTrigger>
+                <TabsTrigger value="monthly" data-testid="tab-analytics-monthly">Aylık</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -277,7 +277,7 @@ export default function Messages() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-                <CardTitle className="text-sm font-medium">Yazan Musteri</CardTitle>
+                <CardTitle className="text-sm font-medium">Yazan Müşteri</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -289,7 +289,7 @@ export default function Messages() {
                       {analytics?.metrics.uniqueCustomers ?? analytics?.metrics.totalCustomers ?? 0}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {analyticsPeriod === 'daily' ? 'Bugun' : analyticsPeriod === 'weekly' ? 'Son 7 gun' : 'Son 30 gun'}
+                      {analyticsPeriod === 'daily' ? 'Bugün' : analyticsPeriod === 'weekly' ? 'Son 7 gun' : 'Son 30 gun'}
                     </p>
                   </>
                 )}
@@ -401,7 +401,7 @@ export default function Messages() {
           <Card className="p-12 text-center">
             <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
             <p className="text-muted-foreground">
-              {searchQuery ? "Arama sonucu bulunamadı" : "Henüz mesaj yok"}
+              {searchQuery ? "Arama sonuçu bulunamadı" : "Henüz mesaj yok"}
             </p>
           </Card>
         ) : (

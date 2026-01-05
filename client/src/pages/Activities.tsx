@@ -148,7 +148,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     activity ? (activity as any).sendNotificationToAdmin !== false : true
   );
   const [notificationMessage, setNotificationMessage] = useState(
-    activity ? (activity as any).notificationMessageTemplate || "Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kisiSayisi}" : "Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kisiSayisi}"
+    activity ? (activity as any).notificationMessageTemplate || "Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}" : "Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}"
   );
   const [nameAliases, setNameAliases] = useState(() => {
     if (activity && (activity as any).nameAliases) {
@@ -411,7 +411,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     placeholder="https://example.com/reservation"
                     data-testid="input-reservation-link-en"
                   />
-                  <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği harici sayfa linkleri</p>
+                  <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği hariçi sayfa linkleri</p>
                 </div>
 
                 <div className="space-y-2">
@@ -434,7 +434,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       { value: "blue", label: "Mavi", bg: "bg-blue-500" },
                       { value: "purple", label: "Mor", bg: "bg-purple-500" },
                       { value: "green", label: "Yeşil", bg: "bg-green-500" },
-                      { value: "orange", label: "Turuncu", bg: "bg-orange-500" },
+                      { value: "orange", label: "Türüncu", bg: "bg-orange-500" },
                       { value: "pink", label: "Pembe", bg: "bg-pink-500" },
                       { value: "cyan", label: "Camgöbeği", bg: "bg-cyan-500" },
                       { value: "red", label: "Kırmızı", bg: "bg-red-500" },
@@ -490,7 +490,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       <Textarea 
                         value={transferZones}
                         onChange={(e) => setTransferZones(e.target.value)}
-                        placeholder="Oludeniz, Fethiye Merkez, Hisaronu, Ovacik, Calis"
+                        placeholder="Oludeniz, Fethiye Merkez, Hisaronu, Ovaçık, Calis"
                         className="min-h-[60px]"
                         data-testid="input-transfer-zones"
                       />
@@ -601,8 +601,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
 
               <TabsContent value="notifications" className="space-y-4 mt-0">
                 <div className="space-y-2">
-                  <Label>Telefon Bildirim Ayarlari</Label>
-                  <p className="text-sm text-muted-foreground">Yeni rezervasyon yapildiginda kime SMS gonderilecek?</p>
+                  <Label>Telefon Bildirim Ayarları</Label>
+                  <p className="text-sm text-muted-foreground">Yeni rezervasyon yapıldığında kime SMS gönderilecek?</p>
                 </div>
 
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
@@ -657,7 +657,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     className="min-h-[150px]"
                   />
                   <p className="text-xs text-muted-foreground">
-                    <strong>Desteklenen değişkenler:</strong> {'{'}isim{'}'} - Müşteri adı, {'{'}telefonunuz{'}'} - Müşteri telefonu, {'{'}emailiniz{'}'} - Müşteri eposta, {'{'}tarih{'}'} - Rezervasyon tarihi, {'{'}saat{'}'} - Rezervasyon saati, {'{'}aktivite{'}'} - Aktivite adı, {'{'}kisiSayisi{'}'} - Kişi sayısı
+                    <strong>Desteklenen değişkenler:</strong> {'{'}isim{'}'} - Müşteri adı, {'{'}telefonunuz{'}'} - Müşteri telefonu, {'{'}emailiniz{'}'} - Müşteri eposta, {'{'}tarih{'}'} - Rezervasyon tarihi, {'{'}saat{'}'} - Rezervasyon saati, {'{'}aktivite{'}'} - Aktivite adı, {'{'}kişiSayısı{'}'} - Kişi sayısı
                   </p>
                 </div>
               </TabsContent>

@@ -215,7 +215,7 @@ export default function Settings() {
   
   const handleSaveGmailSettings = async () => {
     if (!gmailUser || !gmailPassword) {
-      toast({ title: "Hata", description: "Gmail adresi ve uygulama sifresi gerekli.", variant: "destructive" });
+      toast({ title: "Hata", description: "Gmail adresi ve uygulama şifresi gerekli.", variant: "destructive" });
       return;
     }
     
@@ -229,14 +229,14 @@ export default function Settings() {
       const data = await res.json();
       
       if (res.ok) {
-        toast({ title: "Basarili", description: data.message || "Gmail ayarlari kaydedildi." });
+        toast({ title: "Başarılı", description: data.message || "Gmail ayarları kaydedildi." });
         setGmailPassword("");
         await refetchTenantIntegrations();
       } else {
-        toast({ title: "Hata", description: data.error || "Gmail ayarlari kaydedilemedi.", variant: "destructive" });
+        toast({ title: "Hata", description: data.error || "Gmail ayarları kaydedilemedi.", variant: "destructive" });
       }
     } catch (err) {
-      toast({ title: "Hata", description: "Gmail ayarlari kaydedilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Gmail ayarları kaydedilemedi.", variant: "destructive" });
     } finally {
       setIsSavingGmail(false);
     }
@@ -249,9 +249,9 @@ export default function Settings() {
       const data = await res.json();
       
       if (data.success) {
-        toast({ title: "Basarili", description: data.message || "Gmail baglantisi basarili!" });
+        toast({ title: "Başarılı", description: data.message || "Gmail baglantisi başarılı!" });
       } else {
-        toast({ title: "Hata", description: data.error || "Gmail baglantisi basarisiz.", variant: "destructive" });
+        toast({ title: "Hata", description: data.error || "Gmail baglantisi başarısız.", variant: "destructive" });
       }
     } catch (err) {
       toast({ title: "Hata", description: "Gmail baglantisi test edilemedi.", variant: "destructive" });
@@ -264,13 +264,13 @@ export default function Settings() {
     try {
       const res = await fetch('/api/tenant-integrations/gmail', { method: 'DELETE' });
       if (res.ok) {
-        toast({ title: "Basarili", description: "Gmail baglantisi kaldirildi." });
+        toast({ title: "Başarılı", description: "Gmail baglantisi kaldırıldı." });
         setGmailUser("");
         setGmailPassword("");
         await refetchTenantIntegrations();
       }
     } catch (err) {
-      toast({ title: "Hata", description: "Gmail baglantisi kaldirilamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Gmail baglantisi kaldırilamadi.", variant: "destructive" });
     }
   };
 
@@ -492,11 +492,11 @@ export default function Settings() {
           <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 mb-6">
             <TabsTrigger value="security" data-testid="tab-security">
               <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
-              Guvenlik
+              Güvenlik
             </TabsTrigger>
             <TabsTrigger value="users" data-testid="tab-users">
               <Users className="w-4 h-4 mr-2 hidden sm:inline" />
-              Kullanicilar
+              Kullanıcılar
             </TabsTrigger>
             <TabsTrigger value="whatsapp" data-testid="tab-whatsapp">
               <MessageSquare className="w-4 h-4 mr-2 hidden sm:inline" />
@@ -518,16 +518,16 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5 text-primary" />
-                Hesap Ayarlari
+                Hesap Ayarları
               </CardTitle>
               <CardDescription>
-                Hesabiniza ait sifrenizi degistirebilirsiniz
+                Hesabıniza ait şifrenizi değiştirebilirsiniz
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Mevcut Sifre</Label>
+                  <Label htmlFor="currentPassword">Mevcut Şifre</Label>
                   <div className="relative">
                     <Input 
                       id="currentPassword"
@@ -537,7 +537,7 @@ export default function Settings() {
                         setCurrentPassword(e.target.value);
                         setPasswordError("");
                       }}
-                      placeholder="Mevcut sifrenizi girin"
+                      placeholder="Mevcut şifrenizi girin"
                       data-testid="input-current-password"
                     />
                   </div>
@@ -545,7 +545,7 @@ export default function Settings() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="newPassword">Yeni Sifre</Label>
+                    <Label htmlFor="newPassword">Yeni Şifre</Label>
                     <div className="relative">
                       <Input 
                         id="newPassword"
@@ -555,7 +555,7 @@ export default function Settings() {
                           setNewPassword(e.target.value);
                           setPasswordError("");
                         }}
-                        placeholder="Yeni sifrenizi girin"
+                        placeholder="Yeni şifrenizi girin"
                         data-testid="input-new-password"
                       />
                       <Tooltip>
@@ -571,12 +571,12 @@ export default function Settings() {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>{showPassword ? "Sifreyi gizle" : "Sifreyi goster"}</TooltipContent>
+                        <TooltipContent>{showPassword ? "Şifreyi gizle" : "Şifreyi göster"}</TooltipContent>
                       </Tooltip>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="newPasswordConfirm">Yeni Sifre Tekrar</Label>
+                    <Label htmlFor="newPasswordConfirm">Yeni Şifre Tekrar</Label>
                     <Input 
                       id="newPasswordConfirm"
                       type={showPassword ? "text" : "password"}
@@ -585,7 +585,7 @@ export default function Settings() {
                         setNewPasswordConfirm(e.target.value);
                         setPasswordError("");
                       }}
-                      placeholder="Yeni sifreyi tekrar girin"
+                      placeholder="Yeni şifreyi tekrar girin"
                       data-testid="input-new-password-confirm"
                     />
                   </div>
@@ -603,19 +603,19 @@ export default function Settings() {
                   {isChangingPassword ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Degistiriliyor...
+                      Değiştiriliyor...
                     </>
                   ) : (
                     <>
                       <Key className="h-4 w-4 mr-2" />
-                      Sifreyi Degistir
+                      Şifreyi Değiştir
                     </>
                   )}
                 </Button>
               </div>
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                 <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Sifrenizi degistirdikten sonra yeni sifrenizle giris yapmaniz gerekecektir.
+                  Şifrenizi değiştirdikten sonra yeni şifrenizle giriş yapmaniz gerekecektir.
                 </p>
               </div>
             </CardContent>
@@ -637,7 +637,7 @@ export default function Settings() {
                   <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
                     <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
                     <div className="flex-1">
-                      <p className="font-medium text-green-800 dark:text-green-300">Gmail Bagli</p>
+                      <p className="font-medium text-green-800 dark:text-green-300">Gmail Bağlı</p>
                       <p className="text-sm text-green-700 dark:text-green-400">{tenantIntegrations.gmailUser}</p>
                     </div>
                   </div>
@@ -746,7 +746,7 @@ export default function Settings() {
                       </li>
                       <li>2 Adımlı Doğrulama'yı açın (açık değilse)</li>
                       <li>"Uygulama şifreleri" bölümüne gidin</li>
-                      <li>"Smartur" adıyla yeni şifre oluşturun</li>
+                      <li>"Smartur" adıyla yeni şifre oluştürün</li>
                       <li>16 karakterlik şifreyi kopyalayın</li>
                     </ol>
                   </div>
@@ -863,7 +863,7 @@ export default function Settings() {
                     <Smartphone className="w-4 h-4 mr-2" />
                     Baglanti
                   </TabsTrigger>
-                  <TabsTrigger value="bot" data-testid="tab-whatsapp-bot">Bot Ayarlari</TabsTrigger>
+                  <TabsTrigger value="bot" data-testid="tab-whatsapp-bot">Bot Ayarları</TabsTrigger>
                   <TabsTrigger value="templates" data-testid="tab-whatsapp-templates">Sablonlar</TabsTrigger>
                   <TabsTrigger value="bot-test" data-testid="tab-whatsapp-bot-test">Bot Test</TabsTrigger>
                   <TabsTrigger value="support" data-testid="tab-whatsapp-support">Destek</TabsTrigger>
@@ -1025,7 +1025,7 @@ export default function Settings() {
 
                         <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                           <p className="text-xs text-blue-900 dark:text-blue-200">
-                            <strong>Ipucu:</strong> Prompt'unuzda musterilerle samimi olmalarini, kibar olmalarini, hizli cevap vermelerini ve rezervasyon yapmalarina yardimci olmalarini belirtin.
+                            <strong>Ipucu:</strong> Prompt'unuzda müşterilerle samimi olmalarini, kibar olmalarini, hızlı cevap vermelerini ve rezervasyon yapmalarina yardimci olmalarini belirtin.
                           </p>
                         </div>
                       </div>
@@ -1042,7 +1042,7 @@ export default function Settings() {
                           <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
                             <div className="space-y-0.5">
                               <Label>Aktivite Bilgileri</Label>
-                              <p className="text-xs text-muted-foreground">Aktivite aciklamalari, fiyatlar ve rezervasyon linkleri</p>
+                              <p className="text-xs text-muted-foreground">Aktivite açıklamalari, fiyatlar ve rezervasyon linkleri</p>
                             </div>
                             <Switch 
                               checked={botAccessActivities} 
@@ -1054,7 +1054,7 @@ export default function Settings() {
                           <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
                             <div className="space-y-0.5">
                               <Label>Paket Tur Bilgileri</Label>
-                              <p className="text-xs text-muted-foreground">Paket tur aciklamalari, fiyatlar ve rezervasyon linkleri</p>
+                              <p className="text-xs text-muted-foreground">Paket tur açıklamalari, fiyatlar ve rezervasyon linkleri</p>
                             </div>
                             <Switch 
                               checked={botAccessPackageTours} 
@@ -1089,8 +1089,8 @@ export default function Settings() {
 
                           <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
                             <div className="space-y-0.5">
-                              <Label>Onay Mesajlari</Label>
-                              <p className="text-xs text-muted-foreground">Siparis tamamlandiginda gonderilecek onay mesajlari</p>
+                              <Label>Onay Mesajları</Label>
+                              <p className="text-xs text-muted-foreground">Sipariş tamamlandıginda gönderilecek onay mesajları</p>
                             </div>
                             <Switch 
                               checked={botAccessConfirmation} 
@@ -1102,7 +1102,7 @@ export default function Settings() {
                           <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
                             <div className="space-y-0.5">
                               <Label>Transfer Bilgileri</Label>
-                              <p className="text-xs text-muted-foreground">Ucretsiz otel transferi bolgeleri</p>
+                              <p className="text-xs text-muted-foreground">Ücretsiz otel transferi bolgeleri</p>
                             </div>
                             <Switch 
                               checked={botAccessTransfer} 
@@ -1403,7 +1403,7 @@ function WooCommerceCard() {
     if (!storeUrl || !consumerKey || !consumerSecret) {
       toast({
         title: "Hata",
-        description: "Tum alanlari doldurun",
+        description: "Tum alanlari doldürün",
         variant: "destructive",
       });
       return;
@@ -1419,7 +1419,7 @@ function WooCommerceCard() {
 
       if (response.ok) {
         toast({
-          title: "Basarili",
+          title: "Başarılı",
           description: "WooCommerce baglantisi kuruldu",
         });
         setStoreUrl("");
@@ -1437,7 +1437,7 @@ function WooCommerceCard() {
     } catch (error) {
       toast({
         title: "Hata",
-        description: "Baglanti hatasi",
+        description: "Baglanti hatası",
         variant: "destructive",
       });
     } finally {
@@ -1454,15 +1454,15 @@ function WooCommerceCard() {
 
       if (response.ok) {
         toast({
-          title: "Basarili",
-          description: "WooCommerce baglantisi kaldirildi",
+          title: "Başarılı",
+          description: "WooCommerce baglantisi kaldırıldı",
         });
         refetch();
       }
     } catch (error) {
       toast({
         title: "Hata",
-        description: "Baglanti kaldirilamadi",
+        description: "Baglanti kaldırilamadi",
         variant: "destructive",
       });
     } finally {
@@ -1502,12 +1502,12 @@ function WooCommerceCard() {
           {wooSettings?.woocommerceConfigured ? (
             <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 gap-1">
               <CheckCircle className="w-3 h-3" />
-              Bagli
+              Bağlı
             </Badge>
           ) : (
             <Badge variant="secondary" className="gap-1">
               <XCircle className="w-3 h-3" />
-              Bagli Degil
+              Bağlı Degil
             </Badge>
           )}
         </CardTitle>
@@ -1539,7 +1539,7 @@ function WooCommerceCard() {
                 </Tooltip>
               </div>
               <p className="text-xs text-muted-foreground">
-                Bu URL'i WooCommerce ayarlariniza ekleyin (WooCommerce &gt; Settings &gt; Advanced &gt; Webhooks).
+                Bu URL'i WooCommerce ayarlarıniza ekleyin (WooCommerce &gt; Settings &gt; Advanced &gt; Webhooks).
               </p>
             </div>
 
@@ -1551,7 +1551,7 @@ function WooCommerceCard() {
                   disabled={isDisconnecting}
                   data-testid="button-disconnect-woo"
                 >
-                  {isDisconnecting ? "Kaldiriliyor..." : "Baglantiyi Kaldir"}
+                  {isDisconnecting ? "Kaldıriliyor..." : "Baglantiyi Kaldır"}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>WooCommerce bağlantısını kaldır</TooltipContent>
@@ -1756,7 +1756,7 @@ function AutoResponsesCard() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Bu otomatik yaniti silmek istediginize emin misiniz?")) {
+    if (confirm("Bu otomatik yaniti silmek istediğinize emin misiniz?")) {
       deleteMutation.mutate(id);
     }
   };
@@ -1769,7 +1769,7 @@ function AutoResponsesCard() {
           Otomatik Yanitlar
         </CardTitle>
         <CardDescription>
-          AI cagirisi yapmadan anahtar kelime eslesmesiyle hizli yanitlar (maliyet tasarrufu)
+          AI cagirişi yapmadan anahtar kelime eslesmesiyle hızlı yanitlar (maliyet tasarrufu)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1878,12 +1878,12 @@ function AutoResponsesCard() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDialogOpen(false)}>
             <div className="bg-background border rounded-lg p-6 max-w-lg w-full mx-4 space-y-4" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-semibold">
-                {editingItem ? "Otomatik Yaniti Duzenle" : "Yeni Otomatik Yanit"}
+                {editingItem ? "Otomatik Yaniti Düzenle" : "Yeni Otomatik Yanit"}
               </h3>
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="auto-name">Kural Adi</Label>
+                  <Label htmlFor="auto-name">Kural Adı</Label>
                   <Input
                     id="auto-name"
                     value={formName}
@@ -1924,11 +1924,11 @@ function AutoResponsesCard() {
                         id="auto-keywords"
                         value={formKeywords}
                         onChange={(e) => setFormKeywords(e.target.value)}
-                        placeholder="fiyat, ucret, ne kadar, kac para"
+                        placeholder="fiyat, ücret, ne kadar, kac para"
                         data-testid="input-auto-keywords"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Turkce karakter farki gozetilmez (i/ı, o/ö, u/ü, s/ş, c/ç, g/ğ)
+                        Turkce karakter farki gözetilmez (i/ı, o/ö, u/ü, s/ş, c/ç, g/ğ)
                       </p>
                     </div>
 
@@ -1938,7 +1938,7 @@ function AutoResponsesCard() {
                         id="auto-response"
                         value={formResponse}
                         onChange={(e) => setFormResponse(e.target.value)}
-                        placeholder="Merhaba! Fiyatlarimiz hakkinda bilgi almak icin..."
+                        placeholder="Merhaba! Fiyatlarimiz hakkinda bilgi almak için..."
                         rows={4}
                         data-testid="input-auto-response"
                       />
@@ -1988,7 +1988,7 @@ function AutoResponsesCard() {
                       data-testid="input-auto-priority"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Yuksek deger = once kontrol edilir
+                      Yüksek deger = once kontrol edilir
                     </p>
                   </div>
 
@@ -2008,7 +2008,7 @@ function AutoResponsesCard() {
 
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setDialogOpen(false)} data-testid="button-cancel">
-                  Iptal
+                  İptal
                 </Button>
                 <Button 
                   onClick={handleSubmit} 
@@ -2028,19 +2028,19 @@ function AutoResponsesCard() {
 
 // === HOLIDAYS SECTION ===
 const HOLIDAY_TYPES = [
-  { value: 'official', label: 'Resmi Tatil' },
+  { value: 'offiçial', label: 'Resmi Tatil' },
   { value: 'religious', label: 'Dini Bayram' },
-  { value: 'special', label: 'Ozel Gun' },
+  { value: 'special', label: 'Özel Gun' },
 ];
 
 const PRESET_HOLIDAYS_2026 = [
-  { name: "Yilbasi", startDate: "2026-01-01", endDate: "2026-01-01", type: "official", keywords: '["yilbasi", "yeni yil", "1 ocak"]' },
-  { name: "23 Nisan Ulusal Egemenlik ve Cocuk Bayrami", startDate: "2026-04-23", endDate: "2026-04-23", type: "official", keywords: '["23 nisan", "cocuk bayrami"]' },
-  { name: "1 Mayis Emek ve Dayanisma Gunu", startDate: "2026-05-01", endDate: "2026-05-01", type: "official", keywords: '["1 mayis", "isci bayrami"]' },
-  { name: "19 Mayis Ataturku Anma Genclik ve Spor Bayrami", startDate: "2026-05-19", endDate: "2026-05-19", type: "official", keywords: '["19 mayis", "genclik bayrami"]' },
-  { name: "15 Temmuz Demokrasi ve Milli Birlik Gunu", startDate: "2026-07-15", endDate: "2026-07-15", type: "official", keywords: '["15 temmuz"]' },
-  { name: "30 Agustos Zafer Bayrami", startDate: "2026-08-30", endDate: "2026-08-30", type: "official", keywords: '["30 agustos", "zafer bayrami"]' },
-  { name: "29 Ekim Cumhuriyet Bayrami", startDate: "2026-10-29", endDate: "2026-10-29", type: "official", keywords: '["29 ekim", "cumhuriyet bayrami"]' },
+  { name: "Yılbaşı", startDate: "2026-01-01", endDate: "2026-01-01", type: "offiçial", keywords: '["yılbaşı", "yeni yıl", "1 ocak"]' },
+  { name: "23 Nisan Ulusal Egemenlik ve Cocuk Bayrami", startDate: "2026-04-23", endDate: "2026-04-23", type: "offiçial", keywords: '["23 nisan", "cocuk bayrami"]' },
+  { name: "1 Mayıs Emek ve Dayanisma Gunu", startDate: "2026-05-01", endDate: "2026-05-01", type: "offiçial", keywords: '["1 mayıs", "isci bayrami"]' },
+  { name: "19 Mayıs Ataturku Anma Genclik ve Spor Bayrami", startDate: "2026-05-19", endDate: "2026-05-19", type: "offiçial", keywords: '["19 mayıs", "genclik bayrami"]' },
+  { name: "15 Temmuz Demokrasi ve Milli Birlik Gunu", startDate: "2026-07-15", endDate: "2026-07-15", type: "offiçial", keywords: '["15 temmuz"]' },
+  { name: "30 Ağustos Zafer Bayrami", startDate: "2026-08-30", endDate: "2026-08-30", type: "offiçial", keywords: '["30 ağustos", "zafer bayrami"]' },
+  { name: "29 Ekim Cumhuriyet Bayrami", startDate: "2026-10-29", endDate: "2026-10-29", type: "offiçial", keywords: '["29 ekim", "cumhuriyet bayrami"]' },
   { name: "Ramazan Bayrami 2026", startDate: "2026-03-20", endDate: "2026-03-22", type: "religious", keywords: '["ramazan bayrami", "seker bayrami"]' },
   { name: "Kurban Bayrami 2026", startDate: "2026-05-27", endDate: "2026-05-30", type: "religious", keywords: '["kurban bayrami", "bayram"]' },
 ];
@@ -2052,7 +2052,7 @@ function HolidaysSection() {
   const [formName, setFormName] = useState("");
   const [formStartDate, setFormStartDate] = useState("");
   const [formEndDate, setFormEndDate] = useState("");
-  const [formType, setFormType] = useState("official");
+  const [formType, setFormType] = useState("offiçial");
   const [formKeywords, setFormKeywords] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
@@ -2094,7 +2094,7 @@ function HolidaysSection() {
     setFormName("");
     setFormStartDate("");
     setFormEndDate("");
-    setFormType("official");
+    setFormType("offiçial");
     setFormKeywords("");
     setFormNotes("");
     setFormIsActive(true);
@@ -2105,7 +2105,7 @@ function HolidaysSection() {
     setFormName(holiday.name);
     setFormStartDate(holiday.startDate);
     setFormEndDate(holiday.endDate);
-    setFormType(holiday.type || "official");
+    setFormType(holiday.type || "offiçial");
     try {
       const kw = JSON.parse(holiday.keywords || '[]');
       setFormKeywords(Array.isArray(kw) ? kw.join(', ') : '');
@@ -2241,20 +2241,20 @@ function HolidaysSection() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingHoliday ? 'Tatil Duzenle' : 'Yeni Tatil Ekle'}</DialogTitle>
+            <DialogTitle>{editingHoliday ? 'Tatil Düzenle' : 'Yeni Tatil Ekle'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Tatil Adi *</Label>
+              <Label>Tatil Adı *</Label>
               <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ornegin: Kurban Bayrami" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Baslangic Tarihi *</Label>
+                <Label>Başlangıç Tarihi *</Label>
                 <Input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Bitis Tarihi</Label>
+                <Label>Bitiş Tarihi</Label>
                 <Input type="date" value={formEndDate} onChange={(e) => setFormEndDate(e.target.value)} />
               </div>
             </div>
@@ -2282,7 +2282,7 @@ function HolidaysSection() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Iptal</Button>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>İptal</Button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending}>
@@ -2384,7 +2384,7 @@ function RequestMessageTemplatesSection() {
       <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
         <p className="font-medium">Kullanılabilir Değişkenler:</p>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}musteri_adi{'}'}</code> - Müşteri adı</div>
+          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}müşteri_adi{'}'}</code> - Müşteri adı</div>
           <div><code className="bg-background px-1.5 py-1 rounded">{'{'}talep_turu{'}'}</code> - Talep türü</div>
           <div><code className="bg-background px-1.5 py-1 rounded">{'{'}yeni_saat{'}'}</code> - Yeni saat (saat değişikliği için)</div>
           <div><code className="bg-background px-1.5 py-1 rounded">{'{'}red_sebebi{'}'}</code> - Ret sebebi</div>
@@ -2570,7 +2570,7 @@ function BotTestSection() {
                 className="w-full"
                 data-testid="button-bot-test-send"
               >
-                {loading ? "Gonderiliyor..." : "Gonder"}
+                {loading ? "Gönderiliyor..." : "Gönder"}
               </Button>
             </div>
           </div>
@@ -2578,7 +2578,7 @@ function BotTestSection() {
             <Label htmlFor="test-message" className="text-xs">Mesaj</Label>
             <Textarea
               id="test-message"
-              placeholder="Botunuza gondermek istediginiz mesaji yazin..."
+              placeholder="Botunuza göndermek istediğiniz mesajı yazın..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => {
@@ -2629,7 +2629,7 @@ function BotTestSection() {
             <li>Turkce olarak sorular sorun</li>
             <li>Bot aktiviteleri ve kapasiteyi gorebilir</li>
             <li>Rezervasyon yapabilir</li>
-            <li>Ctrl+Enter ile hizli gonder</li>
+            <li>Ctrl+Enter ile hızlı gönder</li>
           </ul>
         </div>
 
@@ -2706,10 +2706,10 @@ function UserManagementSection() {
       refetch();
       setEditingUser(null);
       setIsNewUser(false);
-      toast({ title: "Basarili", description: "Kullanici olusturuldu" });
+      toast({ title: "Başarılı", description: "Kullanıcı oluşturuldu" });
     },
     onError: (error: any) => {
-      toast({ title: "Hata", description: error.message || "Kullanici olusturulamadi", variant: "destructive" });
+      toast({ title: "Hata", description: error.message || "Kullanıcı oluşturulamadi", variant: "destructive" });
     }
   });
 
@@ -2721,10 +2721,10 @@ function UserManagementSection() {
     onSuccess: () => {
       refetch();
       setEditingUser(null);
-      toast({ title: "Basarili", description: "Kullanici guncellendi" });
+      toast({ title: "Başarılı", description: "Kullanıcı güncellendi" });
     },
     onError: (error: any) => {
-      toast({ title: "Hata", description: error.message || "Kullanici guncellenemedi", variant: "destructive" });
+      toast({ title: "Hata", description: error.message || "Kullanıcı güncellenemedi", variant: "destructive" });
     }
   });
 
@@ -2732,10 +2732,10 @@ function UserManagementSection() {
     mutationFn: (id: number) => apiRequest('DELETE', `/api/tenant-users/${id}`),
     onSuccess: () => {
       refetch();
-      toast({ title: "Basarili", description: "Kullanici silindi" });
+      toast({ title: "Başarılı", description: "Kullanıcı silindi" });
     },
     onError: (error: any) => {
-      toast({ title: "Hata", description: error.message || "Kullanici silinemedi", variant: "destructive" });
+      toast({ title: "Hata", description: error.message || "Kullanıcı silinemedi", variant: "destructive" });
     }
   });
 
@@ -2787,23 +2787,23 @@ function UserManagementSection() {
         <div>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Kullanici Yonetimi
+            Kullanıcı Yönetimi
           </CardTitle>
           <CardDescription>
-            Acentaniz icin kullanici hesaplarini yonetin
+            Acentaniz için kullanıcı hesaplarini yonetin
           </CardDescription>
         </div>
         <Button onClick={openNewUserDialog} data-testid="button-new-user">
           <UserPlus className="h-4 w-4 mr-2" />
-          Yeni Kullanici
+          Yeni Kullanıcı
         </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
         ) : users.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            Henuz kullanici bulunmuyor. Yeni kullanici eklemek icin butona tiklayin.
+            Henuz kullanıcı bulunmuyor. Yeni kullanıcı eklemek için butona tıklayın.
           </div>
         ) : (
           <div className="space-y-3">
@@ -2838,7 +2838,7 @@ function UserManagementSection() {
                     size="icon"
                     variant="ghost"
                     onClick={() => {
-                      if (confirm(`"${user.name || user.username}" kullanicisini silmek istediginizden emin misiniz?`)) {
+                      if (confirm(`"${user.name || user.username}" kullanıcısini silmek istediğinizden emin misiniz?`)) {
                         deleteUserMutation.mutate(user.id);
                       }
                     }}
@@ -2855,17 +2855,17 @@ function UserManagementSection() {
         <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{isNewUser ? "Yeni Kullanici Ekle" : "Kullanici Duzenle"}</DialogTitle>
+              <DialogTitle>{isNewUser ? "Yeni Kullanıcı Ekle" : "Kullanıcı Düzenle"}</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Kullanici Adi *</Label>
+                <Label htmlFor="username">Kullanıcı Adı *</Label>
                 <Input
                   id="username"
                   value={userForm.username}
                   onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-                  placeholder="Kullanici adi"
+                  placeholder="Kullanıcı adi"
                   disabled={!isNewUser}
                   data-testid="input-user-username"
                 />
@@ -2906,13 +2906,13 @@ function UserManagementSection() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">{isNewUser ? "Sifre *" : "Yeni Sifre (bos birakilabilir)"}</Label>
+                <Label htmlFor="password">{isNewUser ? "Şifre *" : "Yeni Şifre (boş birakilabilir)"}</Label>
                 <Input
                   id="password"
                   type="password"
                   value={userForm.password}
                   onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                  placeholder={isNewUser ? "Sifre girin" : "Degistirmek icin yeni sifre"}
+                  placeholder={isNewUser ? "Şifre girin" : "Değiştirmek için yeni şifre"}
                   data-testid="input-user-password"
                 />
               </div>
@@ -2921,7 +2921,7 @@ function UserManagementSection() {
                 <div className="space-y-2">
                   <Label>Rol</Label>
                   <p className="text-xs text-muted-foreground">
-                    Yonetici: Aktivite, bot, finans ve kullanici yonetimi. Operator: Rezervasyon ve mesajlar.
+                    Yönetiçi: Aktivite, bot, finans ve kullanıcı yönetimi. Operator: Rezervasyon ve mesajlar.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {tenantRoles.map((role) => (
@@ -2948,7 +2948,7 @@ function UserManagementSection() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditingUser(null)}>
-                Iptal
+                İptal
               </Button>
               <Button
                 onClick={handleSaveUser}

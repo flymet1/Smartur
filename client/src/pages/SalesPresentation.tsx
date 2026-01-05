@@ -81,7 +81,7 @@ export default function SalesPresentation() {
       <FinanceFeatures />
       <IntegrationFeatures />
       <IndustryUseCases />
-      <PricingPlans />
+      <PriçingPlans />
       <CallToAction />
     </div>
   );
@@ -137,7 +137,7 @@ function ExecutiveSummary() {
     <div className="page-break min-h-screen p-12 flex flex-col justify-center">
       <SectionHeader 
         icon={<FileText className="w-8 h-8" />}
-        title="Yönetici Özeti"
+        title="Yönetiçi Özeti"
         subtitle="Smartur Nedir?"
       />
 
@@ -889,7 +889,7 @@ function IndustryUseCases() {
   );
 }
 
-function PricingPlans() {
+function PriçingPlans() {
   return (
     <div className="page-break min-h-screen p-12 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
       <div className="text-center mb-12">
@@ -898,7 +898,7 @@ function PricingPlans() {
       </div>
 
       <div className="grid md:grid-cols-4 gap-6">
-        <PricingCard 
+        <PriçingCard 
           name="Trial"
           price="Ücretsiz"
           period="14 Gün"
@@ -911,8 +911,8 @@ function PricingPlans() {
           ]}
           isPopular={false}
         />
-        <PricingCard 
-          name="Basic"
+        <PriçingCard 
+          name="Başıc"
           price="₺999"
           period="/ay"
           features={[
@@ -925,7 +925,7 @@ function PricingPlans() {
           ]}
           isPopular={false}
         />
-        <PricingCard 
+        <PriçingCard 
           name="Professional"
           price="₺1.999"
           period="/ay"
@@ -940,7 +940,7 @@ function PricingPlans() {
           ]}
           isPopular={true}
         />
-        <PricingCard 
+        <PriçingCard 
           name="Enterprise"
           price="Özel"
           period="Teklif"
@@ -950,7 +950,7 @@ function PricingPlans() {
             "Özel geliştirmeler",
             "Beyaz etiket seçeneği",
             "SLA garantisi",
-            "Özel hesap yöneticisi",
+            "Özel hesap yönetiçisi",
             "7/24 destek"
           ]}
           isPopular={false}
@@ -1154,7 +1154,7 @@ function IndustryCard({ title, icon, useCases }: { title: string; icon: React.Re
   );
 }
 
-function PricingCard({ name, price, period, features, isPopular }: { name: string; price: string; period: string; features: string[]; isPopular: boolean }) {
+function PriçingCard({ name, price, period, features, isPopular }: { name: string; price: string; period: string; features: string[]; isPopular: boolean }) {
   return (
     <div className={`rounded-xl p-6 ${isPopular ? 'bg-blue-600 ring-4 ring-yellow-400' : 'bg-gray-800'}`}>
       {isPopular && (

@@ -154,21 +154,21 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
           <Card className="p-4 bg-primary/5 border-primary/20">
             <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
               <span className="w-1.5 h-4 bg-primary rounded-full"></span>
-              Gun Ozeti - {formattedDate ? format(new Date(formattedDate), "d MMMM", { locale: tr }) : ""}
+              Gun Özeti - {formattedDate ? format(new Date(formattedDate), "d MMMM", { locale: tr }) : ""}
             </h4>
             <div className="space-y-3">
               {Object.entries(summary.byActivity).map(([actId, data]) => (
                 <div key={actId} className="bg-card rounded-lg p-3 border">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">{data.name}</span>
-                    <Badge variant="secondary">{data.total} kisi</Badge>
+                    <Badge variant="secondary">{data.total} kişi</Badge>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(data.byHour)
                       .sort(([a], [b]) => a.localeCompare(b))
                       .map(([time, count]) => (
                         <Badge key={time} variant="outline" className="text-xs">
-                          {time}: {count} kisi
+                          {time}: {count} kişi
                         </Badge>
                       ))}
                   </div>
@@ -176,7 +176,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
               ))}
               <div className="pt-2 border-t flex justify-between items-center">
                 <span className="font-semibold">Toplam</span>
-                <Badge className="bg-primary text-primary-foreground">{summary.grandTotal} kisi</Badge>
+                <Badge className="bg-primary text-primary-foreground">{summary.grandTotal} kişi</Badge>
               </div>
             </div>
           </Card>
@@ -244,7 +244,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                               <div className="flex items-center gap-2 mb-1">
                                 <Package className="w-4 h-4 text-purple-600" />
                                 <span className="font-semibold text-purple-700 dark:text-purple-300">
-                                  {packageName || "Paket Siparis"}
+                                  {packageName || "Paket Sipariş"}
                                 </span>
                                 {first.orderNumber && (
                                   <Badge variant="outline" className="font-mono text-xs">
@@ -261,7 +261,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                             {items.map((res, idx) => (
                               <div key={res.id} className="flex justify-between items-center text-sm bg-background/50 rounded p-2">
                                 <span className="text-muted-foreground">
-                                  {res.time} • {res.quantity} Kisi
+                                  {res.time} • {res.quantity} Kişi
                                 </span>
                                 <span className="font-medium">{getActivityName(res.activityId)}</span>
                               </div>
@@ -269,7 +269,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                           </div>
                           <div className="mt-2 pt-2 border-t border-purple-200 dark:border-purple-700 flex justify-between text-sm">
                             <span className="text-muted-foreground">{items.length} aktivite</span>
-                            <span className="font-medium">{items.reduce((sum, r) => sum + r.quantity, 0)} Kisi toplam</span>
+                            <span className="font-medium">{items.reduce((sum, r) => sum + r.quantity, 0)} Kişi toplam</span>
                           </div>
                         </div>
                       );
@@ -297,7 +297,7 @@ export function ReservationCalendar({ reservations }: ReservationCalendarProps) 
                         </div>
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">
-                            {res.time} • {res.quantity} Kisi
+                            {res.time} • {res.quantity} Kişi
                           </span>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{getActivityName(res.activityId)}</span>

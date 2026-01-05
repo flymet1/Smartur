@@ -69,16 +69,16 @@ import {
 import { Sidebar } from "@/components/layout/Sidebar";
 
 const searchableContent = [
-  { id: "genel-bakis", keywords: ["genel", "bakis", "woocommerce", "whatsapp", "takvim", "kapasite", "finans", "musteri", "acenta"], title: "Genel Bakis" },
-  { id: "panel-sayfalari", keywords: ["panel", "sayfa", "dashboard", "takvim", "rezervasyon", "aktivite", "paket", "finans", "acenta", "mesaj", "talep", "destek", "bot", "test", "ayar", "gelistirici", "tatil", "sunum"], title: "Panel Sayfalari" },
-  { id: "whatsapp-bot", keywords: ["whatsapp", "bot", "mesaj", "onay", "sablon", "template", "eskalasyon", "bilgi", "musaitlik", "tarih", "bayram", "tatil", "rezervasyon", "cok", "dil", "sss", "fallback", "takip", "talep", "toplu", "bildirim"], title: "WhatsApp Bot" },
-  { id: "rezervasyon-yonetimi", keywords: ["rezervasyon", "yonetim", "durum", "onay", "iptal", "beklemede", "paket", "tur", "siparis", "filtre", "takvim", "liste"], title: "Rezervasyon Yonetimi" },
-  { id: "musteri-takip", keywords: ["musteri", "takip", "link", "token", "talep", "iptal", "saat", "degisiklik", "bildirim", "whatsapp", "acenta"], title: "Musteri Takip" },
-  { id: "finans", keywords: ["finans", "acenta", "odeme", "sevk", "dispatch", "payout", "kdv", "fatura", "rapor", "hesaplasma"], title: "Finans" },
-  { id: "ayarlar", keywords: ["ayar", "guvenlik", "whatsapp", "entegrasyon", "sistem", "sifre", "logo", "prompt", "otomatik", "yanit", "kara", "liste", "tatil", "gmail", "guncelleme", "hata", "sablon", "toplu", "bildirim"], title: "Ayarlar" },
-  { id: "lisans", keywords: ["lisans", "uyelik", "plan", "trial", "basic", "professional", "enterprise", "sure", "limit"], title: "Lisans" },
-  { id: "sorun-giderme", keywords: ["sorun", "hata", "problem", "mesaj", "siparis", "bot", "kapasite", "bildirim"], title: "Sorun Giderme" },
-  { id: "guncellemeler", keywords: ["guncelleme", "yeni", "ozellik", "iyilestirme", "degisiklik", "versiyon"], title: "Guncellemeler" },
+  { id: "genel-bakis", keywords: ["genel", "bakis", "woocommerce", "whatsapp", "takvim", "kapasite", "finans", "müşteri", "acenta"], title: "Genel Bakis" },
+  { id: "panel-sayfalari", keywords: ["panel", "sayfa", "dashboard", "takvim", "rezervasyon", "aktivite", "paket", "finans", "acenta", "mesaj", "talep", "destek", "bot", "test", "ayar", "gelistiriçi", "tatil", "sunum"], title: "Panel Sayfalari" },
+  { id: "whatsapp-bot", keywords: ["whatsapp", "bot", "mesaj", "onay", "sablon", "template", "eskalasyon", "bilgi", "müsaitlik", "tarih", "bayram", "tatil", "rezervasyon", "cok", "dil", "sss", "fallback", "takip", "talep", "toplu", "bildirim"], title: "WhatsApp Bot" },
+  { id: "rezervasyon-yönetimi", keywords: ["rezervasyon", "yönetim", "durum", "onay", "iptal", "beklemede", "paket", "tur", "sipariş", "filtre", "takvim", "liste"], title: "Rezervasyon Yönetimi" },
+  { id: "müşteri-takip", keywords: ["müşteri", "takip", "link", "token", "talep", "iptal", "saat", "değişiklik", "bildirim", "whatsapp", "acenta"], title: "Müşteri Takip" },
+  { id: "finans", keywords: ["finans", "acenta", "ödeme", "sevk", "dispatch", "payout", "kdv", "fatura", "rapor", "hesaplasma"], title: "Finans" },
+  { id: "ayarlar", keywords: ["ayar", "güvenlik", "whatsapp", "entegrasyon", "sistem", "şifre", "logo", "prompt", "otomatik", "yanit", "kara", "liste", "tatil", "gmail", "güncelleme", "hata", "sablon", "toplu", "bildirim"], title: "Ayarlar" },
+  { id: "lisans", keywords: ["lisans", "üyelik", "plan", "trial", "başıc", "professional", "enterprise", "sure", "limit"], title: "Lisans" },
+  { id: "sorun-giderme", keywords: ["sorun", "hata", "problem", "mesaj", "sipariş", "bot", "kapasite", "bildirim"], title: "Sorun Giderme" },
+  { id: "güncellemeler", keywords: ["güncelleme", "yeni", "özellik", "iyılestirme", "değişiklik", "versiyon"], title: "Güncellemeler" },
 ];
 
 export default function UserGuide() {
@@ -183,13 +183,13 @@ export default function UserGuide() {
               <QuickNavButton href="#genel-bakis" label="Genel Bakış" />
               <QuickNavButton href="#panel-sayfalari" label="Panel Sayfaları" />
               <QuickNavButton href="#whatsapp-bot" label="WhatsApp Bot" />
-              <QuickNavButton href="#rezervasyon-yonetimi" label="Rezervasyon" />
-              <QuickNavButton href="#musteri-takip" label="Müşteri Takip" />
+              <QuickNavButton href="#rezervasyon-yönetimi" label="Rezervasyon" />
+              <QuickNavButton href="#müşteri-takip" label="Müşteri Takip" />
               <QuickNavButton href="#finans" label="Finans" />
               <QuickNavButton href="#ayarlar" label="Ayarlar" />
               <QuickNavButton href="#lisans" label="Lisans" />
               <QuickNavButton href="#sorun-giderme" label="Sorun Giderme" />
-              <QuickNavButton href="#guncellemeler" label="Güncellemeler" />
+              <QuickNavButton href="#güncellemeler" label="Güncellemeler" />
             </div>
           </CardContent>
         </Card>
@@ -235,7 +235,7 @@ export default function UserGuide() {
               <FeatureCard 
                 icon={<Building2 className="h-5 w-5 text-rose-500" />}
                 title="Acenta Yönetimi"
-                description="Acentalarınızı tanımlayın, sevk kayıtları oluşturun ve hesaplaşmalarınızı takip edin."
+                description="Acentalarınızı tanımlayın, sevk kayıtları oluştürün ve hesaplaşmalarınızı takip edin."
               />
             </div>
           </Section>
@@ -321,7 +321,7 @@ export default function UserGuide() {
                   "Rezervasyon onay mesajı şablonu",
                   "Rezervasyon linki (TR/EN)",
                   "Otel transferi bölgeleri",
-                  "Ekstra hizmetler (ör: Kadın Pilot, Akrobasi)",
+                  "Ekstra hizmetler (ör: Kadın Pilot, Akrobaşı)",
                   "SSS (Sık Sorulan Sorular) yönetimi",
                   "Acenta/admin bildirim ayarları"
                 ]}
@@ -438,12 +438,12 @@ export default function UserGuide() {
 
               <PageGuideCard 
                 icon={<Wrench className="h-5 w-5 text-slate-500" />}
-                title="Geliştirici Paneli"
+                title="Geliştiriçi Paneli"
                 path="/bot-rules"
                 features={[
                   "Bot kurallarını görüntüleme ve düzenleme",
                   "Sistem loglarını inceleme",
-                  "Geliştirici e-posta ayarı",
+                  "Geliştiriçi e-posta ayarı",
                   "Destek taleplerini yönetme",
                   "Teknik yapılandırma"
                 ]}
@@ -459,7 +459,7 @@ export default function UserGuide() {
                   "Bot'un 'bayramda müsait misiniz?' sorularını anlaması için anahtar kelimeler",
                   "Tatil başlangıç ve bitiş tarihleri",
                   "Tatil türü seçimi (Resmi/Dini/Özel)",
-                  "Aktif/pasif durumu ile geçici devre dışı bırakma"
+                  "Aktif/pasif durumu ile geçiçi devre dışı bırakma"
                 ]}
               />
 
@@ -685,7 +685,7 @@ export default function UserGuide() {
                 <p className="text-sm font-medium mb-2">Kullanılabilir Değişkenler:</p>
                 <div className="grid md:grid-cols-2 gap-2">
                   <div className="bg-muted/50 rounded-lg p-2">
-                    <p className="text-xs font-medium font-mono">{'{musteri_adi}'}</p>
+                    <p className="text-xs font-medium font-mono">{'{müşteri_adi}'}</p>
                     <p className="text-xs text-muted-foreground">Müşterinin adı</p>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-2">
@@ -822,7 +822,7 @@ export default function UserGuide() {
           <Section 
             icon={<ClipboardList className="h-5 w-5" />}
             title="4. Rezervasyon Yönetimi"
-            id="rezervasyon-yonetimi"
+            id="rezervasyon-yönetimi"
           >
             <div className="space-y-6">
               <div>
@@ -869,7 +869,7 @@ export default function UserGuide() {
                     </p>
                     <div className="bg-muted/50 rounded p-2">
                       <p className="text-xs font-mono">Örnek: "Yamaç Paraşütü" aktivitesi için</p>
-                      <p className="text-xs font-mono text-primary">Takma adlar: paragliding, tandem paragliding, parachute</p>
+                      <p className="text-xs font-mono text-primary">Takma adlar: paragliding, tandem paragliding, paraçhute</p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       Bu şekilde WooCommerce'den "Paragliding" siparişi geldiğinde sistem "Yamaç Paraşütü" aktivitesiyle eşleştirir.
@@ -947,7 +947,7 @@ export default function UserGuide() {
           <Section 
             icon={<UserCheck className="h-5 w-5" />}
             title="5. Müşteri Takip Sistemi"
-            id="musteri-takip"
+            id="müşteri-takip"
           >
             <div className="space-y-6">
               <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-4">
@@ -1158,7 +1158,7 @@ export default function UserGuide() {
                   <p className="text-sm text-muted-foreground">14 günlük deneme süresi</p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-4 border">
-                  <Badge className="bg-blue-500 mb-2">Basic</Badge>
+                  <Badge className="bg-blue-500 mb-2">Başıc</Badge>
                   <p className="text-sm text-muted-foreground">Temel özellikler</p>
                 </div>
                 <div className="bg-muted/50 rounded-lg p-4 border">
@@ -1230,60 +1230,60 @@ export default function UserGuide() {
           <Section 
             icon={<RefreshCw className="h-5 w-5" />}
             title="10. Son Güncellemeler"
-            id="guncellemeler"
+            id="güncellemeler"
           >
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground mb-2">
-                En son eklenen özellikler ve iyileştirmeler:
+                En son eklenen özellikler ve iyıleştirmeler:
               </p>
               
               <UpdateEntry 
                 date="04.01.2026"
                 title="Toplu Bildirim Mesaj Şablonları"
                 description="Rezervasyon durumuna göre (Onaylandı/Beklemede/İptal) farklı mesaj şablonları. Dinamik değişken desteği ({isim}, {tarih}, {aktivite}, {saat}). Kılavuz içi arama özelliği eklendi."
-                type="ozellik"
+                type="özellik"
               />
               <UpdateEntry 
                 date="04.01.2026"
                 title="Müşteri Talep Mesaj Şablonları"
-                description="Talep onay/red bildirimlerinde kullanılacak WhatsApp mesaj şablonları yönetimi. Dinamik değişken desteği ({musteri_adi}, {talep_turu}, {yeni_saat}, {red_sebebi})."
-                type="ozellik"
+                description="Talep onay/red bildirimlerinde kullanılacak WhatsApp mesaj şablonları yönetimi. Dinamik değişken desteği ({müşteri_adi}, {talep_turu}, {yeni_saat}, {red_sebebi})."
+                type="özellik"
               />
               <UpdateEntry 
                 date="04.01.2026"
                 title="Bot Talep Durumu Farkındalığı"
                 description="WhatsApp botu artık müşterinin bekleyen/onaylanan/reddedilen taleplerini otomatik algılayarak bilgilendiriyor."
-                type="iyilestirme"
+                type="iyılestirme"
               />
               <UpdateEntry 
                 date="02.01.2026"
                 title="Lisans ve Üyelik Sistemi"
                 description="4 plan tipi, aktivite/rezervasyon limitleri, süre dolduğunda salt okunur mod ve otomatik yenileme."
-                type="ozellik"
+                type="özellik"
               />
               <UpdateEntry 
                 date="02.01.2026"
                 title="Müşteri Takip Sistemi"
                 description="Benzersiz takip linki, saat değişikliği/iptal talepleri, WhatsApp ve acenta bildirimi."
-                type="ozellik"
+                type="özellik"
               />
               <UpdateEntry 
                 date="02.01.2026"
                 title="Gelişmiş WhatsApp Bot"
                 description="İki dilli otomatik yanıtlar (TR/EN), retry mekanizması, akıllı fallback ve takip sayfası entegrasyonu."
-                type="iyilestirme"
+                type="iyılestirme"
               />
               <UpdateEntry 
                 date="02.01.2026"
-                title="Takvim ve Kapasite İyileştirmeleri"
+                title="Takvim ve Kapasite İyıleştirmeleri"
                 description="Varsayılan slotlar otomatik gösterim, aktivite filtresi, gün özeti, dinamik doluluk oranı."
-                type="iyilestirme"
+                type="iyılestirme"
               />
               <UpdateEntry 
                 date="31.12.2025"
                 title="Finans ve Acenta Modülü"
                 description="Tedarikçi maliyetleri, acenta ödemeleri, KDV hesaplaması ve hesaplaşma takibi."
-                type="ozellik"
+                type="özellik"
               />
 
               <div className="pt-4 border-t">
@@ -1425,18 +1425,18 @@ function NavLink({ href, label, icon }: { href: string; label: string; icon: Rea
   );
 }
 
-function UpdateEntry({ date, title, description, type }: { date: string; title: string; description: string; type: 'ozellik' | 'kural' | 'iyilestirme' | 'duzeltme' }) {
+function UpdateEntry({ date, title, description, type }: { date: string; title: string; description: string; type: 'özellik' | 'kural' | 'iyılestirme' | 'duzeltme' }) {
   const typeColors = {
-    ozellik: 'bg-green-500/10 text-green-600 border-green-500/20',
+    özellik: 'bg-green-500/10 text-green-600 border-green-500/20',
     kural: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-    iyilestirme: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    iyılestirme: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
     duzeltme: 'bg-red-500/10 text-red-600 border-red-500/20',
   };
   
   const typeLabels = {
-    ozellik: 'Yeni Özellik',
+    özellik: 'Yeni Özellik',
     kural: 'Kural Değişikliği',
-    iyilestirme: 'İyileştirme',
+    iyılestirme: 'İyıleştirme',
     duzeltme: 'Düzeltme',
   };
 

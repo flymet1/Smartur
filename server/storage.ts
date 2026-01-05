@@ -1733,7 +1733,7 @@ export class DatabaseStorage implements IStorage {
     // Get the reservation to calculate expiry date (activity date/time + 24 hours)
     const [reservation] = await db.select().from(reservations).where(eq(reservations.id, reservationId));
     if (!reservation) {
-      throw new Error('Rezervasyon bulunamadi');
+      throw new Error('Rezervasyon bulunamadı');
     }
     
     // Calculate expiry: activity date + time + 24 hours
@@ -1861,13 +1861,13 @@ export class DatabaseStorage implements IStorage {
     
     if (!currentLicense) {
       // Trial mode: Allow writes when no license exists (for demo/development)
-      return { valid: true, message: "Deneme modu - lisans tanimlanmamis.", status: 'active', canWrite: true };
+      return { valid: true, message: "Deneme modu - lisans tanımlanmamis.", status: 'active', canWrite: true };
     }
 
     if (!currentLicense.isActive) {
       return { 
         valid: false, 
-        message: "Lisansiniz devre disi birakilmis.", 
+        message: "Lisansiniz devre dışı birakilmis.", 
         license: currentLicense,
         status: 'suspended',
         canWrite: false
@@ -1900,7 +1900,7 @@ export class DatabaseStorage implements IStorage {
         const graceDaysRemaining = Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         return { 
           valid: false, 
-          message: `Lisansiniz dolmus. ${graceDaysRemaining} gun icinde yenileyin, aksi halde sisteme erisim kapanacak.`, 
+          message: `Lisansiniz dolmus. ${graceDaysRemaining} gun içinde yenileyin, aksi halde sisteme erisim kapanacak.`, 
           license: currentLicense,
           status: 'grace',
           daysRemaining: daysRemaining,
@@ -1928,7 +1928,7 @@ export class DatabaseStorage implements IStorage {
         if (currentLicense.maxReservationsPerMonth && usage.reservationsThisMonth > currentLicense.maxReservationsPerMonth) {
           return { 
             valid: false, 
-            message: `Aylik rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
+            message: `Aylık rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
             license: currentLicense,
             status: 'warning',
             daysRemaining: daysRemaining,
@@ -1968,7 +1968,7 @@ export class DatabaseStorage implements IStorage {
     if (currentLicense.maxReservationsPerMonth && usage.reservationsThisMonth > currentLicense.maxReservationsPerMonth) {
       return { 
         valid: false, 
-        message: `Aylik rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
+        message: `Aylık rezervasyon limitini astiniz (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lutfen planinizi yukseltin.`,
         license: currentLicense,
         status: 'active',
         canWrite: false
@@ -1982,7 +1982,7 @@ export class DatabaseStorage implements IStorage {
 
     return { 
       valid: true, 
-      message: "Lisans gecerli.", 
+      message: "Lisans geçerli.", 
       license: currentLicense,
       status: 'active',
       canWrite: true
@@ -2043,7 +2043,7 @@ export class DatabaseStorage implements IStorage {
       {
         name: "Onaylandı",
         templateType: "approved",
-        messageContent: `Merhaba {musteri_adi},
+        messageContent: `Merhaba {müşteri_adi},
 
 {talep_turu} talebiniz onaylanmıştır.{yeni_saat}
 
@@ -2056,7 +2056,7 @@ Sky Fethiye`,
       {
         name: "Değerlendiriliyor",
         templateType: "pending",
-        messageContent: `Merhaba {musteri_adi},
+        messageContent: `Merhaba {müşteri_adi},
 
 {talep_turu} talebiniz alınmıştır ve değerlendirilmektedir.
 
@@ -2069,7 +2069,7 @@ Sky Fethiye`,
       {
         name: "Reddedildi",
         templateType: "rejected",
-        messageContent: `Merhaba {musteri_adi},
+        messageContent: `Merhaba {müşteri_adi},
 
 Üzgünüz, {talep_turu} talebinizi maalesef karşılayamıyoruz.{red_sebebi}
 
@@ -2131,14 +2131,14 @@ Sky Fethiye`,
         maxReservationsPerMonth: 50,
         maxUsers: 1,
         maxWhatsappNumbers: 1,
-        features: JSON.stringify(["basic_calendar", "manual_reservations"]),
+        features: JSON.stringify(["başıc_calendar", "manual_reservations"]),
         sortOrder: 0,
         isActive: true,
         isPopular: false,
       },
       {
-        code: "basic",
-        name: "Basic",
+        code: "başıc",
+        name: "Başıc",
         description: "Küçük işletmeler için temel paket",
         priceTl: 99900, // 999 TL
         priceUsd: 2900, // $29
@@ -2150,7 +2150,7 @@ Sky Fethiye`,
         maxReservationsPerMonth: 200,
         maxUsers: 2,
         maxWhatsappNumbers: 1,
-        features: JSON.stringify(["basic_calendar", "manual_reservations", "whatsapp_notifications", "basic_reports"]),
+        features: JSON.stringify(["başıc_calendar", "manual_reservations", "whatsapp_notifications", "başıc_reports"]),
         sortOrder: 1,
         isActive: true,
         isPopular: false,
@@ -2169,7 +2169,7 @@ Sky Fethiye`,
         maxReservationsPerMonth: 1000,
         maxUsers: 5,
         maxWhatsappNumbers: 3,
-        features: JSON.stringify(["basic_calendar", "manual_reservations", "whatsapp_notifications", "advanced_reports", "ai_bot", "woocommerce", "package_tours"]),
+        features: JSON.stringify(["başıc_calendar", "manual_reservations", "whatsapp_notifications", "advanced_reports", "ai_bot", "woocommerce", "package_tours"]),
         sortOrder: 2,
         isActive: true,
         isPopular: true,
@@ -2188,7 +2188,7 @@ Sky Fethiye`,
         maxReservationsPerMonth: 99999,
         maxUsers: 99,
         maxWhatsappNumbers: 10,
-        features: JSON.stringify(["basic_calendar", "manual_reservations", "whatsapp_notifications", "advanced_reports", "ai_bot", "woocommerce", "package_tours", "api_access", "priority_support", "custom_branding"]),
+        features: JSON.stringify(["başıc_calendar", "manual_reservations", "whatsapp_notifications", "advanced_reports", "ai_bot", "woocommerce", "package_tours", "api_access", "priority_support", "custom_branding"]),
         sortOrder: 3,
         isActive: true,
         isPopular: false,
@@ -2229,10 +2229,10 @@ Sky Fethiye`,
     if (existing.length > 0) return;
 
     const defaultFeatures: InsertPlanFeature[] = [
-      { key: "basic_calendar", label: "Temel Takvim", description: "Rezervasyon takvimi görüntüleme", icon: "Calendar", category: "core", sortOrder: 0 },
+      { key: "başıc_calendar", label: "Temel Takvim", description: "Rezervasyon takvimi görüntüleme", icon: "Calendar", category: "core", sortOrder: 0 },
       { key: "manual_reservations", label: "Manuel Rezervasyon", description: "Manuel rezervasyon oluşturma", icon: "ClipboardList", category: "core", sortOrder: 1 },
       { key: "whatsapp_notifications", label: "WhatsApp Bildirimleri", description: "WhatsApp üzerinden bildirim gönderme", icon: "MessageCircle", category: "communication", sortOrder: 2 },
-      { key: "basic_reports", label: "Temel Raporlar", description: "Basit istatistik raporları", icon: "BarChart3", category: "analytics", sortOrder: 3 },
+      { key: "başıc_reports", label: "Temel Raporlar", description: "Başıt istatistik raporları", icon: "BarChart3", category: "analytics", sortOrder: 3 },
       { key: "advanced_reports", label: "Gelişmiş Raporlar", description: "Detaylı analiz ve raporlama", icon: "TrendingUp", category: "analytics", sortOrder: 4 },
       { key: "ai_bot", label: "AI Bot", description: "Yapay zeka destekli müşteri yanıtları", icon: "Bot", category: "automation", sortOrder: 5 },
       { key: "woocommerce", label: "WooCommerce Entegrasyonu", description: "E-ticaret sitesi entegrasyonu", icon: "ShoppingCart", category: "integration", sortOrder: 6 },
@@ -2532,10 +2532,10 @@ Sky Fethiye`,
     // Get the version to rollback to
     const targetVersion = await this.getAppVersion(id);
     if (!targetVersion) {
-      throw new Error('Hedef surum bulunamadi');
+      throw new Error('Hedef sürüm bulunamadı');
     }
     if (!targetVersion.isRollbackTarget) {
-      throw new Error('Bu surum geri alinabilir degil');
+      throw new Error('Bu sürüm geri alınabilir degil');
     }
 
     // Deactivate current active version and mark as rollback target
@@ -2701,7 +2701,7 @@ Sky Fethiye`,
   // Bulk Operations
   async bulkChangePlan(licenseIds: number[], newPlanId: number): Promise<any> {
     const plan = await this.getSubscriptionPlan(newPlanId);
-    if (!plan) throw new Error('Plan bulunamadi');
+    if (!plan) throw new Error('Plan bulunamadı');
 
     const results = [];
     for (const id of licenseIds) {
@@ -2731,7 +2731,7 @@ Sky Fethiye`,
       try {
         const [lic] = await db.select().from(license).where(eq(license.id, id));
         if (!lic) {
-          results.push({ id, success: false, error: 'Lisans bulunamadi' });
+          results.push({ id, success: false, error: 'Lisans bulunamadı' });
           continue;
         }
         
@@ -2824,7 +2824,7 @@ Sky Fethiye`,
 
     return Object.entries(monthlyData).map(([month, data]) => ({
       month: Number(month) + 1,
-      monthName: ['Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran', 'Temmuz', 'Agustos', 'Eylul', 'Ekim', 'Kasim', 'Aralik'][Number(month)],
+      monthName: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Hazıran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'][Number(month)],
       ...data
     }));
   }
@@ -2841,7 +2841,7 @@ Sky Fethiye`,
 
   async generateInvoice(licenseId: number, periodStart: string, periodEnd: string): Promise<Invoice> {
     const [lic] = await db.select().from(license).where(eq(license.id, licenseId));
-    if (!lic) throw new Error('Lisans bulunamadi');
+    if (!lic) throw new Error('Lisans bulunamadı');
 
     const plan = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.code, lic.planType || 'trial'));
     const planData = plan[0];
@@ -2978,30 +2978,30 @@ Sky Fethiye`,
 
   async initializeDefaultPermissions(): Promise<void> {
     const defaultPermissions = [
-      { key: 'dashboard.view', name: 'Dashboard Goruntule', category: 'dashboard', sortOrder: 1 },
-      { key: 'reservations.view', name: 'Rezervasyonlari Goruntule', category: 'reservations', sortOrder: 1 },
-      { key: 'reservations.create', name: 'Rezervasyon Olustur', category: 'reservations', sortOrder: 2 },
-      { key: 'reservations.edit', name: 'Rezervasyon Duzenle', category: 'reservations', sortOrder: 3 },
+      { key: 'dashboard.view', name: 'Dashboard Görüntüle', category: 'dashboard', sortOrder: 1 },
+      { key: 'reservations.view', name: 'Rezervasyonlari Görüntüle', category: 'reservations', sortOrder: 1 },
+      { key: 'reservations.create', name: 'Rezervasyon Oluştur', category: 'reservations', sortOrder: 2 },
+      { key: 'reservations.edit', name: 'Rezervasyon Düzenle', category: 'reservations', sortOrder: 3 },
       { key: 'reservations.delete', name: 'Rezervasyon Sil', category: 'reservations', sortOrder: 4 },
-      { key: 'activities.view', name: 'Aktiviteleri Goruntule', category: 'activities', sortOrder: 1 },
+      { key: 'activities.view', name: 'Aktiviteleri Görüntüle', category: 'activities', sortOrder: 1 },
       { key: 'activities.manage', name: 'Aktiviteleri Yonet', category: 'activities', sortOrder: 2 },
-      { key: 'calendar.view', name: 'Takvimi Goruntule', category: 'calendar', sortOrder: 1 },
+      { key: 'calendar.view', name: 'Takvimi Görüntüle', category: 'calendar', sortOrder: 1 },
       { key: 'calendar.manage', name: 'Takvimi Yonet', category: 'calendar', sortOrder: 2 },
-      { key: 'reports.view', name: 'Raporlari Goruntule', category: 'reports', sortOrder: 1 },
-      { key: 'reports.export', name: 'Rapor Indir', category: 'reports', sortOrder: 2 },
-      { key: 'finance.view', name: 'Finans Goruntule', category: 'finance', sortOrder: 1 },
+      { key: 'reports.view', name: 'Raporlari Görüntüle', category: 'reports', sortOrder: 1 },
+      { key: 'reports.export', name: 'Rapor İndir', category: 'reports', sortOrder: 2 },
+      { key: 'finance.view', name: 'Finans Görüntüle', category: 'finance', sortOrder: 1 },
       { key: 'finance.manage', name: 'Finans Yonet', category: 'finance', sortOrder: 2 },
-      { key: 'settings.view', name: 'Ayarlari Goruntule', category: 'settings', sortOrder: 1 },
-      { key: 'settings.manage', name: 'Ayarlari Yonet', category: 'settings', sortOrder: 2 },
-      { key: 'users.view', name: 'Kullanicilari Goruntule', category: 'users', sortOrder: 1 },
-      { key: 'users.manage', name: 'Kullanicilari Yonet', category: 'users', sortOrder: 2 },
-      { key: 'whatsapp.view', name: 'WhatsApp Goruntule', category: 'whatsapp', sortOrder: 1 },
+      { key: 'settings.view', name: 'Ayarları Görüntüle', category: 'settings', sortOrder: 1 },
+      { key: 'settings.manage', name: 'Ayarları Yonet', category: 'settings', sortOrder: 2 },
+      { key: 'users.view', name: 'Kullanıcılari Görüntüle', category: 'users', sortOrder: 1 },
+      { key: 'users.manage', name: 'Kullanıcılari Yonet', category: 'users', sortOrder: 2 },
+      { key: 'whatsapp.view', name: 'WhatsApp Görüntüle', category: 'whatsapp', sortOrder: 1 },
       { key: 'whatsapp.manage', name: 'WhatsApp Yonet', category: 'whatsapp', sortOrder: 2 },
-      { key: 'bot.view', name: 'Bot Ayarlarini Goruntule', category: 'bot', sortOrder: 1 },
-      { key: 'bot.manage', name: 'Bot Ayarlarini Yonet', category: 'bot', sortOrder: 2 },
-      { key: 'agencies.view', name: 'Acentalari Goruntule', category: 'agencies', sortOrder: 1 },
+      { key: 'bot.view', name: 'Bot Ayarlarıni Görüntüle', category: 'bot', sortOrder: 1 },
+      { key: 'bot.manage', name: 'Bot Ayarlarıni Yonet', category: 'bot', sortOrder: 2 },
+      { key: 'agencies.view', name: 'Acentalari Görüntüle', category: 'agencies', sortOrder: 1 },
       { key: 'agencies.manage', name: 'Acentalari Yonet', category: 'agencies', sortOrder: 2 },
-      { key: 'subscription.view', name: 'Abonelik Goruntule', category: 'subscription', sortOrder: 1 },
+      { key: 'subscription.view', name: 'Abonelik Görüntüle', category: 'subscription', sortOrder: 1 },
       { key: 'subscription.manage', name: 'Abonelik Yonet', category: 'subscription', sortOrder: 2 },
     ];
 
@@ -3017,21 +3017,21 @@ Sky Fethiye`,
       { 
         name: 'tenant_owner', 
         displayName: 'Sahip', 
-        description: 'Acenta sahibi - tam yetki (ayarlar, faturalar, kullanici yonetimi)', 
+        description: 'Acenta sahibi - tam yetki (ayarlar, faturalar, kullanıcı yönetimi)', 
         color: 'purple', 
         isSystem: true 
       },
       { 
         name: 'tenant_manager', 
-        displayName: 'Yonetici', 
-        description: 'Operasyonel yonetici - aktiviteler, bot, finans, rezervasyonlar', 
+        displayName: 'Yönetiçi', 
+        description: 'Operasyonel yönetiçi - aktiviteler, bot, finans, rezervasyonlar', 
         color: 'blue', 
         isSystem: true 
       },
       { 
         name: 'tenant_operator', 
         displayName: 'Operator', 
-        description: 'Gunluk islemler - rezervasyon ve mesajlar', 
+        description: 'Günlük işlemler - rezervasyon ve mesajlar', 
         color: 'green', 
         isSystem: true 
       },

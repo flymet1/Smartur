@@ -90,7 +90,7 @@ export default function CustomerRequests() {
       setPendingNotification({ id: variables.id, status: variables.status });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Talep güncellenemedi.", variant: "destructive" });
     },
   });
 
@@ -115,7 +115,7 @@ export default function CustomerRequests() {
         message += `Yeni saatiniz: ${request.preferredTime}\n\n`;
       }
       if (request.requestType === 'cancellation') {
-        message += `Rezervasyonunuz basariyla iptal edilmistir.\n\n`;
+        message += `Rezervasyonunuz basariyla iptal edilmiştir.\n\n`;
       }
     } else if (request.status === 'rejected') {
       message += `Uzgunum, ${requestTypeText.toLowerCase()} talebinizi su anda karsilayamiyoruz.\n\n`;
@@ -123,14 +123,14 @@ export default function CustomerRequests() {
       message += `${requestTypeText} talebiniz alindi ve degerlendiriliyor.\n\n`;
     }
     
-    message += `Sorulariniz icin bize bu numaradan yazabilirsiniz.\n\nSky Fethiye`;
+    message += `Sorularınız için bize bu numaradan yazabilirsiniz.\n\nSky Fethiye`;
     return message;
   };
 
   const applyTemplateVariables = (template: string, request: CustomerRequest) => {
     const requestTypeText = getRequestTypeText(request.requestType);
     return template
-      .replace(/{musteri_adi}/g, request.customerName)
+      .replace(/{müşteri_adi}/g, request.customerName)
       .replace(/{talep_turu}/g, requestTypeText)
       .replace(/{yeni_saat}/g, request.preferredTime || '')
       .replace(/{red_sebebi}/g, request.adminNotes || 'Belirtilmedi');
@@ -333,17 +333,17 @@ export default function CustomerRequests() {
           <CardHeader>
             <CardTitle>Tum Talepler</CardTitle>
             <CardDescription>
-              Son gelen talepler en ustte gosterilir
+              Son gelen talepler en üstte gösterilir
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+              <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
             ) : !customerRequests || customerRequests.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <MessageSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-lg">Henuz musteri talebi yok</p>
-                <p className="text-sm mt-1">Musteriler takip sayfasindan talep gonderebilir</p>
+                <p className="text-lg">Henuz müşteri talebi yok</p>
+                <p className="text-sm mt-1">Müşteriler takip sayfasından talep gönderebilir</p>
               </div>
             ) : (
               <ScrollArea className="h-[500px] pr-4">

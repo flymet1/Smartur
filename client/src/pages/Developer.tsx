@@ -94,12 +94,12 @@ export default function Developer() {
         localStorage.setItem('superAdminToken', data.token);
         setIsAuthenticated(true);
         loadBotRules();
-        toast({ title: "Giris Basarili", description: "Gelistirici paneline hos geldiniz." });
+        toast({ title: "Giriş Başarılı", description: "Gelistiriçi paneline hos geldiniz." });
       } else {
-        toast({ title: "Hata", description: data.error || "Sifre yanlis", variant: "destructive" });
+        toast({ title: "Hata", description: data.error || "Şifre yanlış", variant: "destructive" });
       }
     } catch {
-      toast({ title: "Hata", description: "Giris yapilamadi", variant: "destructive" });
+      toast({ title: "Hata", description: "Giriş yapılamadı", variant: "destructive" });
     }
   };
 
@@ -114,7 +114,7 @@ export default function Developer() {
         if (data.value) setBotRules(data.value);
       }
     } catch (err) {
-      console.error("Bot rules yuklenemedi:", err);
+      console.error("Bot rules yüklenemedi:", err);
     }
   };
 
@@ -179,7 +179,7 @@ export default function Developer() {
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20">
-        <div className="text-muted-foreground">Yukleniyor...</div>
+        <div className="text-muted-foreground">Yükleniyor...</div>
       </div>
     );
   }
@@ -192,22 +192,22 @@ export default function Developer() {
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
               <Lock className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle>Gelistirici Paneli</CardTitle>
+            <CardTitle>Gelistiriçi Paneli</CardTitle>
             <CardDescription>
-              Bu panele erismek icin sifrenizi girin
+              Bu panele erismek için şifrenizi girin
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="password">Sifre</Label>
+                <Label htmlFor="password">Şifre</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Sifrenizi girin"
+                    placeholder="Şifrenizi girin"
                     required
                     data-testid="input-developer-password"
                   />
@@ -224,7 +224,7 @@ export default function Developer() {
                 </div>
               </div>
               <Button type="submit" className="w-full" data-testid="button-developer-login">
-                Giris Yap
+                Giriş Yap
               </Button>
             </form>
           </CardContent>
@@ -238,7 +238,7 @@ export default function Developer() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Code className="h-6 w-6 text-primary" />
-          Gelistirici Paneli
+          Gelistiriçi Paneli
         </h1>
         <p className="text-muted-foreground">Bot kurallari ve sistem loglari</p>
       </div>
@@ -251,12 +251,12 @@ export default function Developer() {
               Destek E-posta Adresi
             </CardTitle>
             <CardDescription>
-              Kullanicilarin destek talepleri bu adrese gonderilecektir.
+              Kullanıcıların destek talepleri bu adrese gönderilecektir.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label htmlFor="developerEmail">Gelistirici E-posta</Label>
+              <Label htmlFor="developerEmail">Gelistiriçi E-posta</Label>
               <Input
                 id="developerEmail"
                 type="email"
@@ -273,7 +273,7 @@ export default function Developer() {
           <CardHeader>
             <CardTitle>AI Bot Kurallari</CardTitle>
             <CardDescription>
-              Bu kurallar bot'un sistem prompt'una eklenir ve her mesajda gecerli olur.
+              Bu kurallar bot'un sistem prompt'una eklenir ve her mesajda geçerli olur.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -281,7 +281,7 @@ export default function Developer() {
               value={botRules}
               onChange={(e) => setBotRules(e.target.value)}
               className="min-h-[300px] font-mono text-sm"
-              placeholder="Bot kurallarini buraya yazin..."
+              placeholder="Bot kurallarini buraya yazın..."
               data-testid="textarea-bot-rules"
             />
 
@@ -292,16 +292,16 @@ export default function Developer() {
                 data-testid="button-save-rules"
               >
                 <Save className="w-4 h-4 mr-2" />
-                {isSavingRules ? "Kaydediliyor..." : "Ayarlari Kaydet"}
+                {isSavingRules ? "Kaydediliyor..." : "Ayarları Kaydet"}
               </Button>
             </div>
 
             <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-2">Ipuclari</h4>
               <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-                <li>Her kurali numaralandirarak yazin (1., 2., 3. gibi)</li>
-                <li>Kurallar net ve acik olmali</li>
-                <li>Bot bu kurallara gore musteri mesajlarini yanitlar</li>
+                <li>Her kurali numaralandirarak yazın (1., 2., 3. gibi)</li>
+                <li>Kurallar net ve açık olmali</li>
+                <li>Bot bu kurallara gore müşteri mesajlarıni yanitlar</li>
               </ul>
             </div>
           </CardContent>
@@ -325,12 +325,12 @@ export default function Developer() {
               </Button>
             </CardTitle>
             <CardDescription>
-              Son 24 saat icindeki hata ve uyari kayitlari (en yeni en ustte)
+              Son 24 saat içindeki hata ve uyarı kayıtlari (en yeni en üstte)
             </CardDescription>
           </CardHeader>
           <CardContent>
             {logsLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+              <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
             ) : !systemLogs || systemLogs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />

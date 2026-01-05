@@ -328,7 +328,7 @@ function CapacityCardWithEdit({ slot, activityName, onQuickAdjust, onCreateReser
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ totalSlots }),
       });
-      if (!res.ok) throw new Error("Kapasite guncellenemedi");
+      if (!res.ok) throw new Error("Kapasite güncellenemedi");
       return res.json();
     },
     onSuccess: () => {
@@ -1282,7 +1282,7 @@ export default function CalendarPage() {
           <DialogHeader>
             <DialogTitle>Hızlı Rezervasyon</DialogTitle>
             <DialogDescription>
-              {createReservationSlot && `${getActivityName(createReservationSlot.activityId)} - ${createReservationSlot.time} için rezervasyon oluşturun.`}
+              {createReservationSlot && `${getActivityName(createReservationSlot.activityId)} - ${createReservationSlot.time} için rezervasyon oluştürün.`}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 text-center">

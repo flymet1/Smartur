@@ -415,7 +415,7 @@ export default function Finance() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Current Rates Display */}
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-muted-foreground">Gunluk Kurlar</h4>
+                <h4 className="text-sm font-medium text-muted-foreground">Günlük Kurlar</h4>
                 {ratesLoading ? (
                   <div className="space-y-2">
                     <Skeleton className="h-12 w-full" />
@@ -466,7 +466,7 @@ export default function Finance() {
                   </div>
                 ) : (
                   <div className="text-center py-4 text-muted-foreground">
-                    Kur bilgisi alinamadi
+                    Kur bilgisi alınamadı
                   </div>
                 )}
               </div>
@@ -475,7 +475,7 @@ export default function Finance() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Calculator className="h-4 w-4 text-primary" />
-                  <h4 className="text-sm font-medium text-muted-foreground">Doviz Hesaplayici</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">Doviz Hesaplayiçi</h4>
                 </div>
                 <div className="p-4 rounded-lg border bg-background">
                   <div className="flex flex-col gap-3">
@@ -823,7 +823,7 @@ export default function Finance() {
                           </div>
                           <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                             <Calendar className="h-4 w-4" />
-                            {rate.validFrom} - {rate.validTo || 'Suresiz'}
+                            {rate.validFrom} - {rate.validTo || 'Süresiz'}
                           </div>
                           {rate.notes && <p className="text-sm text-muted-foreground mt-1">{rate.notes}</p>}
                         </div>
@@ -861,7 +861,7 @@ export default function Finance() {
                   })}
                   {rates.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      Henuz fiyat tanimlanmamis
+                      Henuz fiyat tanımlanmamis
                     </div>
                   )}
                 </div>
@@ -870,7 +870,7 @@ export default function Finance() {
           </TabsContent>
         </Tabs>
 
-        {/* Odeme Dialog */}
+        {/* Ödeme Dialog */}
         <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -1026,7 +1026,7 @@ export default function Finance() {
           </DialogContent>
         </Dialog>
 
-        {/* Gonderim Dialog */}
+        {/* Gönderim Dialog */}
         <Dialog open={dispatchDialogOpen} onOpenChange={setDispatchDialogOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -1106,7 +1106,7 @@ export default function Finance() {
                   />
                 </div>
                 <div>
-                  <Label>Kisi Basi (TL)</Label>
+                  <Label>Kişi Başı (TL)</Label>
                   <Input 
                     type="number"
                     value={dispatchForm.unitPayoutTl}
@@ -1171,7 +1171,7 @@ export default function Finance() {
                 </Select>
               </div>
               <div>
-                <Label>Aktivite (Opsiyonel - bos birakilirsa genel fiyat)</Label>
+                <Label>Aktivite (Opsiyonel - boş birakilirsa genel fiyat)</Label>
                 <Select 
                   value={rateForm.activityId ? String(rateForm.activityId) : "0"} 
                   onValueChange={v => setRateForm(f => ({ ...f, activityId: parseInt(v) || 0 }))}
@@ -1189,7 +1189,7 @@ export default function Finance() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Gecerlilik Baslangici</Label>
+                  <Label>Geçerlilik Başlangıçi</Label>
                   <Input 
                     type="date"
                     value={rateForm.validFrom}
@@ -1198,7 +1198,7 @@ export default function Finance() {
                   />
                 </div>
                 <div>
-                  <Label>Gecerlilik Bitisi (Opsiyonel)</Label>
+                  <Label>Geçerlilik Bitişi (Opsiyonel)</Label>
                   <Input 
                     type="date"
                     value={rateForm.validTo}

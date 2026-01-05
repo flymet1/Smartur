@@ -61,7 +61,7 @@ export default function Agencies() {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       setDialogOpen(false);
       setEditingAgency(null);
-      toast({ title: "Acenta guncellendi" });
+      toast({ title: "Acenta güncellendi" });
     }
   });
 
@@ -208,7 +208,7 @@ export default function Agencies() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactInfo">Iletisim Bilgisi (Telefon)</Label>
+              <Label htmlFor="contactInfo">İletişim Bilgisi (Telefon)</Label>
               <Input
                 id="contactInfo"
                 value={form.contactInfo}
@@ -216,10 +216,10 @@ export default function Agencies() {
                 placeholder="+905xxxxxxxxx"
                 data-testid="input-agency-contact"
               />
-              <p className="text-xs text-muted-foreground">WhatsApp bildirimleri icin telefon numarasi</p>
+              <p className="text-xs text-muted-foreground">WhatsApp bildirimleri için telefon numarası</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="payout">Kisi Basi Odeme (TL)</Label>
+              <Label htmlFor="payout">Kişi Başı Ödeme (TL)</Label>
               <Input
                 id="payout"
                 type="number"
@@ -241,13 +241,13 @@ export default function Agencies() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Iptal</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>İptal</Button>
             <Button 
               onClick={handleSubmit} 
               disabled={createMutation.isPending || updateMutation.isPending}
               data-testid="button-save-agency"
             >
-              {editingAgency ? 'Guncelle' : 'Ekle'}
+              {editingAgency ? 'Güncelle' : 'Ekle'}
             </Button>
           </DialogFooter>
         </DialogContent>

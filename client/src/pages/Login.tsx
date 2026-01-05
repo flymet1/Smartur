@@ -74,7 +74,7 @@ export default function Login() {
       }
       
       toast({
-        title: "Giris Basarili",
+        title: "Giriş Başarılı",
         description: `Hosgeldiniz, ${data.user.name || data.user.username}!`,
       });
       
@@ -82,8 +82,8 @@ export default function Login() {
     },
     onError: (error: any) => {
       toast({
-        title: "Giris Hatasi",
-        description: error.message || "Kullanici adi veya sifre hatali",
+        title: "Giriş Hatası",
+        description: error.message || "Kullanıcı adi veya şifre hatali",
         variant: "destructive",
       });
     },
@@ -94,7 +94,7 @@ export default function Login() {
     if (!username || !password) {
       toast({
         title: "Eksik Bilgi",
-        description: "Lutfen kullanici adi ve sifre giriniz",
+        description: "Lutfen kullanıcı adi ve şifre giriniz",
         variant: "destructive",
       });
       return;
@@ -136,18 +136,18 @@ export default function Login() {
               {brandSettings.companyName || "Smartur"}
             </CardTitle>
             <CardDescription>
-              Rezervasyon ve Operasyon Yonetim Sistemi
+              Rezervasyon ve Operasyon Yönetim Sistemi
             </CardDescription>
           </CardHeader>
         
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Kullanici Adi</Label>
+              <Label htmlFor="username">Kullanıcı Adı</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Kullanici adinizi giriniz"
+                placeholder="Kullanıcı adinizi giriniz"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 data-testid="input-username"
@@ -157,12 +157,12 @@ export default function Login() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Sifre</Label>
+              <Label htmlFor="password">Şifre</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Sifrenizi giriniz"
+                  placeholder="Şifrenizi giriniz"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   data-testid="input-password"
@@ -198,19 +198,19 @@ export default function Login() {
               {loginMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Giris yapiliyor...
+                  Giriş yapiliyor...
                 </>
               ) : (
                 <>
                   <LogIn className="mr-2 h-4 w-4" />
-                  Giris Yap
+                  Giriş Yap
                 </>
               )}
             </Button>
             
             <div className="text-center space-y-1">
               <p className="text-xs text-muted-foreground">
-                Hesabiniz yok mu? Planlar ve abonelik icin Smartur ekibi ile iletisime gecin.
+                Hesabıniz yok mu? Planlar ve abonelik için Smartur ekibi ile iletişime gecin.
               </p>
               <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">

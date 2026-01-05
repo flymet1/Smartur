@@ -119,10 +119,10 @@ const getIconComponent = (iconName: string | null | undefined): React.ComponentT
 };
 
 const FEATURE_OPTIONS = [
-  { key: "basic_calendar", label: "Temel Takvim", icon: Activity },
+  { key: "başıc_calendar", label: "Temel Takvim", icon: Activity },
   { key: "manual_reservations", label: "Manuel Rezervasyon", icon: Plus },
   { key: "whatsapp_notifications", label: "WhatsApp Bildirim", icon: MessageSquare },
-  { key: "basic_reports", label: "Temel Raporlar", icon: Activity },
+  { key: "başıc_reports", label: "Temel Raporlar", icon: Activity },
   { key: "advanced_reports", label: "Gelişmiş Raporlar", icon: Activity },
   { key: "ai_bot", label: "AI Bot", icon: Zap },
   { key: "woocommerce", label: "WooCommerce", icon: CreditCard },
@@ -274,10 +274,10 @@ function TenantManagementSection() {
       queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
       setEditingTenant(null);
       setIsNewTenant(false);
-      toast({ title: "Basarili", description: "Acenta olusturuldu" });
+      toast({ title: "Başarılı", description: "Acenta oluşturuldu" });
     },
     onError: (error: any) => {
-      toast({ title: "Hata", description: error.message || "Acenta olusturulamadi", variant: "destructive" });
+      toast({ title: "Hata", description: error.message || "Acenta oluşturulamadi", variant: "destructive" });
     }
   });
 
@@ -287,10 +287,10 @@ function TenantManagementSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
       setEditingTenant(null);
-      toast({ title: "Basarili", description: "Acenta guncellendi" });
+      toast({ title: "Başarılı", description: "Acenta güncellendi" });
     },
     onError: (error: any) => {
-      toast({ title: "Hata", description: error.message || "Acenta guncellenemedi", variant: "destructive" });
+      toast({ title: "Hata", description: error.message || "Acenta güncellenemedi", variant: "destructive" });
     }
   });
 
@@ -298,7 +298,7 @@ function TenantManagementSection() {
     mutationFn: (id: number) => apiRequest('DELETE', `/api/tenants/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
-      toast({ title: "Basarili", description: "Acenta silindi" });
+      toast({ title: "Başarılı", description: "Acenta silindi" });
     },
     onError: (error: any) => {
       toast({ title: "Hata", description: error.message || "Acenta silinemedi", variant: "destructive" });
@@ -384,7 +384,7 @@ function TenantManagementSection() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+        <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
       ) : tenants.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
@@ -398,10 +398,10 @@ function TenantManagementSection() {
               <TableRow>
                 <TableHead>Acenta</TableHead>
                 <TableHead>Slug</TableHead>
-                <TableHead>Iletisim</TableHead>
+                <TableHead>İletişim</TableHead>
                 <TableHead>Durum</TableHead>
-                <TableHead>Kayit Tarihi</TableHead>
-                <TableHead className="text-right">Islemler</TableHead>
+                <TableHead>Kayıt Tarihi</TableHead>
+                <TableHead className="text-right">İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -419,7 +419,7 @@ function TenantManagementSection() {
                       <div>
                         <div className="font-medium">{tenant.name}</div>
                         {tenant.slug === "default" && (
-                          <Badge variant="outline" className="text-xs">Varsayilan</Badge>
+                          <Badge variant="outline" className="text-xs">Varsayılan</Badge>
                         )}
                       </div>
                     </div>
@@ -456,7 +456,7 @@ function TenantManagementSection() {
                           size="icon"
                           variant="ghost"
                           onClick={() => {
-                            if (confirm(`"${tenant.name}" acentasini silmek istediginizden emin misiniz?`)) {
+                            if (confirm(`"${tenant.name}" acentasini silmek istediğinizden emin misiniz?`)) {
                               deleteTenantMutation.mutate(tenant.id);
                             }
                           }}
@@ -477,18 +477,18 @@ function TenantManagementSection() {
       <Dialog open={!!editingTenant} onOpenChange={(open) => !open && setEditingTenant(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{isNewTenant ? "Yeni Acenta Olustur" : "Acenta Duzenle"}</DialogTitle>
+            <DialogTitle>{isNewTenant ? "Yeni Acenta Oluştur" : "Acenta Düzenle"}</DialogTitle>
             <DialogDescription>
               {isNewTenant 
                 ? "Platformu kullanacak yeni bir acenta ekleyin"
-                : "Acenta bilgilerini guncelleyin"}
+                : "Acenta bilgilerini güncelleyin"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Acenta Adi *</Label>
+                <Label htmlFor="name">Acenta Adı *</Label>
                 <Input
                   id="name"
                   value={tenantForm.name}
@@ -567,14 +567,14 @@ function TenantManagementSection() {
                 <div className="flex items-center gap-2 mb-4">
                   <Users className="h-5 w-5 text-primary" />
                   <div>
-                    <h4 className="font-medium">Yonetici Hesabi</h4>
-                    <p className="text-sm text-muted-foreground">Acenta icin yonetici kullanicisi olustur</p>
+                    <h4 className="font-medium">Yönetiçi Hesabı</h4>
+                    <p className="text-sm text-muted-foreground">Acenta için yönetiçi kullanıcısi oluştur</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="adminUsername">Kullanici Adi *</Label>
+                    <Label htmlFor="adminUsername">Kullanıcı Adı *</Label>
                     <Input
                       id="adminUsername"
                       value={tenantForm.adminUsername}
@@ -603,31 +603,31 @@ function TenantManagementSection() {
                       id="adminName"
                       value={tenantForm.adminName}
                       onChange={(e) => setTenantForm({ ...tenantForm, adminName: e.target.value })}
-                      placeholder="Yonetici Ad Soyad"
+                      placeholder="Yönetiçi Ad Soyad"
                       data-testid="input-admin-name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="adminPassword">Sifre *</Label>
+                    <Label htmlFor="adminPassword">Şifre *</Label>
                     <Input
                       id="adminPassword"
                       type="password"
                       value={tenantForm.adminPassword}
                       onChange={(e) => setTenantForm({ ...tenantForm, adminPassword: e.target.value })}
-                      placeholder="Guclu bir sifre girin"
+                      placeholder="Guclu bir şifre girin"
                       data-testid="input-admin-password"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2 mt-4">
-                  <Label htmlFor="licenseDuration">Kullanim Suresi</Label>
+                  <Label htmlFor="licenseDuration">Kullanim Süresi</Label>
                   <Select
                     value={tenantForm.licenseDuration}
                     onValueChange={(value) => setTenantForm({ ...tenantForm, licenseDuration: value })}
                   >
                     <SelectTrigger id="licenseDuration" data-testid="select-license-duration">
-                      <SelectValue placeholder="Sure secin" />
+                      <SelectValue placeholder="Sure seçin" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="7">7 Gun (Deneme)</SelectItem>
@@ -635,8 +635,8 @@ function TenantManagementSection() {
                       <SelectItem value="30">30 Gun (1 Ay)</SelectItem>
                       <SelectItem value="90">90 Gun (3 Ay)</SelectItem>
                       <SelectItem value="180">180 Gun (6 Ay)</SelectItem>
-                      <SelectItem value="365">365 Gun (1 Yil)</SelectItem>
-                      <SelectItem value="0">Sinirsiz</SelectItem>
+                      <SelectItem value="365">365 Gun (1 Yıl)</SelectItem>
+                      <SelectItem value="0">Sınırsız</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
@@ -649,7 +649,7 @@ function TenantManagementSection() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingTenant(null)}>
-              Iptal
+              İptal
             </Button>
             <Button 
               onClick={handleSaveTenant}
@@ -678,7 +678,7 @@ function TenantStatsSection() {
     <div className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold">Acenta Istatistikleri</h2>
-        <p className="text-sm text-muted-foreground">Tum acentalarin ozet istatistikleri</p>
+        <p className="text-sm text-muted-foreground">Tum acentalarin özet istatistikleri</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -762,8 +762,8 @@ function UserManagementSection() {
   const getMembershipLabel = (type: string | null) => {
     switch (type) {
       case "trial": return "Deneme";
-      case "monthly": return "Aylik";
-      case "yearly": return "Yillik";
+      case "monthly": return "Aylık";
+      case "yearly": return "Yıllik";
       default: return type || "-";
     }
   };
@@ -782,9 +782,9 @@ function UserManagementSection() {
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-blue-600 mt-0.5" />
             <div>
-              <h4 className="font-medium text-blue-900 dark:text-blue-100">Kullanici Yonetimi Degisti</h4>
+              <h4 className="font-medium text-blue-900 dark:text-blue-100">Kullanıcı Yönetimi Değişti</h4>
               <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
-                Her acenta artik kendi kullanicilarini <strong>Ayarlar &gt; Kullanicilar</strong> sayfasindan yonetiyor.
+                Her acenta artik kendi kullanıcılarıni <strong>Ayarlar &gt; Kullanıcılar</strong> sayfasından yonetiyor.
                 Bu sayfa sadece izleme amaciyla kullanilmaktadir.
               </p>
             </div>
@@ -797,27 +797,27 @@ function UserManagementSection() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Tum Kullanicilar (Izleme)
+              Tum Kullanıcılar (İzleme)
             </CardTitle>
-            <CardDescription>Platformdaki tum kullanicilari goruntuleyin</CardDescription>
+            <CardDescription>Platformdaki tum kullanıcılari görüntüleyin</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : users.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Henuz kullanici bulunmuyor.</div>
+            <div className="text-center py-8 text-muted-foreground">Henuz kullanıcı bulunmuyor.</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Kullanici</TableHead>
+                  <TableHead>Kullanıcı</TableHead>
                   <TableHead>Acenta</TableHead>
-                  <TableHead>Uyelik</TableHead>
+                  <TableHead>Üyelik</TableHead>
                   <TableHead>Roller</TableHead>
                   <TableHead>Durum</TableHead>
-                  <TableHead>Giris Gecmisi</TableHead>
+                  <TableHead>Giriş Geçmişi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -890,15 +890,15 @@ function UserManagementSection() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Giris Gecmisi
+              Giriş Geçmişi
             </DialogTitle>
             <DialogDescription>
-              Kullanicinin son giris kayitlari
+              Kullanıcınin son giriş kayıtları
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-96">
             {loginLogs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">Giris kaydi bulunamadi.</div>
+              <div className="text-center py-8 text-muted-foreground">Giriş kaydi bulunamadı.</div>
             ) : (
               <Table>
                 <TableHeader>
@@ -917,7 +917,7 @@ function UserManagementSection() {
                       <TableCell>{log.ipAddress || "-"}</TableCell>
                       <TableCell>
                         <Badge variant={log.success ? "default" : "destructive"}>
-                          {log.success ? "Basarili" : "Basarisiz"}
+                          {log.success ? "Başarılı" : "Başarısız"}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -965,10 +965,10 @@ function RolesPermissionsSection() {
       setEditingRole(null);
       setIsNewRole(false);
       resetRoleForm();
-      toast({ title: "Basarili", description: "Rol olusturuldu." });
+      toast({ title: "Başarılı", description: "Rol oluşturuldu." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Rol olusturulamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Rol oluşturulamadi.", variant: "destructive" });
     }
   });
 
@@ -979,10 +979,10 @@ function RolesPermissionsSection() {
       queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
       setEditingRole(null);
       resetRoleForm();
-      toast({ title: "Basarili", description: "Rol guncellendi." });
+      toast({ title: "Başarılı", description: "Rol güncellendi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Rol guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Rol güncellenemedi.", variant: "destructive" });
     }
   });
 
@@ -990,7 +990,7 @@ function RolesPermissionsSection() {
     mutationFn: (id: number) => apiRequest('DELETE', `/api/roles/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
-      toast({ title: "Basarili", description: "Rol silindi." });
+      toast({ title: "Başarılı", description: "Rol silindi." });
     },
     onError: () => {
       toast({ title: "Hata", description: "Rol silinemedi.", variant: "destructive" });
@@ -1002,10 +1002,10 @@ function RolesPermissionsSection() {
       apiRequest('PUT', `/api/roles/${roleId}/permissions`, { permissionIds }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/roles', selectedRoleForPermissions, 'permissions'] });
-      toast({ title: "Basarili", description: "Izinler guncellendi." });
+      toast({ title: "Başarılı", description: "Izinler güncellendi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Izinler guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Izinler güncellenemedi.", variant: "destructive" });
     }
   });
 
@@ -1013,10 +1013,10 @@ function RolesPermissionsSection() {
     mutationFn: () => apiRequest('POST', '/api/permissions/initialize'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/permissions'] });
-      toast({ title: "Basarili", description: "Varsayilan izinler olusturuldu." });
+      toast({ title: "Başarılı", description: "Varsayılan izinler oluşturuldu." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Izinler olusturulamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Izinler oluşturulamadi.", variant: "destructive" });
     }
   });
 
@@ -1078,11 +1078,11 @@ function RolesPermissionsSection() {
   const categoryLabels: Record<string, string> = {
     reservations: "Rezervasyonlar",
     activities: "Aktiviteler",
-    customers: "Musteriler",
+    customers: "Müşteriler",
     finance: "Finans",
     reports: "Raporlar",
     settings: "Ayarlar",
-    users: "Kullanicilar",
+    users: "Kullanıcılar",
     general: "Genel"
   };
 
@@ -1096,7 +1096,7 @@ function RolesPermissionsSection() {
                 <Shield className="h-5 w-5" />
                 Roller
               </CardTitle>
-              <CardDescription>Kullanici rollerini yonetin</CardDescription>
+              <CardDescription>Kullanıcı rollerini yonetin</CardDescription>
             </div>
             <Button onClick={openNewRoleDialog} data-testid="button-new-role">
               <Plus className="h-4 w-4 mr-2" />
@@ -1105,7 +1105,7 @@ function RolesPermissionsSection() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+              <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
             ) : roles.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">Henuz rol bulunmuyor.</div>
             ) : (
@@ -1164,7 +1164,7 @@ function RolesPermissionsSection() {
               <CardDescription>
                 {selectedRoleForPermissions 
                   ? `"${roles.find(r => r.id === selectedRoleForPermissions)?.displayName}" rolunun izinleri`
-                  : "Bir rol secin"
+                  : "Bir rol seçin"
                 }
               </CardDescription>
             </div>
@@ -1176,18 +1176,18 @@ function RolesPermissionsSection() {
                 data-testid="button-init-permissions"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Izinleri Olustur
+                Izinleri Oluştur
               </Button>
             )}
           </CardHeader>
           <CardContent>
             {selectedRoleForPermissions === null ? (
               <div className="text-center py-8 text-muted-foreground">
-                Izinleri goruntulemek icin sol taraftan bir rol secin.
+                Izinleri görüntülemek için sol taraftan bir rol seçin.
               </div>
             ) : permissions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Henuz izin tanimlanmamis. Varsayilan izinleri olusturmak icin butona tiklayin.
+                Henuz izin tanımlanmamis. Varsayılan izinleri oluşturmak için butona tıklayın.
               </div>
             ) : (
               <ScrollArea className="h-96">
@@ -1235,16 +1235,16 @@ function RolesPermissionsSection() {
       <Dialog open={!!editingRole} onOpenChange={(open) => !open && setEditingRole(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{isNewRole ? "Yeni Rol Olustur" : "Rolu Duzenle"}</DialogTitle>
+            <DialogTitle>{isNewRole ? "Yeni Rol Oluştur" : "Rolu Düzenle"}</DialogTitle>
             <DialogDescription>
-              Rol bilgilerini girin veya guncelleyin.
+              Rol bilgilerini girin veya güncelleyin.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Rol Adi (key)</Label>
+                <Label>Rol Adı (key)</Label>
                 <Input
                   value={roleForm.name}
                   onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value.toLowerCase().replace(/\s/g, '_') })}
@@ -1257,18 +1257,18 @@ function RolesPermissionsSection() {
                 <Input
                   value={roleForm.displayName}
                   onChange={(e) => setRoleForm({ ...roleForm, displayName: e.target.value })}
-                  placeholder="Yonetici"
+                  placeholder="Yönetiçi"
                   data-testid="input-role-display-name"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Aciklama</Label>
+              <Label>Açıklama</Label>
               <Textarea
                 value={roleForm.description}
                 onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
-                placeholder="Rol aciklamasi..."
+                placeholder="Rol açıklamasi..."
                 data-testid="textarea-role-description"
               />
             </div>
@@ -1298,7 +1298,7 @@ function RolesPermissionsSection() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingRole(null)}>
-              Iptal
+              İptal
             </Button>
             <Button 
               onClick={handleSaveRole}
@@ -1329,10 +1329,10 @@ function AnnouncementsSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/announcements'] });
       setNewAnnouncement({ title: "", content: "", type: "info" });
-      toast({ title: "Basarili", description: "Duyuru olusturuldu." });
+      toast({ title: "Başarılı", description: "Duyuru oluşturuldu." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Duyuru olusturulamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Duyuru oluşturulamadi.", variant: "destructive" });
     }
   });
 
@@ -1340,7 +1340,7 @@ function AnnouncementsSection() {
     mutationFn: (id: number) => apiRequest('DELETE', `/api/announcements/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/announcements'] });
-      toast({ title: "Basarili", description: "Duyuru silindi." });
+      toast({ title: "Başarılı", description: "Duyuru silindi." });
     },
     onError: () => {
       toast({ title: "Hata", description: "Duyuru silinemedi.", variant: "destructive" });
@@ -1353,7 +1353,7 @@ function AnnouncementsSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Megaphone className="h-5 w-5" />
-            Yeni Duyuru Olustur
+            Yeni Duyuru Oluştur
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1376,18 +1376,18 @@ function AnnouncementsSection() {
                 data-testid="select-announcement-type"
               >
                 <option value="info">Bilgi</option>
-                <option value="warning">Uyari</option>
+                <option value="warning">Uyarı</option>
                 <option value="maintenance">Bakim</option>
-                <option value="update">Guncelleme</option>
+                <option value="update">Güncelleme</option>
               </select>
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Icerik</Label>
+            <Label>İçerik</Label>
             <Textarea
               value={newAnnouncement.content}
               onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
-              placeholder="Duyuru icerigi..."
+              placeholder="Duyuru içeriği..."
               data-testid="textarea-announcement-content"
             />
           </div>
@@ -1397,7 +1397,7 @@ function AnnouncementsSection() {
             data-testid="button-create-announcement"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Duyuru Olustur
+            Duyuru Oluştur
           </Button>
         </CardContent>
       </Card>
@@ -1408,7 +1408,7 @@ function AnnouncementsSection() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : announcements.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">Henuz duyuru bulunmuyor.</div>
           ) : (
@@ -1422,7 +1422,7 @@ function AnnouncementsSection() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant={ann.type === "warning" ? "destructive" : ann.type === "maintenance" ? "secondary" : "outline"}>
-                        {ann.type === "info" ? "Bilgi" : ann.type === "warning" ? "Uyari" : ann.type === "maintenance" ? "Bakim" : "Guncelleme"}
+                        {ann.type === "info" ? "Bilgi" : ann.type === "warning" ? "Uyarı" : ann.type === "maintenance" ? "Bakim" : "Güncelleme"}
                       </Badge>
                       <span className="font-medium">{ann.title}</span>
                     </div>
@@ -1467,10 +1467,10 @@ function PlanFeaturesSection() {
       queryClient.invalidateQueries({ queryKey: ['/api/plan-features'] });
       setNewFeature({ key: "", label: "", description: "", icon: "Star", category: "general" });
       setShowNewForm(false);
-      toast({ title: "Basarili", description: "Ozellik olusturuldu." });
+      toast({ title: "Başarılı", description: "Özellik oluşturuldu." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Ozellik olusturulamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Özellik oluşturulamadi.", variant: "destructive" });
     }
   });
 
@@ -1480,10 +1480,10 @@ function PlanFeaturesSection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/plan-features'] });
       setEditingFeature(null);
-      toast({ title: "Basarili", description: "Ozellik guncellendi." });
+      toast({ title: "Başarılı", description: "Özellik güncellendi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Ozellik guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Özellik güncellenemedi.", variant: "destructive" });
     }
   });
 
@@ -1491,21 +1491,21 @@ function PlanFeaturesSection() {
     mutationFn: (id: number) => apiRequest('DELETE', `/api/plan-features/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/plan-features'] });
-      toast({ title: "Basarili", description: "Ozellik silindi." });
+      toast({ title: "Başarılı", description: "Özellik silindi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Ozellik silinemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Özellik silinemedi.", variant: "destructive" });
     }
   });
 
   const categoryLabels: Record<string, string> = {
     core: "Temel",
-    communication: "Iletisim",
+    communication: "İletişim",
     analytics: "Analitik",
     automation: "Otomasyon",
     integration: "Entegrasyon",
     support: "Destek",
-    customization: "Ozellestirme",
+    customization: "Özellestirme",
     general: "Genel"
   };
 
@@ -1516,13 +1516,13 @@ function PlanFeaturesSection() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Settings2 className="h-5 w-5" />
-              Plan Ozellikleri Yonetimi
+              Plan Özellikleri Yönetimi
             </CardTitle>
-            <CardDescription>Planlara atanabilecek ozellikleri yonetin</CardDescription>
+            <CardDescription>Planlara atanabilecek özellikleri yonetin</CardDescription>
           </div>
           <Button onClick={() => setShowNewForm(!showNewForm)} data-testid="button-toggle-new-feature">
             <Plus className="h-4 w-4 mr-2" />
-            Yeni Ozellik
+            Yeni Özellik
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1573,11 +1573,11 @@ function PlanFeaturesSection() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Aciklama</Label>
+                <Label>Açıklama</Label>
                 <Textarea
                   value={newFeature.description}
                   onChange={(e) => setNewFeature({ ...newFeature, description: e.target.value })}
-                  placeholder="Ozellik aciklamasi..."
+                  placeholder="Özellik açıklamasi..."
                   data-testid="textarea-new-feature-description"
                 />
               </div>
@@ -1588,19 +1588,19 @@ function PlanFeaturesSection() {
                   data-testid="button-create-feature"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Olustur
+                  Oluştur
                 </Button>
                 <Button variant="outline" onClick={() => setShowNewForm(false)}>
-                  Iptal
+                  İptal
                 </Button>
               </div>
             </div>
           )}
 
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : features.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Henuz ozellik bulunmuyor.</div>
+            <div className="text-center py-8 text-muted-foreground">Henuz özellik bulunmuyor.</div>
           ) : (
             <Table>
               <TableHeader>
@@ -1610,7 +1610,7 @@ function PlanFeaturesSection() {
                   <TableHead>Kategori</TableHead>
                   <TableHead>Ikon</TableHead>
                   <TableHead>Durum</TableHead>
-                  <TableHead>Islemler</TableHead>
+                  <TableHead>İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1676,8 +1676,8 @@ function PlanFeaturesSection() {
       <Dialog open={!!editingFeature} onOpenChange={(open) => !open && setEditingFeature(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ozellik Duzenle</DialogTitle>
-            <DialogDescription>Ozellik bilgilerini duzenleyin</DialogDescription>
+            <DialogTitle>Özellik Düzenle</DialogTitle>
+            <DialogDescription>Özellik bilgilerini düzenleyin</DialogDescription>
           </DialogHeader>
           {editingFeature && (
             <div className="space-y-4">
@@ -1721,7 +1721,7 @@ function PlanFeaturesSection() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Aciklama</Label>
+                <Label>Açıklama</Label>
                 <Textarea
                   value={editingFeature.description || ""}
                   onChange={(e) => setEditingFeature({ ...editingFeature, description: e.target.value })}
@@ -1731,7 +1731,7 @@ function PlanFeaturesSection() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingFeature(null)}>Iptal</Button>
+            <Button variant="outline" onClick={() => setEditingFeature(null)}>İptal</Button>
             <Button 
               onClick={() => editingFeature && updateMutation.mutate({ 
                 id: editingFeature.id, 
@@ -1802,10 +1802,10 @@ function BrandingSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/settings', 'brandSettings'] });
-      toast({ title: "Basarili", description: "Marka ayarlari kaydedildi." });
+      toast({ title: "Başarılı", description: "Marka ayarları kaydedildi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Marka ayarlari kaydedilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Marka ayarları kaydedilemedi.", variant: "destructive" });
     },
   });
   
@@ -1844,16 +1844,16 @@ function BrandingSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Palette className="h-5 w-5" />
-            Marka Ayarlari
+            Marka Ayarları
           </CardTitle>
           <CardDescription>
-            Rezervasyon asistani icin renk paleti ve logo ayarlari
+            Rezervasyon asistani için renk paleti ve logo ayarları
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Company Name */}
           <div className="space-y-2">
-            <Label htmlFor="companyName">Sirket/Marka Adi</Label>
+            <Label htmlFor="companyName">Şirket/Marka Adı</Label>
             <Input
               id="companyName"
               value={companyName}
@@ -1931,7 +1931,7 @@ function BrandingSection() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Ozel vurgular ve dikkat cekici elemanlarda kullanilir
+                Özel vurgular ve dikkat cekiçi elemanlarda kullanilir
               </p>
             </div>
           </div>
@@ -1947,7 +1947,7 @@ function BrandingSection() {
               data-testid="input-logo-url"
             />
             <p className="text-xs text-muted-foreground">
-              Sidebar ve diger alanlarda gosterilecek logo URL'si
+              Sidebar ve diger alanlarda gösterilecek logo URL'si
             </p>
             {logoUrl && (
               <div className="mt-3 p-4 bg-muted/50 rounded-lg">
@@ -2017,7 +2017,7 @@ function BrandingSection() {
               }}
               data-testid="button-reset-branding"
             >
-              Varsayilana Don
+              Varsayılana Don
             </Button>
             <Button 
               onClick={handleSave}
@@ -2051,7 +2051,7 @@ function BrandingSection() {
         <CardContent>
           <div className="text-sm text-muted-foreground space-y-2">
             <p>Bu ayarlar kaydedildikten sonra rezervasyon asistani arayuzunde uygulanir.</p>
-            <p>Degisikliklerin gorunmesi icin sayfayi yenilemeniz gerekebilir.</p>
+            <p>Değişikliklerin gorunmesi için sayfayi yenilemeniz gerekebilir.</p>
           </div>
         </CardContent>
       </Card>
@@ -2086,7 +2086,7 @@ function AnalyticsSection() {
         </CardHeader>
         <CardContent>
           {platformLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : platformAnalytics ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 border rounded-lg text-center">
@@ -2103,15 +2103,15 @@ function AnalyticsSection() {
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold text-primary">{platformAnalytics.paidAgencies}</div>
-                <div className="text-sm text-muted-foreground">Odeme Yapan</div>
+                <div className="text-sm text-muted-foreground">Ödeme Yapan</div>
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold">{formatCurrency(platformAnalytics.mrrTl, "TL")}</div>
-                <div className="text-sm text-muted-foreground">Aylik Gelir (TL)</div>
+                <div className="text-sm text-muted-foreground">Aylık Gelir (TL)</div>
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold">{formatCurrency(platformAnalytics.mrrUsd, "USD")}</div>
-                <div className="text-sm text-muted-foreground">Aylik Gelir (USD)</div>
+                <div className="text-sm text-muted-foreground">Aylık Gelir (USD)</div>
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold">{platformAnalytics.totalReservationsThisMonth}</div>
@@ -2134,11 +2134,11 @@ function AnalyticsSection() {
             <MessageSquare className="h-5 w-5" />
             WhatsApp Istatistikleri
           </CardTitle>
-          <CardDescription>Son 30 gunluk WhatsApp mesaj istatistikleri</CardDescription>
+          <CardDescription>Son 30 günlük WhatsApp mesaj istatistikleri</CardDescription>
         </CardHeader>
         <CardContent>
           {whatsappLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : whatsappStats ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 border rounded-lg text-center">
@@ -2147,7 +2147,7 @@ function AnalyticsSection() {
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold text-blue-600">{whatsappStats.userMessages}</div>
-                <div className="text-sm text-muted-foreground">Musteri Mesaji</div>
+                <div className="text-sm text-muted-foreground">Müşteri Mesajı</div>
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold text-green-600">{whatsappStats.botResponses}</div>
@@ -2163,11 +2163,11 @@ function AnalyticsSection() {
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold">{whatsappStats.uniqueCustomers}</div>
-                <div className="text-sm text-muted-foreground">Benzersiz Musteri</div>
+                <div className="text-sm text-muted-foreground">Benzersiz Müşteri</div>
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold">{whatsappStats.avgResponseTimeMs}ms</div>
-                <div className="text-sm text-muted-foreground">Ort. Yanit Suresi</div>
+                <div className="text-sm text-muted-foreground">Ort. Yanit Süresi</div>
               </div>
               <div className="p-4 border rounded-lg text-center">
                 <div className="text-2xl font-bold text-green-600">{whatsappStats.botSuccessRate.toFixed(1)}%</div>
@@ -2257,13 +2257,13 @@ function InvoicesSection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Receipt className="h-5 w-5" />
-          Fatura Yonetimi
+          Fatura Yönetimi
         </CardTitle>
-        <CardDescription>Tum acentalarin faturalari ve odeme durumlari</CardDescription>
+        <CardDescription>Tum acentalarin faturalari ve ödeme durumlari</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
         ) : invoices.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">Henuz fatura bulunmuyor.</div>
         ) : (
@@ -2274,8 +2274,8 @@ function InvoicesSection() {
                 <TableHead>Abonelik ID</TableHead>
                 <TableHead>Tutar</TableHead>
                 <TableHead>Durum</TableHead>
-                <TableHead>Son Odeme</TableHead>
-                <TableHead>Olusturulma</TableHead>
+                <TableHead>Son Ödeme</TableHead>
+                <TableHead>Oluşturulma</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -2317,10 +2317,10 @@ function ApiMonitoringSection() {
     mutationFn: () => apiRequest('POST', '/api/api-status/check'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/api-status'] });
-      toast({ title: "Basarili", description: "API durumlari kontrol edildi." });
+      toast({ title: "Başarılı", description: "API durumlari kontrol edildi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "API kontrolu yapilamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "API kontrolu yapılamadı.", variant: "destructive" });
     }
   });
 
@@ -2356,7 +2356,7 @@ function ApiMonitoringSection() {
     twilio: 'Twilio (WhatsApp)',
     woocommerce: 'WooCommerce',
     gemini: 'Google Gemini AI',
-    paytr: 'PayTR Odeme'
+    paytr: 'PayTR Ödeme'
   };
 
   return (
@@ -2365,7 +2365,7 @@ function ApiMonitoringSection() {
         <CardTitle className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Radio className="h-5 w-5" />
-            API Durum Izleme
+            API Durum İzleme
           </div>
           <Button 
             size="sm" 
@@ -2382,7 +2382,7 @@ function ApiMonitoringSection() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {['twilio', 'woocommerce', 'gemini', 'paytr'].map((service) => {
@@ -2409,7 +2409,7 @@ function ApiMonitoringSection() {
                       <>
                         {getStatusIcon(status.status)}
                         <span className={`text-sm font-medium ${getStatusColor(status.status)}`}>
-                          {status.status === 'up' ? 'Calisiyor' : 
+                          {status.status === 'up' ? 'Çalışıyor' : 
                            status.status === 'degraded' ? 'Yavas' : 'Kapalı'}
                         </span>
                       </>
@@ -2495,15 +2495,15 @@ function ApplicationUpdatesSection() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Aktivasyon basarisiz');
+      if (!res.ok) throw new Error('Aktivasyon başarısız');
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/app-versions'] });
-      toast({ title: "Basarili", description: "Surum aktif edildi." });
+      toast({ title: "Başarılı", description: "Sürüm aktif edildi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Surum aktif edilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Sürüm aktif edilemedi.", variant: "destructive" });
     }
   });
 
@@ -2514,17 +2514,17 @@ function ApplicationUpdatesSection() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Geri alma basarisiz');
+      if (!res.ok) throw new Error('Geri alma başarısız');
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/app-versions'] });
       setRollbackDialogOpen(false);
       setSelectedRollbackVersion(null);
-      toast({ title: "Basarili", description: "Onceki surume geri donuldu." });
+      toast({ title: "Başarılı", description: "Önceki sürüme geri donuldu." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Geri alma basarisiz.", variant: "destructive" });
+      toast({ title: "Hata", description: "Geri alma başarısız.", variant: "destructive" });
     }
   });
 
@@ -2533,8 +2533,8 @@ function ApplicationUpdatesSection() {
     if (file) {
       if (!file.name.endsWith('.tar.gz') && !file.name.endsWith('.zip')) {
         toast({ 
-          title: "Gecersiz Dosya", 
-          description: "Lutfen .tar.gz veya .zip dosyasi secin", 
+          title: "Geçersiz Dosya", 
+          description: "Lutfen .tar.gz veya .zip dosyası seçin", 
           variant: "destructive" 
         });
         return;
@@ -2551,7 +2551,7 @@ function ApplicationUpdatesSection() {
   const handleUpload = async () => {
     if (!selectedFile) return;
     if (!versionInput) {
-      toast({ title: "Hata", description: "Surum numarasi giriniz", variant: "destructive" });
+      toast({ title: "Hata", description: "Sürüm numarası giriniz", variant: "destructive" });
       return;
     }
 
@@ -2572,13 +2572,13 @@ function ApplicationUpdatesSection() {
           version: versionInput,
           fileName: selectedFile.name,
           fileSize: selectedFile.size,
-          notes: 'Yuklenen guncelleme dosyasi'
+          notes: 'Yüklenen güncelleme dosyası'
         })
       });
       
       if (!createRes.ok) {
         const err = await createRes.json();
-        throw new Error(err.error || 'Surum olusturulamadi');
+        throw new Error(err.error || 'Sürüm oluşturulamadi');
       }
 
       const newVersion = await createRes.json();
@@ -2610,19 +2610,19 @@ function ApplicationUpdatesSection() {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             if (activateRes.ok) {
-              toast({ title: "Basarili", description: "Guncelleme yuklendi ve aktif edildi. Onceki surum yedeklendi." });
+              toast({ title: "Başarılı", description: "Güncelleme yüklendi ve aktif edildi. Önceki sürüm yedeklendi." });
             } else {
-              toast({ title: "Uyari", description: "Guncelleme yuklendi ancak otomatik aktivasyon yapilamadi." });
+              toast({ title: "Uyarı", description: "Güncelleme yüklendi ancak otomatik aktivasyon yapılamadı." });
             }
           } catch {
-            toast({ title: "Uyari", description: "Guncelleme yuklendi ancak aktivasyon sirasinda hata olustu." });
+            toast({ title: "Uyarı", description: "Güncelleme yüklendi ancak aktivasyon sirasinda hata olustu." });
           }
           setSelectedFile(null);
           setVersionInput("");
           refetch();
           refetchVersions();
         } else {
-          let errorMsg = "Yukleme basarisiz";
+          let errorMsg = "Yükleme başarısız";
           try {
             const resp = JSON.parse(xhr.responseText);
             errorMsg = resp.error || errorMsg;
@@ -2636,14 +2636,14 @@ function ApplicationUpdatesSection() {
       };
 
       xhr.onerror = () => {
-        toast({ title: "Hata", description: "Yukleme basarisiz", variant: "destructive" });
+        toast({ title: "Hata", description: "Yükleme başarısız", variant: "destructive" });
         setIsUploading(false);
         setUploadProgress(0);
       };
 
       xhr.send(formData);
     } catch (err: any) {
-      toast({ title: "Hata", description: err.message || "Yukleme basarisiz", variant: "destructive" });
+      toast({ title: "Hata", description: err.message || "Yükleme başarısız", variant: "destructive" });
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -2674,7 +2674,7 @@ function ApplicationUpdatesSection() {
       case 'inactive':
         return <Badge variant="outline"><History className="h-3 w-3 mr-1" />Pasif</Badge>;
       case 'failed':
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Basarisiz</Badge>;
+        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Başarısız</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -2693,24 +2693,24 @@ function ApplicationUpdatesSection() {
             <Server className="h-5 w-5" />
             Sistem Bilgileri
           </CardTitle>
-          <CardDescription>Mevcut sistem surumu ve durum bilgileri</CardDescription>
+          <CardDescription>Mevcut sistem sürümu ve durum bilgileri</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : versionInfo ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-3 p-4 border rounded-lg">
                 <Package className="h-8 w-8 text-primary" />
                 <div>
-                  <div className="text-sm text-muted-foreground">Surum</div>
+                  <div className="text-sm text-muted-foreground">Sürüm</div>
                   <div className="text-lg font-semibold">{versionInfo.version}</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 border rounded-lg">
                 <Clock className="h-8 w-8 text-blue-500" />
                 <div>
-                  <div className="text-sm text-muted-foreground">Calisma Suresi</div>
+                  <div className="text-sm text-muted-foreground">Çalışma Süresi</div>
                   <div className="text-lg font-semibold">{formatUptime(versionInfo.uptime)}</div>
                 </div>
               </div>
@@ -2731,7 +2731,7 @@ function ApplicationUpdatesSection() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              Sistem bilgisi alinamadi
+              Sistem bilgisi alınamadı
             </div>
           )}
         </CardContent>
@@ -2741,10 +2741,10 @@ function ApplicationUpdatesSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Uygulama Guncelleme
+            Uygulama Güncelleme
           </CardTitle>
           <CardDescription>
-            Sistemi guncellemek icin yeni surum dosyasini yukleyin. Onceki surum otomatik olarak yedeklenir.
+            Sistemi güncellemek için yeni sürüm dosyasıni yükleyin. Önceki sürüm otomatik olarak yedeklenir.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -2763,7 +2763,7 @@ function ApplicationUpdatesSection() {
             >
               <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-sm text-muted-foreground mb-2">
-                Dosya secmek icin tiklayin veya surukleyin
+                Dosya secmek için tıklayın veya surukleyin
               </p>
               <p className="text-xs text-muted-foreground">
                 Desteklenen formatlar: .tar.gz, .zip
@@ -2784,7 +2784,7 @@ function ApplicationUpdatesSection() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="version-input">Surum Numarasi</Label>
+                <Label htmlFor="version-input">Sürüm Numarası</Label>
                 <Input
                   id="version-input"
                   placeholder="orn: 1.2.3"
@@ -2803,12 +2803,12 @@ function ApplicationUpdatesSection() {
                 {isUploading ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Yukleniyor... {uploadProgress}%
+                    Yükleniyor... {uploadProgress}%
                   </>
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    Yukle ve Aktif Et
+                    Yükle ve Aktif Et
                   </>
                 )}
               </Button>
@@ -2830,7 +2830,7 @@ function ApplicationUpdatesSection() {
               Otomatik Yedekleme
             </h4>
             <p className="text-sm text-green-800 dark:text-green-300">
-              Yeni surum yuklendiginde mevcut surum otomatik olarak yedeklenir. Herhangi bir sorun durumunda onceki surume geri donebilirsiniz.
+              Yeni sürüm yüklendiginde mevcut sürüm otomatik olarak yedeklenir. Herhangi bir sorun durumunda önceki sürüme geri donebilirsiniz.
             </p>
           </div>
         </CardContent>
@@ -2840,27 +2840,27 @@ function ApplicationUpdatesSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <History className="h-5 w-5" />
-            Surum Gecmisi
+            Sürüm Geçmişi
           </CardTitle>
-          <CardDescription>Yuklenen surumler ve geri alma secenekleri</CardDescription>
+          <CardDescription>Yüklenen sürümler ve geri alma seçenekleri</CardDescription>
         </CardHeader>
         <CardContent>
           {versionsLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : storedVersions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              Henuz surum gecmisi bulunmuyor. Ilk guncellemenizi yukleyerek baslayin.
+              Henuz sürüm geçmişi bulunmuyor. Ilk güncellemenizi yükleyerek baslayin.
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Surum</TableHead>
+                  <TableHead>Sürüm</TableHead>
                   <TableHead>Dosya</TableHead>
                   <TableHead>Boyut</TableHead>
                   <TableHead>Durum</TableHead>
                   <TableHead>Tarih</TableHead>
-                  <TableHead className="text-right">Islemler</TableHead>
+                  <TableHead className="text-right">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -2904,7 +2904,7 @@ function ApplicationUpdatesSection() {
                           </Button>
                         )}
                         {version.status === 'active' && (
-                          <span className="text-xs text-muted-foreground">Aktif surum</span>
+                          <span className="text-xs text-muted-foreground">Aktif sürüm</span>
                         )}
                       </div>
                     </TableCell>
@@ -2920,7 +2920,7 @@ function ApplicationUpdatesSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
-            Yedek Indirme
+            Yedek İndirme
           </CardTitle>
           <CardDescription>Mevcut sistemin yedegini indirin</CardDescription>
         </CardHeader>
@@ -2931,7 +2931,7 @@ function ApplicationUpdatesSection() {
             data-testid="button-download-backup"
           >
             <Download className="h-4 w-4 mr-2" />
-            Yedegi Indir
+            Yedegi İndir
           </Button>
           <p className="text-xs text-muted-foreground mt-2">
             Mevcut sistemin tam yedegi (veritabani haric)
@@ -2944,13 +2944,13 @@ function ApplicationUpdatesSection() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <RotateCcw className="h-5 w-5" />
-              Surumu Geri Al
+              Sürümu Geri Al
             </DialogTitle>
             <DialogDescription>
               {selectedRollbackVersion && (
                 <>
-                  <strong>{selectedRollbackVersion.version}</strong> surumune geri donmek uzeresiniz.
-                  Bu islem mevcut surumu pasif hale getirecek ve secilen surumu aktif edecektir.
+                  <strong>{selectedRollbackVersion.version}</strong> sürümune geri donmek uzeresiniz.
+                  Bu işlem mevcut sürümu pasif hale getirecek ve secilen sürümu aktif edecektir.
                 </>
               )}
             </DialogDescription>
@@ -2961,14 +2961,14 @@ function ApplicationUpdatesSection() {
               Dikkat
             </h4>
             <ul className="text-sm text-yellow-800 dark:text-yellow-300 space-y-1">
-              <li>Sistem geciici olarak durdurulabilir</li>
-              <li>Mevcut surumdeki degisiklikler korunacak</li>
-              <li>Geri alma islemi geri alinabilir</li>
+              <li>Sistem geciiçi olarak durdurulabilir</li>
+              <li>Mevcut sürümdeki değişiklikler korunacak</li>
+              <li>Geri alma işlemi geri alınabilir</li>
             </ul>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRollbackDialogOpen(false)}>
-              Iptal
+              İptal
             </Button>
             <Button
               onClick={() => selectedRollbackVersion && rollbackMutation.mutate(selectedRollbackVersion.id)}
@@ -2978,7 +2978,7 @@ function ApplicationUpdatesSection() {
               {rollbackMutation.isPending ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Isleniyor...
+                  İşleniyor...
                 </>
               ) : (
                 <>
@@ -3012,10 +3012,10 @@ function AgencySupportSection() {
     mutationFn: (id: number) => apiRequest('POST', `/api/support-requests/${id}/resolve`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/support-requests'] });
-      toast({ title: "Basarili", description: "Talep cozuldu olarak isaretlendi." });
+      toast({ title: "Başarılı", description: "Talep cozuldu olarak isaretlendi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Talep güncellenemedi.", variant: "destructive" });
     }
   });
 
@@ -3038,9 +3038,9 @@ function AgencySupportSection() {
       case 'Hata Bildirimi':
         return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Hata</Badge>;
       case 'Güncelleme İsteği':
-        return <Badge variant="secondary"><RefreshCw className="h-3 w-3 mr-1" />Guncelleme</Badge>;
+        return <Badge variant="secondary"><RefreshCw className="h-3 w-3 mr-1" />Güncelleme</Badge>;
       case 'Öneri':
-        return <Badge variant="outline"><Star className="h-3 w-3 mr-1" />Oneri</Badge>;
+        return <Badge variant="outline"><Star className="h-3 w-3 mr-1" />Öneri</Badge>;
       case 'Soru':
         return <Badge variant="outline"><HelpCircle className="h-3 w-3 mr-1" />Soru</Badge>;
       default:
@@ -3057,7 +3057,7 @@ function AgencySupportSection() {
               <MessageSquare className="h-5 w-5" />
               Ajans Destek Talepleri
               {openRequests.length > 0 && (
-                <Badge variant="destructive">{openRequests.length} Acik</Badge>
+                <Badge variant="destructive">{openRequests.length} Açık</Badge>
               )}
             </div>
           </CardTitle>
@@ -3065,7 +3065,7 @@ function AgencySupportSection() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : formRequests.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">Henuz ajans destek talebi bulunmuyor.</div>
           ) : (
@@ -3122,7 +3122,7 @@ function AgencySupportSection() {
                       <div className="mt-4 pt-4 border-t">
                         <div className="text-sm space-y-2">
                           <div><strong>Talep Turu:</strong> {info.type}</div>
-                          <div><strong>Gonderen:</strong> {info.name} {info.email ? `<${info.email}>` : ''}</div>
+                          <div><strong>Gönderen:</strong> {info.name} {info.email ? `<${info.email}>` : ''}</div>
                           <div><strong>Konu:</strong> {info.subject}</div>
                           <div><strong>Tarih:</strong> {req.createdAt ? new Date(req.createdAt).toLocaleString("tr-TR") : "-"}</div>
                         </div>
@@ -3181,12 +3181,12 @@ function PlatformAdminsSection() {
     mutationFn: (admin: any) => apiRequest('POST', '/api/platform-admins', admin),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/platform-admins'] });
-      toast({ title: "Basarili", description: "Yonetici eklendi." });
+      toast({ title: "Başarılı", description: "Yönetiçi eklendi." });
       setShowAddDialog(false);
       setNewAdmin({ email: '', name: '', password: '', role: 'admin' });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Yonetici eklenemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Yönetiçi eklenemedi.", variant: "destructive" });
     }
   });
 
@@ -3194,10 +3194,10 @@ function PlatformAdminsSection() {
     mutationFn: (id: number) => apiRequest('DELETE', `/api/platform-admins/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/platform-admins'] });
-      toast({ title: "Basarili", description: "Yonetici silindi." });
+      toast({ title: "Başarılı", description: "Yönetiçi silindi." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Yonetici silinemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Yönetiçi silinemedi.", variant: "destructive" });
     }
   });
 
@@ -3207,20 +3207,20 @@ function PlatformAdminsSection() {
         <CardTitle className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <UserCog className="h-5 w-5" />
-            Platform Yoneticileri
+            Platform Yönetiçileri
           </div>
           <Button size="sm" onClick={() => setShowAddDialog(true)} data-testid="button-add-admin">
             <Plus className="h-4 w-4 mr-1" />
-            Yonetici Ekle
+            Yönetiçi Ekle
           </Button>
         </CardTitle>
-        <CardDescription>Platform yoneticilerini yonetin</CardDescription>
+        <CardDescription>Platform yönetiçilerini yonetin</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
         ) : admins.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">Henuz yonetici bulunmuyor.</div>
+          <div className="text-center py-8 text-muted-foreground">Henuz yönetiçi bulunmuyor.</div>
         ) : (
           <Table>
             <TableHeader>
@@ -3229,8 +3229,8 @@ function PlatformAdminsSection() {
                 <TableHead>E-posta</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Durum</TableHead>
-                <TableHead>Olusturma</TableHead>
-                <TableHead>Islemler</TableHead>
+                <TableHead>Oluşturma</TableHead>
+                <TableHead>İşlemler</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -3272,7 +3272,7 @@ function PlatformAdminsSection() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Yeni Yonetici Ekle</DialogTitle>
+            <DialogTitle>Yeni Yönetiçi Ekle</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -3295,18 +3295,18 @@ function PlatformAdminsSection() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Sifre</Label>
+              <Label>Şifre</Label>
               <Input
                 type="password"
                 value={newAdmin.password}
                 onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
-                placeholder="Guclu bir sifre girin"
+                placeholder="Guclu bir şifre girin"
                 data-testid="input-admin-password"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Iptal</Button>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>İptal</Button>
             <Button
               onClick={() => createMutation.mutate(newAdmin)}
               disabled={createMutation.isPending || !newAdmin.email || !newAdmin.password || !newAdmin.name}
@@ -3331,24 +3331,24 @@ function SecuritySection() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="h-5 w-5" />
-          Giris Kayitlari
+          Giriş Kayıtları
         </CardTitle>
-        <CardDescription>Son giris islemleri ve guvenlik kayitlari</CardDescription>
+        <CardDescription>Son giriş işlemleri ve güvenlik kayıtlari</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
         ) : loginLogs.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">Henuz giris kaydi bulunmuyor.</div>
+          <div className="text-center py-8 text-muted-foreground">Henuz giriş kaydi bulunmuyor.</div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Tarih</TableHead>
-                <TableHead>Kullanici</TableHead>
+                <TableHead>Kullanıcı</TableHead>
                 <TableHead>IP Adresi</TableHead>
                 <TableHead>Durum</TableHead>
-                <TableHead>Tarayici</TableHead>
+                <TableHead>Tarayiçi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -3361,7 +3361,7 @@ function SecuritySection() {
                   <TableCell>{log.ipAddress || "-"}</TableCell>
                   <TableCell>
                     <Badge variant={log.success ? 'default' : 'destructive'}>
-                      {log.success ? 'Basarili' : 'Basarisiz'}
+                      {log.success ? 'Başarılı' : 'Başarısız'}
                     </Badge>
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
@@ -3398,13 +3398,13 @@ function BulkOperationsSection() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
       toast({ 
-        title: "Basarili", 
-        description: `${data.updated || 0} lisans guncellendi.` 
+        title: "Başarılı", 
+        description: `${data.updated || 0} lisans güncellendi.` 
       });
       setSelectedLicenses([]);
     },
     onError: () => {
-      toast({ title: "Hata", description: "Plan degistirilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Plan değiştirilemedi.", variant: "destructive" });
     }
   });
 
@@ -3414,7 +3414,7 @@ function BulkOperationsSection() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
       toast({ 
-        title: "Basarili", 
+        title: "Başarılı", 
         description: `${data.updated || 0} lisans uzatildi.` 
       });
       setSelectedLicenses([]);
@@ -3444,9 +3444,9 @@ function BulkOperationsSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Layers className="h-5 w-5" />
-            Toplu Islemler
+            Toplu İşlemler
           </CardTitle>
-          <CardDescription>Birden fazla lisans uzerinde toplu islem yapin</CardDescription>
+          <CardDescription>Birden fazla lisans uzerinde toplu işlem yapin</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4 flex-wrap">
@@ -3456,7 +3456,7 @@ function BulkOperationsSection() {
               onClick={selectAll}
               data-testid="button-select-all"
             >
-              {selectedLicenses.length === licenses.length ? 'Tumunu Kaldir' : 'Tumunu Sec'}
+              {selectedLicenses.length === licenses.length ? 'Tumunu Kaldır' : 'Tumunu Sec'}
             </Button>
             <span className="text-sm text-muted-foreground">
               {selectedLicenses.length} lisans secildi
@@ -3495,7 +3495,7 @@ function BulkOperationsSection() {
             <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Plan Degistir</CardTitle>
+                  <CardTitle className="text-base">Plan Değiştir</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <select
@@ -3518,7 +3518,7 @@ function BulkOperationsSection() {
                     className="w-full"
                     data-testid="button-bulk-change-plan"
                   >
-                    {changePlanMutation.isPending ? "Guncelleniyor..." : "Plani Degistir"}
+                    {changePlanMutation.isPending ? "Güncelleniyor..." : "Plani Değiştir"}
                   </Button>
                 </CardContent>
               </Card>
@@ -3586,15 +3586,15 @@ function DatabaseBackupSection() {
       });
       const data = await res.json();
       if (res.ok) {
-        toast({ title: "Basarili", description: data.message || "Yedek olusturuldu" });
+        toast({ title: "Başarılı", description: data.message || "Yedek oluşturuldu" });
         setBackupName("");
         setBackupDescription("");
         refetch();
       } else {
-        toast({ title: "Hata", description: data.error || "Yedek olusturulamadi", variant: "destructive" });
+        toast({ title: "Hata", description: data.error || "Yedek oluşturulamadi", variant: "destructive" });
       }
     } catch (err) {
-      toast({ title: "Hata", description: "Yedek olusturulamadi", variant: "destructive" });
+      toast({ title: "Hata", description: "Yedek oluşturulamadi", variant: "destructive" });
     } finally {
       setIsCreating(false);
     }
@@ -3614,18 +3614,18 @@ function DatabaseBackupSection() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({ title: "Basarili", description: "Yedek indirildi" });
+      toast({ title: "Başarılı", description: "Yedek indirildi" });
     } catch (err) {
       toast({ title: "Hata", description: "Yedek indirilemedi", variant: "destructive" });
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bu yedegi silmek istediginizden emin misiniz?')) return;
+    if (!confirm('Bu yedegi silmek istediğinizden emin misiniz?')) return;
     try {
       const res = await fetch(`/api/database-backups/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast({ title: "Basarili", description: "Yedek silindi" });
+        toast({ title: "Başarılı", description: "Yedek silindi" });
         refetch();
       }
     } catch (err) {
@@ -3654,13 +3654,13 @@ function DatabaseBackupSection() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Yeni Yedek Olustur</CardTitle>
+          <CardTitle className="text-base">Yeni Yedek Oluştur</CardTitle>
           <CardDescription>Veritabaninin tam bir yedeğini alin</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="backup-name">Yedek Adi</Label>
+              <Label htmlFor="backup-name">Yedek Adı</Label>
               <Input
                 id="backup-name"
                 value={backupName}
@@ -3670,7 +3670,7 @@ function DatabaseBackupSection() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="backup-desc">Aciklama (Opsiyonel)</Label>
+              <Label htmlFor="backup-desc">Açıklama (Opsiyonel)</Label>
               <Input
                 id="backup-desc"
                 value={backupDescription}
@@ -3689,7 +3689,7 @@ function DatabaseBackupSection() {
             ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
-                Yedek Olustur
+                Yedek Oluştur
               </>
             )}
           </Button>
@@ -3698,12 +3698,12 @@ function DatabaseBackupSection() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Yedek Gecmisi</CardTitle>
-          <CardDescription>Onceki yedeklerinizi goruntuleyin ve yonetin</CardDescription>
+          <CardTitle className="text-base">Yedek Geçmişi</CardTitle>
+          <CardDescription>Önceki yedeklerinizi görüntüleyin ve yonetin</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-muted-foreground">Yukleniyor...</div>
+            <div className="text-muted-foreground">Yükleniyor...</div>
           ) : !backups || backups.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Database className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -3716,10 +3716,10 @@ function DatabaseBackupSection() {
                   <TableHead>Ad</TableHead>
                   <TableHead>Tarih</TableHead>
                   <TableHead>Tablo</TableHead>
-                  <TableHead>Kayit</TableHead>
+                  <TableHead>Kayıt</TableHead>
                   <TableHead>Boyut</TableHead>
                   <TableHead>Durum</TableHead>
-                  <TableHead className="text-right">Islem</TableHead>
+                  <TableHead className="text-right">İşlem</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -3747,7 +3747,7 @@ function DatabaseBackupSection() {
                     <TableCell>{formatFileSize(backup.fileSize || 0)}</TableCell>
                     <TableCell>
                       <Badge variant={backup.status === 'completed' ? 'default' : 'secondary'}>
-                        {backup.status === 'completed' ? 'Tamamlandi' : backup.status}
+                        {backup.status === 'completed' ? 'Tamamlandı' : backup.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -3784,10 +3784,10 @@ function DatabaseBackupSection() {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
             <div>
-              <p className="font-medium text-amber-800 dark:text-amber-300">Onemli Bilgi</p>
+              <p className="font-medium text-amber-800 dark:text-amber-300">Önemli Bilgi</p>
               <p className="text-sm text-amber-700 dark:text-amber-400">
-                Yedekler JSON formatinda indirilir. Geri yukleme islemleri icin Replit'in dahili 
-                checkpoint sistemini kullanmanizi oneririz - bu daha guvenli ve otomatiktir.
+                Yedekler JSON formatinda indirilir. Geri yükleme işlemleri için Replit'in dahili 
+                checkpoint sistemini kullanmanizi öneririz - bu daha guvenli ve otomatiktir.
               </p>
             </div>
           </div>
@@ -3808,7 +3808,7 @@ function SystemMonitoringSection() {
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Server className="h-5 w-5" />
-          Sistem Izleme
+          Sistem İzleme
         </h3>
         <Button variant="outline" size="sm" onClick={() => refetchDb()} data-testid="button-refresh-system">
           <RefreshCw className="h-4 w-4 mr-1" />
@@ -3826,13 +3826,13 @@ function SystemMonitoringSection() {
           </CardHeader>
           <CardContent>
             {dbLoading ? (
-              <div className="text-muted-foreground">Yukleniyor...</div>
+              <div className="text-muted-foreground">Yükleniyor...</div>
             ) : dbStats ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Durum</span>
                   <Badge variant={dbStats.status === 'connected' ? 'default' : 'destructive'}>
-                    {dbStats.status === 'connected' ? 'Bagli' : 'Bagli Degil'}
+                    {dbStats.status === 'connected' ? 'Bağlı' : 'Bağlı Degil'}
                   </Badge>
                 </div>
                 {dbStats.tables && Object.entries(dbStats.tables).map(([table, count]) => (
@@ -3950,7 +3950,7 @@ function RevenueSection() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tamamlanan Odemeler</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tamamlanan Ödemeler</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -3961,7 +3961,7 @@ function RevenueSection() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Bekleyen Odemeler</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Bekleyen Ödemeler</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
@@ -3976,7 +3976,7 @@ function RevenueSection() {
           <CardTitle className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Aylik Gelir
+              Aylık Gelir
             </div>
             <select
               className="p-2 border rounded-md text-sm"
@@ -3992,7 +3992,7 @@ function RevenueSection() {
         </CardHeader>
         <CardContent>
           {monthlyLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+            <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
           ) : (
             <Table>
               <TableHeader>
@@ -4000,7 +4000,7 @@ function RevenueSection() {
                   <TableHead>Ay</TableHead>
                   <TableHead className="text-right">Gelir (TL)</TableHead>
                   <TableHead className="text-right">Gelir (USD)</TableHead>
-                  <TableHead className="text-right">Islem Sayisi</TableHead>
+                  <TableHead className="text-right">İşlem Sayısı</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -4023,7 +4023,7 @@ function RevenueSection() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-600">
               <AlertTriangle className="h-5 w-5" />
-              Vadesi Gecmis Faturalar ({overdueInvoices.length})
+              Vadesi Geçmiş Faturalar ({overdueInvoices.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -4107,7 +4107,7 @@ export default function SuperAdmin() {
       
       if (data.success) {
         setIsAuthenticated(true);
-        toast({ title: "Giris Basarili", description: "Super Admin paneline hos geldiniz." });
+        toast({ title: "Giriş Başarılı", description: "Super Admin paneline hos geldiniz." });
       } else {
         toast({ title: "Hata", description: data.error || "E-posta veya şifre yanlış", variant: "destructive" });
       }
@@ -4313,18 +4313,18 @@ export default function SuperAdmin() {
   const mainCategories = [
     { id: "overview", label: "Genel Bakis", icon: BarChart3 },
     { id: "tenants", label: "Acentalar", icon: Building2 },
-    { id: "billing", label: "Uyelik & Faturalama", icon: CreditCard },
-    { id: "users", label: "Kullanicilar", icon: Users },
+    { id: "billing", label: "Üyelik & Faturalama", icon: CreditCard },
+    { id: "users", label: "Kullanıcılar", icon: Users },
     { id: "system", label: "Sistem", icon: Server },
-    { id: "communications", label: "Iletisim", icon: MessageSquare },
-    { id: "configuration", label: "Yapilandirma", icon: Settings2 },
+    { id: "communications", label: "İletişim", icon: MessageSquare },
+    { id: "configuration", label: "Yapılandırma", icon: Settings2 },
   ];
 
   const subTabs: Record<string, { id: string; label: string; icon: React.ComponentType<{ className?: string }> }[]> = {
     overview: [
       { id: "analytics", label: "Analitik", icon: BarChart3 },
       { id: "revenue", label: "Gelir", icon: TrendingUp },
-      { id: "api-status", label: "API Izleme", icon: Radio },
+      { id: "api-status", label: "API İzleme", icon: Radio },
     ],
     tenants: [
       { id: "tenant-list", label: "Acenta Listesi", icon: Building2 },
@@ -4332,29 +4332,29 @@ export default function SuperAdmin() {
     ],
     billing: [
       { id: "plans", label: "Planlar", icon: Package },
-      { id: "features", label: "Ozellikler", icon: Settings2 },
+      { id: "features", label: "Özellikler", icon: Settings2 },
       { id: "subscriptions", label: "Abonelikler", icon: Users },
-      { id: "payments", label: "Odemeler", icon: CreditCard },
+      { id: "payments", label: "Ödemeler", icon: CreditCard },
       { id: "invoices", label: "Faturalar", icon: Receipt },
     ],
     users: [
-      { id: "users", label: "Kullanicilar", icon: Users },
+      { id: "users", label: "Kullanıcılar", icon: Users },
       { id: "roles", label: "Roller ve Izinler", icon: KeyRound },
-      { id: "platform-admins", label: "Platform Yoneticileri", icon: UserCog },
+      { id: "platform-admins", label: "Platform Yönetiçileri", icon: UserCog },
     ],
     system: [
       { id: "system", label: "Sistem Durumu", icon: Server },
       { id: "backup", label: "Yedekleme", icon: Database },
-      { id: "updates", label: "Guncellemeler", icon: RefreshCw },
-      { id: "security", label: "Guvenlik", icon: Shield },
-      { id: "bulk-ops", label: "Toplu Islem", icon: Layers },
+      { id: "updates", label: "Güncellemeler", icon: RefreshCw },
+      { id: "security", label: "Güvenlik", icon: Shield },
+      { id: "bulk-ops", label: "Toplu İşlem", icon: Layers },
     ],
     communications: [
       { id: "announcements", label: "Duyurular", icon: Megaphone },
       { id: "support", label: "Destek Talepleri", icon: HeadphonesIcon },
     ],
     configuration: [
-      { id: "branding", label: "Marka Ayarlari", icon: Palette },
+      { id: "branding", label: "Marka Ayarları", icon: Palette },
     ],
   };
 
@@ -4401,7 +4401,7 @@ export default function SuperAdmin() {
         <div className="p-2 border-t">
           <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleLogout} data-testid="button-super-admin-logout">
             <X className="h-4 w-4 mr-2" />
-            Cikis
+            Çıkış
           </Button>
         </div>
       </div>
@@ -4445,7 +4445,7 @@ export default function SuperAdmin() {
                   </Button>
                 </div>
                 {isLoading ? (
-                  <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+                  <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {plans.map((plan) => (
@@ -4497,11 +4497,11 @@ export default function SuperAdmin() {
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center gap-2">
                               <Activity className="h-4 w-4 text-muted-foreground" />
-                              <span>{plan.maxActivities === 9999 ? "Sinirsiz" : plan.maxActivities} aktivite</span>
+                              <span>{plan.maxActivities === 9999 ? "Sınırsız" : plan.maxActivities} aktivite</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4 text-muted-foreground" />
-                              <span>{plan.maxReservationsPerMonth === 99999 ? "Sinirsiz" : plan.maxReservationsPerMonth} rez./ay</span>
+                              <span>{plan.maxReservationsPerMonth === 99999 ? "Sınırsız" : plan.maxReservationsPerMonth} rez./ay</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -4559,7 +4559,7 @@ export default function SuperAdmin() {
                           <TableHead>Plan</TableHead>
                           <TableHead>Durum</TableHead>
                           <TableHead>Donem</TableHead>
-                          <TableHead>Sonraki Odeme</TableHead>
+                          <TableHead>Sonraki Ödeme</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -4573,10 +4573,10 @@ export default function SuperAdmin() {
                               <Badge variant={sub.status === "active" ? "default" : sub.status === "trial" ? "secondary" : "destructive"}>
                                 {sub.status === "active" ? "Aktif" : 
                                  sub.status === "trial" ? "Deneme" : 
-                                 sub.status === "cancelled" ? "Iptal" : sub.status}
+                                 sub.status === "cancelled" ? "İptal" : sub.status}
                               </Badge>
                             </TableCell>
-                            <TableCell>{sub.billingCycle === "yearly" ? "Yillik" : "Aylik"}</TableCell>
+                            <TableCell>{sub.billingCycle === "yearly" ? "Yıllik" : "Aylık"}</TableCell>
                             <TableCell>
                               {sub.nextPaymentAt ? new Date(sub.nextPaymentAt).toLocaleDateString("tr-TR") : "-"}
                             </TableCell>
@@ -4592,13 +4592,13 @@ export default function SuperAdmin() {
             {activeSubTab === "payments" && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Odeme Gecmisi</CardTitle>
-                  <CardDescription>Tum abonelik odemeleri</CardDescription>
+                  <CardTitle>Ödeme Geçmişi</CardTitle>
+                  <CardDescription>Tum abonelik ödemeleri</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {paymentsData.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      Henuz odeme bulunmuyor.
+                      Henuz ödeme bulunmuyor.
                     </div>
                   ) : (
                     <Table>
@@ -4623,9 +4623,9 @@ export default function SuperAdmin() {
                             </TableCell>
                             <TableCell>
                               <Badge variant={payment.status === "completed" ? "default" : payment.status === "pending" ? "secondary" : "destructive"}>
-                                {payment.status === "completed" ? "Tamamlandi" : 
+                                {payment.status === "completed" ? "Tamamlandı" : 
                                  payment.status === "pending" ? "Beklemede" : 
-                                 payment.status === "failed" ? "Basarisiz" : payment.status}
+                                 payment.status === "failed" ? "Başarısız" : payment.status}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -4677,7 +4677,7 @@ export default function SuperAdmin() {
                   id="code"
                   value={planForm.code || ""}
                   onChange={(e) => setPlanForm({ ...planForm, code: e.target.value })}
-                  placeholder="basic"
+                  placeholder="başıc"
                   data-testid="input-plan-code"
                 />
               </div>
@@ -4687,7 +4687,7 @@ export default function SuperAdmin() {
                   id="name"
                   value={planForm.name || ""}
                   onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                  placeholder="Basic"
+                  placeholder="Başıc"
                   data-testid="input-plan-name"
                 />
               </div>

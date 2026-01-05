@@ -98,7 +98,7 @@ export default function Reservations() {
   const generateMoveCustomerMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
     const oldDateFormatted = format(new Date(oldDate), "d MMMM yyyy", { locale: tr });
     const newDateFormatted = format(new Date(newDate), "d MMMM yyyy", { locale: tr });
-    let message = `Merhaba ${customerName},\n\nRezervasyonunuz guncellenmistir.\n\n`;
+    let message = `Merhaba ${customerName},\n\nRezervasyonunuz güncellenmistir.\n\n`;
     if (oldDate !== newDate) {
       message += `Eski tarih: ${oldDateFormatted}\nYeni tarih: ${newDateFormatted}\n`;
     }
@@ -470,7 +470,7 @@ export default function Reservations() {
     
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      toast({ title: "Hata", description: "Pop-up engelleyici aktif olabilir.", variant: "destructive" });
+      toast({ title: "Hata", description: "Pop-up engelleyiçi aktif olabilir.", variant: "destructive" });
       return;
     }
     
@@ -885,7 +885,7 @@ export default function Reservations() {
                             onClick={async () => {
                               const agency = agencies.find(a => a.id === Number(moveAgencyId));
                               if (!agency?.contactInfo) {
-                                toast({ title: "Hata", description: "Acenta iletisim bilgisi bulunamadi.", variant: "destructive" });
+                                toast({ title: "Hata", description: "Acenta iletişim bilgisi bulunamadı.", variant: "destructive" });
                                 return;
                               }
                               try {
@@ -1869,14 +1869,14 @@ function BigCalendar({
   const generateCustomerMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
     const oldDateFormatted = format(new Date(oldDate), "d MMMM yyyy", { locale: tr });
     const newDateFormatted = format(new Date(newDate), "d MMMM yyyy", { locale: tr });
-    let message = `Merhaba ${customerName},\n\nRezervasyonunuz guncellenmistir.\n\n`;
+    let message = `Merhaba ${customerName},\n\nRezervasyonunuz güncellenmistir.\n\n`;
     if (oldDate !== newDate) {
       message += `Eski tarih: ${oldDateFormatted}\nYeni tarih: ${newDateFormatted}\n`;
     }
     if (oldTime && newTime && oldTime !== newTime) {
       message += `Eski saat: ${oldTime}\nYeni saat: ${newTime}\n`;
     }
-    message += `\nSorulariniz icin bize bu numaradan yazabilirsiniz.\n\nSky Fethiye`;
+    message += `\nSorularınız için bize bu numaradan yazabilirsiniz.\n\nSky Fethiye`;
     return message;
   };
 
@@ -1884,7 +1884,7 @@ function BigCalendar({
   const generateAgencyMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
     const oldDateFormatted = format(new Date(oldDate), "d MMMM yyyy", { locale: tr });
     const newDateFormatted = format(new Date(newDate), "d MMMM yyyy", { locale: tr });
-    let message = `Rezervasyon Degisikligi Bildirimi\n\nMusteri: ${customerName}\n`;
+    let message = `Rezervasyon Degisikligi Bildirimi\n\nMüşteri: ${customerName}\n`;
     if (oldDate !== newDate) {
       message += `Eski Tarih: ${oldDateFormatted}\nYeni Tarih: ${newDateFormatted}\n`;
     }

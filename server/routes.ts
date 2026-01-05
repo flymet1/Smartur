@@ -56,7 +56,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
   // Regular tenant users need both userId and tenantId
   if (!req.session?.userId || !req.session?.tenantId) {
-    return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+    return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
   }
   next();
 }
@@ -64,7 +64,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 // Middleware for platform admin only routes
 function requirePlatformAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.isPlatformAdmin || !req.session?.platformAdminId) {
-    return res.status(401).json({ error: "Platform yoneticisi girisi gerekiyor" });
+    return res.status(401).json({ error: "Platform yönetiçisi girişi gerekiyor" });
   }
   next();
 }
@@ -77,7 +77,7 @@ function requirePermission(...requiredPermissions: string[]) {
     }
     
     if (!req.session?.userId || !req.session?.tenantId) {
-      return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+      return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
     }
     
     const userPermissions = req.session.permissions || [];
@@ -86,7 +86,7 @@ function requirePermission(...requiredPermissions: string[]) {
     const hasPermission = requiredPermissions.some(perm => userPermissions.includes(perm));
     
     if (!hasPermission) {
-      return res.status(403).json({ error: "Bu islemi yapmak icin yetkiniz yok" });
+      return res.status(403).json({ error: "Bu işlemi yapmak için yetkiniz yok" });
     }
     
     next();
@@ -129,11 +129,11 @@ async function checkLicenseForWrite(): Promise<{ allowed: boolean; message: stri
     let message = verification.message;
     
     if (verification.status === 'grace') {
-      message = `Lisansiniz dolmus (Ek sure: ${verification.graceDaysRemaining} gun). Salt okunur moddasiniz - yeni islem yapamazsiniz.`;
+      message = `Lisansiniz dolmus (Ek sure: ${verification.graceDaysRemaining} gun). Salt okunur moddasiniz - yeni işlem yapamazsiniz.`;
     } else if (verification.status === 'expired') {
-      message = "Lisansiniz tamamen dolmus. Sisteme erisim icin lisansinizi yenileyin.";
+      message = "Lisansiniz tamamen dolmus. Sisteme erisim için lisansinizi yenileyin.";
     } else if (verification.status === 'suspended') {
-      message = "Lisansiniz askiya alinmis. Destek ile iletisime gecin.";
+      message = "Lisansiniz askiya alınmış. Destek ile iletişime gecin.";
     }
     
     return { allowed: false, message, status: verification.status };
@@ -243,7 +243,7 @@ try {
 
 // Turkish day names
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Hazıran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
 // Helper function to parse Turkish date expressions from message and return relevant dates
 function parseDatesFromMessage(message: string): string[] {
@@ -256,18 +256,18 @@ function parseDatesFromMessage(message: string): string[] {
   // Turkish month names to number mapping
   const monthMap: Record<string, number> = {
     'ocak': 0, 'subat': 1, 'şubat': 1, 'mart': 2, 'nisan': 3, 
-    'mayis': 4, 'mayıs': 4, 'haziran': 5, 'temmuz': 6, 'agustos': 7, 'ağustos': 7,
-    'eylul': 8, 'eylül': 8, 'ekim': 9, 'kasim': 10, 'kasım': 10, 'aralik': 11, 'aralık': 11
+    'mayıs': 4, 'mayıs': 4, 'hazıran': 5, 'temmuz': 6, 'ağustos': 7, 'ağustos': 7,
+    'eylül': 8, 'eylül': 8, 'ekim': 9, 'kasım': 10, 'kasım': 10, 'aralık': 11, 'aralık': 11
   };
   
   // Helper to format date as YYYY-MM-DD
   const formatDate = (d: Date) => d.toISOString().split('T')[0];
   
   // Relative date keywords
-  if (msgLower.includes('bugün') || msgLower.includes('bugun')) {
+  if (msgLower.includes('bugün') || msgLower.includes('bugün')) {
     dates.add(formatDate(today));
   }
-  if (msgLower.includes('yarın') || msgLower.includes('yarin')) {
+  if (msgLower.includes('yarın') || msgLower.includes('yarın')) {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
     dates.add(formatDate(tomorrow));
@@ -277,7 +277,7 @@ function parseDatesFromMessage(message: string): string[] {
     dayAfter.setDate(today.getDate() + 2);
     dates.add(formatDate(dayAfter));
   }
-  if (msgLower.includes('hafta sonu') || msgLower.includes('haftasonu')) {
+  if (msgLower.includes('hafta sonu') || msgLower.includes('hafta sonu')) {
     // Find next Saturday and Sunday (or this weekend if today is Sat/Sun)
     const dayOfWeek = today.getDay();
     let daysUntilSat = (6 - dayOfWeek + 7) % 7;
@@ -868,7 +868,7 @@ ${context.botRules || DEFAULT_BOT_RULES}`;
     
     // Log final error for debugging
     console.error("AI generation failed after all retries. Last error:", lastError);
-    await logError('ai', 'AI yanit olusturulamadi - tum denemeler basarisiz', { error: lastError instanceof Error ? lastError.message : String(lastError) });
+    await logError('ai', 'AI yanit oluşturulamadi - tum denemeler başarısız', { error: lastError instanceof Error ? lastError.message : String(lastError) });
   }
 
   // Smart fallback response when AI is not available or fails
@@ -958,7 +958,7 @@ export async function registerRoutes(
     
     // Require authentication for all other API routes
     if (!req.session?.userId) {
-      return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+      return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
     }
     
     next();
@@ -1020,7 +1020,7 @@ export async function registerRoutes(
       const tours = await storage.getPackageTours();
       res.json(tours);
     } catch (err) {
-      res.status(500).json({ error: "Paket turlar alinamadi" });
+      res.status(500).json({ error: "Paket turlar alınamadı" });
     }
   });
 
@@ -1028,11 +1028,11 @@ export async function registerRoutes(
     try {
       const tour = await storage.getPackageTour(Number(req.params.id));
       if (!tour) {
-        return res.status(404).json({ error: "Paket tur bulunamadi" });
+        return res.status(404).json({ error: "Paket tur bulunamadı" });
       }
       res.json(tour);
     } catch (err) {
-      res.status(500).json({ error: "Paket tur alinamadi" });
+      res.status(500).json({ error: "Paket tur alınamadı" });
     }
   });
 
@@ -1077,7 +1077,7 @@ export async function registerRoutes(
       res.status(201).json(tour);
     } catch (err) {
       console.error('Package tour create error:', err);
-      res.status(400).json({ error: "Paket tur olusturulamadi" });
+      res.status(400).json({ error: "Paket tur oluşturulamadi" });
     }
   });
 
@@ -1113,7 +1113,7 @@ export async function registerRoutes(
       res.json(tour);
     } catch (err) {
       console.error('Package tour update error:', err);
-      res.status(400).json({ error: "Paket tur guncellenemedi" });
+      res.status(400).json({ error: "Paket tur güncellenemedi" });
     }
   });
 
@@ -1146,7 +1146,7 @@ export async function registerRoutes(
       
       res.json(enrichedActivities);
     } catch (err) {
-      res.status(500).json({ error: "Paket tur aktiviteleri alinamadi" });
+      res.status(500).json({ error: "Paket tur aktiviteleri alınamadı" });
     }
   });
 
@@ -1156,7 +1156,7 @@ export async function registerRoutes(
       const holidayList = await storage.getHolidays();
       res.json(holidayList);
     } catch (err) {
-      res.status(500).json({ error: "Tatiller alinamadi" });
+      res.status(500).json({ error: "Tatiller alınamadı" });
     }
   });
 
@@ -1164,11 +1164,11 @@ export async function registerRoutes(
     try {
       const holiday = await storage.getHoliday(Number(req.params.id));
       if (!holiday) {
-        return res.status(404).json({ error: "Tatil bulunamadi" });
+        return res.status(404).json({ error: "Tatil bulunamadı" });
       }
       res.json(holiday);
     } catch (err) {
-      res.status(500).json({ error: "Tatil alinamadi" });
+      res.status(500).json({ error: "Tatil alınamadı" });
     }
   });
 
@@ -1177,7 +1177,7 @@ export async function registerRoutes(
       const { name, startDate, endDate, type, keywords, notes, isActive } = req.body;
       
       if (!name || !startDate || !endDate) {
-        return res.status(400).json({ error: "Tatil adi, baslangic ve bitis tarihi zorunlu" });
+        return res.status(400).json({ error: "Tatil adi, başlangıç ve bitiş tarihi zorunlu" });
       }
       
       // Validate and normalize keywords JSON
@@ -1191,7 +1191,7 @@ export async function registerRoutes(
             return res.status(400).json({ error: "Anahtar kelimeler JSON dizisi olmali" });
           }
         } catch {
-          return res.status(400).json({ error: "Gecersiz JSON formati" });
+          return res.status(400).json({ error: "Geçersiz JSON formati" });
         }
       }
       
@@ -1199,7 +1199,7 @@ export async function registerRoutes(
         name,
         startDate,
         endDate,
-        type: type || 'official',
+        type: type || 'offiçial',
         keywords: validKeywords,
         notes,
         isActive: isActive !== false
@@ -1208,7 +1208,7 @@ export async function registerRoutes(
       res.status(201).json(holiday);
     } catch (err) {
       console.error('Holiday create error:', err);
-      res.status(400).json({ error: "Tatil olusturulamadi" });
+      res.status(400).json({ error: "Tatil oluşturulamadi" });
     }
   });
 
@@ -1228,7 +1228,7 @@ export async function registerRoutes(
             return res.status(400).json({ error: "Anahtar kelimeler JSON dizisi olmali" });
           }
         } catch {
-          return res.status(400).json({ error: "Gecersiz JSON formati" });
+          return res.status(400).json({ error: "Geçersiz JSON formati" });
         }
       }
       
@@ -1245,7 +1245,7 @@ export async function registerRoutes(
       res.json(holiday);
     } catch (err) {
       console.error('Holiday update error:', err);
-      res.status(400).json({ error: "Tatil guncellenemedi" });
+      res.status(400).json({ error: "Tatil güncellenemedi" });
     }
   });
 
@@ -1820,13 +1820,13 @@ export async function registerRoutes(
       const { token } = req.params;
       
       if (!token || token.length < 10) {
-        return res.status(400).json({ error: "Gecersiz takip kodu" });
+        return res.status(400).json({ error: "Geçersiz takip kodu" });
       }
       
       const reservation = await storage.getReservationByTrackingToken(token);
       
       if (!reservation) {
-        return res.status(404).json({ error: "Rezervasyon bulunamadi veya takip suresi dolmus" });
+        return res.status(404).json({ error: "Rezervasyon bulunamadı veya takip süresi dolmus" });
       }
       
       // Get activity details
@@ -1870,7 +1870,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Track reservation error:", error);
-      res.status(500).json({ error: "Rezervasyon bilgileri alinamadi" });
+      res.status(500).json({ error: "Rezervasyon bilgileri alınamadı" });
     }
   });
 
@@ -1880,7 +1880,7 @@ export async function registerRoutes(
       const id = parseInt(req.params.id);
       
       if (isNaN(id)) {
-        return res.status(400).json({ error: "Gecersiz rezervasyon ID" });
+        return res.status(400).json({ error: "Geçersiz rezervasyon ID" });
       }
       
       const token = await storage.generateTrackingToken(id);
@@ -1891,7 +1891,7 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       console.error("Generate tracking token error:", error);
-      res.status(500).json({ error: error.message || "Token olusturulamadi" });
+      res.status(500).json({ error: error.message || "Token oluşturulamadi" });
     }
   });
 
@@ -1901,11 +1901,11 @@ export async function registerRoutes(
       const count = await storage.cleanupExpiredTrackingTokens();
       res.json({ 
         success: true, 
-        message: `${count} suresi dolmus takip kodu temizlendi` 
+        message: `${count} süresi dolmus takip kodu temizlendi` 
       });
     } catch (error) {
       console.error("Cleanup tracking tokens error:", error);
-      res.status(500).json({ error: "Temizleme basarisiz" });
+      res.status(500).json({ error: "Temizleme başarısız" });
     }
   });
 
@@ -1923,7 +1923,7 @@ export async function registerRoutes(
       // Verify token and get reservation
       const reservation = await storage.getReservationByTrackingToken(token);
       if (!reservation) {
-        return res.status(404).json({ error: "Gecersiz veya suresi dolmus takip linki" });
+        return res.status(404).json({ error: "Geçersiz veya süresi dolmus takip linki" });
       }
       
       // Create the request
@@ -1951,13 +1951,13 @@ export async function registerRoutes(
         const developerEmail = await storage.getSetting("developerEmail");
         if (developerEmail) {
           const requestTypeText = requestType === 'time_change' ? 'Saat Degisikligi' : 
-                                  requestType === 'cancellation' ? 'Iptal Talebi' : 'Diger Talep';
+                                  requestType === 'cancellation' ? 'İptal Talebi' : 'Diger Talep';
           
           const emailBody = `
-Yeni Musteri Talebi
+Yeni Müşteri Talebi
 
 Talep Tipi: ${requestTypeText}
-Musteri: ${reservation.customerName}
+Müşteri: ${reservation.customerName}
 Telefon: ${reservation.customerPhone}
 E-posta: ${reservation.customerEmail || '-'}
 
@@ -1965,13 +1965,13 @@ Rezervasyon Bilgileri:
 - Aktivite: ${activityName}
 - Tarih: ${reservation.date}
 - Saat: ${reservation.time}
-- Kisi Sayisi: ${reservation.quantity}
+- Kişi Sayısı: ${reservation.quantity}
 
 ${requestType === 'time_change' && preferredTime ? `Tercih Edilen Saat: ${preferredTime}` : ''}
-${requestDetails ? `Ek Aciklama: ${requestDetails}` : ''}
+${requestDetails ? `Ek Açıklama: ${requestDetails}` : ''}
 
 ---
-Bu talep musteri takip sayfasindan gonderilmistir.
+Bu talep müşteri takip sayfasından gönderilmistir.
           `.trim();
           
           // Send email using nodemailer (if configured)
@@ -1995,7 +1995,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
             await transporter.sendMail({
               from: gmailUser,
               to: developerEmail,
-              subject: `[Musteri Talebi] ${requestTypeText} - ${reservation.customerName}`,
+              subject: `[Müşteri Talebi] ${requestTypeText} - ${reservation.customerName}`,
               text: emailBody,
             });
             
@@ -2010,12 +2010,12 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       
       res.json({ 
         success: true, 
-        message: "Talebiniz basariyla iletildi. En kisa surede size donecegiz.",
+        message: "Talebiniz basariyla iletildi. En kısa sürede size döneceğiz.",
         requestId: customerRequest.id
       });
     } catch (error) {
       console.error("Create customer request error:", error);
-      res.status(500).json({ error: "Talep olusturulamadi" });
+      res.status(500).json({ error: "Talep oluşturulamadi" });
     }
   });
 
@@ -2026,7 +2026,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       res.json(requests);
     } catch (error) {
       console.error("Get customer requests error:", error);
-      res.status(500).json({ error: "Talepler alinamadi" });
+      res.status(500).json({ error: "Talepler alınamadı" });
     }
   });
 
@@ -2047,7 +2047,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       res.json(updated);
     } catch (error) {
       console.error("Update customer request error:", error);
-      res.status(500).json({ error: "Talep guncellenemedi" });
+      res.status(500).json({ error: "Talep güncellenemedi" });
     }
   });
 
@@ -2065,7 +2065,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       const normalizeText = (text: string): string => {
         if (!text) return '';
         
-        // Turkish-specific character replacements (handle all variants)
+        // Turkish-specific charaçter replacements (handle all variants)
         const turkishMap: Record<string, string> = {
           'ı': 'i', 'İ': 'i', 'I': 'i',
           'ğ': 'g', 'Ğ': 'g',
@@ -2241,7 +2241,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
               packageTourId: matchedPackageTour.id,
               parentReservationId: parentReservationId,
               orderNumber: String(order.id),
-              customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Musteri',
+              customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Müşteri',
               customerPhone: order.billing?.phone || '',
               customerEmail: order.billing?.email || '',
               date: activityDate,
@@ -2307,7 +2307,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
             await storage.createReservation({
               activityId: matchedActivity.id,
               orderNumber: String(order.id),
-              customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Musteri',
+              customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Müşteri',
               customerPhone: order.billing?.phone || '',
               customerEmail: order.billing?.email || '',
               date: bookingDate,
@@ -2336,7 +2336,7 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       res.json({ received: true, processed: lineItems.length });
     } catch (error) {
       console.error("WooCommerce webhook error:", error);
-      await logError('webhook', 'WooCommerce webhook hatasi', { error: error instanceof Error ? error.message : String(error) });
+      await logError('webhook', 'WooCommerce webhook hatası', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Webhook processing failed" });
     }
   });
@@ -2503,8 +2503,8 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
       
       if (!accountSid || !authToken || !twilioWhatsAppNumber) {
-        await logError('whatsapp', 'Twilio yapilandirmasi eksik', { phone });
-        return res.status(500).json({ error: "WhatsApp yapilandirmasi eksik" });
+        await logError('whatsapp', 'Twilio yapılandırmasi eksik', { phone });
+        return res.status(500).json({ error: "WhatsApp yapılandırmasi eksik" });
       }
       
       // Format phone number for WhatsApp (must start with country code)
@@ -2547,12 +2547,12 @@ Bu talep musteri takip sayfasindan gonderilmistir.
       } else {
         message = `Merhaba ${customerName},
 
-Rezervasyonunuz olusturulmustur:
+Rezervasyonunuz oluşturulmustur:
 Aktivite: ${activityName}
 Tarih: ${date}
 ${time ? `Saat: ${time}` : ''}
 
-Sorulariniz icin bize bu numaradan yazabilirsiniz.
+Sorularınız için bize bu numaradan yazabilirsiniz.
 
 Sky Fethiye`;
       }
@@ -2567,7 +2567,7 @@ Sky Fethiye`;
       const twilioResponse = await fetch(twilioUrl, {
         method: 'POST',
         headers: {
-          'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+          'Authorization': 'Başıc ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: formData.toString()
@@ -2575,12 +2575,12 @@ Sky Fethiye`;
       
       if (!twilioResponse.ok) {
         const errorText = await twilioResponse.text();
-        await logError('whatsapp', 'Twilio mesaj gonderme hatasi', { phone, error: errorText });
-        return res.status(500).json({ error: "WhatsApp mesaji gonderilemedi" });
+        await logError('whatsapp', 'Twilio mesaj gönderme hatası', { phone, error: errorText });
+        return res.status(500).json({ error: "WhatsApp mesajı gönderilemedi" });
       }
       
       const result = await twilioResponse.json();
-      await logInfo('whatsapp', `WhatsApp bildirimi gonderildi: ${customerName} - ${activityName}`);
+      await logInfo('whatsapp', `WhatsApp bildirimi gönderildi: ${customerName} - ${activityName}`);
       
       // Also save the message to conversation history
       await storage.addMessage({
@@ -2591,8 +2591,8 @@ Sky Fethiye`;
       
       res.json({ success: true, messageSid: result.sid });
     } catch (error) {
-      await logError('whatsapp', 'WhatsApp bildirim hatasi', { error: error instanceof Error ? error.message : String(error) });
-      res.status(500).json({ error: "WhatsApp mesaji gonderilemedi" });
+      await logError('whatsapp', 'WhatsApp bildirim hatası', { error: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "WhatsApp mesajı gönderilemedi" });
     }
   });
 
@@ -2610,8 +2610,8 @@ Sky Fethiye`;
       const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
       
       if (!accountSid || !authToken || !twilioWhatsAppNumber) {
-        await logError('whatsapp', 'Twilio yapilandirmasi eksik', { phone });
-        return res.status(500).json({ error: "WhatsApp yapilandirmasi eksik" });
+        await logError('whatsapp', 'Twilio yapılandırmasi eksik', { phone });
+        return res.status(500).json({ error: "WhatsApp yapılandırmasi eksik" });
       }
       
       // Format phone number for WhatsApp (must start with country code)
@@ -2633,7 +2633,7 @@ Sky Fethiye`;
       const twilioResponse = await fetch(twilioUrl, {
         method: 'POST',
         headers: {
-          'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+          'Authorization': 'Başıc ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: formData.toString()
@@ -2641,12 +2641,12 @@ Sky Fethiye`;
       
       if (!twilioResponse.ok) {
         const errorText = await twilioResponse.text();
-        await logError('whatsapp', 'Twilio mesaj gonderme hatasi', { phone, error: errorText });
-        return res.status(500).json({ error: "WhatsApp mesaji gonderilemedi" });
+        await logError('whatsapp', 'Twilio mesaj gönderme hatası', { phone, error: errorText });
+        return res.status(500).json({ error: "WhatsApp mesajı gönderilemedi" });
       }
       
       const result = await twilioResponse.json();
-      await logInfo('whatsapp', `Ozel WhatsApp mesaji gonderildi: ${formattedPhone}`);
+      await logInfo('whatsapp', `Özel WhatsApp mesajı gönderildi: ${formattedPhone}`);
       
       // Also save the message to conversation history
       await storage.addMessage({
@@ -2657,8 +2657,8 @@ Sky Fethiye`;
       
       res.json({ success: true, messageSid: result.sid });
     } catch (error) {
-      await logError('whatsapp', 'WhatsApp ozel mesaj hatasi', { error: error instanceof Error ? error.message : String(error) });
-      res.status(500).json({ error: "WhatsApp mesaji gonderilemedi" });
+      await logError('whatsapp', 'WhatsApp özel mesaj hatası', { error: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "WhatsApp mesajı gönderilemedi" });
     }
   });
 
@@ -2671,7 +2671,7 @@ Sky Fethiye`;
       const value = await storage.getSetting('sidebarLogo');
       res.json({ key: 'sidebarLogo', value });
     } catch (err) {
-      res.status(400).json({ error: "Ayar alinamadi" });
+      res.status(400).json({ error: "Ayar alınamadı" });
     }
   });
   
@@ -2680,7 +2680,7 @@ Sky Fethiye`;
       const value = await storage.getSetting('brandSettings');
       res.json({ key: 'brandSettings', value });
     } catch (err) {
-      res.status(400).json({ error: "Ayar alinamadi" });
+      res.status(400).json({ error: "Ayar alınamadı" });
     }
   });
   
@@ -2689,7 +2689,7 @@ Sky Fethiye`;
       const value = await storage.getSetting('botAccess');
       res.json({ key: 'botAccess', value });
     } catch (err) {
-      res.status(400).json({ error: "Ayar alinamadi" });
+      res.status(400).json({ error: "Ayar alınamadı" });
     }
   });
   
@@ -2826,7 +2826,7 @@ Sky Fethiye`;
           });
           await storage.setSetting('botRulesSessionToken', tokenData);
           
-          // Save session explicitly
+          // Save session expliçitly
           return req.session.save((err) => {
             if (err) {
               console.error('Session save error:', err);
@@ -2893,7 +2893,7 @@ Sky Fethiye`;
   app.post("/api/platform-admin/logout", (req, res) => {
     req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ error: "Cikis yapilamadi" });
+        return res.status(500).json({ error: "Çıkış yapılamadı" });
       }
       res.clearCookie('connect.sid');
       return res.json({ success: true });
@@ -2907,7 +2907,7 @@ Sky Fethiye`;
     try {
       const tenantId = req.session.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
       const integration = await storage.getTenantIntegration(tenantId);
@@ -2931,7 +2931,7 @@ Sky Fethiye`;
       });
     } catch (err) {
       console.error("Get tenant integrations error:", err);
-      res.status(500).json({ error: "Entegrasyon ayarlari alinamadi" });
+      res.status(500).json({ error: "Entegrasyon ayarları alınamadı" });
     }
   });
   
@@ -2940,13 +2940,13 @@ Sky Fethiye`;
     try {
       const tenantId = req.session.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
       const { accountSid, authToken, whatsappNumber } = req.body;
       
       if (!accountSid || !authToken || !whatsappNumber) {
-        return res.status(400).json({ error: "Account SID, Auth Token ve WhatsApp numarasi gerekli" });
+        return res.status(400).json({ error: "Account SID, Auth Token ve WhatsApp numarası gerekli" });
       }
       
       // Encrypt the auth token
@@ -2964,10 +2964,10 @@ Sky Fethiye`;
         twilioConfigured: true,
       });
       
-      res.json({ success: true, message: "Twilio ayarlari kaydedildi", webhookUrl });
+      res.json({ success: true, message: "Twilio ayarları kaydedildi", webhookUrl });
     } catch (err) {
       console.error("Twilio settings save error:", err);
-      res.status(500).json({ error: "Twilio ayarlari kaydedilemedi" });
+      res.status(500).json({ error: "Twilio ayarları kaydedilemedi" });
     }
   });
   
@@ -2976,7 +2976,7 @@ Sky Fethiye`;
     try {
       const tenantId = req.session.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
       await storage.upsertTenantIntegration(tenantId, {
@@ -2987,9 +2987,9 @@ Sky Fethiye`;
         twilioConfigured: false,
       });
       
-      res.json({ success: true, message: "Twilio baglantisi kaldirildi" });
+      res.json({ success: true, message: "Twilio baglantisi kaldırıldı" });
     } catch (err) {
-      res.status(500).json({ error: "Twilio ayarlari silinemedi" });
+      res.status(500).json({ error: "Twilio ayarları silinemedi" });
     }
   });
   
@@ -2998,7 +2998,7 @@ Sky Fethiye`;
     try {
       const tenantId = req.session.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
       const { storeUrl, consumerKey, consumerSecret } = req.body;
@@ -3021,10 +3021,10 @@ Sky Fethiye`;
         woocommerceConfigured: true,
       });
       
-      res.json({ success: true, message: "WooCommerce ayarlari kaydedildi" });
+      res.json({ success: true, message: "WooCommerce ayarları kaydedildi" });
     } catch (err) {
       console.error("WooCommerce settings save error:", err);
-      res.status(500).json({ error: "WooCommerce ayarlari kaydedilemedi" });
+      res.status(500).json({ error: "WooCommerce ayarları kaydedilemedi" });
     }
   });
   
@@ -3033,7 +3033,7 @@ Sky Fethiye`;
     try {
       const tenantId = req.session.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
       await storage.upsertTenantIntegration(tenantId, {
@@ -3044,9 +3044,9 @@ Sky Fethiye`;
         woocommerceConfigured: false,
       });
       
-      res.json({ success: true, message: "WooCommerce baglantisi kaldirildi" });
+      res.json({ success: true, message: "WooCommerce baglantisi kaldırıldı" });
     } catch (err) {
-      res.status(500).json({ error: "WooCommerce ayarlari silinemedi" });
+      res.status(500).json({ error: "WooCommerce ayarları silinemedi" });
     }
   });
   
@@ -3055,13 +3055,13 @@ Sky Fethiye`;
     try {
       const tenantId = req.session.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
       const { gmailUser, gmailPassword, gmailFromName } = req.body;
       
       if (!gmailUser || !gmailPassword) {
-        return res.status(400).json({ error: "Gmail adresi ve uygulama sifresi gerekli" });
+        return res.status(400).json({ error: "Gmail adresi ve uygulama şifresi gerekli" });
       }
       
       // Encrypt the password
@@ -3074,10 +3074,10 @@ Sky Fethiye`;
         gmailConfigured: true,
       });
       
-      res.json({ success: true, message: "Gmail ayarlari kaydedildi" });
+      res.json({ success: true, message: "Gmail ayarları kaydedildi" });
     } catch (err) {
       console.error("Gmail settings save error:", err);
-      res.status(500).json({ error: "Gmail ayarlari kaydedilemedi" });
+      res.status(500).json({ error: "Gmail ayarları kaydedilemedi" });
     }
   });
   
@@ -3086,20 +3086,20 @@ Sky Fethiye`;
     try {
       const tenantId = req.session.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
       const integration = await storage.getTenantIntegration(tenantId);
       
       if (!integration?.gmailUser || !integration?.gmailAppPasswordEncrypted) {
-        return res.status(400).json({ success: false, error: "Gmail ayarlari yapilandirmamis" });
+        return res.status(400).json({ success: false, error: "Gmail ayarları yapılandırmamis" });
       }
       
       let gmailPassword: string;
       try {
         gmailPassword = decrypt(integration.gmailAppPasswordEncrypted);
       } catch (decryptErr) {
-        return res.status(400).json({ success: false, error: "Sifre cozme hatasi. Lutfen Gmail sifresini yeniden girin." });
+        return res.status(400).json({ success: false, error: "Şifre cozme hatası. Lutfen Gmail şifresini yeniden girin." });
       }
       
       const transporter = nodemailer.createTransport({
@@ -3112,12 +3112,12 @@ Sky Fethiye`;
       
       await transporter.verify();
       
-      res.json({ success: true, message: "Gmail baglantisi basarili!" });
+      res.json({ success: true, message: "Gmail baglantisi başarılı!" });
     } catch (err: any) {
       console.error("Gmail test error:", err);
-      let errorMessage = "Gmail baglantisi basarisiz";
+      let errorMessage = "Gmail baglantisi başarısız";
       if (err.code === 'EAUTH') {
-        errorMessage = "Kimlik dogrulama hatasi. Lutfen Gmail adresinizi ve uygulama sifrenizi kontrol edin.";
+        errorMessage = "Kimlik doğrulama hatası. Lutfen Gmail adresinizi ve uygulama şifrenizi kontrol edin.";
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -3130,7 +3130,7 @@ Sky Fethiye`;
     try {
       const tenantId = req.session.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
       await storage.upsertTenantIntegration(tenantId, {
@@ -3140,9 +3140,9 @@ Sky Fethiye`;
         gmailConfigured: false,
       });
       
-      res.json({ success: true, message: "Gmail baglantisi kaldirildi" });
+      res.json({ success: true, message: "Gmail baglantisi kaldırıldı" });
     } catch (err) {
-      res.status(500).json({ error: "Gmail ayarlari silinemedi" });
+      res.status(500).json({ error: "Gmail ayarları silinemedi" });
     }
   });
   
@@ -3300,7 +3300,7 @@ Sky Fethiye`;
         requests: openRequests.slice(0, 5)
       });
     } catch (err) {
-      res.status(500).json({ error: "Destek ozeti alinamadi" });
+      res.status(500).json({ error: "Destek özeti alınamadı" });
     }
   });
 
@@ -3334,11 +3334,11 @@ Sky Fethiye`;
       const created = await storage.createSupportRequest({ phone, reservationId, description, status: 'open' });
       
       await attachLogsToSupportRequest(created.id, phone);
-      await logInfo('system', `Destek talebi olusturuldu: #${created.id}`, { phone, reservationId }, phone);
+      await logInfo('system', `Destek talebi oluşturuldu: #${created.id}`, { phone, reservationId }, phone);
       
       res.json(created);
     } catch (err) {
-      await logError('system', 'Destek talebi olusturma hatasi', err);
+      await logError('system', 'Destek talebi oluşturma hatası', err);
       res.status(400).json({ error: "Destek talebi oluşturulamadı" });
     }
   });
@@ -3349,7 +3349,7 @@ Sky Fethiye`;
       const logs = await getSupportRequestLogs(id);
       res.json(logs);
     } catch (err) {
-      res.status(500).json({ error: "Loglar alinamadi" });
+      res.status(500).json({ error: "Loglar alınamadı" });
     }
   });
 
@@ -3360,7 +3360,7 @@ Sky Fethiye`;
       const logs = await getRecentLogs(phone, limit);
       res.json(logs);
     } catch (err) {
-      res.status(500).json({ error: "Sistem loglari alinamadi" });
+      res.status(500).json({ error: "Sistem loglari alınamadı" });
     }
   });
 
@@ -3375,8 +3375,8 @@ Sky Fethiye`;
 
       const requestTypeLabels: Record<string, string> = {
         hata: 'Hata Bildirimi',
-        guncelleme: 'Güncelleme İsteği',
-        oneri: 'Öneri',
+        güncelleme: 'Güncelleme İsteği',
+        öneri: 'Öneri',
         soru: 'Soru',
         diger: 'Diğer'
       };
@@ -3650,7 +3650,7 @@ Sky Fethiye`;
         }
       }
       
-      res.json({ message: `${results.length} ay icin maliyet kaydedildi`, costs: results });
+      res.json({ message: `${results.length} ay için maliyet kaydedildi`, costs: results });
     } catch (err) {
       console.error('Bulk cost error:', err);
       res.status(400).json({ error: "Toplu maliyet kaydedilemedi" });
@@ -4262,7 +4262,7 @@ Sky Fethiye`;
           id: 'ai_errors',
           severity: 'error',
           title: 'AI Baglanti Sorunu',
-          description: `Son 24 saatte ${aiErrors.length} AI hatasi. Gemini API limitine ulasilmis olabilir.`,
+          description: `Son 24 saatte ${aiErrors.length} AI hatası. Gemini API limitine ulasilmis olabilir.`,
           suggestion: 'Biraz bekleyin veya API kotasini kontrol edin.'
         });
       }
@@ -4274,19 +4274,19 @@ Sky Fethiye`;
           id: 'webhook_errors',
           severity: 'warning',
           title: 'Webhook Hatalari',
-          description: `${webhookErrors.length} WooCommerce webhook hatasi tespit edildi.`,
-          suggestion: 'WooCommerce baglanti ayarlarini kontrol edin.'
+          description: `${webhookErrors.length} WooCommerce webhook hatası tespit edildi.`,
+          suggestion: 'WooCommerce baglanti ayarlarıni kontrol edin.'
         });
       }
       
-      // Acik destek talepleri
+      // Açık destek talepleri
       const openSupport = supportRequests.filter(s => s.status === 'open');
       if (openSupport.length > 5) {
         healthChecks.push({
           id: 'pending_support',
           severity: 'info',
           title: 'Bekleyen Destek Talepleri',
-          description: `${openSupport.length} acik destek talebi var.`,
+          description: `${openSupport.length} açık destek talebi var.`,
           suggestion: 'Destek taleplerini inceleyin ve cozumleyin.'
         });
       }
@@ -4296,9 +4296,9 @@ Sky Fethiye`;
         healthChecks.push({
           id: 'no_activities',
           severity: 'warning',
-          title: 'Aktivite Tanimlanmamis',
+          title: 'Aktivite Tanımlanmamis',
           description: 'Sistemde hic aktivite tanimli degil.',
-          suggestion: 'Aktiviteler sayfasindan aktivite ekleyin.'
+          suggestion: 'Aktiviteler sayfasından aktivite ekleyin.'
         });
       }
 
@@ -4352,13 +4352,13 @@ Sky Fethiye`;
       
       res.json(snapshot);
     } catch (err) {
-      console.error('Debug snapshot hatasi:', err);
-      await logError('system', 'Debug snapshot olusturulamadi', err);
-      res.status(500).json({ error: "Debug snapshot olusturulamadi" });
+      console.error('Debug snapshot hatası:', err);
+      await logError('system', 'Debug snapshot oluşturulamadi', err);
+      res.status(500).json({ error: "Debug snapshot oluşturulamadi" });
     }
   });
 
-  // Sistem Sagligi kontrolu (basit endpoint)
+  // Sistem Sagligi kontrolu (başıt endpoint)
   app.get("/api/system/health", async (req, res) => {
     try {
       const recentLogs = await getRecentLogs(undefined, 50);
@@ -4376,7 +4376,7 @@ Sky Fethiye`;
         lastCheck: new Date().toISOString()
       });
     } catch (err) {
-      res.status(500).json({ status: 'error', error: 'Sistem durumu alinamadi' });
+      res.status(500).json({ status: 'error', error: 'Sistem durumu alınamadı' });
     }
   });
 
@@ -4388,14 +4388,14 @@ Sky Fethiye`;
       const token = req.headers.authorization?.replace('Bearer ', '');
       const validToken = (global as Record<string, unknown>).superAdminToken;
       if (!validToken || token !== validToken) {
-        return res.status(403).json({ error: "Yetkisiz erisim" });
+        return res.status(403).json({ error: "Yetkişiz erisim" });
       }
       
       const versions = await storage.getAppVersions();
       res.json(versions);
     } catch (err) {
-      console.error('App versions hatasi:', err);
-      res.status(500).json({ error: "Surumler alinamadi" });
+      console.error('App versions hatası:', err);
+      res.status(500).json({ error: "Sürümler alınamadı" });
     }
   });
 
@@ -4405,7 +4405,7 @@ Sky Fethiye`;
       const version = await storage.getActiveAppVersion();
       res.json(version || null);
     } catch (err) {
-      res.status(500).json({ error: "Aktif surum alinamadi" });
+      res.status(500).json({ error: "Aktif sürüm alınamadı" });
     }
   });
 
@@ -4415,13 +4415,13 @@ Sky Fethiye`;
       const token = req.headers.authorization?.replace('Bearer ', '');
       const validToken = (global as Record<string, unknown>).superAdminToken;
       if (!validToken || token !== validToken) {
-        return res.status(403).json({ error: "Yetkisiz erisim" });
+        return res.status(403).json({ error: "Yetkişiz erisim" });
       }
 
       const { version, fileName, fileSize, checksum, notes } = req.body;
       
       if (!version || !fileName) {
-        return res.status(400).json({ error: "Surum numarasi ve dosya adi gerekli" });
+        return res.status(400).json({ error: "Sürüm numarası ve dosya adi gerekli" });
       }
 
       // Get current active version to mark as rollback target
@@ -4442,8 +4442,8 @@ Sky Fethiye`;
 
       res.status(201).json(newVersion);
     } catch (err) {
-      console.error('App version create hatasi:', err);
-      res.status(500).json({ error: "Surum olusturulamadi" });
+      console.error('App version create hatası:', err);
+      res.status(500).json({ error: "Sürüm oluşturulamadi" });
     }
   });
 
@@ -4453,24 +4453,24 @@ Sky Fethiye`;
       const token = req.headers.authorization?.replace('Bearer ', '');
       const validToken = (global as Record<string, unknown>).superAdminToken;
       if (!validToken || token !== validToken) {
-        return res.status(403).json({ error: "Yetkisiz erisim" });
+        return res.status(403).json({ error: "Yetkişiz erisim" });
       }
 
       const id = Number(req.params.id);
       const version = await storage.getAppVersion(id);
       
       if (!version) {
-        return res.status(404).json({ error: "Surum bulunamadi" });
+        return res.status(404).json({ error: "Sürüm bulunamadı" });
       }
 
       const activated = await storage.activateAppVersion(id);
       
-      await logInfo('system', `Surum aktif edildi: ${version.version}`);
+      await logInfo('system', `Sürüm aktif edildi: ${version.version}`);
       
       res.json(activated);
     } catch (err) {
-      console.error('Version activate hatasi:', err);
-      res.status(500).json({ error: "Surum aktif edilemedi" });
+      console.error('Version activate hatası:', err);
+      res.status(500).json({ error: "Sürüm aktif edilemedi" });
     }
   });
 
@@ -4480,32 +4480,32 @@ Sky Fethiye`;
       const token = req.headers.authorization?.replace('Bearer ', '');
       const validToken = (global as Record<string, unknown>).superAdminToken;
       if (!validToken || token !== validToken) {
-        return res.status(403).json({ error: "Yetkisiz erisim" });
+        return res.status(403).json({ error: "Yetkişiz erisim" });
       }
 
       const id = Number(req.params.id);
       const version = await storage.getAppVersion(id);
       
       if (!version) {
-        return res.status(404).json({ error: "Surum bulunamadi" });
+        return res.status(404).json({ error: "Sürüm bulunamadı" });
       }
 
       if (!version.isRollbackTarget) {
-        return res.status(400).json({ error: "Bu surum geri alinabilir degil" });
+        return res.status(400).json({ error: "Bu sürüm geri alınabilir degil" });
       }
 
       const rolledBack = await storage.rollbackToVersion(id);
       
-      await logInfo('system', `Surum geri alindi: ${version.version}`);
+      await logInfo('system', `Sürüm geri alindi: ${version.version}`);
       
       res.json({
         success: true,
-        message: `${version.version} surumune geri donuldu`,
+        message: `${version.version} sürümune geri donuldu`,
         version: rolledBack
       });
     } catch (err) {
-      console.error('Version rollback hatasi:', err);
-      res.status(500).json({ error: "Geri alma basarisiz" });
+      console.error('Version rollback hatası:', err);
+      res.status(500).json({ error: "Geri alma başarısız" });
     }
   });
 
@@ -4520,7 +4520,7 @@ Sky Fethiye`;
       // Verify Super Admin token
       const validToken = (global as Record<string, unknown>).superAdminToken;
       if (!validToken || token !== validToken) {
-        return res.status(403).json({ error: "Gecersiz token" });
+        return res.status(403).json({ error: "Geçersiz token" });
       }
       
       // Get version info from body if available
@@ -4535,7 +4535,7 @@ Sky Fethiye`;
           fileName,
           fileSize: fileSize || 0,
           checksum: null,
-          notes: 'Yuklenen guncelleme',
+          notes: 'Yüklenen güncelleme',
           status: 'pending',
           uploadedBy: 'super_admin',
           backupFileName: currentActive ? `backup_${currentActive.version}_${Date.now()}.tar.gz` : null,
@@ -4547,13 +4547,13 @@ Sky Fethiye`;
       // In production VPS deployment, this would handle file extraction and system update
       res.json({ 
         success: true, 
-        message: "Guncelleme talebi alindi.",
-        note: "Not: Dosya isleme henuz uygulanmadi. VPS kurulumunda aktif edilecek.",
+        message: "Güncelleme talebi alindi.",
+        note: "Not: Dosya işleme henuz uygulanmadi. VPS kurulumunda aktif edilecek.",
         implemented: false
       });
     } catch (err) {
-      console.error('Update upload hatasi:', err);
-      res.status(500).json({ error: "Guncelleme yuklenemedi" });
+      console.error('Update upload hatası:', err);
+      res.status(500).json({ error: "Güncelleme yüklenemedi" });
     }
   });
 
@@ -4563,7 +4563,7 @@ Sky Fethiye`;
       const autoResponses = await storage.getAutoResponses();
       res.json(autoResponses);
     } catch (err) {
-      res.status(500).json({ error: "Otomatik yanitlar alinamadi" });
+      res.status(500).json({ error: "Otomatik yanitlar alınamadı" });
     }
   });
 
@@ -4571,11 +4571,11 @@ Sky Fethiye`;
     try {
       const autoResponse = await storage.getAutoResponse(Number(req.params.id));
       if (!autoResponse) {
-        return res.status(404).json({ error: "Otomatik yanit bulunamadi" });
+        return res.status(404).json({ error: "Otomatik yanit bulunamadı" });
       }
       res.json(autoResponse);
     } catch (err) {
-      res.status(500).json({ error: "Otomatik yanit alinamadi" });
+      res.status(500).json({ error: "Otomatik yanit alınamadı" });
     }
   });
 
@@ -4594,7 +4594,7 @@ Sky Fethiye`;
           return res.status(400).json({ error: "Anahtar kelimeler bir dizi olmali ve en az bir kelime icermeli" });
         }
       } catch {
-        return res.status(400).json({ error: "Anahtar kelimeler gecerli bir JSON dizisi olmali" });
+        return res.status(400).json({ error: "Anahtar kelimeler geçerli bir JSON dizisi olmali" });
       }
       
       // Validate English keywords JSON if provided
@@ -4605,7 +4605,7 @@ Sky Fethiye`;
             return res.status(400).json({ error: "Ingilizce anahtar kelimeler bir dizi olmali" });
           }
         } catch {
-          return res.status(400).json({ error: "Ingilizce anahtar kelimeler gecerli bir JSON dizisi olmali" });
+          return res.status(400).json({ error: "Ingilizce anahtar kelimeler geçerli bir JSON dizisi olmali" });
         }
       }
       
@@ -4621,8 +4621,8 @@ Sky Fethiye`;
       
       res.status(201).json(autoResponse);
     } catch (err) {
-      console.error("Otomatik yanit olusturma hatasi:", err);
-      res.status(400).json({ error: "Otomatik yanit olusturulamadi" });
+      console.error("Otomatik yanit oluşturma hatası:", err);
+      res.status(400).json({ error: "Otomatik yanit oluşturulamadi" });
     }
   });
 
@@ -4639,7 +4639,7 @@ Sky Fethiye`;
             return res.status(400).json({ error: "Anahtar kelimeler bir dizi olmali" });
           }
         } catch {
-          return res.status(400).json({ error: "Anahtar kelimeler gecerli bir JSON dizisi olmali" });
+          return res.status(400).json({ error: "Anahtar kelimeler geçerli bir JSON dizisi olmali" });
         }
       }
       
@@ -4651,7 +4651,7 @@ Sky Fethiye`;
             return res.status(400).json({ error: "Ingilizce anahtar kelimeler bir dizi olmali" });
           }
         } catch {
-          return res.status(400).json({ error: "Ingilizce anahtar kelimeler gecerli bir JSON dizisi olmali" });
+          return res.status(400).json({ error: "Ingilizce anahtar kelimeler geçerli bir JSON dizisi olmali" });
         }
       }
       
@@ -4667,8 +4667,8 @@ Sky Fethiye`;
       const updated = await storage.updateAutoResponse(id, updateData);
       res.json(updated);
     } catch (err) {
-      console.error("Otomatik yanit guncelleme hatasi:", err);
-      res.status(400).json({ error: "Otomatik yanit guncellenemedi" });
+      console.error("Otomatik yanit güncelleme hatası:", err);
+      res.status(400).json({ error: "Otomatik yanit güncellenemedi" });
     }
   });
 
@@ -4691,8 +4691,8 @@ Sky Fethiye`;
       const templates = await storage.getRequestMessageTemplates();
       res.json(templates);
     } catch (err) {
-      console.error("Mesaj sablonlari alinamadi:", err);
-      res.status(500).json({ error: "Mesaj sablonlari alinamadi" });
+      console.error("Mesaj sablonlari alınamadı:", err);
+      res.status(500).json({ error: "Mesaj sablonlari alınamadı" });
     }
   });
 
@@ -4701,11 +4701,11 @@ Sky Fethiye`;
     try {
       const template = await storage.getRequestMessageTemplate(Number(req.params.id));
       if (!template) {
-        return res.status(404).json({ error: "Sablon bulunamadi" });
+        return res.status(404).json({ error: "Sablon bulunamadı" });
       }
       res.json(template);
     } catch (err) {
-      res.status(500).json({ error: "Sablon alinamadi" });
+      res.status(500).json({ error: "Sablon alınamadı" });
     }
   });
 
@@ -4715,7 +4715,7 @@ Sky Fethiye`;
       const { name, templateType, messageContent, isDefault, isActive } = req.body;
       
       if (!name || !templateType || !messageContent) {
-        return res.status(400).json({ error: "Sablon adi, tipi ve icerik zorunlu" });
+        return res.status(400).json({ error: "Sablon adi, tipi ve içerik zorunlu" });
       }
       
       const template = await storage.createRequestMessageTemplate({
@@ -4727,8 +4727,8 @@ Sky Fethiye`;
       });
       res.status(201).json(template);
     } catch (err) {
-      console.error("Sablon olusturma hatasi:", err);
-      res.status(400).json({ error: "Sablon olusturulamadi" });
+      console.error("Sablon oluşturma hatası:", err);
+      res.status(400).json({ error: "Sablon oluşturulamadi" });
     }
   });
 
@@ -4748,8 +4748,8 @@ Sky Fethiye`;
       const updated = await storage.updateRequestMessageTemplate(id, updateData);
       res.json(updated);
     } catch (err) {
-      console.error("Sablon guncelleme hatasi:", err);
-      res.status(400).json({ error: "Sablon guncellenemedi" });
+      console.error("Sablon güncelleme hatası:", err);
+      res.status(400).json({ error: "Sablon güncellenemedi" });
     }
   });
 
@@ -4775,7 +4775,7 @@ Sky Fethiye`;
         return res.json({ 
           license: null, 
           usage,
-          status: { valid: false, message: "Lisans bulunamadi" }
+          status: { valid: false, message: "Lisans bulunamadı" }
         });
       }
       
@@ -4786,8 +4786,8 @@ Sky Fethiye`;
         status: verification
       });
     } catch (err) {
-      console.error("Lisans bilgisi alinamadi:", err);
-      res.status(500).json({ error: "Lisans bilgisi alinamadi" });
+      console.error("Lisans bilgisi alınamadı:", err);
+      res.status(500).json({ error: "Lisans bilgisi alınamadı" });
     }
   });
 
@@ -4797,8 +4797,8 @@ Sky Fethiye`;
       const verification = await storage.verifyLicense();
       res.json(verification);
     } catch (err) {
-      console.error("Lisans dogrulama hatasi:", err);
-      res.status(500).json({ error: "Lisans dogrulanamadi" });
+      console.error("Lisans doğrulama hatası:", err);
+      res.status(500).json({ error: "Lisans doğrulanamadi" });
     }
   });
 
@@ -4808,13 +4808,13 @@ Sky Fethiye`;
       const { licenseKey, agencyName, agencyEmail, agencyPhone, planType, expiryDate } = req.body;
       
       if (!licenseKey || !agencyName) {
-        return res.status(400).json({ error: "Lisans anahtari ve acenta adi zorunludur" });
+        return res.status(400).json({ error: "Lisans anahtarı ve acenta adi zorunludur" });
       }
 
       // Define plan limits based on plan type
       const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string }> = {
         trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme" },
-        basic: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel" },
+        başıc: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel" },
         professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel" },
         enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal" }
       };
@@ -4839,8 +4839,8 @@ Sky Fethiye`;
 
       res.status(201).json(newLicense);
     } catch (err) {
-      console.error("Lisans olusturma hatasi:", err);
-      res.status(400).json({ error: "Lisans olusturulamadi" });
+      console.error("Lisans oluşturma hatası:", err);
+      res.status(400).json({ error: "Lisans oluşturulamadi" });
     }
   });
 
@@ -4860,7 +4860,7 @@ Sky Fethiye`;
       if (planType !== undefined) {
         const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string }> = {
           trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme" },
-          basic: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel" },
+          başıc: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel" },
           professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel" },
           enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal" }
         };
@@ -4879,8 +4879,8 @@ Sky Fethiye`;
       const updated = await storage.updateLicense(id, updateData);
       res.json(updated);
     } catch (err) {
-      console.error("Lisans guncelleme hatasi:", err);
-      res.status(400).json({ error: "Lisans guncellenemedi" });
+      console.error("Lisans güncelleme hatası:", err);
+      res.status(400).json({ error: "Lisans güncellenemedi" });
     }
   });
 
@@ -4892,7 +4892,7 @@ Sky Fethiye`;
       
       const currentLicense = await storage.getLicense();
       if (!currentLicense || currentLicense.id !== id) {
-        return res.status(404).json({ error: "Lisans bulunamadi" });
+        return res.status(404).json({ error: "Lisans bulunamadı" });
       }
       
       // Calculate new expiry date
@@ -4908,10 +4908,10 @@ Sky Fethiye`;
       
       res.json({ 
         license: updated, 
-        message: `Lisansiniz ${months} ay uzatildi. Yeni bitis tarihi: ${newExpiry.toLocaleDateString('tr-TR')}` 
+        message: `Lisansiniz ${months} ay uzatildi. Yeni bitiş tarihi: ${newExpiry.toLocaleDateString('tr-TR')}` 
       });
     } catch (err) {
-      console.error("Lisans yenileme hatasi:", err);
+      console.error("Lisans yenileme hatası:", err);
       res.status(400).json({ error: "Lisans yenilenemedi" });
     }
   });
@@ -4930,8 +4930,8 @@ Sky Fethiye`;
         } : null
       });
     } catch (err) {
-      console.error("Kullanim bilgisi alinamadi:", err);
-      res.status(500).json({ error: "Kullanim bilgisi alinamadi" });
+      console.error("Kullanim bilgisi alınamadı:", err);
+      res.status(500).json({ error: "Kullanim bilgisi alınamadı" });
     }
   });
 
@@ -4941,7 +4941,7 @@ Sky Fethiye`;
       const { licenseKey, agencyName } = req.body;
       
       if (!licenseKey || !agencyName) {
-        return res.status(400).json({ error: "Lisans anahtari ve acenta adi zorunludur" });
+        return res.status(400).json({ error: "Lisans anahtarı ve acenta adi zorunludur" });
       }
 
       // Parse license key to determine plan type
@@ -4954,7 +4954,7 @@ Sky Fethiye`;
       } else if (keyPrefix === 'PRO' || keyPrefix === 'PROFESSIONAL') {
         planType = 'professional';
       } else if (keyPrefix === 'BAS' || keyPrefix === 'BASIC') {
-        planType = 'basic';
+        planType = 'başıc';
       } else if (keyPrefix === 'TRI' || keyPrefix === 'TRIAL') {
         planType = 'trial';
       }
@@ -4962,7 +4962,7 @@ Sky Fethiye`;
       // Define plan limits based on plan type
       const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string; expiryMonths: number }> = {
         trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme", expiryMonths: 0.5 },
-        basic: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel", expiryMonths: 12 },
+        başıc: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel", expiryMonths: 12 },
         professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel", expiryMonths: 12 },
         enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal", expiryMonths: 0 }
       };
@@ -4997,7 +4997,7 @@ Sky Fethiye`;
         message: `Lisans basariyla aktive edildi. Plan: ${plan.planName}` 
       });
     } catch (err) {
-      console.error("Lisans aktivasyon hatasi:", err);
+      console.error("Lisans aktivasyon hatası:", err);
       res.status(400).json({ error: "Lisans aktive edilemedi" });
     }
   });
@@ -5007,14 +5007,14 @@ Sky Fethiye`;
     try {
       const currentLicense = await storage.getLicense();
       if (!currentLicense) {
-        return res.status(404).json({ error: "Kaldirilacak lisans bulunamadi" });
+        return res.status(404).json({ error: "Kaldırilacak lisans bulunamadı" });
       }
       
       await storage.deleteLicense(currentLicense.id);
-      res.json({ success: true, message: "Lisans kaldirildi" });
+      res.json({ success: true, message: "Lisans kaldırıldı" });
     } catch (err) {
-      console.error("Lisans kaldirma hatasi:", err);
-      res.status(500).json({ error: "Lisans kaldirilamadi" });
+      console.error("Lisans kaldırma hatası:", err);
+      res.status(500).json({ error: "Lisans kaldırilamadi" });
     }
   });
 
@@ -5026,8 +5026,8 @@ Sky Fethiye`;
       const plans = await storage.getSubscriptionPlans();
       res.json(plans);
     } catch (err) {
-      console.error("Plan listesi hatasi:", err);
-      res.status(500).json({ error: "Planlar alinamadi" });
+      console.error("Plan listesi hatası:", err);
+      res.status(500).json({ error: "Planlar alınamadı" });
     }
   });
 
@@ -5036,12 +5036,12 @@ Sky Fethiye`;
     try {
       const plan = await storage.getSubscriptionPlan(Number(req.params.id));
       if (!plan) {
-        return res.status(404).json({ error: "Plan bulunamadi" });
+        return res.status(404).json({ error: "Plan bulunamadı" });
       }
       res.json(plan);
     } catch (err) {
-      console.error("Plan detay hatasi:", err);
-      res.status(500).json({ error: "Plan alinamadi" });
+      console.error("Plan detay hatası:", err);
+      res.status(500).json({ error: "Plan alınamadı" });
     }
   });
 
@@ -5062,8 +5062,8 @@ Sky Fethiye`;
       if (err instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: err.errors });
       }
-      console.error("Plan olusturma hatasi:", err);
-      res.status(500).json({ error: "Plan olusturulamadi" });
+      console.error("Plan oluşturma hatası:", err);
+      res.status(500).json({ error: "Plan oluşturulamadi" });
     }
   });
 
@@ -5084,8 +5084,8 @@ Sky Fethiye`;
       if (err instanceof z.ZodError) {
         return res.status(400).json({ error: "Validation failed", details: err.errors });
       }
-      console.error("Plan guncelleme hatasi:", err);
-      res.status(500).json({ error: "Plan guncellenemedi" });
+      console.error("Plan güncelleme hatası:", err);
+      res.status(500).json({ error: "Plan güncellenemedi" });
     }
   });
 
@@ -5095,7 +5095,7 @@ Sky Fethiye`;
       await storage.deleteSubscriptionPlan(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      console.error("Plan silme hatasi:", err);
+      console.error("Plan silme hatası:", err);
       res.status(500).json({ error: "Plan silinemedi" });
     }
   });
@@ -5108,8 +5108,8 @@ Sky Fethiye`;
       const allTenants = await storage.getTenants();
       res.json(allTenants);
     } catch (err) {
-      console.error("Tenant listesi hatasi:", err);
-      res.status(500).json({ error: "Tenant listesi alinamadi" });
+      console.error("Tenant listesi hatası:", err);
+      res.status(500).json({ error: "Tenant listesi alınamadı" });
     }
   });
 
@@ -5118,12 +5118,12 @@ Sky Fethiye`;
     try {
       const tenant = await storage.getTenant(Number(req.params.id));
       if (!tenant) {
-        return res.status(404).json({ error: "Tenant bulunamadi" });
+        return res.status(404).json({ error: "Tenant bulunamadı" });
       }
       res.json(tenant);
     } catch (err) {
-      console.error("Tenant detay hatasi:", err);
-      res.status(500).json({ error: "Tenant alinamadi" });
+      console.error("Tenant detay hatası:", err);
+      res.status(500).json({ error: "Tenant alınamadı" });
     }
   });
 
@@ -5145,12 +5145,12 @@ Sky Fethiye`;
       // Validate admin user info if provided
       if (adminUsername || adminEmail || adminPassword) {
         if (!adminUsername || !adminEmail || !adminPassword) {
-          return res.status(400).json({ error: "Admin kullanici icin username, email ve password zorunludur" });
+          return res.status(400).json({ error: "Admin kullanıcı için username, email ve password zorunludur" });
         }
         // Check if username or email already exists
         const existingUsername = await storage.getAppUserByUsername(adminUsername);
         if (existingUsername) {
-          return res.status(400).json({ error: "Bu kullanici adi zaten kullaniliyor" });
+          return res.status(400).json({ error: "Bu kullanıcı adi zaten kullaniliyor" });
         }
         const existingEmail = await storage.getAppUserByEmail(adminEmail);
         if (existingEmail) {
@@ -5202,7 +5202,7 @@ Sky Fethiye`;
           planId: null,
           maxActivities: 50,
           maxReservationsPerMonth: 1000,
-          notes: `${name} acentasi yonetici hesabi`,
+          notes: `${name} acentasi yönetiçi hesabı`,
           isActive: true,
         });
 
@@ -5216,8 +5216,8 @@ Sky Fethiye`;
 
       res.json({ tenant, adminUser });
     } catch (err) {
-      console.error("Tenant olusturma hatasi:", err);
-      res.status(500).json({ error: "Tenant olusturulamadi" });
+      console.error("Tenant oluşturma hatası:", err);
+      res.status(500).json({ error: "Tenant oluşturulamadi" });
     }
   });
 
@@ -5227,8 +5227,8 @@ Sky Fethiye`;
       const tenant = await storage.updateTenant(Number(req.params.id), req.body);
       res.json(tenant);
     } catch (err) {
-      console.error("Tenant guncelleme hatasi:", err);
-      res.status(500).json({ error: "Tenant guncellenemedi" });
+      console.error("Tenant güncelleme hatası:", err);
+      res.status(500).json({ error: "Tenant güncellenemedi" });
     }
   });
 
@@ -5238,7 +5238,7 @@ Sky Fethiye`;
       await storage.deleteTenant(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      console.error("Tenant silme hatasi:", err);
+      console.error("Tenant silme hatası:", err);
       res.status(500).json({ error: "Tenant silinemedi" });
     }
   });
@@ -5248,12 +5248,12 @@ Sky Fethiye`;
     try {
       const tenant = await storage.getTenantBySlug(req.params.slug);
       if (!tenant) {
-        return res.status(404).json({ error: "Tenant bulunamadi" });
+        return res.status(404).json({ error: "Tenant bulunamadı" });
       }
       res.json(tenant);
     } catch (err) {
-      console.error("Tenant slug sorgu hatasi:", err);
-      res.status(500).json({ error: "Tenant alinamadi" });
+      console.error("Tenant slug sorgu hatası:", err);
+      res.status(500).json({ error: "Tenant alınamadı" });
     }
   });
 
@@ -5265,8 +5265,8 @@ Sky Fethiye`;
       const features = await storage.getPlanFeatures();
       res.json(features);
     } catch (err) {
-      console.error("Özellik listesi hatasi:", err);
-      res.status(500).json({ error: "Özellikler alinamadi" });
+      console.error("Özellik listesi hatası:", err);
+      res.status(500).json({ error: "Özellikler alınamadı" });
     }
   });
 
@@ -5276,7 +5276,7 @@ Sky Fethiye`;
       const feature = await storage.createPlanFeature(req.body);
       res.json(feature);
     } catch (err) {
-      console.error("Özellik oluşturma hatasi:", err);
+      console.error("Özellik oluşturma hatası:", err);
       res.status(500).json({ error: "Özellik oluşturulamadi" });
     }
   });
@@ -5287,7 +5287,7 @@ Sky Fethiye`;
       const feature = await storage.updatePlanFeature(Number(req.params.id), req.body);
       res.json(feature);
     } catch (err) {
-      console.error("Özellik güncelleme hatasi:", err);
+      console.error("Özellik güncelleme hatası:", err);
       res.status(500).json({ error: "Özellik güncellenemedi" });
     }
   });
@@ -5298,7 +5298,7 @@ Sky Fethiye`;
       await storage.deletePlanFeature(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      console.error("Özellik silme hatasi:", err);
+      console.error("Özellik silme hatası:", err);
       res.status(500).json({ error: "Özellik silinemedi" });
     }
   });
@@ -5311,8 +5311,8 @@ Sky Fethiye`;
       const subs = await storage.getSubscriptions();
       res.json(subs);
     } catch (err) {
-      console.error("Abonelik listesi hatasi:", err);
-      res.status(500).json({ error: "Abonelikler alinamadi" });
+      console.error("Abonelik listesi hatası:", err);
+      res.status(500).json({ error: "Abonelikler alınamadı" });
     }
   });
 
@@ -5322,8 +5322,8 @@ Sky Fethiye`;
       const payments = await storage.getSubscriptionPayments();
       res.json(payments);
     } catch (err) {
-      console.error("Odeme listesi hatasi:", err);
-      res.status(500).json({ error: "Odemeler alinamadi" });
+      console.error("Ödeme listesi hatası:", err);
+      res.status(500).json({ error: "Ödemeler alınamadı" });
     }
   });
 
@@ -5333,8 +5333,8 @@ Sky Fethiye`;
       const payment = await storage.createSubscriptionPayment(req.body);
       res.json(payment);
     } catch (err) {
-      console.error("Odeme olusturma hatasi:", err);
-      res.status(500).json({ error: "Odeme olusturulamadi" });
+      console.error("Ödeme oluşturma hatası:", err);
+      res.status(500).json({ error: "Ödeme oluşturulamadi" });
     }
   });
 
@@ -5345,8 +5345,8 @@ Sky Fethiye`;
       const announcements = await storage.getAnnouncements();
       res.json(announcements);
     } catch (err) {
-      console.error("Duyuru listesi hatasi:", err);
-      res.status(500).json({ error: "Duyurular alinamadi" });
+      console.error("Duyuru listesi hatası:", err);
+      res.status(500).json({ error: "Duyurular alınamadı" });
     }
   });
 
@@ -5355,8 +5355,8 @@ Sky Fethiye`;
       const announcement = await storage.createAnnouncement(req.body);
       res.json(announcement);
     } catch (err) {
-      console.error("Duyuru olusturma hatasi:", err);
-      res.status(500).json({ error: "Duyuru olusturulamadi" });
+      console.error("Duyuru oluşturma hatası:", err);
+      res.status(500).json({ error: "Duyuru oluşturulamadi" });
     }
   });
 
@@ -5365,8 +5365,8 @@ Sky Fethiye`;
       const announcement = await storage.updateAnnouncement(Number(req.params.id), req.body);
       res.json(announcement);
     } catch (err) {
-      console.error("Duyuru guncelleme hatasi:", err);
-      res.status(500).json({ error: "Duyuru guncellenemedi" });
+      console.error("Duyuru güncelleme hatası:", err);
+      res.status(500).json({ error: "Duyuru güncellenemedi" });
     }
   });
 
@@ -5375,7 +5375,7 @@ Sky Fethiye`;
       await storage.deleteAnnouncement(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      console.error("Duyuru silme hatasi:", err);
+      console.error("Duyuru silme hatası:", err);
       res.status(500).json({ error: "Duyuru silinemedi" });
     }
   });
@@ -5387,8 +5387,8 @@ Sky Fethiye`;
       const invoices = await storage.getInvoices();
       res.json(invoices);
     } catch (err) {
-      console.error("Fatura listesi hatasi:", err);
-      res.status(500).json({ error: "Faturalar alinamadi" });
+      console.error("Fatura listesi hatası:", err);
+      res.status(500).json({ error: "Faturalar alınamadı" });
     }
   });
 
@@ -5397,8 +5397,8 @@ Sky Fethiye`;
       const invoice = await storage.createInvoice(req.body);
       res.json(invoice);
     } catch (err) {
-      console.error("Fatura olusturma hatasi:", err);
-      res.status(500).json({ error: "Fatura olusturulamadi" });
+      console.error("Fatura oluşturma hatası:", err);
+      res.status(500).json({ error: "Fatura oluşturulamadi" });
     }
   });
 
@@ -5407,8 +5407,8 @@ Sky Fethiye`;
       const invoice = await storage.updateInvoice(Number(req.params.id), req.body);
       res.json(invoice);
     } catch (err) {
-      console.error("Fatura guncelleme hatasi:", err);
-      res.status(500).json({ error: "Fatura guncellenemedi" });
+      console.error("Fatura güncelleme hatası:", err);
+      res.status(500).json({ error: "Fatura güncellenemedi" });
     }
   });
 
@@ -5419,8 +5419,8 @@ Sky Fethiye`;
       const status = await storage.getApiStatusLogs();
       res.json(status);
     } catch (err) {
-      console.error("API durum hatasi:", err);
-      res.status(500).json({ error: "API durumu alinamadi" });
+      console.error("API durum hatası:", err);
+      res.status(500).json({ error: "API durumu alınamadı" });
     }
   });
 
@@ -5429,8 +5429,8 @@ Sky Fethiye`;
       const results = await storage.checkApiStatus();
       res.json(results);
     } catch (err) {
-      console.error("API kontrol hatasi:", err);
-      res.status(500).json({ error: "API kontrolu yapilamadi" });
+      console.error("API kontrol hatası:", err);
+      res.status(500).json({ error: "API kontrolu yapılamadı" });
     }
   });
 
@@ -5441,8 +5441,8 @@ Sky Fethiye`;
       const scores = await storage.getBotQualityScores();
       res.json(scores);
     } catch (err) {
-      console.error("Bot kalite hatasi:", err);
-      res.status(500).json({ error: "Bot kalite verileri alinamadi" });
+      console.error("Bot kalite hatası:", err);
+      res.status(500).json({ error: "Bot kalite verileri alınamadı" });
     }
   });
 
@@ -5451,8 +5451,8 @@ Sky Fethiye`;
       const stats = await storage.getBotQualityStats();
       res.json(stats);
     } catch (err) {
-      console.error("Bot kalite istatistik hatasi:", err);
-      res.status(500).json({ error: "Bot istatistikleri alinamadi" });
+      console.error("Bot kalite istatistik hatası:", err);
+      res.status(500).json({ error: "Bot istatistikleri alınamadı" });
     }
   });
 
@@ -5463,8 +5463,8 @@ Sky Fethiye`;
       const licenses = await storage.getLicenses();
       res.json(licenses);
     } catch (err) {
-      console.error("Lisans listesi hatasi:", err);
-      res.status(500).json({ error: "Lisanslar alinamadi" });
+      console.error("Lisans listesi hatası:", err);
+      res.status(500).json({ error: "Lisanslar alınamadı" });
     }
   });
 
@@ -5473,8 +5473,8 @@ Sky Fethiye`;
       const license = await storage.updateLicense(Number(req.params.id), req.body);
       res.json(license);
     } catch (err) {
-      console.error("Lisans guncelleme hatasi:", err);
-      res.status(500).json({ error: "Lisans guncellenemedi" });
+      console.error("Lisans güncelleme hatası:", err);
+      res.status(500).json({ error: "Lisans güncellenemedi" });
     }
   });
 
@@ -5483,8 +5483,8 @@ Sky Fethiye`;
       const license = await storage.suspendLicense(Number(req.params.id));
       res.json(license);
     } catch (err) {
-      console.error("Lisans askiya alma hatasi:", err);
-      res.status(500).json({ error: "Lisans askiya alinamadi" });
+      console.error("Lisans askiya alma hatası:", err);
+      res.status(500).json({ error: "Lisans askiya alınamadı" });
     }
   });
 
@@ -5493,7 +5493,7 @@ Sky Fethiye`;
       const license = await storage.activateLicense(Number(req.params.id));
       res.json(license);
     } catch (err) {
-      console.error("Lisans aktiflesirme hatasi:", err);
+      console.error("Lisans aktiflesirme hatası:", err);
       res.status(500).json({ error: "Lisans aktiflesirilemedi" });
     }
   });
@@ -5505,8 +5505,8 @@ Sky Fethiye`;
       const analytics = await storage.getPlatformAnalytics();
       res.json(analytics);
     } catch (err) {
-      console.error("Platform analitik hatasi:", err);
-      res.status(500).json({ error: "Analitik verileri alinamadi" });
+      console.error("Platform analitik hatası:", err);
+      res.status(500).json({ error: "Analitik verileri alınamadı" });
     }
   });
 
@@ -5515,8 +5515,8 @@ Sky Fethiye`;
       const stats = await storage.getWhatsAppStats();
       res.json(stats);
     } catch (err) {
-      console.error("WhatsApp istatistik hatasi:", err);
-      res.status(500).json({ error: "WhatsApp istatistikleri alinamadi" });
+      console.error("WhatsApp istatistik hatası:", err);
+      res.status(500).json({ error: "WhatsApp istatistikleri alınamadı" });
     }
   });
 
@@ -5527,8 +5527,8 @@ Sky Fethiye`;
       const admins = await storage.getPlatformAdmins();
       res.json(admins);
     } catch (err) {
-      console.error("Platform admin hatasi:", err);
-      res.status(500).json({ error: "Adminler alinamadi" });
+      console.error("Platform admin hatası:", err);
+      res.status(500).json({ error: "Adminler alınamadı" });
     }
   });
 
@@ -5537,7 +5537,7 @@ Sky Fethiye`;
       const { email, name, password, role } = req.body;
       
       if (!email || !password || !name) {
-        return res.status(400).json({ error: "E-posta, ad ve sifre gerekli" });
+        return res.status(400).json({ error: "E-posta, ad ve şifre gerekli" });
       }
       
       // Check if email already exists
@@ -5558,8 +5558,8 @@ Sky Fethiye`;
       });
       res.json(admin);
     } catch (err) {
-      console.error("Platform admin olusturma hatasi:", err);
-      res.status(500).json({ error: "Admin olusturulamadi" });
+      console.error("Platform admin oluşturma hatası:", err);
+      res.status(500).json({ error: "Admin oluşturulamadi" });
     }
   });
 
@@ -5568,8 +5568,8 @@ Sky Fethiye`;
       const admin = await storage.updatePlatformAdmin(Number(req.params.id), req.body);
       res.json(admin);
     } catch (err) {
-      console.error("Platform admin guncelleme hatasi:", err);
-      res.status(500).json({ error: "Admin guncellenemedi" });
+      console.error("Platform admin güncelleme hatası:", err);
+      res.status(500).json({ error: "Admin güncellenemedi" });
     }
   });
 
@@ -5586,7 +5586,7 @@ Sky Fethiye`;
       await storage.deletePlatformAdmin(adminIdToDelete);
       res.json({ success: true });
     } catch (err) {
-      console.error("Platform admin silme hatasi:", err);
+      console.error("Platform admin silme hatası:", err);
       res.status(500).json({ error: "Admin silinemedi" });
     }
   });
@@ -5599,8 +5599,8 @@ Sky Fethiye`;
       const logs = await storage.getLoginLogs(limit);
       res.json(logs);
     } catch (err) {
-      console.error("Giris logu hatasi:", err);
-      res.status(500).json({ error: "Giris loglari alinamadi" });
+      console.error("Giriş logu hatası:", err);
+      res.status(500).json({ error: "Giriş loglari alınamadı" });
     }
   });
 
@@ -5611,8 +5611,8 @@ Sky Fethiye`;
       const notes = await storage.getAgencyNotes(Number(req.params.licenseId));
       res.json(notes);
     } catch (err) {
-      console.error("Ajans notu hatasi:", err);
-      res.status(500).json({ error: "Notlar alinamadi" });
+      console.error("Ajans notu hatası:", err);
+      res.status(500).json({ error: "Notlar alınamadı" });
     }
   });
 
@@ -5621,8 +5621,8 @@ Sky Fethiye`;
       const note = await storage.createAgencyNote(req.body);
       res.json(note);
     } catch (err) {
-      console.error("Ajans notu olusturma hatasi:", err);
-      res.status(500).json({ error: "Not olusturulamadi" });
+      console.error("Ajans notu oluşturma hatası:", err);
+      res.status(500).json({ error: "Not oluşturulamadi" });
     }
   });
 
@@ -5631,7 +5631,7 @@ Sky Fethiye`;
       await storage.deleteAgencyNote(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      console.error("Ajans notu silme hatasi:", err);
+      console.error("Ajans notu silme hatası:", err);
       res.status(500).json({ error: "Not silinemedi" });
     }
   });
@@ -5644,8 +5644,8 @@ Sky Fethiye`;
       const tickets = await storage.getSupportTickets(status);
       res.json(tickets);
     } catch (err) {
-      console.error("Destek talebi hatasi:", err);
-      res.status(500).json({ error: "Talepler alinamadi" });
+      console.error("Destek talebi hatası:", err);
+      res.status(500).json({ error: "Talepler alınamadı" });
     }
   });
 
@@ -5653,12 +5653,12 @@ Sky Fethiye`;
     try {
       const ticket = await storage.getSupportTicket(Number(req.params.id));
       if (!ticket) {
-        return res.status(404).json({ error: "Talep bulunamadi" });
+        return res.status(404).json({ error: "Talep bulunamadı" });
       }
       res.json(ticket);
     } catch (err) {
-      console.error("Destek talebi hatasi:", err);
-      res.status(500).json({ error: "Talep alinamadi" });
+      console.error("Destek talebi hatası:", err);
+      res.status(500).json({ error: "Talep alınamadı" });
     }
   });
 
@@ -5667,8 +5667,8 @@ Sky Fethiye`;
       const ticket = await storage.createSupportTicket(req.body);
       res.json(ticket);
     } catch (err) {
-      console.error("Destek talebi olusturma hatasi:", err);
-      res.status(500).json({ error: "Talep olusturulamadi" });
+      console.error("Destek talebi oluşturma hatası:", err);
+      res.status(500).json({ error: "Talep oluşturulamadi" });
     }
   });
 
@@ -5677,8 +5677,8 @@ Sky Fethiye`;
       const ticket = await storage.updateSupportTicket(Number(req.params.id), req.body);
       res.json(ticket);
     } catch (err) {
-      console.error("Destek talebi guncelleme hatasi:", err);
-      res.status(500).json({ error: "Talep guncellenemedi" });
+      console.error("Destek talebi güncelleme hatası:", err);
+      res.status(500).json({ error: "Talep güncellenemedi" });
     }
   });
 
@@ -5689,8 +5689,8 @@ Sky Fethiye`;
       const responses = await storage.getTicketResponses(Number(req.params.ticketId));
       res.json(responses);
     } catch (err) {
-      console.error("Talep yaniti hatasi:", err);
-      res.status(500).json({ error: "Yanitlar alinamadi" });
+      console.error("Talep yaniti hatası:", err);
+      res.status(500).json({ error: "Yanitlar alınamadı" });
     }
   });
 
@@ -5702,8 +5702,8 @@ Sky Fethiye`;
       });
       res.json(response);
     } catch (err) {
-      console.error("Talep yaniti olusturma hatasi:", err);
-      res.status(500).json({ error: "Yanit olusturulamadi" });
+      console.error("Talep yaniti oluşturma hatası:", err);
+      res.status(500).json({ error: "Yanit oluşturulamadi" });
     }
   });
 
@@ -5742,8 +5742,8 @@ Sky Fethiye`;
         hostname: os.hostname()
       });
     } catch (err) {
-      console.error("Sistem istatistik hatasi:", err);
-      res.status(500).json({ error: "Sistem istatistikleri alinamadi" });
+      console.error("Sistem istatistik hatası:", err);
+      res.status(500).json({ error: "Sistem istatistikleri alınamadı" });
     }
   });
 
@@ -5752,8 +5752,8 @@ Sky Fethiye`;
       const stats = await storage.getDatabaseStats();
       res.json(stats);
     } catch (err) {
-      console.error("Veritabani istatistik hatasi:", err);
-      res.status(500).json({ error: "Veritabani istatistikleri alinamadi" });
+      console.error("Veritabani istatistik hatası:", err);
+      res.status(500).json({ error: "Veritabani istatistikleri alınamadı" });
     }
   });
 
@@ -5765,8 +5765,8 @@ Sky Fethiye`;
       const backups = await storage.getDatabaseBackups();
       res.json(backups);
     } catch (err) {
-      console.error("Yedek listesi hatasi:", err);
-      res.status(500).json({ error: "Yedekler alinamadi" });
+      console.error("Yedek listesi hatası:", err);
+      res.status(500).json({ error: "Yedekler alınamadı" });
     }
   });
 
@@ -5826,11 +5826,11 @@ Sky Fethiye`;
       res.json({ 
         success: true, 
         backup,
-        message: `${tableCount} tablo ve ${totalRows} kayit yedeklendi`
+        message: `${tableCount} tablo ve ${totalRows} kayıt yedeklendi`
       });
     } catch (err) {
-      console.error("Yedekleme hatasi:", err);
-      res.status(500).json({ error: "Yedek olusturulamadi" });
+      console.error("Yedekleme hatası:", err);
+      res.status(500).json({ error: "Yedek oluşturulamadi" });
     }
   });
 
@@ -5839,7 +5839,7 @@ Sky Fethiye`;
     try {
       const backup = await storage.getDatabaseBackup(Number(req.params.id));
       if (!backup) {
-        return res.status(404).json({ error: "Yedek bulunamadi" });
+        return res.status(404).json({ error: "Yedek bulunamadı" });
       }
       
       // Get all table data for export
@@ -5876,7 +5876,7 @@ Sky Fethiye`;
       res.setHeader('Content-Disposition', `attachment; filename="${backup.fileName}"`);
       res.json(exportData);
     } catch (err) {
-      console.error("Yedek indirme hatasi:", err);
+      console.error("Yedek indirme hatası:", err);
       res.status(500).json({ error: "Yedek indirilemedi" });
     }
   });
@@ -5887,7 +5887,7 @@ Sky Fethiye`;
       await storage.deleteDatabaseBackup(Number(req.params.id));
       res.json({ success: true, message: "Yedek silindi" });
     } catch (err) {
-      console.error("Yedek silme hatasi:", err);
+      console.error("Yedek silme hatası:", err);
       res.status(500).json({ error: "Yedek silinemedi" });
     }
   });
@@ -5900,8 +5900,8 @@ Sky Fethiye`;
       const results = await storage.bulkChangePlan(licenseIds, newPlanId);
       res.json(results);
     } catch (err) {
-      console.error("Toplu plan degisikligi hatasi:", err);
-      res.status(500).json({ error: "Plan degisikligi yapilamadi" });
+      console.error("Toplu plan degisikligi hatası:", err);
+      res.status(500).json({ error: "Plan degisikligi yapılamadı" });
     }
   });
 
@@ -5911,8 +5911,8 @@ Sky Fethiye`;
       const results = await storage.bulkExtendLicense(licenseIds, days);
       res.json(results);
     } catch (err) {
-      console.error("Toplu lisans uzatma hatasi:", err);
-      res.status(500).json({ error: "Lisans uzatma yapilamadi" });
+      console.error("Toplu lisans uzatma hatası:", err);
+      res.status(500).json({ error: "Lisans uzatma yapılamadı" });
     }
   });
 
@@ -5923,8 +5923,8 @@ Sky Fethiye`;
       const details = await storage.getAgencyDetails(Number(req.params.licenseId));
       res.json(details);
     } catch (err) {
-      console.error("Ajans detayi hatasi:", err);
-      res.status(500).json({ error: "Ajans detaylari alinamadi" });
+      console.error("Ajans detayi hatası:", err);
+      res.status(500).json({ error: "Ajans detayları alınamadı" });
     }
   });
 
@@ -5937,8 +5937,8 @@ Sky Fethiye`;
       const summary = await storage.getRevenueSummary(startDate, endDate);
       res.json(summary);
     } catch (err) {
-      console.error("Gelir ozeti hatasi:", err);
-      res.status(500).json({ error: "Gelir ozeti alinamadi" });
+      console.error("Gelir özeti hatası:", err);
+      res.status(500).json({ error: "Gelir özeti alınamadı" });
     }
   });
 
@@ -5948,8 +5948,8 @@ Sky Fethiye`;
       const monthly = await storage.getMonthlyRevenue(year);
       res.json(monthly);
     } catch (err) {
-      console.error("Aylik gelir hatasi:", err);
-      res.status(500).json({ error: "Aylik gelir alinamadi" });
+      console.error("Aylık gelir hatası:", err);
+      res.status(500).json({ error: "Aylık gelir alınamadı" });
     }
   });
 
@@ -5958,8 +5958,8 @@ Sky Fethiye`;
       const invoices = await storage.getOverdueInvoices();
       res.json(invoices);
     } catch (err) {
-      console.error("Vadesi gecmis fatura hatasi:", err);
-      res.status(500).json({ error: "Vadesi gecmis faturalar alinamadi" });
+      console.error("Vadesi geçmiş fatura hatası:", err);
+      res.status(500).json({ error: "Vadesi geçmiş faturalar alınamadı" });
     }
   });
 
@@ -5969,8 +5969,8 @@ Sky Fethiye`;
       const invoice = await storage.generateInvoice(licenseId, periodStart, periodEnd);
       res.json(invoice);
     } catch (err) {
-      console.error("Fatura olusturma hatasi:", err);
-      res.status(500).json({ error: "Fatura olusturulamadi" });
+      console.error("Fatura oluşturma hatası:", err);
+      res.status(500).json({ error: "Fatura oluşturulamadi" });
     }
   });
 
@@ -5984,15 +5984,15 @@ Sky Fethiye`;
       // SECURITY: Get tenant ID from authenticated session
       const tenantId = req.session?.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+        return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
       }
 
       const allUsers = await storage.getAppUsers();
       const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
       res.json(tenantUsers);
     } catch (err) {
-      console.error("Tenant kullanici listesi hatasi:", err);
-      res.status(500).json({ error: "Kullanicilar alinamadi" });
+      console.error("Tenant kullanıcı listesi hatası:", err);
+      res.status(500).json({ error: "Kullanıcılar alınamadı" });
     }
   });
 
@@ -6002,7 +6002,7 @@ Sky Fethiye`;
       // SECURITY: Get tenant ID from authenticated session, ignore client-provided value
       const tenantId = req.session?.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+        return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
       }
 
       const { username, email, password, name, phone, roleIds } = req.body;
@@ -6017,13 +6017,13 @@ Sky Fethiye`;
       const userLimit = (tenantSub as any)?.plan?.maxUsers || 5; // Default 5 if no plan
       
       if (tenantUsers.length >= userLimit) {
-        return res.status(400).json({ error: `Kullanici limitine ulastiiniz (${userLimit}). Daha fazla kullanici eklemek icin planinizi yukseltiniz.` });
+        return res.status(400).json({ error: `Kullanıcı limitine ulastiiniz (${userLimit}). Daha fazla kullanıcı eklemek için planinizi yukseltiniz.` });
       }
 
       // Check if username or email already exists
       const existingUsername = await storage.getAppUserByUsername(username);
       if (existingUsername) {
-        return res.status(400).json({ error: "Bu kullanici adi zaten kullaniliyor" });
+        return res.status(400).json({ error: "Bu kullanıcı adi zaten kullaniliyor" });
       }
       const existingEmail = await storage.getAppUserByEmail(email);
       if (existingEmail) {
@@ -6033,7 +6033,7 @@ Sky Fethiye`;
       // Get tenant info
       const tenant = await storage.getTenant(tenantId);
       if (!tenant) {
-        return res.status(400).json({ error: "Tenant bulunamadi" });
+        return res.status(400).json({ error: "Tenant bulunamadı" });
       }
 
       const passwordHash = hashPassword(password);
@@ -6052,7 +6052,7 @@ Sky Fethiye`;
         planId: null,
         maxActivities: 50,
         maxReservationsPerMonth: 1000,
-        notes: `${tenant.name} acentasi kullanicisi`,
+        notes: `${tenant.name} acentasi kullanıcısi`,
         isActive: true,
       });
 
@@ -6065,8 +6065,8 @@ Sky Fethiye`;
 
       res.json(user);
     } catch (err) {
-      console.error("Tenant kullanici olusturma hatasi:", err);
-      res.status(500).json({ error: "Kullanici olusturulamadi" });
+      console.error("Tenant kullanıcı oluşturma hatası:", err);
+      res.status(500).json({ error: "Kullanıcı oluşturulamadi" });
     }
   });
 
@@ -6076,7 +6076,7 @@ Sky Fethiye`;
       // SECURITY: Get tenant ID from authenticated session
       const tenantId = req.session?.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+        return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
       }
 
       const id = Number(req.params.id);
@@ -6084,7 +6084,7 @@ Sky Fethiye`;
       // SECURITY: Verify the user being updated belongs to the current tenant
       const existingUser = await storage.getAppUser(id);
       if (!existingUser || existingUser.tenantId !== tenantId) {
-        return res.status(403).json({ error: "Bu kullaniciyi duzenleme yetkiniz yok" });
+        return res.status(403).json({ error: "Bu kullanıcıyi düzenleme yetkiniz yok" });
       }
 
       const { password, roleIds, ...updateData } = req.body;
@@ -6115,8 +6115,8 @@ Sky Fethiye`;
 
       res.json(user);
     } catch (err) {
-      console.error("Tenant kullanici guncelleme hatasi:", err);
-      res.status(500).json({ error: "Kullanici guncellenemedi" });
+      console.error("Tenant kullanıcı güncelleme hatası:", err);
+      res.status(500).json({ error: "Kullanıcı güncellenemedi" });
     }
   });
 
@@ -6126,7 +6126,7 @@ Sky Fethiye`;
       // SECURITY: Get tenant ID from authenticated session
       const tenantId = req.session?.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+        return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
       }
 
       const id = Number(req.params.id);
@@ -6134,14 +6134,14 @@ Sky Fethiye`;
       // SECURITY: Verify the user being deleted belongs to the current tenant
       const existingUser = await storage.getAppUser(id);
       if (!existingUser || existingUser.tenantId !== tenantId) {
-        return res.status(403).json({ error: "Bu kullaniciyi silme yetkiniz yok" });
+        return res.status(403).json({ error: "Bu kullanıcıyi silme yetkiniz yok" });
       }
 
       await storage.deleteAppUser(id);
       res.json({ success: true });
     } catch (err) {
-      console.error("Tenant kullanici silme hatasi:", err);
-      res.status(500).json({ error: "Kullanici silinemedi" });
+      console.error("Tenant kullanıcı silme hatası:", err);
+      res.status(500).json({ error: "Kullanıcı silinemedi" });
     }
   });
 
@@ -6152,8 +6152,8 @@ Sky Fethiye`;
       const users = await storage.getAppUsers();
       res.json(users);
     } catch (err) {
-      console.error("Kullanici listesi hatasi:", err);
-      res.status(500).json({ error: "Kullanicilar alinamadi" });
+      console.error("Kullanıcı listesi hatası:", err);
+      res.status(500).json({ error: "Kullanıcılar alınamadı" });
     }
   });
 
@@ -6161,12 +6161,12 @@ Sky Fethiye`;
     try {
       const user = await storage.getAppUser(Number(req.params.id));
       if (!user) {
-        return res.status(404).json({ error: "Kullanici bulunamadi" });
+        return res.status(404).json({ error: "Kullanıcı bulunamadı" });
       }
       res.json(user);
     } catch (err) {
-      console.error("Kullanici detay hatasi:", err);
-      res.status(500).json({ error: "Kullanici alinamadi" });
+      console.error("Kullanıcı detay hatası:", err);
+      res.status(500).json({ error: "Kullanıcı alınamadı" });
     }
   });
 
@@ -6177,7 +6177,7 @@ Sky Fethiye`;
       // Check if username or email already exists
       const existingUsername = await storage.getAppUserByUsername(username);
       if (existingUsername) {
-        return res.status(400).json({ error: "Bu kullanici adi zaten kullaniliyor" });
+        return res.status(400).json({ error: "Bu kullanıcı adi zaten kullaniliyor" });
       }
       const existingEmail = await storage.getAppUserByEmail(email);
       if (existingEmail) {
@@ -6213,8 +6213,8 @@ Sky Fethiye`;
 
       res.json(user);
     } catch (err) {
-      console.error("Kullanici olusturma hatasi:", err);
-      res.status(500).json({ error: "Kullanici olusturulamadi" });
+      console.error("Kullanıcı oluşturma hatası:", err);
+      res.status(500).json({ error: "Kullanıcı oluşturulamadi" });
     }
   });
 
@@ -6261,8 +6261,8 @@ Sky Fethiye`;
 
       res.json(user);
     } catch (err) {
-      console.error("Kullanici guncelleme hatasi:", err);
-      res.status(500).json({ error: "Kullanici guncellenemedi" });
+      console.error("Kullanıcı güncelleme hatası:", err);
+      res.status(500).json({ error: "Kullanıcı güncellenemedi" });
     }
   });
 
@@ -6271,8 +6271,8 @@ Sky Fethiye`;
       await storage.deleteAppUser(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
-      console.error("Kullanici silme hatasi:", err);
-      res.status(500).json({ error: "Kullanici silinemedi" });
+      console.error("Kullanıcı silme hatası:", err);
+      res.status(500).json({ error: "Kullanıcı silinemedi" });
     }
   });
 
@@ -6302,35 +6302,35 @@ Sky Fethiye`;
       };
 
       if (!user) {
-        logEntry.failureReason = 'Kullanici bulunamadi';
+        logEntry.failureReason = 'Kullanıcı bulunamadı';
         await storage.createUserLoginLog(logEntry);
-        return res.status(401).json({ error: "Gecersiz kullanici adi veya sifre" });
+        return res.status(401).json({ error: "Geçersiz kullanıcı adi veya şifre" });
       }
 
       if (!user.isActive) {
         logEntry.failureReason = 'Hesap aktif degil';
         await storage.createUserLoginLog(logEntry);
-        return res.status(401).json({ error: "Hesabiniz aktif degil" });
+        return res.status(401).json({ error: "Hesabıniz aktif degil" });
       }
 
       if (user.isSuspended) {
-        logEntry.failureReason = 'Hesap askiya alinmis';
+        logEntry.failureReason = 'Hesap askiya alınmış';
         await storage.createUserLoginLog(logEntry);
-        return res.status(401).json({ error: "Hesabiniz askiya alinmis: " + (user.suspendReason || '') });
+        return res.status(401).json({ error: "Hesabıniz askiya alınmış: " + (user.suspendReason || '') });
       }
 
       // Verify password using salted hash
       if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) {
-        logEntry.failureReason = 'Yanlis sifre';
+        logEntry.failureReason = 'Yanlış şifre';
         await storage.createUserLoginLog(logEntry);
-        return res.status(401).json({ error: "Gecersiz kullanici adi veya sifre" });
+        return res.status(401).json({ error: "Geçersiz kullanıcı adi veya şifre" });
       }
 
       // Check membership expiration
       if (user.membershipEndDate && new Date(user.membershipEndDate) < new Date()) {
-        logEntry.failureReason = 'Uyelik suresi dolmus';
+        logEntry.failureReason = 'Üyelik süresi dolmus';
         await storage.createUserLoginLog(logEntry);
-        return res.status(401).json({ error: "Uyelik suresiz dolmus. Lutfen yenileyin." });
+        return res.status(401).json({ error: "Üyelik süresiz dolmus. Lutfen yenileyin." });
       }
 
       // Successful login
@@ -6353,7 +6353,7 @@ Sky Fethiye`;
       req.session.regenerate((err) => {
         if (err) {
           console.error("Session regeneration error:", err);
-          return res.status(500).json({ error: "Giris yapilamadi" });
+          return res.status(500).json({ error: "Giriş yapılamadı" });
         }
 
         // Store session data for server-side authorization
@@ -6366,7 +6366,7 @@ Sky Fethiye`;
         req.session.save((saveErr) => {
           if (saveErr) {
             console.error("Session save error:", saveErr);
-            return res.status(500).json({ error: "Giris yapilamadi" });
+            return res.status(500).json({ error: "Giriş yapılamadı" });
           }
 
           // Don't send password hash
@@ -6388,8 +6388,8 @@ Sky Fethiye`;
         });
       });
     } catch (err) {
-      console.error("Giris hatasi:", err);
-      res.status(500).json({ error: "Giris yapilamadi" });
+      console.error("Giriş hatası:", err);
+      res.status(500).json({ error: "Giriş yapılamadı" });
     }
   });
 
@@ -6398,14 +6398,14 @@ Sky Fethiye`;
       // SECURITY: Only use session-based authentication - no header fallback
       const userId = req.session?.userId;
       if (!userId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
+        return res.status(401).json({ error: "Oturum bulunamadı" });
       }
 
       const user = await storage.getAppUser(Number(userId));
       if (!user) {
         // Session has invalid user - destroy it
         req.session.destroy(() => {});
-        return res.status(401).json({ error: "Kullanici bulunamadi" });
+        return res.status(401).json({ error: "Kullanıcı bulunamadı" });
       }
 
       const permissions = await storage.getUserPermissions(user.id);
@@ -6433,7 +6433,7 @@ Sky Fethiye`;
         } : null,
       });
     } catch (err) {
-      console.error("Oturum kontrol hatasi:", err);
+      console.error("Oturum kontrol hatası:", err);
       res.status(500).json({ error: "Oturum kontrol edilemedi" });
     }
   });
@@ -6450,7 +6450,7 @@ Sky Fethiye`;
     req.session.destroy((err) => {
       if (err) {
         console.error("Logout error:", err);
-        return res.status(500).json({ error: "Cikis yapilamadi" });
+        return res.status(500).json({ error: "Çıkış yapılamadı" });
       }
       // Clear session cookie with same options used in session middleware
       res.clearCookie('connect.sid', {
@@ -6468,37 +6468,37 @@ Sky Fethiye`;
     try {
       const userId = req.session?.userId;
       if (!userId) {
-        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+        return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
       }
 
       const { currentPassword, newPassword } = req.body;
 
       if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: "Mevcut ve yeni sifre gerekli" });
+        return res.status(400).json({ error: "Mevcut ve yeni şifre gerekli" });
       }
 
       if (newPassword.length < 6) {
-        return res.status(400).json({ error: "Yeni sifre en az 6 karakter olmali" });
+        return res.status(400).json({ error: "Yeni şifre en az 6 karakter olmali" });
       }
 
       const user = await storage.getAppUser(Number(userId));
       if (!user) {
-        return res.status(404).json({ error: "Kullanici bulunamadi" });
+        return res.status(404).json({ error: "Kullanıcı bulunamadı" });
       }
 
       // Verify current password
       if (!user.passwordHash || !verifyPassword(currentPassword, user.passwordHash)) {
-        return res.status(401).json({ error: "Mevcut sifre yanlis" });
+        return res.status(401).json({ error: "Mevcut şifre yanlış" });
       }
 
       // Hash new password and update
       const newPasswordHash = hashPassword(newPassword);
       await storage.updateAppUser(user.id, { passwordHash: newPasswordHash });
 
-      res.json({ success: true, message: "Sifre basariyla degistirildi" });
+      res.json({ success: true, message: "Şifre basariyla değiştirildi" });
     } catch (err) {
-      console.error("Sifre degistirme hatasi:", err);
-      res.status(500).json({ error: "Sifre degistirilemedi" });
+      console.error("Şifre değiştirme hatası:", err);
+      res.status(500).json({ error: "Şifre değiştirilemedi" });
     }
   });
 
@@ -6510,8 +6510,8 @@ Sky Fethiye`;
       const roles = await storage.getRoles();
       res.json(roles);
     } catch (err) {
-      console.error("Rol listesi hatasi:", err);
-      res.status(500).json({ error: "Roller alinamadi" });
+      console.error("Rol listesi hatası:", err);
+      res.status(500).json({ error: "Roller alınamadı" });
     }
   });
 
@@ -6520,8 +6520,8 @@ Sky Fethiye`;
       const role = await storage.createRole(req.body);
       res.json(role);
     } catch (err) {
-      console.error("Rol olusturma hatasi:", err);
-      res.status(500).json({ error: "Rol olusturulamadi" });
+      console.error("Rol oluşturma hatası:", err);
+      res.status(500).json({ error: "Rol oluşturulamadi" });
     }
   });
 
@@ -6530,8 +6530,8 @@ Sky Fethiye`;
       const role = await storage.updateRole(Number(req.params.id), req.body);
       res.json(role);
     } catch (err) {
-      console.error("Rol guncelleme hatasi:", err);
-      res.status(500).json({ error: "Rol guncellenemedi" });
+      console.error("Rol güncelleme hatası:", err);
+      res.status(500).json({ error: "Rol güncellenemedi" });
     }
   });
 
@@ -6540,7 +6540,7 @@ Sky Fethiye`;
       await storage.deleteRole(Number(req.params.id));
       res.json({ success: true });
     } catch (err: any) {
-      console.error("Rol silme hatasi:", err);
+      console.error("Rol silme hatası:", err);
       res.status(400).json({ error: err.message || "Rol silinemedi" });
     }
   });
@@ -6552,8 +6552,8 @@ Sky Fethiye`;
       const permissions = await storage.getPermissions();
       res.json(permissions);
     } catch (err) {
-      console.error("Izin listesi hatasi:", err);
-      res.status(500).json({ error: "Izinler alinamadi" });
+      console.error("Izin listesi hatası:", err);
+      res.status(500).json({ error: "Izinler alınamadı" });
     }
   });
 
@@ -6562,7 +6562,7 @@ Sky Fethiye`;
       await storage.initializeDefaultPermissions();
       res.json({ success: true });
     } catch (err) {
-      console.error("Izin baslat hatasi:", err);
+      console.error("Izin baslat hatası:", err);
       res.status(500).json({ error: "Izinler baslatilamadi" });
     }
   });
@@ -6574,8 +6574,8 @@ Sky Fethiye`;
       const rolePermissions = await storage.getRolePermissions(Number(req.params.id));
       res.json(rolePermissions);
     } catch (err) {
-      console.error("Rol izinleri hatasi:", err);
-      res.status(500).json({ error: "Rol izinleri alinamadi" });
+      console.error("Rol izinleri hatası:", err);
+      res.status(500).json({ error: "Rol izinleri alınamadı" });
     }
   });
 
@@ -6585,8 +6585,8 @@ Sky Fethiye`;
       await storage.setRolePermissions(Number(req.params.id), permissionIds || []);
       res.json({ success: true });
     } catch (err) {
-      console.error("Rol izinleri guncelleme hatasi:", err);
-      res.status(500).json({ error: "Rol izinleri guncellenemedi" });
+      console.error("Rol izinleri güncelleme hatası:", err);
+      res.status(500).json({ error: "Rol izinleri güncellenemedi" });
     }
   });
 
@@ -6597,8 +6597,8 @@ Sky Fethiye`;
       const userRoles = await storage.getUserRoles(Number(req.params.id));
       res.json(userRoles);
     } catch (err) {
-      console.error("Kullanici rolleri hatasi:", err);
-      res.status(500).json({ error: "Kullanici rolleri alinamadi" });
+      console.error("Kullanıcı rolleri hatası:", err);
+      res.status(500).json({ error: "Kullanıcı rolleri alınamadı" });
     }
   });
 
@@ -6607,8 +6607,8 @@ Sky Fethiye`;
       const permissions = await storage.getUserPermissions(Number(req.params.id));
       res.json(permissions);
     } catch (err) {
-      console.error("Kullanici izinleri hatasi:", err);
-      res.status(500).json({ error: "Kullanici izinleri alinamadi" });
+      console.error("Kullanıcı izinleri hatası:", err);
+      res.status(500).json({ error: "Kullanıcı izinleri alınamadı" });
     }
   });
 
@@ -6621,8 +6621,8 @@ Sky Fethiye`;
       const logs = await storage.getUserLoginLogs(userId, limit);
       res.json(logs);
     } catch (err) {
-      console.error("Kullanici giris loglari hatasi:", err);
-      res.status(500).json({ error: "Giris loglari alinamadi" });
+      console.error("Kullanıcı giriş loglari hatası:", err);
+      res.status(500).json({ error: "Giriş loglari alınamadı" });
     }
   });
 

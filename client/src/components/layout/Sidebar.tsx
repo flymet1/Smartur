@@ -300,7 +300,7 @@ export function Sidebar() {
       // Unlimited membership (membershipEndDate is null)
       if (!currentUser.membershipEndDate) {
         return { 
-          text: 'Aktif / Suresiz', 
+          text: 'Aktif / Süresiz', 
           color: 'text-accent-foreground', 
           bgColor: 'bg-accent',
           isActive: true,
@@ -345,7 +345,7 @@ export function Sidebar() {
     }
     
     // No user logged in - show neutral state
-    return { text: 'Giris Yapiniz', color: 'text-muted-foreground', bgColor: 'bg-muted', isActive: false, isLoading: false };
+    return { text: 'Giriş Yapiniz', color: 'text-muted-foreground', bgColor: 'bg-muted', isActive: false, isLoading: false };
   };
 
   const licenseStatusInfo = getLicenseStatusInfo();
@@ -461,7 +461,7 @@ export function Sidebar() {
                   <Link href="/login">
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground">
                       <LogIn className="h-4 w-4" />
-                      Giris Yap
+                      Giriş Yap
                     </div>
                   </Link>
                 )}
@@ -602,7 +602,7 @@ export function Sidebar() {
                   "text-xs px-1.5 py-0.5 rounded font-semibold",
                   isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
                 )}>
-                  {isBotEnabled ? "Aktif" : "Kapali"}
+                  {isBotEnabled ? "Aktif" : "Kapalı"}
                 </span>
               </div>
             </Link>
@@ -678,7 +678,7 @@ export function Sidebar() {
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )} data-testid="button-login">
                 <LogIn className="h-4 w-4" />
-                Giris Yap
+                Giriş Yap
               </div>
             </Link>
           )}

@@ -57,7 +57,7 @@ export default function Support() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject || !requestType || !message || !senderName) {
-      toast({ title: "Uyarı", description: "Lütfen tüm zorunlu alanları doldurun.", variant: "destructive" });
+      toast({ title: "Uyarı", description: "Lütfen tüm zorunlu alanları doldürün.", variant: "destructive" });
       return;
     }
     sendMutation.mutate({ subject, requestType, message, senderName, senderEmail, developerEmail });
@@ -65,8 +65,8 @@ export default function Support() {
 
   const requestTypes = [
     { value: "hata", label: "Hata Bildirimi", icon: AlertTriangle, color: "text-red-500" },
-    { value: "guncelleme", label: "Güncelleme İsteği", icon: MessageSquare, color: "text-blue-500" },
-    { value: "oneri", label: "Öneri", icon: Lightbulb, color: "text-yellow-500" },
+    { value: "güncelleme", label: "Güncelleme İsteği", icon: MessageSquare, color: "text-blue-500" },
+    { value: "öneri", label: "Öneri", icon: Lightbulb, color: "text-yellow-500" },
     { value: "soru", label: "Soru", icon: HelpCircleIcon, color: "text-purple-500" },
     { value: "diger", label: "Diğer", icon: MoreHorizontal, color: "text-muted-foreground" },
   ];
@@ -92,7 +92,7 @@ export default function Support() {
               Yeni Destek Talebi
             </CardTitle>
             <CardDescription>
-              Talebiniz geliştirici ekibine iletilecektir.
+              Talebiniz geliştiriçi ekibine iletilecektir.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -186,7 +186,7 @@ export default function Support() {
               <div>
                 <h3 className="font-semibold mb-1">Acil Durumlar</h3>
                 <p className="text-sm text-muted-foreground">
-                  Acil sistem sorunları için doğrudan geliştirici ekibine ulaşabilirsiniz. 
+                  Acil sistem sorunları için doğrudan geliştiriçi ekibine ulaşabilirsiniz. 
                   Normal talepler genellikle 24-48 saat içinde yanıtlanır.
                 </p>
               </div>

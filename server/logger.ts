@@ -47,7 +47,7 @@ export async function logSystem(entry: LogEntry): Promise<void> {
       phone: entry.phone,
     });
   } catch (err) {
-    console.error('Log kaydetme hatasi:', err);
+    console.error('Log kaydetme hatası:', err);
   }
 }
 
@@ -110,7 +110,7 @@ export async function attachLogsToSupportRequest(supportRequestId: number, phone
       messageSnapshot = '';
     }
   } catch (err) {
-    console.error('Log ekleme hatasi:', err);
+    console.error('Log ekleme hatası:', err);
   }
 }
 
@@ -139,6 +139,6 @@ export async function cleanupOldLogs(): Promise<void> {
     const cutoffTime = new Date(Date.now() - LOG_RETENTION_HOURS * 60 * 60 * 1000);
     await db.delete(systemLogs).where(gte(systemLogs.createdAt, cutoffTime));
   } catch (err) {
-    console.error('Eski log temizleme hatasi:', err);
+    console.error('Eski log temizleme hatası:', err);
   }
 }

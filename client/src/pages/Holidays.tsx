@@ -23,19 +23,19 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const HOLIDAY_TYPES = [
-  { value: 'official', label: 'Resmi Tatil' },
+  { value: 'offiçial', label: 'Resmi Tatil' },
   { value: 'religious', label: 'Dini Bayram' },
   { value: 'special', label: 'Özel Gün' },
 ];
 
 const PRESET_HOLIDAYS_2026 = [
-  { name: "Yılbaşı", startDate: "2026-01-01", endDate: "2026-01-01", type: "official", keywords: '["yılbaşı", "yeni yıl", "1 ocak"]' },
-  { name: "23 Nisan Ulusal Egemenlik ve Çocuk Bayramı", startDate: "2026-04-23", endDate: "2026-04-23", type: "official", keywords: '["23 nisan", "çocuk bayramı", "ulusal egemenlik"]' },
-  { name: "1 Mayıs Emek ve Dayanışma Günü", startDate: "2026-05-01", endDate: "2026-05-01", type: "official", keywords: '["1 mayıs", "işçi bayramı", "emek günü"]' },
-  { name: "19 Mayıs Atatürk'ü Anma Gençlik ve Spor Bayramı", startDate: "2026-05-19", endDate: "2026-05-19", type: "official", keywords: '["19 mayıs", "gençlik bayramı"]' },
-  { name: "15 Temmuz Demokrasi ve Milli Birlik Günü", startDate: "2026-07-15", endDate: "2026-07-15", type: "official", keywords: '["15 temmuz"]' },
-  { name: "30 Ağustos Zafer Bayramı", startDate: "2026-08-30", endDate: "2026-08-30", type: "official", keywords: '["30 ağustos", "zafer bayramı"]' },
-  { name: "29 Ekim Cumhuriyet Bayramı", startDate: "2026-10-29", endDate: "2026-10-29", type: "official", keywords: '["29 ekim", "cumhuriyet bayramı"]' },
+  { name: "Yılbaşı", startDate: "2026-01-01", endDate: "2026-01-01", type: "offiçial", keywords: '["yılbaşı", "yeni yıl", "1 ocak"]' },
+  { name: "23 Nisan Ulusal Egemenlik ve Çocuk Bayramı", startDate: "2026-04-23", endDate: "2026-04-23", type: "offiçial", keywords: '["23 nisan", "çocuk bayramı", "ulusal egemenlik"]' },
+  { name: "1 Mayıs Emek ve Dayanışma Günü", startDate: "2026-05-01", endDate: "2026-05-01", type: "offiçial", keywords: '["1 mayıs", "işçi bayramı", "emek günü"]' },
+  { name: "19 Mayıs Atatürk'ü Anma Gençlik ve Spor Bayramı", startDate: "2026-05-19", endDate: "2026-05-19", type: "offiçial", keywords: '["19 mayıs", "gençlik bayramı"]' },
+  { name: "15 Temmuz Demokrasi ve Milli Birlik Günü", startDate: "2026-07-15", endDate: "2026-07-15", type: "offiçial", keywords: '["15 temmuz"]' },
+  { name: "30 Ağustos Zafer Bayramı", startDate: "2026-08-30", endDate: "2026-08-30", type: "offiçial", keywords: '["30 ağustos", "zafer bayramı"]' },
+  { name: "29 Ekim Cumhuriyet Bayramı", startDate: "2026-10-29", endDate: "2026-10-29", type: "offiçial", keywords: '["29 ekim", "cumhuriyet bayramı"]' },
   { name: "Ramazan Bayramı 2026", startDate: "2026-03-20", endDate: "2026-03-22", type: "religious", keywords: '["ramazan bayramı", "şeker bayramı", "bayram"]' },
   { name: "Kurban Bayramı 2026", startDate: "2026-05-27", endDate: "2026-05-30", type: "religious", keywords: '["kurban bayramı", "bayram"]' },
 ];
@@ -233,7 +233,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
   const [name, setName] = useState(holiday?.name || "");
   const [startDate, setStartDate] = useState(holiday?.startDate || "");
   const [endDate, setEndDate] = useState(holiday?.endDate || "");
-  const [type, setType] = useState(holiday?.type || "official");
+  const [type, setType] = useState(holiday?.type || "offiçial");
   const [keywordsText, setKeywordsText] = useState(jsonToCommaSeparated(holiday?.keywords || "[]"));
   const [notes, setNotes] = useState(holiday?.notes || "");
   const [isActive, setIsActive] = useState(holiday?.isActive !== false);
@@ -261,7 +261,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
     setName("");
     setStartDate("");
     setEndDate("");
-    setType("official");
+    setType("offiçial");
     setKeywordsText("");
     setNotes("");
     setIsActive(true);
@@ -269,7 +269,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
 
   const handleSubmit = async () => {
     if (!name || !startDate || !endDate) {
-      toast({ title: "Hata", description: "Tatil adi, baslangic ve bitis tarihi zorunlu.", variant: "destructive" });
+      toast({ title: "Hata", description: "Tatil adi, başlangıç ve bitiş tarihi zorunlu.", variant: "destructive" });
       return;
     }
     
@@ -306,7 +306,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
             setName(holiday.name);
             setStartDate(holiday.startDate);
             setEndDate(holiday.endDate);
-            setType(holiday.type || "official");
+            setType(holiday.type || "offiçial");
             setKeywordsText(jsonToCommaSeparated(holiday.keywords || "[]"));
             setNotes(holiday.notes || "");
             setIsActive(holiday.isActive !== false);
@@ -331,7 +331,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Tatil Adi</Label>
+            <Label htmlFor="name">Tatil Adı</Label>
             <Input
               id="name"
               value={name}
@@ -342,7 +342,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="startDate">Baslangic Tarihi</Label>
+              <Label htmlFor="startDate">Başlangıç Tarihi</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -352,7 +352,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="endDate">Bitis Tarihi</Label>
+              <Label htmlFor="endDate">Bitiş Tarihi</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -384,7 +384,7 @@ function HolidayDialog({ holiday }: { holiday?: Holiday }) {
               placeholder="bayram, tatil, kurban"
               data-testid="input-holiday-keywords"
             />
-            <p className="text-xs text-muted-foreground">Virgul ile ayirarak yazin. Bot bu kelimeleri algiladiginda bu tatili bulur.</p>
+            <p className="text-xs text-muted-foreground">Virgul ile ayirarak yazın. Bot bu kelimeleri algiladiginda bu tatili bulur.</p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="notes">Notlar</Label>

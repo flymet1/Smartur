@@ -107,7 +107,7 @@ export default function CustomerTracking() {
         return (
           <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 gap-1" data-testid="badge-status-cancelled">
             <XCircle className="w-3 h-3" />
-            Iptal Edildi
+            İptal Edildi
           </Badge>
         );
       default:
@@ -133,7 +133,7 @@ export default function CustomerTracking() {
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-            <p className="text-muted-foreground">Rezervasyon bilgileri yukleniyor...</p>
+            <p className="text-muted-foreground">Rezervasyon bilgileri yükleniyor...</p>
           </CardContent>
         </Card>
       </div>
@@ -146,12 +146,12 @@ export default function CustomerTracking() {
         <Card className="w-full max-w-md border-destructive/50">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <XCircle className="w-12 h-12 text-destructive mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Rezervasyon Bulunamadi</h2>
+            <h2 className="text-xl font-semibold mb-2">Rezervasyon Bulunamadı</h2>
             <p className="text-muted-foreground">
-              Bu takip linki gecersiz veya suresi dolmus olabilir.
+              Bu takip linki geçersiz veya süresi dolmus olabilir.
             </p>
             <p className="text-sm text-muted-foreground mt-4">
-              Sorulariniz icin bizimle iletisime gecebilirsiniz.
+              Sorularınız için bizimle iletişime geçebilirsiniz.
             </p>
           </CardContent>
         </Card>
@@ -182,7 +182,7 @@ export default function CustomerTracking() {
             <CardTitle className="text-2xl" data-testid="text-customer-name">
               Merhaba, {reservation.customerName}
             </CardTitle>
-            <p className="text-muted-foreground mt-2">Rezervasyon Detaylari</p>
+            <p className="text-muted-foreground mt-2">Rezervasyon Detayları</p>
           </CardHeader>
           
           <CardContent className="pt-6 space-y-6">
@@ -197,7 +197,7 @@ export default function CustomerTracking() {
                 <div>
                   <p className="font-medium" data-testid="text-activity-name">{reservation.activityName}</p>
                   {reservation.orderNumber && (
-                    <p className="text-sm text-muted-foreground">Siparis No: {reservation.orderNumber}</p>
+                    <p className="text-sm text-muted-foreground">Sipariş No: {reservation.orderNumber}</p>
                   )}
                 </div>
               </div>
@@ -219,7 +219,7 @@ export default function CustomerTracking() {
               <div className="flex items-center gap-3">
                 <Users className="w-5 h-5 text-primary shrink-0" />
                 <div>
-                  <p className="font-medium" data-testid="text-quantity">{reservation.quantity} Kisi</p>
+                  <p className="font-medium" data-testid="text-quantity">{reservation.quantity} Kişi</p>
                 </div>
               </div>
             </div>
@@ -236,7 +236,7 @@ export default function CustomerTracking() {
             {reservation.status === 'confirmed' && (
               <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
                 <p className="text-green-800 dark:text-green-300 text-sm">
-                  Rezervasyonunuz onaylandi! Belirtilen tarih ve saatte sizi bekliyoruz.
+                  Rezervasyonunuz onaylandı! Belirtilen tarih ve saatte sizi bekliyoruz.
                 </p>
               </div>
             )}
@@ -244,7 +244,7 @@ export default function CustomerTracking() {
             {reservation.status === 'pending' && (
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-center">
                 <p className="text-amber-800 dark:text-amber-300 text-sm">
-                  Rezervasyonunuz beklemede. En kisa surede size donecegiz.
+                  Rezervasyonunuz beklemede. En kısa sürede size döneceğiz.
                 </p>
               </div>
             )}
@@ -252,7 +252,7 @@ export default function CustomerTracking() {
             {reservation.status === 'cancelled' && (
               <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
                 <p className="text-red-800 dark:text-red-300 text-sm">
-                  Rezervasyonunuz iptal edilmistir. Sorulariniz icin bizimle iletisime gecebilirsiniz.
+                  Rezervasyonunuz iptal edilmiştir. Sorularınız için bizimle iletişime geçebilirsiniz.
                 </p>
               </div>
             )}
@@ -265,10 +265,10 @@ export default function CustomerTracking() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <MessageSquare className="w-5 h-5" />
-                Talep Olustur
+                Talep Oluştur
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Rezervasyonunuzla ilgili degisiklik veya iptal talebi olusturabilirsiniz.
+                Rezervasyonunuzla ilgili değişiklik veya iptal talebi oluşturabilirsiniz.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -281,7 +281,7 @@ export default function CustomerTracking() {
                     data-testid="button-time-change"
                   >
                     <Edit3 className="w-4 h-4" />
-                    <span className="text-sm">Saat Degistir</span>
+                    <span className="text-sm">Saat Değiştir</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -290,7 +290,7 @@ export default function CustomerTracking() {
                     data-testid="button-cancellation"
                   >
                     <Ban className="w-4 h-4" />
-                    <span className="text-sm">Iptal Et</span>
+                    <span className="text-sm">İptal Et</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -314,7 +314,7 @@ export default function CustomerTracking() {
                     {requestType === 'cancellation' && (
                       <>
                         <Ban className="w-4 h-4 text-red-500" />
-                        Iptal Talebi
+                        İptal Talebi
                       </>
                     )}
                     {requestType === 'other' && (
@@ -330,7 +330,7 @@ export default function CustomerTracking() {
                       <Label>Tercih Ettiginiz Saat</Label>
                       <Select value={preferredTime} onValueChange={setPreferredTime}>
                         <SelectTrigger data-testid="select-preferred-time">
-                          <SelectValue placeholder="Saat secin" />
+                          <SelectValue placeholder="Saat seçin" />
                         </SelectTrigger>
                         <SelectContent>
                           {reservation?.defaultTimes && reservation.defaultTimes.length > 0 ? (
@@ -355,12 +355,12 @@ export default function CustomerTracking() {
 
                   <div className="space-y-2">
                     <Label>
-                      {requestType === 'cancellation' ? 'Iptal Sebebi (Opsiyonel)' : 'Ek Aciklama (Opsiyonel)'}
+                      {requestType === 'cancellation' ? 'İptal Sebebi (Opsiyonel)' : 'Ek Açıklama (Opsiyonel)'}
                     </Label>
                     <Textarea
                       placeholder={
                         requestType === 'cancellation' 
-                          ? "Iptal sebebinizi yazabilirsiniz..." 
+                          ? "İptal sebebinizi yazabilirsiniz..." 
                           : "Talebinizle ilgili ek bilgi..."
                       }
                       value={requestDetails}
@@ -390,7 +390,7 @@ export default function CustomerTracking() {
                       ) : (
                         <Send className="w-4 h-4 mr-2" />
                       )}
-                      Gonder
+                      Gönder
                     </Button>
                   </div>
                 </div>
@@ -408,7 +408,7 @@ export default function CustomerTracking() {
                 <div>
                   <p className="font-medium">Talebiniz Alindi</p>
                   <p className="text-sm text-muted-foreground">
-                    En kisa surede size donecegiz. Tesekkur ederiz.
+                    En kısa sürede size döneceğiz. Teşekkür ederiz.
                   </p>
                 </div>
               </div>

@@ -108,7 +108,7 @@ function PackageTourCard({ tour, onDelete }: { tour: PackageTour; onDelete: () =
           </Badge>
         </div>
         <p className="text-muted-foreground text-sm line-clamp-2 mb-4 flex-1">
-          {tour.description || "Aciklama yok"}
+          {tour.description || "Açıklama yok"}
         </p>
         
         <div className="flex items-center gap-4 text-sm font-medium text-foreground/80 mb-2">
@@ -178,7 +178,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
     description: tour?.description || '',
     price: tour?.price || 0,
     priceUsd: tour?.priceUsd || 0,
-    confirmationMessage: tour?.confirmationMessage || 'Sayin {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Rezervasyonunuzu takip etmek icin: {takip_linki} Tesekkur ederiz.',
+    confirmationMessage: tour?.confirmationMessage || 'Sayın {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.',
     reservationLink: tour?.reservationLink || '',
     reservationLinkEn: tour?.reservationLinkEn || '',
     active: tour?.active !== false
@@ -198,7 +198,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
         description: tour?.description || '',
         price: tour?.price || 0,
         priceUsd: tour?.priceUsd || 0,
-        confirmationMessage: tour?.confirmationMessage || 'Sayin {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Rezervasyonunuzu takip etmek icin: {takip_linki} Tesekkur ederiz.',
+        confirmationMessage: tour?.confirmationMessage || 'Sayın {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.',
         reservationLink: tour?.reservationLink || '',
         reservationLinkEn: tour?.reservationLinkEn || '',
         active: tour?.active !== false
@@ -312,7 +312,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <Label>Paket Tur Adi</Label>
+              <Label>Paket Tur Adı</Label>
               <Input 
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
@@ -322,7 +322,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
             </div>
             
             <div className="col-span-2">
-              <Label>Isim Eslestirmeleri (WooCommerce icin)</Label>
+              <Label>İsim Eslestirmeleri (WooCommerce için)</Label>
               <div className="flex gap-2 mb-2">
                 <Input 
                   value={aliasInput}
@@ -379,7 +379,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
                 <Package className="w-5 h-5" />
                 Dahil Aktiviteler
               </CardTitle>
-              <CardDescription>Bu pakete dahil olan aktiviteleri ve varsayilan saatlerini tanimlayin</CardDescription>
+              <CardDescription>Bu pakete dahil olan aktiviteleri ve varsayılan saatlerini tanımlayin</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {tourActivities.map((ta, index) => (
@@ -441,11 +441,11 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
           
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <Label>Onay Mesaji</Label>
+              <Label>Onay Mesajı</Label>
               <Textarea 
                 value={form.confirmationMessage}
                 onChange={e => setForm({ ...form, confirmationMessage: e.target.value })}
-                placeholder="Sayin {isim}, rezervasyonunuz onaylandi..."
+                placeholder="Sayın {isim}, rezervasyonunuz onaylandı..."
                 data-testid="input-confirmation-message"
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -454,7 +454,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
             </div>
             
             <div>
-              <Label className="flex items-center gap-1"><LinkIcon className="w-4 h-4" /> Rezervasyon Sayfasi (TR)</Label>
+              <Label className="flex items-center gap-1"><LinkIcon className="w-4 h-4" /> Rezervasyon Sayfası (TR)</Label>
               <Input 
                 value={form.reservationLink}
                 onChange={e => setForm({ ...form, reservationLink: e.target.value })}
@@ -464,7 +464,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
             </div>
             
             <div>
-              <Label className="flex items-center gap-1"><LinkIcon className="w-4 h-4" /> Rezervasyon Sayfasi (EN)</Label>
+              <Label className="flex items-center gap-1"><LinkIcon className="w-4 h-4" /> Rezervasyon Sayfası (EN)</Label>
               <Input 
                 value={form.reservationLinkEn}
                 onChange={e => setForm({ ...form, reservationLinkEn: e.target.value })}
@@ -486,7 +486,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Sik Sorulan Sorular</CardTitle>
-              <CardDescription>Musterilerin sik sordugu sorular ve cevaplar</CardDescription>
+              <CardDescription>Müşterilerin sik sorduğu sorular ve cevaplar</CardDescription>
             </CardHeader>
             <CardContent>
               <FaqEditor 
