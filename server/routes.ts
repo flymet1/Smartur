@@ -3043,6 +3043,65 @@ Sky Fethiye`;
     }
   });
 
+  // === Exchange Rates (from Frankfurter API) ===
+  // Simple in-memory cache for exchange rates
+  let exchangeRateCache: { rates: any; lastUpdated: Date | null } = { rates: null, lastUpdated: null };
+  const CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache
+
+  app.get("/api/finance/exchange-rates", async (req, res) => {
+    try {
+      const now = new Date();
+      
+      // Return cached data if still valid
+      if (exchangeRateCache.rates && exchangeRateCache.lastUpdated && 
+          (now.getTime() - exchangeRateCache.lastUpdated.getTime()) < CACHE_DURATION) {
+        return res.json(exchangeRateCache.rates);
+      }
+
+      // Fetch fresh rates from Frankfurter API
+      const [usdResponse, eurResponse] = await Promise.all([
+        fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,EUR'),
+        fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=TRY,USD')
+      ]);
+
+      if (!usdResponse.ok || !eurResponse.ok) {
+        throw new Error('Failed to fetch exchange rates');
+      }
+
+      const usdData = await usdResponse.json();
+      const eurData = await eurResponse.json();
+
+      const rates = {
+        USD: {
+          TRY: usdData.rates.TRY,
+          EUR: usdData.rates.EUR
+        },
+        EUR: {
+          TRY: eurData.rates.TRY,
+          USD: eurData.rates.USD
+        },
+        TRY: {
+          USD: 1 / usdData.rates.TRY,
+          EUR: 1 / eurData.rates.TRY
+        },
+        lastUpdated: now.toISOString(),
+        date: usdData.date
+      };
+
+      // Update cache
+      exchangeRateCache = { rates, lastUpdated: now };
+
+      res.json(rates);
+    } catch (err) {
+      console.error('Exchange rate fetch error:', err);
+      // Return cached data if available, even if stale
+      if (exchangeRateCache.rates) {
+        return res.json({ ...exchangeRateCache.rates, stale: true });
+      }
+      res.status(500).json({ error: "Döviz kurları alınamadı" });
+    }
+  });
+
   // === Finance - Agencies ===
   app.get("/api/finance/agencies", async (req, res) => {
     try {
