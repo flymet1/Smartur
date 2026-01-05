@@ -11,7 +11,6 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   HelpCircle,
-  Mail,
   Send,
   MessageSquare,
   AlertTriangle,
@@ -168,11 +167,7 @@ export default function Support() {
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  <span>Gönderilecek adres: {developerEmail}</span>
-                </div>
+              <div className="flex justify-end pt-4 border-t">
                 <Button type="submit" disabled={sendMutation.isPending} data-testid="button-send-support">
                   <Send className="h-4 w-4 mr-2" />
                   {sendMutation.isPending ? "Gönderiliyor..." : "Talebi Gönder"}
