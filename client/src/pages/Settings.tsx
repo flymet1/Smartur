@@ -2522,15 +2522,61 @@ interface LicenseData {
   };
 }
 
+interface UserData {
+  id: number;
+  username: string;
+  name: string | null;
+  companyName: string | null;
+  membershipType?: string | null;
+  membershipStartDate?: string | null;
+  membershipEndDate?: string | null;
+  maxActivities?: number;
+  maxReservationsPerMonth?: number;
+}
+
 function LicenseSection() {
   const { toast } = useToast();
   const [licenseKey, setLicenseKey] = useState("");
   const [agencyName, setAgencyName] = useState("");
   const [isActivating, setIsActivating] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+
+  // Check for logged in user
+  useEffect(() => {
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        setCurrentUser(JSON.parse(userData));
+      } catch {
+        setCurrentUser(null);
+      }
+    }
+  }, []);
 
   const { data: licenseData, isLoading, refetch } = useQuery<LicenseData>({
     queryKey: ['/api/license']
   });
+
+  // Calculate user-specific membership status
+  const getUserMembershipStatus = () => {
+    if (!currentUser?.membershipEndDate) return null;
+    
+    const endDate = new Date(currentUser.membershipEndDate);
+    const now = new Date();
+    const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return {
+      valid: daysRemaining > 0,
+      daysRemaining,
+      endDate,
+      membershipType: currentUser.membershipType,
+      companyName: currentUser.companyName,
+      maxActivities: currentUser.maxActivities || 5,
+      maxReservationsPerMonth: currentUser.maxReservationsPerMonth || 100
+    };
+  };
+
+  const userMembership = getUserMembershipStatus();
 
   const handleActivateLicense = async () => {
     if (!licenseKey.trim()) {
@@ -2598,7 +2644,83 @@ function LicenseSection() {
             <div className="space-y-2">
               <Skeleton className="h-20 w-full" />
             </div>
+          ) : userMembership ? (
+            /* Show user-specific membership when logged in */
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Durum</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {userMembership.valid ? (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-orange-500" />
+                    )}
+                    <span className={`font-bold ${userMembership.valid ? 'text-green-600' : 'text-orange-600'}`}>
+                      {userMembership.valid ? `Aktif (${userMembership.daysRemaining} gun kaldi)` : 'Suresi Dolmus'}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Plan</p>
+                  <p className="font-bold mt-1">
+                    {userMembership.membershipType === 'yearly' ? 'Yillik' : 
+                     userMembership.membershipType === 'monthly' ? 'Aylik' : 
+                     userMembership.membershipType === 'trial' ? 'Deneme' : userMembership.membershipType}
+                  </p>
+                  <Badge variant="secondary" className="mt-1">{userMembership.membershipType}</Badge>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Isletme</p>
+                  <p className="font-bold mt-1">{userMembership.companyName || currentUser?.name || '-'}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Bitis Tarihi</p>
+                  <p className="font-bold mt-1">
+                    {userMembership.endDate.toLocaleDateString('tr-TR')}
+                  </p>
+                  {userMembership.daysRemaining <= 30 && userMembership.daysRemaining > 0 && (
+                    <Badge variant="destructive" className="mt-1">Yaklasiyor</Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-muted/50">
+                <p className="text-sm text-muted-foreground mb-3">Kullanim Limitleri</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Aktiviteler</span>
+                      <span className="font-medium">{licenseData?.usage?.activitiesUsed || 0} / {userMembership.maxActivities}</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary rounded-full transition-all" 
+                        style={{ width: `${Math.min(100, ((licenseData?.usage?.activitiesUsed || 0) / userMembership.maxActivities) * 100)}%` }} 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Aylik Rezervasyonlar</span>
+                      <span className="font-medium">{licenseData?.usage?.reservationsThisMonth || 0} / {userMembership.maxReservationsPerMonth}</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary rounded-full transition-all" 
+                        style={{ width: `${Math.min(100, ((licenseData?.usage?.reservationsThisMonth || 0) / userMembership.maxReservationsPerMonth) * 100)}%` }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {!userMembership.valid && (
+                <p className="text-sm text-orange-600">Uyeliginizin suresi dolmus. Lutfen yenileyin.</p>
+              )}
+            </div>
           ) : licenseData?.license ? (
+            /* Fallback to global license for non-logged-in users */
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-4 rounded-lg bg-muted/50">
