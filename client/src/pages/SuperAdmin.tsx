@@ -185,6 +185,7 @@ interface AppUser {
   membershipType: string | null;
   membershipEndDate: string | null;
   planId: number | null;
+  tenantId: number | null;
   isSuspended: boolean;
   isActive: boolean;
   notes: string | null;
@@ -220,6 +221,478 @@ interface UserLoginLog {
   success: boolean;
 }
 
+interface Tenant {
+  id: number;
+  name: string;
+  slug: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  address: string | null;
+  logoUrl: string | null;
+  primaryColor: string | null;
+  accentColor: string | null;
+  timezone: string | null;
+  language: string | null;
+  isActive: boolean;
+  createdAt: string | null;
+}
+
+function TenantManagementSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [isNewTenant, setIsNewTenant] = useState(false);
+  const [tenantForm, setTenantForm] = useState({
+    name: "",
+    slug: "",
+    contactEmail: "",
+    contactPhone: "",
+    address: "",
+    logoUrl: "",
+    primaryColor: "262 83% 58%",
+    accentColor: "142 76% 36%",
+    timezone: "Europe/Istanbul",
+    language: "tr",
+    isActive: true,
+  });
+
+  const { data: tenants = [], isLoading } = useQuery<Tenant[]>({
+    queryKey: ['/api/tenants'],
+  });
+
+  const createTenantMutation = useMutation({
+    mutationFn: (data: typeof tenantForm) => apiRequest('POST', '/api/tenants', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
+      setEditingTenant(null);
+      setIsNewTenant(false);
+      toast({ title: "Basarili", description: "Acenta olusturuldu" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Acenta olusturulamadi", variant: "destructive" });
+    }
+  });
+
+  const updateTenantMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<typeof tenantForm> }) => 
+      apiRequest('PATCH', `/api/tenants/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
+      setEditingTenant(null);
+      toast({ title: "Basarili", description: "Acenta guncellendi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Acenta guncellenemedi", variant: "destructive" });
+    }
+  });
+
+  const deleteTenantMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/tenants/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
+      toast({ title: "Basarili", description: "Acenta silindi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Acenta silinemedi", variant: "destructive" });
+    }
+  });
+
+  const resetForm = () => {
+    setTenantForm({
+      name: "",
+      slug: "",
+      contactEmail: "",
+      contactPhone: "",
+      address: "",
+      logoUrl: "",
+      primaryColor: "262 83% 58%",
+      accentColor: "142 76% 36%",
+      timezone: "Europe/Istanbul",
+      language: "tr",
+      isActive: true,
+    });
+  };
+
+  const openNewTenantDialog = () => {
+    resetForm();
+    setIsNewTenant(true);
+    setEditingTenant({ id: 0 } as Tenant);
+  };
+
+  const openEditTenantDialog = (tenant: Tenant) => {
+    setTenantForm({
+      name: tenant.name || "",
+      slug: tenant.slug || "",
+      contactEmail: tenant.contactEmail || "",
+      contactPhone: tenant.contactPhone || "",
+      address: tenant.address || "",
+      logoUrl: tenant.logoUrl || "",
+      primaryColor: tenant.primaryColor || "262 83% 58%",
+      accentColor: tenant.accentColor || "142 76% 36%",
+      timezone: tenant.timezone || "Europe/Istanbul",
+      language: tenant.language || "tr",
+      isActive: tenant.isActive,
+    });
+    setIsNewTenant(false);
+    setEditingTenant(tenant);
+  };
+
+  const handleSaveTenant = () => {
+    if (isNewTenant) {
+      createTenantMutation.mutate(tenantForm);
+    } else if (editingTenant?.id) {
+      updateTenantMutation.mutate({ id: editingTenant.id, data: tenantForm });
+    }
+  };
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
+        <div>
+          <h2 className="text-lg font-semibold">Acentalar (Tenants)</h2>
+          <p className="text-sm text-muted-foreground">Platformu kullanan acentalari yonetin</p>
+        </div>
+        <Button onClick={openNewTenantDialog} data-testid="button-new-tenant">
+          <Plus className="h-4 w-4 mr-2" />
+          Yeni Acenta
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+      ) : tenants.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            Henuz acenta bulunmuyor.
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Acenta</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>Iletisim</TableHead>
+                <TableHead>Durum</TableHead>
+                <TableHead>Kayit Tarihi</TableHead>
+                <TableHead className="text-right">Islemler</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tenants.map((tenant) => (
+                <TableRow key={tenant.id} data-testid={`row-tenant-${tenant.id}`}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {tenant.logoUrl ? (
+                        <img src={tenant.logoUrl} alt={tenant.name} className="h-8 w-8 rounded object-contain" />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+                          <Building2 className="h-4 w-4 text-primary" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium">{tenant.name}</div>
+                        {tenant.slug === "default" && (
+                          <Badge variant="outline" className="text-xs">Varsayilan</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">{tenant.slug}</TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      {tenant.contactEmail && <div>{tenant.contactEmail}</div>}
+                      {tenant.contactPhone && <div className="text-muted-foreground">{tenant.contactPhone}</div>}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {tenant.isActive ? (
+                      <Badge variant="default" className="bg-green-600">Aktif</Badge>
+                    ) : (
+                      <Badge variant="secondary">Pasif</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {tenant.createdAt ? new Date(tenant.createdAt).toLocaleDateString("tr-TR") : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => openEditTenantDialog(tenant)}
+                        data-testid={`button-edit-tenant-${tenant.id}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      {tenant.slug !== "default" && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            if (confirm(`"${tenant.name}" acentasini silmek istediginizden emin misiniz?`)) {
+                              deleteTenantMutation.mutate(tenant.id);
+                            }
+                          }}
+                          data-testid={`button-delete-tenant-${tenant.id}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      <Dialog open={!!editingTenant} onOpenChange={(open) => !open && setEditingTenant(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isNewTenant ? "Yeni Acenta Olustur" : "Acenta Duzenle"}</DialogTitle>
+            <DialogDescription>
+              {isNewTenant 
+                ? "Platformu kullanacak yeni bir acenta ekleyin"
+                : "Acenta bilgilerini guncelleyin"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Acenta Adi *</Label>
+                <Input
+                  id="name"
+                  value={tenantForm.name}
+                  onChange={(e) => {
+                    setTenantForm({ 
+                      ...tenantForm, 
+                      name: e.target.value,
+                      slug: isNewTenant ? generateSlug(e.target.value) : tenantForm.slug
+                    });
+                  }}
+                  placeholder="Ornek: Kapadokya Tours"
+                  data-testid="input-tenant-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="slug">Slug (URL) *</Label>
+                <Input
+                  id="slug"
+                  value={tenantForm.slug}
+                  onChange={(e) => setTenantForm({ ...tenantForm, slug: generateSlug(e.target.value) })}
+                  placeholder="ornek: kapadokya-tours"
+                  data-testid="input-tenant-slug"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contactEmail">E-posta</Label>
+                <Input
+                  id="contactEmail"
+                  type="email"
+                  value={tenantForm.contactEmail}
+                  onChange={(e) => setTenantForm({ ...tenantForm, contactEmail: e.target.value })}
+                  placeholder="info@acenta.com"
+                  data-testid="input-tenant-email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contactPhone">Telefon</Label>
+                <Input
+                  id="contactPhone"
+                  value={tenantForm.contactPhone}
+                  onChange={(e) => setTenantForm({ ...tenantForm, contactPhone: e.target.value })}
+                  placeholder="+90 555 123 4567"
+                  data-testid="input-tenant-phone"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Adres</Label>
+              <Textarea
+                id="address"
+                value={tenantForm.address}
+                onChange={(e) => setTenantForm({ ...tenantForm, address: e.target.value })}
+                placeholder="Acenta adresi"
+                rows={2}
+                data-testid="input-tenant-address"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="logoUrl">Logo URL</Label>
+              <Input
+                id="logoUrl"
+                value={tenantForm.logoUrl}
+                onChange={(e) => setTenantForm({ ...tenantForm, logoUrl: e.target.value })}
+                placeholder="https://example.com/logo.png"
+                data-testid="input-tenant-logo"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="primaryColor">Ana Renk (HSL)</Label>
+                <Input
+                  id="primaryColor"
+                  value={tenantForm.primaryColor}
+                  onChange={(e) => setTenantForm({ ...tenantForm, primaryColor: e.target.value })}
+                  placeholder="262 83% 58%"
+                  data-testid="input-tenant-primary-color"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accentColor">Vurgu Rengi (HSL)</Label>
+                <Input
+                  id="accentColor"
+                  value={tenantForm.accentColor}
+                  onChange={(e) => setTenantForm({ ...tenantForm, accentColor: e.target.value })}
+                  placeholder="142 76% 36%"
+                  data-testid="input-tenant-accent-color"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="timezone">Zaman Dilimi</Label>
+                <Input
+                  id="timezone"
+                  value={tenantForm.timezone}
+                  onChange={(e) => setTenantForm({ ...tenantForm, timezone: e.target.value })}
+                  placeholder="Europe/Istanbul"
+                  data-testid="input-tenant-timezone"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="language">Dil</Label>
+                <Input
+                  id="language"
+                  value={tenantForm.language}
+                  onChange={(e) => setTenantForm({ ...tenantForm, language: e.target.value })}
+                  placeholder="tr"
+                  data-testid="input-tenant-language"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="isActive"
+                checked={tenantForm.isActive}
+                onCheckedChange={(checked) => setTenantForm({ ...tenantForm, isActive: checked })}
+                data-testid="switch-tenant-active"
+              />
+              <Label htmlFor="isActive">Aktif</Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTenant(null)}>
+              Iptal
+            </Button>
+            <Button 
+              onClick={handleSaveTenant}
+              disabled={!tenantForm.name || !tenantForm.slug || createTenantMutation.isPending || updateTenantMutation.isPending}
+              data-testid="button-save-tenant"
+            >
+              {(createTenantMutation.isPending || updateTenantMutation.isPending) ? "Kaydediliyor..." : "Kaydet"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function TenantStatsSection() {
+  const { data: tenants = [] } = useQuery<Tenant[]>({
+    queryKey: ['/api/tenants'],
+  });
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold">Acenta Istatistikleri</h2>
+        <p className="text-sm text-muted-foreground">Tum acentalarin ozet istatistikleri</p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Toplam Acenta</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{tenants.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Aktif Acenta</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {tenants.filter(t => t.isActive).length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Pasif Acenta</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-muted-foreground">
+              {tenants.filter(t => !t.isActive).length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Acenta Listesi</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {tenants.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">Henuz acenta bulunmuyor</p>
+          ) : (
+            <div className="space-y-2">
+              {tenants.map((tenant) => (
+                <div key={tenant.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                  <div className="flex items-center gap-3">
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <div className="font-medium">{tenant.name}</div>
+                      <div className="text-sm text-muted-foreground">{tenant.contactEmail || tenant.slug}</div>
+                    </div>
+                  </div>
+                  <Badge variant={tenant.isActive ? "default" : "secondary"}>
+                    {tenant.isActive ? "Aktif" : "Pasif"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function UserManagementSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -236,6 +709,7 @@ function UserManagementSection() {
     membershipType: "trial",
     membershipEndDate: "",
     planId: null as number | null,
+    tenantId: null as number | null,
     roleIds: [] as number[],
     notes: ""
   });
@@ -250,6 +724,10 @@ function UserManagementSection() {
 
   const { data: plans = [] } = useQuery<{ id: number; name: string }[]>({
     queryKey: ['/api/subscription-plans'],
+  });
+
+  const { data: tenants = [] } = useQuery<Tenant[]>({
+    queryKey: ['/api/tenants'],
   });
 
   const { data: loginLogs = [] } = useQuery<UserLoginLog[]>({
@@ -319,6 +797,7 @@ function UserManagementSection() {
       membershipType: "trial",
       membershipEndDate: "",
       planId: null,
+      tenantId: null,
       roleIds: [],
       notes: ""
     });
@@ -341,6 +820,7 @@ function UserManagementSection() {
       membershipType: user.membershipType || "trial",
       membershipEndDate: user.membershipEndDate || "",
       planId: user.planId,
+      tenantId: user.tenantId || null,
       roleIds: user.roles?.map(r => r.id) || [],
       notes: user.notes || ""
     });
@@ -582,6 +1062,22 @@ function UserManagementSection() {
                   data-testid="input-user-company"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Bagli Oldugu Acenta</Label>
+              <select
+                className="w-full h-9 px-3 rounded-md border bg-background"
+                value={userForm.tenantId || ""}
+                onChange={(e) => setUserForm({ ...userForm, tenantId: e.target.value ? Number(e.target.value) : null })}
+                data-testid="select-user-tenant"
+              >
+                <option value="">Acenta Secin</option>
+                {tenants.map(tenant => (
+                  <option key={tenant.id} value={tenant.id}>{tenant.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">Kullanicinin hangi acentaya ait oldugunu secin</p>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -3946,6 +4442,7 @@ export default function SuperAdmin() {
 
   const mainCategories = [
     { id: "overview", label: "Genel Bakis", icon: BarChart3 },
+    { id: "tenants", label: "Acentalar", icon: Building2 },
     { id: "billing", label: "Uyelik & Faturalama", icon: CreditCard },
     { id: "users", label: "Kullanicilar", icon: Users },
     { id: "system", label: "Sistem", icon: Server },
@@ -3958,6 +4455,10 @@ export default function SuperAdmin() {
       { id: "analytics", label: "Analitik", icon: BarChart3 },
       { id: "revenue", label: "Gelir", icon: TrendingUp },
       { id: "api-status", label: "API Izleme", icon: Radio },
+    ],
+    tenants: [
+      { id: "tenant-list", label: "Acenta Listesi", icon: Building2 },
+      { id: "tenant-stats", label: "Acenta Istatistikleri", icon: BarChart3 },
     ],
     billing: [
       { id: "plans", label: "Planlar", icon: Package },
@@ -4061,6 +4562,9 @@ export default function SuperAdmin() {
             {activeSubTab === "analytics" && <AnalyticsSection />}
             {activeSubTab === "revenue" && <RevenueSection />}
             {activeSubTab === "api-status" && <ApiMonitoringSection />}
+
+            {activeSubTab === "tenant-list" && <TenantManagementSection />}
+            {activeSubTab === "tenant-stats" && <TenantStatsSection />}
 
             {activeSubTab === "plans" && (
               <div className="space-y-4">
