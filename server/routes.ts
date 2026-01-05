@@ -4010,6 +4010,35 @@ Sky Fethiye`;
     }
   });
 
+  // System update upload endpoint (placeholder - multipart handling not implemented)
+  app.post("/api/system/upload-update", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return res.status(401).json({ error: "Yetkilendirme gerekli" });
+      }
+      
+      // Verify Super Admin token
+      const validToken = (global as Record<string, unknown>).superAdminToken;
+      if (!validToken || token !== validToken) {
+        return res.status(403).json({ error: "Gecersiz token" });
+      }
+      
+      // Note: Multipart file handling (multer) not implemented
+      // This endpoint acknowledges the request but doesn't persist files
+      // In production VPS deployment, this would handle file extraction and system update
+      res.json({ 
+        success: true, 
+        message: "Guncelleme talebi alindi.",
+        note: "Not: Dosya isleme henuz uygulanmadi. VPS kurulumunda aktif edilecek.",
+        implemented: false
+      });
+    } catch (err) {
+      console.error('Update upload hatasi:', err);
+      res.status(500).json({ error: "Guncelleme yuklenemedi" });
+    }
+  });
+
   // Auto Responses CRUD
   app.get("/api/auto-responses", async (req, res) => {
     try {

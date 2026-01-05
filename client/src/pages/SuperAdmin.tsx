@@ -55,7 +55,11 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  Upload,
+  Download,
+  Server,
+  GitBranch
 } from "lucide-react";
 import type { SubscriptionPlan, Subscription, SubscriptionPayment, PlanFeature } from "@shared/schema";
 
@@ -111,12 +115,6 @@ const FEATURE_OPTIONS = [
   { key: "priority_support", label: "Öncelikli Destek", icon: Star },
   { key: "custom_branding", label: "Özel Marka", icon: Crown },
 ];
-
-const DEFAULT_BOT_RULES = `1. Her zaman nazik ve profesyonel ol.
-2. Müşterilere aktivite bilgilerini doğru ver.
-3. Fiyat sorularına net cevap ver.
-4. Rezervasyon taleplerinde tarih, saat ve kişi sayısını sor.
-5. Karmaşık konularda yetkiliye yönlendir.`;
 
 interface License {
   id: number;
@@ -1084,6 +1082,276 @@ function ApiMonitoringSection() {
   );
 }
 
+interface AppVersion {
+  version: string;
+  gitCommit: string | null;
+  gitBranch: string | null;
+  nodeVersion: string;
+  environment: string;
+  uptime: number;
+  lastChecked: string;
+}
+
+function ApplicationUpdatesSection() {
+  const { toast } = useToast();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  const { data: versionInfo, isLoading, refetch } = useQuery<AppVersion>({
+    queryKey: ['/api/system/version'],
+    queryFn: async () => {
+      const res = await fetch('/api/system/version');
+      return res.json();
+    },
+  });
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.tar.gz') && !file.name.endsWith('.zip')) {
+        toast({ 
+          title: "Gecersiz Dosya", 
+          description: "Lutfen .tar.gz veya .zip dosyasi secin", 
+          variant: "destructive" 
+        });
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const token = localStorage.getItem('superAdminToken');
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/system/upload-update');
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          setUploadProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          toast({ title: "Basarili", description: "Guncelleme dosyasi yuklendi." });
+          setSelectedFile(null);
+          refetch();
+        } else {
+          let errorMsg = "Yukleme basarisiz";
+          try {
+            const resp = JSON.parse(xhr.responseText);
+            errorMsg = resp.error || errorMsg;
+          } catch {
+            // Non-JSON response, use default error message
+          }
+          toast({ title: "Hata", description: errorMsg, variant: "destructive" });
+        }
+        setIsUploading(false);
+        setUploadProgress(0);
+      };
+
+      xhr.onerror = () => {
+        toast({ title: "Hata", description: "Yukleme basarisiz", variant: "destructive" });
+        setIsUploading(false);
+        setUploadProgress(0);
+      };
+
+      xhr.send(formData);
+    } catch (err) {
+      toast({ title: "Hata", description: "Yukleme basarisiz", variant: "destructive" });
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const formatUptime = (seconds: number) => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `${days} gun ${hours} saat`;
+    if (hours > 0) return `${hours} saat ${mins} dakika`;
+    return `${mins} dakika`;
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Server className="h-5 w-5" />
+            Sistem Bilgileri
+          </CardTitle>
+          <CardDescription>Mevcut sistem surumu ve durum bilgileri</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : versionInfo ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-4 border rounded-lg">
+                <Package className="h-8 w-8 text-primary" />
+                <div>
+                  <div className="text-sm text-muted-foreground">Surum</div>
+                  <div className="text-lg font-semibold">{versionInfo.version}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 border rounded-lg">
+                <Clock className="h-8 w-8 text-blue-500" />
+                <div>
+                  <div className="text-sm text-muted-foreground">Calisma Suresi</div>
+                  <div className="text-lg font-semibold">{formatUptime(versionInfo.uptime)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 border rounded-lg">
+                <GitBranch className="h-8 w-8 text-green-500" />
+                <div>
+                  <div className="text-sm text-muted-foreground">Git Commit</div>
+                  <div className="text-lg font-semibold font-mono">{versionInfo.gitCommit?.slice(0, 8) || 'N/A'}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 border rounded-lg">
+                <Server className="h-8 w-8 text-orange-500" />
+                <div>
+                  <div className="text-sm text-muted-foreground">Node.js</div>
+                  <div className="text-lg font-semibold">{versionInfo.nodeVersion}</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Sistem bilgisi alinamadi
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Uygulama Guncelleme
+          </CardTitle>
+          <CardDescription>
+            Sistemi guncellemek icin yeni surum dosyasini yukleyin (.tar.gz veya .zip)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="border-2 border-dashed rounded-lg p-6 text-center">
+            <input
+              type="file"
+              accept=".tar.gz,.zip"
+              onChange={handleFileSelect}
+              className="hidden"
+              id="update-file-input"
+              data-testid="input-update-file"
+            />
+            <label 
+              htmlFor="update-file-input" 
+              className="cursor-pointer"
+            >
+              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-sm text-muted-foreground mb-2">
+                Dosya secmek icin tiklayin veya surukleyin
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Desteklenen formatlar: .tar.gz, .zip
+              </p>
+            </label>
+          </div>
+
+          {selectedFile && (
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-primary" />
+                <div>
+                  <div className="font-medium">{selectedFile.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </div>
+                </div>
+              </div>
+              <Button
+                onClick={handleUpload}
+                disabled={isUploading}
+                data-testid="button-upload-update"
+              >
+                {isUploading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Yukleniyor... {uploadProgress}%
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Yukle
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {isUploading && (
+            <div className="w-full bg-muted rounded-full h-2">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          )}
+
+          <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <h4 className="font-medium text-yellow-900 dark:text-yellow-200 mb-2 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Onemli Bilgi
+            </h4>
+            <ul className="text-sm text-yellow-800 dark:text-yellow-300 space-y-1">
+              <li>Guncelleme oncesi yedek alinmasi onerilir</li>
+              <li>Yukleme sirasinda sistem geciici olarak durdurulabilir</li>
+              <li>Guncelleme tamamlandiktan sonra sistem otomatik yeniden baslatilir</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Yedek Indirme
+          </CardTitle>
+          <CardDescription>Mevcut sistemin yedegini indirin</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            onClick={() => window.open('/smartur-backup.tar.gz', '_blank')}
+            data-testid="button-download-backup"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Yedegi Indir
+          </Button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Mevcut sistemin tam yedegi (veritabani haric)
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function AgencySupportSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1271,12 +1539,6 @@ export default function SuperAdmin() {
   const [isNewPlan, setIsNewPlan] = useState(false);
   const [planForm, setPlanForm] = useState<Partial<SubscriptionPlan>>({});
   
-  // Developer section state
-  const [botRules, setBotRules] = useState(DEFAULT_BOT_RULES);
-  const [isSavingRules, setIsSavingRules] = useState(false);
-  const [developerEmail, setDeveloperEmail] = useState("logobudur@gmail.com");
-  const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
-
   // Check for existing session token
   useEffect(() => {
     const verifyExistingToken = async () => {
@@ -1291,7 +1553,6 @@ export default function SuperAdmin() {
           const data = await res.json();
           if (data.valid) {
             setIsAuthenticated(true);
-            loadBotRules();
           } else {
             localStorage.removeItem('superAdminToken');
           }
@@ -1317,8 +1578,7 @@ export default function SuperAdmin() {
       if (data.success && data.token) {
         localStorage.setItem('superAdminToken', data.token);
         setIsAuthenticated(true);
-        loadBotRules();
-        toast({ title: "Giriş Başarılı", description: "Süper Admin paneline hoş geldiniz." });
+        toast({ title: "Giris Basarili", description: "Super Admin paneline hos geldiniz." });
       } else {
         toast({ title: "Hata", description: data.error || "Şifre yanlış", variant: "destructive" });
       }
@@ -1331,48 +1591,6 @@ export default function SuperAdmin() {
     setIsAuthenticated(false);
     localStorage.removeItem('superAdminToken');
     setPassword("");
-  };
-
-  const loadBotRules = async () => {
-    try {
-      const token = localStorage.getItem('superAdminToken');
-      const res = await fetch('/api/settings/bot_rules', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.value) setBotRules(data.value);
-      }
-    } catch (err) {
-      console.error("Bot rules yüklenemedi:", err);
-    }
-  };
-
-  const handleSaveRules = async () => {
-    setIsSavingRules(true);
-    try {
-      const token = localStorage.getItem('superAdminToken');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      
-      await fetch('/api/settings/bot_rules', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ value: botRules })
-      });
-      
-      await fetch('/api/settings/developerEmail', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ value: developerEmail })
-      });
-      
-      toast({ title: "Kaydedildi", description: "Ayarlar başarıyla kaydedildi." });
-    } catch {
-      toast({ title: "Hata", description: "Ayarlar kaydedilemedi", variant: "destructive" });
-    } finally {
-      setIsSavingRules(false);
-    }
   };
 
   const { data: plans = [], isLoading } = useQuery<SubscriptionPlan[]>({
@@ -1391,39 +1609,6 @@ export default function SuperAdmin() {
   const { data: planFeatures = [] } = useQuery<PlanFeature[]>({
     queryKey: ["/api/plan-features"],
   });
-
-  // System logs query
-  const { data: systemLogs, isLoading: logsLoading, refetch: refetchLogs } = useQuery<SystemLog[]>({
-    queryKey: ['/api/system-logs'],
-    queryFn: async () => {
-      const token = localStorage.getItem('superAdminToken');
-      const res = await fetch('/api/system-logs?limit=50', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      return res.json();
-    },
-    enabled: isAuthenticated,
-    refetchInterval: 30000,
-  });
-
-  // Developer email query
-  const { data: emailSetting } = useQuery<{ value: string }>({
-    queryKey: ['/api/settings/developerEmail'],
-    queryFn: async () => {
-      const token = localStorage.getItem('superAdminToken');
-      const res = await fetch('/api/settings/developerEmail', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      return res.json();
-    },
-    enabled: isAuthenticated,
-  });
-
-  useEffect(() => {
-    if (emailSetting?.value) {
-      setDeveloperEmail(emailSetting.value);
-    }
-  }, [emailSetting]);
 
   const createPlanMutation = useMutation({
     mutationFn: async (plan: Partial<SubscriptionPlan>) => {
@@ -1633,9 +1818,9 @@ export default function SuperAdmin() {
             <MessageSquare className="h-4 w-4 mr-2" />
             Destek
           </TabsTrigger>
-          <TabsTrigger value="developer" data-testid="tab-developer">
-            <Shield className="h-4 w-4 mr-2" />
-            Gelistirici
+          <TabsTrigger value="updates" data-testid="tab-updates">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Guncellemeler
           </TabsTrigger>
         </TabsList>
 
@@ -1877,164 +2062,9 @@ export default function SuperAdmin() {
           <AgencySupportSection />
         </TabsContent>
 
-        {/* Developer Tab */}
-        <TabsContent value="developer" className="space-y-4 mt-4">
-          {/* Developer Email */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Destek E-posta Adresi
-              </CardTitle>
-              <CardDescription>
-                Kullanıcıların destek talepleri bu adrese gönderilecektir.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="developerEmail">Geliştirici E-posta</Label>
-                <Input
-                  id="developerEmail"
-                  type="email"
-                  value={developerEmail}
-                  onChange={(e) => setDeveloperEmail(e.target.value)}
-                  placeholder="ornek@email.com"
-                  data-testid="input-developer-email"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Bot Rules */}
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Bot Kuralları</CardTitle>
-              <CardDescription>
-                Bu kurallar bot'un sistem prompt'una eklenir ve her mesajda geçerli olur.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Textarea
-                value={botRules}
-                onChange={(e) => setBotRules(e.target.value)}
-                className="min-h-[300px] font-mono text-sm"
-                placeholder="Bot kurallarını buraya yazın..."
-                data-testid="textarea-bot-rules"
-              />
-
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleSaveRules} 
-                  disabled={isSavingRules}
-                  data-testid="button-save-rules"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isSavingRules ? "Kaydediliyor..." : "Ayarları Kaydet"}
-                </Button>
-              </div>
-
-              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 dark:text-blue-200 mb-2">İpuçları</h4>
-                <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-                  <li>Her kuralı numaralandırarak yazın (1., 2., 3. gibi)</li>
-                  <li>Kurallar net ve açık olmalı</li>
-                  <li>Bot bu kurallara göre müşteri mesajlarını yanıtlar</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* System Logs */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Sistem Logları
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => refetchLogs()}
-                  disabled={logsLoading}
-                  data-testid="button-refresh-logs"
-                >
-                  <RefreshCw className={`h-4 w-4 ${logsLoading ? 'animate-spin' : ''}`} />
-                </Button>
-              </CardTitle>
-              <CardDescription>
-                Son 24 saat içindeki hata ve uyarı kayıtları (en yeni en üstte)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {logsLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
-              ) : !systemLogs || systemLogs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  Henüz log kaydı yok
-                </div>
-              ) : (
-                <ScrollArea className="h-[400px] pr-4">
-                  <div className="space-y-2">
-                    {systemLogs.map((log) => (
-                      <Collapsible
-                        key={log.id}
-                        open={expandedLogId === log.id}
-                        onOpenChange={(open) => setExpandedLogId(open ? log.id : null)}
-                      >
-                        <div className="border rounded-md p-3">
-                          <CollapsibleTrigger className="w-full">
-                            <div className="flex items-start gap-2 text-left">
-                              {log.level === 'error' ? (
-                                <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-                              ) : log.level === 'warn' ? (
-                                <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
-                              ) : (
-                                <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge variant={log.level === 'error' ? 'destructive' : log.level === 'warn' ? 'secondary' : 'outline'} className="text-xs">
-                                    {log.source}
-                                  </Badge>
-                                  {log.phone && (
-                                    <span className="text-xs text-muted-foreground">{log.phone}</span>
-                                  )}
-                                  <span className="text-xs text-muted-foreground ml-auto">
-                                    {new Date(log.createdAt).toLocaleString('tr-TR')}
-                                  </span>
-                                </div>
-                                <p className="text-sm mt-1 break-words">{log.message}</p>
-                              </div>
-                              {log.details && (
-                                <div className="shrink-0">
-                                  {expandedLogId === log.id ? (
-                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                  ) : (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </CollapsibleTrigger>
-                          {log.details && (
-                            <CollapsibleContent>
-                              <div className="mt-3 pt-3 border-t">
-                                <pre className="text-xs bg-muted p-2 rounded overflow-x-auto whitespace-pre-wrap break-words">
-                                  {log.details}
-                                </pre>
-                              </div>
-                            </CollapsibleContent>
-                          )}
-                        </div>
-                      </Collapsible>
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
+        {/* Updates Tab */}
+        <TabsContent value="updates" className="space-y-4 mt-4">
+          <ApplicationUpdatesSection />
         </TabsContent>
       </Tabs>
 
