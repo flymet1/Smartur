@@ -5430,7 +5430,15 @@ Sky Fethiye`;
 
   app.delete("/api/platform-admins/:id", async (req, res) => {
     try {
-      await storage.deletePlatformAdmin(Number(req.params.id));
+      const adminIdToDelete = Number(req.params.id);
+      const currentAdminId = req.session?.platformAdminId;
+      
+      // Prevent self-deletion
+      if (currentAdminId && currentAdminId === adminIdToDelete) {
+        return res.status(400).json({ error: "Kendinizi silemezsiniz" });
+      }
+      
+      await storage.deletePlatformAdmin(adminIdToDelete);
       res.json({ success: true });
     } catch (err) {
       console.error("Platform admin silme hatasi:", err);
