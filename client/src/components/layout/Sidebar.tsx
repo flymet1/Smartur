@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -20,7 +20,10 @@ import {
   X,
   AlertTriangle,
   Info,
-  AlertCircle
+  AlertCircle,
+  LogIn,
+  LogOut,
+  User
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -60,9 +63,48 @@ interface Announcement {
   createdAt: string | null;
 }
 
+interface UserData {
+  id: number;
+  username: string;
+  name: string | null;
+  companyName: string | null;
+}
+
 export function Sidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<number[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+
+  // Check for logged in user on mount and when localStorage changes
+  useEffect(() => {
+    const checkUser = () => {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        try {
+          setCurrentUser(JSON.parse(userData));
+        } catch {
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    };
+    
+    checkUser();
+    
+    // Listen for storage changes
+    window.addEventListener('storage', checkUser);
+    return () => window.removeEventListener('storage', checkUser);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('userPermissions');
+    localStorage.removeItem('userRoles');
+    setCurrentUser(null);
+    setLocation('/login');
+  };
 
   const { data: logoSetting } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'sidebarLogo'],
@@ -276,6 +318,40 @@ export function Sidebar() {
                   </div>
                 </Link>
               ))}
+              
+              {/* Mobile Login/Logout */}
+              <div className="mt-4 pt-4 border-t">
+                {currentUser ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
+                      <User className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">{currentUser.name || currentUser.username}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start gap-2"
+                      onClick={handleLogout}
+                      data-testid="button-logout-mobile"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Cikis Yap
+                    </Button>
+                  </div>
+                ) : (
+                  <Link href="/login">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="w-full justify-start gap-2"
+                      data-testid="button-login-mobile"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      Giris Yap
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </nav>
           </SheetContent>
         </Sheet>
@@ -442,6 +518,51 @@ export function Sidebar() {
               Destek
             </div>
           </Link>
+
+          {/* User Login/Logout Section */}
+          <div className="mt-3 pt-3 border-t">
+            {currentUser ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate" data-testid="text-current-user-name">
+                      {currentUser.name || currentUser.username}
+                    </div>
+                    {currentUser.companyName && (
+                      <div className="text-xs text-muted-foreground truncate" data-testid="text-current-user-company">
+                        {currentUser.companyName}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                  onClick={handleLogout}
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Cikis Yap
+                </Button>
+              </div>
+            ) : (
+              <Link href="/login">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full justify-start gap-2"
+                  data-testid="button-login"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Giris Yap
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     </>
