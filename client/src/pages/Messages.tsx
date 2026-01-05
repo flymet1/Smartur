@@ -286,7 +286,7 @@ export default function Messages() {
                 ) : (
                   <>
                     <div className="text-2xl font-bold" data-testid="text-total-customers">
-                      {analytics?.metrics.totalCustomers ?? 0}
+                      {analytics?.metrics.uniqueCustomers ?? analytics?.metrics.totalCustomers ?? 0}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {analyticsPeriod === 'daily' ? 'Bugun' : analyticsPeriod === 'weekly' ? 'Son 7 gun' : 'Son 30 gun'}
