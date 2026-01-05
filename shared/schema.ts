@@ -447,6 +447,19 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Plan Özellikleri (Super Admin tarafından yönetilir)
+export const planFeatures = pgTable("plan_features", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(), // Unique identifier: basic_calendar, ai_bot, etc.
+  label: text("label").notNull(), // Display name: "Temel Takvim", "AI Bot"
+  description: text("description"), // Optional description
+  icon: text("icon").default("Star"), // Lucide icon name
+  category: text("category").default("general"), // Feature category for grouping
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Abonelikler (Acentaların aktif abonelikleri)
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
@@ -565,6 +578,11 @@ export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 export const insertSubscriptionPaymentSchema = createInsertSchema(subscriptionPayments).omit({ id: true, createdAt: true });
 export type SubscriptionPayment = typeof subscriptionPayments.$inferSelect;
 export type InsertSubscriptionPayment = z.infer<typeof insertSubscriptionPaymentSchema>;
+
+// === PLAN FEATURES SCHEMAS & TYPES ===
+export const insertPlanFeatureSchema = createInsertSchema(planFeatures).omit({ id: true, createdAt: true });
+export type PlanFeature = typeof planFeatures.$inferSelect;
+export type InsertPlanFeature = z.infer<typeof insertPlanFeatureSchema>;
 
 // === SUPER ADMIN - PLATFORM MANAGEMENT ===
 
