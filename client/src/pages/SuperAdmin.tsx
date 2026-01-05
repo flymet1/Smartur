@@ -47,7 +47,14 @@ import {
   BarChart3,
   Radio,
   Ban,
-  PlayCircle
+  PlayCircle,
+  Receipt,
+  Wifi,
+  WifiOff,
+  Headphones,
+  CheckCircle,
+  Clock,
+  XCircle
 } from "lucide-react";
 import type { SubscriptionPlan, Subscription, SubscriptionPayment } from "@shared/schema";
 
@@ -136,7 +143,7 @@ function AgenciesSection() {
   });
 
   const suspendMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/licenses/${id}/suspend`, { method: 'POST' }),
+    mutationFn: (id: number) => apiRequest('POST', `/api/licenses/${id}/suspend`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
       toast({ title: "Basarili", description: "Lisans askiya alindi." });
@@ -147,7 +154,7 @@ function AgenciesSection() {
   });
 
   const activateMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/licenses/${id}/activate`, { method: 'POST' }),
+    mutationFn: (id: number) => apiRequest('POST', `/api/licenses/${id}/activate`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/licenses'] });
       toast({ title: "Basarili", description: "Lisans aktif edildi." });
@@ -245,7 +252,7 @@ function AnnouncementsSection() {
 
   const createMutation = useMutation({
     mutationFn: (data: { title: string; content: string; type: string }) => 
-      apiRequest('/api/announcements', { method: 'POST', body: JSON.stringify(data) }),
+      apiRequest('POST', '/api/announcements', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/announcements'] });
       setNewAnnouncement({ title: "", content: "", type: "info" });
@@ -257,7 +264,7 @@ function AnnouncementsSection() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/announcements/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/announcements/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/announcements'] });
       toast({ title: "Basarili", description: "Duyuru silindi." });
@@ -486,6 +493,357 @@ function AnalyticsSection() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">Veri yok</div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface Invoice {
+  id: number;
+  subscriptionId: number;
+  invoiceNumber: string;
+  amountTl: number;
+  amountUsd: number;
+  currency: string;
+  status: string;
+  dueDate: string | null;
+  paidAt: string | null;
+  createdAt: string | null;
+}
+
+interface ApiStatus {
+  id: number;
+  service: string;
+  status: string;
+  responseTimeMs: number | null;
+  errorCount: number;
+  lastError: string | null;
+  checkedAt: string | null;
+}
+
+interface SupportRequest {
+  id: number;
+  phone: string;
+  description: string | null;
+  status: string;
+  reservationId: number | null;
+  createdAt: string | null;
+  resolvedAt: string | null;
+}
+
+function InvoicesSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: invoices = [], isLoading } = useQuery<Invoice[]>({
+    queryKey: ['/api/invoices'],
+  });
+
+  const formatPrice = (amount: number | null) => {
+    if (!amount) return "0.00";
+    return (amount / 100).toFixed(2);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge variant="default"><CheckCircle className="h-3 w-3 mr-1" />Odendi</Badge>;
+      case 'pending':
+        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Beklemede</Badge>;
+      case 'overdue':
+        return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Gecikti</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Receipt className="h-5 w-5" />
+          Fatura Yonetimi
+        </CardTitle>
+        <CardDescription>Tum acentalarin faturalari ve odeme durumlari</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+        ) : invoices.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">Henuz fatura bulunmuyor.</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fatura No</TableHead>
+                <TableHead>Abonelik ID</TableHead>
+                <TableHead>Tutar</TableHead>
+                <TableHead>Durum</TableHead>
+                <TableHead>Son Odeme</TableHead>
+                <TableHead>Olusturulma</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {invoices.map((inv) => (
+                <TableRow key={inv.id} data-testid={`row-invoice-${inv.id}`}>
+                  <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>
+                  <TableCell>#{inv.subscriptionId}</TableCell>
+                  <TableCell>
+                    {inv.currency === "TRY" 
+                      ? `${formatPrice(inv.amountTl)} TL`
+                      : `$${formatPrice(inv.amountUsd)}`}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(inv.status)}</TableCell>
+                  <TableCell>
+                    {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("tr-TR") : "-"}
+                  </TableCell>
+                  <TableCell>
+                    {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString("tr-TR") : "-"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ApiMonitoringSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: apiStatuses = [], isLoading, refetch } = useQuery<ApiStatus[]>({
+    queryKey: ['/api/api-status'],
+  });
+
+  const checkMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/api-status/check'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/api-status'] });
+      toast({ title: "Basarili", description: "API durumlari kontrol edildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "API kontrolu yapilamadi.", variant: "destructive" });
+    }
+  });
+
+  const getServiceIcon = (service: string) => {
+    switch (service) {
+      case 'twilio': return <MessageSquare className="h-5 w-5" />;
+      case 'woocommerce': return <CreditCard className="h-5 w-5" />;
+      case 'gemini': return <Zap className="h-5 w-5" />;
+      case 'paytr': return <Receipt className="h-5 w-5" />;
+      default: return <Radio className="h-5 w-5" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'up': return 'text-green-600';
+      case 'degraded': return 'text-yellow-600';
+      case 'down': return 'text-red-600';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'up': return <Wifi className="h-5 w-5 text-green-600" />;
+      case 'degraded': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+      case 'down': return <WifiOff className="h-5 w-5 text-red-600" />;
+      default: return <Radio className="h-5 w-5 text-muted-foreground" />;
+    }
+  };
+
+  const serviceNames: Record<string, string> = {
+    twilio: 'Twilio (WhatsApp)',
+    woocommerce: 'WooCommerce',
+    gemini: 'Google Gemini AI',
+    paytr: 'PayTR Odeme'
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Radio className="h-5 w-5" />
+            API Durum Izleme
+          </div>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => checkMutation.mutate()}
+            disabled={checkMutation.isPending}
+            data-testid="button-check-api-status"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${checkMutation.isPending ? 'animate-spin' : ''}`} />
+            Kontrol Et
+          </Button>
+        </CardTitle>
+        <CardDescription>Entegre servislerin canli durum izlemesi</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {['twilio', 'woocommerce', 'gemini', 'paytr'].map((service) => {
+              const status = apiStatuses.find(s => s.service === service);
+              return (
+                <div 
+                  key={service} 
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                  data-testid={`card-api-status-${service}`}
+                >
+                  <div className="flex items-center gap-3">
+                    {getServiceIcon(service)}
+                    <div>
+                      <div className="font-medium">{serviceNames[service]}</div>
+                      {status?.responseTimeMs && (
+                        <div className="text-xs text-muted-foreground">
+                          Yanit: {status.responseTimeMs}ms
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {status ? (
+                      <>
+                        {getStatusIcon(status.status)}
+                        <span className={`text-sm font-medium ${getStatusColor(status.status)}`}>
+                          {status.status === 'up' ? 'Calisiyor' : 
+                           status.status === 'degraded' ? 'Yavas' : 'Kapalı'}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Bilinmiyor</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        
+        {apiStatuses.length > 0 && apiStatuses[0]?.checkedAt && (
+          <div className="mt-4 text-xs text-muted-foreground text-center">
+            Son kontrol: {new Date(apiStatuses[0].checkedAt).toLocaleString("tr-TR")}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SupportRequestsSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const { data: requests = [], isLoading } = useQuery<SupportRequest[]>({
+    queryKey: ['/api/support-requests'],
+  });
+
+  const resolveMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('PATCH', `/api/support-requests/${id}`, { status: 'resolved' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/support-requests'] });
+      toast({ title: "Basarili", description: "Talep cozuldu olarak isaretlendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
+    }
+  });
+
+  const openRequests = requests.filter(r => r.status === 'open');
+  const resolvedRequests = requests.filter(r => r.status === 'resolved');
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Headphones className="h-5 w-5" />
+              Destek Talepleri
+              {openRequests.length > 0 && (
+                <Badge variant="destructive">{openRequests.length} Acik</Badge>
+              )}
+            </div>
+          </CardTitle>
+          <CardDescription>Kullanicilarin destek talepleri ve sistem hatalari</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : requests.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Henuz destek talebi bulunmuyor.</div>
+          ) : (
+            <div className="space-y-3">
+              {openRequests.map((req) => (
+                <div 
+                  key={req.id} 
+                  className="flex items-start justify-between gap-4 p-4 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 rounded-lg"
+                  data-testid={`card-support-request-${req.id}`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Acik
+                      </Badge>
+                      <span className="text-sm font-medium">{req.phone}</span>
+                      {req.reservationId && (
+                        <Badge variant="outline">Rez #{req.reservationId}</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm">{req.description || "Aciklama yok"}</p>
+                    <span className="text-xs text-muted-foreground">
+                      {req.createdAt ? new Date(req.createdAt).toLocaleString("tr-TR") : "-"}
+                    </span>
+                  </div>
+                  <Button 
+                    size="sm"
+                    onClick={() => resolveMutation.mutate(req.id)}
+                    disabled={resolveMutation.isPending}
+                    data-testid={`button-resolve-${req.id}`}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Cozuldu
+                  </Button>
+                </div>
+              ))}
+              
+              {resolvedRequests.length > 0 && (
+                <>
+                  <div className="text-sm font-medium text-muted-foreground mt-6 mb-2">
+                    Cozulen Talepler ({resolvedRequests.length})
+                  </div>
+                  {resolvedRequests.slice(0, 5).map((req) => (
+                    <div 
+                      key={req.id} 
+                      className="flex items-start justify-between gap-4 p-3 border rounded-lg opacity-60"
+                      data-testid={`card-support-request-resolved-${req.id}`}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Cozuldu
+                          </Badge>
+                          <span className="text-sm">{req.phone}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{req.description || "Aciklama yok"}</p>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -848,9 +1206,21 @@ export default function SuperAdmin() {
             <BarChart3 className="h-4 w-4 mr-2" />
             Analitik
           </TabsTrigger>
+          <TabsTrigger value="invoices" data-testid="tab-invoices">
+            <Receipt className="h-4 w-4 mr-2" />
+            Faturalar
+          </TabsTrigger>
+          <TabsTrigger value="api-status" data-testid="tab-api-status">
+            <Radio className="h-4 w-4 mr-2" />
+            API Izleme
+          </TabsTrigger>
+          <TabsTrigger value="support" data-testid="tab-support">
+            <Headphones className="h-4 w-4 mr-2" />
+            Destek
+          </TabsTrigger>
           <TabsTrigger value="developer" data-testid="tab-developer">
             <Shield className="h-4 w-4 mr-2" />
-            Geliştirici
+            Gelistirici
           </TabsTrigger>
         </TabsList>
 
@@ -1071,6 +1441,21 @@ export default function SuperAdmin() {
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4 mt-4">
           <AnalyticsSection />
+        </TabsContent>
+
+        {/* Invoices Tab */}
+        <TabsContent value="invoices" className="space-y-4 mt-4">
+          <InvoicesSection />
+        </TabsContent>
+
+        {/* API Status Tab */}
+        <TabsContent value="api-status" className="space-y-4 mt-4">
+          <ApiMonitoringSection />
+        </TabsContent>
+
+        {/* Support Tab */}
+        <TabsContent value="support" className="space-y-4 mt-4">
+          <SupportRequestsSection />
         </TabsContent>
 
         {/* Developer Tab */}
