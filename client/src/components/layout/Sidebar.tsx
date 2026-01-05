@@ -357,17 +357,6 @@ export function Sidebar() {
               Destek
             </div>
           </Link>
-          <Link href="/bot-rules">
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
-              location === "/bot-rules"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )} data-testid="link-developer-login">
-              <Code className="h-4 w-4" />
-              Geliştirici Girişi
-            </div>
-          </Link>
           <Link href="/super-admin">
             <div className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
