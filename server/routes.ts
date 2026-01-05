@@ -4010,6 +4010,135 @@ Sky Fethiye`;
     }
   });
 
+  // === APP VERSION MANAGEMENT ===
+
+  // Get all app versions (for Super Admin)
+  app.get("/api/app-versions", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      const validToken = (global as Record<string, unknown>).superAdminToken;
+      if (!validToken || token !== validToken) {
+        return res.status(403).json({ error: "Yetkisiz erisim" });
+      }
+      
+      const versions = await storage.getAppVersions();
+      res.json(versions);
+    } catch (err) {
+      console.error('App versions hatasi:', err);
+      res.status(500).json({ error: "Surumler alinamadi" });
+    }
+  });
+
+  // Get active app version
+  app.get("/api/app-versions/active", async (req, res) => {
+    try {
+      const version = await storage.getActiveAppVersion();
+      res.json(version || null);
+    } catch (err) {
+      res.status(500).json({ error: "Aktif surum alinamadi" });
+    }
+  });
+
+  // Create new app version record (when uploading)
+  app.post("/api/app-versions", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      const validToken = (global as Record<string, unknown>).superAdminToken;
+      if (!validToken || token !== validToken) {
+        return res.status(403).json({ error: "Yetkisiz erisim" });
+      }
+
+      const { version, fileName, fileSize, checksum, notes } = req.body;
+      
+      if (!version || !fileName) {
+        return res.status(400).json({ error: "Surum numarasi ve dosya adi gerekli" });
+      }
+
+      // Get current active version to mark as rollback target
+      const currentActive = await storage.getActiveAppVersion();
+      
+      // Create the new version entry
+      const newVersion = await storage.createAppVersion({
+        version,
+        fileName,
+        fileSize: fileSize || 0,
+        checksum: checksum || null,
+        notes: notes || null,
+        status: 'pending',
+        uploadedBy: 'super_admin',
+        backupFileName: currentActive ? `backup_${currentActive.version}_${Date.now()}.tar.gz` : null,
+        isRollbackTarget: false,
+      });
+
+      res.status(201).json(newVersion);
+    } catch (err) {
+      console.error('App version create hatasi:', err);
+      res.status(500).json({ error: "Surum olusturulamadi" });
+    }
+  });
+
+  // Activate an app version
+  app.post("/api/app-versions/:id/activate", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      const validToken = (global as Record<string, unknown>).superAdminToken;
+      if (!validToken || token !== validToken) {
+        return res.status(403).json({ error: "Yetkisiz erisim" });
+      }
+
+      const id = Number(req.params.id);
+      const version = await storage.getAppVersion(id);
+      
+      if (!version) {
+        return res.status(404).json({ error: "Surum bulunamadi" });
+      }
+
+      const activated = await storage.activateAppVersion(id);
+      
+      await logInfo('system', `Surum aktif edildi: ${version.version}`);
+      
+      res.json(activated);
+    } catch (err) {
+      console.error('Version activate hatasi:', err);
+      res.status(500).json({ error: "Surum aktif edilemedi" });
+    }
+  });
+
+  // Rollback to a previous version
+  app.post("/api/app-versions/:id/rollback", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      const validToken = (global as Record<string, unknown>).superAdminToken;
+      if (!validToken || token !== validToken) {
+        return res.status(403).json({ error: "Yetkisiz erisim" });
+      }
+
+      const id = Number(req.params.id);
+      const version = await storage.getAppVersion(id);
+      
+      if (!version) {
+        return res.status(404).json({ error: "Surum bulunamadi" });
+      }
+
+      if (!version.isRollbackTarget) {
+        return res.status(400).json({ error: "Bu surum geri alinabilir degil" });
+      }
+
+      const rolledBack = await storage.rollbackToVersion(id);
+      
+      await logInfo('system', `Surum geri alindi: ${version.version}`);
+      
+      res.json({
+        success: true,
+        message: `${version.version} surumune geri donuldu`,
+        version: rolledBack
+      });
+    } catch (err) {
+      console.error('Version rollback hatasi:', err);
+      res.status(500).json({ error: "Geri alma basarisiz" });
+    }
+  });
+
   // System update upload endpoint (placeholder - multipart handling not implemented)
   app.post("/api/system/upload-update", async (req, res) => {
     try {
@@ -4024,8 +4153,27 @@ Sky Fethiye`;
         return res.status(403).json({ error: "Gecersiz token" });
       }
       
+      // Get version info from body if available
+      const { version, fileName, fileSize } = req.body;
+      
+      // Create a version record for the upload
+      if (version && fileName) {
+        const currentActive = await storage.getActiveAppVersion();
+        
+        await storage.createAppVersion({
+          version,
+          fileName,
+          fileSize: fileSize || 0,
+          checksum: null,
+          notes: 'Yuklenen guncelleme',
+          status: 'pending',
+          uploadedBy: 'super_admin',
+          backupFileName: currentActive ? `backup_${currentActive.version}_${Date.now()}.tar.gz` : null,
+          isRollbackTarget: false,
+        });
+      }
+      
       // Note: Multipart file handling (multer) not implemented
-      // This endpoint acknowledges the request but doesn't persist files
       // In production VPS deployment, this would handle file extraction and system update
       res.json({ 
         success: true, 

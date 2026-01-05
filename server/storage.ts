@@ -94,6 +94,9 @@ import {
   type BotQualityScore,
   type InsertBotQualityScore,
   systemLogs,
+  appVersions,
+  type AppVersion,
+  type InsertAppVersion,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -319,6 +322,15 @@ export interface IStorage {
   // Super Admin - Analytics
   getPlatformAnalytics(): Promise<any>;
   getWhatsAppStats(): Promise<any>;
+
+  // App Version Management
+  getAppVersions(): Promise<AppVersion[]>;
+  getAppVersion(id: number): Promise<AppVersion | undefined>;
+  getActiveAppVersion(): Promise<AppVersion | undefined>;
+  createAppVersion(version: InsertAppVersion): Promise<AppVersion>;
+  updateAppVersion(id: number, version: Partial<InsertAppVersion>): Promise<AppVersion>;
+  activateAppVersion(id: number): Promise<AppVersion>;
+  rollbackToVersion(id: number): Promise<AppVersion>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2220,6 +2232,77 @@ Sky Fethiye`,
       avgResponseTimeMs: botQuality.avgResponseTimeMs,
       botSuccessRate: 100 - botQuality.escalationRate,
     };
+  }
+
+  // App Version Management
+  async getAppVersions(): Promise<AppVersion[]> {
+    return db.select().from(appVersions).orderBy(desc(appVersions.createdAt));
+  }
+
+  async getAppVersion(id: number): Promise<AppVersion | undefined> {
+    const [version] = await db.select().from(appVersions).where(eq(appVersions.id, id));
+    return version;
+  }
+
+  async getActiveAppVersion(): Promise<AppVersion | undefined> {
+    const [version] = await db.select().from(appVersions).where(eq(appVersions.status, 'active'));
+    return version;
+  }
+
+  async createAppVersion(version: InsertAppVersion): Promise<AppVersion> {
+    const [created] = await db.insert(appVersions).values(version).returning();
+    return created;
+  }
+
+  async updateAppVersion(id: number, version: Partial<InsertAppVersion>): Promise<AppVersion> {
+    const [updated] = await db.update(appVersions)
+      .set(version)
+      .where(eq(appVersions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async activateAppVersion(id: number): Promise<AppVersion> {
+    // Deactivate current active version first
+    const currentActive = await this.getActiveAppVersion();
+    if (currentActive) {
+      await db.update(appVersions)
+        .set({ status: 'inactive', isRollbackTarget: true })
+        .where(eq(appVersions.id, currentActive.id));
+    }
+
+    // Activate the new version
+    const [activated] = await db.update(appVersions)
+      .set({ status: 'active', activatedAt: new Date() })
+      .where(eq(appVersions.id, id))
+      .returning();
+    return activated;
+  }
+
+  async rollbackToVersion(id: number): Promise<AppVersion> {
+    // Get the version to rollback to
+    const targetVersion = await this.getAppVersion(id);
+    if (!targetVersion) {
+      throw new Error('Hedef surum bulunamadi');
+    }
+    if (!targetVersion.isRollbackTarget) {
+      throw new Error('Bu surum geri alinabilir degil');
+    }
+
+    // Deactivate current active version
+    const currentActive = await this.getActiveAppVersion();
+    if (currentActive) {
+      await db.update(appVersions)
+        .set({ status: 'inactive', isRollbackTarget: true })
+        .where(eq(appVersions.id, currentActive.id));
+    }
+
+    // Activate the target version
+    const [activated] = await db.update(appVersions)
+      .set({ status: 'active', activatedAt: new Date() })
+      .where(eq(appVersions.id, id))
+      .returning();
+    return activated;
   }
 }
 
