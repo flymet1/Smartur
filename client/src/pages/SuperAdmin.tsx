@@ -57,7 +57,7 @@ import {
   XCircle,
   HelpCircle
 } from "lucide-react";
-import type { SubscriptionPlan, Subscription, SubscriptionPayment } from "@shared/schema";
+import type { SubscriptionPlan, Subscription, SubscriptionPayment, PlanFeature } from "@shared/schema";
 
 // Uses server-side authentication - no password stored client-side
 
@@ -363,6 +363,302 @@ function AnnouncementsSection() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function PlanFeaturesSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [editingFeature, setEditingFeature] = useState<PlanFeature | null>(null);
+  const [newFeature, setNewFeature] = useState({ key: "", label: "", description: "", icon: "Star", category: "general" });
+  const [showNewForm, setShowNewForm] = useState(false);
+
+  const { data: features = [], isLoading } = useQuery<PlanFeature[]>({
+    queryKey: ['/api/plan-features'],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: { key: string; label: string; description: string; icon: string; category: string }) => 
+      apiRequest('POST', '/api/plan-features', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/plan-features'] });
+      setNewFeature({ key: "", label: "", description: "", icon: "Star", category: "general" });
+      setShowNewForm(false);
+      toast({ title: "Basarili", description: "Ozellik olusturuldu." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Ozellik olusturulamadi.", variant: "destructive" });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<PlanFeature> }) => 
+      apiRequest('PATCH', `/api/plan-features/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/plan-features'] });
+      setEditingFeature(null);
+      toast({ title: "Basarili", description: "Ozellik guncellendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Ozellik guncellenemedi.", variant: "destructive" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/plan-features/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/plan-features'] });
+      toast({ title: "Basarili", description: "Ozellik silindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Ozellik silinemedi.", variant: "destructive" });
+    }
+  });
+
+  const categoryLabels: Record<string, string> = {
+    core: "Temel",
+    communication: "Iletisim",
+    analytics: "Analitik",
+    automation: "Otomasyon",
+    integration: "Entegrasyon",
+    support: "Destek",
+    customization: "Ozellestirme",
+    general: "Genel"
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-2">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5" />
+              Plan Ozellikleri Yonetimi
+            </CardTitle>
+            <CardDescription>Planlara atanabilecek ozellikleri yonetin</CardDescription>
+          </div>
+          <Button onClick={() => setShowNewForm(!showNewForm)} data-testid="button-toggle-new-feature">
+            <Plus className="h-4 w-4 mr-2" />
+            Yeni Ozellik
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {showNewForm && (
+            <div className="p-4 border rounded-lg space-y-4 bg-muted/30">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Anahtar (key)</Label>
+                  <Input 
+                    value={newFeature.key}
+                    onChange={(e) => setNewFeature({ ...newFeature, key: e.target.value.toLowerCase().replace(/\s/g, '_') })}
+                    placeholder="ornek: ai_bot"
+                    data-testid="input-new-feature-key"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Etiket</Label>
+                  <Input 
+                    value={newFeature.label}
+                    onChange={(e) => setNewFeature({ ...newFeature, label: e.target.value })}
+                    placeholder="AI Bot"
+                    data-testid="input-new-feature-label"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Ikon</Label>
+                  <Input 
+                    value={newFeature.icon}
+                    onChange={(e) => setNewFeature({ ...newFeature, icon: e.target.value })}
+                    placeholder="Star, Bot, Calendar..."
+                    data-testid="input-new-feature-icon"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Kategori</Label>
+                  <select 
+                    className="w-full h-9 px-3 rounded-md border bg-background"
+                    value={newFeature.category}
+                    onChange={(e) => setNewFeature({ ...newFeature, category: e.target.value })}
+                    data-testid="select-new-feature-category"
+                  >
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Aciklama</Label>
+                <Textarea
+                  value={newFeature.description}
+                  onChange={(e) => setNewFeature({ ...newFeature, description: e.target.value })}
+                  placeholder="Ozellik aciklamasi..."
+                  data-testid="textarea-new-feature-description"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => createMutation.mutate(newFeature)}
+                  disabled={!newFeature.key || !newFeature.label || createMutation.isPending}
+                  data-testid="button-create-feature"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Olustur
+                </Button>
+                <Button variant="outline" onClick={() => setShowNewForm(false)}>
+                  Iptal
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : features.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Henuz ozellik bulunmuyor.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Anahtar</TableHead>
+                  <TableHead>Etiket</TableHead>
+                  <TableHead>Kategori</TableHead>
+                  <TableHead>Ikon</TableHead>
+                  <TableHead>Durum</TableHead>
+                  <TableHead>Islemler</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {features.map((feature) => (
+                  <TableRow key={feature.id} data-testid={`row-feature-${feature.id}`}>
+                    <TableCell className="font-mono text-sm">{feature.key}</TableCell>
+                    <TableCell className="font-medium">{feature.label}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{categoryLabels[feature.category || "general"]}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{feature.icon}</TableCell>
+                    <TableCell>
+                      <Badge variant={feature.isActive ? "default" : "secondary"}>
+                        {feature.isActive ? "Aktif" : "Pasif"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          onClick={() => setEditingFeature(feature)}
+                          data-testid={`button-edit-feature-${feature.id}`}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          onClick={() => updateMutation.mutate({ id: feature.id, data: { isActive: !feature.isActive } })}
+                          data-testid={`button-toggle-feature-${feature.id}`}
+                        >
+                          {feature.isActive ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                        </Button>
+                        <Button 
+                          size="icon" 
+                          variant="ghost"
+                          onClick={() => deleteMutation.mutate(feature.id)}
+                          data-testid={`button-delete-feature-${feature.id}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!editingFeature} onOpenChange={(open) => !open && setEditingFeature(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ozellik Duzenle</DialogTitle>
+            <DialogDescription>Ozellik bilgilerini duzenleyin</DialogDescription>
+          </DialogHeader>
+          {editingFeature && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Anahtar (key)</Label>
+                <Input 
+                  value={editingFeature.key}
+                  onChange={(e) => setEditingFeature({ ...editingFeature, key: e.target.value.toLowerCase().replace(/\s/g, '_') })}
+                  data-testid="input-edit-feature-key"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Etiket</Label>
+                <Input 
+                  value={editingFeature.label}
+                  onChange={(e) => setEditingFeature({ ...editingFeature, label: e.target.value })}
+                  data-testid="input-edit-feature-label"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Ikon</Label>
+                  <Input 
+                    value={editingFeature.icon || ""}
+                    onChange={(e) => setEditingFeature({ ...editingFeature, icon: e.target.value })}
+                    data-testid="input-edit-feature-icon"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Kategori</Label>
+                  <select 
+                    className="w-full h-9 px-3 rounded-md border bg-background"
+                    value={editingFeature.category || "general"}
+                    onChange={(e) => setEditingFeature({ ...editingFeature, category: e.target.value })}
+                    data-testid="select-edit-feature-category"
+                  >
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Aciklama</Label>
+                <Textarea
+                  value={editingFeature.description || ""}
+                  onChange={(e) => setEditingFeature({ ...editingFeature, description: e.target.value })}
+                  data-testid="textarea-edit-feature-description"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingFeature(null)}>Iptal</Button>
+            <Button 
+              onClick={() => editingFeature && updateMutation.mutate({ 
+                id: editingFeature.id, 
+                data: { 
+                  key: editingFeature.key,
+                  label: editingFeature.label,
+                  icon: editingFeature.icon,
+                  category: editingFeature.category,
+                  description: editingFeature.description 
+                } 
+              })}
+              disabled={updateMutation.isPending}
+              data-testid="button-save-feature"
+            >
+              Kaydet
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1249,6 +1545,10 @@ export default function SuperAdmin() {
             <Package className="h-4 w-4 mr-2" />
             Planlar
           </TabsTrigger>
+          <TabsTrigger value="features" data-testid="tab-features">
+            <Settings2 className="h-4 w-4 mr-2" />
+            Ozellikler
+          </TabsTrigger>
           <TabsTrigger value="subscriptions" data-testid="tab-subscriptions">
             <Users className="h-4 w-4 mr-2" />
             Abonelikler
@@ -1389,6 +1689,10 @@ export default function SuperAdmin() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="features" className="space-y-4 mt-4">
+          <PlanFeaturesSection />
         </TabsContent>
 
         <TabsContent value="subscriptions" className="mt-4">
