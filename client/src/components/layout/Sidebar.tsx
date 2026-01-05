@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useState } from "react";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -16,7 +17,12 @@ import {
   Building2,
   Bell,
   Shield,
-  Crown
+  Crown,
+  Megaphone,
+  X,
+  AlertTriangle,
+  Info,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -47,8 +53,18 @@ type SupportSummary = {
   requests: SupportRequest[];
 };
 
+interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  type: string;
+  isActive: boolean | null;
+  createdAt: string | null;
+}
+
 export function Sidebar() {
   const [location] = useLocation();
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<number[]>([]);
 
   const { data: logoSetting } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'sidebarLogo'],
@@ -68,6 +84,44 @@ export function Sidebar() {
     queryKey: ['/api/customer-requests'],
     refetchInterval: 30000,
   });
+
+  const { data: announcements = [] } = useQuery<Announcement[]>({
+    queryKey: ['/api/announcements'],
+    refetchInterval: 60000,
+  });
+
+  // Filter active and not dismissed announcements
+  const activeAnnouncements = announcements.filter(
+    a => a.isActive !== false && !dismissedAnnouncements.includes(a.id)
+  );
+
+  const dismissAnnouncement = (id: number) => {
+    setDismissedAnnouncements(prev => [...prev, id]);
+  };
+
+  const getAnnouncementStyle = (type: string) => {
+    switch (type) {
+      case 'warning':
+        return 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200';
+      case 'error':
+        return 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200';
+      case 'success':
+        return 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200';
+      default:
+        return 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200';
+    }
+  };
+
+  const getAnnouncementIcon = (type: string) => {
+    switch (type) {
+      case 'warning':
+        return <AlertTriangle className="h-4 w-4" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4" />;
+      default:
+        return <Info className="h-4 w-4" />;
+    }
+  };
 
   // License data for sidebar status
   type LicenseData = {
@@ -293,6 +347,39 @@ export function Sidebar() {
             </Link>
           </div>
         </div>
+
+        {/* Announcements */}
+        {activeAnnouncements.length > 0 && (
+          <div className="px-4 pb-3 space-y-2">
+            {activeAnnouncements.slice(0, 2).map((announcement) => (
+              <div
+                key={announcement.id}
+                className={cn(
+                  "p-3 rounded-lg border text-xs relative",
+                  getAnnouncementStyle(announcement.type)
+                )}
+                data-testid={`announcement-${announcement.id}`}
+              >
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="absolute top-1 right-1 h-5 w-5 opacity-60 hover:opacity-100"
+                  onClick={() => dismissAnnouncement(announcement.id)}
+                  data-testid={`button-dismiss-announcement-${announcement.id}`}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+                <div className="flex items-start gap-2 pr-5">
+                  {getAnnouncementIcon(announcement.type)}
+                  <div>
+                    <div className="font-medium">{announcement.title}</div>
+                    <div className="opacity-80 mt-0.5">{announcement.content}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex-1 px-4 py-4 space-y-1 border-t">
           {navItems.map((item) => (

@@ -54,7 +54,8 @@ import {
   WifiOff,
   CheckCircle,
   Clock,
-  XCircle
+  XCircle,
+  HelpCircle
 } from "lucide-react";
 import type { SubscriptionPlan, Subscription, SubscriptionPayment } from "@shared/schema";
 
@@ -740,6 +741,179 @@ function ApiMonitoringSection() {
   );
 }
 
+function AgencySupportSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  
+  const { data: allRequests = [], isLoading } = useQuery<SupportRequest[]>({
+    queryKey: ['/api/support-requests'],
+  });
+
+  // Filter only form-based requests (those starting with "[")
+  const formRequests = allRequests.filter(r => r.phone.startsWith('['));
+  const openRequests = formRequests.filter(r => r.status === 'open');
+  const resolvedRequests = formRequests.filter(r => r.status === 'resolved');
+
+  const resolveMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('POST', `/api/support-requests/${id}/resolve`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/support-requests'] });
+      toast({ title: "Basarili", description: "Talep cozuldu olarak isaretlendi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
+    }
+  });
+
+  // Parse the phone field to extract details
+  const parseRequestInfo = (phone: string) => {
+    const match = phone.match(/^\[([^\]]+)\]\s*(.+?)(?:\s*<([^>]+)>)?\s*-\s*(.+)$/);
+    if (match) {
+      return {
+        type: match[1],
+        name: match[2].trim(),
+        email: match[3] || null,
+        subject: match[4].trim()
+      };
+    }
+    return { type: 'Diger', name: phone, email: null, subject: '' };
+  };
+
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case 'Hata Bildirimi':
+        return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Hata</Badge>;
+      case 'Güncelleme İsteği':
+        return <Badge variant="secondary"><RefreshCw className="h-3 w-3 mr-1" />Guncelleme</Badge>;
+      case 'Öneri':
+        return <Badge variant="outline"><Star className="h-3 w-3 mr-1" />Oneri</Badge>;
+      case 'Soru':
+        return <Badge variant="outline"><HelpCircle className="h-3 w-3 mr-1" />Soru</Badge>;
+      default:
+        return <Badge variant="outline">{type}</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Ajans Destek Talepleri
+              {openRequests.length > 0 && (
+                <Badge variant="destructive">{openRequests.length} Acik</Badge>
+              )}
+            </div>
+          </CardTitle>
+          <CardDescription>Acentalardan gelen destek talepleri (form uzerinden)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : formRequests.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Henuz ajans destek talebi bulunmuyor.</div>
+          ) : (
+            <div className="space-y-3">
+              {openRequests.map((req) => {
+                const info = parseRequestInfo(req.phone);
+                const isExpanded = expandedId === req.id;
+                return (
+                  <div 
+                    key={req.id} 
+                    className="p-4 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 rounded-lg"
+                    data-testid={`card-support-request-${req.id}`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {getTypeBadge(info.type)}
+                          <span className="font-medium">{info.name}</span>
+                          {info.email && (
+                            <span className="text-sm text-muted-foreground">({info.email})</span>
+                          )}
+                        </div>
+                        <p className="font-medium mb-1">{info.subject}</p>
+                        {req.description && (
+                          <p className="text-sm text-muted-foreground">{req.description}</p>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {req.createdAt ? new Date(req.createdAt).toLocaleString("tr-TR") : "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setExpandedId(isExpanded ? null : req.id)}
+                          data-testid={`button-expand-${req.id}`}
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Detay
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={() => resolveMutation.mutate(req.id)}
+                          disabled={resolveMutation.isPending}
+                          data-testid={`button-resolve-${req.id}`}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Cozuldu
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {isExpanded && (
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="text-sm space-y-2">
+                          <div><strong>Talep Turu:</strong> {info.type}</div>
+                          <div><strong>Gonderen:</strong> {info.name} {info.email ? `<${info.email}>` : ''}</div>
+                          <div><strong>Konu:</strong> {info.subject}</div>
+                          <div><strong>Tarih:</strong> {req.createdAt ? new Date(req.createdAt).toLocaleString("tr-TR") : "-"}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {resolvedRequests.length > 0 && (
+                <>
+                  <div className="text-sm font-medium text-muted-foreground mt-6 mb-2">
+                    Cozulen Talepler ({resolvedRequests.length})
+                  </div>
+                  {resolvedRequests.slice(0, 5).map((req) => {
+                    const info = parseRequestInfo(req.phone);
+                    return (
+                      <div 
+                        key={req.id} 
+                        className="p-3 border rounded-lg opacity-60"
+                        data-testid={`card-support-request-resolved-${req.id}`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Cozuldu
+                          </Badge>
+                          {getTypeBadge(info.type)}
+                          <span className="text-sm">{info.name}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{info.subject}</p>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function SuperAdmin() {
   const { toast } = useToast();
   
@@ -1103,6 +1277,10 @@ export default function SuperAdmin() {
             <Radio className="h-4 w-4 mr-2" />
             API Izleme
           </TabsTrigger>
+          <TabsTrigger value="support" data-testid="tab-support">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Destek
+          </TabsTrigger>
           <TabsTrigger value="developer" data-testid="tab-developer">
             <Shield className="h-4 w-4 mr-2" />
             Gelistirici
@@ -1338,6 +1516,10 @@ export default function SuperAdmin() {
           <ApiMonitoringSection />
         </TabsContent>
 
+        {/* Support Tab - Agency Form Requests Only */}
+        <TabsContent value="support" className="space-y-4 mt-4">
+          <AgencySupportSection />
+        </TabsContent>
 
         {/* Developer Tab */}
         <TabsContent value="developer" className="space-y-4 mt-4">
