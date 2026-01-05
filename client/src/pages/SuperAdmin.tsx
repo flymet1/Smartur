@@ -551,63 +551,6 @@ function TenantManagementSection() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="logoUrl">Logo URL</Label>
-              <Input
-                id="logoUrl"
-                value={tenantForm.logoUrl}
-                onChange={(e) => setTenantForm({ ...tenantForm, logoUrl: e.target.value })}
-                placeholder="https://example.com/logo.png"
-                data-testid="input-tenant-logo"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="primaryColor">Ana Renk (HSL)</Label>
-                <Input
-                  id="primaryColor"
-                  value={tenantForm.primaryColor}
-                  onChange={(e) => setTenantForm({ ...tenantForm, primaryColor: e.target.value })}
-                  placeholder="262 83% 58%"
-                  data-testid="input-tenant-primary-color"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="accentColor">Vurgu Rengi (HSL)</Label>
-                <Input
-                  id="accentColor"
-                  value={tenantForm.accentColor}
-                  onChange={(e) => setTenantForm({ ...tenantForm, accentColor: e.target.value })}
-                  placeholder="142 76% 36%"
-                  data-testid="input-tenant-accent-color"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="timezone">Zaman Dilimi</Label>
-                <Input
-                  id="timezone"
-                  value={tenantForm.timezone}
-                  onChange={(e) => setTenantForm({ ...tenantForm, timezone: e.target.value })}
-                  placeholder="Europe/Istanbul"
-                  data-testid="input-tenant-timezone"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="language">Dil</Label>
-                <Input
-                  id="language"
-                  value={tenantForm.language}
-                  onChange={(e) => setTenantForm({ ...tenantForm, language: e.target.value })}
-                  placeholder="tr"
-                  data-testid="input-tenant-language"
-                />
-              </div>
-            </div>
-
             <div className="flex items-center gap-2">
               <Switch
                 id="isActive"
