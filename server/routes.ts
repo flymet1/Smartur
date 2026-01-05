@@ -2640,6 +2640,37 @@ Sky Fethiye`;
   });
 
   // === Settings ===
+  // Public settings endpoints (no auth required for sidebar/branding)
+  const publicSettingsKeys = ['sidebarLogo', 'brandSettings', 'botAccess'];
+  
+  app.get("/api/settings/sidebarLogo", async (req, res) => {
+    try {
+      const value = await storage.getSetting('sidebarLogo');
+      res.json({ key: 'sidebarLogo', value });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar alinamadi" });
+    }
+  });
+  
+  app.get("/api/settings/brandSettings", async (req, res) => {
+    try {
+      const value = await storage.getSetting('brandSettings');
+      res.json({ key: 'brandSettings', value });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar alinamadi" });
+    }
+  });
+  
+  app.get("/api/settings/botAccess", async (req, res) => {
+    try {
+      const value = await storage.getSetting('botAccess');
+      res.json({ key: 'botAccess', value });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar alinamadi" });
+    }
+  });
+  
+  // Protected settings endpoint (requires auth)
   app.get("/api/settings/:key", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
       const value = await storage.getSetting(req.params.key);
