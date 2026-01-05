@@ -6185,6 +6185,45 @@ Sky Fethiye`;
     });
   });
 
+  // Change password - requires authenticated user
+  app.post("/api/auth/change-password", async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Giris yapmaniz gerekiyor" });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Mevcut ve yeni sifre gerekli" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "Yeni sifre en az 6 karakter olmali" });
+      }
+
+      const user = await storage.getAppUser(Number(userId));
+      if (!user) {
+        return res.status(404).json({ error: "Kullanici bulunamadi" });
+      }
+
+      // Verify current password
+      if (!user.passwordHash || !verifyPassword(currentPassword, user.passwordHash)) {
+        return res.status(401).json({ error: "Mevcut sifre yanlis" });
+      }
+
+      // Hash new password and update
+      const newPasswordHash = hashPassword(newPassword);
+      await storage.updateAppUser(user.id, { passwordHash: newPasswordHash });
+
+      res.json({ success: true, message: "Sifre basariyla degistirildi" });
+    } catch (err) {
+      console.error("Sifre degistirme hatasi:", err);
+      res.status(500).json({ error: "Sifre degistirilemedi" });
+    }
+  });
+
   // === ROLES ===
   // AUTHORIZATION: Requires settings.view/manage permission
 

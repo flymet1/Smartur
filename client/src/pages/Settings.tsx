@@ -32,13 +32,13 @@ export default function Settings() {
   const [reminderHours, setReminderHours] = useState(24);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   
-  // Admin credentials
-  const [adminUsername, setAdminUsername] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
-  const [adminPasswordConfirm, setAdminPasswordConfirm] = useState("");
+  // Account password change
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [adminCredentialsLoaded, setAdminCredentialsLoaded] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [reminderMessage, setReminderMessage] = useState(
     "Merhaba {isim}! Rezervasyonunuz için hatırlatma:\n\n{aktiviteler}\nTarih: {tarih}\n\nSizi görmek için sabırsızlanıyoruz!"
   );
@@ -94,14 +94,6 @@ export default function Settings() {
     },
   });
 
-  // Load admin credentials
-  const { data: adminCredentialsSetting } = useQuery<{ key: string; value: string | null }>({
-    queryKey: ['/api/settings', 'adminCredentials'],
-    queryFn: async () => {
-      const res = await fetch('/api/settings/adminCredentials');
-      return res.json();
-    },
-  });
 
   // Load bot prompt
   const { data: botPromptSetting } = useQuery<{ key: string; value: string | null }>({
@@ -158,17 +150,6 @@ export default function Settings() {
     }
   }, [botAccessSettings?.value, botAccessSettingsLoaded]);
 
-  // Apply loaded admin credentials when data arrives (using useEffect)
-  useEffect(() => {
-    if (adminCredentialsSetting?.value && !adminCredentialsLoaded) {
-      try {
-        const creds = JSON.parse(adminCredentialsSetting.value);
-        if (creds.username) setAdminUsername(creds.username);
-        // Note: password is not loaded back for security - only username is shown
-        setAdminCredentialsLoaded(true);
-      } catch {}
-    }
-  }, [adminCredentialsSetting?.value, adminCredentialsLoaded]);
 
   // Apply loaded bot prompt when data arrives
   useEffect(() => {
@@ -327,17 +308,6 @@ export default function Settings() {
   };
 
   const handleSaveSettings = async () => {
-    // Validate password confirmation if password is being changed
-    if (adminPassword && adminPassword !== adminPasswordConfirm) {
-      setPasswordError("Şifreler eşleşmiyor. Lütfen kontrol edin.");
-      toast({ 
-        title: "Hata", 
-        description: "Şifreler eşleşmiyor.", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
     setIsSaving(true);
     try {
       // Build bot access settings object
@@ -350,12 +320,6 @@ export default function Settings() {
         confirmation: botAccessConfirmation,
         transfer: botAccessTransfer,
         extras: botAccessExtras
-      });
-
-      // Build admin credentials object (only update if password is provided)
-      const adminCredentialsValue = JSON.stringify({
-        username: adminUsername,
-        password: adminPassword // Will be hashed on server side
       });
 
       // Save all settings
@@ -396,27 +360,11 @@ export default function Settings() {
         })
       ];
 
-      // Only save admin credentials if username is provided
-      if (adminUsername.trim()) {
-        savePromises.push(
-          fetch("/api/settings/adminCredentials", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ value: adminCredentialsValue })
-          })
-        );
-      }
-
       await Promise.all(savePromises);
-      
-      // Clear password fields after save
-      setAdminPassword("");
-      setAdminPasswordConfirm("");
-      setPasswordError("");
       
       toast({ 
         title: "Başarılı", 
-        description: adminPassword ? "Ayarlar ve şifre kaydedildi." : "Ayarlar kaydedildi." 
+        description: "Ayarlar kaydedildi."
       });
     } catch (err) {
       toast({ 
@@ -426,6 +374,72 @@ export default function Settings() {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Handle password change
+  const handleChangePassword = async () => {
+    if (!currentPassword) {
+      setPasswordError("Mevcut şifrenizi girmelisiniz.");
+      return;
+    }
+    if (!newPassword) {
+      setPasswordError("Yeni şifrenizi girmelisiniz.");
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordError("Yeni şifreler eşleşmiyor.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("Yeni şifre en az 6 karakter olmalıdır.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setPasswordError("");
+
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          currentPassword, 
+          newPassword 
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setPasswordError(data.error || "Şifre değiştirilemedi.");
+        toast({ 
+          title: "Hata", 
+          description: data.error || "Şifre değiştirilemedi.", 
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      // Clear fields on success
+      setCurrentPassword("");
+      setNewPassword("");
+      setNewPasswordConfirm("");
+      setPasswordError("");
+
+      toast({ 
+        title: "Başarılı", 
+        description: "Şifreniz başarıyla değiştirildi."
+      });
+    } catch (err) {
+      setPasswordError("Şifre değiştirme işlemi başarısız.");
+      toast({ 
+        title: "Hata", 
+        description: "Şifre değiştirilemedi.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -487,93 +501,105 @@ export default function Settings() {
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                Admin Giriş Bilgileri
+                <Key className="h-5 w-5 text-primary" />
+                Hesap Ayarlari
               </CardTitle>
               <CardDescription>
-                Bot kuralları sayfasına ve uygulamaya giriş için kullanılacak kimlik bilgileri
+                Hesabiniza ait sifrenizi degistirebilirsiniz
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="adminUsername">Kullanici Adi</Label>
-                  <Input 
-                    id="adminUsername"
-                    value={adminUsername}
-                    onChange={(e) => setAdminUsername(e.target.value)}
-                    placeholder="admin"
-                    data-testid="input-admin-username"
-                  />
+                  <Label htmlFor="currentPassword">Mevcut Sifre</Label>
+                  <div className="relative">
+                    <Input 
+                      id="currentPassword"
+                      type={showPassword ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => {
+                        setCurrentPassword(e.target.value);
+                        setPasswordError("");
+                      }}
+                      placeholder="Mevcut sifrenizi girin"
+                      data-testid="input-current-password"
+                    />
+                  </div>
                 </div>
                 
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Key className="h-4 w-4" />
-                    {adminCredentialsLoaded ? "Şifre Değiştir" : "Şifre Belirle"}
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="adminPassword">
-                        {adminCredentialsLoaded ? "Yeni Şifre" : "Şifre"}
-                      </Label>
-                      <div className="relative">
-                        <Input 
-                          id="adminPassword"
-                          type={showPassword ? "text" : "password"}
-                          value={adminPassword}
-                          onChange={(e) => {
-                            setAdminPassword(e.target.value);
-                            setPasswordError("");
-                          }}
-                          placeholder={adminCredentialsLoaded ? "Yeni şifre girin" : "Şifre belirleyin"}
-                          data-testid="input-admin-password"
-                        />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="absolute right-0 top-0 h-full px-3"
-                              onClick={() => setShowPassword(!showPassword)}
-                              data-testid="button-toggle-password"
-                            >
-                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{showPassword ? "Şifreyi gizle" : "Şifreyi göster"}</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="adminPasswordConfirm">Şifre Tekrar</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">Yeni Sifre</Label>
+                    <div className="relative">
                       <Input 
-                        id="adminPasswordConfirm"
+                        id="newPassword"
                         type={showPassword ? "text" : "password"}
-                        value={adminPasswordConfirm}
+                        value={newPassword}
                         onChange={(e) => {
-                          setAdminPasswordConfirm(e.target.value);
+                          setNewPassword(e.target.value);
                           setPasswordError("");
                         }}
-                        placeholder="Şifreyi tekrar girin"
-                        data-testid="input-admin-password-confirm"
+                        placeholder="Yeni sifrenizi girin"
+                        data-testid="input-new-password"
                       />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3"
+                            onClick={() => setShowPassword(!showPassword)}
+                            data-testid="button-toggle-password"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{showPassword ? "Sifreyi gizle" : "Sifreyi goster"}</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
-                  {passwordError && (
-                    <p className="text-sm text-destructive mt-2">{passwordError}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {adminCredentialsLoaded 
-                      ? "Mevcut şifreniz gizlidir. Değiştirmek için her iki alana da yeni şifrenizi girin." 
-                      : "Bu şifre ile korunan sayfalara erişebilirsiniz."}
-                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPasswordConfirm">Yeni Sifre Tekrar</Label>
+                    <Input 
+                      id="newPasswordConfirm"
+                      type={showPassword ? "text" : "password"}
+                      value={newPasswordConfirm}
+                      onChange={(e) => {
+                        setNewPasswordConfirm(e.target.value);
+                        setPasswordError("");
+                      }}
+                      placeholder="Yeni sifreyi tekrar girin"
+                      data-testid="input-new-password-confirm"
+                    />
+                  </div>
                 </div>
+
+                {passwordError && (
+                  <p className="text-sm text-destructive mt-2">{passwordError}</p>
+                )}
+
+                <Button 
+                  onClick={handleChangePassword}
+                  disabled={isChangingPassword || !currentPassword || !newPassword || !newPasswordConfirm}
+                  data-testid="button-change-password"
+                >
+                  {isChangingPassword ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Degistiriliyor...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="h-4 w-4 mr-2" />
+                      Sifreyi Degistir
+                    </>
+                  )}
+                </Button>
               </div>
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                 <p className="text-xs text-amber-800 dark:text-amber-300">
-                  Bu bilgiler Smartur yönetim paneline giriş için kullanılacaktır. Şifreyi güvenli bir yerde saklayın.
+                  Sifrenizi degistirdikten sonra yeni sifrenizle giris yapmaniz gerekecektir.
                 </p>
               </div>
             </CardContent>
