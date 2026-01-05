@@ -117,13 +117,22 @@ export function Sidebar() {
     return () => window.removeEventListener('storage', checkUser);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch {
+    }
+    
     localStorage.removeItem('userToken');
     localStorage.removeItem('userData');
     localStorage.removeItem('userPermissions');
     localStorage.removeItem('userRoles');
+    localStorage.removeItem('tenantData');
     setCurrentUser(null);
-    setLocation('/login');
+    window.location.href = '/login';
   };
 
   const { data: logoSetting } = useQuery<{ key: string; value: string | null }>({

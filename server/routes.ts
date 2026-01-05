@@ -6393,6 +6393,35 @@ Sky Fethiye`;
     }
   });
 
+  app.get("/api/auth/session", async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.json({ authenticated: false });
+      }
+
+      const user = await storage.getAppUser(Number(userId));
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.json({ authenticated: false });
+      }
+
+      const permissions = await storage.getUserPermissions(user.id);
+      const roles = await storage.getUserRoles(user.id);
+      const { passwordHash: _, ...safeUser } = user;
+
+      res.json({
+        authenticated: true,
+        user: safeUser,
+        permissions: permissions.map(p => p.key),
+        roles: roles.map(r => r.roleId),
+      });
+    } catch (err) {
+      console.error("Session check error:", err);
+      res.json({ authenticated: false });
+    }
+  });
+
   app.get("/api/auth/me", async (req, res) => {
     try {
       // SECURITY: Only use session-based authentication - no header fallback
