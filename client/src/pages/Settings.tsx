@@ -2940,54 +2940,6 @@ function LicenseSection() {
           </Button>
         </CardContent>
       </Card>
-
-      {/* Plan Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Plan Karsilastirmasi</CardTitle>
-          <CardDescription>Mevcut planlar ve ozellikleri</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <Badge variant="secondary" className="mb-2">Trial</Badge>
-              <h4 className="font-bold">Deneme</h4>
-              <p className="text-sm text-muted-foreground mt-1">14 gun ucretsiz</p>
-              <ul className="text-sm mt-3 space-y-1">
-                <li>5 aktivite</li>
-                <li>50 rez./ay</li>
-              </ul>
-            </div>
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <Badge variant="secondary" className="mb-2">Basic</Badge>
-              <h4 className="font-bold">Temel</h4>
-              <p className="text-sm text-muted-foreground mt-1">Kucuk isletmeler icin</p>
-              <ul className="text-sm mt-3 space-y-1">
-                <li>10 aktivite</li>
-                <li>200 rez./ay</li>
-              </ul>
-            </div>
-            <div className="p-4 rounded-lg border border-primary bg-primary/5">
-              <Badge className="mb-2">Professional</Badge>
-              <h4 className="font-bold">Profesyonel</h4>
-              <p className="text-sm text-muted-foreground mt-1">Orta olcekli isletmeler</p>
-              <ul className="text-sm mt-3 space-y-1">
-                <li>25 aktivite</li>
-                <li>500 rez./ay</li>
-              </ul>
-            </div>
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <Badge variant="outline" className="mb-2">Enterprise</Badge>
-              <h4 className="font-bold">Kurumsal</h4>
-              <p className="text-sm text-muted-foreground mt-1">Buyuk isletmeler icin</p>
-              <ul className="text-sm mt-3 space-y-1">
-                <li>Sinirsiz aktivite</li>
-                <li>Sinirsiz rezervasyon</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </>
   );
 }
