@@ -5357,7 +5357,28 @@ Sky Fethiye`;
 
   app.post("/api/platform-admins", async (req, res) => {
     try {
-      const admin = await storage.createPlatformAdmin(req.body);
+      const { email, name, password, role } = req.body;
+      
+      if (!email || !password || !name) {
+        return res.status(400).json({ error: "E-posta, ad ve sifre gerekli" });
+      }
+      
+      // Check if email already exists
+      const existing = await storage.getPlatformAdminByEmail(email);
+      if (existing) {
+        return res.status(400).json({ error: "Bu e-posta adresi zaten kullaniliyor" });
+      }
+      
+      // Hash the password
+      const passwordHash = hashPassword(password);
+      
+      const admin = await storage.createPlatformAdmin({
+        email,
+        name,
+        passwordHash,
+        role: role || 'admin',
+        isActive: true
+      });
       res.json(admin);
     } catch (err) {
       console.error("Platform admin olusturma hatasi:", err);

@@ -3278,7 +3278,7 @@ function PlatformAdminsSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [newAdmin, setNewAdmin] = useState({ email: '', name: '', role: 'admin' });
+  const [newAdmin, setNewAdmin] = useState({ email: '', name: '', password: '', role: 'admin' });
 
   const { data: admins = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/platform-admins'],
@@ -3290,7 +3290,7 @@ function PlatformAdminsSection() {
       queryClient.invalidateQueries({ queryKey: ['/api/platform-admins'] });
       toast({ title: "Basarili", description: "Yonetici eklendi." });
       setShowAddDialog(false);
-      setNewAdmin({ email: '', name: '', role: 'admin' });
+      setNewAdmin({ email: '', name: '', password: '', role: 'admin' });
     },
     onError: () => {
       toast({ title: "Hata", description: "Yonetici eklenemedi.", variant: "destructive" });
@@ -3401,12 +3401,22 @@ function PlatformAdminsSection() {
                 data-testid="input-admin-email"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Sifre</Label>
+              <Input
+                type="password"
+                value={newAdmin.password}
+                onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                placeholder="Guclu bir sifre girin"
+                data-testid="input-admin-password"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>Iptal</Button>
             <Button
               onClick={() => createMutation.mutate(newAdmin)}
-              disabled={createMutation.isPending || !newAdmin.email}
+              disabled={createMutation.isPending || !newAdmin.email || !newAdmin.password || !newAdmin.name}
               data-testid="button-save-admin"
             >
               {createMutation.isPending ? "Ekleniyor..." : "Ekle"}
