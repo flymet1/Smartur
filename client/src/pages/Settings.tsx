@@ -267,7 +267,9 @@ export default function Settings() {
     queryKey: ['/api/blacklist'],
     queryFn: async () => {
       const res = await fetch('/api/blacklist');
-      return res.json();
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     }
   });
 
