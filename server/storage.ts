@@ -95,8 +95,23 @@ import {
   type InsertBotQualityScore,
   systemLogs,
   appVersions,
+  platformAdmins,
+  loginLogs,
+  agencyNotes,
+  platformSupportTickets,
+  ticketResponses,
   type AppVersion,
   type InsertAppVersion,
+  type PlatformAdmin,
+  type InsertPlatformAdmin,
+  type LoginLog,
+  type InsertLoginLog,
+  type AgencyNote,
+  type InsertAgencyNote,
+  type PlatformSupportTicket,
+  type InsertPlatformSupportTicket,
+  type TicketResponse,
+  type InsertTicketResponse,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -331,6 +346,47 @@ export interface IStorage {
   updateAppVersion(id: number, version: Partial<InsertAppVersion>): Promise<AppVersion>;
   activateAppVersion(id: number): Promise<AppVersion>;
   rollbackToVersion(id: number): Promise<AppVersion>;
+
+  // Platform Admins
+  getPlatformAdmins(): Promise<PlatformAdmin[]>;
+  createPlatformAdmin(admin: InsertPlatformAdmin): Promise<PlatformAdmin>;
+  updatePlatformAdmin(id: number, admin: Partial<InsertPlatformAdmin>): Promise<PlatformAdmin>;
+  deletePlatformAdmin(id: number): Promise<void>;
+
+  // Login Logs
+  getLoginLogs(limit?: number): Promise<LoginLog[]>;
+  createLoginLog(log: InsertLoginLog): Promise<LoginLog>;
+
+  // Agency Notes
+  getAgencyNotes(licenseId: number): Promise<AgencyNote[]>;
+  createAgencyNote(note: InsertAgencyNote): Promise<AgencyNote>;
+  deleteAgencyNote(id: number): Promise<void>;
+
+  // Support Tickets
+  getSupportTickets(status?: string): Promise<PlatformSupportTicket[]>;
+  getSupportTicket(id: number): Promise<PlatformSupportTicket | undefined>;
+  createSupportTicket(ticket: InsertPlatformSupportTicket): Promise<PlatformSupportTicket>;
+  updateSupportTicket(id: number, ticket: Partial<InsertPlatformSupportTicket>): Promise<PlatformSupportTicket>;
+
+  // Ticket Responses
+  getTicketResponses(ticketId: number): Promise<TicketResponse[]>;
+  createTicketResponse(response: InsertTicketResponse): Promise<TicketResponse>;
+
+  // System Stats
+  getDatabaseStats(): Promise<any>;
+
+  // Bulk Operations
+  bulkChangePlan(licenseIds: number[], newPlanId: number): Promise<any>;
+  bulkExtendLicense(licenseIds: number[], days: number): Promise<any>;
+
+  // Agency Details
+  getAgencyDetails(licenseId: number): Promise<any>;
+
+  // Revenue Reports
+  getRevenueSummary(startDate?: string, endDate?: string): Promise<any>;
+  getMonthlyRevenue(year: number): Promise<any>;
+  getOverdueInvoices(): Promise<Invoice[]>;
+  generateInvoice(licenseId: number, periodStart: string, periodEnd: string): Promise<Invoice>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2303,6 +2359,297 @@ Sky Fethiye`,
       .where(eq(appVersions.id, id))
       .returning();
     return activated;
+  }
+
+  // Platform Admins
+  async getPlatformAdmins(): Promise<PlatformAdmin[]> {
+    return db.select().from(platformAdmins).orderBy(desc(platformAdmins.createdAt));
+  }
+
+  async createPlatformAdmin(admin: InsertPlatformAdmin): Promise<PlatformAdmin> {
+    const [created] = await db.insert(platformAdmins).values(admin).returning();
+    return created;
+  }
+
+  async updatePlatformAdmin(id: number, admin: Partial<InsertPlatformAdmin>): Promise<PlatformAdmin> {
+    const [updated] = await db.update(platformAdmins)
+      .set({ ...admin, updatedAt: new Date() })
+      .where(eq(platformAdmins.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePlatformAdmin(id: number): Promise<void> {
+    await db.delete(platformAdmins).where(eq(platformAdmins.id, id));
+  }
+
+  // Login Logs
+  async getLoginLogs(limit: number = 100): Promise<LoginLog[]> {
+    return db.select().from(loginLogs).orderBy(desc(loginLogs.createdAt)).limit(limit);
+  }
+
+  async createLoginLog(log: InsertLoginLog): Promise<LoginLog> {
+    const [created] = await db.insert(loginLogs).values(log).returning();
+    return created;
+  }
+
+  // Agency Notes
+  async getAgencyNotes(licenseId: number): Promise<AgencyNote[]> {
+    return db.select().from(agencyNotes)
+      .where(eq(agencyNotes.licenseId, licenseId))
+      .orderBy(desc(agencyNotes.createdAt));
+  }
+
+  async createAgencyNote(note: InsertAgencyNote): Promise<AgencyNote> {
+    const [created] = await db.insert(agencyNotes).values(note).returning();
+    return created;
+  }
+
+  async deleteAgencyNote(id: number): Promise<void> {
+    await db.delete(agencyNotes).where(eq(agencyNotes.id, id));
+  }
+
+  // Support Tickets
+  async getSupportTickets(status?: string): Promise<PlatformSupportTicket[]> {
+    if (status) {
+      return db.select().from(platformSupportTickets)
+        .where(eq(platformSupportTickets.status, status))
+        .orderBy(desc(platformSupportTickets.createdAt));
+    }
+    return db.select().from(platformSupportTickets).orderBy(desc(platformSupportTickets.createdAt));
+  }
+
+  async getSupportTicket(id: number): Promise<PlatformSupportTicket | undefined> {
+    const [ticket] = await db.select().from(platformSupportTickets).where(eq(platformSupportTickets.id, id));
+    return ticket;
+  }
+
+  async createSupportTicket(ticket: InsertPlatformSupportTicket): Promise<PlatformSupportTicket> {
+    const [created] = await db.insert(platformSupportTickets).values(ticket).returning();
+    return created;
+  }
+
+  async updateSupportTicket(id: number, ticket: Partial<InsertPlatformSupportTicket>): Promise<PlatformSupportTicket> {
+    const updateData: any = { ...ticket, updatedAt: new Date() };
+    if (ticket.status === 'resolved' || ticket.status === 'closed') {
+      updateData.resolvedAt = new Date();
+    }
+    const [updated] = await db.update(platformSupportTickets)
+      .set(updateData)
+      .where(eq(platformSupportTickets.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Ticket Responses
+  async getTicketResponses(ticketId: number): Promise<TicketResponse[]> {
+    return db.select().from(ticketResponses)
+      .where(eq(ticketResponses.ticketId, ticketId))
+      .orderBy(ticketResponses.createdAt);
+  }
+
+  async createTicketResponse(response: InsertTicketResponse): Promise<TicketResponse> {
+    const [created] = await db.insert(ticketResponses).values(response).returning();
+    return created;
+  }
+
+  // Database Stats
+  async getDatabaseStats(): Promise<any> {
+    const [activityCount] = await db.select({ count: sql<number>`count(*)` }).from(activities);
+    const [reservationCount] = await db.select({ count: sql<number>`count(*)` }).from(reservations);
+    const [messageCount] = await db.select({ count: sql<number>`count(*)` }).from(messages);
+    const [licenseCount] = await db.select({ count: sql<number>`count(*)` }).from(license);
+    const [ticketCount] = await db.select({ count: sql<number>`count(*)` }).from(platformSupportTickets);
+
+    return {
+      tables: {
+        activities: Number(activityCount?.count || 0),
+        reservations: Number(reservationCount?.count || 0),
+        messages: Number(messageCount?.count || 0),
+        licenses: Number(licenseCount?.count || 0),
+        supportTickets: Number(ticketCount?.count || 0),
+      },
+      status: 'connected',
+    };
+  }
+
+  // Bulk Operations
+  async bulkChangePlan(licenseIds: number[], newPlanId: number): Promise<any> {
+    const plan = await this.getSubscriptionPlan(newPlanId);
+    if (!plan) throw new Error('Plan bulunamadi');
+
+    const results = [];
+    for (const id of licenseIds) {
+      try {
+        const updated = await db.update(license)
+          .set({ 
+            planType: plan.code,
+            planName: plan.name,
+            maxActivities: plan.maxActivities,
+            maxReservationsPerMonth: plan.maxReservationsPerMonth,
+            features: plan.features,
+            updatedAt: new Date()
+          })
+          .where(eq(license.id, id))
+          .returning();
+        results.push({ id, success: true, license: updated[0] });
+      } catch (err) {
+        results.push({ id, success: false, error: (err as Error).message });
+      }
+    }
+    return { updated: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length, results };
+  }
+
+  async bulkExtendLicense(licenseIds: number[], days: number): Promise<any> {
+    const results = [];
+    for (const id of licenseIds) {
+      try {
+        const [lic] = await db.select().from(license).where(eq(license.id, id));
+        if (!lic) {
+          results.push({ id, success: false, error: 'Lisans bulunamadi' });
+          continue;
+        }
+        
+        const currentExpiry = lic.expiryDate ? new Date(lic.expiryDate) : new Date();
+        const newExpiry = new Date(currentExpiry.getTime() + days * 24 * 60 * 60 * 1000);
+        
+        const [updated] = await db.update(license)
+          .set({ expiryDate: newExpiry, updatedAt: new Date() })
+          .where(eq(license.id, id))
+          .returning();
+        results.push({ id, success: true, newExpiry, license: updated });
+      } catch (err) {
+        results.push({ id, success: false, error: (err as Error).message });
+      }
+    }
+    return { updated: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length, results };
+  }
+
+  // Agency Details
+  async getAgencyDetails(licenseId: number): Promise<any> {
+    const [lic] = await db.select().from(license).where(eq(license.id, licenseId));
+    if (!lic) return null;
+
+    const notes = await this.getAgencyNotes(licenseId);
+    const allInvoices = await db.select().from(invoices).where(eq(invoices.licenseId, licenseId)).orderBy(desc(invoices.createdAt));
+    const subs = await db.select().from(subscriptions).where(eq(subscriptions.licenseId, licenseId)).orderBy(desc(subscriptions.createdAt));
+
+    return {
+      license: lic,
+      notes,
+      invoices: allInvoices,
+      subscriptionHistory: subs,
+    };
+  }
+
+  // Revenue Reports
+  async getRevenueSummary(startDate?: string, endDate?: string): Promise<any> {
+    let allPayments;
+    
+    if (startDate && endDate) {
+      allPayments = await db.select().from(subscriptionPayments).where(
+        and(
+          gte(subscriptionPayments.createdAt, new Date(startDate)),
+          lte(subscriptionPayments.createdAt, new Date(endDate))
+        )
+      );
+    } else {
+      allPayments = await db.select().from(subscriptionPayments);
+    }
+    const completedPayments = allPayments.filter(p => p.status === 'completed');
+
+    const totalTl = completedPayments.reduce((sum, p) => sum + (p.amountTl || 0), 0);
+    const totalUsd = completedPayments.reduce((sum, p) => sum + (p.amountUsd || 0), 0);
+
+    return {
+      totalPayments: allPayments.length,
+      completedPayments: completedPayments.length,
+      totalRevenueTl: totalTl,
+      totalRevenueUsd: totalUsd,
+      pendingPayments: allPayments.filter(p => p.status === 'pending').length,
+      failedPayments: allPayments.filter(p => p.status === 'failed').length,
+    };
+  }
+
+  async getMonthlyRevenue(year: number): Promise<any> {
+    const startOfYear = new Date(year, 0, 1);
+    const endOfYear = new Date(year, 11, 31, 23, 59, 59);
+
+    const allPayments = await db.select().from(subscriptionPayments).where(
+      and(
+        gte(subscriptionPayments.createdAt, startOfYear),
+        lte(subscriptionPayments.createdAt, endOfYear),
+        eq(subscriptionPayments.status, 'completed')
+      )
+    );
+
+    const monthlyData: Record<number, { tl: number; usd: number; count: number }> = {};
+    for (let i = 0; i < 12; i++) {
+      monthlyData[i] = { tl: 0, usd: 0, count: 0 };
+    }
+
+    allPayments.forEach(p => {
+      if (p.createdAt) {
+        const month = new Date(p.createdAt).getMonth();
+        monthlyData[month].tl += p.amountTl || 0;
+        monthlyData[month].usd += p.amountUsd || 0;
+        monthlyData[month].count += 1;
+      }
+    });
+
+    return Object.entries(monthlyData).map(([month, data]) => ({
+      month: Number(month) + 1,
+      monthName: ['Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran', 'Temmuz', 'Agustos', 'Eylul', 'Ekim', 'Kasim', 'Aralik'][Number(month)],
+      ...data
+    }));
+  }
+
+  async getOverdueInvoices(): Promise<Invoice[]> {
+    const today = new Date().toISOString().split('T')[0];
+    return db.select().from(invoices).where(
+      and(
+        eq(invoices.status, 'pending'),
+        lte(invoices.dueDate, today)
+      )
+    ).orderBy(invoices.dueDate);
+  }
+
+  async generateInvoice(licenseId: number, periodStart: string, periodEnd: string): Promise<Invoice> {
+    const [lic] = await db.select().from(license).where(eq(license.id, licenseId));
+    if (!lic) throw new Error('Lisans bulunamadi');
+
+    const plan = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.code, lic.planType || 'trial'));
+    const planData = plan[0];
+
+    const subtotalTl = planData?.priceTl || 0;
+    const vatRate = 20;
+    const vatAmount = Math.round(subtotalTl * vatRate / 100);
+    const totalTl = subtotalTl + vatAmount;
+
+    // Generate invoice number
+    const allInvoices = await db.select().from(invoices);
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(allInvoices.length + 1).padStart(5, '0')}`;
+
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 15); // 15 gun vadeli
+
+    const [created] = await db.insert(invoices).values({
+      licenseId,
+      invoiceNumber,
+      agencyName: lic.agencyName,
+      agencyEmail: lic.agencyEmail,
+      periodStart,
+      periodEnd,
+      subtotalTl,
+      vatRatePct: vatRate,
+      vatAmountTl: vatAmount,
+      totalTl,
+      currency: 'TRY',
+      status: 'pending',
+      dueDate: dueDate.toISOString().split('T')[0],
+    }).returning();
+
+    return created;
   }
 }
 

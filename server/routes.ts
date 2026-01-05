@@ -28,6 +28,22 @@ function verifyPassword(password: string, storedHash: string): boolean {
   return hash === verifyHash;
 }
 
+// Format uptime in human-readable format
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  
+  const parts = [];
+  if (days > 0) parts.push(`${days}g`);
+  if (hours > 0) parts.push(`${hours}s`);
+  if (minutes > 0) parts.push(`${minutes}d`);
+  if (secs > 0 || parts.length === 0) parts.push(`${secs}sn`);
+  
+  return parts.join(' ');
+}
+
 // License middleware - checks if write operations are allowed
 async function checkLicenseForWrite(): Promise<{ allowed: boolean; message: string; status?: string }> {
   const verification = await storage.verifyLicense();
@@ -2890,7 +2906,7 @@ Sky Fethiye`;
       
       // Calculate response rate (conversations that got bot response)
       const conversationsWithBotResponse = periodConversations.filter(conv => 
-        conv.messages && conv.messages.some(m => m.role === 'assistant')
+        conv.messages && conv.messages.some((m: { role: string }) => m.role === 'assistant')
       ).length;
       
       // Calculate conversion rate
@@ -4990,6 +5006,296 @@ Sky Fethiye`;
     } catch (err) {
       console.error("WhatsApp istatistik hatasi:", err);
       res.status(500).json({ error: "WhatsApp istatistikleri alinamadi" });
+    }
+  });
+
+  // === PLATFORM ADMINS ===
+  
+  app.get("/api/platform-admins", async (req, res) => {
+    try {
+      const admins = await storage.getPlatformAdmins();
+      res.json(admins);
+    } catch (err) {
+      console.error("Platform admin hatasi:", err);
+      res.status(500).json({ error: "Adminler alinamadi" });
+    }
+  });
+
+  app.post("/api/platform-admins", async (req, res) => {
+    try {
+      const admin = await storage.createPlatformAdmin(req.body);
+      res.json(admin);
+    } catch (err) {
+      console.error("Platform admin olusturma hatasi:", err);
+      res.status(500).json({ error: "Admin olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/platform-admins/:id", async (req, res) => {
+    try {
+      const admin = await storage.updatePlatformAdmin(Number(req.params.id), req.body);
+      res.json(admin);
+    } catch (err) {
+      console.error("Platform admin guncelleme hatasi:", err);
+      res.status(500).json({ error: "Admin guncellenemedi" });
+    }
+  });
+
+  app.delete("/api/platform-admins/:id", async (req, res) => {
+    try {
+      await storage.deletePlatformAdmin(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Platform admin silme hatasi:", err);
+      res.status(500).json({ error: "Admin silinemedi" });
+    }
+  });
+
+  // === LOGIN LOGS ===
+  
+  app.get("/api/login-logs", async (req, res) => {
+    try {
+      const limit = Number(req.query.limit) || 100;
+      const logs = await storage.getLoginLogs(limit);
+      res.json(logs);
+    } catch (err) {
+      console.error("Giris logu hatasi:", err);
+      res.status(500).json({ error: "Giris loglari alinamadi" });
+    }
+  });
+
+  // === AGENCY NOTES ===
+  
+  app.get("/api/agency-notes/:licenseId", async (req, res) => {
+    try {
+      const notes = await storage.getAgencyNotes(Number(req.params.licenseId));
+      res.json(notes);
+    } catch (err) {
+      console.error("Ajans notu hatasi:", err);
+      res.status(500).json({ error: "Notlar alinamadi" });
+    }
+  });
+
+  app.post("/api/agency-notes", async (req, res) => {
+    try {
+      const note = await storage.createAgencyNote(req.body);
+      res.json(note);
+    } catch (err) {
+      console.error("Ajans notu olusturma hatasi:", err);
+      res.status(500).json({ error: "Not olusturulamadi" });
+    }
+  });
+
+  app.delete("/api/agency-notes/:id", async (req, res) => {
+    try {
+      await storage.deleteAgencyNote(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Ajans notu silme hatasi:", err);
+      res.status(500).json({ error: "Not silinemedi" });
+    }
+  });
+
+  // === SUPPORT TICKETS ===
+  
+  app.get("/api/support-tickets", async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const tickets = await storage.getSupportTickets(status);
+      res.json(tickets);
+    } catch (err) {
+      console.error("Destek talebi hatasi:", err);
+      res.status(500).json({ error: "Talepler alinamadi" });
+    }
+  });
+
+  app.get("/api/support-tickets/:id", async (req, res) => {
+    try {
+      const ticket = await storage.getSupportTicket(Number(req.params.id));
+      if (!ticket) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+      res.json(ticket);
+    } catch (err) {
+      console.error("Destek talebi hatasi:", err);
+      res.status(500).json({ error: "Talep alinamadi" });
+    }
+  });
+
+  app.post("/api/support-tickets", async (req, res) => {
+    try {
+      const ticket = await storage.createSupportTicket(req.body);
+      res.json(ticket);
+    } catch (err) {
+      console.error("Destek talebi olusturma hatasi:", err);
+      res.status(500).json({ error: "Talep olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/support-tickets/:id", async (req, res) => {
+    try {
+      const ticket = await storage.updateSupportTicket(Number(req.params.id), req.body);
+      res.json(ticket);
+    } catch (err) {
+      console.error("Destek talebi guncelleme hatasi:", err);
+      res.status(500).json({ error: "Talep guncellenemedi" });
+    }
+  });
+
+  // === TICKET RESPONSES ===
+  
+  app.get("/api/support-tickets/:ticketId/responses", async (req, res) => {
+    try {
+      const responses = await storage.getTicketResponses(Number(req.params.ticketId));
+      res.json(responses);
+    } catch (err) {
+      console.error("Talep yaniti hatasi:", err);
+      res.status(500).json({ error: "Yanitlar alinamadi" });
+    }
+  });
+
+  app.post("/api/support-tickets/:ticketId/responses", async (req, res) => {
+    try {
+      const response = await storage.createTicketResponse({
+        ...req.body,
+        ticketId: Number(req.params.ticketId)
+      });
+      res.json(response);
+    } catch (err) {
+      console.error("Talep yaniti olusturma hatasi:", err);
+      res.status(500).json({ error: "Yanit olusturulamadi" });
+    }
+  });
+
+  // === SYSTEM MONITORING ===
+  
+  app.get("/api/system/stats", async (req, res) => {
+    try {
+      const os = await import('os');
+      
+      const cpuUsage = os.loadavg()[0];
+      const totalMem = os.totalmem();
+      const freeMem = os.freemem();
+      const usedMem = totalMem - freeMem;
+      const memUsagePct = Math.round((usedMem / totalMem) * 100);
+      
+      const uptime = process.uptime();
+      const nodeVersion = process.version;
+      
+      res.json({
+        cpu: {
+          loadAvg: cpuUsage.toFixed(2),
+          cores: os.cpus().length
+        },
+        memory: {
+          total: Math.round(totalMem / 1024 / 1024 / 1024 * 100) / 100,
+          used: Math.round(usedMem / 1024 / 1024 / 1024 * 100) / 100,
+          free: Math.round(freeMem / 1024 / 1024 / 1024 * 100) / 100,
+          usagePct: memUsagePct
+        },
+        uptime: {
+          seconds: Math.floor(uptime),
+          formatted: formatUptime(uptime)
+        },
+        nodeVersion,
+        platform: os.platform(),
+        hostname: os.hostname()
+      });
+    } catch (err) {
+      console.error("Sistem istatistik hatasi:", err);
+      res.status(500).json({ error: "Sistem istatistikleri alinamadi" });
+    }
+  });
+
+  app.get("/api/system/db-stats", async (req, res) => {
+    try {
+      const stats = await storage.getDatabaseStats();
+      res.json(stats);
+    } catch (err) {
+      console.error("Veritabani istatistik hatasi:", err);
+      res.status(500).json({ error: "Veritabani istatistikleri alinamadi" });
+    }
+  });
+
+  // === BULK OPERATIONS ===
+  
+  app.post("/api/bulk/plan-change", async (req, res) => {
+    try {
+      const { licenseIds, newPlanId } = req.body;
+      const results = await storage.bulkChangePlan(licenseIds, newPlanId);
+      res.json(results);
+    } catch (err) {
+      console.error("Toplu plan degisikligi hatasi:", err);
+      res.status(500).json({ error: "Plan degisikligi yapilamadi" });
+    }
+  });
+
+  app.post("/api/bulk/extend-license", async (req, res) => {
+    try {
+      const { licenseIds, days } = req.body;
+      const results = await storage.bulkExtendLicense(licenseIds, days);
+      res.json(results);
+    } catch (err) {
+      console.error("Toplu lisans uzatma hatasi:", err);
+      res.status(500).json({ error: "Lisans uzatma yapilamadi" });
+    }
+  });
+
+  // === AGENCY DETAILS (For Super Admin) ===
+  
+  app.get("/api/agency-details/:licenseId", async (req, res) => {
+    try {
+      const details = await storage.getAgencyDetails(Number(req.params.licenseId));
+      res.json(details);
+    } catch (err) {
+      console.error("Ajans detayi hatasi:", err);
+      res.status(500).json({ error: "Ajans detaylari alinamadi" });
+    }
+  });
+
+  // === REVENUE REPORTS ===
+  
+  app.get("/api/revenue/summary", async (req, res) => {
+    try {
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      const summary = await storage.getRevenueSummary(startDate, endDate);
+      res.json(summary);
+    } catch (err) {
+      console.error("Gelir ozeti hatasi:", err);
+      res.status(500).json({ error: "Gelir ozeti alinamadi" });
+    }
+  });
+
+  app.get("/api/revenue/monthly", async (req, res) => {
+    try {
+      const year = Number(req.query.year) || new Date().getFullYear();
+      const monthly = await storage.getMonthlyRevenue(year);
+      res.json(monthly);
+    } catch (err) {
+      console.error("Aylik gelir hatasi:", err);
+      res.status(500).json({ error: "Aylik gelir alinamadi" });
+    }
+  });
+
+  app.get("/api/invoices/overdue", async (req, res) => {
+    try {
+      const invoices = await storage.getOverdueInvoices();
+      res.json(invoices);
+    } catch (err) {
+      console.error("Vadesi gecmis fatura hatasi:", err);
+      res.status(500).json({ error: "Vadesi gecmis faturalar alinamadi" });
+    }
+  });
+
+  app.post("/api/invoices/generate", async (req, res) => {
+    try {
+      const { licenseId, periodStart, periodEnd } = req.body;
+      const invoice = await storage.generateInvoice(licenseId, periodStart, periodEnd);
+      res.json(invoice);
+    } catch (err) {
+      console.error("Fatura olusturma hatasi:", err);
+      res.status(500).json({ error: "Fatura olusturulamadi" });
     }
   });
 
