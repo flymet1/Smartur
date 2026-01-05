@@ -4,7 +4,8 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { storage } from "./storage";
-import MemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -25,20 +26,25 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-// Session middleware
-const MemoryStoreSession = MemoryStore(session);
+// Session middleware with PostgreSQL-backed storage for persistence across restarts
+const PgSession = connectPgSimple(session);
 app.use(
   session({
+    store: new PgSession({
+      pool: pool,
+      tableName: 'session',
+      createTableIfMissing: true,
+      pruneSessionInterval: 60 * 15 // Prune expired sessions every 15 minutes
+    }),
     secret: process.env.SESSION_SECRET || 'smartur-session-secret-fallback',
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStoreSession({
-      checkPeriod: 86400000 // 24 hours
-    }),
+    rolling: true, // Reset session expiry on each request
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (extended for better UX)
     }
   })
 );
