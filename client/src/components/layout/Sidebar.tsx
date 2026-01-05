@@ -322,33 +322,30 @@ export function Sidebar() {
               {/* Mobile Login/Logout */}
               <div className="mt-4 pt-4 border-t">
                 {currentUser ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
-                      <User className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">{currentUser.name || currentUser.username}</span>
-                    </div>
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
+                    <User className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium flex-1">{currentUser.name || currentUser.username}</span>
                     <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start gap-2"
-                      onClick={handleLogout}
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleLogout();
+                      }}
                       data-testid="button-logout-mobile"
                     >
                       <LogOut className="h-4 w-4" />
-                      Cikis Yap
                     </Button>
                   </div>
                 ) : (
                   <Link href="/login">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="w-full justify-start gap-2"
-                      data-testid="button-login-mobile"
-                    >
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground">
                       <LogIn className="h-4 w-4" />
                       Giris Yap
-                    </Button>
+                    </div>
                   </Link>
                 )}
               </div>
@@ -520,49 +517,44 @@ export function Sidebar() {
           </Link>
 
           {/* User Login/Logout Section */}
-          <div className="mt-3 pt-3 border-t">
-            {currentUser ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate" data-testid="text-current-user-name">
-                      {currentUser.name || currentUser.username}
-                    </div>
-                    {currentUser.companyName && (
-                      <div className="text-xs text-muted-foreground truncate" data-testid="text-current-user-company">
-                        {currentUser.companyName}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start gap-2"
-                  onClick={handleLogout}
-                  data-testid="button-logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Cikis Yap
-                </Button>
+          {currentUser ? (
+            <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/50 rounded-lg">
+              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <User className="h-3 w-3 text-primary" />
               </div>
-            ) : (
-              <Link href="/login">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full justify-start gap-2"
-                  data-testid="button-login"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Giris Yap
-                </Button>
-              </Link>
-            )}
-          </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-medium truncate" data-testid="text-current-user-name">
+                  {currentUser.name || currentUser.username}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 flex-shrink-0"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleLogout();
+                }}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ) : (
+            <Link href="/login">
+              <div className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                location === "/login"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )} data-testid="button-login">
+                <LogIn className="h-4 w-4" />
+                Giris Yap
+              </div>
+            </Link>
+          )}
         </div>
       </div>
     </>
