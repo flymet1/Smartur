@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { Holiday } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -429,15 +429,20 @@ export default function Settings() {
     }
   };
 
+  // Get current location from wouter
+  const [location] = useLocation();
+
   // Settings tab state - read from URL query parameter if present
-  const [settingsTab, setSettingsTab] = useState(() => {
+  const [settingsTab, setSettingsTab] = useState('security');
+
+  // Update tab when URL changes (e.g., clicking sidebar links)
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     if (tab && ['security', 'license', 'whatsapp', 'integrations', 'holidays', 'system'].includes(tab)) {
-      return tab;
+      setSettingsTab(tab);
     }
-    return 'security';
-  });
+  }, [location]);
 
   return (
     <div className="flex min-h-screen bg-muted/20">
