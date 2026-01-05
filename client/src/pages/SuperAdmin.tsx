@@ -119,10 +119,10 @@ const getIconComponent = (iconName: string | null | undefined): React.ComponentT
 };
 
 const FEATURE_OPTIONS = [
-  { key: "başıc_calendar", label: "Temel Takvim", icon: Activity },
+  { key: "basic_calendar", label: "Temel Takvim", icon: Activity },
   { key: "manual_reservations", label: "Manuel Rezervasyon", icon: Plus },
   { key: "whatsapp_notifications", label: "WhatsApp Bildirim", icon: MessageSquare },
-  { key: "başıc_reports", label: "Temel Raporlar", icon: Activity },
+  { key: "basic_reports", label: "Temel Raporlar", icon: Activity },
   { key: "advanced_reports", label: "Gelişmiş Raporlar", icon: Activity },
   { key: "ai_bot", label: "AI Bot", icon: Zap },
   { key: "woocommerce", label: "WooCommerce", icon: CreditCard },
@@ -4311,7 +4311,7 @@ export default function SuperAdmin() {
   }
 
   const mainCategories = [
-    { id: "overview", label: "Genel Bakis", icon: BarChart3 },
+    { id: "overview", label: "Genel Bakış", icon: BarChart3 },
     { id: "tenants", label: "Acentalar", icon: Building2 },
     { id: "billing", label: "Üyelik & Faturalama", icon: CreditCard },
     { id: "users", label: "Kullanıcılar", icon: Users },

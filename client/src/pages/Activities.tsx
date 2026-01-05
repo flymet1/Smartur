@@ -434,7 +434,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       { value: "blue", label: "Mavi", bg: "bg-blue-500" },
                       { value: "purple", label: "Mor", bg: "bg-purple-500" },
                       { value: "green", label: "Yeşil", bg: "bg-green-500" },
-                      { value: "orange", label: "Türüncu", bg: "bg-orange-500" },
+                      { value: "orange", label: "Turuncu", bg: "bg-orange-500" },
                       { value: "pink", label: "Pembe", bg: "bg-pink-500" },
                       { value: "cyan", label: "Camgöbeği", bg: "bg-cyan-500" },
                       { value: "red", label: "Kırmızı", bg: "bg-red-500" },

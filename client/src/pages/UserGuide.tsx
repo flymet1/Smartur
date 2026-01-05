@@ -69,8 +69,8 @@ import {
 import { Sidebar } from "@/components/layout/Sidebar";
 
 const searchableContent = [
-  { id: "genel-bakis", keywords: ["genel", "bakis", "woocommerce", "whatsapp", "takvim", "kapasite", "finans", "müşteri", "acenta"], title: "Genel Bakis" },
-  { id: "panel-sayfalari", keywords: ["panel", "sayfa", "dashboard", "takvim", "rezervasyon", "aktivite", "paket", "finans", "acenta", "mesaj", "talep", "destek", "bot", "test", "ayar", "gelistiriçi", "tatil", "sunum"], title: "Panel Sayfalari" },
+  { id: "genel-bakis", keywords: ["genel", "bakis", "woocommerce", "whatsapp", "takvim", "kapasite", "finans", "müşteri", "acenta"], title: "Genel Bakış" },
+  { id: "panel-sayfalari", keywords: ["panel", "sayfa", "dashboard", "takvim", "rezervasyon", "aktivite", "paket", "finans", "acenta", "mesaj", "talep", "destek", "bot", "test", "ayar", "geliştirici", "tatil", "sunum"], title: "Panel Sayfaları" },
   { id: "whatsapp-bot", keywords: ["whatsapp", "bot", "mesaj", "onay", "sablon", "template", "eskalasyon", "bilgi", "müsaitlik", "tarih", "bayram", "tatil", "rezervasyon", "cok", "dil", "sss", "fallback", "takip", "talep", "toplu", "bildirim"], title: "WhatsApp Bot" },
   { id: "rezervasyon-yönetimi", keywords: ["rezervasyon", "yönetim", "durum", "onay", "iptal", "beklemede", "paket", "tur", "sipariş", "filtre", "takvim", "liste"], title: "Rezervasyon Yönetimi" },
   { id: "müşteri-takip", keywords: ["müşteri", "takip", "link", "token", "talep", "iptal", "saat", "değişiklik", "bildirim", "whatsapp", "acenta"], title: "Müşteri Takip" },

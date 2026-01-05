@@ -950,7 +950,7 @@ function PriçingPlans() {
             "Özel geliştirmeler",
             "Beyaz etiket seçeneği",
             "SLA garantisi",
-            "Özel hesap yönetiçisi",
+            "Özel hesap yöneticisi",
             "7/24 destek"
           ]}
           isPopular={false}

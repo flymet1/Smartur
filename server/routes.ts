@@ -64,7 +64,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 // Middleware for platform admin only routes
 function requirePlatformAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.isPlatformAdmin || !req.session?.platformAdminId) {
-    return res.status(401).json({ error: "Platform yönetiçisi girişi gerekiyor" });
+    return res.status(401).json({ error: "Platform yöneticisi girişi gerekiyor" });
   }
   next();
 }
@@ -1199,7 +1199,7 @@ export async function registerRoutes(
         name,
         startDate,
         endDate,
-        type: type || 'offiçial',
+        type: type || 'official',
         keywords: validKeywords,
         notes,
         isActive: isActive !== false

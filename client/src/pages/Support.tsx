@@ -57,7 +57,7 @@ export default function Support() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject || !requestType || !message || !senderName) {
-      toast({ title: "Uyarı", description: "Lütfen tüm zorunlu alanları doldürün.", variant: "destructive" });
+      toast({ title: "Uyarı", description: "Lütfen tüm zorunlu alanları doldurun.", variant: "destructive" });
       return;
     }
     sendMutation.mutate({ subject, requestType, message, senderName, senderEmail, developerEmail });

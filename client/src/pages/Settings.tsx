@@ -1403,7 +1403,7 @@ function WooCommerceCard() {
     if (!storeUrl || !consumerKey || !consumerSecret) {
       toast({
         title: "Hata",
-        description: "Tum alanlari doldürün",
+        description: "Tum alanlari doldurun",
         variant: "destructive",
       });
       return;
@@ -2028,19 +2028,19 @@ function AutoResponsesCard() {
 
 // === HOLIDAYS SECTION ===
 const HOLIDAY_TYPES = [
-  { value: 'offiçial', label: 'Resmi Tatil' },
+  { value: 'official', label: 'Resmi Tatil' },
   { value: 'religious', label: 'Dini Bayram' },
   { value: 'special', label: 'Özel Gun' },
 ];
 
 const PRESET_HOLIDAYS_2026 = [
-  { name: "Yılbaşı", startDate: "2026-01-01", endDate: "2026-01-01", type: "offiçial", keywords: '["yılbaşı", "yeni yıl", "1 ocak"]' },
-  { name: "23 Nisan Ulusal Egemenlik ve Cocuk Bayrami", startDate: "2026-04-23", endDate: "2026-04-23", type: "offiçial", keywords: '["23 nisan", "cocuk bayrami"]' },
-  { name: "1 Mayıs Emek ve Dayanisma Gunu", startDate: "2026-05-01", endDate: "2026-05-01", type: "offiçial", keywords: '["1 mayıs", "isci bayrami"]' },
-  { name: "19 Mayıs Ataturku Anma Genclik ve Spor Bayrami", startDate: "2026-05-19", endDate: "2026-05-19", type: "offiçial", keywords: '["19 mayıs", "genclik bayrami"]' },
-  { name: "15 Temmuz Demokrasi ve Milli Birlik Gunu", startDate: "2026-07-15", endDate: "2026-07-15", type: "offiçial", keywords: '["15 temmuz"]' },
-  { name: "30 Ağustos Zafer Bayrami", startDate: "2026-08-30", endDate: "2026-08-30", type: "offiçial", keywords: '["30 ağustos", "zafer bayrami"]' },
-  { name: "29 Ekim Cumhuriyet Bayrami", startDate: "2026-10-29", endDate: "2026-10-29", type: "offiçial", keywords: '["29 ekim", "cumhuriyet bayrami"]' },
+  { name: "Yılbaşı", startDate: "2026-01-01", endDate: "2026-01-01", type: "official", keywords: '["yılbaşı", "yeni yıl", "1 ocak"]' },
+  { name: "23 Nisan Ulusal Egemenlik ve Cocuk Bayrami", startDate: "2026-04-23", endDate: "2026-04-23", type: "official", keywords: '["23 nisan", "cocuk bayrami"]' },
+  { name: "1 Mayıs Emek ve Dayanisma Gunu", startDate: "2026-05-01", endDate: "2026-05-01", type: "official", keywords: '["1 mayıs", "isci bayrami"]' },
+  { name: "19 Mayıs Ataturku Anma Genclik ve Spor Bayrami", startDate: "2026-05-19", endDate: "2026-05-19", type: "official", keywords: '["19 mayıs", "genclik bayrami"]' },
+  { name: "15 Temmuz Demokrasi ve Milli Birlik Gunu", startDate: "2026-07-15", endDate: "2026-07-15", type: "official", keywords: '["15 temmuz"]' },
+  { name: "30 Ağustos Zafer Bayrami", startDate: "2026-08-30", endDate: "2026-08-30", type: "official", keywords: '["30 ağustos", "zafer bayrami"]' },
+  { name: "29 Ekim Cumhuriyet Bayrami", startDate: "2026-10-29", endDate: "2026-10-29", type: "official", keywords: '["29 ekim", "cumhuriyet bayrami"]' },
   { name: "Ramazan Bayrami 2026", startDate: "2026-03-20", endDate: "2026-03-22", type: "religious", keywords: '["ramazan bayrami", "seker bayrami"]' },
   { name: "Kurban Bayrami 2026", startDate: "2026-05-27", endDate: "2026-05-30", type: "religious", keywords: '["kurban bayrami", "bayram"]' },
 ];
@@ -2052,7 +2052,7 @@ function HolidaysSection() {
   const [formName, setFormName] = useState("");
   const [formStartDate, setFormStartDate] = useState("");
   const [formEndDate, setFormEndDate] = useState("");
-  const [formType, setFormType] = useState("offiçial");
+  const [formType, setFormType] = useState("official");
   const [formKeywords, setFormKeywords] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
@@ -2094,7 +2094,7 @@ function HolidaysSection() {
     setFormName("");
     setFormStartDate("");
     setFormEndDate("");
-    setFormType("offiçial");
+    setFormType("official");
     setFormKeywords("");
     setFormNotes("");
     setFormIsActive(true);
@@ -2105,7 +2105,7 @@ function HolidaysSection() {
     setFormName(holiday.name);
     setFormStartDate(holiday.startDate);
     setFormEndDate(holiday.endDate);
-    setFormType(holiday.type || "offiçial");
+    setFormType(holiday.type || "official");
     try {
       const kw = JSON.parse(holiday.keywords || '[]');
       setFormKeywords(Array.isArray(kw) ? kw.join(', ') : '');
