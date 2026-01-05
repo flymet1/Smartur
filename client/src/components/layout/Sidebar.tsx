@@ -68,6 +68,9 @@ interface UserData {
   username: string;
   name: string | null;
   companyName: string | null;
+  membershipType?: string | null;
+  membershipStartDate?: string | null;
+  membershipEndDate?: string | null;
 }
 
 export function Sidebar() {
@@ -271,6 +274,44 @@ export function Sidebar() {
 
   // License status helper
   const getLicenseStatusInfo = () => {
+    // If user is logged in, use their membership dates
+    if (currentUser?.membershipEndDate) {
+      const endDate = new Date(currentUser.membershipEndDate);
+      const now = new Date();
+      const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysRemaining <= 0) {
+        return { text: 'Yenileme Gerekli', color: 'text-red-600', bgColor: 'bg-red-500', isActive: false, isLoading: false };
+      }
+      
+      if (daysRemaining <= 7) {
+        return { 
+          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          color: 'text-red-600', 
+          bgColor: 'bg-red-500',
+          isActive: true,
+          isLoading: false
+        };
+      } else if (daysRemaining <= 14) {
+        return { 
+          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          color: 'text-amber-600', 
+          bgColor: 'bg-amber-500',
+          isActive: true,
+          isLoading: false
+        };
+      } else {
+        return { 
+          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          color: 'text-accent-foreground', 
+          bgColor: 'bg-accent',
+          isActive: true,
+          isLoading: false
+        };
+      }
+    }
+    
+    // Fallback to global license for non-logged-in users
     // Show neutral state while loading
     if (isLicenseLoading || !licenseData?.status) {
       return { text: 'Uyelik Durumu', color: 'text-muted-foreground', bgColor: 'bg-muted-foreground', isActive: false, isLoading: true };
