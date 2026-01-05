@@ -52,7 +52,6 @@ import {
   Receipt,
   Wifi,
   WifiOff,
-  Headphones,
   CheckCircle,
   Clock,
   XCircle
@@ -524,6 +523,16 @@ interface SupportRequest {
   resolvedAt: string | null;
 }
 
+interface SystemLog {
+  id: number;
+  level: string;
+  source: string;
+  message: string;
+  details: string | null;
+  phone: string | null;
+  createdAt: string;
+}
+
 function InvoicesSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -728,207 +737,6 @@ function ApiMonitoringSection() {
         )}
       </CardContent>
     </Card>
-  );
-}
-
-interface SystemLog {
-  id: number;
-  level: string;
-  source: string;
-  message: string;
-  details: string | null;
-  phone: string | null;
-  createdAt: string;
-}
-
-function SupportRequestCard({ 
-  request, 
-  onResolve, 
-  isResolving 
-}: { 
-  request: SupportRequest; 
-  onResolve: (id: number) => void;
-  isResolving: boolean;
-}) {
-  const [showLogs, setShowLogs] = useState(false);
-  
-  const { data: logs = [], isLoading: logsLoading } = useQuery<SystemLog[]>({
-    queryKey: ['/api/support-requests', request.id, 'logs'],
-    queryFn: async () => {
-      const res = await fetch(`/api/support-requests/${request.id}/logs`);
-      return res.json();
-    },
-    enabled: showLogs,
-  });
-
-  const isOpen = request.status === 'open';
-
-  return (
-    <div 
-      className={cn(
-        "p-4 border rounded-lg",
-        isOpen 
-          ? "border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20" 
-          : "opacity-60"
-      )}
-      data-testid={`card-support-request-${request.id}`}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <Badge variant={isOpen ? "secondary" : "outline"}>
-              {isOpen ? <Clock className="h-3 w-3 mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-              {isOpen ? "Acik" : "Cozuldu"}
-            </Badge>
-            <span className="text-sm font-medium">{request.phone}</span>
-            {request.reservationId && (
-              <Badge variant="outline">Rez #{request.reservationId}</Badge>
-            )}
-          </div>
-          <p className="text-sm">{request.description || "Aciklama yok"}</p>
-          <span className="text-xs text-muted-foreground">
-            {request.createdAt ? new Date(request.createdAt).toLocaleString("tr-TR") : "-"}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            size="sm"
-            variant="outline"
-            onClick={() => setShowLogs(!showLogs)}
-            data-testid={`button-show-logs-${request.id}`}
-          >
-            <FileText className="h-4 w-4 mr-1" />
-            Loglar
-          </Button>
-          {isOpen && (
-            <Button 
-              size="sm"
-              onClick={() => onResolve(request.id)}
-              disabled={isResolving}
-              data-testid={`button-resolve-${request.id}`}
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Cozuldu
-            </Button>
-          )}
-        </div>
-      </div>
-      
-      {showLogs && (
-        <div className="mt-4 border-t pt-4">
-          <div className="text-sm font-medium mb-2">Sistem Loglari</div>
-          {logsLoading ? (
-            <div className="text-sm text-muted-foreground">Yuklenitor...</div>
-          ) : logs.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Bu talebe bagli log bulunamadi.</div>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {logs.map((log) => (
-                <div 
-                  key={log.id}
-                  className={cn(
-                    "p-2 rounded text-xs font-mono",
-                    log.level === 'error' && "bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200",
-                    log.level === 'warn' && "bg-yellow-100 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-200",
-                    log.level === 'info' && "bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-200"
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="outline" className="text-xs">{log.level.toUpperCase()}</Badge>
-                    <span className="text-muted-foreground">{log.source}</span>
-                    <span className="text-muted-foreground">
-                      {new Date(log.createdAt).toLocaleString("tr-TR")}
-                    </span>
-                  </div>
-                  <div>{log.message}</div>
-                  {log.details && (
-                    <pre className="mt-1 text-xs overflow-x-auto whitespace-pre-wrap opacity-80">
-                      {log.details}
-                    </pre>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SupportRequestsSection() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const { data: requests = [], isLoading } = useQuery<SupportRequest[]>({
-    queryKey: ['/api/support-requests'],
-  });
-
-  const resolveMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('POST', `/api/support-requests/${id}/resolve`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/support-requests'] });
-      toast({ title: "Basarili", description: "Talep cozuldu olarak isaretlendi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
-    }
-  });
-
-  const openRequests = requests.filter(r => r.status === 'open');
-  const resolvedRequests = requests.filter(r => r.status === 'resolved');
-
-  return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Headphones className="h-5 w-5" />
-              Destek Talepleri
-              {openRequests.length > 0 && (
-                <Badge variant="destructive">{openRequests.length} Acik</Badge>
-              )}
-            </div>
-          </CardTitle>
-          <CardDescription>Acentalardan gelen destek talepleri ve ilgili sistem loglari</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
-          ) : requests.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Henuz destek talebi bulunmuyor.</div>
-          ) : (
-            <div className="space-y-3">
-              {openRequests.map((req) => (
-                <SupportRequestCard
-                  key={req.id}
-                  request={req}
-                  onResolve={(id) => resolveMutation.mutate(id)}
-                  isResolving={resolveMutation.isPending}
-                />
-              ))}
-              
-              {resolvedRequests.length > 0 && (
-                <>
-                  <div className="text-sm font-medium text-muted-foreground mt-6 mb-2">
-                    Cozulen Talepler ({resolvedRequests.length})
-                  </div>
-                  {resolvedRequests.slice(0, 5).map((req) => (
-                    <SupportRequestCard
-                      key={req.id}
-                      request={req}
-                      onResolve={(id) => resolveMutation.mutate(id)}
-                      isResolving={resolveMutation.isPending}
-                    />
-                  ))}
-                </>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
   );
 }
 
@@ -1295,10 +1103,6 @@ export default function SuperAdmin() {
             <Radio className="h-4 w-4 mr-2" />
             API Izleme
           </TabsTrigger>
-          <TabsTrigger value="support" data-testid="tab-support">
-            <Headphones className="h-4 w-4 mr-2" />
-            Destek
-          </TabsTrigger>
           <TabsTrigger value="developer" data-testid="tab-developer">
             <Shield className="h-4 w-4 mr-2" />
             Gelistirici
@@ -1534,10 +1338,6 @@ export default function SuperAdmin() {
           <ApiMonitoringSection />
         </TabsContent>
 
-        {/* Support Tab */}
-        <TabsContent value="support" className="space-y-4 mt-4">
-          <SupportRequestsSection />
-        </TabsContent>
 
         {/* Developer Tab */}
         <TabsContent value="developer" className="space-y-4 mt-4">
