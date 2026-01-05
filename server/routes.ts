@@ -2814,9 +2814,13 @@ Sky Fethiye`;
           req.session.platformAdminId = platformAdmin.id;
           req.session.isPlatformAdmin = true;
           
-          // Generate token for backward compatibility
+          // Generate token with expiration (24 hours)
           const token = crypto.randomBytes(32).toString('hex');
-          await storage.setSetting('botRulesSessionToken', token);
+          const tokenData = JSON.stringify({
+            token,
+            expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+          });
+          await storage.setSetting('botRulesSessionToken', tokenData);
           
           // Save session explicitly
           return req.session.save((err) => {
@@ -2832,9 +2836,13 @@ Sky Fethiye`;
       
       // Legacy: Verify against fixed password if no email provided
       if (verifyPassword(password, BOT_RULES_PASSWORD_HASH)) {
-        // Generate a session token for bot rules
+        // Generate a session token with expiration (24 hours)
         const token = crypto.randomBytes(32).toString('hex');
-        await storage.setSetting('botRulesSessionToken', token);
+        const tokenData = JSON.stringify({
+          token,
+          expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+        });
+        await storage.setSetting('botRulesSessionToken', tokenData);
         return res.json({ success: true, token });
       }
       
@@ -2849,10 +2857,18 @@ Sky Fethiye`;
   app.post("/api/bot-rules/verify", async (req, res) => {
     try {
       const { token } = req.body;
-      const storedToken = await storage.getSetting('botRulesSessionToken');
+      const storedTokenData = await storage.getSetting('botRulesSessionToken');
       
-      if (storedToken && storedToken === token) {
-        return res.json({ valid: true });
+      if (storedTokenData) {
+        try {
+          const parsed = JSON.parse(storedTokenData);
+          // Check if token matches and is not expired
+          if (parsed.token === token && parsed.expiresAt > Date.now()) {
+            return res.json({ valid: true });
+          }
+        } catch {
+          // Legacy format: plain token string - invalidate it
+        }
       }
       
       return res.json({ valid: false });
