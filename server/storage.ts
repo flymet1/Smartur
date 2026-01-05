@@ -2263,7 +2263,7 @@ Sky Fethiye`,
   }
 
   async activateAppVersion(id: number): Promise<AppVersion> {
-    // Deactivate current active version first
+    // Deactivate current active version first and mark as rollback target
     const currentActive = await this.getActiveAppVersion();
     if (currentActive) {
       await db.update(appVersions)
@@ -2271,9 +2271,9 @@ Sky Fethiye`,
         .where(eq(appVersions.id, currentActive.id));
     }
 
-    // Activate the new version
+    // Activate the new version (active version is not a rollback target)
     const [activated] = await db.update(appVersions)
-      .set({ status: 'active', activatedAt: new Date() })
+      .set({ status: 'active', activatedAt: new Date(), isRollbackTarget: false })
       .where(eq(appVersions.id, id))
       .returning();
     return activated;
@@ -2289,7 +2289,7 @@ Sky Fethiye`,
       throw new Error('Bu surum geri alinabilir degil');
     }
 
-    // Deactivate current active version
+    // Deactivate current active version and mark as rollback target
     const currentActive = await this.getActiveAppVersion();
     if (currentActive) {
       await db.update(appVersions)
@@ -2297,9 +2297,9 @@ Sky Fethiye`,
         .where(eq(appVersions.id, currentActive.id));
     }
 
-    // Activate the target version
+    // Activate the target version (active version is not a rollback target)
     const [activated] = await db.update(appVersions)
-      .set({ status: 'active', activatedAt: new Date() })
+      .set({ status: 'active', activatedAt: new Date(), isRollbackTarget: false })
       .where(eq(appVersions.id, id))
       .returning();
     return activated;

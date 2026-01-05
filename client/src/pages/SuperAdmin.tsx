@@ -59,7 +59,9 @@ import {
   Upload,
   Download,
   Server,
-  GitBranch
+  GitBranch,
+  RotateCcw,
+  History
 } from "lucide-react";
 import type { SubscriptionPlan, Subscription, SubscriptionPayment, PlanFeature } from "@shared/schema";
 
@@ -1092,11 +1094,30 @@ interface AppVersion {
   lastChecked: string;
 }
 
+interface StoredAppVersion {
+  id: number;
+  version: string;
+  fileName: string;
+  fileSize: number | null;
+  checksum: string | null;
+  status: string;
+  notes: string | null;
+  uploadedBy: string | null;
+  backupFileName: string | null;
+  isRollbackTarget: boolean | null;
+  activatedAt: string | null;
+  createdAt: string;
+}
+
 function ApplicationUpdatesSection() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [versionInput, setVersionInput] = useState("");
+  const [rollbackDialogOpen, setRollbackDialogOpen] = useState(false);
+  const [selectedRollbackVersion, setSelectedRollbackVersion] = useState<StoredAppVersion | null>(null);
   
   const { data: versionInfo, isLoading, refetch } = useQuery<AppVersion>({
     queryKey: ['/api/system/version'],
@@ -1104,6 +1125,58 @@ function ApplicationUpdatesSection() {
       const res = await fetch('/api/system/version');
       return res.json();
     },
+  });
+
+  const { data: storedVersions = [], isLoading: versionsLoading, refetch: refetchVersions } = useQuery<StoredAppVersion[]>({
+    queryKey: ['/api/app-versions'],
+    queryFn: async () => {
+      const token = localStorage.getItem('superAdminToken');
+      const res = await fetch('/api/app-versions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const token = localStorage.getItem('superAdminToken');
+      const res = await fetch(`/api/app-versions/${id}/activate`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Aktivasyon basarisiz');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/app-versions'] });
+      toast({ title: "Basarili", description: "Surum aktif edildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Surum aktif edilemedi.", variant: "destructive" });
+    }
+  });
+
+  const rollbackMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const token = localStorage.getItem('superAdminToken');
+      const res = await fetch(`/api/app-versions/${id}/rollback`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Geri alma basarisiz');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/app-versions'] });
+      setRollbackDialogOpen(false);
+      setSelectedRollbackVersion(null);
+      toast({ title: "Basarili", description: "Onceki surume geri donuldu." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Geri alma basarisiz.", variant: "destructive" });
+    }
   });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1118,19 +1191,54 @@ function ApplicationUpdatesSection() {
         return;
       }
       setSelectedFile(file);
+      // Extract version from filename if possible (e.g., smartur-1.2.3.tar.gz)
+      const versionMatch = file.name.match(/(\d+\.\d+\.\d+)/);
+      if (versionMatch) {
+        setVersionInput(versionMatch[1]);
+      }
     }
   };
 
   const handleUpload = async () => {
     if (!selectedFile) return;
+    if (!versionInput) {
+      toast({ title: "Hata", description: "Surum numarasi giriniz", variant: "destructive" });
+      return;
+    }
 
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
       const token = localStorage.getItem('superAdminToken');
+      
+      // First, create a version record
+      const createRes = await fetch('/api/app-versions', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          version: versionInput,
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          notes: 'Yuklenen guncelleme dosyasi'
+        })
+      });
+      
+      if (!createRes.ok) {
+        const err = await createRes.json();
+        throw new Error(err.error || 'Surum olusturulamadi');
+      }
+
+      const newVersion = await createRes.json();
+
+      // Then upload the file
       const formData = new FormData();
       formData.append('file', selectedFile);
+      formData.append('version', versionInput);
+      formData.append('versionId', String(newVersion.id));
 
       const xhr = new XMLHttpRequest();
       xhr.open('POST', '/api/system/upload-update');
@@ -1144,11 +1252,26 @@ function ApplicationUpdatesSection() {
         }
       };
 
-      xhr.onload = () => {
+      xhr.onload = async () => {
         if (xhr.status === 200) {
-          toast({ title: "Basarili", description: "Guncelleme dosyasi yuklendi." });
+          // Auto-activate the new version after successful upload
+          try {
+            const activateRes = await fetch(`/api/app-versions/${newVersion.id}/activate`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (activateRes.ok) {
+              toast({ title: "Basarili", description: "Guncelleme yuklendi ve aktif edildi. Onceki surum yedeklendi." });
+            } else {
+              toast({ title: "Uyari", description: "Guncelleme yuklendi ancak otomatik aktivasyon yapilamadi." });
+            }
+          } catch {
+            toast({ title: "Uyari", description: "Guncelleme yuklendi ancak aktivasyon sirasinda hata olustu." });
+          }
           setSelectedFile(null);
+          setVersionInput("");
           refetch();
+          refetchVersions();
         } else {
           let errorMsg = "Yukleme basarisiz";
           try {
@@ -1170,8 +1293,8 @@ function ApplicationUpdatesSection() {
       };
 
       xhr.send(formData);
-    } catch (err) {
-      toast({ title: "Hata", description: "Yukleme basarisiz", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Hata", description: err.message || "Yukleme basarisiz", variant: "destructive" });
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -1184,6 +1307,33 @@ function ApplicationUpdatesSection() {
     if (days > 0) return `${days} gun ${hours} saat`;
     if (hours > 0) return `${hours} saat ${mins} dakika`;
     return `${mins} dakika`;
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '-';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Aktif</Badge>;
+      case 'pending':
+        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Bekliyor</Badge>;
+      case 'inactive':
+        return <Badge variant="outline"><History className="h-3 w-3 mr-1" />Pasif</Badge>;
+      case 'failed':
+        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Basarisiz</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const handleRollbackClick = (version: StoredAppVersion) => {
+    setSelectedRollbackVersion(version);
+    setRollbackDialogOpen(true);
   };
 
   return (
@@ -1245,7 +1395,7 @@ function ApplicationUpdatesSection() {
             Uygulama Guncelleme
           </CardTitle>
           <CardDescription>
-            Sistemi guncellemek icin yeni surum dosyasini yukleyin (.tar.gz veya .zip)
+            Sistemi guncellemek icin yeni surum dosyasini yukleyin. Onceki surum otomatik olarak yedeklenir.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -1273,7 +1423,7 @@ function ApplicationUpdatesSection() {
           </div>
 
           {selectedFile && (
-            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-primary" />
                 <div>
@@ -1283,9 +1433,22 @@ function ApplicationUpdatesSection() {
                   </div>
                 </div>
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="version-input">Surum Numarasi</Label>
+                <Input
+                  id="version-input"
+                  placeholder="orn: 1.2.3"
+                  value={versionInput}
+                  onChange={(e) => setVersionInput(e.target.value)}
+                  data-testid="input-version-number"
+                />
+              </div>
+              
               <Button
                 onClick={handleUpload}
-                disabled={isUploading}
+                disabled={isUploading || !versionInput}
+                className="w-full"
                 data-testid="button-upload-update"
               >
                 {isUploading ? (
@@ -1296,7 +1459,7 @@ function ApplicationUpdatesSection() {
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    Yukle
+                    Yukle ve Aktif Et
                   </>
                 )}
               </Button>
@@ -1312,17 +1475,95 @@ function ApplicationUpdatesSection() {
             </div>
           )}
 
-          <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <h4 className="font-medium text-yellow-900 dark:text-yellow-200 mb-2 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Onemli Bilgi
+          <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
+            <h4 className="font-medium text-green-900 dark:text-green-200 mb-2 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Otomatik Yedekleme
             </h4>
-            <ul className="text-sm text-yellow-800 dark:text-yellow-300 space-y-1">
-              <li>Guncelleme oncesi yedek alinmasi onerilir</li>
-              <li>Yukleme sirasinda sistem geciici olarak durdurulabilir</li>
-              <li>Guncelleme tamamlandiktan sonra sistem otomatik yeniden baslatilir</li>
-            </ul>
+            <p className="text-sm text-green-800 dark:text-green-300">
+              Yeni surum yuklendiginde mevcut surum otomatik olarak yedeklenir. Herhangi bir sorun durumunda onceki surume geri donebilirsiniz.
+            </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Surum Gecmisi
+          </CardTitle>
+          <CardDescription>Yuklenen surumler ve geri alma secenekleri</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {versionsLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Yukleniyor...</div>
+          ) : storedVersions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Henuz surum gecmisi bulunmuyor. Ilk guncellemenizi yukleyerek baslayin.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Surum</TableHead>
+                  <TableHead>Dosya</TableHead>
+                  <TableHead>Boyut</TableHead>
+                  <TableHead>Durum</TableHead>
+                  <TableHead>Tarih</TableHead>
+                  <TableHead className="text-right">Islemler</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {storedVersions.map((version) => (
+                  <TableRow key={version.id} data-testid={`row-version-${version.id}`}>
+                    <TableCell className="font-medium font-mono">{version.version}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{version.fileName}</TableCell>
+                    <TableCell className="text-sm">{formatFileSize(version.fileSize)}</TableCell>
+                    <TableCell>{getStatusBadge(version.status)}</TableCell>
+                    <TableCell className="text-sm">
+                      {new Date(version.createdAt).toLocaleDateString("tr-TR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {version.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            onClick={() => activateMutation.mutate(version.id)}
+                            disabled={activateMutation.isPending}
+                            data-testid={`button-activate-${version.id}`}
+                          >
+                            <PlayCircle className="h-4 w-4 mr-1" />
+                            Aktif Et
+                          </Button>
+                        )}
+                        {version.isRollbackTarget && version.status !== 'active' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRollbackClick(version)}
+                            data-testid={`button-rollback-${version.id}`}
+                          >
+                            <RotateCcw className="h-4 w-4 mr-1" />
+                            Geri Al
+                          </Button>
+                        )}
+                        {version.status === 'active' && (
+                          <span className="text-xs text-muted-foreground">Aktif surum</span>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -1348,6 +1589,58 @@ function ApplicationUpdatesSection() {
           </p>
         </CardContent>
       </Card>
+
+      <Dialog open={rollbackDialogOpen} onOpenChange={setRollbackDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Surumu Geri Al
+            </DialogTitle>
+            <DialogDescription>
+              {selectedRollbackVersion && (
+                <>
+                  <strong>{selectedRollbackVersion.version}</strong> surumune geri donmek uzeresiniz.
+                  Bu islem mevcut surumu pasif hale getirecek ve secilen surumu aktif edecektir.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 my-4">
+            <h4 className="font-medium text-yellow-900 dark:text-yellow-200 mb-2 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Dikkat
+            </h4>
+            <ul className="text-sm text-yellow-800 dark:text-yellow-300 space-y-1">
+              <li>Sistem geciici olarak durdurulabilir</li>
+              <li>Mevcut surumdeki degisiklikler korunacak</li>
+              <li>Geri alma islemi geri alinabilir</li>
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRollbackDialogOpen(false)}>
+              Iptal
+            </Button>
+            <Button
+              onClick={() => selectedRollbackVersion && rollbackMutation.mutate(selectedRollbackVersion.id)}
+              disabled={rollbackMutation.isPending}
+              data-testid="button-confirm-rollback"
+            >
+              {rollbackMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Isleniyor...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Geri Al
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
