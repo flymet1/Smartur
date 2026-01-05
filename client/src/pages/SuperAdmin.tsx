@@ -61,6 +61,43 @@ import type { SubscriptionPlan, Subscription, SubscriptionPayment, PlanFeature }
 
 // Uses server-side authentication - no password stored client-side
 
+// Icon registry - maps stored icon string names to actual lucide components
+const ICON_REGISTRY: Record<string, React.ComponentType<{ className?: string }>> = {
+  Activity,
+  Plus,
+  MessageSquare,
+  Zap,
+  CreditCard,
+  Package,
+  Settings2,
+  Star,
+  Crown,
+  Users,
+  BarChart3,
+  Shield,
+  FileText,
+  Mail,
+  RefreshCw,
+  CheckCircle,
+  Clock,
+  HelpCircle,
+  Info,
+  AlertCircle,
+  AlertTriangle,
+  Building2,
+  Receipt,
+  Radio,
+  Wifi,
+  Lock,
+  Eye,
+};
+
+// Helper function to get icon component from icon string name
+const getIconComponent = (iconName: string | null | undefined): React.ComponentType<{ className?: string }> => {
+  if (!iconName) return Star;
+  return ICON_REGISTRY[iconName] || Star;
+};
+
 const FEATURE_OPTIONS = [
   { key: "basic_calendar", label: "Temel Takvim", icon: Activity },
   { key: "manual_reservations", label: "Manuel Rezervasyon", icon: Plus },
@@ -539,7 +576,17 @@ function PlanFeaturesSection() {
                     <TableCell>
                       <Badge variant="outline">{categoryLabels[feature.category || "general"]}</Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{feature.icon}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {(() => {
+                        const IconComponent = getIconComponent(feature.icon);
+                        return (
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="h-4 w-4" />
+                            <span className="text-xs">{feature.icon}</span>
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={feature.isActive ? "default" : "secondary"}>
                         {feature.isActive ? "Aktif" : "Pasif"}
@@ -1340,6 +1387,11 @@ export default function SuperAdmin() {
     queryKey: ["/api/subscription-payments"],
   });
 
+  // Plan features from database
+  const { data: planFeatures = [] } = useQuery<PlanFeature[]>({
+    queryKey: ["/api/plan-features"],
+  });
+
   // System logs query
   const { data: systemLogs, isLoading: logsLoading, refetch: refetchLogs } = useQuery<SystemLog[]>({
     queryKey: ['/api/system-logs'],
@@ -1663,7 +1715,7 @@ export default function SuperAdmin() {
 
                     <div className="pt-2 border-t space-y-1">
                       {getPlanFeatures(plan).slice(0, 4).map((f: string) => {
-                        const feature = FEATURE_OPTIONS.find((o) => o.key === f);
+                        const feature = planFeatures.find((o) => o.key === f) || FEATURE_OPTIONS.find((o) => o.key === f);
                         return feature ? (
                           <div key={f} className="flex items-center gap-2 text-xs">
                             <Check className="h-3 w-3 text-green-600" />
@@ -2123,9 +2175,12 @@ export default function SuperAdmin() {
 
             <div className="space-y-2">
               <Label>Özellikler</Label>
-              <div className="grid grid-cols-2 gap-2 p-3 border rounded-md">
-                {FEATURE_OPTIONS.map((feature) => {
+              <div className="grid grid-cols-2 gap-2 p-3 border rounded-md max-h-64 overflow-y-auto">
+                {(planFeatures.length > 0 ? planFeatures.filter(f => f.isActive) : FEATURE_OPTIONS).map((feature) => {
                   const isEnabled = JSON.parse(planForm.features || "[]").includes(feature.key);
+                  const FeatureIcon = 'icon' in feature && typeof feature.icon === 'string' 
+                    ? getIconComponent(feature.icon) 
+                    : (feature as typeof FEATURE_OPTIONS[0]).icon || Star;
                   return (
                     <div
                       key={feature.key}
@@ -2134,7 +2189,7 @@ export default function SuperAdmin() {
                       data-testid={`toggle-feature-${feature.key}`}
                     >
                       <div className="flex items-center gap-2">
-                        <feature.icon className="h-4 w-4 text-muted-foreground" />
+                        <FeatureIcon className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">{feature.label}</span>
                       </div>
                       {isEnabled ? (
