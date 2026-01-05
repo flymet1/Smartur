@@ -906,6 +906,7 @@ export async function registerRoutes(
   const publicPaths = [
     '/auth/login',
     '/auth/logout',
+    '/auth/me',
     '/whatsapp',
     '/webhook',
     '/tracking',
@@ -914,6 +915,11 @@ export async function registerRoutes(
     '/tenants/by-slug',
     '/bot-rules/verify',
     '/health',
+    '/settings/sidebarLogo',
+    '/settings/brandSettings',
+    '/settings/botAccess',
+    '/announcements',
+    '/license',
   ];
   
   app.use('/api', (req, res, next) => {
