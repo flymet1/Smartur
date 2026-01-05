@@ -4454,6 +4454,188 @@ Sky Fethiye`;
     }
   });
 
+  // === SUPER ADMIN - ANNOUNCEMENTS ===
+  
+  app.get("/api/announcements", async (req, res) => {
+    try {
+      const announcements = await storage.getAnnouncements();
+      res.json(announcements);
+    } catch (err) {
+      console.error("Duyuru listesi hatasi:", err);
+      res.status(500).json({ error: "Duyurular alinamadi" });
+    }
+  });
+
+  app.post("/api/announcements", async (req, res) => {
+    try {
+      const announcement = await storage.createAnnouncement(req.body);
+      res.json(announcement);
+    } catch (err) {
+      console.error("Duyuru olusturma hatasi:", err);
+      res.status(500).json({ error: "Duyuru olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/announcements/:id", async (req, res) => {
+    try {
+      const announcement = await storage.updateAnnouncement(Number(req.params.id), req.body);
+      res.json(announcement);
+    } catch (err) {
+      console.error("Duyuru guncelleme hatasi:", err);
+      res.status(500).json({ error: "Duyuru guncellenemedi" });
+    }
+  });
+
+  app.delete("/api/announcements/:id", async (req, res) => {
+    try {
+      await storage.deleteAnnouncement(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Duyuru silme hatasi:", err);
+      res.status(500).json({ error: "Duyuru silinemedi" });
+    }
+  });
+
+  // === SUPER ADMIN - INVOICES ===
+  
+  app.get("/api/invoices", async (req, res) => {
+    try {
+      const invoices = await storage.getInvoices();
+      res.json(invoices);
+    } catch (err) {
+      console.error("Fatura listesi hatasi:", err);
+      res.status(500).json({ error: "Faturalar alinamadi" });
+    }
+  });
+
+  app.post("/api/invoices", async (req, res) => {
+    try {
+      const invoice = await storage.createInvoice(req.body);
+      res.json(invoice);
+    } catch (err) {
+      console.error("Fatura olusturma hatasi:", err);
+      res.status(500).json({ error: "Fatura olusturulamadi" });
+    }
+  });
+
+  app.patch("/api/invoices/:id", async (req, res) => {
+    try {
+      const invoice = await storage.updateInvoice(Number(req.params.id), req.body);
+      res.json(invoice);
+    } catch (err) {
+      console.error("Fatura guncelleme hatasi:", err);
+      res.status(500).json({ error: "Fatura guncellenemedi" });
+    }
+  });
+
+  // === SUPER ADMIN - API STATUS MONITORING ===
+  
+  app.get("/api/api-status", async (req, res) => {
+    try {
+      const status = await storage.getApiStatusLogs();
+      res.json(status);
+    } catch (err) {
+      console.error("API durum hatasi:", err);
+      res.status(500).json({ error: "API durumu alinamadi" });
+    }
+  });
+
+  app.post("/api/api-status/check", async (req, res) => {
+    try {
+      const results = await storage.checkApiStatus();
+      res.json(results);
+    } catch (err) {
+      console.error("API kontrol hatasi:", err);
+      res.status(500).json({ error: "API kontrolu yapilamadi" });
+    }
+  });
+
+  // === SUPER ADMIN - BOT QUALITY SCORES ===
+  
+  app.get("/api/bot-quality", async (req, res) => {
+    try {
+      const scores = await storage.getBotQualityScores();
+      res.json(scores);
+    } catch (err) {
+      console.error("Bot kalite hatasi:", err);
+      res.status(500).json({ error: "Bot kalite verileri alinamadi" });
+    }
+  });
+
+  app.get("/api/bot-quality/stats", async (req, res) => {
+    try {
+      const stats = await storage.getBotQualityStats();
+      res.json(stats);
+    } catch (err) {
+      console.error("Bot kalite istatistik hatasi:", err);
+      res.status(500).json({ error: "Bot istatistikleri alinamadi" });
+    }
+  });
+
+  // === SUPER ADMIN - LICENSE/AGENCY MANAGEMENT ===
+  
+  app.get("/api/licenses", async (req, res) => {
+    try {
+      const licenses = await storage.getLicenses();
+      res.json(licenses);
+    } catch (err) {
+      console.error("Lisans listesi hatasi:", err);
+      res.status(500).json({ error: "Lisanslar alinamadi" });
+    }
+  });
+
+  app.patch("/api/licenses/:id", async (req, res) => {
+    try {
+      const license = await storage.updateLicense(Number(req.params.id), req.body);
+      res.json(license);
+    } catch (err) {
+      console.error("Lisans guncelleme hatasi:", err);
+      res.status(500).json({ error: "Lisans guncellenemedi" });
+    }
+  });
+
+  app.post("/api/licenses/:id/suspend", async (req, res) => {
+    try {
+      const license = await storage.suspendLicense(Number(req.params.id));
+      res.json(license);
+    } catch (err) {
+      console.error("Lisans askiya alma hatasi:", err);
+      res.status(500).json({ error: "Lisans askiya alinamadi" });
+    }
+  });
+
+  app.post("/api/licenses/:id/activate", async (req, res) => {
+    try {
+      const license = await storage.activateLicense(Number(req.params.id));
+      res.json(license);
+    } catch (err) {
+      console.error("Lisans aktiflesirme hatasi:", err);
+      res.status(500).json({ error: "Lisans aktiflesirilemedi" });
+    }
+  });
+
+  // === SUPER ADMIN - ANALYTICS ===
+  
+  app.get("/api/analytics/platform", async (req, res) => {
+    try {
+      const analytics = await storage.getPlatformAnalytics();
+      res.json(analytics);
+    } catch (err) {
+      console.error("Platform analitik hatasi:", err);
+      res.status(500).json({ error: "Analitik verileri alinamadi" });
+    }
+  });
+
+  app.get("/api/analytics/whatsapp", async (req, res) => {
+    try {
+      const stats = await storage.getWhatsAppStats();
+      res.json(stats);
+    } catch (err) {
+      console.error("WhatsApp istatistik hatasi:", err);
+      res.status(500).json({ error: "WhatsApp istatistikleri alinamadi" });
+    }
+  });
+
   return httpServer;
 }
 

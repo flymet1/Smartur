@@ -565,3 +565,91 @@ export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 export const insertSubscriptionPaymentSchema = createInsertSchema(subscriptionPayments).omit({ id: true, createdAt: true });
 export type SubscriptionPayment = typeof subscriptionPayments.$inferSelect;
 export type InsertSubscriptionPayment = z.infer<typeof insertSubscriptionPaymentSchema>;
+
+// === SUPER ADMIN - PLATFORM MANAGEMENT ===
+
+// Platform Duyuruları
+export const announcements = pgTable("announcements", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  type: text("type").default("info"), // info, warning, maintenance, update
+  targetAudience: text("target_audience").default("all"), // all, agencies, admins
+  priority: integer("priority").default(0), // Yüksek = önemli
+  isActive: boolean("is_active").default(true),
+  startsAt: timestamp("starts_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Platform Faturaları
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  licenseId: integer("license_id").references(() => license.id),
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  agencyName: text("agency_name").notNull(),
+  agencyEmail: text("agency_email"),
+  periodStart: text("period_start").notNull(), // YYYY-MM-DD
+  periodEnd: text("period_end").notNull(), // YYYY-MM-DD
+  subtotalTl: integer("subtotal_tl").default(0),
+  vatRatePct: integer("vat_rate_pct").default(20),
+  vatAmountTl: integer("vat_amount_tl").default(0),
+  totalTl: integer("total_tl").default(0),
+  subtotalUsd: integer("subtotal_usd").default(0),
+  totalUsd: integer("total_usd").default(0),
+  currency: text("currency").default("TRY"),
+  status: text("status").default("pending"), // pending, paid, overdue, cancelled
+  dueDate: text("due_date"), // YYYY-MM-DD
+  paidAt: timestamp("paid_at"),
+  paymentMethod: text("payment_method"),
+  paymentReference: text("payment_reference"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// API Durum Logları (Sistem İzleme)
+export const apiStatusLogs = pgTable("api_status_logs", {
+  id: serial("id").primaryKey(),
+  service: text("service").notNull(), // twilio, woocommerce, gemini, paytr
+  status: text("status").notNull(), // up, down, degraded
+  responseTimeMs: integer("response_time_ms"),
+  errorMessage: text("error_message"),
+  errorCount: integer("error_count").default(0),
+  lastSuccessAt: timestamp("last_success_at"),
+  lastErrorAt: timestamp("last_error_at"),
+  checkedAt: timestamp("checked_at").defaultNow(),
+});
+
+// Bot Kalite Skorları
+export const botQualityScores = pgTable("bot_quality_scores", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").references(() => messages.id),
+  phone: text("phone"),
+  question: text("question"),
+  response: text("response"),
+  responseTimeMs: integer("response_time_ms"),
+  wasEscalated: boolean("was_escalated").default(false),
+  wasHelpful: boolean("was_helpful"), // null = bilinmiyor
+  feedbackScore: integer("feedback_score"), // 1-5 arası puan
+  errorOccurred: boolean("error_occurred").default(false),
+  usedFallback: boolean("used_fallback").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === SUPER ADMIN SCHEMAS & TYPES ===
+export const insertAnnouncementSchema = createInsertSchema(announcements).omit({ id: true, createdAt: true });
+export type Announcement = typeof announcements.$inferSelect;
+export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+
+export const insertApiStatusLogSchema = createInsertSchema(apiStatusLogs).omit({ id: true, checkedAt: true });
+export type ApiStatusLog = typeof apiStatusLogs.$inferSelect;
+export type InsertApiStatusLog = z.infer<typeof insertApiStatusLogSchema>;
+
+export const insertBotQualityScoreSchema = createInsertSchema(botQualityScores).omit({ id: true, createdAt: true });
+export type BotQualityScore = typeof botQualityScores.$inferSelect;
+export type InsertBotQualityScore = z.infer<typeof insertBotQualityScoreSchema>;

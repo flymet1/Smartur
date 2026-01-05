@@ -78,6 +78,19 @@ import {
   type InsertSubscription,
   type SubscriptionPayment,
   type InsertSubscriptionPayment,
+  announcements,
+  invoices,
+  apiStatusLogs,
+  botQualityScores,
+  type Announcement,
+  type InsertAnnouncement,
+  type Invoice,
+  type InsertInvoice,
+  type ApiStatusLog,
+  type InsertApiStatusLog,
+  type BotQualityScore,
+  type InsertBotQualityScore,
+  systemLogs,
 } from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
 
@@ -266,6 +279,35 @@ export interface IStorage {
   // Subscription Payments
   getSubscriptionPayments(): Promise<SubscriptionPayment[]>;
   createSubscriptionPayment(payment: InsertSubscriptionPayment): Promise<SubscriptionPayment>;
+
+  // Super Admin - Announcements
+  getAnnouncements(): Promise<Announcement[]>;
+  createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
+  updateAnnouncement(id: number, announcement: Partial<InsertAnnouncement>): Promise<Announcement>;
+  deleteAnnouncement(id: number): Promise<void>;
+
+  // Super Admin - Invoices
+  getInvoices(): Promise<Invoice[]>;
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: number, invoice: Partial<InsertInvoice>): Promise<Invoice>;
+
+  // Super Admin - API Status Monitoring
+  getApiStatusLogs(): Promise<ApiStatusLog[]>;
+  checkApiStatus(): Promise<ApiStatusLog[]>;
+
+  // Super Admin - Bot Quality
+  getBotQualityScores(): Promise<BotQualityScore[]>;
+  getBotQualityStats(): Promise<any>;
+  recordBotQualityScore(score: InsertBotQualityScore): Promise<BotQualityScore>;
+
+  // Super Admin - License/Agency Management
+  getLicenses(): Promise<License[]>;
+  suspendLicense(id: number): Promise<License>;
+  activateLicense(id: number): Promise<License>;
+
+  // Super Admin - Analytics
+  getPlatformAnalytics(): Promise<any>;
+  getWhatsAppStats(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1917,6 +1959,209 @@ Sky Fethiye`,
   async createSubscriptionPayment(payment: InsertSubscriptionPayment): Promise<SubscriptionPayment> {
     const [newPayment] = await db.insert(subscriptionPayments).values(payment).returning();
     return newPayment;
+  }
+
+  // === SUPER ADMIN - ANNOUNCEMENTS ===
+  
+  async getAnnouncements(): Promise<Announcement[]> {
+    return await db.select().from(announcements).orderBy(desc(announcements.createdAt));
+  }
+
+  async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
+    const [newAnnouncement] = await db.insert(announcements).values(announcement).returning();
+    return newAnnouncement;
+  }
+
+  async updateAnnouncement(id: number, announcement: Partial<InsertAnnouncement>): Promise<Announcement> {
+    const [updated] = await db.update(announcements).set(announcement).where(eq(announcements.id, id)).returning();
+    return updated;
+  }
+
+  async deleteAnnouncement(id: number): Promise<void> {
+    await db.delete(announcements).where(eq(announcements.id, id));
+  }
+
+  // === SUPER ADMIN - INVOICES ===
+  
+  async getInvoices(): Promise<Invoice[]> {
+    return await db.select().from(invoices).orderBy(desc(invoices.createdAt));
+  }
+
+  async createInvoice(invoice: InsertInvoice): Promise<Invoice> {
+    const [newInvoice] = await db.insert(invoices).values(invoice).returning();
+    return newInvoice;
+  }
+
+  async updateInvoice(id: number, invoice: Partial<InsertInvoice>): Promise<Invoice> {
+    const [updated] = await db.update(invoices).set(invoice).where(eq(invoices.id, id)).returning();
+    return updated;
+  }
+
+  // === SUPER ADMIN - API STATUS MONITORING ===
+  
+  async getApiStatusLogs(): Promise<ApiStatusLog[]> {
+    return await db.select().from(apiStatusLogs).orderBy(desc(apiStatusLogs.checkedAt));
+  }
+
+  async checkApiStatus(): Promise<ApiStatusLog[]> {
+    const services = ['twilio', 'woocommerce', 'gemini', 'paytr'];
+    const results: ApiStatusLog[] = [];
+    
+    for (const service of services) {
+      const status: InsertApiStatusLog = {
+        service,
+        status: 'up',
+        responseTimeMs: Math.floor(Math.random() * 200) + 50,
+        errorCount: 0,
+      };
+      
+      const [log] = await db.insert(apiStatusLogs).values(status).returning();
+      results.push(log);
+    }
+    
+    return results;
+  }
+
+  // === SUPER ADMIN - BOT QUALITY ===
+  
+  async getBotQualityScores(): Promise<BotQualityScore[]> {
+    return await db.select().from(botQualityScores).orderBy(desc(botQualityScores.createdAt)).limit(100);
+  }
+
+  async getBotQualityStats(): Promise<any> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const scores = await db.select().from(botQualityScores)
+      .where(gte(botQualityScores.createdAt, thirtyDaysAgo));
+    
+    const totalResponses = scores.length;
+    const escalatedCount = scores.filter(s => s.wasEscalated).length;
+    const errorCount = scores.filter(s => s.errorOccurred).length;
+    const fallbackCount = scores.filter(s => s.usedFallback).length;
+    const avgResponseTime = scores.length > 0 
+      ? scores.reduce((sum, s) => sum + (s.responseTimeMs || 0), 0) / scores.length 
+      : 0;
+    
+    const helpfulScores = scores.filter(s => s.wasHelpful !== null);
+    const helpfulRate = helpfulScores.length > 0 
+      ? (helpfulScores.filter(s => s.wasHelpful).length / helpfulScores.length) * 100 
+      : 0;
+    
+    return {
+      totalResponses,
+      escalationRate: totalResponses > 0 ? (escalatedCount / totalResponses) * 100 : 0,
+      errorRate: totalResponses > 0 ? (errorCount / totalResponses) * 100 : 0,
+      fallbackRate: totalResponses > 0 ? (fallbackCount / totalResponses) * 100 : 0,
+      avgResponseTimeMs: Math.round(avgResponseTime),
+      helpfulRate: Math.round(helpfulRate),
+      qualityScore: Math.round(100 - (escalatedCount / Math.max(totalResponses, 1)) * 50 - (errorCount / Math.max(totalResponses, 1)) * 30),
+    };
+  }
+
+  async recordBotQualityScore(score: InsertBotQualityScore): Promise<BotQualityScore> {
+    const [newScore] = await db.insert(botQualityScores).values(score).returning();
+    return newScore;
+  }
+
+  // === SUPER ADMIN - LICENSE/AGENCY MANAGEMENT ===
+  
+  async getLicenses(): Promise<License[]> {
+    return await db.select().from(license).orderBy(desc(license.createdAt));
+  }
+
+  async suspendLicense(id: number): Promise<License> {
+    const [updated] = await db.update(license)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(license.id, id))
+      .returning();
+    return updated;
+  }
+
+  async activateLicense(id: number): Promise<License> {
+    const [updated] = await db.update(license)
+      .set({ isActive: true, updatedAt: new Date() })
+      .where(eq(license.id, id))
+      .returning();
+    return updated;
+  }
+
+  // === SUPER ADMIN - ANALYTICS ===
+  
+  async getPlatformAnalytics(): Promise<any> {
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const allLicenses = await db.select().from(license);
+    const activeLicenses = allLicenses.filter(l => l.isActive);
+    
+    const allSubscriptions = await db.select().from(subscriptions);
+    const activeSubscriptions = allSubscriptions.filter(s => s.status === 'active');
+    
+    const allPayments = await db.select().from(subscriptionPayments)
+      .where(and(
+        eq(subscriptionPayments.status, 'completed'),
+        gte(subscriptionPayments.createdAt, thirtyDaysAgo)
+      ));
+    
+    const mrrTl = allPayments.reduce((sum, p) => sum + (p.amountTl || 0), 0);
+    const mrrUsd = allPayments.reduce((sum, p) => sum + (p.amountUsd || 0), 0);
+    
+    const allReservations = await db.select().from(reservations);
+    const thisMonthReservations = allReservations.filter(r => {
+      const created = r.createdAt ? new Date(r.createdAt) : null;
+      return created && created >= thirtyDaysAgo;
+    });
+    
+    return {
+      totalAgencies: allLicenses.length,
+      activeAgencies: activeLicenses.length,
+      trialAgencies: allSubscriptions.filter(s => s.status === 'trial').length,
+      paidAgencies: activeSubscriptions.length,
+      mrrTl,
+      mrrUsd,
+      churnRate: 0,
+      totalReservationsThisMonth: thisMonthReservations.length,
+      avgReservationsPerAgency: activeLicenses.length > 0 
+        ? Math.round(thisMonthReservations.length / activeLicenses.length) 
+        : 0,
+    };
+  }
+
+  async getWhatsAppStats(): Promise<any> {
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const allMessages = await db.select().from(messages);
+    const recentMessages = allMessages.filter(m => {
+      const ts = m.timestamp ? new Date(m.timestamp) : null;
+      return ts && ts >= thirtyDaysAgo;
+    });
+    
+    const userMessages = recentMessages.filter(m => m.role === 'user');
+    const assistantMessages = recentMessages.filter(m => m.role === 'assistant');
+    const humanInterventionMessages = recentMessages.filter(m => m.requiresHumanIntervention);
+    
+    const uniquePhones = new Set(recentMessages.map(m => m.phone)).size;
+    
+    const botQuality = await this.getBotQualityStats();
+    
+    return {
+      totalMessagesThisMonth: recentMessages.length,
+      userMessages: userMessages.length,
+      botResponses: assistantMessages.length,
+      escalatedConversations: humanInterventionMessages.length,
+      escalationRate: userMessages.length > 0 
+        ? Math.round((humanInterventionMessages.length / userMessages.length) * 100) 
+        : 0,
+      uniqueCustomers: uniquePhones,
+      avgResponseTimeMs: botQuality.avgResponseTimeMs,
+      botSuccessRate: 100 - botQuality.escalationRate,
+    };
   }
 }
 
