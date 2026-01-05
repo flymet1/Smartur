@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -259,6 +260,8 @@ function TenantManagementSection() {
     adminEmail: "",
     adminPassword: "",
     adminName: "",
+    // License duration in days (0 = unlimited)
+    licenseDuration: "30",
   });
 
   const { data: tenants = [], isLoading } = useQuery<Tenant[]>({
@@ -319,6 +322,7 @@ function TenantManagementSection() {
       adminEmail: "",
       adminPassword: "",
       adminName: "",
+      licenseDuration: "30",
     });
   };
 
@@ -345,6 +349,7 @@ function TenantManagementSection() {
       adminEmail: "",
       adminPassword: "",
       adminName: "",
+      licenseDuration: "30",
     });
     setIsNewTenant(false);
     setEditingTenant(tenant);
@@ -670,6 +675,30 @@ function TenantManagementSection() {
                       data-testid="input-admin-password"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="licenseDuration">Kullanim Suresi</Label>
+                  <Select
+                    value={tenantForm.licenseDuration}
+                    onValueChange={(value) => setTenantForm({ ...tenantForm, licenseDuration: value })}
+                  >
+                    <SelectTrigger id="licenseDuration" data-testid="select-license-duration">
+                      <SelectValue placeholder="Sure secin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">7 Gun (Deneme)</SelectItem>
+                      <SelectItem value="14">14 Gun</SelectItem>
+                      <SelectItem value="30">30 Gun (1 Ay)</SelectItem>
+                      <SelectItem value="90">90 Gun (3 Ay)</SelectItem>
+                      <SelectItem value="180">180 Gun (6 Ay)</SelectItem>
+                      <SelectItem value="365">365 Gun (1 Yil)</SelectItem>
+                      <SelectItem value="0">Sinirsiz</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Acenta bu sure boyunca sistemi kullanabilir
+                  </p>
                 </div>
               </div>
             )}

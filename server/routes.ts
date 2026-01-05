@@ -4905,7 +4905,7 @@ Sky Fethiye`;
   // Create tenant with admin user
   app.post("/api/tenants", async (req, res) => {
     try {
-      const { name, slug, contactEmail, contactPhone, address, logoUrl, primaryColor, accentColor, timezone, language, adminUsername, adminEmail, adminPassword, adminName } = req.body;
+      const { name, slug, contactEmail, contactPhone, address, logoUrl, primaryColor, accentColor, timezone, language, adminUsername, adminEmail, adminPassword, adminName, licenseDuration } = req.body;
       
       if (!name || !slug) {
         return res.status(400).json({ error: "Tenant adi ve slug zorunludur" });
@@ -4951,6 +4951,16 @@ Sky Fethiye`;
       let adminUser = null;
       if (adminUsername && adminEmail && adminPassword) {
         const passwordHash = hashPassword(adminPassword);
+        
+        // Calculate membership end date based on licenseDuration (in days)
+        let membershipEndDate: Date | null = null;
+        const durationDays = parseInt(licenseDuration) || 30;
+        if (durationDays > 0) {
+          membershipEndDate = new Date();
+          membershipEndDate.setDate(membershipEndDate.getDate() + durationDays);
+        }
+        // If durationDays is 0, membershipEndDate stays null (unlimited)
+        
         adminUser = await storage.createAppUser({
           tenantId: tenant.id,
           username: adminUsername,
@@ -4959,9 +4969,9 @@ Sky Fethiye`;
           name: adminName || name + " Admin",
           phone: contactPhone || null,
           companyName: name,
-          membershipType: 'professional',
+          membershipType: durationDays <= 14 ? 'trial' : 'professional',
           membershipStartDate: new Date(),
-          membershipEndDate: null,
+          membershipEndDate,
           planId: null,
           maxActivities: 50,
           maxReservationsPerMonth: 1000,
