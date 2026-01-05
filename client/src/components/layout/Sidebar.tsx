@@ -314,8 +314,20 @@ export function Sidebar() {
 
   // License status helper
   const getLicenseStatusInfo = () => {
-    // If user is logged in, use their membership dates
-    if (currentUser?.membershipEndDate) {
+    // If user is logged in, check their membership
+    if (currentUser) {
+      // Unlimited membership (membershipEndDate is null)
+      if (!currentUser.membershipEndDate) {
+        return { 
+          text: 'Aktif / Suresiz', 
+          color: 'text-accent-foreground', 
+          bgColor: 'bg-accent',
+          isActive: true,
+          isLoading: false
+        };
+      }
+      
+      // Has an end date - calculate remaining days
       const endDate = new Date(currentUser.membershipEndDate);
       const now = new Date();
       const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
