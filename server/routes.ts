@@ -5338,9 +5338,8 @@ Sky Fethiye`;
         return res.status(400).json({ error: "Bu e-posta zaten kullaniliyor" });
       }
 
-      // Hash password
-      const crypto = await import('crypto');
-      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+      // Hash password with salt using pbkdf2
+      const passwordHash = hashPassword(password);
 
       const user = await storage.createAppUser({
         username,
@@ -5378,10 +5377,9 @@ Sky Fethiye`;
       const id = Number(req.params.id);
       const { password, roleIds, ...updateData } = req.body;
 
-      // If password is provided, hash it
+      // If password is provided, hash it with salt
       if (password) {
-        const crypto = await import('crypto');
-        updateData.passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+        updateData.passwordHash = hashPassword(password);
       }
 
       // Convert date strings to Date objects if provided
@@ -5437,8 +5435,6 @@ Sky Fethiye`;
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = req.body;
-      const crypto = await import('crypto');
-      const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
 
       const user = await storage.getAppUserByUsername(username);
 
@@ -5470,7 +5466,8 @@ Sky Fethiye`;
         return res.status(401).json({ error: "Hesabiniz askiya alinmis: " + (user.suspendReason || '') });
       }
 
-      if (user.passwordHash !== passwordHash) {
+      // Verify password using salted hash
+      if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) {
         logEntry.failureReason = 'Yanlis sifre';
         await storage.createUserLoginLog(logEntry);
         return res.status(401).json({ error: "Gecersiz kullanici adi veya sifre" });
