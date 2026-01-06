@@ -8087,6 +8087,27 @@ async function seedDatabase() {
   // Initialize default roles and permissions for user management
   await storage.initializeDefaultPermissions();
   
+  // Create default tenant and admin user if not exists
+  const defaultTenant = await storage.createDefaultTenantIfNotExists();
+  
+  // Check if any admin user exists for this tenant
+  const existingUsers = await storage.getAllAppUsers();
+  const tenantUsers = existingUsers.filter(u => u.tenantId === defaultTenant.id);
+  
+  if (tenantUsers.length === 0) {
+    // Create default admin user with password "admin123" (should be changed after first login)
+    await storage.createAppUser({
+      tenantId: defaultTenant.id,
+      username: "admin",
+      email: "admin@smartur.com",
+      passwordHash: hashPassword("admin123"), // Hash password for security
+      fullName: "Sistem Yöneticisi",
+      role: "owner",
+      isActive: true
+    });
+    console.log("Default admin user created: admin / admin123");
+  }
+  
   const activities = await storage.getActivities();
   if (activities.length === 0) {
     await storage.createActivity({
