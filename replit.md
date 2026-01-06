@@ -36,7 +36,7 @@ External dependencies should focus on what's actually integrated.
 -   **Database**: PostgreSQL for robust and scalable data storage.
 -   **Encryption**: AES-256-GCM for secure storage of sensitive credentials (e.g., Gmail).
 -   **Internationalization**: Two-way automatic responses with separate Turkish and English keywords and replies, supporting Turkish character normalization.
--   **Licensing & Subscription**: 4-tier licensing system (trial/basic/professional/enterprise) with activity and reservation limits. Super Admin panel for dynamic plan management (pricing, features, limits). Subscription page for agencies to view and select plans. Database tables: `subscription_plans`, `subscriptions`, `subscription_payments` for tracking billing. PayTR integration prepared (pending configuration).
+-   **Licensing & Subscription**: 4-tier licensing system (trial/basic/professional/enterprise) with activity, reservation, and daily message limits. Super Admin panel for dynamic plan management (pricing, features, limits). Subscription page for agencies to view and select plans. Database tables: `subscription_plans`, `subscriptions`, `subscription_payments`, `daily_message_usage` for tracking billing and usage. PayTR integration prepared (pending configuration). Daily message limits: Trial (50), Basic (200), Professional (1000), Enterprise (10000).
 -   **Security**: Password change confirmation, token-based reservation tracking.
 -   **Error Handling**: Retry mechanism with exponential backoff for AI calls, intelligent fallback responses, system logging, and debug snapshot generation.
 

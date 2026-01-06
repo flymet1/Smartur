@@ -2352,6 +2352,133 @@ Bu talep müşteri takip sayfasından gönderilmistir.
     }
   });
 
+  // Tenant-specific WhatsApp webhook (preferred - properly identifies tenant from URL)
+  app.post("/api/webhooks/whatsapp/:tenantSlug", async (req, res) => {
+    const { Body, From } = req.body;
+    const { tenantSlug } = req.params;
+    
+    // Identify tenant from URL slug
+    const tenant = await storage.getTenantBySlug(tenantSlug);
+    if (!tenant) {
+      console.error(`WhatsApp webhook: Unknown tenant slug: ${tenantSlug}`);
+      res.type('text/xml');
+      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+      return;
+    }
+    const tenantId = tenant.id;
+    
+    if (From && Body) {
+      await storage.addMessage({ phone: From, content: Body, role: "user" });
+
+      // Check blacklist
+      const isBlacklisted = await storage.isBlacklisted(From);
+      if (isBlacklisted) {
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+        return;
+      }
+
+      // Check daily message limit for tenant
+      const messageLimit = await storage.getTenantMessageLimit(tenantId);
+      if (messageLimit.remaining <= 0) {
+        const limitExceededMsg = "Günlük mesaj limitimize ulaştık. Lütfen yarın tekrar deneyin veya bizi doğrudan arayın.";
+        await storage.addMessage({ phone: From, content: limitExceededMsg, role: "assistant" });
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${limitExceededMsg}</Message></Response>`);
+        return;
+      }
+      
+      // Increment message count atomically
+      await storage.incrementDailyMessageCount(tenantId);
+
+      // Check for open support request
+      const openSupportRequest = await storage.getOpenSupportRequest(From);
+      if (openSupportRequest) {
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+        return;
+      }
+
+      // Check for auto-response match
+      const autoResponseMatch = await storage.findMatchingAutoResponse(Body);
+      if (autoResponseMatch) {
+        await storage.addMessage({ phone: From, content: autoResponseMatch.response, role: "assistant" });
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${autoResponseMatch.response}</Message></Response>`);
+        return;
+      }
+
+      // Check reservation
+      const orderNumberMatch = Body.match(/\b(\d{4,})\b/);
+      const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
+      const userReservation = await storage.findReservationByPhoneOrOrder(From, potentialOrderId);
+
+      // Get customer requests
+      const customerRequestsForPhone = await storage.getCustomerRequestsByPhone(From);
+      const pendingRequests = customerRequestsForPhone.filter(r => r.status === 'pending');
+
+      // Get history & context for this tenant
+      const history = await storage.getMessages(From, 5);
+      const activities = await storage.getActivities(tenantId);
+      const packageTours = await storage.getPackageTours(tenantId);
+      
+      // Get capacity data
+      const today = new Date();
+      const upcomingDates: Set<string> = new Set();
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        upcomingDates.add(d.toISOString().split('T')[0]);
+      }
+      const messageDates = parseDatesFromMessage(Body);
+      for (const dateStr of messageDates) upcomingDates.add(dateStr);
+      const holidayDates = await findHolidayDatesFromMessage(Body);
+      for (const dateStr of holidayDates) upcomingDates.add(dateStr);
+      const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
+      
+      // Get bot settings for this tenant
+      const botPrompt = await storage.getSetting('botPrompt');
+      const botAccessSetting = await storage.getSetting('botAccess');
+      let botAccess = { activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true };
+      if (botAccessSetting) {
+        try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
+      }
+      const botRules = await storage.getSetting('botRules');
+      
+      // Generate AI response
+      const aiResponse = await generateAIResponse(history, { 
+        activities: botAccess.activities ? activities : [], 
+        packageTours: botAccess.packageTours ? packageTours : [],
+        capacityData: botAccess.capacity ? upcomingCapacity : [],
+        hasReservation: !!userReservation,
+        reservation: userReservation,
+        askForOrderNumber: !userReservation,
+        customerRequests: customerRequestsForPhone,
+        pendingRequests,
+        botAccess,
+        botRules
+      }, botPrompt || undefined);
+      
+      // Check if needs human intervention
+      const needsHuman = aiResponse.toLowerCase().includes('yetkili') || 
+                         aiResponse.toLowerCase().includes('müdahale') ||
+                         aiResponse.toLowerCase().includes('iletiyorum');
+      
+      if (needsHuman) {
+        await storage.createSupportRequest({ phone: From, status: 'open' });
+        await storage.markHumanIntervention(From, true);
+      }
+      
+      await storage.addMessage({ phone: From, content: aiResponse, role: "assistant" });
+      res.type('text/xml');
+      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${aiResponse}</Message></Response>`);
+    } else {
+      res.type('text/xml');
+      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+    }
+  });
+
+  // Legacy/fallback WhatsApp webhook (tries to identify tenant from reservation)
   app.post(api.webhooks.whatsapp.path, async (req, res) => {
     const { Body, From } = req.body;
     
@@ -2401,15 +2528,38 @@ Bu talep müşteri takip sayfasından gönderilmistir.
       const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
       const userReservation = await storage.findReservationByPhoneOrOrder(From, potentialOrderId);
 
+      // Try to determine tenantId from reservation or session
+      let tenantId = req.session?.tenantId;
+      if (!tenantId && userReservation?.tenantId) {
+        tenantId = userReservation.tenantId;
+      }
+      
+      // Check daily message limit for tenant (if identified)
+      if (tenantId) {
+        const messageLimit = await storage.getTenantMessageLimit(tenantId);
+        if (messageLimit.remaining <= 0) {
+          // Daily limit exceeded - send polite message and don't process
+          const limitExceededMsg = "Günlük mesaj limitimize ulaştık. Lütfen yarın tekrar deneyin veya bizi doğrudan arayın.";
+          await storage.addMessage({
+            phone: From,
+            content: limitExceededMsg,
+            role: "assistant"
+          });
+          res.type('text/xml');
+          res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${limitExceededMsg}</Message></Response>`);
+          return;
+        }
+        
+        // Increment message count for this tenant
+        await storage.incrementDailyMessageCount(tenantId);
+      }
+
       // Check if user has any pending customer requests
       const customerRequestsForPhone = await storage.getCustomerRequestsByPhone(From);
       const pendingRequests = customerRequestsForPhone.filter(r => r.status === 'pending');
 
       // Get history
       const history = await storage.getMessages(From, 5);
-      
-      // Get context (activities, package tours, etc)
-      const tenantId = req.session?.tenantId;
       const activities = await storage.getActivities(tenantId);
       const packageTours = await storage.getPackageTours(tenantId);
       
@@ -5176,6 +5326,58 @@ Sky Fethiye`;
     }
   });
 
+  // === MESSAGE USAGE TRACKING ===
+  
+  // Get current tenant's message usage stats
+  app.get("/api/message-usage", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const stats = await storage.getTenantMessageLimit(tenantId);
+      res.json(stats);
+    } catch (err) {
+      console.error("Mesaj kullanım istatistiği hatası:", err);
+      res.status(500).json({ error: "İstatistikler alınamadı" });
+    }
+  });
+  
+  // Super Admin: Get message usage for all tenants
+  app.get("/api/super-admin/message-usage", async (req, res) => {
+    try {
+      const isPlatformAdmin = req.session?.isPlatformAdmin;
+      if (!isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      
+      const allTenants = await storage.getTenants();
+      const today = new Date().toISOString().split('T')[0];
+      
+      const usageByTenant = await Promise.all(
+        allTenants.map(async (tenant: { id: number; name: string; planCode: string | null }) => {
+          const stats = await storage.getTenantMessageLimit(tenant.id);
+          return {
+            tenantId: tenant.id,
+            tenantName: tenant.name,
+            planCode: tenant.planCode,
+            ...stats,
+            usagePercentage: stats.limit > 0 ? Math.round((stats.used / stats.limit) * 100) : 0
+          };
+        })
+      );
+      
+      res.json({
+        date: today,
+        tenants: usageByTenant.sort((a: { usagePercentage: number }, b: { usagePercentage: number }) => b.usagePercentage - a.usagePercentage)
+      });
+    } catch (err) {
+      console.error("Super Admin mesaj kullanım hatası:", err);
+      res.status(500).json({ error: "İstatistikler alınamadı" });
+    }
+  });
+
   // === TENANTS (Multi-Tenant Management) ===
 
   // Get all tenants
@@ -5206,7 +5408,7 @@ Sky Fethiye`;
   // Create tenant with admin user
   app.post("/api/tenants", async (req, res) => {
     try {
-      const { name, slug, contactEmail, contactPhone, address, logoUrl, primaryColor, accentColor, timezone, language, adminUsername, adminEmail, adminPassword, adminName, licenseDuration } = req.body;
+      const { name, slug, contactEmail, contactPhone, address, logoUrl, primaryColor, accentColor, timezone, language, planCode, adminUsername, adminEmail, adminPassword, adminName, licenseDuration } = req.body;
       
       if (!name || !slug) {
         return res.status(400).json({ error: "Tenant adi ve slug zorunludur" });
@@ -5245,6 +5447,7 @@ Sky Fethiye`;
         accentColor: accentColor || "142 76% 36%",
         timezone: timezone || "Europe/Istanbul",
         language: language || "tr",
+        planCode: planCode || "trial",
         isActive: true,
       });
 

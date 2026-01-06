@@ -24,6 +24,7 @@ import {
   customerRequests,
   license,
   requestMessageTemplates,
+  dailyMessageUsage,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -94,6 +95,8 @@ import {
   type InsertApiStatusLog,
   type BotQualityScore,
   type InsertBotQualityScore,
+  type DailyMessageUsage,
+  type InsertDailyMessageUsage,
   systemLogs,
   appVersions,
   platformAdmins,
@@ -370,6 +373,11 @@ export interface IStorage {
   getBotQualityScores(): Promise<BotQualityScore[]>;
   getBotQualityStats(): Promise<any>;
   recordBotQualityScore(score: InsertBotQualityScore): Promise<BotQualityScore>;
+
+  // Daily Message Usage Tracking
+  getDailyMessageUsage(tenantId: number, date: string): Promise<DailyMessageUsage | undefined>;
+  incrementDailyMessageCount(tenantId: number): Promise<DailyMessageUsage>;
+  getTenantMessageLimit(tenantId: number): Promise<{ limit: number; used: number; remaining: number }>;
 
   // Super Admin - License/Agency Management
   getLicenses(): Promise<License[]>;
@@ -2446,6 +2454,62 @@ Sky Fethiye`,
   async recordBotQualityScore(score: InsertBotQualityScore): Promise<BotQualityScore> {
     const [newScore] = await db.insert(botQualityScores).values(score).returning();
     return newScore;
+  }
+
+  // === DAILY MESSAGE USAGE TRACKING ===
+
+  async getDailyMessageUsage(tenantId: number, date: string): Promise<DailyMessageUsage | undefined> {
+    const [usage] = await db.select().from(dailyMessageUsage)
+      .where(and(
+        eq(dailyMessageUsage.tenantId, tenantId),
+        eq(dailyMessageUsage.date, date)
+      ));
+    return usage;
+  }
+
+  async incrementDailyMessageCount(tenantId: number): Promise<DailyMessageUsage> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Use atomic upsert to prevent race conditions
+    const [result] = await db.execute(sql`
+      INSERT INTO daily_message_usage (tenant_id, date, message_count, last_message_at, created_at, updated_at)
+      VALUES (${tenantId}, ${today}, 1, NOW(), NOW(), NOW())
+      ON CONFLICT (tenant_id, date) 
+      DO UPDATE SET 
+        message_count = daily_message_usage.message_count + 1,
+        last_message_at = NOW(),
+        updated_at = NOW()
+      RETURNING *
+    `);
+    
+    // Return the result or fetch it
+    const usage = await this.getDailyMessageUsage(tenantId, today);
+    return usage!;
+  }
+
+  async getTenantMessageLimit(tenantId: number): Promise<{ limit: number; used: number; remaining: number }> {
+    // Get tenant's plan code
+    const tenant = await this.getTenant(tenantId);
+    if (!tenant) {
+      return { limit: 0, used: 0, remaining: 0 };
+    }
+    
+    // Get plan limits
+    const plan = await db.select().from(subscriptionPlans)
+      .where(eq(subscriptionPlans.code, tenant.planCode || 'trial'));
+    
+    const maxDailyMessages = plan[0]?.maxDailyMessages || 50;
+    
+    // Get today's usage
+    const today = new Date().toISOString().split('T')[0];
+    const usage = await this.getDailyMessageUsage(tenantId, today);
+    const used = usage?.messageCount || 0;
+    
+    return {
+      limit: maxDailyMessages,
+      used,
+      remaining: Math.max(0, maxDailyMessages - used)
+    };
   }
 
   // === SUPER ADMIN - LICENSE/AGENCY MANAGEMENT ===

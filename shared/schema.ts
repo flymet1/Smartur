@@ -24,6 +24,7 @@ export const tenants = pgTable("tenants", {
   // Diger ayarlar
   timezone: text("timezone").default("Europe/Istanbul"),
   language: text("language").default("tr"),
+  planCode: text("plan_code").default("trial"), // Hangi abonelik planı: trial, basic, professional, enterprise
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -491,6 +492,7 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   maxReservationsPerMonth: integer("max_reservations_per_month").default(100),
   maxUsers: integer("max_users").default(1),
   maxWhatsappNumbers: integer("max_whatsapp_numbers").default(1),
+  maxDailyMessages: integer("max_daily_messages").default(50), // Günlük maksimum WhatsApp mesaj sayısı
   features: text("features").default("[]"), // JSON array: ["ai_bot", "reports", "api_access", "multi_user"]
   sortOrder: integer("sort_order").default(0),
   isActive: boolean("is_active").default(true),
@@ -709,6 +711,22 @@ export const botQualityScores = pgTable("bot_quality_scores", {
   usedFallback: boolean("used_fallback").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Günlük Mesaj Kullanımı Takibi
+export const dailyMessageUsage = pgTable("daily_message_usage", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
+  date: text("date").notNull(), // YYYY-MM-DD formatında
+  messageCount: integer("message_count").default(0), // O gün gönderilen mesaj sayısı
+  lastMessageAt: timestamp("last_message_at"), // Son mesaj zamanı
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// === DAILY MESSAGE USAGE SCHEMAS & TYPES ===
+export const insertDailyMessageUsageSchema = createInsertSchema(dailyMessageUsage).omit({ id: true, createdAt: true, updatedAt: true });
+export type DailyMessageUsage = typeof dailyMessageUsage.$inferSelect;
+export type InsertDailyMessageUsage = z.infer<typeof insertDailyMessageUsageSchema>;
 
 // === TENANT INTEGRATION SETTINGS ===
 // Acenta bazli entegrasyon ayarlari (Twilio, WooCommerce, Gmail)
