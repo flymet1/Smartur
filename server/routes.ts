@@ -261,17 +261,23 @@ const DEFAULT_BOT_RULES = `
 "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir."
 `;
 
-// Replit AI Integration for Gemini
+// Gemini AI Integration - supports both Replit integration and standalone API key
 let ai: GoogleGenAI | null = null;
 try {
-  if (process.env.AI_INTEGRATIONS_GEMINI_API_KEY && process.env.AI_INTEGRATIONS_GEMINI_BASE_URL) {
-    ai = new GoogleGenAI({
-      apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-      httpOptions: {
+  // Check for Replit AI Integration first, then fallback to standard GEMINI_API_KEY
+  const apiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+  const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+  
+  if (apiKey) {
+    const options: any = { apiKey };
+    // Only add httpOptions if using Replit integration with base URL
+    if (baseUrl) {
+      options.httpOptions = {
         apiVersion: "",
-        baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-      },
-    });
+        baseUrl: baseUrl,
+      };
+    }
+    ai = new GoogleGenAI(options);
     console.log("Gemini AI Integration initialized successfully");
   } else {
     console.warn("Gemini API not available, falling back to mock responses");
