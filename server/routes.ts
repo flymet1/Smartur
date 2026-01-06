@@ -6699,6 +6699,188 @@ Sky Fethiye`;
     }
   });
 
+  // Get last backup info (for reminder system)
+  app.get("/api/database-backups/last", async (req, res) => {
+    try {
+      const backups = await storage.getDatabaseBackups();
+      const lastBackup = backups.length > 0 ? backups[0] : null;
+      
+      let daysSinceLastBackup = null;
+      if (lastBackup && lastBackup.createdAt) {
+        const lastBackupDate = new Date(lastBackup.createdAt);
+        const now = new Date();
+        daysSinceLastBackup = Math.floor((now.getTime() - lastBackupDate.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      
+      res.json({
+        lastBackup,
+        daysSinceLastBackup,
+        needsBackup: daysSinceLastBackup === null || daysSinceLastBackup >= 7
+      });
+    } catch (err) {
+      console.error("Son yedek bilgisi hatası:", err);
+      res.status(500).json({ error: "Son yedek bilgisi alınamadı" });
+    }
+  });
+
+  // === TENANT DATA EXPORT (Acenta Bazlı Veri İndirme) ===
+  
+  // Export tenant's own data (for agency self-service)
+  app.get("/api/tenant-export", async (req, res) => {
+    try {
+      const tenantId = (req as any).tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ error: "Acenta bilgisi bulunamadı" });
+      }
+      
+      const format = (req.query.format as string) || 'json';
+      const dataTypes = (req.query.types as string)?.split(',') || ['all'];
+      
+      const exportData: Record<string, any> = {
+        exportInfo: {
+          tenantId,
+          exportedAt: new Date().toISOString(),
+          format,
+          dataTypes
+        }
+      };
+      
+      // Get tenant-specific data
+      if (dataTypes.includes('all') || dataTypes.includes('activities')) {
+        exportData.activities = await storage.getActivities(tenantId);
+      }
+      
+      if (dataTypes.includes('all') || dataTypes.includes('reservations')) {
+        exportData.reservations = await storage.getReservations(tenantId);
+      }
+      
+      if (dataTypes.includes('all') || dataTypes.includes('capacity')) {
+        // Get capacity for all activities
+        const activities = exportData.activities || await storage.getActivities(tenantId);
+        const capacityData: any[] = [];
+        for (const activity of activities) {
+          const activityCapacity = await storage.getCapacity(activity.id, tenantId);
+          capacityData.push(...activityCapacity);
+        }
+        exportData.capacity = capacityData;
+      }
+      
+      if (dataTypes.includes('all') || dataTypes.includes('agencies')) {
+        exportData.agencies = await storage.getAgencies(tenantId);
+      }
+      
+      if (dataTypes.includes('all') || dataTypes.includes('messages')) {
+        exportData.messages = await storage.getMessages('all', tenantId);
+      }
+      
+      if (dataTypes.includes('all') || dataTypes.includes('customers')) {
+        // Extract unique customers from reservations
+        const reservations = exportData.reservations || await storage.getReservations(tenantId);
+        const customersMap = new Map();
+        for (const r of reservations) {
+          const key = r.customerPhone || r.customerEmail;
+          if (key && !customersMap.has(key)) {
+            customersMap.set(key, {
+              name: r.customerName,
+              phone: r.customerPhone,
+              email: r.customerEmail,
+              reservationCount: 1,
+              lastReservationDate: r.date
+            });
+          } else if (key) {
+            const existing = customersMap.get(key);
+            existing.reservationCount++;
+            if (r.date > existing.lastReservationDate) {
+              existing.lastReservationDate = r.date;
+            }
+          }
+        }
+        exportData.customers = Array.from(customersMap.values());
+      }
+      
+      if (format === 'csv') {
+        // Convert to CSV format
+        let csvContent = '';
+        
+        // Reservations CSV
+        if (exportData.reservations && exportData.reservations.length > 0) {
+          csvContent += 'REZERVASYONLAR\n';
+          csvContent += 'ID,Müşteri Adı,Telefon,Email,Tarih,Saat,Aktivite ID,Kişi Sayısı,Fiyat TL,Durum,Kaynak\n';
+          for (const r of exportData.reservations) {
+            csvContent += `${r.id},"${r.customerName || ''}","${r.customerPhone || ''}","${r.customerEmail || ''}",${r.date},${r.time || ''},${r.activityId || ''},${r.quantity},${r.priceTl || 0},${r.status},${r.source || ''}\n`;
+          }
+          csvContent += '\n';
+        }
+        
+        // Activities CSV
+        if (exportData.activities && exportData.activities.length > 0) {
+          csvContent += 'AKTİVİTELER\n';
+          csvContent += 'ID,Ad,Açıklama,Fiyat TL,Fiyat USD,Süre (dk),Aktif\n';
+          for (const a of exportData.activities) {
+            csvContent += `${a.id},"${a.name}","${a.description || ''}",${a.price || 0},${a.priceUsd || 0},${a.durationMinutes || 0},${a.active ? 'Evet' : 'Hayır'}\n`;
+          }
+          csvContent += '\n';
+        }
+        
+        // Customers CSV
+        if (exportData.customers && exportData.customers.length > 0) {
+          csvContent += 'MÜŞTERİLER\n';
+          csvContent += 'Ad,Telefon,Email,Rezervasyon Sayısı,Son Rezervasyon\n';
+          for (const c of exportData.customers) {
+            csvContent += `"${c.name || ''}","${c.phone || ''}","${c.email || ''}",${c.reservationCount},${c.lastReservationDate || ''}\n`;
+          }
+        }
+        
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="acenta_verileri_${new Date().toISOString().split('T')[0]}.csv"`);
+        res.send('\ufeff' + csvContent); // BOM for Excel UTF-8 compatibility
+      } else {
+        // JSON format
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="acenta_verileri_${new Date().toISOString().split('T')[0]}.json"`);
+        res.json(exportData);
+      }
+    } catch (err) {
+      console.error("Acenta veri dışa aktarma hatası:", err);
+      res.status(500).json({ error: "Veriler dışa aktarılamadı" });
+    }
+  });
+
+  // Get export preview (without downloading)
+  app.get("/api/tenant-export/preview", async (req, res) => {
+    try {
+      const tenantId = (req as any).tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ error: "Acenta bilgisi bulunamadı" });
+      }
+      
+      const activities = await storage.getActivities(tenantId);
+      const reservations = await storage.getReservations(tenantId);
+      const agencies = await storage.getAgencies(tenantId);
+      const messages = await storage.getMessages('all', tenantId);
+      
+      // Extract unique customers
+      const customersSet = new Set<string>();
+      for (const r of reservations) {
+        if (r.customerPhone) customersSet.add(r.customerPhone);
+      }
+      
+      res.json({
+        summary: {
+          activitiesCount: activities.length,
+          reservationsCount: reservations.length,
+          agenciesCount: agencies.length,
+          messagesCount: messages.length,
+          customersCount: customersSet.size
+        },
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error("Veri onizleme hatası:", err);
+      res.status(500).json({ error: "Veri ozeti alınamadı" });
+    }
+  });
+
   // === BULK OPERATIONS ===
   
   app.post("/api/bulk/plan-change", async (req, res) => {
