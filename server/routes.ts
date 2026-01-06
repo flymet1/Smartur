@@ -6728,7 +6728,7 @@ Sky Fethiye`;
   // Export tenant's own data (for agency self-service)
   app.get("/api/tenant-export", async (req, res) => {
     try {
-      const tenantId = (req as any).tenantId;
+      const tenantId = req.session?.tenantId;
       if (!tenantId) {
         return res.status(400).json({ error: "Acenta bilgisi bulunamadı" });
       }
@@ -6849,7 +6849,7 @@ Sky Fethiye`;
   // Get export preview (without downloading)
   app.get("/api/tenant-export/preview", async (req, res) => {
     try {
-      const tenantId = (req as any).tenantId;
+      const tenantId = req.session?.tenantId;
       if (!tenantId) {
         return res.status(400).json({ error: "Acenta bilgisi bulunamadı" });
       }
@@ -6884,7 +6884,7 @@ Sky Fethiye`;
   // Tenant data import (restore from backup)
   app.post("/api/tenant-import", async (req, res) => {
     try {
-      const tenantId = (req as any).tenantId;
+      const tenantId = req.session?.tenantId;
       if (!tenantId) {
         return res.status(400).json({ error: "Acenta bilgisi bulunamadı" });
       }
@@ -6949,11 +6949,11 @@ Sky Fethiye`;
       if (data.reservations && Array.isArray(data.reservations)) {
         results.reservations = { imported: 0, skipped: 0, errors: [] };
         
-        // Get current activities to map old IDs to new ones
+        // Refresh current activities after import to get newly created ones
         const currentActivities = await storage.getActivities(tenantId);
         const activityMap = new Map<number, number>();
         
-        // Try to match activities by name
+        // Build activity mapping: backup ID -> current ID (match by name)
         if (data.activities) {
           for (const oldActivity of data.activities) {
             const matchingActivity = currentActivities.find(a => a.name === oldActivity.name);
@@ -6963,12 +6963,28 @@ Sky Fethiye`;
           }
         }
         
+        // If no activity list in backup, try direct matching by ID
+        if (!data.activities) {
+          for (const activity of currentActivities) {
+            activityMap.set(activity.id, activity.id);
+          }
+        }
+        
         for (const reservation of data.reservations) {
           try {
             // Map activity ID to current system
-            const mappedActivityId = activityMap.get(reservation.activityId);
+            let mappedActivityId = activityMap.get(reservation.activityId);
+            
+            // Fallback: try to find activity by name from reservation data if available
+            if (!mappedActivityId && reservation.activityName) {
+              const matchByName = currentActivities.find(a => a.name === reservation.activityName);
+              if (matchByName) {
+                mappedActivityId = matchByName.id;
+              }
+            }
+            
             if (!mappedActivityId) {
-              results.reservations.errors.push(`Rezervasyon ${reservation.id}: Aktivite eşleştirilemedi`);
+              results.reservations.errors.push(`Rezervasyon ${reservation.id}: Aktivite eşleştirilemedi (ID: ${reservation.activityId})`);
               continue;
             }
             
