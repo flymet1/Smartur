@@ -132,12 +132,13 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [times, setTimes] = useState<string[]>(() => {
     if (activity && (activity as any).defaultTimes) {
       try {
-        return JSON.parse((activity as any).defaultTimes);
+        const parsed = JSON.parse((activity as any).defaultTimes);
+        return parsed.length > 0 ? parsed : ["09:00"];
       } catch {
-        return [];
+        return ["09:00"];
       }
     }
-    return [];
+    return ["09:00"];
   });
   const [defaultCapacity, setDefaultCapacity] = useState(
     activity ? (activity as any).defaultCapacity || 10 : 10
