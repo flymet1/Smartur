@@ -158,19 +158,21 @@ async function logApiError(params: {
   }
 }
 
-// License middleware - checks if write operations are allowed (tenant-aware)
-async function checkLicenseForWrite(tenantId?: number): Promise<{ allowed: boolean; message: string; status?: string }> {
-  const verification = await storage.verifyLicense(tenantId);
+// Plan verification middleware - checks if write operations are allowed for tenant
+async function checkPlanForWrite(tenantId?: number): Promise<{ allowed: boolean; message: string; status?: string }> {
+  if (!tenantId) {
+    // Allow if no tenant context (backward compatibility)
+    return { allowed: true, message: "OK", status: 'active' };
+  }
+  const verification = await storage.verifyTenantPlan(tenantId);
   
   if (!verification.canWrite) {
     let message = verification.message;
     
-    if (verification.status === 'grace') {
-      message = `Lisansınız dolmuş (Ek süre: ${verification.graceDaysRemaining} gün). Salt okunur modasınız - yeni işlem yapamazsınız.`;
-    } else if (verification.status === 'expired') {
-      message = "Lisansınız tamamen dolmuş. Sisteme erişim için lisansınızı yenileyin.";
+    if (verification.status === 'expired') {
+      message = "Planınız dolmuş. Sisteme erişim için planınızı yenileyin.";
     } else if (verification.status === 'suspended') {
-      message = "Lisansınız askıya alınmış. Destek ile iletişime geçin.";
+      message = "Hesabınız askıya alınmış. Destek ile iletişime geçin.";
     }
     
     return { allowed: false, message, status: verification.status };
@@ -1022,7 +1024,7 @@ export async function registerRoutes(
     try {
       const tenantId = req.session?.tenantId;
       // License check for write operations (tenant-aware)
-      const licenseCheck = await checkLicenseForWrite(tenantId);
+      const licenseCheck = await checkPlanForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
       }
@@ -1040,7 +1042,7 @@ export async function registerRoutes(
     try {
       const tenantId = req.session?.tenantId;
       // License check for write operations (tenant-aware)
-      const licenseCheck = await checkLicenseForWrite(tenantId);
+      const licenseCheck = await checkPlanForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
       }
@@ -1056,7 +1058,7 @@ export async function registerRoutes(
   app.delete(api.activities.delete.path, async (req, res) => {
     const tenantId = req.session?.tenantId;
     // License check for write operations (tenant-aware)
-    const licenseCheck = await checkLicenseForWrite(tenantId);
+    const licenseCheck = await checkPlanForWrite(tenantId);
     if (!licenseCheck.allowed) {
       return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
     }
@@ -1092,7 +1094,7 @@ export async function registerRoutes(
     try {
       const tenantId = req.session?.tenantId;
       // License check for write operations (tenant-aware)
-      const licenseCheck = await checkLicenseForWrite(tenantId);
+      const licenseCheck = await checkPlanForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
       }
@@ -1471,7 +1473,7 @@ export async function registerRoutes(
   app.post("/api/capacity/bulk", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
-      const licenseCheck = await checkLicenseForWrite(tenantId);
+      const licenseCheck = await checkPlanForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message });
       }
@@ -1605,7 +1607,7 @@ export async function registerRoutes(
   app.post(api.reservations.create.path, async (req, res) => {
     const tenantId = req.session?.tenantId;
     // License check for write operations (tenant-aware)
-    const licenseCheck = await checkLicenseForWrite(tenantId);
+    const licenseCheck = await checkPlanForWrite(tenantId);
     if (!licenseCheck.allowed) {
       return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
     }
@@ -1842,7 +1844,7 @@ export async function registerRoutes(
     try {
       const tenantId = req.session?.tenantId;
       // License check using established guard (tenant-aware)
-      const licenseCheck = await checkLicenseForWrite(tenantId);
+      const licenseCheck = await checkPlanForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message });
       }
@@ -5477,25 +5479,79 @@ Sky Fethiye`;
     }
   });
 
-  // === LICENSE & SUBSCRIPTION ===
+  // === TENANT PLAN & SUBSCRIPTION ===
   
-  // Get current license
-  app.get("/api/license", async (req, res) => {
+  // Get current tenant plan status
+  app.get("/api/tenant/plan", async (req, res) => {
     try {
-      const currentLicense = await storage.getLicense();
-      const usage = await storage.getLicenseUsage();
-      
-      if (!currentLicense) {
-        return res.json({ 
-          license: null, 
-          usage,
-          status: { valid: false, message: "Lisans bulunamadı" }
-        });
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
       }
       
-      const verification = await storage.verifyLicense();
+      const tenant = await storage.getTenant(tenantId);
+      if (!tenant) {
+        return res.status(404).json({ error: "Tenant bulunamadı" });
+      }
+      
+      const usage = await storage.getTenantUsage(tenantId);
+      const verification = await storage.verifyTenantPlan(tenantId);
       res.json({ 
-        license: currentLicense, 
+        tenant, 
+        usage,
+        plan: verification.plan,
+        status: verification
+      });
+    } catch (err) {
+      console.error("Plan bilgisi alınamadı:", err);
+      res.status(500).json({ error: "Plan bilgisi alınamadı" });
+    }
+  });
+
+  // Verify tenant plan
+  app.get("/api/tenant/plan/verify", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      }
+      
+      const verification = await storage.verifyTenantPlan(tenantId);
+      res.json(verification);
+    } catch (err) {
+      console.error("Plan doğrulama hatası:", err);
+      res.status(500).json({ error: "Plan doğrulanamadı" });
+    }
+  });
+
+  // Legacy license endpoint - redirects to tenant plan
+  app.get("/api/license", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      }
+      
+      const tenant = await storage.getTenant(tenantId);
+      if (!tenant) {
+        return res.status(404).json({ error: "Tenant bulunamadı" });
+      }
+      
+      const usage = await storage.getTenantUsage(tenantId);
+      const verification = await storage.verifyTenantPlan(tenantId);
+      
+      // Return in legacy format for backward compatibility
+      res.json({ 
+        license: {
+          id: tenant.id,
+          agencyName: tenant.name,
+          agencyEmail: tenant.contactEmail,
+          planType: tenant.planCode,
+          planName: verification.plan?.name || 'Deneme',
+          maxActivities: verification.plan?.maxActivities || 5,
+          maxReservationsPerMonth: verification.plan?.maxReservationsPerMonth || 50,
+          isActive: tenant.isActive,
+        }, 
         usage,
         status: verification
       });
@@ -5505,10 +5561,15 @@ Sky Fethiye`;
     }
   });
 
-  // Verify license
+  // Legacy verify endpoint
   app.get("/api/license/verify", async (req, res) => {
     try {
-      const verification = await storage.verifyLicense();
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      }
+      
+      const verification = await storage.verifyTenantPlan(tenantId);
       res.json(verification);
     } catch (err) {
       console.error("Lisans doğrulama hatası:", err);
@@ -5516,131 +5577,40 @@ Sky Fethiye`;
     }
   });
 
-  // Create/activate license
-  app.post("/api/license", async (req, res) => {
-    try {
-      const { licenseKey, agencyName, agencyEmail, agencyPhone, planType, expiryDate } = req.body;
-      
-      if (!licenseKey || !agencyName) {
-        return res.status(400).json({ error: "Lisans anahtarı ve acenta adi zorunludur" });
-      }
-
-      // Define plan limits based on plan type
-      const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string }> = {
-        trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme" },
-        başıc: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel" },
-        professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel" },
-        enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal" }
-      };
-
-      const plan = planLimits[planType || 'trial'] || planLimits.trial;
-      
-      const newLicense = await storage.createLicense({
-        licenseKey,
-        agencyName,
-        agencyEmail: agencyEmail || null,
-        agencyPhone: agencyPhone || null,
-        planType: planType || 'trial',
-        planName: plan.planName,
-        maxActivities: plan.maxActivities,
-        maxReservationsPerMonth: plan.maxReservationsPerMonth,
-        maxUsers: plan.maxUsers,
-        features: JSON.stringify([]),
-        startDate: new Date(),
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
-        isActive: true
-      });
-
-      res.status(201).json(newLicense);
-    } catch (err) {
-      console.error("Lisans oluşturma hatası:", err);
-      res.status(400).json({ error: "Lisans oluşturulamadi" });
-    }
-  });
-
-  // Update license
-  app.patch("/api/license/:id", async (req, res) => {
+  // Update tenant plan (replaces license update)
+  app.patch("/api/tenant/:id/plan", async (req, res) => {
     try {
       const id = Number(req.params.id);
-      const { agencyName, agencyEmail, agencyPhone, planType, expiryDate, isActive } = req.body;
+      const { planCode } = req.body;
       
-      const updateData: Record<string, unknown> = {};
-      if (agencyName !== undefined) updateData.agencyName = agencyName;
-      if (agencyEmail !== undefined) updateData.agencyEmail = agencyEmail;
-      if (agencyPhone !== undefined) updateData.agencyPhone = agencyPhone;
-      if (isActive !== undefined) updateData.isActive = isActive;
-      
-      // If plan type changes, update limits too
-      if (planType !== undefined) {
-        const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string }> = {
-          trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme" },
-          başıc: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel" },
-          professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel" },
-          enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal" }
-        };
-        const plan = planLimits[planType] || planLimits.trial;
-        updateData.planType = planType;
-        updateData.planName = plan.planName;
-        updateData.maxActivities = plan.maxActivities;
-        updateData.maxReservationsPerMonth = plan.maxReservationsPerMonth;
-        updateData.maxUsers = plan.maxUsers;
+      if (!planCode) {
+        return res.status(400).json({ error: "Plan kodu zorunludur" });
       }
       
-      if (expiryDate !== undefined) {
-        updateData.expiryDate = expiryDate ? new Date(expiryDate) : null;
-      }
-      
-      const updated = await storage.updateLicense(id, updateData);
+      const updated = await storage.updateTenant(id, { planCode });
       res.json(updated);
     } catch (err) {
-      console.error("Lisans güncelleme hatası:", err);
-      res.status(400).json({ error: "Lisans güncellenemedi" });
+      console.error("Plan güncelleme hatası:", err);
+      res.status(400).json({ error: "Plan güncellenemedi" });
     }
   });
 
-  // Renew license (extend expiry date)
-  app.post("/api/license/:id/renew", async (req, res) => {
+  // Get tenant usage statistics
+  app.get("/api/tenant/usage", async (req, res) => {
     try {
-      const id = Number(req.params.id);
-      const { months = 1 } = req.body;
-      
-      const currentLicense = await storage.getLicense();
-      if (!currentLicense || currentLicense.id !== id) {
-        return res.status(404).json({ error: "Lisans bulunamadı" });
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
       }
       
-      // Calculate new expiry date
-      const currentExpiry = currentLicense.expiryDate ? new Date(currentLicense.expiryDate) : new Date();
-      const baseDate = currentExpiry < new Date() ? new Date() : currentExpiry;
-      const newExpiry = new Date(baseDate);
-      newExpiry.setMonth(newExpiry.getMonth() + months);
-      
-      const updated = await storage.updateLicense(id, { 
-        expiryDate: newExpiry,
-        isActive: true 
-      });
-      
-      res.json({ 
-        license: updated, 
-        message: `Lisansiniz ${months} ay uzatildi. Yeni bitiş tarihi: ${newExpiry.toLocaleDateString('tr-TR')}` 
-      });
-    } catch (err) {
-      console.error("Lisans yenileme hatası:", err);
-      res.status(400).json({ error: "Lisans yenilenemedi" });
-    }
-  });
-
-  // Get license usage statistics
-  app.get("/api/license/usage", async (req, res) => {
-    try {
-      const usage = await storage.getLicenseUsage();
-      const currentLicense = await storage.getLicense();
+      const usage = await storage.getTenantUsage(tenantId);
+      const verification = await storage.verifyTenantPlan(tenantId);
       
       res.json({
         usage,
-        limits: currentLicense ? {
-          maxActivities: currentLicense.maxActivities,
-          maxReservationsPerMonth: currentLicense.maxReservationsPerMonth
+        limits: verification.plan ? {
+          maxActivities: verification.plan.maxActivities,
+          maxReservationsPerMonth: verification.plan.maxReservationsPerMonth
         } : null
       });
     } catch (err) {
@@ -5649,86 +5619,27 @@ Sky Fethiye`;
     }
   });
 
-  // Activate license with license key
-  app.post("/api/license/activate", async (req, res) => {
+  // Legacy license usage endpoint (backward compatibility)
+  app.get("/api/license/usage", async (req, res) => {
     try {
-      const { licenseKey, agencyName } = req.body;
-      
-      if (!licenseKey || !agencyName) {
-        return res.status(400).json({ error: "Lisans anahtarı ve acenta adi zorunludur" });
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
       }
-
-      // Parse license key to determine plan type
-      // Format: PLAN-XXXX-XXXX-XXXX (e.g., PRO-1234-5678-9012)
-      const keyPrefix = licenseKey.split('-')[0]?.toUpperCase();
-      let planType = 'trial';
       
-      if (keyPrefix === 'ENT' || keyPrefix === 'ENTERPRISE') {
-        planType = 'enterprise';
-      } else if (keyPrefix === 'PRO' || keyPrefix === 'PROFESSIONAL') {
-        planType = 'professional';
-      } else if (keyPrefix === 'BAS' || keyPrefix === 'BASIC') {
-        planType = 'başıc';
-      } else if (keyPrefix === 'TRI' || keyPrefix === 'TRIAL') {
-        planType = 'trial';
-      }
-
-      // Define plan limits based on plan type
-      const planLimits: Record<string, { maxActivities: number; maxReservationsPerMonth: number; maxUsers: number; planName: string; expiryMonths: number }> = {
-        trial: { maxActivities: 5, maxReservationsPerMonth: 50, maxUsers: 1, planName: "Deneme", expiryMonths: 0.5 },
-        başıc: { maxActivities: 10, maxReservationsPerMonth: 200, maxUsers: 2, planName: "Temel", expiryMonths: 12 },
-        professional: { maxActivities: 25, maxReservationsPerMonth: 500, maxUsers: 5, planName: "Profesyonel", expiryMonths: 12 },
-        enterprise: { maxActivities: 999, maxReservationsPerMonth: 9999, maxUsers: 99, planName: "Kurumsal", expiryMonths: 0 }
-      };
-
-      const plan = planLimits[planType];
+      const usage = await storage.getTenantUsage(tenantId);
+      const verification = await storage.verifyTenantPlan(tenantId);
       
-      // Calculate expiry date
-      let expiryDate: Date | null = null;
-      if (plan.expiryMonths > 0) {
-        expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + plan.expiryMonths);
-      }
-
-      const newLicense = await storage.createLicense({
-        licenseKey,
-        agencyName,
-        agencyEmail: null,
-        agencyPhone: null,
-        planType,
-        planName: plan.planName,
-        maxActivities: plan.maxActivities,
-        maxReservationsPerMonth: plan.maxReservationsPerMonth,
-        maxUsers: plan.maxUsers,
-        features: JSON.stringify([]),
-        startDate: new Date(),
-        expiryDate,
-        isActive: true
-      });
-
-      res.status(201).json({ 
-        license: newLicense, 
-        message: `Lisans basariyla aktive edildi. Plan: ${plan.planName}` 
+      res.json({
+        usage,
+        limits: verification.plan ? {
+          maxActivities: verification.plan.maxActivities,
+          maxReservationsPerMonth: verification.plan.maxReservationsPerMonth
+        } : null
       });
     } catch (err) {
-      console.error("Lisans aktivasyon hatası:", err);
-      res.status(400).json({ error: "Lisans aktive edilemedi" });
-    }
-  });
-
-  // Delete/deactivate license
-  app.delete("/api/license", async (req, res) => {
-    try {
-      const currentLicense = await storage.getLicense();
-      if (!currentLicense) {
-        return res.status(404).json({ error: "Kaldırilacak lisans bulunamadı" });
-      }
-      
-      await storage.deleteLicense(currentLicense.id);
-      res.json({ success: true, message: "Lisans kaldırıldı" });
-    } catch (err) {
-      console.error("Lisans kaldırma hatası:", err);
-      res.status(500).json({ error: "Lisans kaldırilamadi" });
+      console.error("Kullanim bilgisi alınamadı:", err);
+      res.status(500).json({ error: "Kullanim bilgisi alınamadı" });
     }
   });
 
@@ -6413,45 +6324,65 @@ Sky Fethiye`;
     }
   });
 
-  // === SUPER ADMIN - LICENSE/AGENCY MANAGEMENT ===
+  // === SUPER ADMIN - TENANT MANAGEMENT ===
   
+  app.get("/api/tenants", async (req, res) => {
+    try {
+      const allTenants = await storage.getTenants();
+      res.json(allTenants);
+    } catch (err) {
+      console.error("Tenant listesi hatası:", err);
+      res.status(500).json({ error: "Tenant'lar alınamadı" });
+    }
+  });
+
+  // Legacy endpoint for backward compatibility
   app.get("/api/licenses", async (req, res) => {
     try {
-      const licenses = await storage.getLicenses();
-      res.json(licenses);
+      const allTenants = await storage.getTenants();
+      // Map to license-like format for backward compatibility
+      const licenseLike = allTenants.map(t => ({
+        id: t.id,
+        agencyName: t.name,
+        agencyEmail: t.contactEmail,
+        planType: t.planCode,
+        isActive: t.isActive,
+        createdAt: t.createdAt
+      }));
+      res.json(licenseLike);
     } catch (err) {
       console.error("Lisans listesi hatası:", err);
       res.status(500).json({ error: "Lisanslar alınamadı" });
     }
   });
 
-  app.patch("/api/licenses/:id", async (req, res) => {
+  app.patch("/api/tenants/:id", async (req, res) => {
     try {
-      const license = await storage.updateLicense(Number(req.params.id), req.body);
-      res.json(license);
+      const tenant = await storage.updateTenant(Number(req.params.id), req.body);
+      res.json(tenant);
     } catch (err) {
-      console.error("Lisans güncelleme hatası:", err);
-      res.status(500).json({ error: "Lisans güncellenemedi" });
+      console.error("Tenant güncelleme hatası:", err);
+      res.status(500).json({ error: "Tenant güncellenemedi" });
     }
   });
 
-  app.post("/api/licenses/:id/suspend", async (req, res) => {
+  app.post("/api/tenants/:id/suspend", async (req, res) => {
     try {
-      const license = await storage.suspendLicense(Number(req.params.id));
-      res.json(license);
+      const tenant = await storage.suspendTenant(Number(req.params.id));
+      res.json(tenant);
     } catch (err) {
-      console.error("Lisans askiya alma hatası:", err);
-      res.status(500).json({ error: "Lisans askiya alınamadı" });
+      console.error("Tenant askiya alma hatası:", err);
+      res.status(500).json({ error: "Tenant askiya alınamadı" });
     }
   });
 
-  app.post("/api/licenses/:id/activate", async (req, res) => {
+  app.post("/api/tenants/:id/activate", async (req, res) => {
     try {
-      const license = await storage.activateLicense(Number(req.params.id));
-      res.json(license);
+      const tenant = await storage.activateTenant(Number(req.params.id));
+      res.json(tenant);
     } catch (err) {
-      console.error("Lisans aktiflesirme hatası:", err);
-      res.status(500).json({ error: "Lisans aktiflesirilemedi" });
+      console.error("Tenant aktifleştirme hatası:", err);
+      res.status(500).json({ error: "Tenant aktifleştirilemedi" });
     }
   });
 
@@ -7353,12 +7284,12 @@ Sky Fethiye`;
     }
   });
 
-  // === BULK OPERATIONS ===
+  // === BULK OPERATIONS (now tenant-based) ===
   
   app.post("/api/bulk/plan-change", async (req, res) => {
     try {
-      const { licenseIds, newPlanId } = req.body;
-      const results = await storage.bulkChangePlan(licenseIds, newPlanId);
+      const { tenantIds, newPlanCode } = req.body;
+      const results = await storage.bulkChangePlan(tenantIds, newPlanCode);
       res.json(results);
     } catch (err) {
       console.error("Toplu plan degisikligi hatası:", err);
@@ -7366,26 +7297,26 @@ Sky Fethiye`;
     }
   });
 
-  app.post("/api/bulk/extend-license", async (req, res) => {
+  app.post("/api/bulk/extend-subscription", async (req, res) => {
     try {
-      const { licenseIds, days } = req.body;
-      const results = await storage.bulkExtendLicense(licenseIds, days);
+      const { tenantIds, days } = req.body;
+      const results = await storage.bulkExtendSubscription(tenantIds, days);
       res.json(results);
     } catch (err) {
-      console.error("Toplu lisans uzatma hatası:", err);
-      res.status(500).json({ error: "Lisans uzatma yapılamadı" });
+      console.error("Toplu abonelik uzatma hatası:", err);
+      res.status(500).json({ error: "Abonelik uzatma yapılamadı" });
     }
   });
 
-  // === AGENCY DETAILS (For Super Admin) ===
+  // === TENANT DETAILS (For Super Admin) ===
   
-  app.get("/api/agency-details/:licenseId", async (req, res) => {
+  app.get("/api/tenant-details/:tenantId", async (req, res) => {
     try {
-      const details = await storage.getAgencyDetails(Number(req.params.licenseId));
+      const details = await storage.getTenantDetails(Number(req.params.tenantId));
       res.json(details);
     } catch (err) {
-      console.error("Ajans detayi hatası:", err);
-      res.status(500).json({ error: "Ajans detayları alınamadı" });
+      console.error("Tenant detayi hatası:", err);
+      res.status(500).json({ error: "Tenant detayları alınamadı" });
     }
   });
 
@@ -7426,12 +7357,12 @@ Sky Fethiye`;
 
   app.post("/api/invoices/generate", async (req, res) => {
     try {
-      const { licenseId, periodStart, periodEnd } = req.body;
-      const invoice = await storage.generateInvoice(licenseId, periodStart, periodEnd);
+      const { tenantId, periodStart, periodEnd } = req.body;
+      const invoice = await storage.generateInvoice(tenantId, periodStart, periodEnd);
       res.json(invoice);
     } catch (err) {
       console.error("Fatura oluşturma hatası:", err);
-      res.status(500).json({ error: "Fatura oluşturulamadi" });
+      res.status(500).json({ error: "Fatura oluşturulamadı" });
     }
   });
 

@@ -23,7 +23,6 @@ import {
   autoResponses,
   customerRequests,
   reservationRequests,
-  license,
   requestMessageTemplates,
   dailyMessageUsage,
   type Activity,
@@ -70,8 +69,6 @@ import {
   type InsertCustomerRequest,
   type ReservationRequest,
   type InsertReservationRequest,
-  type License,
-  type InsertLicense,
   type RequestMessageTemplate,
   type InsertRequestMessageTemplate,
   subscriptionPlans,
@@ -315,21 +312,15 @@ export interface IStorage {
   updateReservationRequest(id: number, data: Partial<InsertReservationRequest>): Promise<ReservationRequest>;
   getReservationRequestStats(tenantId: number, options: { groupBy: 'daily' | 'monthly'; from?: string; to?: string; viewerId?: number }): Promise<{ viewerId: number; viewerName: string; viewerEmail: string; period: string; count: number; }[]>;
 
-  // License
-  getLicense(): Promise<License | undefined>;
-  createLicense(licenseData: InsertLicense): Promise<License>;
-  updateLicense(id: number, licenseData: Partial<InsertLicense>): Promise<License>;
-  deleteLicense(id: number): Promise<void>;
-  verifyLicense(tenantId?: number): Promise<{ 
+  // Tenant Plan Verification (replaces license system)
+  verifyTenantPlan(tenantId: number): Promise<{ 
     valid: boolean; 
     message: string; 
-    license?: License;
-    status?: 'active' | 'warning' | 'grace' | 'suspended' | 'expired';
-    daysRemaining?: number;
-    graceDaysRemaining?: number;
+    status?: 'active' | 'warning' | 'suspended' | 'expired';
     canWrite?: boolean;
+    plan?: SubscriptionPlan;
   }>;
-  getLicenseUsage(tenantId?: number): Promise<{ activitiesUsed: number; reservationsThisMonth: number }>;
+  getTenantUsage(tenantId: number): Promise<{ activitiesUsed: number; reservationsThisMonth: number }>;
 
   // Request Message Templates
   getRequestMessageTemplates(): Promise<RequestMessageTemplate[]>;
@@ -393,10 +384,10 @@ export interface IStorage {
   // Daily Reservation Limit Checking
   getTenantDailyReservationUsage(tenantId: number): Promise<{ limit: number; used: number; remaining: number }>;
 
-  // Super Admin - License/Agency Management
-  getLicenses(): Promise<License[]>;
-  suspendLicense(id: number): Promise<License>;
-  activateLicense(id: number): Promise<License>;
+  // Super Admin - Tenant Management (replaces license management)
+  getTenants(): Promise<Tenant[]>;
+  suspendTenant(id: number): Promise<Tenant>;
+  activateTenant(id: number): Promise<Tenant>;
 
   // Super Admin - Analytics
   getPlatformAnalytics(): Promise<any>;
@@ -429,8 +420,8 @@ export interface IStorage {
   getLoginLogs(limit?: number): Promise<LoginLog[]>;
   createLoginLog(log: InsertLoginLog): Promise<LoginLog>;
 
-  // Agency Notes
-  getAgencyNotes(licenseId: number): Promise<AgencyNote[]>;
+  // Agency Notes (now tenant-based)
+  getAgencyNotes(tenantId: number): Promise<AgencyNote[]>;
   createAgencyNote(note: InsertAgencyNote): Promise<AgencyNote>;
   deleteAgencyNote(id: number): Promise<void>;
 
@@ -447,18 +438,18 @@ export interface IStorage {
   // System Stats
   getDatabaseStats(): Promise<any>;
 
-  // Bulk Operations
-  bulkChangePlan(licenseIds: number[], newPlanId: number): Promise<any>;
-  bulkExtendLicense(licenseIds: number[], days: number): Promise<any>;
+  // Bulk Operations (now tenant-based)
+  bulkChangePlan(tenantIds: number[], newPlanCode: string): Promise<any>;
+  bulkExtendSubscription(tenantIds: number[], days: number): Promise<any>;
 
-  // Agency Details
-  getAgencyDetails(licenseId: number): Promise<any>;
+  // Agency/Tenant Details
+  getTenantDetails(tenantId: number): Promise<any>;
 
   // Revenue Reports
   getRevenueSummary(startDate?: string, endDate?: string): Promise<any>;
   getMonthlyRevenue(year: number): Promise<any>;
   getOverdueInvoices(): Promise<Invoice[]>;
-  generateInvoice(licenseId: number, periodStart: string, periodEnd: string): Promise<Invoice>;
+  generateInvoice(tenantId: number, periodStart: string, periodEnd: string): Promise<Invoice>;
 
   // App Users (Application Users - Login with username/password)
   getAppUsers(): Promise<AppUser[]>;
@@ -2015,208 +2006,88 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  // License
-  async getLicense(): Promise<License | undefined> {
-    const [currentLicense] = await db.select().from(license).limit(1);
-    return currentLicense;
-  }
-
-  async createLicense(licenseData: InsertLicense): Promise<License> {
-    // First delete any existing license (only one allowed)
-    await db.delete(license);
-    const [newLicense] = await db.insert(license).values(licenseData).returning();
-    return newLicense;
-  }
-
-  async updateLicense(id: number, licenseData: Partial<InsertLicense>): Promise<License> {
-    const [updated] = await db.update(license)
-      .set({ ...licenseData, updatedAt: new Date() })
-      .where(eq(license.id, id))
-      .returning();
-    return updated;
-  }
-
-  async deleteLicense(id: number): Promise<void> {
-    await db.delete(license).where(eq(license.id, id));
-  }
-
-  async verifyLicense(tenantId?: number): Promise<{ 
+  // Tenant Plan Verification (replaces license system)
+  async verifyTenantPlan(tenantId: number): Promise<{ 
     valid: boolean; 
     message: string; 
-    license?: License;
-    status?: 'active' | 'warning' | 'grace' | 'suspended' | 'expired';
-    daysRemaining?: number;
-    graceDaysRemaining?: number;
+    status?: 'active' | 'warning' | 'suspended' | 'expired';
     canWrite?: boolean;
+    plan?: SubscriptionPlan;
   }> {
-    const currentLicense = await this.getLicense();
-    const now = new Date();
-    const GRACE_PERIOD_DAYS = 7;
-    const WARNING_PERIOD_DAYS = 14;
+    // Get tenant
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
     
-    if (!currentLicense) {
-      // Trial mode: Allow writes when no license exists (for demo/development)
-      return { valid: true, message: "Deneme modu - lisans tanımlanmamış.", status: 'active', canWrite: true };
+    if (!tenant) {
+      return { valid: false, message: "Tenant bulunamadı.", status: 'expired', canWrite: false };
     }
 
-    if (!currentLicense.isActive) {
+    if (!tenant.isActive) {
       return { 
         valid: false, 
-        message: "Lisansınız devre dışı bırakılmış.", 
-        license: currentLicense,
+        message: "Hesabınız devre dışı bırakılmış.", 
         status: 'suspended',
         canWrite: false
       };
     }
 
-    // Check expiry date with grace period logic
-    if (currentLicense.expiryDate) {
-      const expiryDate = new Date(currentLicense.expiryDate);
-      const graceEndDate = new Date(expiryDate);
-      graceEndDate.setDate(graceEndDate.getDate() + GRACE_PERIOD_DAYS);
-      
-      const timeDiff = expiryDate.getTime() - now.getTime();
-      const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-      
-      // Fully expired (past grace period)
-      if (now > graceEndDate) {
-        return { 
-          valid: false, 
-          message: "Lisansınız ve ek süre dolmuş. Lütfen yenileyin.", 
-          license: currentLicense,
-          status: 'expired',
-          daysRemaining: daysRemaining,
-          canWrite: false
-        };
-      }
-      
-      // In grace period (expired but within 7 days)
-      if (now > expiryDate) {
-        const graceDaysRemaining = Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        return { 
-          valid: false, 
-          message: `Lisansınız dolmuş. ${graceDaysRemaining} gün içinde yenileyin, aksi halde sisteme erişim kapanacak.`, 
-          license: currentLicense,
-          status: 'grace',
-          daysRemaining: daysRemaining,
-          graceDaysRemaining: graceDaysRemaining,
-          canWrite: false // Read-only mode during grace period
-        };
-      }
-      
-      // Warning period (within 14 days of expiry)
-      if (daysRemaining <= WARNING_PERIOD_DAYS) {
-        // Continue to check usage limits but with warning status - filter by tenantId
-        const usage = await this.getLicenseUsage(tenantId);
-        
-        if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
-          return { 
-            valid: false, 
-            message: `Aktivite limitini aştınız (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lütfen planınızı yükseltin.`,
-            license: currentLicense,
-            status: 'warning',
-            daysRemaining: daysRemaining,
-            canWrite: false
-          };
-        }
-
-        if (currentLicense.maxReservationsPerMonth && usage.reservationsThisMonth > currentLicense.maxReservationsPerMonth) {
-          return { 
-            valid: false, 
-            message: `Aylık rezervasyon limitini aştınız (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lütfen planınızı yükseltin.`,
-            license: currentLicense,
-            status: 'warning',
-            daysRemaining: daysRemaining,
-            canWrite: false
-          };
-        }
-
-        // Update last verified timestamp
-        await db.update(license)
-          .set({ lastVerifiedAt: new Date() })
-          .where(eq(license.id, currentLicense.id));
-
-        return { 
-          valid: true, 
-          message: `Lisansınızın bitmesine ${daysRemaining} gün kaldı. Lütfen yenilemeyi unutmayın.`, 
-          license: currentLicense,
-          status: 'warning',
-          daysRemaining: daysRemaining,
-          canWrite: true
-        };
-      }
-    }
-
-    // Check usage limits for active license - filter by tenantId
-    const usage = await this.getLicenseUsage(tenantId);
+    // Get plan from subscription_plans based on tenant's planCode
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.code, tenant.planCode || 'trial'));
     
-    if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
+    if (!plan) {
+      // Default to trial mode if no plan found
+      return { valid: true, message: "Deneme modu.", status: 'active', canWrite: true };
+    }
+
+    // Check usage limits
+    const usage = await this.getTenantUsage(tenantId);
+    
+    if (plan.maxActivities && usage.activitiesUsed > plan.maxActivities) {
       return { 
         valid: false, 
-        message: `Aktivite limitini aştınız (${usage.activitiesUsed}/${currentLicense.maxActivities}). Lütfen planınızı yükseltin.`,
-        license: currentLicense,
+        message: `Aktivite limitini aştınız (${usage.activitiesUsed}/${plan.maxActivities}). Lütfen planınızı yükseltin.`,
+        plan: plan,
         status: 'active',
         canWrite: false
       };
     }
 
-    if (currentLicense.maxReservationsPerMonth && usage.reservationsThisMonth > currentLicense.maxReservationsPerMonth) {
+    if (plan.maxReservationsPerMonth && usage.reservationsThisMonth > plan.maxReservationsPerMonth) {
       return { 
         valid: false, 
-        message: `Aylık rezervasyon limitini aştınız (${usage.reservationsThisMonth}/${currentLicense.maxReservationsPerMonth}). Lütfen planınızı yükseltin.`,
-        license: currentLicense,
+        message: `Aylık rezervasyon limitini aştınız (${usage.reservationsThisMonth}/${plan.maxReservationsPerMonth}). Lütfen planınızı yükseltin.`,
+        plan: plan,
         status: 'active',
         canWrite: false
       };
     }
-
-    // Update last verified timestamp
-    await db.update(license)
-      .set({ lastVerifiedAt: new Date() })
-      .where(eq(license.id, currentLicense.id));
 
     return { 
       valid: true, 
-      message: "Lisans geçerli.", 
-      license: currentLicense,
+      message: "Plan geçerli.", 
+      plan: plan,
       status: 'active',
       canWrite: true
     };
   }
 
-  async getLicenseUsage(tenantId?: number): Promise<{ activitiesUsed: number; reservationsThisMonth: number }> {
-    // Count active activities - filter by tenantId if provided
-    let activeActivities;
-    if (tenantId) {
-      activeActivities = await db.select().from(activities).where(
-        and(eq(activities.active, true), eq(activities.tenantId, tenantId))
-      );
-    } else {
-      activeActivities = await db.select().from(activities).where(eq(activities.active, true));
-    }
+  async getTenantUsage(tenantId: number): Promise<{ activitiesUsed: number; reservationsThisMonth: number }> {
+    // Count active activities for tenant
+    const activeActivities = await db.select().from(activities).where(
+      and(eq(activities.active, true), eq(activities.tenantId, tenantId))
+    );
     
-    // Count reservations this month - filter by tenantId if provided
+    // Count reservations this month for tenant
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
     
-    let monthlyReservations;
-    if (tenantId) {
-      monthlyReservations = await db.select()
-        .from(reservations)
-        .where(and(
-          gte(reservations.date, firstDayOfMonth),
-          lte(reservations.date, lastDayOfMonth),
-          eq(reservations.tenantId, tenantId)
-        ));
-    } else {
-      monthlyReservations = await db.select()
-        .from(reservations)
-        .where(and(
-          gte(reservations.date, firstDayOfMonth),
-          lte(reservations.date, lastDayOfMonth)
-        ));
-    }
+    const monthlyReservations = await db.select()
+      .from(reservations)
+      .where(and(
+        gte(reservations.date, firstDayOfMonth),
+        lte(reservations.date, lastDayOfMonth),
+        eq(reservations.tenantId, tenantId)
+      ));
 
     return {
       activitiesUsed: activeActivities.length,
@@ -2685,24 +2556,24 @@ Sky Fethiye`,
     };
   }
 
-  // === SUPER ADMIN - LICENSE/AGENCY MANAGEMENT ===
+  // === SUPER ADMIN - TENANT MANAGEMENT ===
   
-  async getLicenses(): Promise<License[]> {
-    return await db.select().from(license).orderBy(desc(license.createdAt));
+  async getTenants(): Promise<Tenant[]> {
+    return await db.select().from(tenants).orderBy(desc(tenants.createdAt));
   }
 
-  async suspendLicense(id: number): Promise<License> {
-    const [updated] = await db.update(license)
+  async suspendTenant(id: number): Promise<Tenant> {
+    const [updated] = await db.update(tenants)
       .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(license.id, id))
+      .where(eq(tenants.id, id))
       .returning();
     return updated;
   }
 
-  async activateLicense(id: number): Promise<License> {
-    const [updated] = await db.update(license)
+  async activateTenant(id: number): Promise<Tenant> {
+    const [updated] = await db.update(tenants)
       .set({ isActive: true, updatedAt: new Date() })
-      .where(eq(license.id, id))
+      .where(eq(tenants.id, id))
       .returning();
     return updated;
   }
@@ -2714,8 +2585,8 @@ Sky Fethiye`,
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const allLicenses = await db.select().from(license);
-    const activeLicenses = allLicenses.filter(l => l.isActive);
+    const allTenants = await db.select().from(tenants);
+    const activeTenants = allTenants.filter(t => t.isActive);
     
     const allSubscriptions = await db.select().from(subscriptions);
     const activeSubscriptions = allSubscriptions.filter(s => s.status === 'active');
@@ -2736,16 +2607,16 @@ Sky Fethiye`,
     });
     
     return {
-      totalAgencies: allLicenses.length,
-      activeAgencies: activeLicenses.length,
+      totalAgencies: allTenants.length,
+      activeAgencies: activeTenants.length,
       trialAgencies: allSubscriptions.filter(s => s.status === 'trial').length,
       paidAgencies: activeSubscriptions.length,
       mrrTl,
       mrrUsd,
       churnRate: 0,
       totalReservationsThisMonth: thisMonthReservations.length,
-      avgReservationsPerAgency: activeLicenses.length > 0 
-        ? Math.round(thisMonthReservations.length / activeLicenses.length) 
+      avgReservationsPerAgency: activeTenants.length > 0 
+        ? Math.round(thisMonthReservations.length / activeTenants.length) 
         : 0,
     };
   }
@@ -2920,10 +2791,10 @@ Sky Fethiye`,
     return created;
   }
 
-  // Agency Notes
-  async getAgencyNotes(licenseId: number): Promise<AgencyNote[]> {
+  // Agency Notes (now tenant-based)
+  async getAgencyNotes(tenantId: number): Promise<AgencyNote[]> {
     return db.select().from(agencyNotes)
-      .where(eq(agencyNotes.licenseId, licenseId))
+      .where(eq(agencyNotes.tenantId, tenantId))
       .orderBy(desc(agencyNotes.createdAt));
   }
 
@@ -2985,7 +2856,7 @@ Sky Fethiye`,
     const [activityCount] = await db.select({ count: sql<number>`count(*)` }).from(activities);
     const [reservationCount] = await db.select({ count: sql<number>`count(*)` }).from(reservations);
     const [messageCount] = await db.select({ count: sql<number>`count(*)` }).from(messages);
-    const [licenseCount] = await db.select({ count: sql<number>`count(*)` }).from(license);
+    const [tenantCount] = await db.select({ count: sql<number>`count(*)` }).from(tenants);
     const [ticketCount] = await db.select({ count: sql<number>`count(*)` }).from(platformSupportTickets);
 
     return {
@@ -2993,33 +2864,29 @@ Sky Fethiye`,
         activities: Number(activityCount?.count || 0),
         reservations: Number(reservationCount?.count || 0),
         messages: Number(messageCount?.count || 0),
-        licenses: Number(licenseCount?.count || 0),
+        tenants: Number(tenantCount?.count || 0),
         supportTickets: Number(ticketCount?.count || 0),
       },
       status: 'connected',
     };
   }
 
-  // Bulk Operations
-  async bulkChangePlan(licenseIds: number[], newPlanId: number): Promise<any> {
-    const plan = await this.getSubscriptionPlan(newPlanId);
+  // Bulk Operations (now tenant-based)
+  async bulkChangePlan(tenantIds: number[], newPlanCode: string): Promise<any> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.code, newPlanCode));
     if (!plan) throw new Error('Plan bulunamadı');
 
     const results = [];
-    for (const id of licenseIds) {
+    for (const id of tenantIds) {
       try {
-        const updated = await db.update(license)
+        const updated = await db.update(tenants)
           .set({ 
-            planType: plan.code,
-            planName: plan.name,
-            maxActivities: plan.maxActivities,
-            maxReservationsPerMonth: plan.maxReservationsPerMonth,
-            features: plan.features,
+            planCode: plan.code,
             updatedAt: new Date()
           })
-          .where(eq(license.id, id))
+          .where(eq(tenants.id, id))
           .returning();
-        results.push({ id, success: true, license: updated[0] });
+        results.push({ id, success: true, tenant: updated[0] });
       } catch (err) {
         results.push({ id, success: false, error: (err as Error).message });
       }
@@ -3027,24 +2894,27 @@ Sky Fethiye`,
     return { updated: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length, results };
   }
 
-  async bulkExtendLicense(licenseIds: number[], days: number): Promise<any> {
+  async bulkExtendSubscription(tenantIds: number[], days: number): Promise<any> {
     const results = [];
-    for (const id of licenseIds) {
+    for (const id of tenantIds) {
       try {
-        const [lic] = await db.select().from(license).where(eq(license.id, id));
-        if (!lic) {
-          results.push({ id, success: false, error: 'Lisans bulunamadı' });
+        // Extend active subscription for this tenant
+        const [activeSub] = await db.select().from(subscriptions)
+          .where(and(eq(subscriptions.tenantId, id), eq(subscriptions.status, 'active')));
+        
+        if (!activeSub) {
+          results.push({ id, success: false, error: 'Aktif abonelik bulunamadı' });
           continue;
         }
         
-        const currentExpiry = lic.expiryDate ? new Date(lic.expiryDate) : new Date();
+        const currentExpiry = activeSub.endDate ? new Date(activeSub.endDate) : new Date();
         const newExpiry = new Date(currentExpiry.getTime() + days * 24 * 60 * 60 * 1000);
         
-        const [updated] = await db.update(license)
-          .set({ expiryDate: newExpiry, updatedAt: new Date() })
-          .where(eq(license.id, id))
+        const [updated] = await db.update(subscriptions)
+          .set({ endDate: newExpiry.toISOString().split('T')[0], updatedAt: new Date() })
+          .where(eq(subscriptions.id, activeSub.id))
           .returning();
-        results.push({ id, success: true, newExpiry, license: updated });
+        results.push({ id, success: true, newExpiry, subscription: updated });
       } catch (err) {
         results.push({ id, success: false, error: (err as Error).message });
       }
@@ -3052,17 +2922,17 @@ Sky Fethiye`,
     return { updated: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length, results };
   }
 
-  // Agency Details
-  async getAgencyDetails(licenseId: number): Promise<any> {
-    const [lic] = await db.select().from(license).where(eq(license.id, licenseId));
-    if (!lic) return null;
+  // Agency/Tenant Details
+  async getTenantDetails(tenantId: number): Promise<any> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
+    if (!tenant) return null;
 
-    const notes = await this.getAgencyNotes(licenseId);
-    const allInvoices = await db.select().from(invoices).where(eq(invoices.licenseId, licenseId)).orderBy(desc(invoices.createdAt));
-    const subs = await db.select().from(subscriptions).where(eq(subscriptions.licenseId, licenseId)).orderBy(desc(subscriptions.createdAt));
+    const notes = await this.getAgencyNotes(tenantId);
+    const allInvoices = await db.select().from(invoices).where(eq(invoices.tenantId, tenantId)).orderBy(desc(invoices.createdAt));
+    const subs = await db.select().from(subscriptions).where(eq(subscriptions.tenantId, tenantId)).orderBy(desc(subscriptions.createdAt));
 
     return {
-      license: lic,
+      tenant,
       notes,
       invoices: allInvoices,
       subscriptionHistory: subs,
@@ -3141,14 +3011,13 @@ Sky Fethiye`,
     ).orderBy(invoices.dueDate);
   }
 
-  async generateInvoice(licenseId: number, periodStart: string, periodEnd: string): Promise<Invoice> {
-    const [lic] = await db.select().from(license).where(eq(license.id, licenseId));
-    if (!lic) throw new Error('Lisans bulunamadı');
+  async generateInvoice(tenantId: number, periodStart: string, periodEnd: string): Promise<Invoice> {
+    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, tenantId));
+    if (!tenant) throw new Error('Tenant bulunamadı');
 
-    const plan = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.code, lic.planType || 'trial'));
-    const planData = plan[0];
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.code, tenant.planCode || 'trial'));
 
-    const subtotalTl = planData?.priceTl || 0;
+    const subtotalTl = plan?.priceTl || 0;
     const vatRate = 20;
     const vatAmount = Math.round(subtotalTl * vatRate / 100);
     const totalTl = subtotalTl + vatAmount;
@@ -3161,10 +3030,10 @@ Sky Fethiye`,
     dueDate.setDate(dueDate.getDate() + 15); // 15 gun vadeli
 
     const [created] = await db.insert(invoices).values({
-      licenseId,
+      tenantId,
       invoiceNumber,
-      agencyName: lic.agencyName,
-      agencyEmail: lic.agencyEmail,
+      agencyName: tenant.name,
+      agencyEmail: tenant.email || '',
       periodStart,
       periodEnd,
       subtotalTl,

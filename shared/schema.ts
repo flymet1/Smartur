@@ -17,10 +17,7 @@ export const tenants = pgTable("tenants", {
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color").default("262 83% 58%"), // HSL format
   accentColor: text("accent_color").default("142 76% 36%"), // HSL format
-  // WhatsApp ayarlari (tenant bazinda)
-  twilioAccountSid: text("twilio_account_sid"),
-  twilioAuthToken: text("twilio_auth_token"),
-  twilioWhatsappNumber: text("twilio_whatsapp_number"),
+  // WhatsApp ayarlari tenant_integrations tablosunda tutulur
   // Diger ayarlar
   timezone: text("timezone").default("Europe/Istanbul"),
   language: text("language").default("tr"),
@@ -546,7 +543,7 @@ export const planFeatures = pgTable("plan_features", {
 // Abonelikler (Acentaların aktif abonelikleri)
 export const subscriptions = pgTable("subscriptions", {
   id: serial("id").primaryKey(),
-  licenseId: integer("license_id").references(() => license.id), // İlişkili lisans
+  tenantId: integer("tenant_id").references(() => tenants.id), // Tenant bağlantısı
   planId: integer("plan_id").references(() => subscriptionPlans.id).notNull(),
   status: text("status").default("trial"), // trial, active, past_due, cancelled, expired
   billingCycle: text("billing_cycle").default("monthly"), // monthly, yearly
@@ -583,29 +580,6 @@ export const subscriptionPayments = pgTable("subscription_payments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// === LICENSE/SUBSCRIPTION ===
-
-// Lisans ve Üyelik Bilgileri
-export const license = pgTable("license", {
-  id: serial("id").primaryKey(),
-  licenseKey: text("license_key").notNull(), // Benzersiz lisans anahtarı
-  agencyName: text("agency_name").notNull(), // Acenta adı
-  agencyEmail: text("agency_email"), // Acenta e-postası
-  agencyPhone: text("agency_phone"), // Acenta telefonu
-  planType: text("plan_type").default("trial"), // trial, basic, professional, enterprise
-  planName: text("plan_name").default("Deneme"), // Plan görüntüleme adı
-  maxActivities: integer("max_activities").default(5), // Maksimum aktivite sayısı
-  maxReservationsPerMonth: integer("max_reservations_per_month").default(100), // Aylık maksimum rezervasyon
-  maxUsers: integer("max_users").default(1), // Maksimum kullanıcı sayısı
-  features: text("features").default("[]"), // JSON array of enabled features
-  startDate: timestamp("start_date").defaultNow(), // Lisans başlangıç tarihi
-  expiryDate: timestamp("expiry_date"), // Lisans bitiş tarihi (null = sınırsız)
-  isActive: boolean("is_active").default(true),
-  lastVerifiedAt: timestamp("last_verified_at"), // Son doğrulama zamanı
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 // === AUTO RESPONSES ===
 
 // Otomatik Yanıtlar (AI çağrısı yapmadan anahtar kelime eşleştirme ile yanıt)
@@ -626,11 +600,6 @@ export const autoResponses = pgTable("auto_responses", {
 export const insertAutoResponseSchema = createInsertSchema(autoResponses).omit({ id: true, createdAt: true });
 export type AutoResponse = typeof autoResponses.$inferSelect;
 export type InsertAutoResponse = z.infer<typeof insertAutoResponseSchema>;
-
-// === LICENSE SCHEMAS & TYPES ===
-export const insertLicenseSchema = createInsertSchema(license).omit({ id: true, createdAt: true, updatedAt: true, lastVerifiedAt: true });
-export type License = typeof license.$inferSelect;
-export type InsertLicense = z.infer<typeof insertLicenseSchema>;
 
 // === REQUEST MESSAGE TEMPLATES ===
 
@@ -688,7 +657,7 @@ export const announcements = pgTable("announcements", {
 // Platform Faturaları
 export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
-  licenseId: integer("license_id").references(() => license.id),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   subscriptionId: integer("subscription_id").references(() => subscriptions.id),
   invoiceNumber: text("invoice_number").notNull().unique(),
   agencyName: text("agency_name").notNull(),
@@ -840,7 +809,7 @@ export const loginLogs = pgTable("login_logs", {
 // Ajans Notlari
 export const agencyNotes = pgTable("agency_notes", {
   id: serial("id").primaryKey(),
-  licenseId: integer("license_id").references(() => license.id).notNull(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
   adminId: integer("admin_id").references(() => platformAdmins.id),
   content: text("content").notNull(),
   noteType: text("note_type").default("general"), // general, billing, support, warning
@@ -851,7 +820,7 @@ export const agencyNotes = pgTable("agency_notes", {
 // Destek Talepleri (Platform seviyesi - tum ajanslarin talepleri)
 export const platformSupportTickets = pgTable("platform_support_tickets", {
   id: serial("id").primaryKey(),
-  licenseId: integer("license_id").references(() => license.id),
+  tenantId: integer("tenant_id").references(() => tenants.id),
   agencyName: text("agency_name"),
   agencyEmail: text("agency_email"),
   subject: text("subject").notNull(),
