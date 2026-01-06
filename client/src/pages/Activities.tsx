@@ -20,6 +20,7 @@ import type { Activity } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FaqEditor, FaqItem, parseFaq, stringifyFaq } from "@/components/FaqEditor";
+import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimitDialog";
 
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
@@ -119,6 +120,9 @@ function ActivityCard({ activity, onDelete }: { activity: Activity; onDelete: ()
 
 function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [licenseErrorOpen, setLicenseErrorOpen] = useState(false);
+  const [licenseErrorMessage, setLicenseErrorMessage] = useState("");
+  const [licenseErrorType, setLicenseErrorType] = useState<'activity' | 'reservation' | 'user' | 'general'>('general');
   
   // Controlled form fields for name, price, duration
   const [name, setName] = useState(activity?.name || "");
@@ -347,16 +351,24 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         toast({ title: "Oluşturuldu", description: "Yeni aktivite başarıyla eklendi." });
       }
       setOpen(false);
-    } catch (err) {
-      toast({ 
-        title: "Hata", 
-        description: "İşlem sırasında bir hata oluştu.", 
-        variant: "destructive" 
-      });
+    } catch (err: any) {
+      const licenseError = parseLicenseError(err);
+      if (licenseError.isLicenseError) {
+        setLicenseErrorMessage(licenseError.message);
+        setLicenseErrorType(licenseError.limitType);
+        setLicenseErrorOpen(true);
+      } else {
+        toast({ 
+          title: "Hata", 
+          description: licenseError.message || "İşlem sırasında bir hata oluştu.", 
+          variant: "destructive" 
+        });
+      }
     }
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
@@ -767,5 +779,13 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         </form>
       </DialogContent>
     </Dialog>
+    
+    <LicenseLimitDialog
+      open={licenseErrorOpen}
+      onOpenChange={setLicenseErrorOpen}
+      errorMessage={licenseErrorMessage}
+      limitType={licenseErrorType}
+    />
+    </>
   );
 }
