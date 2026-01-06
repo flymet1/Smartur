@@ -46,6 +46,8 @@ export default function Settings() {
   const [botPrompt, setBotPrompt] = useState(
     "Sen bir TURİZM RESERVASYONLARI DANIŞMANI'sın. Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. Kibar, samimi ve profesyonel ol. Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol."
   );
+  const [botRules, setBotRules] = useState("");
+  const [botRulesLoaded, setBotRulesLoaded] = useState(false);
   const [customerSupportEmail, setCustomerSupportEmail] = useState("");
   const [whatsappConnected, setWhatsappConnected] = useState(false);
   const [isRefreshingQR, setIsRefreshingQR] = useState(false);
@@ -100,6 +102,15 @@ export default function Settings() {
     queryKey: ['/api/settings', 'botPrompt'],
     queryFn: async () => {
       const res = await fetch('/api/settings/botPrompt');
+      return res.json();
+    },
+  });
+
+  // Load bot rules
+  const { data: botRulesSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'bot_rules'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/bot_rules');
       return res.json();
     },
   });
@@ -176,6 +187,14 @@ export default function Settings() {
       setBotPromptLoaded(true);
     }
   }, [botPromptSetting?.value, botPromptLoaded]);
+
+  // Apply loaded bot rules when data arrives
+  useEffect(() => {
+    if (botRulesSetting?.value && !botRulesLoaded) {
+      setBotRules(botRulesSetting.value);
+      setBotRulesLoaded(true);
+    }
+  }, [botRulesSetting?.value, botRulesLoaded]);
 
   // Apply loaded bulk message templates when data arrives (with backwards compatibility)
   useEffect(() => {
@@ -353,6 +372,11 @@ export default function Settings() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: botPrompt })
+        }),
+        fetch("/api/settings/bot_rules", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: botRules })
         }),
         fetch("/api/settings/reminderHours", {
           method: "POST",
@@ -1026,6 +1050,32 @@ export default function Settings() {
                         <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                           <p className="text-xs text-blue-900 dark:text-blue-200">
                             <strong>Ipucu:</strong> Prompt'unuzda müşterilerle samimi olmalarini, kibar olmalarini, hızlı cevap vermelerini ve rezervasyon yapmalarina yardimci olmalarini belirtin.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                        <div className="space-y-2">
+                          <Label htmlFor="botRules" className="text-base font-medium">Bot Kuralları (13 Madde)</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Bot bu kurallara uyarak müşterilerle iletişim kuracak. Her satır ayrı bir kural olarak değerlendirilir.
+                          </p>
+                          <Textarea 
+                            id="botRules"
+                            value={botRules}
+                            onChange={(e) => setBotRules(e.target.value)}
+                            placeholder="1. Müşterilere her zaman nazik ve profesyonel ol&#10;2. Fiyat bilgisi verirken net rakamlar kullan&#10;3. Rezervasyon detaylarını mutlaka teyit et&#10;..."
+                            className="min-h-[250px] font-mono text-sm"
+                            data-testid="textarea-bot-rules"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Her kuralı yeni satırda yazın. Bot bu kurallara sıkı sıkıya uyacak şekilde yapılandırılmıştır.
+                          </p>
+                        </div>
+
+                        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                          <p className="text-xs text-amber-900 dark:text-amber-200">
+                            <strong>Önemli:</strong> Bu kurallar bot'un davranışını doğrudan etkiler. Yaptığınız değişiklikler kaydedildikten sonra bot yeni kurallara göre çalışmaya başlar.
                           </p>
                         </div>
                       </div>
