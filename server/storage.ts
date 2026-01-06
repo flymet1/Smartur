@@ -22,6 +22,7 @@ import {
   holidays,
   autoResponses,
   customerRequests,
+  reservationRequests,
   license,
   requestMessageTemplates,
   dailyMessageUsage,
@@ -67,6 +68,8 @@ import {
   type InsertAutoResponse,
   type CustomerRequest,
   type InsertCustomerRequest,
+  type ReservationRequest,
+  type InsertReservationRequest,
   type License,
   type InsertLicense,
   type RequestMessageTemplate,
@@ -304,6 +307,12 @@ export interface IStorage {
   getCustomerRequest(id: number): Promise<CustomerRequest | undefined>;
   getCustomerRequestsByPhone(phone: string): Promise<CustomerRequest[]>;
   updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest>;
+
+  // Partner Agency Reservation Requests
+  createReservationRequest(request: InsertReservationRequest): Promise<ReservationRequest>;
+  getReservationRequests(tenantId?: number): Promise<ReservationRequest[]>;
+  getReservationRequest(id: number): Promise<ReservationRequest | undefined>;
+  updateReservationRequest(id: number, data: Partial<InsertReservationRequest>): Promise<ReservationRequest>;
 
   // License
   getLicense(): Promise<License | undefined>;
@@ -1930,6 +1939,31 @@ export class DatabaseStorage implements IStorage {
 
   async updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest> {
     const [updated] = await db.update(customerRequests).set(data).where(eq(customerRequests.id, id)).returning();
+    return updated;
+  }
+
+  // Partner Agency Reservation Requests
+  async createReservationRequest(request: InsertReservationRequest): Promise<ReservationRequest> {
+    const [newRequest] = await db.insert(reservationRequests).values(request).returning();
+    return newRequest;
+  }
+
+  async getReservationRequests(tenantId?: number): Promise<ReservationRequest[]> {
+    if (tenantId) {
+      return await db.select().from(reservationRequests)
+        .where(eq(reservationRequests.tenantId, tenantId))
+        .orderBy(desc(reservationRequests.createdAt));
+    }
+    return await db.select().from(reservationRequests).orderBy(desc(reservationRequests.createdAt));
+  }
+
+  async getReservationRequest(id: number): Promise<ReservationRequest | undefined> {
+    const [request] = await db.select().from(reservationRequests).where(eq(reservationRequests.id, id));
+    return request;
+  }
+
+  async updateReservationRequest(id: number, data: Partial<InsertReservationRequest>): Promise<ReservationRequest> {
+    const [updated] = await db.update(reservationRequests).set(data).where(eq(reservationRequests.id, id)).returning();
     return updated;
   }
 

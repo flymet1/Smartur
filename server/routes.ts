@@ -99,10 +99,12 @@ const PERMISSIONS = {
   RESERVATIONS_CREATE: "reservations.create",
   RESERVATIONS_EDIT: "reservations.edit",
   RESERVATIONS_DELETE: "reservations.delete",
+  RESERVATIONS_REQUEST: "reservations.request",
   ACTIVITIES_VIEW: "activities.view",
   ACTIVITIES_MANAGE: "activities.manage",
   CALENDAR_VIEW: "calendar.view",
   CALENDAR_MANAGE: "calendar.manage",
+  CAPACITY_VIEW: "capacity.view",
   FINANCE_VIEW: "finance.view",
   FINANCE_MANAGE: "finance.manage",
   SETTINGS_VIEW: "settings.view",
@@ -2147,6 +2149,168 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Update customer request error:", error);
       res.status(500).json({ error: "Talep güncellenemedi" });
+    }
+  });
+
+  // === Partner Agency Reservation Requests ===
+  
+  // Create a reservation request (requires RESERVATIONS_REQUEST permission - viewer role)
+  app.post("/api/reservation-requests", requirePermission(PERMISSIONS.RESERVATIONS_REQUEST), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { activityId, date, time, customerName, customerPhone, guests, notes } = req.body;
+      
+      if (!activityId || !date || !time || !customerName || !customerPhone) {
+        return res.status(400).json({ error: "Eksik parametreler" });
+      }
+      
+      // Create the reservation request
+      const request = await storage.createReservationRequest({
+        tenantId,
+        activityId,
+        date,
+        time,
+        customerName,
+        customerPhone,
+        guests: guests || 1,
+        notes,
+        requestedBy: userId,
+        status: "pending"
+      });
+      
+      // Create a system notification for operators
+      try {
+        const activities = await storage.getActivities(tenantId);
+        const activity = activities.find(a => a.id === activityId);
+        const activityName = activity?.name || "Bilinmiyor";
+        
+        await storage.createSupportRequest({
+          tenantId,
+          type: "reservation_request",
+          title: `Yeni Rezervasyon Talebi: ${customerName}`,
+          description: `Partner acenta yeni rezervasyon talebi olusturdu.\n\nAktivite: ${activityName}\nTarih: ${date}\nSaat: ${time}\nMusteri: ${customerName}\nTelefon: ${customerPhone}\nKisi Sayisi: ${guests || 1}\n${notes ? `Not: ${notes}` : ""}`,
+          priority: "medium",
+          metadata: JSON.stringify({ reservationRequestId: request.id })
+        });
+      } catch (notifyErr) {
+        console.error("Failed to create notification for reservation request:", notifyErr);
+      }
+      
+      res.status(201).json(request);
+    } catch (error) {
+      console.error("Create reservation request error:", error);
+      res.status(500).json({ error: "Talep olusturulamadi" });
+    }
+  });
+  
+  // Get reservation requests (requires RESERVATIONS_VIEW or RESERVATIONS_CREATE permission - operator/manager role)
+  app.get("/api/reservation-requests", requirePermission(PERMISSIONS.RESERVATIONS_VIEW, PERMISSIONS.RESERVATIONS_CREATE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      const requests = await storage.getReservationRequests(tenantId);
+      res.json(requests);
+    } catch (error) {
+      console.error("Get reservation requests error:", error);
+      res.status(500).json({ error: "Talepler alinamadi" });
+    }
+  });
+  
+  // Process reservation request (approve/reject) - requires RESERVATIONS_CREATE permission
+  app.patch("/api/reservation-requests/:id", requirePermission(PERMISSIONS.RESERVATIONS_CREATE), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      const { status, processNotes } = req.body;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      if (!["approved", "rejected", "converted"].includes(status)) {
+        return res.status(400).json({ error: "Gecersiz durum" });
+      }
+      
+      // Verify the request belongs to the current tenant
+      const existingRequest = await storage.getReservationRequest(id);
+      if (!existingRequest || existingRequest.tenantId !== tenantId) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+      
+      const updateData: any = {
+        status,
+        processedBy: userId,
+        processedAt: new Date()
+      };
+      
+      if (processNotes) {
+        updateData.processNotes = processNotes;
+      }
+      
+      const updated = await storage.updateReservationRequest(id, updateData);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update reservation request error:", error);
+      res.status(500).json({ error: "Talep guncellenemedi" });
+    }
+  });
+  
+  // Convert reservation request to actual reservation - requires RESERVATIONS_CREATE permission
+  app.post("/api/reservation-requests/:id/convert", requirePermission(PERMISSIONS.RESERVATIONS_CREATE), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.session?.tenantId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      // Get the request and verify tenant ownership
+      const request = await storage.getReservationRequest(id);
+      
+      if (!request || request.tenantId !== tenantId) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+      
+      if (request.status === "converted") {
+        return res.status(400).json({ error: "Bu talep zaten rezervasyona donusturulmus" });
+      }
+      
+      // Create the reservation
+      const reservation = await storage.createReservation({
+        tenantId,
+        activityId: request.activityId,
+        date: request.date,
+        time: request.time,
+        customerName: request.customerName,
+        customerPhone: request.customerPhone,
+        guests: request.guests || 1,
+        notes: request.notes || "",
+        status: "pending",
+        source: "partner"
+      });
+      
+      // Update the request status
+      await storage.updateReservationRequest(id, {
+        status: "converted",
+        reservationId: reservation.id,
+        processedBy: req.session?.userId,
+        processedAt: new Date()
+      });
+      
+      res.json({ success: true, reservation });
+    } catch (error) {
+      console.error("Convert reservation request error:", error);
+      res.status(500).json({ error: "Talep donusturulemedi" });
     }
   });
 

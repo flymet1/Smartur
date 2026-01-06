@@ -3109,10 +3109,11 @@ function UserManagementSection() {
     queryKey: ['/api/roles'],
   });
 
-  // Filter to only show tenant-specific roles (Manager and Operator)
+  // Filter to only show tenant-specific roles (Manager, Operator, Viewer)
   // Owner role is only assigned automatically when tenant is created
+  // Viewer role is for partner agencies with limited access
   const tenantRoles = allRoles.filter(r => 
-    r.name === 'tenant_manager' || r.name === 'tenant_operator'
+    r.name === 'tenant_manager' || r.name === 'tenant_operator' || r.name === 'viewer'
   );
 
   const createUserMutation = useMutation({

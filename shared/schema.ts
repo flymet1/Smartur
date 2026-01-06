@@ -976,6 +976,26 @@ export const userLoginLogs = pgTable("user_login_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Partner Acenta Rezervasyon Talepleri (Viewer rolundeki kullanicilardan gelen talepler)
+export const reservationRequests = pgTable("reservation_requests", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
+  activityId: integer("activity_id").references(() => activities.id).notNull(),
+  date: text("date").notNull(),
+  time: text("time").notNull(),
+  customerName: text("customer_name").notNull(),
+  customerPhone: text("customer_phone").notNull(),
+  guests: integer("guests").default(1),
+  notes: text("notes"),
+  status: text("status").default("pending"), // pending, approved, rejected, converted
+  requestedBy: integer("requested_by").references(() => appUsers.id),
+  processedBy: integer("processed_by").references(() => appUsers.id),
+  processedAt: timestamp("processed_at"),
+  processNotes: text("process_notes"),
+  reservationId: integer("reservation_id").references(() => reservations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === APP USER SCHEMAS & TYPES ===
 export const insertAppUserSchema = createInsertSchema(appUsers).omit({ id: true, createdAt: true, updatedAt: true, lastLoginAt: true, loginCount: true });
 export type AppUser = typeof appUsers.$inferSelect;
@@ -1000,6 +1020,10 @@ export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export const insertUserLoginLogSchema = createInsertSchema(userLoginLogs).omit({ id: true, createdAt: true });
 export type UserLoginLog = typeof userLoginLogs.$inferSelect;
 export type InsertUserLoginLog = z.infer<typeof insertUserLoginLogSchema>;
+
+export const insertReservationRequestSchema = createInsertSchema(reservationRequests).omit({ id: true, createdAt: true, processedAt: true });
+export type ReservationRequest = typeof reservationRequests.$inferSelect;
+export type InsertReservationRequest = z.infer<typeof insertReservationRequestSchema>;
 
 // === APPLICATION VERSION MANAGEMENT ===
 
