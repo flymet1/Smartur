@@ -6831,7 +6831,8 @@ Sky Fethiye`;
         'customer_requests', 'licenses', 'request_message_templates',
         'subscription_plans', 'plan_features', 'subscriptions', 'subscription_payments',
         'announcements', 'api_status_logs', 'bot_quality_scores', 'invoices',
-        'app_users', 'roles', 'permissions', 'role_permissions', 'user_roles'
+        'app_users', 'roles', 'permissions', 'role_permissions', 'user_roles',
+        'reservation_requests'
       ];
       
       for (const tableName of tables) {
@@ -6889,7 +6890,8 @@ Sky Fethiye`;
         'customer_requests', 'licenses', 'request_message_templates',
         'subscription_plans', 'plan_features', 'subscriptions', 'subscription_payments',
         'announcements', 'api_status_logs', 'bot_quality_scores', 'invoices',
-        'app_users', 'roles', 'permissions', 'role_permissions', 'user_roles'
+        'app_users', 'roles', 'permissions', 'role_permissions', 'user_roles',
+        'reservation_requests'
       ];
       
       for (const tableName of tables) {
