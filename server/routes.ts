@@ -6798,6 +6798,39 @@ Sky Fethiye`;
         exportData.customers = Array.from(customersMap.values());
       }
       
+      // Otomatik yanıtlar (Auto responses)
+      if (dataTypes.includes('all') || dataTypes.includes('autoResponses')) {
+        exportData.autoResponses = await storage.getAutoResponses(tenantId);
+      }
+      
+      // Destek talepleri (Support requests from WhatsApp)
+      if (dataTypes.includes('all') || dataTypes.includes('supportRequests')) {
+        exportData.supportRequests = await storage.getAllSupportRequests(undefined, tenantId);
+      }
+      
+      // Tatil günleri (Holidays)
+      if (dataTypes.includes('all') || dataTypes.includes('holidays')) {
+        exportData.holidays = await storage.getHolidays(tenantId);
+      }
+      
+      // SSS (FAQ)
+      if (dataTypes.includes('all') || dataTypes.includes('faq')) {
+        exportData.faq = await storage.getFaq(tenantId);
+      }
+      
+      // Bot ayarları ve hazır mesaj şablonları (Settings)
+      if (dataTypes.includes('all') || dataTypes.includes('settings')) {
+        const settingsToExport = [
+          'botPrompt', 'bot_rules', 'bulkMessageTemplates', 'brandSettings',
+          'tenantNotificationEmail', 'botAccess'
+        ];
+        const settingsData: Record<string, string | undefined> = {};
+        for (const key of settingsToExport) {
+          settingsData[key] = await storage.getSetting(key, tenantId);
+        }
+        exportData.settings = settingsData;
+      }
+      
       if (format === 'csv') {
         // Convert to CSV format
         let csvContent = '';
@@ -6858,6 +6891,10 @@ Sky Fethiye`;
       const reservations = await storage.getReservations(tenantId);
       const agencies = await storage.getAgencies(tenantId);
       const messages = await storage.getMessages('all', tenantId);
+      const autoResponses = await storage.getAutoResponses(tenantId);
+      const supportRequests = await storage.getAllSupportRequests(undefined, tenantId);
+      const holidays = await storage.getHolidays(tenantId);
+      const faq = await storage.getFaq(tenantId);
       
       // Extract unique customers
       const customersSet = new Set<string>();
@@ -6871,7 +6908,11 @@ Sky Fethiye`;
           reservationsCount: reservations.length,
           agenciesCount: agencies.length,
           messagesCount: messages.length,
-          customersCount: customersSet.size
+          customersCount: customersSet.size,
+          autoResponsesCount: autoResponses.length,
+          supportRequestsCount: supportRequests.length,
+          holidaysCount: holidays.length,
+          faqCount: faq.length
         },
         lastUpdated: new Date().toISOString()
       });
@@ -6997,6 +7038,63 @@ Sky Fethiye`;
             results.reservations.imported++;
           } catch (err: any) {
             results.reservations.errors.push(`Rezervasyon ${reservation.id}: ${err.message}`);
+          }
+        }
+      }
+      
+      // Import auto responses (hazır cevaplar)
+      if (data.autoResponses && Array.isArray(data.autoResponses)) {
+        results.autoResponses = { imported: 0, skipped: 0, errors: [] };
+        for (const autoResponse of data.autoResponses) {
+          try {
+            const { id, ...autoResponseData } = autoResponse;
+            await storage.createAutoResponse({ ...autoResponseData, tenantId });
+            results.autoResponses.imported++;
+          } catch (err: any) {
+            results.autoResponses.errors.push(`Otomatik yanıt: ${err.message}`);
+          }
+        }
+      }
+      
+      // Import holidays (tatil günleri)
+      if (data.holidays && Array.isArray(data.holidays)) {
+        results.holidays = { imported: 0, skipped: 0, errors: [] };
+        for (const holiday of data.holidays) {
+          try {
+            const { id, ...holidayData } = holiday;
+            await storage.createHoliday({ ...holidayData, tenantId });
+            results.holidays.imported++;
+          } catch (err: any) {
+            results.holidays.errors.push(`Tatil: ${err.message}`);
+          }
+        }
+      }
+      
+      // Import FAQ (SSS)
+      if (data.faq && Array.isArray(data.faq)) {
+        results.faq = { imported: 0, skipped: 0, errors: [] };
+        for (const faqItem of data.faq) {
+          try {
+            const { id, ...faqData } = faqItem;
+            await storage.createFaq({ ...faqData, tenantId });
+            results.faq.imported++;
+          } catch (err: any) {
+            results.faq.errors.push(`SSS: ${err.message}`);
+          }
+        }
+      }
+      
+      // Import settings (bot ayarları, hazır mesaj şablonları)
+      if (data.settings && typeof data.settings === 'object') {
+        results.settings = { imported: 0, skipped: 0, errors: [] };
+        for (const [key, value] of Object.entries(data.settings)) {
+          try {
+            if (value !== null && value !== undefined) {
+              await storage.setSetting(key, String(value), tenantId);
+              results.settings.imported++;
+            }
+          } catch (err: any) {
+            results.settings.errors.push(`Ayar ${key}: ${err.message}`);
           }
         }
       }

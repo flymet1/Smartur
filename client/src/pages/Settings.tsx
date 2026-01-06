@@ -2042,6 +2042,10 @@ function DataExportSection() {
       agenciesCount: number;
       messagesCount: number;
       customersCount: number;
+      autoResponsesCount: number;
+      supportRequestsCount: number;
+      holidaysCount: number;
+      faqCount: number;
     };
     lastUpdated: string;
   }>({
@@ -2144,6 +2148,11 @@ function DataExportSection() {
     { id: 'customers', label: 'Müşteriler' },
     { id: 'agencies', label: 'Acentalar' },
     { id: 'messages', label: 'Mesajlar' },
+    { id: 'autoResponses', label: 'Otomatik Yanıtlar' },
+    { id: 'supportRequests', label: 'Destek Talepleri' },
+    { id: 'holidays', label: 'Tatiller' },
+    { id: 'faq', label: 'SSS' },
+    { id: 'settings', label: 'Bot Ayarları' },
   ];
 
   const toggleType = (typeId: string) => {
@@ -2177,32 +2186,48 @@ function DataExportSection() {
           <div className="bg-muted/50 rounded-lg p-4">
             <h4 className="font-medium mb-3">Veri Özeti</h4>
             {isLoadingPreview ? (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Skeleton key={i} className="h-16" />
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
+                  <Skeleton key={i} className="h-14" />
                 ))}
               </div>
             ) : preview ? (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                <div className="text-center p-3 bg-background rounded-md">
-                  <div className="text-2xl font-bold">{preview.summary.activitiesCount}</div>
-                  <div className="text-sm text-muted-foreground">Aktivite</div>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.activitiesCount}</div>
+                  <div className="text-xs text-muted-foreground">Aktivite</div>
                 </div>
-                <div className="text-center p-3 bg-background rounded-md">
-                  <div className="text-2xl font-bold">{preview.summary.reservationsCount}</div>
-                  <div className="text-sm text-muted-foreground">Rezervasyon</div>
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.reservationsCount}</div>
+                  <div className="text-xs text-muted-foreground">Rezervasyon</div>
                 </div>
-                <div className="text-center p-3 bg-background rounded-md">
-                  <div className="text-2xl font-bold">{preview.summary.customersCount}</div>
-                  <div className="text-sm text-muted-foreground">Müşteri</div>
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.customersCount}</div>
+                  <div className="text-xs text-muted-foreground">Müşteri</div>
                 </div>
-                <div className="text-center p-3 bg-background rounded-md">
-                  <div className="text-2xl font-bold">{preview.summary.agenciesCount}</div>
-                  <div className="text-sm text-muted-foreground">Acenta</div>
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.agenciesCount}</div>
+                  <div className="text-xs text-muted-foreground">Acenta</div>
                 </div>
-                <div className="text-center p-3 bg-background rounded-md">
-                  <div className="text-2xl font-bold">{preview.summary.messagesCount}</div>
-                  <div className="text-sm text-muted-foreground">Mesaj</div>
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.messagesCount}</div>
+                  <div className="text-xs text-muted-foreground">Mesaj</div>
+                </div>
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.autoResponsesCount || 0}</div>
+                  <div className="text-xs text-muted-foreground">Otomatik Yanıt</div>
+                </div>
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.supportRequestsCount || 0}</div>
+                  <div className="text-xs text-muted-foreground">Destek Talebi</div>
+                </div>
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.holidaysCount || 0}</div>
+                  <div className="text-xs text-muted-foreground">Tatil</div>
+                </div>
+                <div className="text-center p-2 bg-background rounded-md">
+                  <div className="text-xl font-bold">{preview.summary.faqCount || 0}</div>
+                  <div className="text-xs text-muted-foreground">SSS</div>
                 </div>
               </div>
             ) : (
