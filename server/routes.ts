@@ -979,8 +979,9 @@ export async function registerRoutes(
         return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
       }
       
+      const tenantId = req.session?.tenantId;
       const input = api.activities.create.input.parse(req.body);
-      const item = await storage.createActivity(input);
+      const item = await storage.createActivity({ ...input, tenantId });
       res.status(201).json(item);
     } catch (err) {
       if (err instanceof z.ZodError) res.status(400).json(err.errors);
