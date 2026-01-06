@@ -219,7 +219,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setDurationMinutes("");
     setDescription("");
     setFrequency("1");
-    setTimes([]);
+    setTimes(["09:00"]);
     setDefaultCapacity(10);
     setAgencyPhone("");
     setAdminPhone("");
