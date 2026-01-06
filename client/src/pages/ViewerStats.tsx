@@ -124,16 +124,16 @@ export default function ViewerStats() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen">
       <Sidebar />
-      <div className="flex-1 overflow-auto min-w-0">
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="p-4 max-w-full">
+          <div className="flex flex-col gap-4 mb-4">
             <h1 className="text-xl font-bold" data-testid="text-page-title">Is Ortagi Istatistikleri</h1>
             
             <div className="flex items-center gap-2 flex-wrap">
               <Select value={presetRange} onValueChange={handlePresetChange}>
-                <SelectTrigger className="w-[130px]" data-testid="select-preset-range">
+                <SelectTrigger className="w-[120px]" data-testid="select-preset-range">
                   <SelectValue placeholder="Tarih" />
                 </SelectTrigger>
                 <SelectContent>
@@ -146,7 +146,7 @@ export default function ViewerStats() {
               </Select>
 
               <Select value={groupBy} onValueChange={(v) => setGroupBy(v as 'daily' | 'monthly')}>
-                <SelectTrigger className="w-[110px]" data-testid="select-group-by">
+                <SelectTrigger className="w-[100px]" data-testid="select-group-by">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -161,7 +161,7 @@ export default function ViewerStats() {
                     <CalendarIcon className="h-4 w-4" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="range"
                     selected={dateRange}
@@ -177,13 +177,13 @@ export default function ViewerStats() {
               </Popover>
 
               <Button variant="outline" onClick={exportToCSV} data-testid="button-export-csv">
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 mr-1" />
                 CSV
               </Button>
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Toplam Talep</CardTitle>
@@ -306,7 +306,7 @@ export default function ViewerStats() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
