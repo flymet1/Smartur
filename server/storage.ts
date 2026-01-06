@@ -557,6 +557,9 @@ export class DatabaseStorage implements IStorage {
     await db.delete(requestMessageTemplates).where(eq(requestMessageTemplates.tenantId, id));
     await db.delete(tenantIntegrations).where(eq(tenantIntegrations.tenantId, id));
     await db.delete(systemLogs).where(eq(systemLogs.tenantId, id));
+    await db.delete(settings).where(eq(settings.tenantId, id));
+    await db.delete(blacklist).where(eq(blacklist.tenantId, id));
+    await db.delete(botQualityScores).where(eq(botQualityScores.tenantId, id));
     
     // Finally delete the tenant
     await db.delete(tenants).where(eq(tenants.id, id));
