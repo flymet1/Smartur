@@ -294,11 +294,11 @@ export default function Login() {
                 <CardContent className="flex-1 space-y-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold">
-                      {formatPrice(plan.priceTl)}
-                      <span className="text-sm font-normal text-muted-foreground"> TL/ay</span>
+                      {formatPrice(plan.yearlyPriceTl || 0)}
+                      <span className="text-sm font-normal text-muted-foreground"> TL/yıl</span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      ${formatPrice(plan.priceUsd)}/ay
+                      ${formatPrice(plan.yearlyPriceUsd || 0)}/yıl
                     </div>
                   </div>
 
