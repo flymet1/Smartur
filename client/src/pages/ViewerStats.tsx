@@ -128,16 +128,13 @@ export default function ViewerStats() {
       <Sidebar />
       <div className="flex-1 overflow-auto">
         <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-2xl font-bold" data-testid="text-page-title">Is Ortagi Istatistikleri</h1>
-              <p className="text-muted-foreground">Partner acentalarin rezervasyon talep aktiviteleri</p>
-            </div>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h1 className="text-xl font-bold" data-testid="text-page-title">Is Ortagi Istatistikleri</h1>
             
             <div className="flex items-center gap-2 flex-wrap">
               <Select value={presetRange} onValueChange={handlePresetChange}>
-                <SelectTrigger className="w-[160px]" data-testid="select-preset-range">
-                  <SelectValue placeholder="Tarih araligi" />
+                <SelectTrigger className="w-[130px]" data-testid="select-preset-range">
+                  <SelectValue placeholder="Tarih" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="last7">Son 7 gun</SelectItem>
@@ -149,7 +146,7 @@ export default function ViewerStats() {
               </Select>
 
               <Select value={groupBy} onValueChange={(v) => setGroupBy(v as 'daily' | 'monthly')}>
-                <SelectTrigger className="w-[140px]" data-testid="select-group-by">
+                <SelectTrigger className="w-[110px]" data-testid="select-group-by">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
