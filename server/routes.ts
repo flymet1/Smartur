@@ -2285,7 +2285,12 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Bu talep zaten rezervasyona donusturulmus" });
       }
       
-      // Create the reservation
+      // Get activity name for notification
+      const activities = await storage.getActivities(tenantId);
+      const activity = activities.find(a => a.id === request.activityId);
+      const activityName = activity?.name || "Aktivite";
+      
+      // Create the reservation with unpaid payment status
       const reservation = await storage.createReservation({
         tenantId,
         activityId: request.activityId,
@@ -2296,7 +2301,8 @@ export async function registerRoutes(
         guests: request.guests || 1,
         notes: request.notes || "",
         status: "pending",
-        source: "partner"
+        source: "partner",
+        paymentStatus: "unpaid"
       });
       
       // Update the request status
@@ -2306,6 +2312,37 @@ export async function registerRoutes(
         processedBy: req.session?.userId,
         processedAt: new Date()
       });
+      
+      // Send email notification to the viewer who created the request
+      if (request.requestedBy) {
+        try {
+          const requesterUser = await storage.getAppUser(request.requestedBy);
+          if (requesterUser?.email) {
+            const { sendEmail } = await import("./email");
+            await sendEmail({
+              to: requesterUser.email,
+              subject: `Rezervasyon Talebiniz Onaylandi - ${activityName}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #10b981;">Rezervasyon Talebiniz Onaylandi</h2>
+                  <p>Sayin ${requesterUser.name || requesterUser.username},</p>
+                  <p>Olusturdugunuz rezervasyon talebi onaylanmis ve rezervasyona donusturulmustur.</p>
+                  <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Aktivite:</strong> ${activityName}</p>
+                    <p><strong>Tarih:</strong> ${request.date}</p>
+                    <p><strong>Saat:</strong> ${request.time}</p>
+                    <p><strong>Musteri:</strong> ${request.customerName}</p>
+                    <p><strong>Kisi Sayisi:</strong> ${request.guests || 1}</p>
+                  </div>
+                  <p style="color: #6b7280; font-size: 14px;">Bu bir otomatik bildirimdir.</p>
+                </div>
+              `
+            });
+          }
+        } catch (emailErr) {
+          console.error("Failed to send approval email to viewer:", emailErr);
+        }
+      }
       
       res.json({ success: true, reservation });
     } catch (error) {

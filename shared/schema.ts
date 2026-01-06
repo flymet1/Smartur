@@ -100,6 +100,7 @@ export const reservations = pgTable("reservations", {
   trackingTokenExpiresAt: timestamp("tracking_token_expires_at"), // Token geçerlilik süresi (aktivite tarihi + 1 gün)
   hotelName: text("hotel_name"), // WooCommerce'den gelen otel ismi
   hasTransfer: boolean("has_transfer").default(false), // Otel transferi istendi mi
+  paymentStatus: text("payment_status").default("unpaid"), // unpaid, partial, paid - Odeme durumu
   createdAt: timestamp("created_at").defaultNow(),
 });
 

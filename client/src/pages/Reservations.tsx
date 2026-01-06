@@ -3461,7 +3461,29 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Kaynak</Label>
-                <div className="font-medium">{reservation.source === 'manual' ? 'Manuel' : reservation.source === 'woocommerce' ? 'WooCommerce' : reservation.source}</div>
+                <div className="font-medium">{reservation.source === 'manual' ? 'Manuel' : reservation.source === 'woocommerce' ? 'WooCommerce' : reservation.source === 'partner' ? 'Partner Acenta' : reservation.source}</div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-xs">Odeme Durumu</Label>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={
+                      (reservation as any).paymentStatus === 'paid' ? 'default' : 
+                      (reservation as any).paymentStatus === 'partial' ? 'secondary' : 
+                      'outline'
+                    }
+                    className={
+                      (reservation as any).paymentStatus === 'paid' ? 'bg-green-600 text-white' : 
+                      (reservation as any).paymentStatus === 'partial' ? 'bg-yellow-500 text-white' : 
+                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }
+                    data-testid="badge-payment-status"
+                  >
+                    {(reservation as any).paymentStatus === 'paid' ? 'Odendi' : 
+                     (reservation as any).paymentStatus === 'partial' ? 'Kismi' : 
+                     'Odenmedi'}
+                  </Badge>
+                </div>
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs flex items-center gap-1">
