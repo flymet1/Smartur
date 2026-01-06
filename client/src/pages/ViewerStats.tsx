@@ -124,66 +124,65 @@ export default function ViewerStats() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="p-4 max-w-full">
-          <div className="flex flex-col gap-4 mb-4">
-            <h1 className="text-xl font-bold" data-testid="text-page-title">Is Ortagi Istatistikleri</h1>
-            
-            <div className="flex items-center gap-2 flex-wrap">
-              <Select value={presetRange} onValueChange={handlePresetChange}>
-                <SelectTrigger className="w-[120px]" data-testid="select-preset-range">
-                  <SelectValue placeholder="Tarih" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="last7">Son 7 gun</SelectItem>
-                  <SelectItem value="last30">Son 30 gun</SelectItem>
-                  <SelectItem value="last90">Son 90 gun</SelectItem>
-                  <SelectItem value="thisMonth">Bu ay</SelectItem>
-                  <SelectItem value="lastMonth">Gecen ay</SelectItem>
-                </SelectContent>
-              </Select>
+      <main className="flex-1 md:ml-64 p-4 md:p-6 space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Is Ortagi Istatistikleri</h1>
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            <Select value={presetRange} onValueChange={handlePresetChange}>
+              <SelectTrigger className="w-[120px]" data-testid="select-preset-range">
+                <SelectValue placeholder="Tarih" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="last7">Son 7 gun</SelectItem>
+                <SelectItem value="last30">Son 30 gun</SelectItem>
+                <SelectItem value="last90">Son 90 gun</SelectItem>
+                <SelectItem value="thisMonth">Bu ay</SelectItem>
+                <SelectItem value="lastMonth">Gecen ay</SelectItem>
+              </SelectContent>
+            </Select>
 
-              <Select value={groupBy} onValueChange={(v) => setGroupBy(v as 'daily' | 'monthly')}>
-                <SelectTrigger className="w-[100px]" data-testid="select-group-by">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Gunluk</SelectItem>
-                  <SelectItem value="monthly">Aylik</SelectItem>
-                </SelectContent>
-              </Select>
+            <Select value={groupBy} onValueChange={(v) => setGroupBy(v as 'daily' | 'monthly')}>
+              <SelectTrigger className="w-[100px]" data-testid="select-group-by">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="daily">Gunluk</SelectItem>
+                <SelectItem value="monthly">Aylik</SelectItem>
+              </SelectContent>
+            </Select>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon" data-testid="button-date-picker">
-                    <CalendarIcon className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={(range) => {
-                      if (range) {
-                        setDateRange({ from: range.from, to: range.to });
-                        setPresetRange('custom');
-                      }
-                    }}
-                    locale={tr}
-                  />
-                </PopoverContent>
-              </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" data-testid="button-date-picker">
+                  <CalendarIcon className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={(range) => {
+                    if (range) {
+                      setDateRange({ from: range.from, to: range.to });
+                      setPresetRange('custom');
+                    }
+                  }}
+                  locale={tr}
+                />
+              </PopoverContent>
+            </Popover>
 
-              <Button variant="outline" onClick={exportToCSV} data-testid="button-export-csv">
-                <Download className="h-4 w-4 mr-1" />
-                CSV
-              </Button>
-            </div>
+            <Button variant="outline" onClick={exportToCSV} data-testid="button-export-csv">
+              <Download className="h-4 w-4 mr-1" />
+              CSV
+            </Button>
           </div>
+        </div>
 
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Toplam Talep</CardTitle>
@@ -305,7 +304,6 @@ export default function ViewerStats() {
               )}
             </CardContent>
           </Card>
-        </div>
       </main>
     </div>
   );
