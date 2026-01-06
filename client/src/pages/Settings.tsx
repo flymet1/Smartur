@@ -529,7 +529,7 @@ export default function Settings() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'users'].includes(tab)) {
+    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'users', 'data'].includes(tab)) {
       setSettingsTab(tab);
     }
   }, [location]);
@@ -545,7 +545,7 @@ export default function Settings() {
 
         {/* Settings Navigation Tabs */}
         <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6">
             <TabsTrigger value="security" data-testid="tab-security">
               <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
               Güvenlik
@@ -565,6 +565,10 @@ export default function Settings() {
             <TabsTrigger value="holidays" data-testid="tab-holidays">
               <CalendarHeart className="w-4 h-4 mr-2 hidden sm:inline" />
               Tatiller
+            </TabsTrigger>
+            <TabsTrigger value="data" data-testid="tab-data">
+              <Download className="w-4 h-4 mr-2 hidden sm:inline" />
+              Veri
             </TabsTrigger>
           </TabsList>
 
@@ -1329,6 +1333,11 @@ export default function Settings() {
           <TabsContent value="holidays" className="space-y-6">
             <HolidaysSection />
           </TabsContent>
+
+          {/* DATA EXPORT TAB */}
+          <TabsContent value="data" className="space-y-6">
+            <DataExportSection />
+          </TabsContent>
         </Tabs>
 
         {/* Save Button at the end of content */}
@@ -2008,6 +2017,216 @@ function AutoResponsesCard() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// === DATA EXPORT SECTION ===
+function DataExportSection() {
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('csv');
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(['all']);
+
+  const { data: preview, isLoading: isLoadingPreview } = useQuery<{
+    summary: {
+      activitiesCount: number;
+      reservationsCount: number;
+      agenciesCount: number;
+      messagesCount: number;
+      customersCount: number;
+    };
+    lastUpdated: string;
+  }>({
+    queryKey: ['/api/tenant-export/preview']
+  });
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const typesParam = selectedTypes.join(',');
+      const response = await fetch(`/api/tenant-export?format=${exportFormat}&types=${typesParam}`);
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const filename = exportFormat === 'csv' 
+        ? `acenta_verileri_${new Date().toISOString().split('T')[0]}.csv`
+        : `acenta_verileri_${new Date().toISOString().split('T')[0]}.json`;
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({ title: "Başarılı", description: "Veriler indirildi" });
+    } catch (error) {
+      toast({ title: "Hata", description: "Veriler indirilemedi", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const dataTypes = [
+    { id: 'all', label: 'Tüm Veriler' },
+    { id: 'reservations', label: 'Rezervasyonlar' },
+    { id: 'activities', label: 'Aktiviteler' },
+    { id: 'customers', label: 'Müşteriler' },
+    { id: 'agencies', label: 'Acentalar' },
+    { id: 'messages', label: 'Mesajlar' },
+  ];
+
+  const toggleType = (typeId: string) => {
+    if (typeId === 'all') {
+      setSelectedTypes(['all']);
+    } else {
+      const newTypes = selectedTypes.filter(t => t !== 'all');
+      if (newTypes.includes(typeId)) {
+        const updated = newTypes.filter(t => t !== typeId);
+        setSelectedTypes(updated.length === 0 ? ['all'] : updated);
+      } else {
+        setSelectedTypes([...newTypes, typeId]);
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Veri Dışa Aktarma
+          </CardTitle>
+          <CardDescription>
+            Acentanıza ait tüm verileri indirin. CSV formatı Excel ile uyumludur.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Data Summary */}
+          <div className="bg-muted/50 rounded-lg p-4">
+            <h4 className="font-medium mb-3">Veri Özeti</h4>
+            {isLoadingPreview ? (
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Skeleton key={i} className="h-16" />
+                ))}
+              </div>
+            ) : preview ? (
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div className="text-center p-3 bg-background rounded-md">
+                  <div className="text-2xl font-bold">{preview.summary.activitiesCount}</div>
+                  <div className="text-sm text-muted-foreground">Aktivite</div>
+                </div>
+                <div className="text-center p-3 bg-background rounded-md">
+                  <div className="text-2xl font-bold">{preview.summary.reservationsCount}</div>
+                  <div className="text-sm text-muted-foreground">Rezervasyon</div>
+                </div>
+                <div className="text-center p-3 bg-background rounded-md">
+                  <div className="text-2xl font-bold">{preview.summary.customersCount}</div>
+                  <div className="text-sm text-muted-foreground">Müşteri</div>
+                </div>
+                <div className="text-center p-3 bg-background rounded-md">
+                  <div className="text-2xl font-bold">{preview.summary.agenciesCount}</div>
+                  <div className="text-sm text-muted-foreground">Acenta</div>
+                </div>
+                <div className="text-center p-3 bg-background rounded-md">
+                  <div className="text-2xl font-bold">{preview.summary.messagesCount}</div>
+                  <div className="text-sm text-muted-foreground">Mesaj</div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Veri özeti yüklenemedi</p>
+            )}
+          </div>
+
+          {/* Export Options */}
+          <div className="space-y-4">
+            <div>
+              <Label className="mb-2 block">Veri Türleri</Label>
+              <div className="flex flex-wrap gap-2">
+                {dataTypes.map(type => (
+                  <Button
+                    key={type.id}
+                    variant={selectedTypes.includes(type.id) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleType(type.id)}
+                    data-testid={`button-type-${type.id}`}
+                  >
+                    {type.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="mb-2 block">Format</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant={exportFormat === 'csv' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setExportFormat('csv')}
+                  data-testid="button-format-csv"
+                >
+                  CSV (Excel)
+                </Button>
+                <Button
+                  variant={exportFormat === 'json' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setExportFormat('json')}
+                  data-testid="button-format-json"
+                >
+                  JSON
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Export Button */}
+          <Button 
+            onClick={handleExport} 
+            disabled={isExporting}
+            className="w-full sm:w-auto"
+            data-testid="button-export-data"
+          >
+            {isExporting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                İndiriliyor...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Verileri İndir
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Info Card */}
+      <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800 dark:text-blue-200">
+              <p className="font-medium mb-1">Veri Güvenliği Hakkında</p>
+              <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
+                <li>İndirilen veriler sadece sizin acentanıza ait verileri içerir</li>
+                <li>CSV dosyaları Excel, Google Sheets veya benzeri programlarla açılabilir</li>
+                <li>JSON formatı teknik entegrasyonlar için uygundur</li>
+                <li>Verilerinizi düzenli olarak yedeklemenizi öneririz</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
