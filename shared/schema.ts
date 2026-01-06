@@ -136,6 +136,29 @@ export const systemLogs = pgTable("system_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Platform-wide hata izleme - Super Admin için
+export const errorEvents = pgTable("error_events", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id), // null = platform-wide error
+  severity: text("severity").notNull(), // critical, error, warning
+  category: text("category").notNull(), // api, validation, ai_bot, system, auth, database
+  source: text("source").notNull(), // Hangi modül/endpoint
+  message: text("message").notNull(),
+  suggestion: text("suggestion"), // Önerilen çözüm
+  requestPath: text("request_path"), // API endpoint path
+  requestMethod: text("request_method"), // GET, POST, etc.
+  statusCode: integer("status_code"), // HTTP status code
+  userId: integer("user_id"), // Kullanıcı ID (appUsers tablosuna referans)
+  userEmail: text("user_email"), // Maskelenmiş e-posta
+  tenantName: text("tenant_name"), // Acenta adı (kolay erişim için)
+  metadata: text("metadata"), // JSON - ek detaylar (stack trace vb.)
+  occurredAt: timestamp("occurred_at").defaultNow(),
+  status: text("status").default("open"), // open, acknowledged, resolved
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: text("resolved_by"), // Çözen admin kullanıcı adı
+  resolutionNotes: text("resolution_notes"),
+});
+
 // Destek taleplerine eklenmiş loglar
 export const supportRequestLogs = pgTable("support_request_logs", {
   id: serial("id").primaryKey(),
@@ -387,6 +410,7 @@ export const insertReservationSchema = createInsertSchema(reservations).omit({ i
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
 export const insertSupportRequestSchema = createInsertSchema(supportRequests).omit({ id: true, createdAt: true, resolvedAt: true });
 export const insertSystemLogSchema = createInsertSchema(systemLogs).omit({ id: true, createdAt: true });
+export const insertErrorEventSchema = createInsertSchema(errorEvents).omit({ id: true, occurredAt: true, resolvedAt: true });
 export const insertSupportRequestLogSchema = createInsertSchema(supportRequestLogs).omit({ id: true, createdAt: true });
 export const insertCustomerRequestSchema = createInsertSchema(customerRequests).omit({ id: true, createdAt: true, processedAt: true });
 
@@ -408,6 +432,9 @@ export type InsertSupportRequest = z.infer<typeof insertSupportRequestSchema>;
 
 export type SystemLog = typeof systemLogs.$inferSelect;
 export type InsertSystemLog = z.infer<typeof insertSystemLogSchema>;
+
+export type ErrorEvent = typeof errorEvents.$inferSelect;
+export type InsertErrorEvent = z.infer<typeof insertErrorEventSchema>;
 
 export type SupportRequestLog = typeof supportRequestLogs.$inferSelect;
 export type InsertSupportRequestLog = z.infer<typeof insertSupportRequestLogSchema>;

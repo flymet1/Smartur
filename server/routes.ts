@@ -10,7 +10,7 @@ import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { encrypt, decrypt } from "./encryption";
-import { logError, logWarn, logInfo, attachLogsToSupportRequest, getSupportRequestLogs, getRecentLogs } from "./logger";
+import { logError, logWarn, logInfo, attachLogsToSupportRequest, getSupportRequestLogs, getRecentLogs, logErrorEvent, type ErrorCategory, type ErrorSeverity } from "./logger";
 
 // Module-level exchange rate cache (persists between requests)
 let exchangeRateCache: { rates: any; lastUpdated: Date | null } = { rates: null, lastUpdated: null };
@@ -120,6 +120,41 @@ const PERMISSIONS = {
   SUBSCRIPTION_VIEW: "subscription.view",
   SUBSCRIPTION_MANAGE: "subscription.manage",
 } as const;
+
+// Helper function to log API errors to error_events table (for Super Admin monitoring)
+async function logApiError(params: {
+  tenantId?: number;
+  severity?: ErrorSeverity;
+  category: ErrorCategory;
+  source: string;
+  message: string;
+  suggestion?: string;
+  requestPath?: string;
+  requestMethod?: string;
+  statusCode?: number;
+  userId?: number;
+  userEmail?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await logErrorEvent({
+      tenantId: params.tenantId,
+      severity: params.severity || 'error',
+      category: params.category,
+      source: params.source,
+      message: params.message,
+      suggestion: params.suggestion,
+      requestPath: params.requestPath,
+      requestMethod: params.requestMethod,
+      statusCode: params.statusCode,
+      userId: params.userId,
+      userEmail: params.userEmail,
+      metadata: params.metadata,
+    });
+  } catch (err) {
+    console.error('Failed to log error event:', err);
+  }
+}
 
 // License middleware - checks if write operations are allowed (tenant-aware)
 async function checkLicenseForWrite(tenantId?: number): Promise<{ allowed: boolean; message: string; status?: string }> {
@@ -869,6 +904,16 @@ ${context.botRules || DEFAULT_BOT_RULES}`;
     // Log final error for debugging
     console.error("AI generation failed after all retries. Last error:", lastError);
     await logError('ai', 'AI yanit oluşturulamadi - tum denemeler başarısız', { error: lastError instanceof Error ? lastError.message : String(lastError) });
+    
+    // Log to error_events for Super Admin monitoring
+    await logApiError({
+      severity: 'error',
+      category: 'ai_bot',
+      source: 'gemini_api',
+      message: 'AI yanıt oluşturulamadı - tüm denemeler başarısız',
+      suggestion: 'Gemini API kotasını kontrol edin veya bir süre bekleyin',
+      metadata: { error: lastError instanceof Error ? lastError.message : String(lastError) }
+    });
   }
 
   // Smart fallback response when AI is not available or fails
@@ -6270,6 +6315,86 @@ Sky Fethiye`;
     } catch (err) {
       console.error("Platform admin silme hatası:", err);
       res.status(500).json({ error: "Admin silinemedi" });
+    }
+  });
+
+  // === ERROR EVENTS (Super Admin Hata İzleme) ===
+  
+  app.get("/api/admin/error-events/summary", async (req, res) => {
+    try {
+      if (!req.session?.platformAdminId) {
+        return res.status(401).json({ error: "Platform admin girişi gerekli" });
+      }
+      const { getErrorEventsSummary } = await import("./logger");
+      const summary = await getErrorEventsSummary();
+      res.json(summary);
+    } catch (err) {
+      console.error("Error events summary hatası:", err);
+      res.status(500).json({ error: "Hata özeti alınamadı" });
+    }
+  });
+
+  app.get("/api/admin/error-events", async (req, res) => {
+    try {
+      if (!req.session?.platformAdminId) {
+        return res.status(401).json({ error: "Platform admin girişi gerekli" });
+      }
+      const { getErrorEvents } = await import("./logger");
+      
+      const filters: Record<string, unknown> = {};
+      if (req.query.tenantId) filters.tenantId = Number(req.query.tenantId);
+      if (req.query.severity) filters.severity = (req.query.severity as string).split(',');
+      if (req.query.category) filters.category = (req.query.category as string).split(',');
+      if (req.query.status) filters.status = req.query.status as string;
+      if (req.query.startDate) filters.startDate = new Date(req.query.startDate as string);
+      if (req.query.endDate) filters.endDate = new Date(req.query.endDate as string);
+      if (req.query.limit) filters.limit = Number(req.query.limit);
+      if (req.query.offset) filters.offset = Number(req.query.offset);
+
+      const result = await getErrorEvents(filters as any);
+      res.json(result);
+    } catch (err) {
+      console.error("Error events hatası:", err);
+      res.status(500).json({ error: "Hata listesi alınamadı" });
+    }
+  });
+
+  app.post("/api/admin/error-events/:id/resolve", async (req, res) => {
+    try {
+      if (!req.session?.platformAdminId) {
+        return res.status(401).json({ error: "Platform admin girişi gerekli" });
+      }
+      const { resolveErrorEvent } = await import("./logger");
+      const admin = await storage.getPlatformAdmin(req.session.platformAdminId);
+      const event = await resolveErrorEvent(
+        Number(req.params.id),
+        admin?.name || "Admin",
+        req.body.notes
+      );
+      if (!event) {
+        return res.status(404).json({ error: "Hata bulunamadı" });
+      }
+      res.json(event);
+    } catch (err) {
+      console.error("Error event çözümleme hatası:", err);
+      res.status(500).json({ error: "Hata çözümlenemedi" });
+    }
+  });
+
+  app.post("/api/admin/error-events/:id/acknowledge", async (req, res) => {
+    try {
+      if (!req.session?.platformAdminId) {
+        return res.status(401).json({ error: "Platform admin girişi gerekli" });
+      }
+      const { acknowledgeErrorEvent } = await import("./logger");
+      const event = await acknowledgeErrorEvent(Number(req.params.id));
+      if (!event) {
+        return res.status(404).json({ error: "Hata bulunamadı" });
+      }
+      res.json(event);
+    } catch (err) {
+      console.error("Error event onaylama hatası:", err);
+      res.status(500).json({ error: "Hata onaylanamadı" });
     }
   });
 

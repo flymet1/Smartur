@@ -4181,6 +4181,407 @@ function DatabaseBackupSection() {
   );
 }
 
+// === ERROR EVENTS SECTION ===
+interface ErrorEvent {
+  id: number;
+  tenantId: number | null;
+  tenantName: string | null;
+  severity: string;
+  category: string;
+  source: string;
+  message: string;
+  suggestion: string | null;
+  requestPath: string | null;
+  requestMethod: string | null;
+  statusCode: number | null;
+  userId: number | null;
+  userEmail: string | null;
+  metadata: string | null;
+  occurredAt: string;
+  status: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  resolutionNotes: string | null;
+}
+
+interface ErrorEventsSummary {
+  openCount: number;
+  criticalCount: number;
+  affectedTenants: number;
+  recentEvents: ErrorEvent[];
+}
+
+function ErrorEventsSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedEvent, setSelectedEvent] = useState<ErrorEvent | null>(null);
+  const [resolveNotes, setResolveNotes] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("open");
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const { data: summary, isLoading: summaryLoading } = useQuery<ErrorEventsSummary>({
+    queryKey: ['/api/admin/error-events/summary'],
+    refetchInterval: 30000,
+  });
+
+  const { data: eventsData, isLoading: eventsLoading, refetch } = useQuery<{ events: ErrorEvent[], total: number }>({
+    queryKey: ['/api/admin/error-events', statusFilter, severityFilter, categoryFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (severityFilter !== "all") params.set("severity", severityFilter);
+      if (categoryFilter !== "all") params.set("category", categoryFilter);
+      params.set("limit", "50");
+      const res = await fetch(`/api/admin/error-events?${params}`, { credentials: 'include' });
+      if (!res.ok) throw new Error("Hatalar yüklenemedi");
+      return res.json();
+    },
+  });
+
+  const resolveMutation = useMutation({
+    mutationFn: async ({ id, notes }: { id: number; notes?: string }) => {
+      const res = await fetch(`/api/admin/error-events/${id}/resolve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ notes }),
+      });
+      if (!res.ok) throw new Error("Hata çözümlenemedi");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/error-events'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/error-events/summary'] });
+      toast({ title: "Başarılı", description: "Hata çözümlendi olarak işaretlendi." });
+      setSelectedEvent(null);
+      setResolveNotes("");
+    },
+  });
+
+  const acknowledgeMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/admin/error-events/${id}/acknowledge`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error("Hata onaylanamadı");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/error-events'] });
+      toast({ title: "Başarılı", description: "Hata incelenecek olarak işaretlendi." });
+    },
+  });
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-500 text-white';
+      case 'error': return 'bg-orange-500 text-white';
+      case 'warning': return 'bg-yellow-500 text-black';
+      default: return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const labels: Record<string, string> = {
+      api: 'API',
+      validation: 'Doğrulama',
+      ai_bot: 'AI Bot',
+      system: 'Sistem',
+      auth: 'Kimlik Doğrulama',
+      database: 'Veritabanı',
+      license: 'Lisans',
+    };
+    return labels[category] || category;
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'open': return <Badge variant="destructive">Açık</Badge>;
+      case 'acknowledged': return <Badge className="bg-yellow-500">İnceleniyor</Badge>;
+      case 'resolved': return <Badge variant="secondary">Çözüldü</Badge>;
+      default: return <Badge>{status}</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5" />
+          Hata İzleme
+        </h3>
+        <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-refresh-errors">
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Yenile
+        </Button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-red-500" />
+              Açık Hatalar
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summaryLoading ? "..." : summary?.openCount || 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+              Kritik Hatalar
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">{summaryLoading ? "..." : summary?.criticalCount || 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Etkilenen Acentalar
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summaryLoading ? "..." : summary?.affectedTenants || 0}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-32" data-testid="select-error-status">
+            <SelectValue placeholder="Durum" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tümü</SelectItem>
+            <SelectItem value="open">Açık</SelectItem>
+            <SelectItem value="acknowledged">İnceleniyor</SelectItem>
+            <SelectItem value="resolved">Çözüldü</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={severityFilter} onValueChange={setSeverityFilter}>
+          <SelectTrigger className="w-32" data-testid="select-error-severity">
+            <SelectValue placeholder="Önem" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tümü</SelectItem>
+            <SelectItem value="critical">Kritik</SelectItem>
+            <SelectItem value="error">Hata</SelectItem>
+            <SelectItem value="warning">Uyarı</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-40" data-testid="select-error-category">
+            <SelectValue placeholder="Kategori" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tümü</SelectItem>
+            <SelectItem value="api">API</SelectItem>
+            <SelectItem value="validation">Doğrulama</SelectItem>
+            <SelectItem value="ai_bot">AI Bot</SelectItem>
+            <SelectItem value="system">Sistem</SelectItem>
+            <SelectItem value="auth">Kimlik Doğrulama</SelectItem>
+            <SelectItem value="database">Veritabanı</SelectItem>
+            <SelectItem value="license">Lisans</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Error Events Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-24">Önem</TableHead>
+                <TableHead className="w-24">Kategori</TableHead>
+                <TableHead>Acenta</TableHead>
+                <TableHead>Mesaj</TableHead>
+                <TableHead className="w-32">Tarih</TableHead>
+                <TableHead className="w-24">Durum</TableHead>
+                <TableHead className="w-24">İşlem</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {eventsLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    Yükleniyor...
+                  </TableCell>
+                </TableRow>
+              ) : eventsData?.events?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                    Hata bulunamadı
+                  </TableCell>
+                </TableRow>
+              ) : (
+                eventsData?.events?.map((event) => (
+                  <TableRow key={event.id} className="cursor-pointer" onClick={() => setSelectedEvent(event)}>
+                    <TableCell>
+                      <Badge className={getSeverityColor(event.severity)}>
+                        {event.severity === 'critical' ? 'Kritik' : event.severity === 'error' ? 'Hata' : 'Uyarı'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{getCategoryLabel(event.category)}</Badge>
+                    </TableCell>
+                    <TableCell>{event.tenantName || "Platform"}</TableCell>
+                    <TableCell className="max-w-xs truncate">{event.message}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {event.occurredAt ? new Date(event.occurredAt).toLocaleString("tr-TR") : "-"}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(event.status)}</TableCell>
+                    <TableCell>
+                      {event.status === 'open' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            acknowledgeMutation.mutate(event.id);
+                          }}
+                          data-testid={`button-ack-${event.id}`}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Error Detail Dialog */}
+      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Hata Detayı
+            </DialogTitle>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Önem</Label>
+                  <div><Badge className={getSeverityColor(selectedEvent.severity)}>{selectedEvent.severity}</Badge></div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Kategori</Label>
+                  <div><Badge variant="outline">{getCategoryLabel(selectedEvent.category)}</Badge></div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Acenta</Label>
+                  <div>{selectedEvent.tenantName || "Platform"}</div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Kaynak</Label>
+                  <div>{selectedEvent.source}</div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Tarih</Label>
+                  <div>{selectedEvent.occurredAt ? new Date(selectedEvent.occurredAt).toLocaleString("tr-TR") : "-"}</div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Durum</Label>
+                  <div>{getStatusBadge(selectedEvent.status)}</div>
+                </div>
+              </div>
+
+              {selectedEvent.requestPath && (
+                <div>
+                  <Label className="text-muted-foreground">Endpoint</Label>
+                  <div className="font-mono text-sm bg-muted p-2 rounded">
+                    {selectedEvent.requestMethod} {selectedEvent.requestPath}
+                    {selectedEvent.statusCode && <span className="ml-2 text-red-500">({selectedEvent.statusCode})</span>}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <Label className="text-muted-foreground">Mesaj</Label>
+                <div className="bg-muted p-3 rounded">{selectedEvent.message}</div>
+              </div>
+
+              {selectedEvent.suggestion && (
+                <div>
+                  <Label className="text-muted-foreground">Öneri</Label>
+                  <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded text-blue-800 dark:text-blue-200">
+                    {selectedEvent.suggestion}
+                  </div>
+                </div>
+              )}
+
+              {selectedEvent.metadata && (
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full">
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Teknik Detaylar
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <pre className="mt-2 bg-muted p-3 rounded text-xs overflow-x-auto max-h-48">
+                      {selectedEvent.metadata}
+                    </pre>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {selectedEvent.status !== 'resolved' && (
+                <div className="space-y-2 pt-4 border-t">
+                  <Label>Çözüm Notu (Opsiyonel)</Label>
+                  <Textarea
+                    value={resolveNotes}
+                    onChange={(e) => setResolveNotes(e.target.value)}
+                    placeholder="Hatanın nasıl çözüldüğünü not edin..."
+                    data-testid="input-resolve-notes"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => resolveMutation.mutate({ id: selectedEvent.id, notes: resolveNotes })}
+                      disabled={resolveMutation.isPending}
+                      data-testid="button-resolve-error"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Çözüldü Olarak İşaretle
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {selectedEvent.resolvedAt && (
+                <div className="pt-4 border-t text-sm text-muted-foreground">
+                  <div>Çözen: {selectedEvent.resolvedBy}</div>
+                  <div>Çözüm Tarihi: {new Date(selectedEvent.resolvedAt).toLocaleString("tr-TR")}</div>
+                  {selectedEvent.resolutionNotes && <div className="mt-2">Not: {selectedEvent.resolutionNotes}</div>}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 function SystemMonitoringSection() {
   const { data: dbStats, isLoading: dbLoading, refetch: refetchDb } = useQuery<any>({
     queryKey: ['/api/system/db-stats'],
@@ -4728,6 +5129,7 @@ export default function SuperAdmin() {
     ],
     system: [
       { id: "system", label: "Sistem Durumu", icon: Server },
+      { id: "error-events", label: "Hata İzleme", icon: AlertTriangle },
       { id: "backup", label: "Yedekleme", icon: Database },
       { id: "updates", label: "Güncellemeler", icon: RefreshCw },
       { id: "security", label: "Güvenlik", icon: Shield },
@@ -5035,6 +5437,7 @@ export default function SuperAdmin() {
             {activeSubTab === "platform-admins" && <PlatformAdminsSection />}
 
             {activeSubTab === "system" && <SystemMonitoringSection />}
+            {activeSubTab === "error-events" && <ErrorEventsSection />}
             {activeSubTab === "backup" && <DatabaseBackupSection />}
             {activeSubTab === "updates" && <ApplicationUpdatesSection />}
             {activeSubTab === "security" && <SecuritySection />}
