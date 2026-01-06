@@ -1957,59 +1957,80 @@ export async function registerRoutes(
         if (activity) activityName = activity.name;
       }
       
-      // Try to send email notification to admin
+      // Try to send email notification to admin using centralized SMTP
       try {
         const developerEmail = await storage.getSetting("developerEmail");
         if (developerEmail) {
           const requestTypeText = requestType === 'time_change' ? 'Saat Degisikligi' : 
                                   requestType === 'cancellation' ? 'İptal Talebi' : 'Diger Talep';
           
-          const emailBody = `
-Yeni Müşteri Talebi
-
-Talep Tipi: ${requestTypeText}
-Müşteri: ${reservation.customerName}
-Telefon: ${reservation.customerPhone}
-E-posta: ${reservation.customerEmail || '-'}
-
-Rezervasyon Bilgileri:
-- Aktivite: ${activityName}
-- Tarih: ${reservation.date}
-- Saat: ${reservation.time}
-- Kişi Sayısı: ${reservation.quantity}
-
-${requestType === 'time_change' && preferredTime ? `Tercih Edilen Saat: ${preferredTime}` : ''}
-${requestDetails ? `Ek Açıklama: ${requestDetails}` : ''}
-
----
-Bu talep müşteri takip sayfasından gönderilmistir.
-          `.trim();
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+                Yeni Müşteri Talebi
+              </h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Talep Tipi:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${requestTypeText}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Müşteri:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${reservation.customerName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Telefon:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${reservation.customerPhone}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">E-posta:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${reservation.customerEmail || '-'}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Aktivite:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${activityName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Tarih:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${reservation.date}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Saat:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${reservation.time}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Kişi Sayısı:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${reservation.quantity}</td>
+                </tr>
+                ${requestType === 'time_change' && preferredTime ? `
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Tercih Edilen Saat:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${preferredTime}</td>
+                </tr>
+                ` : ''}
+                ${requestDetails ? `
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Ek Açıklama:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${requestDetails}</td>
+                </tr>
+                ` : ''}
+              </table>
+              <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                Bu talep müşteri takip sayfasından gönderilmiştir.
+              </p>
+            </div>
+          `;
           
-          // Send email using nodemailer (if configured)
-          const gmailUser = await storage.getSetting("gmailUser");
-          const gmailAppPasswordEncrypted = await storage.getSetting("gmailAppPassword");
+          // Send email using centralized SMTP service
+          const { sendEmail } = await import("./email");
+          const result = await sendEmail({
+            to: developerEmail,
+            subject: `[Müşteri Talebi] ${requestTypeText} - ${reservation.customerName}`,
+            html: emailHtml,
+            fromName: 'Smartur Bildirim',
+          });
           
-          if (gmailUser && gmailAppPasswordEncrypted) {
-            const nodemailer = await import("nodemailer");
-            const { decrypt } = await import("./encryption");
-            
-            const gmailAppPassword = decrypt(gmailAppPasswordEncrypted);
-            
-            const transporter = nodemailer.createTransport({
-              service: "gmail",
-              auth: {
-                user: gmailUser,
-                pass: gmailAppPassword,
-              },
-            });
-            
-            await transporter.sendMail({
-              from: gmailUser,
-              to: developerEmail,
-              subject: `[Müşteri Talebi] ${requestTypeText} - ${reservation.customerName}`,
-              text: emailBody,
-            });
-            
+          if (result.success) {
             // Mark email as sent
             await storage.updateCustomerRequest(customerRequest.id, { emailSent: true });
           }
@@ -2856,6 +2877,43 @@ Sky Fethiye`;
     }
   });
   
+  // Tenant-specific notification email setting
+  app.get("/api/settings/tenantNotificationEmail", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const value = await storage.getSetting(`tenantNotificationEmail_${tenantId}`);
+      res.json({ key: 'tenantNotificationEmail', value });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar alınamadı" });
+    }
+  });
+  
+  app.post("/api/settings/tenantNotificationEmail", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const { value } = req.body;
+      
+      // Simple email validation
+      if (value && value.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value.trim())) {
+          return res.status(400).json({ error: "Geçerli bir e-posta adresi girin" });
+        }
+      }
+      
+      await storage.setSetting(`tenantNotificationEmail_${tenantId}`, value?.trim() || '');
+      res.json({ success: true, message: "Bildirim e-postası kaydedildi" });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar kaydedilemedi" });
+    }
+  });
+  
   // Protected settings endpoint (requires auth)
   app.get("/api/settings/:key", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
@@ -3586,124 +3644,76 @@ Sky Fethiye`;
       
       await storage.createSupportRequest(requestData);
 
-      // Send email via Gmail SMTP if credentials are configured
+      // Send email using centralized SMTP service
       let emailSent = false;
-      const gmailCreds = await getGmailCredentials();
+      const { sendEmail } = await import("./email");
       
       // Get platform notification email (for Super Admin)
       const platformNotificationEmail = await storage.getSetting("platformNotificationEmail");
       
+      // Build email HTML
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+            Yeni Destek Talebi - Smartur
+          </h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Acente:</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; color: #007bff; font-weight: bold;">${tenantName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Gönderen:</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${senderName}${senderEmail ? ` (${senderEmail})` : ''}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Talep Türü:</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${requestTypeLabels[requestType] || requestType}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Konu:</td>
+              <td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td>
+            </tr>
+          </table>
+          <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+            <h4 style="margin-top: 0; color: #333;">Mesaj:</h4>
+            <p style="white-space: pre-wrap; margin: 0;">${message}</p>
+          </div>
+          <p style="margin-top: 20px; font-size: 12px; color: #666;">
+            Bu e-posta Smartur destek sistemi tarafından otomatik olarak gönderilmiştir.
+          </p>
+        </div>
+      `;
+      
       // Send to platform notification email if configured
-      if (gmailCreds && platformNotificationEmail) {
-        try {
-          const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-              user: gmailCreds.user,
-              pass: gmailCreds.password,
-            },
-          });
-
-          const emailHtml = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-                Yeni Destek Talebi - Smartur
-              </h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Acente:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee; color: #007bff; font-weight: bold;">${tenantName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Gönderen:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${senderName}${senderEmail ? ` (${senderEmail})` : ''}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Talep Türü:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${requestTypeLabels[requestType] || requestType}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Konu:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td>
-                </tr>
-              </table>
-              <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
-                <h4 style="margin-top: 0; color: #333;">Mesaj:</h4>
-                <p style="white-space: pre-wrap; margin: 0;">${message}</p>
-              </div>
-              <p style="margin-top: 20px; font-size: 12px; color: #666;">
-                Bu e-posta Smartur destek sistemi tarafından otomatik olarak gönderilmiştir.
-              </p>
-            </div>
-          `;
-
-          await transporter.sendMail({
-            from: `"Smartur Destek" <${gmailCreds.user}>`,
-            to: platformNotificationEmail,
-            replyTo: senderEmail || undefined,
-            subject: `[${tenantName}] ${requestTypeLabels[requestType] || requestType}: ${subject}`,
-            html: emailHtml,
-          });
-
+      if (platformNotificationEmail) {
+        const result = await sendEmail({
+          to: platformNotificationEmail,
+          subject: `[${tenantName}] ${requestTypeLabels[requestType] || requestType}: ${subject}`,
+          html: emailHtml,
+          replyTo: senderEmail || undefined,
+          fromName: 'Smartur Destek',
+        });
+        
+        if (result.success) {
           emailSent = true;
           console.log(`Support request notification sent to platform admin: ${platformNotificationEmail}`);
-        } catch (emailErr) {
-          console.error("Platform notification email failed:", emailErr);
         }
       }
       
-      // Also send to developer email if provided (and different from platform email if that was set)
-      if (gmailCreds && developerEmail && (!platformNotificationEmail || developerEmail !== platformNotificationEmail)) {
-        try {
-          const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-              user: gmailCreds.user,
-              pass: gmailCreds.password,
-            },
-          });
-
-          const emailHtml = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-                Yeni Destek Talebi - Smartur
-              </h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Gönderen:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${senderName}${senderEmail ? ` (${senderEmail})` : ''}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Talep Türü:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${requestTypeLabels[requestType] || requestType}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Konu:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td>
-                </tr>
-              </table>
-              <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
-                <h4 style="margin-top: 0; color: #333;">Mesaj:</h4>
-                <p style="white-space: pre-wrap; margin: 0;">${message}</p>
-              </div>
-              <p style="margin-top: 20px; font-size: 12px; color: #666;">
-                Bu e-posta Smartur destek sistemi tarafından otomatik olarak gönderilmiştir.
-              </p>
-            </div>
-          `;
-
-          await transporter.sendMail({
-            from: `"Smartur Destek" <${gmailCreds.user}>`,
-            to: developerEmail,
-            replyTo: senderEmail || undefined,
-            subject: `[Destek] ${requestTypeLabels[requestType] || requestType}: ${subject}`,
-            html: emailHtml,
-          });
-
+      // Also send to developer email if provided (and different from platform email)
+      if (developerEmail && (!platformNotificationEmail || developerEmail !== platformNotificationEmail)) {
+        const result = await sendEmail({
+          to: developerEmail,
+          subject: `[Destek] ${requestTypeLabels[requestType] || requestType}: ${subject}`,
+          html: emailHtml,
+          replyTo: senderEmail || undefined,
+          fromName: 'Smartur Destek',
+        });
+        
+        if (result.success) {
           emailSent = true;
           console.log(`Support request email sent to ${developerEmail}`);
-        } catch (emailErr) {
-          console.error("Email sending failed:", emailErr);
         }
       }
 
@@ -3742,6 +3752,124 @@ Sky Fethiye`;
       res.json({ success: true, message: "Bildirim e-postası kaydedildi" });
     } catch (err) {
       res.status(500).json({ error: "Ayarlar kaydedilemedi" });
+    }
+  });
+
+  // === Platform SMTP Configuration (Super Admin) ===
+  app.get("/api/platform/smtp-config", async (req, res) => {
+    try {
+      if (!req.session?.isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      const configJson = await storage.getSetting("platformSmtpConfig");
+      if (!configJson) {
+        return res.json({ configured: false });
+      }
+      
+      const config = JSON.parse(configJson);
+      res.json({
+        configured: true,
+        host: config.host || '',
+        port: config.port || 587,
+        secure: config.secure || false,
+        username: config.username || '',
+        fromEmail: config.fromEmail || '',
+        fromName: config.fromName || '',
+      });
+    } catch (err) {
+      res.status(500).json({ error: "SMTP ayarları alınamadı" });
+    }
+  });
+  
+  app.post("/api/platform/smtp-config", async (req, res) => {
+    try {
+      if (!req.session?.isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      
+      const { host, port, secure, username, password, fromEmail, fromName } = req.body;
+      
+      // Validate required fields
+      if (!host || !username) {
+        return res.status(400).json({ error: "Host ve kullanıcı adı gerekli" });
+      }
+      
+      // Get existing config to preserve password if not provided
+      let existingPassword: string | null = null;
+      const existingConfigJson = await storage.getSetting("platformSmtpConfig");
+      if (existingConfigJson) {
+        try {
+          const existingConfig = JSON.parse(existingConfigJson);
+          if (existingConfig.passwordEncrypted) {
+            existingPassword = decrypt(existingConfig.passwordEncrypted);
+          }
+        } catch {}
+      }
+      
+      // Use new password or existing password
+      const finalPassword = password && password.trim() ? password : existingPassword;
+      
+      if (!finalPassword) {
+        return res.status(400).json({ error: "Şifre gerekli" });
+      }
+      
+      const { saveSmtpConfig, clearSmtpCache } = await import("./email");
+      await saveSmtpConfig({
+        host,
+        port: typeof port === 'number' ? port : parseInt(port) || 587,
+        secure: secure || false,
+        username,
+        password: finalPassword,
+        fromEmail: fromEmail || username,
+        fromName: fromName || 'Smartur',
+      });
+      
+      // Clear cache to ensure fresh config is used immediately
+      clearSmtpCache();
+      
+      res.json({ success: true, message: "SMTP ayarları kaydedildi" });
+    } catch (err) {
+      console.error("SMTP config save error:", err);
+      res.status(500).json({ error: "SMTP ayarları kaydedilemedi" });
+    }
+  });
+  
+  app.post("/api/platform/smtp-config/test", async (req, res) => {
+    try {
+      if (!req.session?.isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      
+      // Clear cache first to ensure fresh config is used
+      const { testSmtpConnection, clearSmtpCache } = await import("./email");
+      clearSmtpCache();
+      
+      const result = await testSmtpConnection();
+      
+      if (result.success) {
+        res.json({ success: true, message: "SMTP bağlantısı başarılı!" });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Bağlantı testi başarısız" });
+    }
+  });
+  
+  app.delete("/api/platform/smtp-config", async (req, res) => {
+    try {
+      if (!req.session?.isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      
+      await storage.setSetting("platformSmtpConfig", '');
+      
+      const { clearSmtpCache } = await import("./email");
+      clearSmtpCache();
+      
+      res.json({ success: true, message: "SMTP yapılandırması kaldırıldı" });
+    } catch (err) {
+      res.status(500).json({ error: "SMTP ayarları silinemedi" });
     }
   });
 

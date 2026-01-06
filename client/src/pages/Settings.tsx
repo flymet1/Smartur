@@ -13,7 +13,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -64,12 +64,16 @@ export default function Settings() {
   const [botAccessExtras, setBotAccessExtras] = useState(true);
   const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
   
-  // Gmail Settings
+  // Gmail Settings (legacy - kept for data migration)
   const [gmailUser, setGmailUser] = useState("");
   const [gmailPassword, setGmailPassword] = useState("");
   const [showGmailPassword, setShowGmailPassword] = useState(false);
   const [isTestingGmail, setIsTestingGmail] = useState(false);
   const [isSavingGmail, setIsSavingGmail] = useState(false);
+  
+  // Notification Email Settings
+  const [notificationEmail, setNotificationEmail] = useState("");
+  const [isSavingNotificationEmail, setIsSavingNotificationEmail] = useState(false);
   
   // Bulk WhatsApp Message Templates (by status) - with labels and content
   const [bulkTemplateConfirmed, setBulkTemplateConfirmed] = useState(
@@ -290,6 +294,34 @@ export default function Settings() {
       }
     } catch (err) {
       toast({ title: "Hata", description: "Gmail baglantisi kaldırilamadi.", variant: "destructive" });
+    }
+  };
+  
+  // Load notification email setting from tenant settings
+  const { data: notificationEmailSetting } = useQuery<{ value: string | null }>({
+    queryKey: ['/api/settings', 'tenantNotificationEmail'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/tenantNotificationEmail');
+      return res.json();
+    },
+  });
+  
+  useEffect(() => {
+    if (notificationEmailSetting?.value) {
+      setNotificationEmail(notificationEmailSetting.value);
+    }
+  }, [notificationEmailSetting?.value]);
+  
+  const handleSaveNotificationEmail = async () => {
+    setIsSavingNotificationEmail(true);
+    try {
+      await apiRequest('POST', '/api/settings/tenantNotificationEmail', { value: notificationEmail });
+      toast({ title: "Başarılı", description: "Bildirim e-postası kaydedildi." });
+      queryClient.invalidateQueries({ queryKey: ['/api/settings', 'tenantNotificationEmail'] });
+    } catch (err) {
+      toast({ title: "Hata", description: "E-posta kaydedilemedi.", variant: "destructive" });
+    } finally {
+      setIsSavingNotificationEmail(false);
     }
   };
 
@@ -649,151 +681,54 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                Gmail E-posta Ayarları
+                E-posta Bildirimleri
               </CardTitle>
               <CardDescription>
-                Destek talepleri ve bildirimler için Gmail hesabınızı bağlayın
+                Destek talepleri ve sistem bildirimleri için e-posta adresinizi ayarlayın
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {tenantIntegrations?.gmailConfigured ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    <div className="flex-1">
-                      <p className="font-medium text-green-800 dark:text-green-300">Gmail Bağlı</p>
-                      <p className="text-sm text-green-700 dark:text-green-400">{tenantIntegrations.gmailUser}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          onClick={handleTestGmailConnection}
-                          disabled={isTestingGmail}
-                          data-testid="button-test-gmail"
-                        >
-                          {isTestingGmail ? (
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Mail className="h-4 w-4 mr-2" />
-                          )}
-                          Bağlantıyı Test Et
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Gmail bağlantısını test et</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          onClick={handleDisconnectGmail}
-                          className="text-destructive"
-                          data-testid="button-disconnect-gmail"
-                        >
-                          <X className="h-4 w-4 mr-2" />
-                          Bağlantıyı Kaldır
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Gmail bağlantısını kaldır</TooltipContent>
-                    </Tooltip>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-blue-800 dark:text-blue-300">Merkezi E-posta Sistemi</p>
+                    <p className="text-sm text-blue-700 dark:text-blue-400">
+                      E-postalar platform tarafından merkezi olarak gönderilmektedir. Sadece bildirim alacağınız e-posta adresini belirtin.
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-                    <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-800 dark:text-amber-300">Gmail Bağlı Değil</p>
-                      <p className="text-sm text-amber-700 dark:text-amber-400">
-                        E-posta bildirimleri göndermek için Gmail hesabınızı bağlayın.
-                      </p>
-                    </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="notificationEmail">Bildirim E-posta Adresi</Label>
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      id="notificationEmail"
+                      type="email"
+                      value={notificationEmail}
+                      onChange={(e) => setNotificationEmail(e.target.value)}
+                      placeholder="bildirim@acenteniz.com"
+                      className="max-w-md"
+                      data-testid="input-notification-email"
+                    />
+                    <Button
+                      onClick={handleSaveNotificationEmail}
+                      disabled={isSavingNotificationEmail}
+                      data-testid="button-save-notification-email"
+                    >
+                      {isSavingNotificationEmail ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4 mr-2" />
+                      )}
+                      Kaydet
+                    </Button>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="gmailUser">Gmail Adresi</Label>
-                      <Input 
-                        id="gmailUser"
-                        type="email"
-                        value={gmailUser}
-                        onChange={(e) => setGmailUser(e.target.value)}
-                        placeholder="ornek@gmail.com"
-                        data-testid="input-gmail-user"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="gmailPassword">Uygulama Şifresi</Label>
-                      <div className="relative">
-                        <Input 
-                          id="gmailPassword"
-                          type={showGmailPassword ? "text" : "password"}
-                          value={gmailPassword}
-                          onChange={(e) => setGmailPassword(e.target.value)}
-                          placeholder="16 karakterlik uygulama şifresi"
-                          data-testid="input-gmail-password"
-                        />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="absolute right-0 top-0 h-full px-3"
-                              onClick={() => setShowGmailPassword(!showGmailPassword)}
-                              data-testid="button-toggle-gmail-password"
-                            >
-                              {showGmailPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>{showGmailPassword ? "Şifreyi gizle" : "Şifreyi göster"}</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
-                    <p className="font-medium">Uygulama Şifresi Nasıl Alınır?</p>
-                    <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                      <li>
-                        <a 
-                          href="https://myaccount.google.com/security" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          Google Hesap Güvenliği
-                        </a>
-                        {" "}sayfasına gidin
-                      </li>
-                      <li>2 Adımlı Doğrulama'yı açın (açık değilse)</li>
-                      <li>"Uygulama şifreleri" bölümüne gidin</li>
-                      <li>"Smartur" adıyla yeni şifre oluştürün</li>
-                      <li>16 karakterlik şifreyi kopyalayın</li>
-                    </ol>
-                  </div>
-                  
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={handleSaveGmailSettings}
-                        disabled={isSavingGmail || !gmailUser || !gmailPassword}
-                        data-testid="button-save-gmail"
-                      >
-                        {isSavingGmail ? (
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Mail className="h-4 w-4 mr-2" />
-                        )}
-                        Gmail'i Bağla
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Gmail hesabını bağla ve kaydet</TooltipContent>
-                  </Tooltip>
+                  <p className="text-sm text-muted-foreground">
+                    Bu adrese müşteri talepleri, rezervasyon bildirimleri ve sistem uyarıları gönderilir.
+                  </p>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
 

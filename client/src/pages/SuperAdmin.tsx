@@ -3103,8 +3103,34 @@ function AgencySupportSection() {
   const [notificationEmail, setNotificationEmail] = useState('');
   const [emailSaving, setEmailSaving] = useState(false);
   
+  // SMTP configuration
+  const [smtpConfig, setSmtpConfig] = useState({
+    host: '',
+    port: '587',
+    secure: false,
+    username: '',
+    password: '',
+    fromEmail: '',
+    fromName: 'Smartur',
+  });
+  const [smtpSaving, setSmtpSaving] = useState(false);
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
+  
   const { data: notificationSettings } = useQuery<{ notificationEmail: string }>({
     queryKey: ['/api/platform/notification-settings'],
+  });
+  
+  const { data: smtpSettings } = useQuery<{ 
+    configured: boolean; 
+    host?: string;
+    port?: number;
+    secure?: boolean;
+    username?: string;
+    fromEmail?: string;
+    fromName?: string;
+  }>({
+    queryKey: ['/api/platform/smtp-config'],
   });
   
   useEffect(() => {
@@ -3112,6 +3138,20 @@ function AgencySupportSection() {
       setNotificationEmail(notificationSettings.notificationEmail);
     }
   }, [notificationSettings]);
+  
+  useEffect(() => {
+    if (smtpSettings?.configured) {
+      setSmtpConfig({
+        host: smtpSettings.host || '',
+        port: String(smtpSettings.port || 587),
+        secure: smtpSettings.secure || false,
+        username: smtpSettings.username || '',
+        password: '',
+        fromEmail: smtpSettings.fromEmail || '',
+        fromName: smtpSettings.fromName || 'Smartur',
+      });
+    }
+  }, [smtpSettings]);
   
   const saveNotificationEmail = async () => {
     setEmailSaving(true);
@@ -3124,15 +3164,198 @@ function AgencySupportSection() {
       setEmailSaving(false);
     }
   };
+  
+  const saveSmtpConfig = async () => {
+    setSmtpSaving(true);
+    try {
+      await apiRequest('POST', '/api/platform/smtp-config', smtpConfig);
+      queryClient.invalidateQueries({ queryKey: ['/api/platform/smtp-config'] });
+      toast({ title: "Başarılı", description: "SMTP yapılandırması kaydedildi." });
+    } catch (error) {
+      toast({ title: "Hata", description: "SMTP ayarları kaydedilemedi.", variant: "destructive" });
+    } finally {
+      setSmtpSaving(false);
+    }
+  };
+  
+  const testSmtpConnection = async () => {
+    setSmtpTesting(true);
+    try {
+      const result = await apiRequest('POST', '/api/platform/smtp-config/test', {});
+      toast({ title: "Başarılı", description: "SMTP bağlantısı başarılı!" });
+    } catch (error: any) {
+      toast({ title: "Hata", description: error?.message || "Bağlantı testi başarısız.", variant: "destructive" });
+    } finally {
+      setSmtpTesting(false);
+    }
+  };
+  
+  const deleteSmtpConfig = async () => {
+    try {
+      await apiRequest('DELETE', '/api/platform/smtp-config');
+      queryClient.invalidateQueries({ queryKey: ['/api/platform/smtp-config'] });
+      setSmtpConfig({
+        host: '',
+        port: '587',
+        secure: false,
+        username: '',
+        password: '',
+        fromEmail: '',
+        fromName: 'Smartur',
+      });
+      toast({ title: "Başarılı", description: "SMTP yapılandırması kaldırıldı." });
+    } catch (error) {
+      toast({ title: "Hata", description: "SMTP ayarları silinemedi.", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="space-y-4">
+      {/* SMTP Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Server className="h-5 w-5" />
+              SMTP Yapılandırması
+              {smtpSettings?.configured && (
+                <Badge variant="default">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Yapılandırıldı
+                </Badge>
+              )}
+            </div>
+          </CardTitle>
+          <CardDescription>Tüm platform e-postaları için merkezi SMTP sunucu ayarları</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="smtp-host">SMTP Sunucu</Label>
+              <Input
+                id="smtp-host"
+                placeholder="smtp.gmail.com"
+                value={smtpConfig.host}
+                onChange={(e) => setSmtpConfig({...smtpConfig, host: e.target.value})}
+                data-testid="input-smtp-host"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-port">Port</Label>
+              <Input
+                id="smtp-port"
+                placeholder="587"
+                value={smtpConfig.port}
+                onChange={(e) => setSmtpConfig({...smtpConfig, port: e.target.value})}
+                data-testid="input-smtp-port"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-username">Kullanıcı Adı (E-posta)</Label>
+              <Input
+                id="smtp-username"
+                placeholder="noreply@example.com"
+                value={smtpConfig.username}
+                onChange={(e) => setSmtpConfig({...smtpConfig, username: e.target.value})}
+                data-testid="input-smtp-username"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-password">Şifre</Label>
+              <div className="relative">
+                <Input
+                  id="smtp-password"
+                  type={showSmtpPassword ? "text" : "password"}
+                  placeholder={smtpSettings?.configured ? "••••••••" : "Şifre veya uygulama şifresi"}
+                  value={smtpConfig.password}
+                  onChange={(e) => setSmtpConfig({...smtpConfig, password: e.target.value})}
+                  data-testid="input-smtp-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0"
+                  onClick={() => setShowSmtpPassword(!showSmtpPassword)}
+                >
+                  {showSmtpPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-from-email">Gönderici E-posta</Label>
+              <Input
+                id="smtp-from-email"
+                placeholder="noreply@example.com"
+                value={smtpConfig.fromEmail}
+                onChange={(e) => setSmtpConfig({...smtpConfig, fromEmail: e.target.value})}
+                data-testid="input-smtp-from-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-from-name">Gönderici Adı</Label>
+              <Input
+                id="smtp-from-name"
+                placeholder="Smartur"
+                value={smtpConfig.fromName}
+                onChange={(e) => setSmtpConfig({...smtpConfig, fromName: e.target.value})}
+                data-testid="input-smtp-from-name"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="smtp-secure"
+              checked={smtpConfig.secure}
+              onCheckedChange={(checked) => setSmtpConfig({...smtpConfig, secure: checked})}
+              data-testid="switch-smtp-secure"
+            />
+            <Label htmlFor="smtp-secure">SSL/TLS Kullan (Port 465 için)</Label>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button 
+              onClick={saveSmtpConfig}
+              disabled={smtpSaving || !smtpConfig.host || !smtpConfig.username || (!smtpSettings?.configured && !smtpConfig.password)}
+              data-testid="button-save-smtp"
+            >
+              <Save className="h-4 w-4 mr-1" />
+              {smtpSaving ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
+            {smtpSettings?.configured && (
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={testSmtpConnection}
+                  disabled={smtpTesting}
+                  data-testid="button-test-smtp"
+                >
+                  <Wifi className="h-4 w-4 mr-1" />
+                  {smtpTesting ? 'Test Ediliyor...' : 'Bağlantıyı Test Et'}
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={deleteSmtpConfig}
+                  data-testid="button-delete-smtp"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Kaldır
+                </Button>
+              </>
+            )}
+          </div>
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p><strong>Gmail için:</strong> smtp.gmail.com, Port 587, Uygulama şifresi kullanın</p>
+            <p><strong>Outlook için:</strong> smtp.office365.com, Port 587</p>
+          </div>
+        </CardContent>
+      </Card>
+      
       {/* Notification Email Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            Destek Bildirimleri
+            Bildirim Alıcısı
           </CardTitle>
           <CardDescription>Yeni destek talebi geldiğinde bildirim alacak e-posta adresini ayarlayın</CardDescription>
         </CardHeader>
@@ -3156,7 +3379,7 @@ function AgencySupportSection() {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            Gmail yapılandırması gereklidir. Acente ayarlarından veya sistem ayarlarından Gmail'i yapılandırın.
+            SMTP yapılandırması gereklidir. Yukarıdaki SMTP ayarlarını yapılandırın.
           </p>
         </CardContent>
       </Card>
