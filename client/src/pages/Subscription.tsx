@@ -3,8 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { 
@@ -62,7 +60,6 @@ interface UsageStats {
 }
 
 export default function Subscription() {
-  const [isYearly, setIsYearly] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
 
@@ -257,22 +254,7 @@ export default function Subscription() {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             İşletmenize en uygun planı seçin ve Smartur'un tüm özelliklerinden yararlanın.
           </p>
-
-          <div className="flex items-center justify-center gap-3 pt-4">
-            <Label htmlFor="billing-toggle" className={!isYearly ? "font-semibold" : "text-muted-foreground"}>
-              Aylık
-            </Label>
-            <Switch
-              id="billing-toggle"
-              checked={isYearly}
-              onCheckedChange={setIsYearly}
-              data-testid="switch-billing-toggle"
-            />
-            <Label htmlFor="billing-toggle" className={isYearly ? "font-semibold" : "text-muted-foreground"}>
-              Yıllık
-              <Badge variant="secondary" className="ml-2">%20 Tasarruf</Badge>
-            </Label>
-          </div>
+          <Badge variant="secondary">Yıllık Abonelik</Badge>
         </div>
 
         {isLoading ? (
@@ -281,12 +263,8 @@ export default function Subscription() {
           <div className="grid gap-6 md:grid-cols-3">
             {activePlans.map((plan) => {
               const isCurrentPlan = currentPlan === plan.code;
-              const monthlyPrice = isYearly 
-                ? Math.round((plan.yearlyPriceTl || 0) / 12)
-                : plan.priceTl || 0;
-              const monthlyPriceUsd = isYearly 
-                ? Math.round((plan.yearlyPriceUsd || 0) / 12)
-                : plan.priceUsd || 0;
+              const yearlyPriceTl = plan.yearlyPriceTl || 0;
+              const yearlyPriceUsd = plan.yearlyPriceUsd || 0;
 
               return (
                 <Card 
@@ -309,17 +287,12 @@ export default function Subscription() {
                   <CardContent className="flex-1 space-y-6">
                     <div className="text-center">
                       <div className="text-4xl font-bold">
-                        {formatPrice(monthlyPrice)}
-                        <span className="text-lg font-normal text-muted-foreground"> TL</span>
+                        {formatPrice(yearlyPriceTl)}
+                        <span className="text-lg font-normal text-muted-foreground"> TL/yıl</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        ${formatPrice(monthlyPriceUsd)}/ay
+                        ${formatPrice(yearlyPriceUsd)}/yıl
                       </div>
-                      {isYearly && (
-                        <div className="text-xs text-green-600 mt-1">
-                          Yıllık toplamda {formatPrice(plan.yearlyPriceTl)} TL
-                        </div>
-                      )}
                     </div>
 
                     <div className="space-y-3 text-sm">
