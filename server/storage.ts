@@ -506,6 +506,59 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTenant(id: number): Promise<void> {
+    // Cascade delete all related records before deleting tenant
+    // Order matters due to foreign key constraints
+    
+    // Delete user-related records first
+    const tenantUsers = await db.select({ id: appUsers.id }).from(appUsers).where(eq(appUsers.tenantId, id));
+    for (const user of tenantUsers) {
+      await db.delete(userRoles).where(eq(userRoles.userId, user.id));
+      await db.delete(userLoginLogs).where(eq(userLoginLogs.userId, user.id));
+    }
+    await db.delete(appUsers).where(eq(appUsers.tenantId, id));
+    
+    // Delete reservation-related records
+    await db.delete(customerRequests).where(eq(customerRequests.tenantId, id));
+    await db.delete(reservations).where(eq(reservations.tenantId, id));
+    
+    // Delete capacity records
+    await db.delete(capacity).where(eq(capacity.tenantId, id));
+    
+    // Delete package tour related records
+    const tenantPackageTours = await db.select({ id: packageTours.id }).from(packageTours).where(eq(packageTours.tenantId, id));
+    for (const pt of tenantPackageTours) {
+      await db.delete(packageTourActivities).where(eq(packageTourActivities.packageTourId, pt.id));
+    }
+    await db.delete(packageTours).where(eq(packageTours.tenantId, id));
+    
+    // Delete activity-related records
+    await db.delete(activityCosts).where(eq(activityCosts.tenantId, id));
+    await db.delete(agencyActivityTerms).where(eq(agencyActivityTerms.tenantId, id));
+    await db.delete(agencyActivityRates).where(eq(agencyActivityRates.tenantId, id));
+    await db.delete(activities).where(eq(activities.tenantId, id));
+    
+    // Delete agency-related records
+    await db.delete(settlementEntries).where(eq(settlementEntries.tenantId, id));
+    await db.delete(settlements).where(eq(settlements.tenantId, id));
+    await db.delete(agencyPayouts).where(eq(agencyPayouts.tenantId, id));
+    await db.delete(payments).where(eq(payments.tenantId, id));
+    await db.delete(agencies).where(eq(agencies.tenantId, id));
+    
+    // Delete supplier records
+    await db.delete(supplierDispatches).where(eq(supplierDispatches.tenantId, id));
+    
+    // Delete messaging records
+    await db.delete(messages).where(eq(messages.tenantId, id));
+    await db.delete(supportRequests).where(eq(supportRequests.tenantId, id));
+    await db.delete(autoResponses).where(eq(autoResponses.tenantId, id));
+    
+    // Delete other tenant-specific records
+    await db.delete(holidays).where(eq(holidays.tenantId, id));
+    await db.delete(requestMessageTemplates).where(eq(requestMessageTemplates.tenantId, id));
+    await db.delete(tenantIntegrations).where(eq(tenantIntegrations.tenantId, id));
+    await db.delete(systemLogs).where(eq(systemLogs.tenantId, id));
+    
+    // Finally delete the tenant
     await db.delete(tenants).where(eq(tenants.id, id));
   }
 
