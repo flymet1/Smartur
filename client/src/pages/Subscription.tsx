@@ -387,7 +387,7 @@ export default function Subscription() {
                 <div className="p-4 border rounded-lg">
                   <h4 className="font-medium mb-2">WhatsApp ile İletişim</h4>
                   <p className="text-sm text-muted-foreground">
-                    +90 XXX XXX XX XX numarasından bize ulaşın.
+                    05302885515 numarasından bize ulaşın.
                   </p>
                 </div>
               </div>
