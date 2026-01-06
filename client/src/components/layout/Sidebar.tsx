@@ -27,8 +27,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { SiWhatsapp } from "react-icons/si";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -87,7 +86,6 @@ export function Sidebar() {
   const [location, setLocation] = useLocation();
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<number[]>([]);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
-  const [supportSheetOpen, setSupportSheetOpen] = useState(false);
   const { permissions } = usePermissions();
 
   // Filter nav items based on user permissions
@@ -414,25 +412,25 @@ export function Sidebar() {
                     </div>
                   </Link>
                 ))}
-                <div 
-                  onClick={() => setSupportSheetOpen(true)}
-                  className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                <Link href="/messages?filter=human_intervention" className="flex-1">
+                  <div className={cn(
+                    "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                     openSupportCount > 0 
                       ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
                       : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
                   )}>
-                  <Bell className="h-3.5 w-3.5" />
-                  Destek
-                  {openSupportCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                    >
-                      {openSupportCount}
-                    </Badge>
-                  )}
-                </div>
+                    <Bell className="h-3.5 w-3.5" />
+                    Destek
+                    {openSupportCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                      >
+                        {openSupportCount}
+                      </Badge>
+                    )}
+                  </div>
+                </Link>
               </div>
               {navItems.map((item) => (
                 <Link key={item.href} href={item.href}>
@@ -525,26 +523,26 @@ export function Sidebar() {
                 </div>
               </Link>
             ))}
-            <div 
-              onClick={() => setSupportSheetOpen(true)}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+            <Link href="/messages?filter=human_intervention" className="flex-1">
+              <div className={cn(
+                "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                 openSupportCount > 0 
                   ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
                   : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
               )} data-testid="button-support-notifications">
-              <Bell className="h-3.5 w-3.5" />
-              Destek
-              {openSupportCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                  data-testid="badge-support-open"
-                >
-                  {openSupportCount}
-                </Badge>
-              )}
-            </div>
+                <Bell className="h-3.5 w-3.5" />
+                Destek
+                {openSupportCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                    data-testid="badge-support-open"
+                  >
+                    {openSupportCount}
+                  </Badge>
+                )}
+              </div>
+            </Link>
           </div>
         </div>
 
@@ -696,61 +694,6 @@ export function Sidebar() {
           )}
         </div>
       </div>
-
-      {/* Support Requests Sheet */}
-      <Sheet open={supportSheetOpen} onOpenChange={setSupportSheetOpen}>
-        <SheetContent side="right" className="w-[400px] sm:w-[500px]">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Aktif Destek Talepleri
-              {openSupportCount > 0 && (
-                <Badge variant="destructive">{openSupportCount}</Badge>
-              )}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-3 max-h-[calc(100vh-120px)] overflow-y-auto">
-            {supportSummary?.requests && supportSummary.requests.length > 0 ? (
-              supportSummary.requests.map((request) => (
-                <div
-                  key={request.id}
-                  className="p-4 rounded-lg border bg-card hover-elevate cursor-pointer"
-                  onClick={() => {
-                    setSupportSheetOpen(false);
-                    setLocation(`/messages?phone=${encodeURIComponent(request.phone)}`);
-                  }}
-                  data-testid={`support-request-${request.id}`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <SiWhatsapp className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        <span className="font-medium text-sm truncate">{request.phone}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {request.description || "Destek talebi"}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant={request.status === 'open' ? 'destructive' : 'secondary'} className="text-xs">
-                          {request.status === 'open' ? 'Açık' : request.status === 'in_progress' ? 'İşlemde' : 'Kapalı'}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {request.createdAt ? new Date(request.createdAt).toLocaleDateString('tr-TR') : ''}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                <Bell className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p className="text-sm">Aktif destek talebi bulunmuyor</p>
-              </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
     </>
   );
 }
