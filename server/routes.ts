@@ -1957,12 +1957,14 @@ export async function registerRoutes(
         if (activity) activityName = activity.name;
       }
       
-      // Try to send email notification to admin using centralized SMTP
+      // Try to send email notification to tenant's configured notification email
       try {
-        const developerEmail = await storage.getSetting("developerEmail");
-        if (developerEmail) {
-          const requestTypeText = requestType === 'time_change' ? 'Saat Degisikligi' : 
-                                  requestType === 'cancellation' ? 'İptal Talebi' : 'Diger Talep';
+        // Get tenant's notification email (tenant-specific setting)
+        const tenantNotificationEmail = await storage.getSetting(`tenantNotificationEmail_${reservation.tenantId}`);
+        
+        if (tenantNotificationEmail) {
+          const requestTypeText = requestType === 'time_change' ? 'Saat Değişikliği' : 
+                                  requestType === 'cancellation' ? 'İptal Talebi' : 'Diğer Talep';
           
           const emailHtml = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -2021,10 +2023,10 @@ export async function registerRoutes(
             </div>
           `;
           
-          // Send email using centralized SMTP service
+          // Send email using centralized SMTP service to tenant's notification email
           const { sendEmail } = await import("./email");
           const result = await sendEmail({
-            to: developerEmail,
+            to: tenantNotificationEmail,
             subject: `[Müşteri Talebi] ${requestTypeText} - ${reservation.customerName}`,
             html: emailHtml,
             fromName: 'Smartur Bildirim',
