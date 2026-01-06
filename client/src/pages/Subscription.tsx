@@ -55,6 +55,10 @@ interface UsageStats {
   maxUsers: number;
   daysRemaining: number | null;
   planName: string;
+  dailyMessagesUsed: number;
+  maxDailyMessages: number;
+  dailyReservationsUsed: number;
+  maxDailyReservations: number;
 }
 
 export default function Subscription() {
@@ -203,6 +207,45 @@ export default function Subscription() {
                     value={usageStats.maxUsers >= 9999 ? 0 : (usageStats.usersCount / usageStats.maxUsers) * 100} 
                     className="h-2"
                   />
+                </div>
+              </div>
+
+              {/* Daily Usage Section */}
+              <div className="grid gap-6 md:grid-cols-2 mt-4 pt-4 border-t">
+                {/* Daily Messages */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      Bugünkü Mesajlar
+                    </span>
+                    <span className="font-medium">
+                      {usageStats.dailyMessagesUsed} / {formatLimit(usageStats.maxDailyMessages)}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={usageStats.maxDailyMessages >= 9999 ? 0 : (usageStats.dailyMessagesUsed / usageStats.maxDailyMessages) * 100} 
+                    className={`h-2 ${getProgressColor(usageStats.dailyMessagesUsed, usageStats.maxDailyMessages)}`}
+                  />
+                  <p className="text-xs text-muted-foreground">Günlük WhatsApp mesaj limiti (gece yarısı sıfırlanır)</p>
+                </div>
+
+                {/* Daily Reservations */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      Bugünkü Rezervasyonlar
+                    </span>
+                    <span className="font-medium">
+                      {usageStats.dailyReservationsUsed} / {formatLimit(usageStats.maxDailyReservations)}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={usageStats.maxDailyReservations >= 9999 ? 0 : (usageStats.dailyReservationsUsed / usageStats.maxDailyReservations) * 100} 
+                    className={`h-2 ${getProgressColor(usageStats.dailyReservationsUsed, usageStats.maxDailyReservations)}`}
+                  />
+                  <p className="text-xs text-muted-foreground">Günlük rezervasyon limiti (gece yarısı sıfırlanır)</p>
                 </div>
               </div>
             </CardContent>

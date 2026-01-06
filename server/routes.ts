@@ -5496,6 +5496,22 @@ Sky Fethiye`;
         daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       }
 
+      // Get daily usage stats
+      let dailyMessagesUsed = 0;
+      let maxDailyMessages = currentPlan?.maxDailyMessages || 50;
+      let dailyReservationsUsed = 0;
+      let maxDailyReservations = currentPlan?.maxDailyReservations || 10;
+
+      if (tenantId) {
+        const messageUsage = await storage.getTenantMessageLimit(tenantId);
+        dailyMessagesUsed = messageUsage.used;
+        maxDailyMessages = messageUsage.limit;
+
+        const reservationUsage = await storage.getTenantDailyReservationUsage(tenantId);
+        dailyReservationsUsed = reservationUsage.used;
+        maxDailyReservations = reservationUsage.limit;
+      }
+
       res.json({
         activitiesUsed,
         maxActivities: currentPlan?.maxActivities || 5,
@@ -5505,6 +5521,10 @@ Sky Fethiye`;
         maxUsers: currentPlan?.maxUsers || 1,
         daysRemaining,
         planName: currentPlan?.name || "Deneme",
+        dailyMessagesUsed,
+        maxDailyMessages,
+        dailyReservationsUsed,
+        maxDailyReservations,
       });
     } catch (err) {
       console.error("Usage stats error:", err);
