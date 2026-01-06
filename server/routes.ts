@@ -8102,6 +8102,19 @@ async function seedDatabase() {
   // Create default tenant and admin user if not exists
   const defaultTenant = await storage.createDefaultTenantIfNotExists();
   
+  // Create default platform admin for Super Admin panel if not exists
+  const existingPlatformAdmin = await storage.getPlatformAdminByEmail("flymet.mail@gmail.com");
+  if (!existingPlatformAdmin) {
+    await storage.createPlatformAdmin({
+      email: "flymet.mail@gmail.com",
+      name: "Süper Admin",
+      passwordHash: hashPassword("Netim1905"),
+      role: "super_admin",
+      isActive: true
+    });
+    console.log("Default platform admin created: flymet.mail@gmail.com / Netim1905");
+  }
+  
   // Check if any admin user exists for this tenant
   const existingUsers = await storage.getAppUsers();
   const tenantUsers = existingUsers.filter(u => u.tenantId === defaultTenant.id);
