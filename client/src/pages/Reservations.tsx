@@ -30,6 +30,8 @@ import { useSearch, useLocation } from "wouter";
 import { format, parse, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, addWeeks, subWeeks, isSameMonth, isSameDay, isToday, eachDayOfInterval, subDays, isWithinInterval, differenceInDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getErrorToastMessage, isLicenseError } from "@/lib/error-utils";
+import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimitDialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -279,8 +281,9 @@ export default function Reservations() {
       clearSelection();
       toast({ title: "Başarılı", description: "Seçili rezervasyonların durumu güncellendi." });
     },
-    onError: () => {
-      toast({ title: "Hata", description: "İşlem başarısız oldu.", variant: "destructive" });
+    onError: (err) => {
+      const { title, description } = getErrorToastMessage(err);
+      toast({ title, description, variant: "destructive" });
     },
   });
 
@@ -293,8 +296,9 @@ export default function Reservations() {
       clearSelection();
       toast({ title: "Başarılı", description: "Seçili rezervasyonlar silindi." });
     },
-    onError: () => {
-      toast({ title: "Hata", description: "Silme işlemi başarısız oldu.", variant: "destructive" });
+    onError: (err) => {
+      const { title, description } = getErrorToastMessage(err);
+      toast({ title, description, variant: "destructive" });
     },
   });
 
@@ -3785,15 +3789,31 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
       setHotelName("");
       setHasTransfer(false);
     } catch (err) {
-      toast({ 
-        title: "Hata", 
-        description: "Rezervasyon oluşturulamadı. Kapasite dolu olabilir.", 
-        variant: "destructive" 
-      });
+      const licenseErr = parseLicenseError(err);
+      if (licenseErr.isLicenseError) {
+        setLicenseErrorOpen(true);
+        setLicenseErrorMessage(licenseErr.message);
+        setLicenseErrorType(licenseErr.limitType);
+      } else {
+        const { title, description } = getErrorToastMessage(err);
+        toast({ title, description, variant: "destructive" });
+      }
     }
   };
 
+  // License error dialog state
+  const [licenseErrorOpen, setLicenseErrorOpen] = useState(false);
+  const [licenseErrorMessage, setLicenseErrorMessage] = useState("");
+  const [licenseErrorType, setLicenseErrorType] = useState<'activity' | 'reservation' | 'user' | 'general'>('general');
+
   return (
+    <>
+    <LicenseLimitDialog
+      open={licenseErrorOpen}
+      onOpenChange={setLicenseErrorOpen}
+      errorMessage={licenseErrorMessage}
+      limitType={licenseErrorType}
+    />
     <Dialog open={open} onOpenChange={setOpen}>
       {!controlledOpen && (
         <DialogTrigger asChild>
@@ -4040,6 +4060,7 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 

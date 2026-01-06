@@ -36,6 +36,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { getErrorToastMessage } from "@/lib/error-utils";
 import type { Capacity } from "@shared/schema";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -336,8 +337,9 @@ function CapacityCardWithEdit({ slot, activityName, onQuickAdjust, onCreateReser
       toast({ title: "Başarılı", description: "Kapasite güncellendi." });
       setEditOpen(false);
     },
-    onError: () => {
-      toast({ title: "Hata", description: "Kapasite güncellenemedi.", variant: "destructive" });
+    onError: (err) => {
+      const { title, description } = getErrorToastMessage(err);
+      toast({ title, description, variant: "destructive" });
     },
   });
 
@@ -352,8 +354,9 @@ function CapacityCardWithEdit({ slot, activityName, onQuickAdjust, onCreateReser
       queryClient.invalidateQueries({ queryKey: [api.capacity.list.path] });
       toast({ title: "Başarılı", description: "Slot silindi." });
     },
-    onError: () => {
-      toast({ title: "Hata", description: "Slot silinemedi.", variant: "destructive" });
+    onError: (err) => {
+      const { title, description } = getErrorToastMessage(err);
+      toast({ title, description, variant: "destructive" });
     },
   });
 
@@ -599,8 +602,9 @@ function BulkCapacityDialog({ activities }: { activities: any[] }) {
       toast({ title: "Başarılı", description: `${data.created} slot oluşturuldu.` });
       setOpen(false);
     },
-    onError: () => {
-      toast({ title: "Hata", description: "Toplu kapasite oluşturulamadı.", variant: "destructive" });
+    onError: (err) => {
+      const { title, description } = getErrorToastMessage(err);
+      toast({ title, description, variant: "destructive" });
     },
   });
   
@@ -1003,8 +1007,9 @@ export default function CalendarPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.capacity.list.path] });
     },
-    onError: () => {
-      toast({ title: "Hata", description: "Kapasite ayarlanamadı.", variant: "destructive" });
+    onError: (err) => {
+      const { title, description } = getErrorToastMessage(err);
+      toast({ title, description, variant: "destructive" });
     },
   });
 
