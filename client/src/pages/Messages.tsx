@@ -72,12 +72,21 @@ interface Conversation {
 }
 
 export default function Messages() {
-  const [filter, setFilter] = useState<FilterType>('all');
+  const searchParams = useSearch();
+  const initialFilter = (() => {
+    const params = new URLSearchParams(searchParams);
+    const filterParam = params.get('filter');
+    if (filterParam === 'human_intervention' || filterParam === 'with_reservation') {
+      return filterParam;
+    }
+    return 'all';
+  })();
+  
+  const [filter, setFilter] = useState<FilterType>(initialFilter);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>('daily');
   const { toast } = useToast();
-  const searchParams = useSearch();
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery<MessageAnalytics>({
     queryKey: ['/api/conversations/analytics', analyticsPeriod],
