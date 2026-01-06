@@ -309,7 +309,7 @@ export interface IStorage {
   createLicense(licenseData: InsertLicense): Promise<License>;
   updateLicense(id: number, licenseData: Partial<InsertLicense>): Promise<License>;
   deleteLicense(id: number): Promise<void>;
-  verifyLicense(): Promise<{ 
+  verifyLicense(tenantId?: number): Promise<{ 
     valid: boolean; 
     message: string; 
     license?: License;
@@ -318,7 +318,7 @@ export interface IStorage {
     graceDaysRemaining?: number;
     canWrite?: boolean;
   }>;
-  getLicenseUsage(): Promise<{ activitiesUsed: number; reservationsThisMonth: number }>;
+  getLicenseUsage(tenantId?: number): Promise<{ activitiesUsed: number; reservationsThisMonth: number }>;
 
   // Request Message Templates
   getRequestMessageTemplates(): Promise<RequestMessageTemplate[]>;
@@ -1951,7 +1951,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(license).where(eq(license.id, id));
   }
 
-  async verifyLicense(): Promise<{ 
+  async verifyLicense(tenantId?: number): Promise<{ 
     valid: boolean; 
     message: string; 
     license?: License;
@@ -2017,8 +2017,8 @@ export class DatabaseStorage implements IStorage {
       
       // Warning period (within 14 days of expiry)
       if (daysRemaining <= WARNING_PERIOD_DAYS) {
-        // Continue to check usage limits but with warning status
-        const usage = await this.getLicenseUsage();
+        // Continue to check usage limits but with warning status - filter by tenantId
+        const usage = await this.getLicenseUsage(tenantId);
         
         if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
           return { 
@@ -2058,8 +2058,8 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // Check usage limits for active license
-    const usage = await this.getLicenseUsage();
+    // Check usage limits for active license - filter by tenantId
+    const usage = await this.getLicenseUsage(tenantId);
     
     if (currentLicense.maxActivities && usage.activitiesUsed > currentLicense.maxActivities) {
       return { 
@@ -2095,21 +2095,39 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getLicenseUsage(): Promise<{ activitiesUsed: number; reservationsThisMonth: number }> {
-    // Count active activities
-    const activeActivities = await db.select().from(activities).where(eq(activities.active, true));
+  async getLicenseUsage(tenantId?: number): Promise<{ activitiesUsed: number; reservationsThisMonth: number }> {
+    // Count active activities - filter by tenantId if provided
+    let activeActivities;
+    if (tenantId) {
+      activeActivities = await db.select().from(activities).where(
+        and(eq(activities.active, true), eq(activities.tenantId, tenantId))
+      );
+    } else {
+      activeActivities = await db.select().from(activities).where(eq(activities.active, true));
+    }
     
-    // Count reservations this month
+    // Count reservations this month - filter by tenantId if provided
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
     
-    const monthlyReservations = await db.select()
-      .from(reservations)
-      .where(and(
-        gte(reservations.date, firstDayOfMonth),
-        lte(reservations.date, lastDayOfMonth)
-      ));
+    let monthlyReservations;
+    if (tenantId) {
+      monthlyReservations = await db.select()
+        .from(reservations)
+        .where(and(
+          gte(reservations.date, firstDayOfMonth),
+          lte(reservations.date, lastDayOfMonth),
+          eq(reservations.tenantId, tenantId)
+        ));
+    } else {
+      monthlyReservations = await db.select()
+        .from(reservations)
+        .where(and(
+          gte(reservations.date, firstDayOfMonth),
+          lte(reservations.date, lastDayOfMonth)
+        ));
+    }
 
     return {
       activitiesUsed: activeActivities.length,

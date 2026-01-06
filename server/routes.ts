@@ -121,9 +121,9 @@ const PERMISSIONS = {
   SUBSCRIPTION_MANAGE: "subscription.manage",
 } as const;
 
-// License middleware - checks if write operations are allowed
-async function checkLicenseForWrite(): Promise<{ allowed: boolean; message: string; status?: string }> {
-  const verification = await storage.verifyLicense();
+// License middleware - checks if write operations are allowed (tenant-aware)
+async function checkLicenseForWrite(tenantId?: number): Promise<{ allowed: boolean; message: string; status?: string }> {
+  const verification = await storage.verifyLicense(tenantId);
   
   if (!verification.canWrite) {
     let message = verification.message;
@@ -973,13 +973,13 @@ export async function registerRoutes(
 
   app.post(api.activities.create.path, async (req, res) => {
     try {
-      // License check for write operations
-      const licenseCheck = await checkLicenseForWrite();
+      const tenantId = req.session?.tenantId;
+      // License check for write operations (tenant-aware)
+      const licenseCheck = await checkLicenseForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
       }
       
-      const tenantId = req.session?.tenantId;
       const input = api.activities.create.input.parse(req.body);
       const item = await storage.createActivity({ ...input, tenantId });
       res.status(201).json(item);
@@ -991,8 +991,9 @@ export async function registerRoutes(
 
   app.put(api.activities.update.path, async (req, res) => {
     try {
-      // License check for write operations
-      const licenseCheck = await checkLicenseForWrite();
+      const tenantId = req.session?.tenantId;
+      // License check for write operations (tenant-aware)
+      const licenseCheck = await checkLicenseForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
       }
@@ -1006,8 +1007,9 @@ export async function registerRoutes(
   });
 
   app.delete(api.activities.delete.path, async (req, res) => {
-    // License check for write operations
-    const licenseCheck = await checkLicenseForWrite();
+    const tenantId = req.session?.tenantId;
+    // License check for write operations (tenant-aware)
+    const licenseCheck = await checkLicenseForWrite(tenantId);
     if (!licenseCheck.allowed) {
       return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
     }
@@ -1041,8 +1043,9 @@ export async function registerRoutes(
 
   app.post("/api/package-tours", async (req, res) => {
     try {
-      // License check for write operations
-      const licenseCheck = await checkLicenseForWrite();
+      const tenantId = req.session?.tenantId;
+      // License check for write operations (tenant-aware)
+      const licenseCheck = await checkLicenseForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
       }
@@ -1420,7 +1423,8 @@ export async function registerRoutes(
   // Bulk capacity create endpoint
   app.post("/api/capacity/bulk", async (req, res) => {
     try {
-      const licenseCheck = await checkLicenseForWrite();
+      const tenantId = req.session?.tenantId;
+      const licenseCheck = await checkLicenseForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message });
       }
@@ -1552,14 +1556,14 @@ export async function registerRoutes(
   });
 
   app.post(api.reservations.create.path, async (req, res) => {
-    // License check for write operations
-    const licenseCheck = await checkLicenseForWrite();
+    const tenantId = req.session?.tenantId;
+    // License check for write operations (tenant-aware)
+    const licenseCheck = await checkLicenseForWrite(tenantId);
     if (!licenseCheck.allowed) {
       return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
     }
     
     // Daily reservation limit check
-    const tenantId = req.session?.tenantId;
     if (tenantId) {
       const reservationUsage = await storage.getTenantDailyReservationUsage(tenantId);
       if (reservationUsage.remaining <= 0) {
@@ -1789,13 +1793,13 @@ export async function registerRoutes(
     }
     
     try {
-      // License check using established guard
-      const licenseCheck = await checkLicenseForWrite();
+      const tenantId = req.session?.tenantId;
+      // License check using established guard (tenant-aware)
+      const licenseCheck = await checkLicenseForWrite(tenantId);
       if (!licenseCheck.allowed) {
         return res.status(403).json({ error: licenseCheck.message });
       }
       
-      const tenantId = req.session?.tenantId;
       const allReservations = await storage.getReservations(tenantId);
       
       // Find all reservations in this package group - ONLY match by packageTourId AND orderNumber
