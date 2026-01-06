@@ -5275,6 +5275,93 @@ Sky Fethiye`;
         }
       }
 
+      // Create default WhatsApp bot rules (auto responses) for the new tenant
+      const defaultAutoResponses = [
+        {
+          tenantId: tenant.id,
+          name: "Fiyat Bilgisi",
+          keywords: JSON.stringify(["fiyat", "ücret", "ne kadar", "kaç para", "kaç tl", "ucuz", "pahalı"]),
+          keywordsEn: JSON.stringify(["price", "cost", "how much", "fee", "rate"]),
+          response: "Fiyat bilgisi için lütfen aktivite sayfamızı ziyaret edin veya temsilcimizle görüşmek için bekleyin.",
+          responseEn: "For pricing information, please visit our activity page or wait to speak with our representative.",
+          priority: 10,
+          isActive: true
+        },
+        {
+          tenantId: tenant.id,
+          name: "Rezervasyon Durumu",
+          keywords: JSON.stringify(["rezervasyon", "booking", "kayıt", "yer ayırtma", "randevu"]),
+          keywordsEn: JSON.stringify(["reservation", "booking", "appointment", "schedule"]),
+          response: "Rezervasyon durumunuzu kontrol etmek için rezervasyon numaranızı paylaşabilir misiniz?",
+          responseEn: "To check your reservation status, could you please share your reservation number?",
+          priority: 9,
+          isActive: true
+        },
+        {
+          tenantId: tenant.id,
+          name: "İptal/Değişiklik",
+          keywords: JSON.stringify(["iptal", "değişiklik", "tarih değiştir", "saat değiştir", "erteleme"]),
+          keywordsEn: JSON.stringify(["cancel", "change", "reschedule", "modify", "postpone"]),
+          response: "Rezervasyon iptali veya değişikliği için lütfen rezervasyon numaranızı ve talebinizi belirtin. Temsilcimiz en kısa sürede size dönüş yapacaktır.",
+          responseEn: "For cancellation or modification, please provide your reservation number and request. Our representative will get back to you shortly.",
+          priority: 8,
+          isActive: true
+        },
+        {
+          tenantId: tenant.id,
+          name: "Çalışma Saatleri",
+          keywords: JSON.stringify(["saat", "çalışma saati", "açık mı", "kapalı mı", "ne zaman"]),
+          keywordsEn: JSON.stringify(["hours", "open", "closed", "when", "time"]),
+          response: "Çalışma saatlerimiz hakkında bilgi almak için web sitemizi ziyaret edebilir veya mesai saatleri içinde bizi arayabilirsiniz.",
+          responseEn: "For our working hours, please visit our website or call us during business hours.",
+          priority: 5,
+          isActive: true
+        },
+        {
+          tenantId: tenant.id,
+          name: "Selamlama",
+          keywords: JSON.stringify(["merhaba", "selam", "günaydın", "iyi günler", "iyi akşamlar"]),
+          keywordsEn: JSON.stringify(["hello", "hi", "good morning", "good evening", "hey"]),
+          response: "Merhaba! Size nasıl yardımcı olabiliriz?",
+          responseEn: "Hello! How can we help you?",
+          priority: 1,
+          isActive: true
+        }
+      ];
+
+      for (const autoResponse of defaultAutoResponses) {
+        await storage.createAutoResponse(autoResponse);
+      }
+
+      // Create default request message templates for the new tenant
+      const defaultMessageTemplates = [
+        {
+          tenantId: tenant.id,
+          name: "Talep Onaylandı",
+          templateType: "approved",
+          messageContent: "Sayın {customerName}, {requestType} talebiniz onaylanmıştır. Teşekkür ederiz.",
+          isActive: true
+        },
+        {
+          tenantId: tenant.id,
+          name: "Talep Değerlendiriliyor",
+          templateType: "pending",
+          messageContent: "Sayın {customerName}, {requestType} talebiniz değerlendirilmektedir. En kısa sürede size dönüş yapacağız.",
+          isActive: true
+        },
+        {
+          tenantId: tenant.id,
+          name: "Talep Reddedildi",
+          templateType: "rejected",
+          messageContent: "Sayın {customerName}, üzgünüz ancak {requestType} talebinizi karşılayamıyoruz. Detaylar için bizimle iletişime geçebilirsiniz.",
+          isActive: true
+        }
+      ];
+
+      for (const template of defaultMessageTemplates) {
+        await storage.createRequestMessageTemplate(template);
+      }
+
       res.json({ tenant, adminUser });
     } catch (err) {
       console.error("Tenant oluşturma hatası:", err);
