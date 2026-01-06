@@ -5094,31 +5094,6 @@ export default function SuperAdmin() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="priceTl">Aylık Fiyat (TL kuruş)</Label>
-                <Input
-                  id="priceTl"
-                  type="number"
-                  value={planForm.priceTl || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, priceTl: Number(e.target.value) })}
-                  data-testid="input-plan-price-tl"
-                />
-                <p className="text-xs text-muted-foreground">= {formatPrice(planForm.priceTl)} TL</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="priceUsd">Aylık Fiyat (USD cent)</Label>
-                <Input
-                  id="priceUsd"
-                  type="number"
-                  value={planForm.priceUsd || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, priceUsd: Number(e.target.value) })}
-                  data-testid="input-plan-price-usd"
-                />
-                <p className="text-xs text-muted-foreground">= ${formatPrice(planForm.priceUsd)}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
                 <Label htmlFor="yearlyPriceTl">Yıllık Fiyat (TL kuruş)</Label>
                 <Input
                   id="yearlyPriceTl"
@@ -5127,16 +5102,18 @@ export default function SuperAdmin() {
                   onChange={(e) => setPlanForm({ ...planForm, yearlyPriceTl: Number(e.target.value) })}
                   data-testid="input-plan-yearly-price-tl"
                 />
+                <p className="text-xs text-muted-foreground">= {formatPrice(planForm.yearlyPriceTl)} TL/yıl</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="yearlyDiscountPct">Yıllık İndirim (%)</Label>
+                <Label htmlFor="yearlyPriceUsd">Yıllık Fiyat (USD cent)</Label>
                 <Input
-                  id="yearlyDiscountPct"
+                  id="yearlyPriceUsd"
                   type="number"
-                  value={planForm.yearlyDiscountPct || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, yearlyDiscountPct: Number(e.target.value) })}
-                  data-testid="input-plan-yearly-discount"
+                  value={planForm.yearlyPriceUsd || 0}
+                  onChange={(e) => setPlanForm({ ...planForm, yearlyPriceUsd: Number(e.target.value) })}
+                  data-testid="input-plan-yearly-price-usd"
                 />
+                <p className="text-xs text-muted-foreground">= ${formatPrice(planForm.yearlyPriceUsd)}/yıl</p>
               </div>
             </div>
 
