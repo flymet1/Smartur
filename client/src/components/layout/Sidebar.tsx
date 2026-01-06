@@ -523,7 +523,7 @@ export function Sidebar() {
                 </div>
               </Link>
             ))}
-            <Link href="/messages?filter=human_intervention">
+            <Link href="/messages?filter=human_intervention" className="flex-1">
               <div className={cn(
                 "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
                 openSupportCount > 0 
