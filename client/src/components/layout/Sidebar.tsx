@@ -38,6 +38,7 @@ interface NavItem {
 const allNavItems: NavItem[] = [
   { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
+  { href: "/musaitlik", label: "Musaitlik", icon: Calendar, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
