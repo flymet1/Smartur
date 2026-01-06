@@ -124,10 +124,10 @@ export default function ViewerStats() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex-1 overflow-auto">
-        <div className="p-6 space-y-6">
+      <div className="flex-1 overflow-auto min-w-0">
+        <div className="p-4 space-y-4">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <h1 className="text-xl font-bold" data-testid="text-page-title">Is Ortagi Istatistikleri</h1>
             
@@ -225,10 +225,10 @@ export default function ViewerStats() {
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Is Ortagi Ozeti</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Is Ortagi Ozeti</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -238,37 +238,39 @@ export default function ViewerStats() {
                   Bu tarih araliginda talep bulunamadi
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Is Ortagi</TableHead>
-                      <TableHead>E-posta</TableHead>
-                      <TableHead className="text-center">Aktif Donem</TableHead>
-                      <TableHead className="text-right">Toplam Talep</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {viewerSummary.map((viewer) => (
-                      <TableRow key={viewer.viewerId} data-testid={`row-viewer-${viewer.viewerId}`}>
-                        <TableCell className="font-medium">{viewer.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{viewer.email}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="secondary">{viewer.activePeriods}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold">{viewer.total}</TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Is Ortagi</TableHead>
+                        <TableHead className="hidden sm:table-cell">E-posta</TableHead>
+                        <TableHead className="text-center">Donem</TableHead>
+                        <TableHead className="text-right">Talep</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {viewerSummary.map((viewer) => (
+                        <TableRow key={viewer.viewerId} data-testid={`row-viewer-${viewer.viewerId}`}>
+                          <TableCell className="font-medium">{viewer.name}</TableCell>
+                          <TableCell className="text-muted-foreground hidden sm:table-cell">{viewer.email}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary">{viewer.activePeriods}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">{viewer.total}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Donem Detayi</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Donem Detayi</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -278,26 +280,28 @@ export default function ViewerStats() {
                   Bu tarih araliginda veri bulunamadi
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Donem</TableHead>
-                      <TableHead>Is Ortagi</TableHead>
-                      <TableHead className="text-right">Talep Sayisi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {stats.map((stat, index) => (
-                      <TableRow key={`${stat.viewerId}-${stat.period}-${index}`} data-testid={`row-stat-${index}`}>
-                        <TableCell>
-                          <Badge variant="outline">{stat.period}</Badge>
-                        </TableCell>
-                        <TableCell>{stat.viewerName}</TableCell>
-                        <TableCell className="text-right font-semibold">{stat.count}</TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Donem</TableHead>
+                        <TableHead>Is Ortagi</TableHead>
+                        <TableHead className="text-right">Talep</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {stats.map((stat, index) => (
+                        <TableRow key={`${stat.viewerId}-${stat.period}-${index}`} data-testid={`row-stat-${index}`}>
+                          <TableCell>
+                            <Badge variant="outline">{stat.period}</Badge>
+                          </TableCell>
+                          <TableCell>{stat.viewerName}</TableCell>
+                          <TableCell className="text-right font-semibold">{stat.count}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
