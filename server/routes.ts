@@ -6343,7 +6343,12 @@ Sky Fethiye`;
     try {
       const { username, password } = req.body;
 
-      const user = await storage.getAppUserByUsername(username);
+      // Try to find user by username first, then by email (case-insensitive)
+      let user = await storage.getAppUserByUsername(username);
+      if (!user) {
+        // Try email lookup if username not found
+        user = await storage.getAppUserByEmail(username);
+      }
 
       // Log login attempt
       const logEntry: {

@@ -2889,12 +2889,16 @@ Sky Fethiye`,
   }
 
   async getAppUserByUsername(username: string): Promise<AppUser | undefined> {
-    const [user] = await db.select().from(appUsers).where(eq(appUsers.username, username));
+    // Case-insensitive username lookup
+    const [user] = await db.select().from(appUsers)
+      .where(sql`LOWER(${appUsers.username}) = LOWER(${username})`);
     return user;
   }
 
   async getAppUserByEmail(email: string): Promise<AppUser | undefined> {
-    const [user] = await db.select().from(appUsers).where(eq(appUsers.email, email));
+    // Case-insensitive email lookup
+    const [user] = await db.select().from(appUsers)
+      .where(sql`LOWER(${appUsers.email}) = LOWER(${email})`);
     return user;
   }
 
