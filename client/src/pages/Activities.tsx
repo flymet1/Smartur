@@ -119,6 +119,13 @@ function ActivityCard({ activity, onDelete }: { activity: Activity; onDelete: ()
 
 function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  
+  // Controlled form fields for name, price, duration
+  const [name, setName] = useState(activity?.name || "");
+  const [price, setPrice] = useState(activity?.price?.toString() || "");
+  const [durationMinutes, setDurationMinutes] = useState(activity?.durationMinutes?.toString() || "");
+  const [description, setDescription] = useState(activity?.description || "");
+  
   const [frequency, setFrequency] = useState<"1" | "3" | "5">(
     activity ? String((activity as any).dailyFrequency || 1) as "1" | "3" | "5" : "1"
   );
@@ -204,6 +211,39 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   // Form validation errors
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
+  // Reset form when dialog opens for new activity
+  const resetForm = () => {
+    setName("");
+    setPrice("");
+    setDurationMinutes("");
+    setDescription("");
+    setFrequency("1");
+    setTimes([]);
+    setDefaultCapacity(10);
+    setAgencyPhone("");
+    setAdminPhone("");
+    setSendNotificationToAgency(true);
+    setSendNotificationToAdmin(true);
+    setNotificationMessage("Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}");
+    setNameAliases("");
+    setPriceUsd(0);
+    setColor("blue");
+    setReservationLink("");
+    setReservationLinkEn("");
+    setHasFreeHotelTransfer(false);
+    setTransferZones("");
+    setExtras([]);
+    setFaq([]);
+    setFormErrors({});
+  };
+  
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen && !activity) {
+      resetForm();
+    }
+    setOpen(newOpen);
+  };
+  
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
   const { toast } = useToast();
@@ -233,13 +273,11 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    // Validate required fields
+    // Validate required fields using controlled state
     const errors: Record<string, string> = {};
-    const name = (formData.get("name") as string)?.trim();
-    const price = formData.get("price") as string;
-    const durationMinutes = formData.get("durationMinutes") as string;
+    const trimmedName = name.trim();
     
-    if (!name) {
+    if (!trimmedName) {
       errors.name = "Aktivite adı zorunludur";
     }
     if (!price || Number(price) < 0) {
@@ -274,12 +312,12 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       .filter((z: string) => z.length > 0);
     
     const data = {
-      name: name,
+      name: trimmedName,
       nameAliases: JSON.stringify(aliasesArray),
-      description: formData.get("description") as string,
-      price: Number(formData.get("price")),
+      description: description,
+      price: Number(price),
       priceUsd: Number(priceUsd),
-      durationMinutes: Number(formData.get("durationMinutes")),
+      durationMinutes: Number(durationMinutes),
       dailyFrequency: Number(frequency),
       defaultTimes: JSON.stringify(times),
       defaultCapacity: Number(defaultCapacity),
@@ -318,7 +356,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all" data-testid="button-add-activity">
@@ -345,7 +383,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   <Input 
                     id="name" 
                     name="name" 
-                    defaultValue={activity?.name} 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     placeholder="Örn: ATV Safari"
                     className={formErrors.name ? "border-destructive" : ""}
                   />
@@ -368,7 +407,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       id="price" 
                       name="price" 
                       type="number" 
-                      defaultValue={activity?.price}
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
                       className={formErrors.price ? "border-destructive" : ""}
                     />
                     {formErrors.price && <p className="text-xs text-destructive">{formErrors.price}</p>}
@@ -389,7 +429,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       id="durationMinutes" 
                       name="durationMinutes" 
                       type="number" 
-                      defaultValue={activity?.durationMinutes}
+                      value={durationMinutes}
+                      onChange={(e) => setDurationMinutes(e.target.value)}
                       className={formErrors.durationMinutes ? "border-destructive" : ""}
                     />
                     {formErrors.durationMinutes && <p className="text-xs text-destructive">{formErrors.durationMinutes}</p>}
@@ -436,7 +477,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   <Textarea 
                     id="description" 
                     name="description" 
-                    defaultValue={activity?.description || ""} 
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     placeholder="Tur hakkında kısa bilgi..." 
                   />
                 </div>
