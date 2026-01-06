@@ -2759,11 +2759,19 @@ export async function registerRoutes(
       // Get bot settings for this tenant
       const botPrompt = await storage.getSetting('botPrompt');
       const botAccessSetting = await storage.getSetting('botAccess');
-      let botAccess = { activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true };
+      let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true };
       if (botAccessSetting) {
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
       const botRules = await storage.getSetting('botRules');
+      
+      // If bot is disabled, just log the message and don't respond
+      if (botAccess.enabled === false) {
+        console.log(`Bot disabled for tenant ${tenantId}, message logged but not responded`);
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+        return;
+      }
       
       // Generate AI response
       const aiResponse = await generateAIResponse(history, { 
@@ -2913,7 +2921,8 @@ export async function registerRoutes(
       
       // Get bot access settings
       const botAccessSetting = await storage.getSetting('botAccess');
-      let botAccess = {
+      let botAccess: any = {
+        enabled: true,
         activities: true,
         packageTours: true,
         capacity: true,
@@ -2930,6 +2939,14 @@ export async function registerRoutes(
       
       // Get custom bot rules from settings
       const botRules = await storage.getSetting('botRules');
+      
+      // If bot is disabled, just log the message and don't respond
+      if (botAccess.enabled === false) {
+        console.log(`Bot disabled for tenant ${tenantId || 'unknown'}, message logged but not responded`);
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+        return;
+      }
       
       // Generate AI response with reservation context, capacity data, package tours, customer requests, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
