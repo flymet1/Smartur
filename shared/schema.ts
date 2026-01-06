@@ -489,9 +489,10 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   yearlyDiscountPct: integer("yearly_discount_pct").default(20), // Yıllık indirim oranı
   trialDays: integer("trial_days").default(14), // Deneme süresi (gün)
   maxActivities: integer("max_activities").default(5),
-  maxReservationsPerMonth: integer("max_reservations_per_month").default(100),
+  maxReservationsPerMonth: integer("max_reservations_per_month").default(100), // Aylık rezervasyon limiti (geriye uyumluluk)
+  maxDailyReservations: integer("max_daily_reservations").default(10), // Günlük rezervasyon limiti
   maxUsers: integer("max_users").default(1),
-  maxWhatsappNumbers: integer("max_whatsapp_numbers").default(1),
+  maxWhatsappNumbers: integer("max_whatsapp_numbers").default(1), // Sabit 1 olarak kullanılacak
   maxDailyMessages: integer("max_daily_messages").default(50), // Günlük maksimum WhatsApp mesaj sayısı
   features: text("features").default("[]"), // JSON array: ["ai_bot", "reports", "api_access", "multi_user"]
   sortOrder: integer("sort_order").default(0),

@@ -4852,11 +4852,15 @@ export default function SuperAdmin() {
                             </div>
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4 text-muted-foreground" />
-                              <span>{plan.maxReservationsPerMonth === 99999 ? "Sınırsız" : plan.maxReservationsPerMonth} rez./ay</span>
+                              <span>{plan.maxUsers === 99 ? "Sınırsız" : plan.maxUsers} kullanıcı</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                              <span>{plan.maxWhatsappNumbers} WhatsApp</span>
+                              <span>{plan.maxDailyMessages === 99999 ? "Sınırsız" : plan.maxDailyMessages} mesaj/gün</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                              <span>{(plan as any).maxDailyReservations === 9999 ? "Sınırsız" : (plan as any).maxDailyReservations || 10} rez./gün</span>
                             </div>
                           </div>
                           <div className="pt-2 border-t space-y-1">
@@ -5103,9 +5107,9 @@ export default function SuperAdmin() {
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="maxActivities">Max Aktivite</Label>
+                <Label htmlFor="maxActivities">Aktivite Sayısı</Label>
                 <Input
                   id="maxActivities"
                   type="number"
@@ -5113,19 +5117,10 @@ export default function SuperAdmin() {
                   onChange={(e) => setPlanForm({ ...planForm, maxActivities: Number(e.target.value) })}
                   data-testid="input-plan-max-activities"
                 />
+                <p className="text-xs text-muted-foreground">Oluşturulabilecek aktivite sayısı</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxReservations">Max Rez./Ay</Label>
-                <Input
-                  id="maxReservations"
-                  type="number"
-                  value={planForm.maxReservationsPerMonth || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, maxReservationsPerMonth: Number(e.target.value) })}
-                  data-testid="input-plan-max-reservations"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="maxUsers">Max Kullanıcı</Label>
+                <Label htmlFor="maxUsers">Kullanıcı Sayısı</Label>
                 <Input
                   id="maxUsers"
                   type="number"
@@ -5133,16 +5128,39 @@ export default function SuperAdmin() {
                   onChange={(e) => setPlanForm({ ...planForm, maxUsers: Number(e.target.value) })}
                   data-testid="input-plan-max-users"
                 />
+                <p className="text-xs text-muted-foreground">Eklenebilecek kullanıcı sayısı</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="maxDailyMessages">Günlük Mesaj Limiti</Label>
+                <Input
+                  id="maxDailyMessages"
+                  type="number"
+                  value={planForm.maxDailyMessages || 0}
+                  onChange={(e) => setPlanForm({ ...planForm, maxDailyMessages: Number(e.target.value) })}
+                  data-testid="input-plan-max-daily-messages"
+                />
+                <p className="text-xs text-muted-foreground">Günlük WhatsApp mesaj sayısı</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxWhatsapp">Max WhatsApp</Label>
+                <Label htmlFor="maxDailyReservations">Günlük Rezervasyon Limiti</Label>
                 <Input
-                  id="maxWhatsapp"
+                  id="maxDailyReservations"
                   type="number"
-                  value={planForm.maxWhatsappNumbers || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, maxWhatsappNumbers: Number(e.target.value) })}
-                  data-testid="input-plan-max-whatsapp"
+                  value={planForm.maxDailyReservations || 0}
+                  onChange={(e) => setPlanForm({ ...planForm, maxDailyReservations: Number(e.target.value) })}
+                  data-testid="input-plan-max-daily-reservations"
                 />
+                <p className="text-xs text-muted-foreground">Günlük oluşturulabilecek rezervasyon</p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-md">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MessageSquare className="h-4 w-4" />
+                <span>WhatsApp: Tüm paketlerde 1 numara (sabit)</span>
               </div>
             </div>
 
