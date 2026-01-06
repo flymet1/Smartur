@@ -362,8 +362,42 @@ export function Sidebar() {
 
   return (
     <>
+      {/* Announcements Banner - Fixed at top */}
+      {activeAnnouncements.length > 0 && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm">
+          <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto">
+            {activeAnnouncements.map((announcement) => (
+              <div
+                key={announcement.id}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs whitespace-nowrap",
+                  getAnnouncementStyle(announcement.type)
+                )}
+                data-testid={`announcement-${announcement.id}`}
+              >
+                {getAnnouncementIcon(announcement.type)}
+                <span className="font-medium">{announcement.title}:</span>
+                <span className="opacity-80">{announcement.content}</span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-4 w-4 ml-1 opacity-60 hover:opacity-100"
+                  onClick={() => dismissAnnouncement(announcement.id)}
+                  data-testid={`button-dismiss-announcement-${announcement.id}`}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Mobile Menu */}
-      <div className="md:hidden p-4 border-b flex items-center justify-between bg-white dark:bg-card">
+      <div className={cn(
+        "md:hidden p-4 border-b flex items-center justify-between bg-white dark:bg-card",
+        activeAnnouncements.length > 0 && "mt-10"
+      )}>
         {(brandLogoUrl || logoUrl) ? (
           <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-8 w-auto" data-testid="img-sidebar-logo-mobile" />
         ) : (
@@ -482,7 +516,10 @@ export function Sidebar() {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex flex-col w-64 border-r bg-card h-screen fixed left-0 top-0">
+      <div className={cn(
+        "hidden md:flex flex-col w-64 border-r bg-card h-screen fixed left-0",
+        activeAnnouncements.length > 0 ? "top-10" : "top-0"
+      )}>
         <div className="p-6">
           {(brandLogoUrl || logoUrl) ? (
             <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-10 w-auto" data-testid="img-sidebar-logo" />
@@ -545,39 +582,6 @@ export function Sidebar() {
             </Link>
           </div>
         </div>
-
-        {/* Announcements */}
-        {activeAnnouncements.length > 0 && (
-          <div className="px-4 pb-3 space-y-2">
-            {activeAnnouncements.slice(0, 2).map((announcement) => (
-              <div
-                key={announcement.id}
-                className={cn(
-                  "p-3 rounded-lg border text-xs relative",
-                  getAnnouncementStyle(announcement.type)
-                )}
-                data-testid={`announcement-${announcement.id}`}
-              >
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="absolute top-1 right-1 h-5 w-5 opacity-60 hover:opacity-100"
-                  onClick={() => dismissAnnouncement(announcement.id)}
-                  data-testid={`button-dismiss-announcement-${announcement.id}`}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-                <div className="flex items-start gap-2 pr-5">
-                  {getAnnouncementIcon(announcement.type)}
-                  <div>
-                    <div className="font-medium">{announcement.title}</div>
-                    <div className="opacity-80 mt-0.5">{announcement.content}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className="flex-1 px-4 py-4 space-y-1 border-t">
           {navItems.map((item) => (
