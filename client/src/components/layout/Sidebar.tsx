@@ -23,7 +23,8 @@ import {
   AlertCircle,
   LogIn,
   LogOut,
-  User
+  User,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -49,6 +50,7 @@ const allNavItems: NavItem[] = [
   { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
   { href: "/agencies", label: "Acentalar", icon: Building2, requiredPermission: PERMISSION_KEYS.AGENCIES_VIEW },
   { href: "/messages", label: "WhatsApp", icon: MessageCircle, requiredPermission: PERMISSION_KEYS.WHATSAPP_VIEW },
+  { href: "/subscription", label: "Abonelik", icon: CreditCard, requiredPermission: PERMISSION_KEYS.SUBSCRIPTION_VIEW },
   { href: "/settings", label: "Ayarlar", icon: Settings, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
 ];
 
