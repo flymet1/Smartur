@@ -6881,6 +6881,132 @@ Sky Fethiye`;
     }
   });
 
+  // Tenant data import (restore from backup)
+  app.post("/api/tenant-import", async (req, res) => {
+    try {
+      const tenantId = (req as any).tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ error: "Acenta bilgisi bulunamadı" });
+      }
+      
+      const { data, options } = req.body;
+      
+      if (!data || !data.exportInfo) {
+        return res.status(400).json({ error: "Geçersiz yedek dosyası formatı" });
+      }
+      
+      // Validate that the backup belongs to this tenant (security check)
+      if (data.exportInfo.tenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu yedek dosyası bu acentaya ait değil" });
+      }
+      
+      const mode = options?.mode || 'merge'; // 'merge' or 'replace'
+      const results: Record<string, { imported: number; skipped: number; errors: string[] }> = {};
+      
+      // Import activities
+      if (data.activities && Array.isArray(data.activities)) {
+        results.activities = { imported: 0, skipped: 0, errors: [] };
+        for (const activity of data.activities) {
+          try {
+            // Check if activity already exists
+            const existing = await storage.getActivity(activity.id, tenantId);
+            if (existing && mode === 'merge') {
+              results.activities.skipped++;
+              continue;
+            }
+            
+            // Remove id for new insert, keep other fields
+            const { id, ...activityData } = activity;
+            await storage.createActivity({ ...activityData, tenantId });
+            results.activities.imported++;
+          } catch (err: any) {
+            results.activities.errors.push(`Aktivite ${activity.name}: ${err.message}`);
+          }
+        }
+      }
+      
+      // Import agencies (sub-agencies)
+      if (data.agencies && Array.isArray(data.agencies)) {
+        results.agencies = { imported: 0, skipped: 0, errors: [] };
+        for (const agency of data.agencies) {
+          try {
+            const existing = await storage.getAgencyByName(agency.name, tenantId);
+            if (existing && mode === 'merge') {
+              results.agencies.skipped++;
+              continue;
+            }
+            
+            const { id, ...agencyData } = agency;
+            await storage.createAgency({ ...agencyData, tenantId });
+            results.agencies.imported++;
+          } catch (err: any) {
+            results.agencies.errors.push(`Acenta ${agency.name}: ${err.message}`);
+          }
+        }
+      }
+      
+      // Import reservations (only in replace mode or if not exists)
+      if (data.reservations && Array.isArray(data.reservations)) {
+        results.reservations = { imported: 0, skipped: 0, errors: [] };
+        
+        // Get current activities to map old IDs to new ones
+        const currentActivities = await storage.getActivities(tenantId);
+        const activityMap = new Map<number, number>();
+        
+        // Try to match activities by name
+        if (data.activities) {
+          for (const oldActivity of data.activities) {
+            const matchingActivity = currentActivities.find(a => a.name === oldActivity.name);
+            if (matchingActivity) {
+              activityMap.set(oldActivity.id, matchingActivity.id);
+            }
+          }
+        }
+        
+        for (const reservation of data.reservations) {
+          try {
+            // Map activity ID to current system
+            const mappedActivityId = activityMap.get(reservation.activityId);
+            if (!mappedActivityId) {
+              results.reservations.errors.push(`Rezervasyon ${reservation.id}: Aktivite eşleştirilemedi`);
+              continue;
+            }
+            
+            const { id, ...reservationData } = reservation;
+            await storage.createReservation({
+              ...reservationData,
+              activityId: mappedActivityId,
+              tenantId
+            });
+            results.reservations.imported++;
+          } catch (err: any) {
+            results.reservations.errors.push(`Rezervasyon ${reservation.id}: ${err.message}`);
+          }
+        }
+      }
+      
+      // Calculate totals
+      let totalImported = 0;
+      let totalSkipped = 0;
+      let totalErrors = 0;
+      
+      for (const key of Object.keys(results)) {
+        totalImported += results[key].imported;
+        totalSkipped += results[key].skipped;
+        totalErrors += results[key].errors.length;
+      }
+      
+      res.json({
+        success: true,
+        message: `İçe aktarma tamamlandı: ${totalImported} kayıt eklendi, ${totalSkipped} atlandı, ${totalErrors} hata`,
+        details: results
+      });
+    } catch (err) {
+      console.error("Veri içe aktarma hatası:", err);
+      res.status(500).json({ error: "Veri içe aktarılamadı" });
+    }
+  });
+
   // === BULK OPERATIONS ===
   
   app.post("/api/bulk/plan-change", async (req, res) => {

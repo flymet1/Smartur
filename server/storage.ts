@@ -208,6 +208,7 @@ export interface IStorage {
   // Finance - Agencies
   getAgencies(tenantId?: number): Promise<Agency[]>;
   getAgency(id: number): Promise<Agency | undefined>;
+  getAgencyByName(name: string, tenantId: number): Promise<Agency | undefined>;
   createAgency(agency: InsertAgency): Promise<Agency>;
   updateAgency(id: number, agency: Partial<InsertAgency>): Promise<Agency>;
   deleteAgency(id: number): Promise<void>;
@@ -1204,6 +1205,12 @@ export class DatabaseStorage implements IStorage {
 
   async getAgency(id: number): Promise<Agency | undefined> {
     const [agency] = await db.select().from(agencies).where(eq(agencies.id, id));
+    return agency;
+  }
+
+  async getAgencyByName(name: string, tenantId: number): Promise<Agency | undefined> {
+    const [agency] = await db.select().from(agencies)
+      .where(and(eq(agencies.name, name), eq(agencies.tenantId, tenantId)));
     return agency;
   }
 
