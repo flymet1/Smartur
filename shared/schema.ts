@@ -885,6 +885,7 @@ export const appUsers = pgTable("app_users", {
   isActive: boolean("is_active").default(true),
   isSuspended: boolean("is_suspended").default(false),
   suspendReason: text("suspend_reason"),
+  isSystemProtected: boolean("is_system_protected").default(false), // Sistem kullanicisi - silinemez
   maxActivities: integer("max_activities").default(5),
   maxReservationsPerMonth: integer("max_reservations_per_month").default(100),
   lastLoginAt: timestamp("last_login_at"),

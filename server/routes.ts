@@ -7551,6 +7551,11 @@ Sky Fethiye`;
       if (!existingUser || existingUser.tenantId !== tenantId) {
         return res.status(403).json({ error: "Bu kullanıcıyi silme yetkiniz yok" });
       }
+      
+      // Prevent deletion of system protected users
+      if (existingUser.isSystemProtected) {
+        return res.status(403).json({ error: "Sistem kullanıcısı silinemez" });
+      }
 
       await storage.deleteAppUser(id);
       res.json({ success: true });
@@ -7683,6 +7688,13 @@ Sky Fethiye`;
 
   app.delete("/api/app-users/:id", async (req, res) => {
     try {
+      const user = await storage.getAppUser(Number(req.params.id));
+      if (!user) {
+        return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+      }
+      if (user.isSystemProtected) {
+        return res.status(403).json({ error: "Sistem kullanıcısı silinemez" });
+      }
       await storage.deleteAppUser(Number(req.params.id));
       res.json({ success: true });
     } catch (err) {
@@ -8095,17 +8107,17 @@ async function seedDatabase() {
   const tenantUsers = existingUsers.filter(u => u.tenantId === defaultTenant.id);
   
   if (tenantUsers.length === 0) {
-    // Create default admin user with password "admin123" (should be changed after first login)
+    // Create default super admin user (cannot be deleted from system)
     await storage.createAppUser({
       tenantId: defaultTenant.id,
-      username: "admin",
-      email: "admin@smartur.com",
-      passwordHash: hashPassword("admin123"), // Hash password for security
-      fullName: "Sistem Yöneticisi",
-      role: "owner",
-      isActive: true
+      username: "superadmin",
+      email: "flymet.mail@gmail.com",
+      passwordHash: hashPassword("Netim1905"), // Hash password for security
+      name: "Süper Admin",
+      isActive: true,
+      isSystemProtected: true // Cannot be deleted
     });
-    console.log("Default admin user created: admin / admin123");
+    console.log("Default super admin user created: superadmin / Netim1905");
   }
   
   const activities = await storage.getActivities();
