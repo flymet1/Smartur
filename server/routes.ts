@@ -416,7 +416,7 @@ async function findHolidayDatesFromMessage(message: string): Promise<string[]> {
 }
 
 // Helper function to get capacity including virtual slots from activity defaults
-async function getCapacityWithVirtualSlots(dates: string[]): Promise<Array<{
+async function getCapacityWithVirtualSlots(dates: string[], tenantId?: number): Promise<Array<{
   activityId: number;
   date: string;
   time: string;
@@ -425,8 +425,8 @@ async function getCapacityWithVirtualSlots(dates: string[]): Promise<Array<{
   isVirtual: boolean;
 }>> {
   const allCapacity = await storage.getCapacity();
-  const allReservations = await storage.getReservations();
-  const allActivities = await storage.getActivities();
+  const allReservations = await storage.getReservations(tenantId);
+  const allActivities = await storage.getActivities(tenantId);
   const activeActivities = allActivities.filter(a => a.active);
   
   const result: Array<{
@@ -966,7 +966,8 @@ export async function registerRoutes(
   
   // === Activities ===
   app.get(api.activities.list.path, async (req, res) => {
-    const items = await storage.getActivities();
+    const tenantId = req.session?.tenantId;
+    const items = await storage.getActivities(tenantId);
     res.json(items);
   });
 
@@ -1017,7 +1018,8 @@ export async function registerRoutes(
   // === Package Tours ===
   app.get("/api/package-tours", async (req, res) => {
     try {
-      const tours = await storage.getPackageTours();
+      const tenantId = req.session?.tenantId;
+      const tours = await storage.getPackageTours(tenantId);
       res.json(tours);
     } catch (err) {
       res.status(500).json({ error: "Paket turlar alınamadı" });
@@ -1129,8 +1131,9 @@ export async function registerRoutes(
   // Package Tour Activities - returns full activity data with defaultTime from package config
   app.get("/api/package-tours/:id/activities", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const tourActivities = await storage.getPackageTourActivities(Number(req.params.id));
-      const allActivities = await storage.getActivities();
+      const allActivities = await storage.getActivities(tenantId);
       
       // Merge activity data with package tour settings
       const enrichedActivities = tourActivities.map(ta => {
@@ -1294,7 +1297,8 @@ export async function registerRoutes(
     }
     
     // Get reservations for this date to calculate booked slots for virtual capacity
-    const allReservations = await storage.getReservations();
+    const tenantId = req.session?.tenantId;
+    const allReservations = await storage.getReservations(tenantId);
     const dateReservations = allReservations.filter(r => 
       r.date === dateStr && r.status !== 'cancelled'
     );
@@ -1309,7 +1313,7 @@ export async function registerRoutes(
     }
     
     // Get all active activities to generate virtual slots from defaults
-    const allActivities = await storage.getActivities();
+    const allActivities = await storage.getActivities(tenantId);
     const activities = actId 
       ? allActivities.filter(a => a.id === actId && a.active)
       : allActivities.filter(a => a.active);
@@ -1386,7 +1390,8 @@ export async function registerRoutes(
       }
       
       // Get capacity with virtual slots for all dates
-      const allCapacity = await getCapacityWithVirtualSlots(dates);
+      const tenantId = req.session?.tenantId;
+      const allCapacity = await getCapacityWithVirtualSlots(dates, tenantId);
       
       // Filter by activity if specified
       const filteredCapacity = actId 
@@ -1496,7 +1501,8 @@ export async function registerRoutes(
       const lastYearDates = generateMonthDates(targetYear - 1, targetMonth);
       
       // Get reservations for both periods
-      const allReservations = await storage.getReservations();
+      const tenantId = req.session?.tenantId;
+      const allReservations = await storage.getReservations(tenantId);
       
       const currentReservations = allReservations.filter(r => 
         currentDates.includes(r.date) && r.status !== 'cancelled'
@@ -1539,7 +1545,8 @@ export async function registerRoutes(
 
   // === Reservations ===
   app.get(api.reservations.list.path, async (req, res) => {
-    const items = await storage.getReservations();
+    const tenantId = req.session?.tenantId;
+    const items = await storage.getReservations(tenantId);
     res.json(items);
   });
 
@@ -1593,9 +1600,10 @@ export async function registerRoutes(
     
     try {
       // Get all activities, reservations, and capacity
-      const allActivities = await storage.getActivities();
+      const tenantId = req.session?.tenantId;
+      const allActivities = await storage.getActivities(tenantId);
       const activeActivities = allActivities.filter(a => a.active);
-      const allReservations = await storage.getReservations();
+      const allReservations = await storage.getReservations(tenantId);
       const allCapacity = await storage.getCapacity();
       
       // Get reservations for this date (not cancelled)
@@ -1686,7 +1694,8 @@ export async function registerRoutes(
     const { date, time } = req.body;
     
     try {
-      const reservations = await storage.getReservations();
+      const tenantId = req.session?.tenantId;
+      const reservations = await storage.getReservations(tenantId);
       const reservation = reservations.find(r => r.id === id);
       if (!reservation) {
         return res.status(404).json({ error: "Rezervasyon bulunamadı" });
@@ -1735,7 +1744,8 @@ export async function registerRoutes(
     }
     
     try {
-      const reservations = await storage.getReservations();
+      const tenantId = req.session?.tenantId;
+      const reservations = await storage.getReservations(tenantId);
       const reservation = reservations.find(r => r.id === id);
       if (!reservation) {
         return res.status(404).json({ error: "Rezervasyon bulunamadı" });
@@ -1770,7 +1780,8 @@ export async function registerRoutes(
         return res.status(403).json({ error: licenseCheck.message });
       }
       
-      const allReservations = await storage.getReservations();
+      const tenantId = req.session?.tenantId;
+      const allReservations = await storage.getReservations(tenantId);
       
       // Find all reservations in this package group - ONLY match by packageTourId AND orderNumber
       const packageReservations = allReservations.filter(r => 
@@ -2398,8 +2409,9 @@ Bu talep müşteri takip sayfasından gönderilmistir.
       const history = await storage.getMessages(From, 5);
       
       // Get context (activities, package tours, etc)
-      const activities = await storage.getActivities();
-      const packageTours = await storage.getPackageTours();
+      const tenantId = req.session?.tenantId;
+      const activities = await storage.getActivities(tenantId);
+      const packageTours = await storage.getPackageTours(tenantId);
       
       // Get capacity data dynamically based on dates mentioned in message + next 7 days
       const today = new Date();
@@ -2424,7 +2436,7 @@ Bu talep müşteri takip sayfasından gönderilmistir.
         upcomingDates.add(dateStr);
       }
       
-      const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates));
+      const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
       
       // Get custom bot prompt from settings
       const botPrompt = await storage.getSetting('botPrompt');
@@ -3550,7 +3562,8 @@ Sky Fethiye`;
   // === Finance - Agencies ===
   app.get("/api/finance/agencies", async (req, res) => {
     try {
-      const agencies = await storage.getAgencies();
+      const tenantId = req.session?.tenantId;
+      const agencies = await storage.getAgencies(tenantId);
       res.json(agencies);
     } catch (err) {
       res.status(500).json({ error: "Acentalar alınamadı" });
@@ -4240,9 +4253,10 @@ Sky Fethiye`;
       } catch {}
       
       // Veritabani verileri (hassas bilgiler maskelenmis)
-      const activities = await storage.getActivities();
-      const packageTours = await storage.getPackageTours();
-      const recentReservations = await storage.getReservations();
+      const tenantId = req.session?.tenantId;
+      const activities = await storage.getActivities(tenantId);
+      const packageTours = await storage.getPackageTours(tenantId);
+      const recentReservations = await storage.getReservations(tenantId);
       const supportRequests = await storage.getAllSupportRequests();
       const recentLogs = await getRecentLogs(undefined, 100);
       const autoResponses = await storage.getAutoResponses();
@@ -5038,13 +5052,14 @@ Sky Fethiye`;
       const currentPlan = plans.find(p => p.code === user.membershipType) || plans.find(p => p.code === "trial");
       
       // Get actual usage counts
-      const activities = await storage.getActivities();
+      const tenantId = req.session?.tenantId;
+      const activities = await storage.getActivities(tenantId);
       const activitiesUsed = activities.length;
 
       // Get reservations for current month
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const allReservations = await storage.getReservations();
+      const allReservations = await storage.getReservations(tenantId);
       const reservationsThisMonth = allReservations.filter(r => {
         const createdAt = r.createdAt ? new Date(r.createdAt) : null;
         return createdAt && createdAt >= startOfMonth;
