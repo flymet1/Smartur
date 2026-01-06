@@ -2102,6 +2102,15 @@ function AnalyticsSection() {
     queryKey: ['/api/analytics/whatsapp'],
   });
 
+  const { data: backupInfo } = useQuery<{
+    lastBackup: any;
+    daysSinceLastBackup: number | null;
+    needsBackup: boolean;
+  }>({
+    queryKey: ['/api/database-backups/last'],
+    refetchInterval: 60000,
+  });
+
   const formatCurrency = (amount: number, currency: string) => {
     return currency === "TL" 
       ? `${(amount / 100).toFixed(2)} TL`
@@ -2110,6 +2119,31 @@ function AnalyticsSection() {
 
   return (
     <div className="space-y-6">
+      {/* Backup Reminder Alert */}
+      {backupInfo?.needsBackup && (
+        <Card className="border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start gap-3">
+              <Database className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-amber-800 dark:text-amber-200">
+                  Yedekleme Hatırlatması
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  {backupInfo.daysSinceLastBackup === null 
+                    ? "Henüz hiç yedek alınmamış. Veri kaybını önlemek için yedekleme yapmanız önerilir."
+                    : `Son yedeklemeden bu yana ${backupInfo.daysSinceLastBackup} gün geçti. Düzenli yedekleme yapmayı unutmayın.`
+                  }
+                </p>
+              </div>
+              <Badge variant="outline" className="border-amber-400 text-amber-700 dark:border-amber-600 dark:text-amber-300">
+                Sistem &gt; Yedekleme
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
