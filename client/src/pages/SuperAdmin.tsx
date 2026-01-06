@@ -237,6 +237,7 @@ interface Tenant {
   language: string | null;
   isActive: boolean;
   createdAt: string | null;
+  planCode: string | null;
 }
 
 function TenantManagementSection() {
@@ -263,6 +264,13 @@ function TenantManagementSection() {
     adminName: "",
     // License duration in days (0 = unlimited)
     licenseDuration: "30",
+    // Subscription plan
+    planCode: "trial",
+  });
+
+  // Query subscription plans for dropdown
+  const { data: subscriptionPlans = [] } = useQuery<{id: number; code: string; name: string}[]>({
+    queryKey: ['/api/subscription-plans'],
   });
 
   const { data: tenants = [], isLoading } = useQuery<Tenant[]>({
@@ -324,6 +332,7 @@ function TenantManagementSection() {
       adminPassword: "",
       adminName: "",
       licenseDuration: "30",
+      planCode: "trial",
     });
   };
 
@@ -351,6 +360,7 @@ function TenantManagementSection() {
       adminPassword: "",
       adminName: "",
       licenseDuration: "30",
+      planCode: tenant.planCode || "trial",
     });
     setIsNewTenant(false);
     setEditingTenant(tenant);
@@ -621,28 +631,51 @@ function TenantManagementSection() {
                   </div>
                 </div>
 
-                <div className="space-y-2 mt-4">
-                  <Label htmlFor="licenseDuration">Kullanim Süresi</Label>
-                  <Select
-                    value={tenantForm.licenseDuration}
-                    onValueChange={(value) => setTenantForm({ ...tenantForm, licenseDuration: value })}
-                  >
-                    <SelectTrigger id="licenseDuration" data-testid="select-license-duration">
-                      <SelectValue placeholder="Sure seçin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">7 Gun (Deneme)</SelectItem>
-                      <SelectItem value="14">14 Gun</SelectItem>
-                      <SelectItem value="30">30 Gun (1 Ay)</SelectItem>
-                      <SelectItem value="90">90 Gun (3 Ay)</SelectItem>
-                      <SelectItem value="180">180 Gun (6 Ay)</SelectItem>
-                      <SelectItem value="365">365 Gun (1 Yıl)</SelectItem>
-                      <SelectItem value="0">Sınırsız</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Acenta bu sure boyunca sistemi kullanabilir
-                  </p>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="planCode">Abonelik Paketi *</Label>
+                    <Select
+                      value={tenantForm.planCode}
+                      onValueChange={(value) => setTenantForm({ ...tenantForm, planCode: value })}
+                    >
+                      <SelectTrigger id="planCode" data-testid="select-plan-code">
+                        <SelectValue placeholder="Paket seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subscriptionPlans.map((plan) => (
+                          <SelectItem key={plan.code} value={plan.code}>
+                            {plan.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Acentanin kullanacagi abonelik paketi
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="licenseDuration">Kullanim Süresi</Label>
+                    <Select
+                      value={tenantForm.licenseDuration}
+                      onValueChange={(value) => setTenantForm({ ...tenantForm, licenseDuration: value })}
+                    >
+                      <SelectTrigger id="licenseDuration" data-testid="select-license-duration">
+                        <SelectValue placeholder="Sure seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">7 Gun (Deneme)</SelectItem>
+                        <SelectItem value="14">14 Gun</SelectItem>
+                        <SelectItem value="30">30 Gun (1 Ay)</SelectItem>
+                        <SelectItem value="90">90 Gun (3 Ay)</SelectItem>
+                        <SelectItem value="180">180 Gun (6 Ay)</SelectItem>
+                        <SelectItem value="365">365 Gun (1 Yıl)</SelectItem>
+                        <SelectItem value="0">Sınırsız</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Acenta bu sure boyunca sistemi kullanabilir
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
