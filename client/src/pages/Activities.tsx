@@ -169,7 +169,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     return '';
   });
   const [priceUsd, setPriceUsd] = useState(
-    activity ? (activity as any).priceUsd || 0 : 0
+    activity ? ((activity as any).priceUsd ? String((activity as any).priceUsd) : "") : ""
   );
   const [color, setColor] = useState(
     activity ? (activity as any).color || "blue" : "blue"
@@ -227,7 +227,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setSendNotificationToAdmin(true);
     setNotificationMessage("Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}");
     setNameAliases("");
-    setPriceUsd(0);
+    setPriceUsd("");
     setColor("blue");
     setReservationLink("");
     setReservationLinkEn("");
@@ -317,7 +317,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       nameAliases: JSON.stringify(aliasesArray),
       description: description,
       price: Number(price),
-      priceUsd: Number(priceUsd),
+      priceUsd: priceUsd ? Number(priceUsd) : 0,
       durationMinutes: Number(durationMinutes),
       dailyFrequency: Number(frequency),
       defaultTimes: JSON.stringify(times),
@@ -420,8 +420,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       id="priceUsd" 
                       type="number" 
                       value={priceUsd}
-                      onChange={(e) => setPriceUsd(Number(e.target.value))}
-                      placeholder="0"
+                      onChange={(e) => setPriceUsd(e.target.value)}
+                      placeholder=""
                     />
                   </div>
                   <div className="space-y-2">
