@@ -1557,6 +1557,20 @@ export async function registerRoutes(
       return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
     }
     
+    // Daily reservation limit check
+    const tenantId = req.session?.tenantId;
+    if (tenantId) {
+      const reservationUsage = await storage.getTenantDailyReservationUsage(tenantId);
+      if (reservationUsage.remaining <= 0) {
+        return res.status(429).json({ 
+          error: `Günlük rezervasyon limitinize ulaştınız (${reservationUsage.limit}). Lütfen yarın tekrar deneyin veya paketinizi yükseltin.`,
+          limitType: 'daily_reservation',
+          limit: reservationUsage.limit,
+          used: reservationUsage.used
+        });
+      }
+    }
+    
     const input = api.reservations.create.input.parse(req.body);
     const item = await storage.createReservation(input);
     

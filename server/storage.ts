@@ -143,7 +143,7 @@ import {
   type TenantIntegration,
   type InsertTenantIntegration,
 } from "@shared/schema";
-import { eq, and, gte, lte, desc, sql, isNull, or, like } from "drizzle-orm";
+import { eq, and, gte, lte, lt, desc, sql, isNull, or, like } from "drizzle-orm";
 
 export interface IStorage {
   // Tenants
@@ -378,6 +378,9 @@ export interface IStorage {
   getDailyMessageUsage(tenantId: number, date: string): Promise<DailyMessageUsage | undefined>;
   incrementDailyMessageCount(tenantId: number): Promise<DailyMessageUsage>;
   getTenantMessageLimit(tenantId: number): Promise<{ limit: number; used: number; remaining: number }>;
+
+  // Daily Reservation Limit Checking
+  getTenantDailyReservationUsage(tenantId: number): Promise<{ limit: number; used: number; remaining: number }>;
 
   // Super Admin - License/Agency Management
   getLicenses(): Promise<License[]>;
@@ -2486,7 +2489,7 @@ Sky Fethiye`,
     const today = new Date().toISOString().split('T')[0];
     
     // Use atomic upsert to prevent race conditions
-    const [result] = await db.execute(sql`
+    await db.execute(sql`
       INSERT INTO daily_message_usage (tenant_id, date, message_count, last_message_at, created_at, updated_at)
       VALUES (${tenantId}, ${today}, 1, NOW(), NOW(), NOW())
       ON CONFLICT (tenant_id, date) 
@@ -2494,7 +2497,6 @@ Sky Fethiye`,
         message_count = daily_message_usage.message_count + 1,
         last_message_at = NOW(),
         updated_at = NOW()
-      RETURNING *
     `);
     
     // Return the result or fetch it
@@ -2524,6 +2526,40 @@ Sky Fethiye`,
       limit: maxDailyMessages,
       used,
       remaining: Math.max(0, maxDailyMessages - used)
+    };
+  }
+
+  async getTenantDailyReservationUsage(tenantId: number): Promise<{ limit: number; used: number; remaining: number }> {
+    // Get tenant's plan code
+    const tenant = await this.getTenant(tenantId);
+    if (!tenant) {
+      return { limit: 0, used: 0, remaining: 0 };
+    }
+    
+    // Get plan limits
+    const plan = await db.select().from(subscriptionPlans)
+      .where(eq(subscriptionPlans.code, tenant.planCode || 'trial'));
+    
+    const maxDailyReservations = plan[0]?.maxDailyReservations || 10;
+    
+    // Get today's date string for comparison (YYYY-MM-DD format)
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Count today's reservations for this tenant (excluding cancelled)
+    // Using SQL for accurate date comparison
+    const result = await db.execute(sql`
+      SELECT COUNT(*) as count FROM reservations 
+      WHERE tenant_id = ${tenantId} 
+        AND DATE(created_at) = ${today}
+        AND status != 'cancelled'
+    `);
+    
+    const used = Number((result.rows?.[0] as any)?.count || 0);
+    
+    return {
+      limit: maxDailyReservations,
+      used,
+      remaining: Math.max(0, maxDailyReservations - used)
     };
   }
 
