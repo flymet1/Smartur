@@ -76,12 +76,15 @@ export default function ViewerStats() {
         params.append('to', dateRange.to.toISOString());
       }
       const res = await fetch(`/api/reservation-requests/stats?${params}`, { credentials: 'include' });
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
     }
   });
 
   const viewerSummary = useMemo(() => {
     const summary: Record<number, { name: string; email: string; total: number; periods: string[] }> = {};
+    
+    if (!Array.isArray(stats)) return [];
     
     stats.forEach(stat => {
       if (!summary[stat.viewerId]) {
@@ -104,19 +107,19 @@ export default function ViewerStats() {
   }, [stats]);
 
   const totalRequests = useMemo(() => 
-    stats.reduce((sum, s) => sum + s.count, 0), 
+    Array.isArray(stats) ? stats.reduce((sum, s) => sum + s.count, 0) : 0, 
     [stats]
   );
 
   const exportToCSV = () => {
-    const headers = ['Izleyici', 'E-posta', 'Donem', 'Talep Sayisi'];
+    const headers = ['Is Ortagi', 'E-posta', 'Donem', 'Talep Sayisi'];
     const rows = stats.map(s => [s.viewerName, s.viewerEmail, s.period, s.count.toString()]);
     const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `izleyici-istatistikleri-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.download = `is-ortagi-istatistikleri-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     link.click();
   };
 
@@ -127,7 +130,7 @@ export default function ViewerStats() {
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-2xl font-bold" data-testid="text-page-title">Izleyici Istatistikleri</h1>
+              <h1 className="text-2xl font-bold" data-testid="text-page-title">Is Ortagi Istatistikleri</h1>
               <p className="text-muted-foreground">Partner acentalarin rezervasyon talep aktiviteleri</p>
             </div>
             
@@ -201,7 +204,7 @@ export default function ViewerStats() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Aktif Izleyici</CardTitle>
+                <CardTitle className="text-sm font-medium">Aktif Is Ortagi</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -219,14 +222,14 @@ export default function ViewerStats() {
                 <div className="text-2xl font-bold" data-testid="text-average">
                   {viewerSummary.length > 0 ? (totalRequests / viewerSummary.length).toFixed(1) : 0}
                 </div>
-                <p className="text-xs text-muted-foreground">Izleyici basina ortalama talep</p>
+                <p className="text-xs text-muted-foreground">Is ortagi basina ortalama talep</p>
               </CardContent>
             </Card>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle>Izleyici Ozeti</CardTitle>
+              <CardTitle>Is Ortagi Ozeti</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -241,7 +244,7 @@ export default function ViewerStats() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Izleyici</TableHead>
+                      <TableHead>Is Ortagi</TableHead>
                       <TableHead>E-posta</TableHead>
                       <TableHead className="text-center">Aktif Donem</TableHead>
                       <TableHead className="text-right">Toplam Talep</TableHead>
@@ -282,7 +285,7 @@ export default function ViewerStats() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Donem</TableHead>
-                      <TableHead>Izleyici</TableHead>
+                      <TableHead>Is Ortagi</TableHead>
                       <TableHead className="text-right">Talep Sayisi</TableHead>
                     </TableRow>
                   </TableHeader>

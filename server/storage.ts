@@ -1987,14 +1987,14 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(reservationRequests.requestedBy, viewerId));
     }
     
-    const dateFormat = groupBy === 'daily' ? 'YYYY-MM-DD' : 'YYYY-MM';
+    const dateFormatSql = groupBy === 'daily' ? sql.raw("'YYYY-MM-DD'") : sql.raw("'YYYY-MM'");
     
     const result = await db.execute(sql`
       SELECT 
         rr.requested_by as "viewerId",
         au.name as "viewerName",
         au.email as "viewerEmail",
-        TO_CHAR(rr.created_at, ${dateFormat}) as period,
+        TO_CHAR(rr.created_at, ${dateFormatSql}) as period,
         COUNT(*)::int as count
       FROM reservation_requests rr
       LEFT JOIN app_users au ON rr.requested_by = au.id
@@ -2002,7 +2002,7 @@ export class DatabaseStorage implements IStorage {
         ${from ? sql`AND rr.created_at >= ${from}::timestamp` : sql``}
         ${to ? sql`AND rr.created_at <= ${to}::timestamp` : sql``}
         ${viewerId ? sql`AND rr.requested_by = ${viewerId}` : sql``}
-      GROUP BY rr.requested_by, au.name, au.email, TO_CHAR(rr.created_at, ${dateFormat})
+      GROUP BY rr.requested_by, au.name, au.email, TO_CHAR(rr.created_at, ${dateFormatSql})
       ORDER BY period DESC, count DESC
     `);
     
