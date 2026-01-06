@@ -188,7 +188,7 @@ export interface IStorage {
   getOpenSupportRequest(phone: string): Promise<SupportRequest | undefined>;
   createSupportRequest(request: InsertSupportRequest): Promise<SupportRequest>;
   resolveSupportRequest(id: number): Promise<SupportRequest>;
-  getAllSupportRequests(status?: 'open' | 'resolved'): Promise<SupportRequest[]>;
+  getAllSupportRequests(status?: 'open' | 'resolved', tenantId?: number): Promise<SupportRequest[]>;
 
   // Settings (tenant-scoped)
   getSetting(key: string, tenantId?: number): Promise<string | undefined>;
@@ -299,7 +299,7 @@ export interface IStorage {
 
   // Customer Requests
   createCustomerRequest(request: InsertCustomerRequest): Promise<CustomerRequest>;
-  getCustomerRequests(): Promise<CustomerRequest[]>;
+  getCustomerRequests(tenantId?: number): Promise<CustomerRequest[]>;
   getCustomerRequest(id: number): Promise<CustomerRequest | undefined>;
   getCustomerRequestsByPhone(phone: string): Promise<CustomerRequest[]>;
   updateCustomerRequest(id: number, data: Partial<InsertCustomerRequest>): Promise<CustomerRequest>;
@@ -1063,9 +1063,19 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async getAllSupportRequests(status?: 'open' | 'resolved'): Promise<SupportRequest[]> {
+  async getAllSupportRequests(status?: 'open' | 'resolved', tenantId?: number): Promise<SupportRequest[]> {
+    const conditions = [];
     if (status) {
-      return await db.select().from(supportRequests).where(eq(supportRequests.status, status)).orderBy(desc(supportRequests.createdAt));
+      conditions.push(eq(supportRequests.status, status));
+    }
+    if (tenantId) {
+      conditions.push(eq(supportRequests.tenantId, tenantId));
+    }
+    
+    if (conditions.length > 0) {
+      return await db.select().from(supportRequests)
+        .where(and(...conditions))
+        .orderBy(desc(supportRequests.createdAt));
     }
     return await db.select().from(supportRequests).orderBy(desc(supportRequests.createdAt));
   }
@@ -1860,7 +1870,12 @@ export class DatabaseStorage implements IStorage {
     return newRequest;
   }
 
-  async getCustomerRequests(): Promise<CustomerRequest[]> {
+  async getCustomerRequests(tenantId?: number): Promise<CustomerRequest[]> {
+    if (tenantId) {
+      return await db.select().from(customerRequests)
+        .where(eq(customerRequests.tenantId, tenantId))
+        .orderBy(desc(customerRequests.createdAt));
+    }
     return await db.select().from(customerRequests).orderBy(desc(customerRequests.createdAt));
   }
 

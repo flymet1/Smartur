@@ -2033,7 +2033,8 @@ Bu talep müşteri takip sayfasından gönderilmistir.
   // Get all customer requests (admin)
   app.get("/api/customer-requests", async (req, res) => {
     try {
-      const requests = await storage.getCustomerRequests();
+      const tenantId = req.session?.tenantId;
+      const requests = await storage.getCustomerRequests(tenantId);
       res.json(requests);
     } catch (error) {
       console.error("Get customer requests error:", error);
@@ -3456,7 +3457,8 @@ Sky Fethiye`;
   // === Support Requests ===
   app.get("/api/support-requests/summary", async (req, res) => {
     try {
-      const openRequests = await storage.getAllSupportRequests('open');
+      const tenantId = req.session?.tenantId;
+      const openRequests = await storage.getAllSupportRequests('open', tenantId);
       res.json({ 
         openCount: openRequests.length,
         requests: openRequests.slice(0, 5)
@@ -3468,8 +3470,9 @@ Sky Fethiye`;
 
   app.get("/api/support-requests", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const status = req.query.status as 'open' | 'resolved' | undefined;
-      const requests = await storage.getAllSupportRequests(status);
+      const requests = await storage.getAllSupportRequests(status, tenantId);
       res.json(requests);
     } catch (err) {
       res.status(500).json({ error: "Destek talepleri alınamadı" });
@@ -3488,12 +3491,13 @@ Sky Fethiye`;
 
   app.post("/api/support-requests", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const { phone, reservationId, description } = req.body;
       const existing = await storage.getOpenSupportRequest(phone);
       if (existing) {
         return res.json(existing);
       }
-      const created = await storage.createSupportRequest({ phone, reservationId, description, status: 'open' });
+      const created = await storage.createSupportRequest({ phone, reservationId, description, status: 'open', tenantId });
       
       await attachLogsToSupportRequest(created.id, phone);
       await logInfo('system', `Destek talebi oluşturuldu: #${created.id}`, { phone, reservationId }, phone);
@@ -5597,7 +5601,7 @@ Sky Fethiye`;
         extras: true
       });
 
-      await storage.setSetting('bot_rules', tenantBotRules, tenant.id);
+      await storage.setSetting('botRules', tenantBotRules, tenant.id);
       await storage.setSetting('botPrompt', defaultBotPrompt, tenant.id);
       await storage.setSetting('botAccess', defaultBotAccess, tenant.id);
 
