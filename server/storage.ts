@@ -181,7 +181,7 @@ export interface IStorage {
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
   getMessages(phone: string, limit?: number): Promise<Message[]>;
-  getAllConversations(filter?: 'all' | 'with_reservation' | 'human_intervention'): Promise<any[]>;
+  getAllConversations(filter?: 'all' | 'with_reservation' | 'human_intervention', tenantId?: number): Promise<any[]>;
   markHumanIntervention(phone: string, requires: boolean): Promise<void>;
 
   // Support Requests
@@ -952,10 +952,25 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getAllConversations(filter?: 'all' | 'with_reservation' | 'human_intervention'): Promise<any[]> {
-    const allMessages = await db.select().from(messages).orderBy(desc(messages.timestamp));
-    const allReservations = await db.select().from(reservations);
-    const allSupportRequests = await db.select().from(supportRequests);
+  async getAllConversations(filter?: 'all' | 'with_reservation' | 'human_intervention', tenantId?: number): Promise<any[]> {
+    // Filter messages by tenantId if provided
+    let allMessages;
+    if (tenantId) {
+      allMessages = await db.select().from(messages).where(eq(messages.tenantId, tenantId)).orderBy(desc(messages.timestamp));
+    } else {
+      allMessages = await db.select().from(messages).orderBy(desc(messages.timestamp));
+    }
+    
+    // Filter reservations and support requests by tenantId if provided
+    let allReservations;
+    let allSupportRequests;
+    if (tenantId) {
+      allReservations = await db.select().from(reservations).where(eq(reservations.tenantId, tenantId));
+      allSupportRequests = await db.select().from(supportRequests).where(eq(supportRequests.tenantId, tenantId));
+    } else {
+      allReservations = await db.select().from(reservations);
+      allSupportRequests = await db.select().from(supportRequests);
+    }
     
     // Normalize phone to last 10 digits for comparison
     const normalizePhone = (p: string): string => {

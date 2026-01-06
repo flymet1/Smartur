@@ -3446,8 +3446,9 @@ Sky Fethiye`;
   // === Conversations / Messages ===
   app.get("/api/conversations", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const filter = req.query.filter as 'all' | 'with_reservation' | 'human_intervention' | undefined;
-      const conversations = await storage.getAllConversations(filter);
+      const conversations = await storage.getAllConversations(filter, tenantId);
       res.json(conversations);
     } catch (err) {
       res.status(500).json({ error: "Konuşmalar alınamadı" });
@@ -3457,6 +3458,7 @@ Sky Fethiye`;
   // Message Analytics Endpoint
   app.get("/api/conversations/analytics", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const period = (req.query.period as 'daily' | 'weekly' | 'monthly') || 'daily';
       
       // Calculate date range based on period
@@ -3477,8 +3479,8 @@ Sky Fethiye`;
           startDate.setHours(0, 0, 0, 0);
       }
       
-      // Get all conversations
-      const allConversations = await storage.getAllConversations('all');
+      // Get all conversations filtered by tenant
+      const allConversations = await storage.getAllConversations('all', tenantId);
       
       // Filter conversations within the period
       const periodConversations = allConversations.filter(conv => {
