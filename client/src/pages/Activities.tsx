@@ -201,6 +201,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   // FAQ state
   const [faq, setFaq] = useState<FaqItem[]>(() => parseFaq((activity as any)?.faq));
   
+  // Form validation errors
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
   const { toast } = useToast();
@@ -230,6 +233,34 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // Validate required fields
+    const errors: Record<string, string> = {};
+    const name = (formData.get("name") as string)?.trim();
+    const price = formData.get("price") as string;
+    const durationMinutes = formData.get("durationMinutes") as string;
+    
+    if (!name) {
+      errors.name = "Aktivite adı zorunludur";
+    }
+    if (!price || Number(price) < 0) {
+      errors.price = "Geçerli bir fiyat giriniz";
+    }
+    if (!durationMinutes || Number(durationMinutes) <= 0) {
+      errors.durationMinutes = "Geçerli bir süre giriniz";
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast({
+        title: "Form Hatası",
+        description: "Lütfen zorunlu alanları doldurunuz",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setFormErrors({});
+    
     // Parse aliases from comma-separated string
     const aliasesArray = nameAliases
       .split(',')
@@ -243,7 +274,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       .filter((z: string) => z.length > 0);
     
     const data = {
-      name: formData.get("name") as string,
+      name: name,
       nameAliases: JSON.stringify(aliasesArray),
       description: formData.get("description") as string,
       price: Number(formData.get("price")),
@@ -310,8 +341,15 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
             <div className="flex-1 overflow-y-auto py-4 px-1 min-h-0">
               <TabsContent value="general" className="space-y-4 mt-0">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Aktivite Adı</Label>
-                  <Input id="name" name="name" defaultValue={activity?.name} required placeholder="Örn: ATV Safari" />
+                  <Label htmlFor="name">Aktivite Adı <span className="text-destructive">*</span></Label>
+                  <Input 
+                    id="name" 
+                    name="name" 
+                    defaultValue={activity?.name} 
+                    placeholder="Örn: ATV Safari"
+                    className={formErrors.name ? "border-destructive" : ""}
+                  />
+                  {formErrors.name && <p className="text-xs text-destructive">{formErrors.name}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="nameAliases">Alternatif İsimler (Çok Dilli)</Label>
@@ -325,8 +363,15 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Fiyat (TL)</Label>
-                    <Input id="price" name="price" type="number" defaultValue={activity?.price} required />
+                    <Label htmlFor="price">Fiyat (TL) <span className="text-destructive">*</span></Label>
+                    <Input 
+                      id="price" 
+                      name="price" 
+                      type="number" 
+                      defaultValue={activity?.price}
+                      className={formErrors.price ? "border-destructive" : ""}
+                    />
+                    {formErrors.price && <p className="text-xs text-destructive">{formErrors.price}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="priceUsd">Fiyat (USD)</Label>
@@ -339,8 +384,15 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="durationMinutes">Süre (Dk)</Label>
-                    <Input id="durationMinutes" name="durationMinutes" type="number" defaultValue={activity?.durationMinutes} required />
+                    <Label htmlFor="durationMinutes">Süre (Dk) <span className="text-destructive">*</span></Label>
+                    <Input 
+                      id="durationMinutes" 
+                      name="durationMinutes" 
+                      type="number" 
+                      defaultValue={activity?.durationMinutes}
+                      className={formErrors.durationMinutes ? "border-destructive" : ""}
+                    />
+                    {formErrors.durationMinutes && <p className="text-xs text-destructive">{formErrors.durationMinutes}</p>}
                   </div>
                 </div>
 
