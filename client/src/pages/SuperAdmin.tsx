@@ -45,6 +45,7 @@ import {
   ChevronDown,
   ChevronUp,
   Megaphone,
+  Building,
   Building2,
   BarChart3,
   Radio,
@@ -2994,12 +2995,17 @@ function ApplicationUpdatesSection() {
   );
 }
 
+interface EnrichedSupportRequest extends SupportRequest {
+  tenantName?: string;
+}
+
 function AgencySupportSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [loadingLogs, setLoadingLogs] = useState<number | null>(null);
   
-  const { data: allRequests = [], isLoading } = useQuery<SupportRequest[]>({
+  const { data: allRequests = [], isLoading } = useQuery<EnrichedSupportRequest[]>({
     queryKey: ['/api/support-requests'],
   });
 
@@ -3007,6 +3013,51 @@ function AgencySupportSection() {
   const formRequests = allRequests.filter(r => r.phone.startsWith('['));
   const openRequests = formRequests.filter(r => r.status === 'open');
   const resolvedRequests = formRequests.filter(r => r.status === 'resolved');
+  
+  // Download logs for a support request
+  const downloadLogs = async (requestId: number) => {
+    try {
+      setLoadingLogs(requestId);
+      const response = await fetch(`/api/support-requests/${requestId}/logs`);
+      const logs = await response.json();
+      
+      // Create downloadable content
+      let content = `Destek Talebi #${requestId} - Sistem Logları\n`;
+      content += `İndirme Tarihi: ${new Date().toLocaleString('tr-TR')}\n`;
+      content += '='.repeat(60) + '\n\n';
+      
+      for (const log of logs) {
+        content += `[${log.logCreatedAt ? new Date(log.logCreatedAt).toLocaleString('tr-TR') : '-'}] `;
+        content += `[${log.logLevel?.toUpperCase() || 'INFO'}] `;
+        content += `[${log.logSource || '-'}] `;
+        content += `${log.logMessage || '-'}\n`;
+        if (log.logDetails) {
+          content += `  Detaylar: ${typeof log.logDetails === 'string' ? log.logDetails : JSON.stringify(log.logDetails)}\n`;
+        }
+        if (log.messageSnapshot) {
+          content += `  Mesaj Gecmisi: ${log.messageSnapshot}\n`;
+        }
+        content += '\n';
+      }
+      
+      // Trigger download
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `destek-talebi-${requestId}-loglar.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({ title: "Başarılı", description: "Loglar indirildi." });
+    } catch (error) {
+      toast({ title: "Hata", description: "Loglar indirilemedi.", variant: "destructive" });
+    } finally {
+      setLoadingLogs(null);
+    }
+  };
 
   const resolveMutation = useMutation({
     mutationFn: (id: number) => apiRequest('POST', `/api/support-requests/${id}/resolve`),
@@ -3048,8 +3099,68 @@ function AgencySupportSection() {
     }
   };
 
+  // Notification email settings
+  const [notificationEmail, setNotificationEmail] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+  
+  const { data: notificationSettings } = useQuery<{ notificationEmail: string }>({
+    queryKey: ['/api/platform/notification-settings'],
+  });
+  
+  useEffect(() => {
+    if (notificationSettings?.notificationEmail) {
+      setNotificationEmail(notificationSettings.notificationEmail);
+    }
+  }, [notificationSettings]);
+  
+  const saveNotificationEmail = async () => {
+    setEmailSaving(true);
+    try {
+      await apiRequest('POST', '/api/platform/notification-settings', { notificationEmail });
+      toast({ title: "Başarılı", description: "Bildirim e-postası kaydedildi." });
+    } catch (error) {
+      toast({ title: "Hata", description: "E-posta kaydedilemedi.", variant: "destructive" });
+    } finally {
+      setEmailSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {/* Notification Email Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Destek Bildirimleri
+          </CardTitle>
+          <CardDescription>Yeni destek talebi geldiğinde bildirim alacak e-posta adresini ayarlayın</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <Input
+              type="email"
+              placeholder="bildirim@example.com"
+              value={notificationEmail}
+              onChange={(e) => setNotificationEmail(e.target.value)}
+              className="max-w-md"
+              data-testid="input-notification-email"
+            />
+            <Button 
+              onClick={saveNotificationEmail}
+              disabled={emailSaving}
+              data-testid="button-save-notification-email"
+            >
+              <Save className="h-4 w-4 mr-1" />
+              {emailSaving ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Gmail yapılandırması gereklidir. Acente ayarlarından veya sistem ayarlarından Gmail'i yapılandırın.
+          </p>
+        </CardContent>
+      </Card>
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
@@ -3083,6 +3194,12 @@ function AgencySupportSection() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2 flex-wrap">
                           {getTypeBadge(info.type)}
+                          {req.tenantName && (
+                            <Badge variant="secondary">
+                              <Building className="h-3 w-3 mr-1" />
+                              {req.tenantName}
+                            </Badge>
+                          )}
                           <span className="font-medium">{info.name}</span>
                           {info.email && (
                             <span className="text-sm text-muted-foreground">({info.email})</span>
@@ -3096,7 +3213,17 @@ function AgencySupportSection() {
                           {req.createdAt ? new Date(req.createdAt).toLocaleString("tr-TR") : "-"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => downloadLogs(req.id)}
+                          disabled={loadingLogs === req.id}
+                          data-testid={`button-download-logs-${req.id}`}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          {loadingLogs === req.id ? 'Yükleniyor...' : 'Loglar'}
+                        </Button>
                         <Button 
                           size="sm"
                           variant="outline"
@@ -3121,6 +3248,7 @@ function AgencySupportSection() {
                     {isExpanded && (
                       <div className="mt-4 pt-4 border-t">
                         <div className="text-sm space-y-2">
+                          {req.tenantName && <div><strong>Acente:</strong> {req.tenantName}</div>}
                           <div><strong>Talep Turu:</strong> {info.type}</div>
                           <div><strong>Gönderen:</strong> {info.name} {info.email ? `<${info.email}>` : ''}</div>
                           <div><strong>Konu:</strong> {info.subject}</div>

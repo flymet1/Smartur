@@ -3471,8 +3471,25 @@ Sky Fethiye`;
   app.get("/api/support-requests", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
+      const isPlatformAdmin = req.session?.isPlatformAdmin;
       const status = req.query.status as 'open' | 'resolved' | undefined;
-      const requests = await storage.getAllSupportRequests(status, tenantId);
+      
+      // Super Admins see all requests (no tenant filter), regular users see only their tenant's requests
+      const requests = await storage.getAllSupportRequests(status, isPlatformAdmin ? undefined : tenantId);
+      
+      // For Super Admin, enrich requests with tenant info
+      if (isPlatformAdmin && requests.length > 0) {
+        const enrichedRequests = await Promise.all(requests.map(async (request) => {
+          let tenantName = 'Bilinmiyor';
+          if (request.tenantId) {
+            const tenant = await storage.getTenant(request.tenantId);
+            tenantName = tenant?.name || 'Bilinmiyor';
+          }
+          return { ...request, tenantName };
+        }));
+        return res.json(enrichedRequests);
+      }
+      
       res.json(requests);
     } catch (err) {
       res.status(500).json({ error: "Destek talepleri alınamadı" });
@@ -3547,19 +3564,96 @@ Sky Fethiye`;
         diger: 'Diğer'
       };
 
+      // Get tenant info for the request
+      const tenantId = req.session?.tenantId;
+      let tenantName = 'Bilinmiyor';
+      if (tenantId) {
+        const tenant = await storage.getTenant(tenantId);
+        tenantName = tenant?.name || 'Bilinmiyor';
+      }
+      
       // Store the support request in database for tracking
       const formattedPhone = `[${requestTypeLabels[requestType] || requestType}] ${senderName}${senderEmail ? ` <${senderEmail}>` : ''} - ${subject}`;
       
-      await storage.createSupportRequest({
+      // Only include tenantId if it exists (public forms won't have it)
+      const requestData: { phone: string; status: 'open'; tenantId?: number } = {
         phone: formattedPhone.substring(0, 255),
-        status: 'open'
-      });
+        status: 'open',
+      };
+      if (tenantId) {
+        requestData.tenantId = tenantId;
+      }
+      
+      await storage.createSupportRequest(requestData);
 
       // Send email via Gmail SMTP if credentials are configured
       let emailSent = false;
       const gmailCreds = await getGmailCredentials();
       
-      if (gmailCreds && developerEmail) {
+      // Get platform notification email (for Super Admin)
+      const platformNotificationEmail = await storage.getSetting("platformNotificationEmail");
+      
+      // Send to platform notification email if configured
+      if (gmailCreds && platformNotificationEmail) {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: gmailCreds.user,
+              pass: gmailCreds.password,
+            },
+          });
+
+          const emailHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+                Yeni Destek Talebi - Smartur
+              </h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold; width: 120px;">Acente:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; color: #007bff; font-weight: bold;">${tenantName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Gönderen:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${senderName}${senderEmail ? ` (${senderEmail})` : ''}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Talep Türü:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${requestTypeLabels[requestType] || requestType}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Konu:</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${subject}</td>
+                </tr>
+              </table>
+              <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                <h4 style="margin-top: 0; color: #333;">Mesaj:</h4>
+                <p style="white-space: pre-wrap; margin: 0;">${message}</p>
+              </div>
+              <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                Bu e-posta Smartur destek sistemi tarafından otomatik olarak gönderilmiştir.
+              </p>
+            </div>
+          `;
+
+          await transporter.sendMail({
+            from: `"Smartur Destek" <${gmailCreds.user}>`,
+            to: platformNotificationEmail,
+            replyTo: senderEmail || undefined,
+            subject: `[${tenantName}] ${requestTypeLabels[requestType] || requestType}: ${subject}`,
+            html: emailHtml,
+          });
+
+          emailSent = true;
+          console.log(`Support request notification sent to platform admin: ${platformNotificationEmail}`);
+        } catch (emailErr) {
+          console.error("Platform notification email failed:", emailErr);
+        }
+      }
+      
+      // Also send to developer email if provided (and different from platform email if that was set)
+      if (gmailCreds && developerEmail && (!platformNotificationEmail || developerEmail !== platformNotificationEmail)) {
         try {
           const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -3622,6 +3716,32 @@ Sky Fethiye`;
     } catch (err) {
       console.error("Support request error:", err);
       res.status(500).json({ error: "Destek talebi gönderilemedi" });
+    }
+  });
+
+  // === Platform Notification Settings (Super Admin) ===
+  app.get("/api/platform/notification-settings", async (req, res) => {
+    try {
+      if (!req.session?.isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      const notificationEmail = await storage.getSetting("platformNotificationEmail");
+      res.json({ notificationEmail: notificationEmail || '' });
+    } catch (err) {
+      res.status(500).json({ error: "Ayarlar alınamadı" });
+    }
+  });
+  
+  app.post("/api/platform/notification-settings", async (req, res) => {
+    try {
+      if (!req.session?.isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      const { notificationEmail } = req.body;
+      await storage.setSetting("platformNotificationEmail", notificationEmail || '');
+      res.json({ success: true, message: "Bildirim e-postası kaydedildi" });
+    } catch (err) {
+      res.status(500).json({ error: "Ayarlar kaydedilemedi" });
     }
   });
 
