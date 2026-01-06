@@ -2606,12 +2606,8 @@ function BotTestSection() {
               <Badge variant="secondary" className="text-xs">Gemini 1.5 Flash</Badge>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Hafiza</span>
-              <span className="font-medium">Son 5 mesaj</span>
-            </div>
-            <div className="flex justify-between">
               <span className="text-muted-foreground">Dil</span>
-              <span className="font-medium">Turkce</span>
+              <span className="font-medium">Türkçe / English</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Durum</span>
