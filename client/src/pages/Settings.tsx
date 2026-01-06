@@ -2023,11 +2023,19 @@ function AutoResponsesCard() {
 // === DATA EXPORT SECTION ===
 function DataExportSection() {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('csv');
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['all']);
+  
+  // Import state
+  const [isImporting, setIsImporting] = useState(false);
+  const [importData, setImportData] = useState<any>(null);
+  const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
 
-  const { data: preview, isLoading: isLoadingPreview } = useQuery<{
+  const { data: preview, isLoading: isLoadingPreview, refetch: refetchPreview } = useQuery<{
     summary: {
       activitiesCount: number;
       reservationsCount: number;
@@ -2072,6 +2080,63 @@ function DataExportSection() {
     }
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.json')) {
+      toast({ title: "Hata", description: "Sadece JSON formatında yedek dosyaları desteklenmektedir", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      if (!data.exportInfo) {
+        toast({ title: "Hata", description: "Geçersiz yedek dosyası formatı", variant: "destructive" });
+        return;
+      }
+
+      setImportData(data);
+      setShowImportConfirm(true);
+    } catch (error) {
+      toast({ title: "Hata", description: "Dosya okunamadı veya geçersiz JSON formatı", variant: "destructive" });
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importData) return;
+    
+    setIsImporting(true);
+    try {
+      const response = await fetch('/api/tenant-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: importData, options: { mode: importMode } })
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Import failed');
+      }
+
+      setImportResult(result);
+      setShowImportConfirm(false);
+      refetchPreview();
+      toast({ title: "Başarılı", description: result.message });
+    } catch (error: any) {
+      toast({ title: "Hata", description: error.message || "Veriler içe aktarılamadı", variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const dataTypes = [
     { id: 'all', label: 'Tüm Veriler' },
     { id: 'reservations', label: 'Rezervasyonlar' },
@@ -2097,18 +2162,18 @@ function DataExportSection() {
 
   return (
     <div className="space-y-6">
+      {/* Export Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="h-5 w-5" />
-            Veri Dışa Aktarma
+            Veri Dışa Aktarma (Yedekleme)
           </CardTitle>
           <CardDescription>
-            Acentanıza ait tüm verileri indirin. CSV formatı Excel ile uyumludur.
+            Acentanıza ait tüm verileri indirin. JSON formatında indirerek daha sonra geri yükleyebilirsiniz.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Data Summary */}
           <div className="bg-muted/50 rounded-lg p-4">
             <h4 className="font-medium mb-3">Veri Özeti</h4>
             {isLoadingPreview ? (
@@ -2145,7 +2210,6 @@ function DataExportSection() {
             )}
           </div>
 
-          {/* Export Options */}
           <div className="space-y-4">
             <div>
               <Label className="mb-2 block">Veri Türleri</Label>
@@ -2181,13 +2245,17 @@ function DataExportSection() {
                   onClick={() => setExportFormat('json')}
                   data-testid="button-format-json"
                 >
-                  JSON
+                  JSON (Yedekleme)
                 </Button>
               </div>
+              {exportFormat === 'json' && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  JSON formatındaki yedekleri daha sonra sisteme geri yükleyebilirsiniz.
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Export Button */}
           <Button 
             onClick={handleExport} 
             disabled={isExporting}
@@ -2209,18 +2277,143 @@ function DataExportSection() {
         </CardContent>
       </Card>
 
+      {/* Import Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Veri İçe Aktarma (Geri Yükleme)
+          </CardTitle>
+          <CardDescription>
+            Daha önce indirdiğiniz JSON formatındaki yedek dosyasını yükleyerek verilerinizi geri yükleyin.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileSelect}
+            className="hidden"
+            data-testid="input-import-file"
+          />
+          
+          <div className="border-2 border-dashed rounded-lg p-6 text-center">
+            <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">
+              JSON formatında yedek dosyası yükleyin
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => fileInputRef.current?.click()}
+              data-testid="button-select-file"
+            >
+              Dosya Seç
+            </Button>
+          </div>
+
+          {importResult && (
+            <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">
+                İçe Aktarma Tamamlandı
+              </h4>
+              <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                {importResult.message}
+              </p>
+              {importResult.details && (
+                <div className="text-xs text-green-600 dark:text-green-400 space-y-1">
+                  {Object.entries(importResult.details).map(([key, value]: [string, any]) => (
+                    <p key={key}>
+                      {key}: {value.imported} eklendi, {value.skipped} atlandı
+                      {value.errors?.length > 0 && `, ${value.errors.length} hata`}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Import Confirmation Dialog */}
+      <Dialog open={showImportConfirm} onOpenChange={setShowImportConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Veri İçe Aktarma Onayı</DialogTitle>
+            <CardDescription>
+              Yedek dosyası başarıyla okundu. İçe aktarmak istediğiniz verileri onaylayın.
+            </CardDescription>
+          </DialogHeader>
+          
+          {importData && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4 text-sm">
+                <p><strong>Yedek Tarihi:</strong> {new Date(importData.exportInfo.exportedAt).toLocaleString('tr-TR')}</p>
+                <p className="mt-2"><strong>İçerik:</strong></p>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  {importData.activities && <li>{importData.activities.length} aktivite</li>}
+                  {importData.reservations && <li>{importData.reservations.length} rezervasyon</li>}
+                  {importData.agencies && <li>{importData.agencies.length} acenta</li>}
+                </ul>
+              </div>
+
+              <div>
+                <Label className="mb-2 block">İçe Aktarma Modu</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={importMode === 'merge' ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setImportMode('merge')}
+                  >
+                    Birleştir
+                  </Button>
+                  <Button
+                    variant={importMode === 'replace' ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setImportMode('replace')}
+                  >
+                    Değiştir
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {importMode === 'merge' 
+                    ? "Mevcut veriler korunur, sadece yeni veriler eklenir."
+                    : "Mevcut veriler üzerine yazılır."}
+                </p>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowImportConfirm(false)}>
+                  İptal
+                </Button>
+                <Button onClick={handleImport} disabled={isImporting}>
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      İçe Aktarılıyor...
+                    </>
+                  ) : (
+                    "İçe Aktar"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Info Card */}
       <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
         <CardContent className="pt-6">
           <div className="flex gap-3">
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-800 dark:text-blue-200">
-              <p className="font-medium mb-1">Veri Güvenliği Hakkında</p>
+              <p className="font-medium mb-1">Yedekleme ve Geri Yükleme Hakkında</p>
               <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
-                <li>İndirilen veriler sadece sizin acentanıza ait verileri içerir</li>
-                <li>CSV dosyaları Excel, Google Sheets veya benzeri programlarla açılabilir</li>
-                <li>JSON formatı teknik entegrasyonlar için uygundur</li>
-                <li>Verilerinizi düzenli olarak yedeklemenizi öneririz</li>
+                <li>Verilerinizi düzenli olarak JSON formatında yedeklemenizi öneririz</li>
+                <li>Geri yükleme işlemi sadece aynı acentaya ait yedekleri kabul eder</li>
+                <li>Birleştir modu mevcut verileri korur, Değiştir modu üzerine yazar</li>
+                <li>Rezervasyonlar aktivite adlarına göre eşleştirilir</li>
               </ul>
             </div>
           </div>
