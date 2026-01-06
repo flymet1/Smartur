@@ -364,33 +364,37 @@ export function Sidebar() {
     <>
       {/* Announcements Banner - Fixed at top */}
       {activeAnnouncements.length > 0 && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm">
-          <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto">
-            {activeAnnouncements.map((announcement) => (
-              <div
-                key={announcement.id}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs whitespace-nowrap",
-                  getAnnouncementStyle(announcement.type)
-                )}
-                data-testid={`announcement-${announcement.id}`}
-              >
-                {getAnnouncementIcon(announcement.type)}
-                <span className="font-medium">{announcement.title}:</span>
-                <span className="opacity-80">{announcement.content}</span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-4 w-4 ml-1 opacity-60 hover:opacity-100"
-                  onClick={() => dismissAnnouncement(announcement.id)}
-                  data-testid={`button-dismiss-announcement-${announcement.id}`}
+        <>
+          <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b shadow-sm">
+            <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto md:ml-64">
+              {activeAnnouncements.map((announcement) => (
+                <div
+                  key={announcement.id}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs whitespace-nowrap",
+                    getAnnouncementStyle(announcement.type)
+                  )}
+                  data-testid={`announcement-${announcement.id}`}
                 >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
+                  {getAnnouncementIcon(announcement.type)}
+                  <span className="font-medium">{announcement.title}:</span>
+                  <span className="opacity-80">{announcement.content}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-4 w-4 ml-1 opacity-60 hover:opacity-100"
+                    onClick={() => dismissAnnouncement(announcement.id)}
+                    data-testid={`button-dismiss-announcement-${announcement.id}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+          {/* Spacer to prevent content from being hidden behind fixed banner */}
+          <div className="h-10 w-full" />
+        </>
       )}
 
       {/* Mobile Menu */}
