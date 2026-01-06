@@ -167,7 +167,7 @@ export interface IStorage {
   deleteCapacity(id: number): Promise<void>;
 
   // Reservations
-  getReservations(): Promise<Reservation[]>;
+  getReservations(tenantId?: number): Promise<Reservation[]>;
   createReservation(reservation: InsertReservation): Promise<Reservation>;
   updateReservation(id: number, data: Partial<InsertReservation>): Promise<Reservation>;
   getReservationsStats(): Promise<any>;
@@ -203,7 +203,7 @@ export interface IStorage {
   isBlacklisted(phone: string): Promise<boolean>;
 
   // Finance - Agencies
-  getAgencies(): Promise<Agency[]>;
+  getAgencies(tenantId?: number): Promise<Agency[]>;
   getAgency(id: number): Promise<Agency | undefined>;
   createAgency(agency: InsertAgency): Promise<Agency>;
   updateAgency(id: number, agency: Partial<InsertAgency>): Promise<Agency>;
@@ -260,7 +260,7 @@ export interface IStorage {
   updateReservationStatus(reservationId: number, status: string): Promise<Reservation>;
 
   // Package Tours
-  getPackageTours(): Promise<PackageTour[]>;
+  getPackageTours(tenantId?: number): Promise<PackageTour[]>;
   getPackageTour(id: number): Promise<PackageTour | undefined>;
   createPackageTour(tour: InsertPackageTour): Promise<PackageTour>;
   updatePackageTour(id: number, tour: Partial<InsertPackageTour>): Promise<PackageTour>;
@@ -650,7 +650,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Reservations
-  async getReservations(): Promise<Reservation[]> {
+  async getReservations(tenantId?: number): Promise<Reservation[]> {
+    if (tenantId) {
+      return await db.select().from(reservations).where(eq(reservations.tenantId, tenantId)).orderBy(desc(reservations.date));
+    }
     return await db.select().from(reservations).orderBy(desc(reservations.date));
   }
 
@@ -1153,7 +1156,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Finance - Agencies
-  async getAgencies(): Promise<Agency[]> {
+  async getAgencies(tenantId?: number): Promise<Agency[]> {
+    if (tenantId) {
+      return await db.select().from(agencies).where(eq(agencies.tenantId, tenantId)).orderBy(desc(agencies.createdAt));
+    }
     return await db.select().from(agencies).orderBy(desc(agencies.createdAt));
   }
 
@@ -1575,7 +1581,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Package Tours
-  async getPackageTours(): Promise<PackageTour[]> {
+  async getPackageTours(tenantId?: number): Promise<PackageTour[]> {
+    if (tenantId) {
+      return await db.select().from(packageTours).where(eq(packageTours.tenantId, tenantId)).orderBy(desc(packageTours.createdAt));
+    }
     return await db.select().from(packageTours).orderBy(desc(packageTours.createdAt));
   }
 
