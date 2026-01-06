@@ -5018,6 +5018,67 @@ Sky Fethiye`;
     }
   });
 
+  // === USER SUBSCRIPTION USAGE ===
+
+  // Get current user's subscription usage stats
+  app.get("/api/subscription/usage", async (req, res) => {
+    try {
+      const userId = req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      }
+
+      const user = await storage.getAppUser(Number(userId));
+      if (!user) {
+        return res.status(404).json({ error: "Kullanıcı bulunamadı" });
+      }
+
+      // Get current plan based on user's membershipType
+      const plans = await storage.getSubscriptionPlans();
+      const currentPlan = plans.find(p => p.code === user.membershipType) || plans.find(p => p.code === "trial");
+      
+      // Get actual usage counts
+      const activities = await storage.getActivities();
+      const activitiesUsed = activities.length;
+
+      // Get reservations for current month
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const allReservations = await storage.getReservations();
+      const reservationsThisMonth = allReservations.filter(r => {
+        const createdAt = r.createdAt ? new Date(r.createdAt) : null;
+        return createdAt && createdAt >= startOfMonth;
+      }).length;
+
+      // Get user count for tenant
+      const allUsers = await storage.getAppUsers();
+      const tenantUsers = user.tenantId 
+        ? allUsers.filter(u => u.tenantId === user.tenantId).length 
+        : allUsers.length;
+
+      // Calculate days remaining
+      let daysRemaining: number | null = null;
+      if (user.membershipEndDate) {
+        const endDate = new Date(user.membershipEndDate);
+        daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      }
+
+      res.json({
+        activitiesUsed,
+        maxActivities: currentPlan?.maxActivities || 5,
+        reservationsThisMonth,
+        maxReservationsPerMonth: currentPlan?.maxReservationsPerMonth || 100,
+        usersCount: tenantUsers,
+        maxUsers: currentPlan?.maxUsers || 1,
+        daysRemaining,
+        planName: currentPlan?.name || "Deneme",
+      });
+    } catch (err) {
+      console.error("Usage stats error:", err);
+      res.status(500).json({ error: "Kullanım bilgileri alınamadı" });
+    }
+  });
+
   // === SUBSCRIPTION PLANS (Super Admin) ===
 
   // Get all subscription plans

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { 
   Check, 
@@ -17,7 +18,10 @@ import {
   Package,
   Settings2,
   Crown,
-  ArrowRight
+  ArrowRight,
+  Calendar,
+  Clock,
+  AlertTriangle
 } from "lucide-react";
 import type { SubscriptionPlan } from "@shared/schema";
 
@@ -36,7 +40,21 @@ const FEATURE_LABELS: Record<string, { label: string; icon: typeof Activity }> =
 };
 
 interface UserData {
+  id?: number;
   membershipType?: string | null;
+  membershipEndDate?: string | null;
+  companyName?: string | null;
+}
+
+interface UsageStats {
+  activitiesUsed: number;
+  maxActivities: number;
+  reservationsThisMonth: number;
+  maxReservationsPerMonth: number;
+  usersCount: number;
+  maxUsers: number;
+  daysRemaining: number | null;
+  planName: string;
 }
 
 export default function Subscription() {
@@ -60,6 +78,11 @@ export default function Subscription() {
     queryKey: ["/api/subscription-plans"],
   });
 
+  const { data: usageStats } = useQuery<UsageStats>({
+    queryKey: ["/api/subscription/usage"],
+    enabled: !!currentUser,
+  });
+
   const activePlans = plans.filter(p => p.isActive && p.code !== "trial");
 
   const formatPrice = (amount: number | null | undefined) => {
@@ -81,10 +104,111 @@ export default function Subscription() {
 
   const currentPlan = currentUser?.membershipType;
 
+  const getProgressColor = (used: number, max: number) => {
+    if (max === 0 || max >= 9999) return "bg-primary";
+    const percent = (used / max) * 100;
+    if (percent >= 90) return "bg-red-500";
+    if (percent >= 75) return "bg-amber-500";
+    return "bg-primary";
+  };
+
+  const formatLimit = (value: number) => {
+    if (value >= 9999) return "Sınırsız";
+    return value.toLocaleString("tr-TR");
+  };
+
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
       <main className="flex-1 md:ml-64 p-4 md:p-8 space-y-8 max-w-6xl mx-auto">
+        {/* Current Usage Stats */}
+        {usageStats && (
+          <Card className="border-primary/20" data-testid="card-usage-stats">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    Mevcut Kullanım
+                  </CardTitle>
+                  <CardDescription>
+                    Plan: <span className="font-medium text-foreground">{usageStats.planName}</span>
+                    {usageStats.daysRemaining !== null && (
+                      <span className="ml-2">
+                        {usageStats.daysRemaining > 0 ? (
+                          <Badge variant={usageStats.daysRemaining <= 7 ? "destructive" : "secondary"}>
+                            <Clock className="h-3 w-3 mr-1" />
+                            {usageStats.daysRemaining} gün kaldı
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Süre doldu
+                          </Badge>
+                        )}
+                      </span>
+                    )}
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6 md:grid-cols-3">
+                {/* Activities */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-muted-foreground" />
+                      Aktiviteler
+                    </span>
+                    <span className="font-medium">
+                      {usageStats.activitiesUsed} / {formatLimit(usageStats.maxActivities)}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={usageStats.maxActivities >= 9999 ? 0 : (usageStats.activitiesUsed / usageStats.maxActivities) * 100} 
+                    className="h-2"
+                  />
+                </div>
+
+                {/* Reservations This Month */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      Aylık Rezervasyon
+                    </span>
+                    <span className="font-medium">
+                      {usageStats.reservationsThisMonth} / {formatLimit(usageStats.maxReservationsPerMonth)}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={usageStats.maxReservationsPerMonth >= 9999 ? 0 : (usageStats.reservationsThisMonth / usageStats.maxReservationsPerMonth) * 100} 
+                    className="h-2"
+                  />
+                </div>
+
+                {/* Users */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      Kullanıcılar
+                    </span>
+                    <span className="font-medium">
+                      {usageStats.usersCount} / {formatLimit(usageStats.maxUsers)}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={usageStats.maxUsers >= 9999 ? 0 : (usageStats.usersCount / usageStats.maxUsers) * 100} 
+                    className="h-2"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold">Abonelik Planları</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
