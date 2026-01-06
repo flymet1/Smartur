@@ -2351,6 +2351,35 @@ export async function registerRoutes(
     }
   });
 
+  // Get reservation request statistics (viewer activity report)
+  app.get("/api/reservation-requests/stats", requirePermission(PERMISSIONS.RESERVATIONS_VIEW, PERMISSIONS.CAPACITY_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { groupBy = 'daily', from, to, viewerId } = req.query;
+      
+      if (groupBy !== 'daily' && groupBy !== 'monthly') {
+        return res.status(400).json({ error: "groupBy parametresi 'daily' veya 'monthly' olmalidir" });
+      }
+      
+      const stats = await storage.getReservationRequestStats(tenantId, {
+        groupBy: groupBy as 'daily' | 'monthly',
+        from: from as string | undefined,
+        to: to as string | undefined,
+        viewerId: viewerId ? parseInt(viewerId as string) : undefined
+      });
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Get reservation request stats error:", error);
+      res.status(500).json({ error: "Istatistikler alinamadi" });
+    }
+  });
+
   // === Webhooks ===
   app.post(api.webhooks.woocommerce.path, async (req, res) => {
     try {

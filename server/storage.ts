@@ -313,6 +313,7 @@ export interface IStorage {
   getReservationRequests(tenantId?: number): Promise<ReservationRequest[]>;
   getReservationRequest(id: number): Promise<ReservationRequest | undefined>;
   updateReservationRequest(id: number, data: Partial<InsertReservationRequest>): Promise<ReservationRequest>;
+  getReservationRequestStats(tenantId: number, options: { groupBy: 'daily' | 'monthly'; from?: string; to?: string; viewerId?: number }): Promise<{ viewerId: number; viewerName: string; viewerEmail: string; period: string; count: number; }[]>;
 
   // License
   getLicense(): Promise<License | undefined>;
@@ -1965,6 +1966,53 @@ export class DatabaseStorage implements IStorage {
   async updateReservationRequest(id: number, data: Partial<InsertReservationRequest>): Promise<ReservationRequest> {
     const [updated] = await db.update(reservationRequests).set(data).where(eq(reservationRequests.id, id)).returning();
     return updated;
+  }
+
+  async getReservationRequestStats(
+    tenantId: number, 
+    options: { groupBy: 'daily' | 'monthly'; from?: string; to?: string; viewerId?: number }
+  ): Promise<{ viewerId: number; viewerName: string; viewerEmail: string; period: string; count: number; }[]> {
+    const { groupBy, from, to, viewerId } = options;
+    
+    // Build conditions
+    const conditions = [eq(reservationRequests.tenantId, tenantId)];
+    
+    if (from) {
+      conditions.push(sql`${reservationRequests.createdAt} >= ${from}::timestamp`);
+    }
+    if (to) {
+      conditions.push(sql`${reservationRequests.createdAt} <= ${to}::timestamp`);
+    }
+    if (viewerId) {
+      conditions.push(eq(reservationRequests.requestedBy, viewerId));
+    }
+    
+    const dateFormat = groupBy === 'daily' ? 'YYYY-MM-DD' : 'YYYY-MM';
+    
+    const result = await db.execute(sql`
+      SELECT 
+        rr.requested_by as "viewerId",
+        au.name as "viewerName",
+        au.email as "viewerEmail",
+        TO_CHAR(rr.created_at, ${dateFormat}) as period,
+        COUNT(*)::int as count
+      FROM reservation_requests rr
+      LEFT JOIN app_users au ON rr.requested_by = au.id
+      WHERE rr.tenant_id = ${tenantId}
+        ${from ? sql`AND rr.created_at >= ${from}::timestamp` : sql``}
+        ${to ? sql`AND rr.created_at <= ${to}::timestamp` : sql``}
+        ${viewerId ? sql`AND rr.requested_by = ${viewerId}` : sql``}
+      GROUP BY rr.requested_by, au.name, au.email, TO_CHAR(rr.created_at, ${dateFormat})
+      ORDER BY period DESC, count DESC
+    `);
+    
+    return (result.rows as any[]).map(row => ({
+      viewerId: row.viewerId,
+      viewerName: row.viewerName || 'Bilinmiyor',
+      viewerEmail: row.viewerEmail || '',
+      period: row.period,
+      count: row.count
+    }));
   }
 
   // License

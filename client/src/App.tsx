@@ -29,6 +29,7 @@ import SuperAdmin from "@/pages/SuperAdmin";
 import Developer from "@/pages/Developer";
 import Login from "@/pages/Login";
 import Musaitlik from "@/pages/Musaitlik";
+import ViewerStats from "@/pages/ViewerStats";
 
 function Router() {
   return (
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/developer" component={Developer} />
       <Route path="/login" component={Login} />
       <Route path="/musaitlik" component={Musaitlik} />
+      <Route path="/viewer-stats" component={ViewerStats} />
       <Route component={NotFound} />
     </Switch>
   );

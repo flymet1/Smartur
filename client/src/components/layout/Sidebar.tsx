@@ -17,7 +17,8 @@ import {
   User,
   CreditCard,
   BookOpen,
-  HelpCircle
+  HelpCircle,
+  BarChart2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -39,6 +40,7 @@ const allNavItems: NavItem[] = [
   { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Calendar, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW },
+  { href: "/viewer-stats", label: "Izleyici Istatistikleri", icon: BarChart2, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
