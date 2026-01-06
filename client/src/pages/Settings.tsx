@@ -1754,7 +1754,7 @@ function AutoResponsesCard() {
           Otomatik Yanitlar
         </CardTitle>
         <CardDescription>
-          AI cagirişi yapmadan anahtar kelime eslesmesiyle hızlı yanitlar (maliyet tasarrufu)
+          Anahtar kelime eşleşmesiyle hızlı yanıtlar
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
