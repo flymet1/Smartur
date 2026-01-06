@@ -913,8 +913,8 @@ function PriçingPlans() {
         />
         <PriçingCard 
           name="Başıc"
-          price="₺999"
-          period="/ay"
+          price="₺9.990"
+          period="/yıl"
           features={[
             "10 aktivite",
             "200 aylık rezervasyon",
@@ -927,8 +927,8 @@ function PriçingPlans() {
         />
         <PriçingCard 
           name="Professional"
-          price="₺1.999"
-          period="/ay"
+          price="₺19.990"
+          period="/yıl"
           features={[
             "25 aktivite",
             "500 aylık rezervasyon",
@@ -958,7 +958,7 @@ function PriçingPlans() {
       </div>
 
       <div className="text-center mt-12 text-gray-400 text-sm">
-        Tüm fiyatlara KDV dahildir. Yıllık ödemelerde %20 indirim.
+        Tüm fiyatlara KDV dahildir. Yıllık abonelik sistemi.
       </div>
     </div>
   );

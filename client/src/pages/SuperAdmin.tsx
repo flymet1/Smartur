@@ -4871,11 +4871,11 @@ export default function SuperAdmin() {
                         <CardContent className="space-y-4">
                           <div>
                             <div className="text-2xl font-bold">
-                              {formatPrice(plan.priceTl)} TL
-                              <span className="text-sm font-normal text-muted-foreground">/ay</span>
+                              {formatPrice(plan.yearlyPriceTl)} TL
+                              <span className="text-sm font-normal text-muted-foreground">/yıl</span>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              ${formatPrice(plan.priceUsd)}/ay
+                              ${formatPrice(plan.yearlyPriceUsd)}/yıl
                             </div>
                           </div>
                           <div className="space-y-2 text-sm">
