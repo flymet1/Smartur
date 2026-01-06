@@ -8103,7 +8103,7 @@ async function seedDatabase() {
   const defaultTenant = await storage.createDefaultTenantIfNotExists();
   
   // Check if any admin user exists for this tenant
-  const existingUsers = await storage.getAllAppUsers();
+  const existingUsers = await storage.getAppUsers();
   const tenantUsers = existingUsers.filter(u => u.tenantId === defaultTenant.id);
   
   if (tenantUsers.length === 0) {
