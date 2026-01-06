@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useState, useEffect, useMemo } from "react";
 import { 
-  LayoutDashboard, 
   Calendar, 
   Ticket, 
   Activity, 
@@ -10,21 +9,15 @@ import {
   Menu,
   Calculator,
   Package,
-  CalendarHeart,
-  BookOpen,
-  HelpCircle,
   Building2,
   Bell,
   Shield,
-  Megaphone,
-  X,
-  AlertTriangle,
-  Info,
-  AlertCircle,
   LogIn,
   LogOut,
   User,
-  CreditCard
+  CreditCard,
+  BookOpen,
+  HelpCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -63,15 +56,6 @@ type SupportSummary = {
   requests: SupportRequest[];
 };
 
-interface Announcement {
-  id: number;
-  title: string;
-  content: string;
-  type: string;
-  isActive: boolean | null;
-  createdAt: string | null;
-}
-
 interface UserData {
   id: number;
   username: string;
@@ -84,7 +68,6 @@ interface UserData {
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
-  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<number[]>([]);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const { permissions } = usePermissions();
 
@@ -234,44 +217,6 @@ export function Sidebar() {
     queryKey: ['/api/customer-requests'],
     refetchInterval: 30000,
   });
-
-  const { data: announcements = [] } = useQuery<Announcement[]>({
-    queryKey: ['/api/announcements'],
-    refetchInterval: 60000,
-  });
-
-  // Filter active and not dismissed announcements
-  const activeAnnouncements = announcements.filter(
-    a => a.isActive !== false && !dismissedAnnouncements.includes(a.id)
-  );
-
-  const dismissAnnouncement = (id: number) => {
-    setDismissedAnnouncements(prev => [...prev, id]);
-  };
-
-  const getAnnouncementStyle = (type: string) => {
-    switch (type) {
-      case 'warning':
-        return 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200';
-      case 'error':
-        return 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200';
-      case 'success':
-        return 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200';
-      default:
-        return 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200';
-    }
-  };
-
-  const getAnnouncementIcon = (type: string) => {
-    switch (type) {
-      case 'warning':
-        return <AlertTriangle className="h-4 w-4" />;
-      case 'error':
-        return <AlertCircle className="h-4 w-4" />;
-      default:
-        return <Info className="h-4 w-4" />;
-    }
-  };
 
   const openSupportCount = supportSummary?.openCount || 0;
   const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
@@ -545,34 +490,6 @@ export function Sidebar() {
             </Link>
           </div>
         </div>
-
-        {/* Compact Announcements */}
-        {activeAnnouncements.length > 0 && (
-          <div className="px-4 pb-2 max-h-20 overflow-y-auto">
-            {activeAnnouncements.map((announcement) => (
-              <div
-                key={announcement.id}
-                className={cn(
-                  "flex items-center gap-1.5 px-2 py-1 rounded text-xs mb-1 relative group",
-                  getAnnouncementStyle(announcement.type)
-                )}
-                data-testid={`announcement-${announcement.id}`}
-              >
-                {getAnnouncementIcon(announcement.type)}
-                <span className="font-medium truncate flex-1">{announcement.title}</span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-4 w-4 opacity-0 group-hover:opacity-100 absolute right-1"
-                  onClick={() => dismissAnnouncement(announcement.id)}
-                  data-testid={`button-dismiss-announcement-${announcement.id}`}
-                >
-                  <X className="h-2.5 w-2.5" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className="flex-1 px-4 py-4 space-y-1 border-t overflow-y-auto">
           {navItems.map((item) => (
