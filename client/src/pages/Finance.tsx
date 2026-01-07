@@ -408,92 +408,9 @@ export default function Finance() {
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
       <main className="flex-1 md:ml-64 p-8 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold" data-testid="text-page-title">Tedarikçi Yönetimi</h1>
-            <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select 
-              value={datePreset}
-              onValueChange={(value) => {
-                setDatePreset(value);
-                const now = new Date();
-                const today = now.toISOString().split('T')[0];
-                
-                if (value === 'today') {
-                  setStartDate(today);
-                  setEndDate(today);
-                } else if (value === 'this-week') {
-                  const dayOfWeek = now.getDay();
-                  const monday = new Date(now);
-                  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-                  const sunday = new Date(monday);
-                  sunday.setDate(monday.getDate() + 6);
-                  setStartDate(monday.toISOString().split('T')[0]);
-                  setEndDate(sunday.toISOString().split('T')[0]);
-                } else if (value === 'this-month') {
-                  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                  setStartDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
-                  setEndDate(lastDayOfMonth.toISOString().split('T')[0]);
-                } else if (value === 'last-month') {
-                  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-                  setStartDate(lastMonth.toISOString().split('T')[0]);
-                  setEndDate(lastMonthEnd.toISOString().split('T')[0]);
-                } else if (value === 'last-3-months') {
-                  const threeMonthsAgo = new Date(now);
-                  threeMonthsAgo.setMonth(now.getMonth() - 3);
-                  setStartDate(threeMonthsAgo.toISOString().split('T')[0]);
-                  setEndDate(today);
-                } else if (value === 'this-year') {
-                  setStartDate(`${now.getFullYear()}-01-01`);
-                  setEndDate(`${now.getFullYear()}-12-31`);
-                } else if (value === 'all-time') {
-                  setStartDate('2020-01-01');
-                  setEndDate('2030-12-31');
-                }
-              }}
-            >
-              <SelectTrigger className="w-[140px]" data-testid="select-date-preset">
-                <SelectValue placeholder="Hızlı Seç" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Bugün</SelectItem>
-                <SelectItem value="this-week">Bu Hafta</SelectItem>
-                <SelectItem value="this-month">Bu Ay</SelectItem>
-                <SelectItem value="last-month">Geçen Ay</SelectItem>
-                <SelectItem value="last-3-months">Son 3 Ay</SelectItem>
-                <SelectItem value="this-year">Bu Yıl</SelectItem>
-                <SelectItem value="all-time">Tüm Zamanlar</SelectItem>
-                <SelectItem value="custom">Özel</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="date" 
-                value={startDate} 
-                onChange={e => {
-                  setStartDate(e.target.value);
-                  setDatePreset('custom');
-                }}
-                className="w-36"
-                data-testid="input-start-date"
-              />
-            </div>
-            <span className="text-muted-foreground">-</span>
-            <Input 
-              type="date" 
-              value={endDate} 
-              onChange={e => {
-                setEndDate(e.target.value);
-                setDatePreset('custom');
-              }}
-              className="w-36"
-              data-testid="input-end-date"
-            />
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold" data-testid="text-page-title">Tedarikçi Yönetimi</h1>
+          <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
         </div>
 
         {/* Currency Exchange Rates & Converter Widget */}
@@ -701,23 +618,108 @@ export default function Finance() {
           </TabsList>
 
           <TabsContent value="dispatches" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Günlük Gönderimler</h3>
-              <Button onClick={() => {
-                setDispatchForm({
-                  agencyId: 0,
-                  activityId: 0,
-                  dispatchDate: new Date().toISOString().split('T')[0],
-                  dispatchTime: '10:00',
-                  guestCount: 1,
-                  unitPayoutTl: 0,
-                  notes: ''
-                });
-                setDispatchDialogOpen(true);
-              }} data-testid="button-add-dispatch">
-                <Plus className="h-4 w-4 mr-2" />
-                Gönderim Ekle
-              </Button>
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Günlük Gönderimler</h3>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select 
+                    value={datePreset}
+                    onValueChange={(value) => {
+                      setDatePreset(value);
+                      const now = new Date();
+                      const today = now.toISOString().split('T')[0];
+                      
+                      if (value === 'today') {
+                        setStartDate(today);
+                        setEndDate(today);
+                      } else if (value === 'this-week') {
+                        const dayOfWeek = now.getDay();
+                        const monday = new Date(now);
+                        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                        const sunday = new Date(monday);
+                        sunday.setDate(monday.getDate() + 6);
+                        setStartDate(monday.toISOString().split('T')[0]);
+                        setEndDate(sunday.toISOString().split('T')[0]);
+                      } else if (value === 'this-month') {
+                        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                        setStartDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+                        setEndDate(lastDayOfMonth.toISOString().split('T')[0]);
+                      } else if (value === 'last-month') {
+                        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+                        setStartDate(lastMonth.toISOString().split('T')[0]);
+                        setEndDate(lastMonthEnd.toISOString().split('T')[0]);
+                      } else if (value === 'last-3-months') {
+                        const threeMonthsAgo = new Date(now);
+                        threeMonthsAgo.setMonth(now.getMonth() - 3);
+                        setStartDate(threeMonthsAgo.toISOString().split('T')[0]);
+                        setEndDate(today);
+                      } else if (value === 'this-year') {
+                        setStartDate(`${now.getFullYear()}-01-01`);
+                        setEndDate(`${now.getFullYear()}-12-31`);
+                      } else if (value === 'all-time') {
+                        setStartDate('2020-01-01');
+                        setEndDate('2030-12-31');
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[140px]" data-testid="select-date-preset">
+                      <SelectValue placeholder="Hızlı Seç" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Bugün</SelectItem>
+                      <SelectItem value="this-week">Bu Hafta</SelectItem>
+                      <SelectItem value="this-month">Bu Ay</SelectItem>
+                      <SelectItem value="last-month">Geçen Ay</SelectItem>
+                      <SelectItem value="last-3-months">Son 3 Ay</SelectItem>
+                      <SelectItem value="this-year">Bu Yıl</SelectItem>
+                      <SelectItem value="all-time">Tüm Zamanlar</SelectItem>
+                      <SelectItem value="custom">Özel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type="date" 
+                      value={startDate} 
+                      onChange={e => {
+                        setStartDate(e.target.value);
+                        setDatePreset('custom');
+                      }}
+                      className="w-36"
+                      data-testid="input-start-date"
+                    />
+                  </div>
+                  <span className="text-muted-foreground">-</span>
+                  <Input 
+                    type="date" 
+                    value={endDate} 
+                    onChange={e => {
+                      setEndDate(e.target.value);
+                      setDatePreset('custom');
+                    }}
+                    className="w-36"
+                    data-testid="input-end-date"
+                  />
+                </div>
+                <Button onClick={() => {
+                  setDispatchForm({
+                    agencyId: 0,
+                    activityId: 0,
+                    dispatchDate: new Date().toISOString().split('T')[0],
+                    dispatchTime: '10:00',
+                    guestCount: 1,
+                    unitPayoutTl: 0,
+                    notes: ''
+                  });
+                  setDispatchDialogOpen(true);
+                }} data-testid="button-add-dispatch">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Gönderim Ekle
+                </Button>
+              </div>
             </div>
 
             {dispatchSummary.length > 0 && (
