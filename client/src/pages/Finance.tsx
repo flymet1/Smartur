@@ -114,6 +114,7 @@ export default function Finance() {
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [datePreset, setDatePreset] = useState<string>('this-month');
 
   // Exchange Rates
   type ExchangeRates = {
@@ -387,8 +388,9 @@ export default function Finance() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Select 
-              value="custom"
+              value={datePreset}
               onValueChange={(value) => {
+                setDatePreset(value);
                 const now = new Date();
                 const today = now.toISOString().split('T')[0];
                 
@@ -399,11 +401,14 @@ export default function Finance() {
                   const dayOfWeek = now.getDay();
                   const monday = new Date(now);
                   monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                  const sunday = new Date(monday);
+                  sunday.setDate(monday.getDate() + 6);
                   setStartDate(monday.toISOString().split('T')[0]);
-                  setEndDate(today);
+                  setEndDate(sunday.toISOString().split('T')[0]);
                 } else if (value === 'this-month') {
+                  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                   setStartDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
-                  setEndDate(today);
+                  setEndDate(lastDayOfMonth.toISOString().split('T')[0]);
                 } else if (value === 'last-month') {
                   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
                   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -416,10 +421,10 @@ export default function Finance() {
                   setEndDate(today);
                 } else if (value === 'this-year') {
                   setStartDate(`${now.getFullYear()}-01-01`);
-                  setEndDate(today);
+                  setEndDate(`${now.getFullYear()}-12-31`);
                 } else if (value === 'all-time') {
                   setStartDate('2020-01-01');
-                  setEndDate(today);
+                  setEndDate('2030-12-31');
                 }
               }}
             >
@@ -442,7 +447,10 @@ export default function Finance() {
               <Input 
                 type="date" 
                 value={startDate} 
-                onChange={e => setStartDate(e.target.value)}
+                onChange={e => {
+                  setStartDate(e.target.value);
+                  setDatePreset('custom');
+                }}
                 className="w-36"
                 data-testid="input-start-date"
               />
@@ -451,7 +459,10 @@ export default function Finance() {
             <Input 
               type="date" 
               value={endDate} 
-              onChange={e => setEndDate(e.target.value)}
+              onChange={e => {
+                setEndDate(e.target.value);
+                setDatePreset('custom');
+              }}
               className="w-36"
               data-testid="input-end-date"
             />
