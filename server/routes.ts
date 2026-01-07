@@ -7861,6 +7861,14 @@ Sky Fethiye`;
       if (existingUser.isSystemProtected) {
         return res.status(403).json({ error: "Sistem kullanıcısı silinemez" });
       }
+      
+      // SECURITY: Prevent deletion of tenant owner (only super admin can do this)
+      const targetUserRoles = await storage.getUserRoles(id);
+      const roles = await storage.getRoles();
+      const ownerRole = roles.find(r => r.name === 'tenant_owner');
+      if (ownerRole && targetUserRoles.some(ur => ur.roleId === ownerRole.id)) {
+        return res.status(403).json({ error: "Acenta sahibi silinemez. Sadece süper admin bu işlemi yapabilir." });
+      }
 
       await storage.deleteAppUser(id);
       res.json({ success: true });
