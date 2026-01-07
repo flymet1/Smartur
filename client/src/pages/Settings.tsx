@@ -818,8 +818,8 @@ export default function Settings() {
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Otomatik Onay Mesajı</Label>
-                  <p className="text-sm text-muted-foreground">Rezervasyon oluştuğunda müşteriye WhatsApp mesajı gönder</p>
+                  <Label>Otomatik Onay Mesajı (Manuel Rezervasyonlar için)</Label>
+                  <p className="text-sm text-muted-foreground">Manuel rezervasyon oluştuğunda müşteriye WhatsApp mesajı gönder</p>
                 </div>
                 <Switch defaultChecked />
               </div>
