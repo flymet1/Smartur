@@ -10,6 +10,11 @@ import { pool } from "./db";
 const app = express();
 const httpServer = createServer(app);
 
+// Trust proxy for Coolify/reverse proxy setups (needed for secure cookies behind proxy)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
@@ -28,6 +33,11 @@ app.use(express.urlencoded({ extended: false }));
 
 // Session middleware with PostgreSQL-backed storage for persistence across restarts
 const PgSession = connectPgSimple(session);
+
+// Determine if we should use secure cookies
+// In production behind a proxy (like Coolify), check X-Forwarded-Proto header
+const isSecureEnvironment = process.env.NODE_ENV === 'production';
+
 app.use(
   session({
     store: new PgSession({
@@ -40,8 +50,9 @@ app.use(
     resave: false,
     saveUninitialized: false,
     rolling: true, // Reset session expiry on each request
+    proxy: isSecureEnvironment, // Trust the reverse proxy
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecureEnvironment ? 'auto' : false, // 'auto' detects HTTPS via X-Forwarded-Proto
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (extended for better UX)
