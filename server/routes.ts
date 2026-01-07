@@ -4432,7 +4432,11 @@ Sky Fethiye`;
 
   app.post("/api/finance/agencies", async (req, res) => {
     try {
-      const agency = await storage.createAgency(req.body);
+      const tenantId = (req.user as any)?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      const agency = await storage.createAgency({ ...req.body, tenantId });
       res.json(agency);
     } catch (err) {
       res.status(400).json({ error: "Acenta oluşturulamadı" });
