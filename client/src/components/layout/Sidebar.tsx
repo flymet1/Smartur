@@ -74,7 +74,7 @@ interface UserData {
 export function Sidebar() {
   const [location, setLocation] = useLocation();
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
-  const { permissions } = usePermissions();
+  const { permissions, hasPermission, hasAnyPermission } = usePermissions();
 
   // Filter nav items based on user permissions
   const navItems = useMemo(() => {
@@ -83,6 +83,21 @@ export function Sidebar() {
       return permissions.includes(item.requiredPermission);
     });
   }, [permissions]);
+
+  // Check if user is a "partner" (İş Ortağı) - only has capacity.view and no other main permissions
+  const isPartnerOnly = useMemo(() => {
+    const mainPermissions = [
+      PERMISSION_KEYS.RESERVATIONS_VIEW,
+      PERMISSION_KEYS.ACTIVITIES_VIEW,
+      PERMISSION_KEYS.SETTINGS_VIEW,
+      PERMISSION_KEYS.WHATSAPP_VIEW,
+      PERMISSION_KEYS.FINANCE_VIEW,
+      PERMISSION_KEYS.AGENCIES_VIEW,
+      PERMISSION_KEYS.USERS_VIEW,
+    ];
+    // Has capacity.view but no other main permissions
+    return hasPermission(PERMISSION_KEYS.CAPACITY_VIEW) && !hasAnyPermission(mainPermissions);
+  }, [permissions, hasPermission, hasAnyPermission]);
 
   // Check for logged in user on mount and when localStorage changes
   useEffect(() => {
@@ -337,51 +352,53 @@ export function Sidebar() {
           </Tooltip>
           <SheetContent side="left" className="w-[240px] sm:w-[300px]">
             <nav className="flex flex-col gap-2 mt-8">
-              {/* Quick Access Buttons for Mobile */}
-              <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b">
-                {quickAccessItems.map((item) => (
-                  <Link key={item.href} href={item.href} className="flex-1">
+              {/* Quick Access Buttons for Mobile - Hidden for partner-only users */}
+              {!isPartnerOnly && (
+                <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b">
+                  {quickAccessItems.map((item) => (
+                    <Link key={item.href} href={item.href} className="flex-1">
+                      <div className={cn(
+                        "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                        pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
+                          ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
+                          : location === item.href 
+                            ? "bg-primary text-primary-foreground border-primary" 
+                            : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                      )}>
+                        <item.icon className="h-3.5 w-3.5" />
+                        {item.label}
+                        {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
+                          <Badge 
+                            variant="destructive" 
+                            className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                          >
+                            {pendingCustomerRequestsCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                  <Link href="/messages?filter=human_intervention" className="flex-1">
                     <div className={cn(
                       "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
-                      pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
-                        ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
-                        : location === item.href 
-                          ? "bg-primary text-primary-foreground border-primary" 
-                          : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                      openSupportCount > 0 
+                        ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
+                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
                     )}>
-                      <item.icon className="h-3.5 w-3.5" />
-                      {item.label}
-                      {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
+                      <Bell className="h-3.5 w-3.5" />
+                      Destek
+                      {openSupportCount > 0 && (
                         <Badge 
                           variant="destructive" 
                           className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
                         >
-                          {pendingCustomerRequestsCount}
+                          {openSupportCount}
                         </Badge>
                       )}
                     </div>
                   </Link>
-                ))}
-                <Link href="/messages?filter=human_intervention" className="flex-1">
-                  <div className={cn(
-                    "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
-                    openSupportCount > 0 
-                      ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
-                      : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
-                  )}>
-                    <Bell className="h-3.5 w-3.5" />
-                    Destek
-                    {openSupportCount > 0 && (
-                      <Badge 
-                        variant="destructive" 
-                        className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                      >
-                        {openSupportCount}
-                      </Badge>
-                    )}
-                  </div>
-                </Link>
-              </div>
+                </div>
+              )}
               {navItems.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div className={cn(
@@ -446,55 +463,57 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Quick Access Buttons */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-2">
-            {quickAccessItems.map((item) => (
-              <Link key={item.href} href={item.href} className="flex-1">
+        {/* Quick Access Buttons - Hidden for partner-only users */}
+        {!isPartnerOnly && (
+          <div className="px-4 pb-3">
+            <div className="flex gap-2">
+              {quickAccessItems.map((item) => (
+                <Link key={item.href} href={item.href} className="flex-1">
+                  <div className={cn(
+                    "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                    pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
+                      ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
+                      : location === item.href 
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                  )} data-testid={`button-quick-${item.href.replace('/', '')}`}>
+                    <item.icon className="h-3.5 w-3.5" />
+                    {item.label}
+                    {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                        data-testid="badge-customer-requests"
+                      >
+                        {pendingCustomerRequestsCount}
+                      </Badge>
+                    )}
+                  </div>
+                </Link>
+              ))}
+              <Link href="/messages?filter=human_intervention" className="flex-1">
                 <div className={cn(
                   "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
-                  pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
-                    ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
-                    : location === item.href 
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                      : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-                )} data-testid={`button-quick-${item.href.replace('/', '')}`}>
-                  <item.icon className="h-3.5 w-3.5" />
-                  {item.label}
-                  {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
+                  openSupportCount > 0 
+                    ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
+                    : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                )} data-testid="button-support-notifications">
+                  <Bell className="h-3.5 w-3.5" />
+                  Destek
+                  {openSupportCount > 0 && (
                     <Badge 
                       variant="destructive" 
                       className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                      data-testid="badge-customer-requests"
+                      data-testid="badge-support-open"
                     >
-                      {pendingCustomerRequestsCount}
+                      {openSupportCount}
                     </Badge>
                   )}
                 </div>
               </Link>
-            ))}
-            <Link href="/messages?filter=human_intervention" className="flex-1">
-              <div className={cn(
-                "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
-                openSupportCount > 0 
-                  ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
-                  : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-              )} data-testid="button-support-notifications">
-                <Bell className="h-3.5 w-3.5" />
-                Destek
-                {openSupportCount > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                    data-testid="badge-support-open"
-                  >
-                    {openSupportCount}
-                  </Badge>
-                )}
-              </div>
-            </Link>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex-1 px-4 py-4 space-y-1 border-t overflow-y-auto">
           {navItems.map((item) => (
@@ -516,59 +535,64 @@ export function Sidebar() {
         </div>
 
         <div className="p-4 border-t space-y-3">
-          <div className="bg-muted/50 rounded-lg p-3">
-            <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sistem Durumu</div>
-            <Link href="/settings?tab=whatsapp">
-              <div className="flex items-center gap-2 text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity" data-testid="link-whatsapp-bot-status">
+          {/* System Status and Links - Hidden for partner-only users */}
+          {!isPartnerOnly && (
+            <>
+              <div className="bg-muted/50 rounded-lg p-3">
+                <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sistem Durumu</div>
+                <Link href="/settings?tab=whatsapp">
+                  <div className="flex items-center gap-2 text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity" data-testid="link-whatsapp-bot-status">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      isBotEnabled ? "bg-accent animate-pulse" : "bg-muted-foreground"
+                    )} />
+                    <span className="text-foreground">WhatsApp Bot</span>
+                    <span className={cn(
+                      "text-xs px-1.5 py-0.5 rounded font-semibold",
+                      isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+                    )}>
+                      {isBotEnabled ? "Aktif" : "Kapalı"}
+                    </span>
+                  </div>
+                </Link>
+                <Link href="/subscription">
+                  <div 
+                    className={cn(
+                      "flex items-center gap-2 text-sm font-medium mt-1 cursor-pointer hover:opacity-80 transition-opacity",
+                      licenseStatusInfo.color
+                    )}
+                    data-testid="link-license-status"
+                  >
+                    <div className={cn("w-2 h-2 rounded-full", licenseStatusInfo.bgColor, licenseStatusInfo.isActive && "animate-pulse")} />
+                    <Shield className="h-3.5 w-3.5" />
+                    {licenseStatusInfo.text}
+                  </div>
+                </Link>
+              </div>
+              <Link href="/user-guide">
                 <div className={cn(
-                  "w-2 h-2 rounded-full",
-                  isBotEnabled ? "bg-accent animate-pulse" : "bg-muted-foreground"
-                )} />
-                <span className="text-foreground">WhatsApp Bot</span>
-                <span className={cn(
-                  "text-xs px-1.5 py-0.5 rounded font-semibold",
-                  isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
-                )}>
-                  {isBotEnabled ? "Aktif" : "Kapalı"}
-                </span>
-              </div>
-            </Link>
-            <Link href="/subscription">
-              <div 
-                className={cn(
-                  "flex items-center gap-2 text-sm font-medium mt-1 cursor-pointer hover:opacity-80 transition-opacity",
-                  licenseStatusInfo.color
-                )}
-                data-testid="link-license-status"
-              >
-                <div className={cn("w-2 h-2 rounded-full", licenseStatusInfo.bgColor, licenseStatusInfo.isActive && "animate-pulse")} />
-                <Shield className="h-3.5 w-3.5" />
-                {licenseStatusInfo.text}
-              </div>
-            </Link>
-          </div>
-          <Link href="/user-guide">
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
-              location === "/user-guide"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )} data-testid="link-user-guide">
-              <BookOpen className="h-4 w-4" />
-              Kullanım Kılavuzu
-            </div>
-          </Link>
-          <Link href="/support">
-            <div className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
-              location === "/support"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )} data-testid="link-support">
-              <HelpCircle className="h-4 w-4" />
-              Destek
-            </div>
-          </Link>
+                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                  location === "/user-guide"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )} data-testid="link-user-guide">
+                  <BookOpen className="h-4 w-4" />
+                  Kullanım Kılavuzu
+                </div>
+              </Link>
+              <Link href="/support">
+                <div className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                  location === "/support"
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )} data-testid="link-support">
+                  <HelpCircle className="h-4 w-4" />
+                  Destek
+                </div>
+              </Link>
+            </>
+          )}
 
           {/* User Login/Logout Section */}
           {currentUser ? (
