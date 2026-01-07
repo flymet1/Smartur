@@ -48,6 +48,16 @@ interface PartnerUser {
   email: string | null;
 }
 
+interface PartnerActivityStat {
+  viewerId: number;
+  viewerName: string;
+  viewerPhone: string | null;
+  activityId: number;
+  activityName: string;
+  totalGuests: number;
+  totalRequests: number;
+}
+
 export default function ViewerStats() {
   const { toast } = useToast();
   const [groupBy, setGroupBy] = useState<'daily' | 'monthly'>('daily');
@@ -147,6 +157,55 @@ export default function ViewerStats() {
     }
   });
 
+  const { data: activityStats = [], isLoading: isLoadingActivityStats } = useQuery<PartnerActivityStat[]>({
+    queryKey: ['/api/partner-activity-stats', dateRange.from?.toISOString(), dateRange.to?.toISOString()],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateRange.from) {
+        params.append('from', dateRange.from.toISOString());
+      }
+      if (dateRange.to) {
+        params.append('to', dateRange.to.toISOString());
+      }
+      const res = await fetch(`/api/partner-activity-stats?${params}`, { credentials: 'include' });
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    }
+  });
+
+  const groupedActivityStats = useMemo(() => {
+    const grouped: Record<number, { name: string; phone: string | null; activities: Record<number, { name: string; guests: number; requests: number }> }> = {};
+    
+    activityStats.forEach(stat => {
+      if (!grouped[stat.viewerId]) {
+        grouped[stat.viewerId] = {
+          name: stat.viewerName,
+          phone: stat.viewerPhone,
+          activities: {}
+        };
+      }
+      grouped[stat.viewerId].activities[stat.activityId] = {
+        name: stat.activityName,
+        guests: stat.totalGuests,
+        requests: stat.totalRequests
+      };
+    });
+    
+    return Object.entries(grouped).map(([id, data]) => ({
+      viewerId: parseInt(id),
+      viewerName: data.name,
+      viewerPhone: data.phone,
+      activities: Object.entries(data.activities).map(([actId, act]) => ({
+        activityId: parseInt(actId),
+        activityName: act.name,
+        totalGuests: act.guests,
+        totalRequests: act.requests
+      })),
+      totalGuests: Object.values(data.activities).reduce((sum, a) => sum + a.guests, 0),
+      totalRequests: Object.values(data.activities).reduce((sum, a) => sum + a.requests, 0)
+    })).sort((a, b) => b.totalGuests - a.totalGuests);
+  }, [activityStats]);
+
   const viewerSummary = useMemo(() => {
     const summary: Record<number, { name: string; email: string; total: number; periods: string[] }> = {};
     
@@ -194,7 +253,7 @@ export default function ViewerStats() {
       <Sidebar />
       <main className="flex-1 md:ml-64 p-4 md:p-6 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Is Ortagi Istatistikleri</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Is Ortaklari</h1>
           
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={presetRange} onValueChange={handlePresetChange}>
@@ -365,6 +424,56 @@ export default function ViewerStats() {
                           </TableCell>
                           <TableCell className="text-right font-semibold">{viewer.total}</TableCell>
                         </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Aktivite Bazli Istatistikler</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {isLoadingActivityStats ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : groupedActivityStats.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Bu tarih araliginda veri bulunamadi
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Is Ortagi</TableHead>
+                        <TableHead>Aktivite</TableHead>
+                        <TableHead className="text-right">Kisi</TableHead>
+                        <TableHead className="text-right">Talep</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {groupedActivityStats.map((partner) => (
+                        partner.activities.map((activity, actIndex) => (
+                          <TableRow 
+                            key={`${partner.viewerId}-${activity.activityId}`} 
+                            data-testid={`row-activity-${partner.viewerId}-${activity.activityId}`}
+                            className={actIndex === 0 ? "border-t-2" : ""}
+                          >
+                            <TableCell className="font-medium">
+                              {actIndex === 0 ? partner.viewerName : ""}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{activity.activityName}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">{activity.totalGuests}</TableCell>
+                            <TableCell className="text-right">{activity.totalRequests}</TableCell>
+                          </TableRow>
+                        ))
                       ))}
                     </TableBody>
                   </Table>

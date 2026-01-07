@@ -311,6 +311,7 @@ export interface IStorage {
   getReservationRequest(id: number): Promise<ReservationRequest | undefined>;
   updateReservationRequest(id: number, data: Partial<InsertReservationRequest>): Promise<ReservationRequest>;
   getReservationRequestStats(tenantId: number, options: { groupBy: 'daily' | 'monthly'; from?: string; to?: string; viewerId?: number }): Promise<{ viewerId: number; viewerName: string; viewerEmail: string; period: string; count: number; }[]>;
+  getPartnerActivityStats(tenantId: number, options?: { from?: string; to?: string }): Promise<{ viewerId: number; viewerName: string; viewerPhone: string | null; activityId: number; activityName: string; totalGuests: number; totalRequests: number; }[]>;
 
   // Tenant Plan Verification (replaces license system)
   verifyTenantPlan(tenantId: number): Promise<{ 
@@ -2003,6 +2004,44 @@ export class DatabaseStorage implements IStorage {
       viewerEmail: row.viewerEmail || '',
       period: row.period,
       count: row.count
+    }));
+  }
+
+  async getPartnerActivityStats(
+    tenantId: number, 
+    options?: { from?: string; to?: string }
+  ): Promise<{ viewerId: number; viewerName: string; viewerPhone: string | null; activityId: number; activityName: string; totalGuests: number; totalRequests: number; }[]> {
+    const from = options?.from;
+    const to = options?.to;
+    
+    const result = await db.execute(sql`
+      SELECT 
+        rr.requested_by as "viewerId",
+        au.name as "viewerName",
+        au.phone as "viewerPhone",
+        rr.activity_id as "activityId",
+        a.name as "activityName",
+        COALESCE(SUM(rr.guests), 0)::int as "totalGuests",
+        COUNT(*)::int as "totalRequests"
+      FROM reservation_requests rr
+      LEFT JOIN app_users au ON rr.requested_by = au.id
+      LEFT JOIN activities a ON rr.activity_id = a.id
+      WHERE rr.tenant_id = ${tenantId}
+        AND rr.requested_by IS NOT NULL
+        ${from ? sql`AND rr.created_at >= ${from}::timestamp` : sql``}
+        ${to ? sql`AND rr.created_at <= ${to}::timestamp` : sql``}
+      GROUP BY rr.requested_by, au.name, au.phone, rr.activity_id, a.name
+      ORDER BY au.name, a.name
+    `);
+    
+    return (result.rows as any[]).map(row => ({
+      viewerId: row.viewerId,
+      viewerName: row.viewerName || 'Bilinmiyor',
+      viewerPhone: row.viewerPhone,
+      activityId: row.activityId,
+      activityName: row.activityName || 'Bilinmiyor',
+      totalGuests: row.totalGuests,
+      totalRequests: row.totalRequests
     }));
   }
 

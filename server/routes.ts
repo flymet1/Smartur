@@ -2476,6 +2476,29 @@ export async function registerRoutes(
     }
   });
 
+  // Get partner activity statistics (which partner sent how many guests per activity)
+  app.get("/api/partner-activity-stats", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { from, to } = req.query;
+      
+      const stats = await storage.getPartnerActivityStats(tenantId, {
+        from: from as string | undefined,
+        to: to as string | undefined
+      });
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Get partner activity stats error:", error);
+      res.status(500).json({ error: "Istatistikler alinamadi" });
+    }
+  });
+
   // === Webhooks ===
   app.post(api.webhooks.woocommerce.path, async (req, res) => {
     try {
