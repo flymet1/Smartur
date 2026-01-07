@@ -4211,7 +4211,208 @@ function DatabaseBackupSection() {
           </div>
         </CardContent>
       </Card>
+
+      <DatabaseSyncSection />
     </div>
+  );
+}
+
+// === DATABASE SYNC SECTION (Export/Import between environments) ===
+function DatabaseSyncSection() {
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
+  const [importResult, setImportResult] = useState<Record<string, { added: number; skipped: number; errors: string[] }> | null>(null);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch('/api/admin/database/export', { credentials: 'include' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Export failed');
+      }
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `smartur-sync-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "Başarılı", description: "Veritabanı dışa aktarıldı" });
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+      toast({ title: "Hata", description: errorMsg, variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportResult(null);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (!data.tables) {
+        throw new Error('Geçersiz dosya formatı');
+      }
+
+      const res = await fetch('/api/admin/database/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ tables: data.tables, mode: importMode }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || 'Import failed');
+      }
+
+      setImportResult(result.results);
+      toast({ title: "Başarılı", description: result.message });
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+      toast({ title: "Hata", description: errorMsg, variant: "destructive" });
+    } finally {
+      setIsImporting(false);
+      event.target.value = '';
+    }
+  };
+
+  return (
+    <Card className="border-blue-200 dark:border-blue-800">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Server className="h-5 w-5 text-blue-600" />
+          Veritabanı Senkronizasyonu
+        </CardTitle>
+        <CardDescription>
+          Farklı ortamlar arasında (Replit - Coolify) veritabanı verilerini aktarın
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="p-4 border rounded-lg space-y-3">
+            <h4 className="font-medium flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Dışa Aktar (Export)
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Mevcut veritabanındaki planları, özellikleri, rolleri ve izinleri JSON dosyası olarak indirin.
+            </p>
+            <Button 
+              onClick={handleExport} 
+              disabled={isExporting}
+              className="w-full"
+              data-testid="button-export-database"
+            >
+              {isExporting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Dışa Aktarılıyor...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  JSON Olarak İndir
+                </>
+              )}
+            </Button>
+          </div>
+
+          <div className="p-4 border rounded-lg space-y-3">
+            <h4 className="font-medium flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              İçe Aktar (Import)
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Dışa aktarılan JSON dosyasını yükleyerek verileri bu ortama aktarın.
+            </p>
+            <div className="space-y-2">
+              <Select value={importMode} onValueChange={(v) => setImportMode(v as 'merge' | 'replace')}>
+                <SelectTrigger data-testid="select-import-mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="merge">Birleştir (Eksikleri Ekle)</SelectItem>
+                  <SelectItem value="replace">Değiştir (Tümünü Güncelle)</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={handleImport}
+                  disabled={isImporting}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  data-testid="input-import-file"
+                />
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  disabled={isImporting}
+                >
+                  {isImporting ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      İçe Aktarılıyor...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      JSON Dosyası Seç
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {importResult && (
+          <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+            <h4 className="font-medium">İçe Aktarma Sonuçları:</h4>
+            {Object.entries(importResult).map(([table, result]) => (
+              <div key={table} className="flex items-center justify-between text-sm">
+                <span className="font-mono">{table}</span>
+                <div className="flex items-center gap-3">
+                  <Badge variant="default">{result.added} eklendi</Badge>
+                  <Badge variant="secondary">{result.skipped} atlandı</Badge>
+                  {result.errors.length > 0 && (
+                    <Badge variant="destructive">{result.errors.length} hata</Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 text-blue-600 mt-0.5" />
+            <div className="text-sm text-blue-700 dark:text-blue-300">
+              <p className="font-medium">Kullanım:</p>
+              <ol className="list-decimal list-inside mt-1 space-y-1">
+                <li>Replit'te "JSON Olarak İndir" ile verileri export edin</li>
+                <li>Coolify'daki Super Admin paneline girin</li>
+                <li>"JSON Dosyası Seç" ile dosyayı yükleyin</li>
+                <li>Veriler otomatik olarak aktarılacak</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
