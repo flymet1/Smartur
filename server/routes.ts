@@ -4742,8 +4742,9 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
   // === Finance - Supplier Dispatches ===
   app.get("/api/finance/dispatches", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const agencyId = req.query.agencyId ? parseInt(req.query.agencyId as string) : undefined;
-      const dispatches = await storage.getSupplierDispatches(agencyId);
+      const dispatches = await storage.getSupplierDispatches(agencyId, tenantId);
       res.json(dispatches);
     } catch (err) {
       res.status(500).json({ error: "Gönderimler alınamadı" });
@@ -4821,9 +4822,10 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
 
   app.get("/api/finance/dispatches/summary", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const startDate = req.query.startDate as string | undefined;
       const endDate = req.query.endDate as string | undefined;
-      const summary = await storage.getSupplierDispatchSummary(startDate, endDate);
+      const summary = await storage.getSupplierDispatchSummary(startDate, endDate, tenantId);
       res.json(summary);
     } catch (err) {
       res.status(500).json({ error: "Özet alınamadı" });

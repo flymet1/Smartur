@@ -235,7 +235,7 @@ export interface IStorage {
   deleteAgencyPayout(id: number): Promise<void>;
 
   // Finance - Supplier Dispatches
-  getSupplierDispatches(agencyId?: number): Promise<SupplierDispatch[]>;
+  getSupplierDispatches(agencyId?: number, tenantId?: number | null): Promise<SupplierDispatch[]>;
   createSupplierDispatch(dispatch: InsertSupplierDispatch): Promise<SupplierDispatch>;
   updateSupplierDispatch(id: number, dispatch: Partial<InsertSupplierDispatch>): Promise<SupplierDispatch>;
   deleteSupplierDispatch(id: number): Promise<void>;
@@ -247,7 +247,7 @@ export interface IStorage {
   deleteAgencyActivityRate(id: number): Promise<void>;
   getActiveRateForDispatch(agencyId: number, activityId: number | null, date: string): Promise<AgencyActivityRate | null>;
   
-  getSupplierDispatchSummary(startDate?: string, endDate?: string): Promise<{
+  getSupplierDispatchSummary(startDate?: string, endDate?: string, tenantId?: number | null): Promise<{
     agencyId: number;
     agencyName: string;
     totalGuests: number;
@@ -1341,9 +1341,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Finance - Supplier Dispatches
-  async getSupplierDispatches(agencyId?: number): Promise<SupplierDispatch[]> {
+  async getSupplierDispatches(agencyId?: number, tenantId?: number | null): Promise<SupplierDispatch[]> {
+    const conditions = [];
     if (agencyId) {
-      return await db.select().from(supplierDispatches).where(eq(supplierDispatches.agencyId, agencyId)).orderBy(desc(supplierDispatches.dispatchDate));
+      conditions.push(eq(supplierDispatches.agencyId, agencyId));
+    }
+    if (tenantId) {
+      conditions.push(eq(supplierDispatches.tenantId, tenantId));
+    }
+    if (conditions.length > 0) {
+      return await db.select().from(supplierDispatches).where(and(...conditions)).orderBy(desc(supplierDispatches.dispatchDate));
     }
     return await db.select().from(supplierDispatches).orderBy(desc(supplierDispatches.dispatchDate));
   }
@@ -1362,7 +1369,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(supplierDispatches).where(eq(supplierDispatches.id, id));
   }
 
-  async getSupplierDispatchSummary(startDate?: string, endDate?: string): Promise<{
+  async getSupplierDispatchSummary(startDate?: string, endDate?: string, tenantId?: number | null): Promise<{
     agencyId: number;
     agencyName: string;
     totalGuests: number;
@@ -1370,9 +1377,15 @@ export class DatabaseStorage implements IStorage {
     totalPaidTl: number;
     remainingTl: number;
   }[]> {
-    const allAgencies = await db.select().from(agencies);
-    const allDispatches = await db.select().from(supplierDispatches);
-    const allPayouts = await db.select().from(agencyPayouts);
+    const allAgencies = tenantId 
+      ? await db.select().from(agencies).where(eq(agencies.tenantId, tenantId))
+      : await db.select().from(agencies);
+    const allDispatches = tenantId
+      ? await db.select().from(supplierDispatches).where(eq(supplierDispatches.tenantId, tenantId))
+      : await db.select().from(supplierDispatches);
+    const allPayouts = tenantId
+      ? await db.select().from(agencyPayouts).where(eq(agencyPayouts.tenantId, tenantId))
+      : await db.select().from(agencyPayouts);
     
     const filteredDispatches = allDispatches.filter(d => {
       if (!startDate || !endDate) return true;
