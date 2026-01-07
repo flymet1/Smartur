@@ -601,6 +601,143 @@ export default function Finance() {
           </Card>
         </div>
 
+        {/* Tarih Filtreleme - Tüm sekmeler için geçerli */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold">Dönem Seçimi</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select 
+              value={datePreset}
+              onValueChange={(value) => {
+                setDatePreset(value);
+                const now = new Date();
+                const today = now.toISOString().split('T')[0];
+                
+                if (value === 'today') {
+                  setStartDate(today);
+                  setEndDate(today);
+                } else if (value === 'this-week') {
+                  const dayOfWeek = now.getDay();
+                  const monday = new Date(now);
+                  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                  const sunday = new Date(monday);
+                  sunday.setDate(monday.getDate() + 6);
+                  setStartDate(monday.toISOString().split('T')[0]);
+                  setEndDate(sunday.toISOString().split('T')[0]);
+                } else if (value === 'this-month') {
+                  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                  setStartDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+                  setEndDate(lastDayOfMonth.toISOString().split('T')[0]);
+                } else if (value === 'last-month') {
+                  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+                  setStartDate(lastMonth.toISOString().split('T')[0]);
+                  setEndDate(lastMonthEnd.toISOString().split('T')[0]);
+                } else if (value === 'last-3-months') {
+                  const threeMonthsAgo = new Date(now);
+                  threeMonthsAgo.setMonth(now.getMonth() - 3);
+                  setStartDate(threeMonthsAgo.toISOString().split('T')[0]);
+                  setEndDate(today);
+                } else if (value === 'this-year') {
+                  setStartDate(`${now.getFullYear()}-01-01`);
+                  setEndDate(`${now.getFullYear()}-12-31`);
+                } else if (value === 'all-time') {
+                  setStartDate('2020-01-01');
+                  setEndDate('2030-12-31');
+                }
+              }}
+            >
+              <SelectTrigger className="w-[140px]" data-testid="select-date-preset">
+                <SelectValue placeholder="Hızlı Seç" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Bugün</SelectItem>
+                <SelectItem value="this-week">Bu Hafta</SelectItem>
+                <SelectItem value="this-month">Bu Ay</SelectItem>
+                <SelectItem value="last-month">Geçen Ay</SelectItem>
+                <SelectItem value="last-3-months">Son 3 Ay</SelectItem>
+                <SelectItem value="this-year">Bu Yıl</SelectItem>
+                <SelectItem value="all-time">Tüm Zamanlar</SelectItem>
+                <SelectItem value="custom">Özel</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="date" 
+                value={startDate} 
+                onChange={e => {
+                  setStartDate(e.target.value);
+                  setDatePreset('custom');
+                }}
+                className="w-36"
+                data-testid="input-start-date"
+              />
+            </div>
+            <span className="text-muted-foreground">-</span>
+            <Input 
+              type="date" 
+              value={endDate} 
+              onChange={e => {
+                setEndDate(e.target.value);
+                setDatePreset('custom');
+              }}
+              className="w-36"
+              data-testid="input-end-date"
+            />
+          </div>
+        </div>
+
+        {/* Acenta Özet Kartları - Tüm sekmeler için geçerli */}
+        {dispatchSummary.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {dispatchSummary.map(summary => {
+              const isDebt = summary.remainingTl > 0;
+              const isCredit = summary.remainingTl < 0;
+              const isSelected = selectedAgencyId === summary.agencyId;
+              return (
+                <Card 
+                  key={summary.agencyId} 
+                  data-testid={`card-summary-${summary.agencyId}`}
+                  className={`cursor-pointer transition-all hover-elevate ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => setSelectedAgencyId(isSelected ? null : summary.agencyId)}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Umbrella className="h-4 w-4" />
+                        {summary.agencyName}
+                      </div>
+                      {isSelected && (
+                        <Badge variant="default" className="text-xs">Seçili</Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">Toplam Kişi:</span>
+                      <span className="font-medium">{summary.totalGuests} kişi</span>
+                    </div>
+                    <div className="flex justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">Toplam Borç:</span>
+                      <span className="font-medium">{summary.totalOwedTl.toLocaleString('tr-TR')} TL</span>
+                    </div>
+                    <div className="flex justify-between gap-2 text-sm">
+                      <span className="text-muted-foreground">Ödenen:</span>
+                      <span className="font-medium text-green-600">{summary.totalPaidTl.toLocaleString('tr-TR')} TL</span>
+                    </div>
+                    <div className="flex justify-between gap-2 text-sm border-t pt-2">
+                      <span className="text-muted-foreground">Kalan:</span>
+                      <Badge variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}>
+                        {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
         <Tabs defaultValue="dispatches" className="space-y-4">
           <TabsList className="h-14 p-1.5 gap-1">
             <TabsTrigger value="dispatches" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-dispatches">
@@ -618,159 +755,24 @@ export default function Finance() {
           </TabsList>
 
           <TabsContent value="dispatches" className="space-y-4">
-            <div className="flex flex-col gap-3">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Günlük Gönderimler</h3>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select 
-                    value={datePreset}
-                    onValueChange={(value) => {
-                      setDatePreset(value);
-                      const now = new Date();
-                      const today = now.toISOString().split('T')[0];
-                      
-                      if (value === 'today') {
-                        setStartDate(today);
-                        setEndDate(today);
-                      } else if (value === 'this-week') {
-                        const dayOfWeek = now.getDay();
-                        const monday = new Date(now);
-                        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-                        const sunday = new Date(monday);
-                        sunday.setDate(monday.getDate() + 6);
-                        setStartDate(monday.toISOString().split('T')[0]);
-                        setEndDate(sunday.toISOString().split('T')[0]);
-                      } else if (value === 'this-month') {
-                        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                        setStartDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
-                        setEndDate(lastDayOfMonth.toISOString().split('T')[0]);
-                      } else if (value === 'last-month') {
-                        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-                        setStartDate(lastMonth.toISOString().split('T')[0]);
-                        setEndDate(lastMonthEnd.toISOString().split('T')[0]);
-                      } else if (value === 'last-3-months') {
-                        const threeMonthsAgo = new Date(now);
-                        threeMonthsAgo.setMonth(now.getMonth() - 3);
-                        setStartDate(threeMonthsAgo.toISOString().split('T')[0]);
-                        setEndDate(today);
-                      } else if (value === 'this-year') {
-                        setStartDate(`${now.getFullYear()}-01-01`);
-                        setEndDate(`${now.getFullYear()}-12-31`);
-                      } else if (value === 'all-time') {
-                        setStartDate('2020-01-01');
-                        setEndDate('2030-12-31');
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-[140px]" data-testid="select-date-preset">
-                      <SelectValue placeholder="Hızlı Seç" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="today">Bugün</SelectItem>
-                      <SelectItem value="this-week">Bu Hafta</SelectItem>
-                      <SelectItem value="this-month">Bu Ay</SelectItem>
-                      <SelectItem value="last-month">Geçen Ay</SelectItem>
-                      <SelectItem value="last-3-months">Son 3 Ay</SelectItem>
-                      <SelectItem value="this-year">Bu Yıl</SelectItem>
-                      <SelectItem value="all-time">Tüm Zamanlar</SelectItem>
-                      <SelectItem value="custom">Özel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      type="date" 
-                      value={startDate} 
-                      onChange={e => {
-                        setStartDate(e.target.value);
-                        setDatePreset('custom');
-                      }}
-                      className="w-36"
-                      data-testid="input-start-date"
-                    />
-                  </div>
-                  <span className="text-muted-foreground">-</span>
-                  <Input 
-                    type="date" 
-                    value={endDate} 
-                    onChange={e => {
-                      setEndDate(e.target.value);
-                      setDatePreset('custom');
-                    }}
-                    className="w-36"
-                    data-testid="input-end-date"
-                  />
-                </div>
-                <Button onClick={() => {
-                  setDispatchForm({
-                    agencyId: 0,
-                    activityId: 0,
-                    dispatchDate: new Date().toISOString().split('T')[0],
-                    dispatchTime: '10:00',
-                    guestCount: 1,
-                    unitPayoutTl: 0,
-                    notes: ''
-                  });
-                  setDispatchDialogOpen(true);
-                }} data-testid="button-add-dispatch">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Gönderim Ekle
-                </Button>
-              </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold">Günlük Gönderimler</h3>
+              <Button onClick={() => {
+                setDispatchForm({
+                  agencyId: 0,
+                  activityId: 0,
+                  dispatchDate: new Date().toISOString().split('T')[0],
+                  dispatchTime: '10:00',
+                  guestCount: 1,
+                  unitPayoutTl: 0,
+                  notes: ''
+                });
+                setDispatchDialogOpen(true);
+              }} data-testid="button-add-dispatch">
+                <Plus className="h-4 w-4 mr-2" />
+                Gönderim Ekle
+              </Button>
             </div>
-
-            {dispatchSummary.length > 0 && (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {dispatchSummary.map(summary => {
-                  const isDebt = summary.remainingTl > 0;
-                  const isCredit = summary.remainingTl < 0;
-                  const isSelected = selectedAgencyId === summary.agencyId;
-                  return (
-                    <Card 
-                      key={summary.agencyId} 
-                      data-testid={`card-summary-${summary.agencyId}`}
-                      className={`cursor-pointer transition-all hover-elevate ${isSelected ? 'ring-2 ring-primary' : ''}`}
-                      onClick={() => setSelectedAgencyId(isSelected ? null : summary.agencyId)}
-                    >
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <Umbrella className="h-4 w-4" />
-                            {summary.agencyName}
-                          </div>
-                          {isSelected && (
-                            <Badge variant="default" className="text-xs">Seçili</Badge>
-                          )}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="flex justify-between gap-2 text-sm">
-                          <span className="text-muted-foreground">Toplam Kişi:</span>
-                          <span className="font-medium">{summary.totalGuests} kişi</span>
-                        </div>
-                        <div className="flex justify-between gap-2 text-sm">
-                          <span className="text-muted-foreground">Toplam Borç:</span>
-                          <span className="font-medium">{summary.totalOwedTl.toLocaleString('tr-TR')} TL</span>
-                        </div>
-                        <div className="flex justify-between gap-2 text-sm">
-                          <span className="text-muted-foreground">Ödenen:</span>
-                          <span className="font-medium text-green-600">{summary.totalPaidTl.toLocaleString('tr-TR')} TL</span>
-                        </div>
-                        <div className="flex justify-between gap-2 text-sm border-t pt-2">
-                          <span className="text-muted-foreground">Kalan:</span>
-                          <Badge variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}>
-                            {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
 
             <Card>
               <CardHeader className="pb-2">
