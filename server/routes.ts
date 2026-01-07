@@ -4562,7 +4562,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
 
   app.post("/api/finance/agencies", async (req, res) => {
     try {
-      const tenantId = (req.user as any)?.tenantId;
+      const tenantId = req.session?.tenantId;
       if (!tenantId) {
         return res.status(401).json({ error: "Oturum bulunamadı" });
       }
