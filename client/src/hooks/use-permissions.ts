@@ -48,6 +48,7 @@ export const PERMISSION_KEYS = {
   FINANCE_MANAGE: "finance.manage",
   SETTINGS_VIEW: "settings.view",
   SETTINGS_MANAGE: "settings.manage",
+  SETTINGS_TEMPLATES_MANAGE: "settings.templates.manage",
   USERS_VIEW: "users.view",
   USERS_MANAGE: "users.manage",
   WHATSAPP_VIEW: "whatsapp.view",

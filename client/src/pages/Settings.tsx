@@ -13,6 +13,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
 import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday } from "@shared/schema";
@@ -28,6 +29,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 export default function Settings() {
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
+  const canManageTemplates = hasPermission(PERMISSION_KEYS.SETTINGS_TEMPLATES_MANAGE);
   const [isSaving, setIsSaving] = useState(false);
   const [reminderHours, setReminderHours] = useState(24);
   const [reminderEnabled, setReminderEnabled] = useState(true);
@@ -859,6 +862,12 @@ export default function Settings() {
               
               {manualConfirmationEnabled && (
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
+                  {!canManageTemplates && (
+                    <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Bu şablonu sadece acenta sahibi düzenleyebilir
+                    </p>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="manualConfirmationTemplate">Onay Mesajı Şablonu</Label>
                     <Textarea 
@@ -867,43 +876,46 @@ export default function Settings() {
                       onChange={(e) => setManualConfirmationTemplate(e.target.value)}
                       placeholder="Mesaj şablonunuzu yazın..."
                       className="min-h-[150px]"
+                      disabled={!canManageTemplates}
                       data-testid="textarea-manual-confirmation-template"
                     />
                     <p className="text-xs text-muted-foreground">
                       Desteklenen değişkenler: {"{isim}"}, {"{aktivite}"}, {"{tarih}"}, {"{saat}"}, {"{kisi}"}, {"{takip_linki}"}
                     </p>
                   </div>
-                  <Button 
-                    onClick={async () => {
-                      setIsSavingManualConfirmation(true);
-                      try {
-                        await fetch('/api/settings/manualConfirmation', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            value: JSON.stringify({
-                              enabled: manualConfirmationEnabled,
-                              template: manualConfirmationTemplate
-                            })
-                          }),
-                        });
-                        toast({ title: "Kaydedildi", description: "Manuel onay mesajı ayarları güncellendi." });
-                      } catch (error) {
-                        toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
-                      } finally {
-                        setIsSavingManualConfirmation(false);
-                      }
-                    }}
-                    disabled={isSavingManualConfirmation}
-                    data-testid="button-save-manual-confirmation"
-                  >
-                    {isSavingManualConfirmation ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
-                    Kaydet
-                  </Button>
+                  {canManageTemplates && (
+                    <Button 
+                      onClick={async () => {
+                        setIsSavingManualConfirmation(true);
+                        try {
+                          await fetch('/api/settings/manualConfirmation', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              value: JSON.stringify({
+                                enabled: manualConfirmationEnabled,
+                                template: manualConfirmationTemplate
+                              })
+                            }),
+                          });
+                          toast({ title: "Kaydedildi", description: "Manuel onay mesajı ayarları güncellendi." });
+                        } catch (error) {
+                          toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
+                        } finally {
+                          setIsSavingManualConfirmation(false);
+                        }
+                      }}
+                      disabled={isSavingManualConfirmation}
+                      data-testid="button-save-manual-confirmation"
+                    >
+                      {isSavingManualConfirmation ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4 mr-2" />
+                      )}
+                      Kaydet
+                    </Button>
+                  )}
                 </div>
               )}
 
