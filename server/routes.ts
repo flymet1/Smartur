@@ -1064,6 +1064,7 @@ export async function registerRoutes(
       }
       
       const tour = await storage.createPackageTour({
+        tenantId,
         name,
         nameAliases: nameAliases || '[]',
         description,
