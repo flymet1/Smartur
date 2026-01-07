@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { format, subDays, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { tr } from "date-fns/locale";
 import { 
@@ -7,7 +7,10 @@ import {
   Users, 
   TrendingUp, 
   Download,
-  BarChart3
+  BarChart3,
+  Send,
+  MessageSquare,
+  Loader2
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +19,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Table,
   TableBody,
@@ -33,13 +40,72 @@ interface ViewerStat {
   count: number;
 }
 
+interface PartnerUser {
+  id: number;
+  username: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
 export default function ViewerStats() {
+  const { toast } = useToast();
   const [groupBy, setGroupBy] = useState<'daily' | 'monthly'>('daily');
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: subDays(new Date(), 30),
     to: new Date()
   });
   const [presetRange, setPresetRange] = useState<string>('last30');
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [isSendingBulk, setIsSendingBulk] = useState(false);
+
+  const { data: partnerUsers = [] } = useQuery<PartnerUser[]>({
+    queryKey: ['/api/tenant-users'],
+  });
+
+  const partnersWithPhone = useMemo(() => 
+    partnerUsers.filter(u => u.phone && u.phone.trim() !== ''),
+    [partnerUsers]
+  );
+
+  const sendBulkMessage = async () => {
+    if (!bulkMessage.trim()) {
+      toast({ title: "Hata", description: "Mesaj icerigi giriniz.", variant: "destructive" });
+      return;
+    }
+    if (partnersWithPhone.length === 0) {
+      toast({ title: "Hata", description: "Telefon numarasi olan is ortagi bulunamadi.", variant: "destructive" });
+      return;
+    }
+
+    setIsSendingBulk(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const partner of partnersWithPhone) {
+      try {
+        await apiRequest('POST', '/api/send-whatsapp-custom-message', {
+          phone: partner.phone,
+          message: bulkMessage.replace(/{isim}/gi, partner.name || partner.username)
+        });
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    setIsSendingBulk(false);
+    setBulkMessage("");
+    
+    if (successCount > 0) {
+      toast({ 
+        title: "Toplu mesaj gonderildi", 
+        description: `${successCount} is ortagina mesaj gonderildi${failCount > 0 ? `, ${failCount} basarisiz` : ''}.` 
+      });
+    } else {
+      toast({ title: "Hata", description: "Mesajlar gonderilemedi.", variant: "destructive" });
+    }
+  };
 
   const handlePresetChange = (preset: string) => {
     setPresetRange(preset);
@@ -222,6 +288,48 @@ export default function ViewerStats() {
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Toplu WhatsApp Bildirimi
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bulkMessage">Mesaj Icerigi</Label>
+                <Textarea
+                  id="bulkMessage"
+                  placeholder="Merhaba {isim}, size onemli bir duyuru yapmak istiyoruz..."
+                  value={bulkMessage}
+                  onChange={(e) => setBulkMessage(e.target.value)}
+                  rows={4}
+                  data-testid="input-bulk-message"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Kullanilabilir degiskenler: {"{isim}"} - Is ortaginin adi
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                  {partnersWithPhone.length} is ortagina mesaj gonderilecek
+                </p>
+                <Button 
+                  onClick={sendBulkMessage} 
+                  disabled={isSendingBulk || partnersWithPhone.length === 0}
+                  data-testid="button-send-bulk"
+                >
+                  {isSendingBulk ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
+                  {isSendingBulk ? "Gonderiliyor..." : "Toplu Gonder"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader className="pb-2">
