@@ -9,10 +9,16 @@ async function throwIfResNotOk(res: Response) {
       if (json.error) {
         throw new Error(json.error);
       }
-    } catch {
-      // If not JSON or no error field, use plain text without status code
+      // If JSON but no error field, show generic message
+      throw new Error("Bir hata oluştu");
+    } catch (e) {
+      // If it's already an Error we created, rethrow it
+      if (e instanceof Error) {
+        throw e;
+      }
+      // If JSON parse failed, show generic message (not raw text)
+      throw new Error("Bir hata oluştu");
     }
-    throw new Error(text || "Bir hata oluştu");
   }
 }
 
