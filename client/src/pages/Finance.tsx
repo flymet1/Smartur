@@ -42,7 +42,11 @@ import {
   ArrowRightLeft,
   Euro,
   Banknote,
-  Calculator
+  Calculator,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  X
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate } from "@shared/schema";
 import { format } from "date-fns";
@@ -103,6 +107,10 @@ export default function Finance() {
   const [converterAmount, setConverterAmount] = useState<string>("100");
   const [converterFrom, setConverterFrom] = useState<string>("USD");
   const [converterTo, setConverterTo] = useState<string>("TRY");
+
+  // Dispatch filter states
+  const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
+  const [dispatchSortOrder, setDispatchSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   // Exchange Rates
   type ExchangeRates = {
@@ -179,11 +187,25 @@ export default function Finance() {
     return true;
   });
 
-  // Tarih aralığına göre filtrelenmiş gönderimler
-  const filteredDispatches = dispatches.filter(d => {
-    if (!d.dispatchDate) return false;
-    return d.dispatchDate >= startDate && d.dispatchDate <= endDate;
-  });
+  // Tarih aralığına göre filtrelenmiş ve sıralanmış gönderimler
+  const filteredDispatches = dispatches
+    .filter(d => {
+      if (!d.dispatchDate) return false;
+      // Tarih filtresi
+      if (d.dispatchDate < startDate || d.dispatchDate > endDate) return false;
+      // Acenta filtresi
+      if (selectedAgencyId && d.agencyId !== selectedAgencyId) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const dateA = a.dispatchDate || '';
+      const dateB = b.dispatchDate || '';
+      if (dispatchSortOrder === 'newest') {
+        return dateB.localeCompare(dateA);
+      } else {
+        return dateA.localeCompare(dateB);
+      }
+    });
 
   // Özet hesaplamalar
   const totalGuests = filteredPayouts.reduce((sum, p) => sum + (p.guestCount || 0), 0);
@@ -360,7 +382,58 @@ export default function Finance() {
             <h1 className="text-3xl font-bold" data-testid="text-page-title">Tedarikçi Yönetimi</h1>
             <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Select 
+              value="custom"
+              onValueChange={(value) => {
+                const now = new Date();
+                const today = now.toISOString().split('T')[0];
+                
+                if (value === 'today') {
+                  setStartDate(today);
+                  setEndDate(today);
+                } else if (value === 'this-week') {
+                  const dayOfWeek = now.getDay();
+                  const monday = new Date(now);
+                  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                  setStartDate(monday.toISOString().split('T')[0]);
+                  setEndDate(today);
+                } else if (value === 'this-month') {
+                  setStartDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+                  setEndDate(today);
+                } else if (value === 'last-month') {
+                  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+                  setStartDate(lastMonth.toISOString().split('T')[0]);
+                  setEndDate(lastMonthEnd.toISOString().split('T')[0]);
+                } else if (value === 'last-3-months') {
+                  const threeMonthsAgo = new Date(now);
+                  threeMonthsAgo.setMonth(now.getMonth() - 3);
+                  setStartDate(threeMonthsAgo.toISOString().split('T')[0]);
+                  setEndDate(today);
+                } else if (value === 'this-year') {
+                  setStartDate(`${now.getFullYear()}-01-01`);
+                  setEndDate(today);
+                } else if (value === 'all-time') {
+                  setStartDate('2020-01-01');
+                  setEndDate(today);
+                }
+              }}
+            >
+              <SelectTrigger className="w-[140px]" data-testid="select-date-preset">
+                <SelectValue placeholder="Hızlı Seç" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Bugün</SelectItem>
+                <SelectItem value="this-week">Bu Hafta</SelectItem>
+                <SelectItem value="this-month">Bu Ay</SelectItem>
+                <SelectItem value="last-month">Geçen Ay</SelectItem>
+                <SelectItem value="last-3-months">Son 3 Ay</SelectItem>
+                <SelectItem value="this-year">Bu Yıl</SelectItem>
+                <SelectItem value="all-time">Tüm Zamanlar</SelectItem>
+                <SelectItem value="custom">Özel</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <Input 
@@ -611,12 +684,23 @@ export default function Finance() {
                 {dispatchSummary.map(summary => {
                   const isDebt = summary.remainingTl > 0;
                   const isCredit = summary.remainingTl < 0;
+                  const isSelected = selectedAgencyId === summary.agencyId;
                   return (
-                    <Card key={summary.agencyId} data-testid={`card-summary-${summary.agencyId}`}>
+                    <Card 
+                      key={summary.agencyId} 
+                      data-testid={`card-summary-${summary.agencyId}`}
+                      className={`cursor-pointer transition-all hover-elevate ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                      onClick={() => setSelectedAgencyId(isSelected ? null : summary.agencyId)}
+                    >
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Umbrella className="h-4 w-4" />
-                          {summary.agencyName}
+                        <CardTitle className="text-base flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Umbrella className="h-4 w-4" />
+                            {summary.agencyName}
+                          </div>
+                          {isSelected && (
+                            <Badge variant="default" className="text-xs">Seçili</Badge>
+                          )}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
@@ -646,7 +730,50 @@ export default function Finance() {
             )}
 
             <Card>
-              <CardContent className="pt-4">
+              <CardHeader className="pb-2">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CardTitle className="text-base">Gönderim Listesi</CardTitle>
+                    {selectedAgencyId && (
+                      <Badge variant="secondary" className="gap-1">
+                        {suppliers.find(s => s.id === selectedAgencyId)?.name || 'Acenta'}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 p-0 ml-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAgencyId(null);
+                          }}
+                          data-testid="button-clear-agency-filter"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    )}
+                    <Badge variant="outline">{filteredDispatches.length} kayıt</Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDispatchSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                    data-testid="button-toggle-sort"
+                  >
+                    {dispatchSortOrder === 'newest' ? (
+                      <>
+                        <ArrowDown className="h-4 w-4 mr-1" />
+                        En Yeni
+                      </>
+                    ) : (
+                      <>
+                        <ArrowUp className="h-4 w-4 mr-1" />
+                        En Eski
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-2">
                 <div className="space-y-3">
                   {filteredDispatches.map(dispatch => {
                     const supplier = suppliers.find(s => s.id === dispatch.agencyId);
