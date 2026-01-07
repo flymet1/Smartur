@@ -1315,13 +1315,13 @@ export default function Settings() {
               </Tabs>
             </CardContent>
           </Card>
+          
+          <AutoResponsesCard />
           </TabsContent>
 
           {/* INTEGRATIONS TAB */}
           <TabsContent value="integrations" className="space-y-6">
           <WooCommerceCard />
-
-          <AutoResponsesCard />
           </TabsContent>
 
           {/* USERS TAB */}
