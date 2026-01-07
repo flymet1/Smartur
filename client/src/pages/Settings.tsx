@@ -129,9 +129,9 @@ export default function Settings() {
 
   // Load bot rules
   const { data: botRulesSetting } = useQuery<{ key: string; value: string | null }>({
-    queryKey: ['/api/settings', 'bot_rules'],
+    queryKey: ['/api/settings', 'botRules'],
     queryFn: async () => {
-      const res = await fetch('/api/settings/bot_rules');
+      const res = await fetch('/api/settings/botRules');
       return res.json();
     },
   });
