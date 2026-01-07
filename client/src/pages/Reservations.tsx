@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown, Pencil, Save, ClipboardList } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown, Pencil, Save, Handshake } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -728,7 +728,7 @@ export default function Reservations() {
                   className="relative"
                   data-testid="button-reservation-requests"
                 >
-                  <ClipboardList className="h-4 w-4 mr-2" />
+                  <Handshake className="h-4 w-4 mr-2" />
                   Rez. Talepleri
                   {pendingRequestsCount > 0 && (
                     <Badge 
@@ -740,7 +740,7 @@ export default function Reservations() {
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Rezervasyon taleplerini görüntüle</TooltipContent>
+              <TooltipContent>Is ortaklarindan gelen rezervasyon taleplerini goruntule</TooltipContent>
             </Tooltip>
             <DropdownMenu>
               <Tooltip>
