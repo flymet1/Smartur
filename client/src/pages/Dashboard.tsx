@@ -226,8 +226,12 @@ export default function Dashboard() {
                         </div>
                         <div className="flex flex-col items-end gap-2">
                           {getStatusBadge(res.status || 'pending', res.id)}
-                          {res.priceTl && (
-                            <span className="text-sm font-medium">₺{res.priceTl.toLocaleString('tr-TR')}</span>
+                          {(res.priceTl || res.priceUsd) && (
+                            <span className="text-sm font-medium">
+                              {res.priceTl ? `₺${res.priceTl.toLocaleString('tr-TR')}` : ''}
+                              {res.priceTl && res.priceUsd ? ' / ' : ''}
+                              {res.priceUsd ? `$${res.priceUsd.toLocaleString('en-US')}` : ''}
+                            </span>
                           )}
                         </div>
                       </div>
