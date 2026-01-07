@@ -1621,6 +1621,33 @@ export default function Reservations() {
               setCustomerHistoryPhone(phone);
               setCustomerHistoryName(name);
             }}
+            onWhatsAppNotify={(reservation) => {
+              // Select this single reservation and open WhatsApp dialog
+              setSelectedIds(new Set([reservation.id]));
+              
+              // Generate message from template based on status
+              const templates = bulkTemplatesSetting?.value ? JSON.parse(bulkTemplatesSetting.value) : null;
+              const defaultTemplates = {
+                confirmed: "Merhaba {isim},\n\nRezervasyon onaylandı!\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz.",
+                pending: "Merhaba {isim},\n\nRezervasyon talebiniz değerlendiriliyor.\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nEn kısa sürede bilgilendirme yapılacaktır.",
+                cancelled: "Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nSorularınız için bizimle iletişime geçebilirsiniz."
+              };
+              const templateType = reservation.status === "cancelled" ? "cancelled" : reservation.status === "pending" ? "pending" : "confirmed";
+              setBulkTemplateType(templateType);
+              
+              const templateData = templates?.[templateType];
+              const template = typeof templateData === 'string' ? templateData : (templateData?.content || defaultTemplates[templateType]);
+              
+              const activityName = activities?.find(a => a.id === reservation.activityId)?.name || "";
+              const msg = template
+                .replace(/{isim}/g, reservation.customerName)
+                .replace(/{tarih}/g, format(new Date(reservation.date), "d MMMM yyyy", { locale: tr }))
+                .replace(/{saat}/g, reservation.time || "")
+                .replace(/{aktivite}/g, activityName);
+              
+              setBulkWhatsAppMessage(msg);
+              setBulkWhatsAppOpen(true);
+            }}
           />
         ) : viewMode === "mini" ? (
           <MiniCalendarView 

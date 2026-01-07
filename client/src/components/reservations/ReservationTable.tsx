@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote, Handshake } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote, Handshake, Send, CheckCircle, XCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -33,6 +33,7 @@ interface ReservationTableProps {
   onToggleSelection?: (id: number) => void;
   onSelectAll?: () => void;
   onCustomerClick?: (phone: string, name: string) => void;
+  onWhatsAppNotify?: (reservation: Reservation) => void;
 }
 
 export function ReservationTable({ 
@@ -41,7 +42,8 @@ export function ReservationTable({
   selectedIds, 
   onToggleSelection, 
   onSelectAll,
-  onCustomerClick 
+  onCustomerClick,
+  onWhatsAppNotify
 }: ReservationTableProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -369,6 +371,34 @@ export function ReservationTable({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {res.status !== 'confirmed' && (
+                            <DropdownMenuItem 
+                              onClick={() => statusMutation.mutate({ id: res.id, status: 'confirmed' })}
+                              data-testid={`action-confirm-${res.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                              Onayla
+                            </DropdownMenuItem>
+                          )}
+                          {res.status !== 'cancelled' && (
+                            <DropdownMenuItem 
+                              onClick={() => statusMutation.mutate({ id: res.id, status: 'cancelled' })}
+                              data-testid={`action-cancel-${res.id}`}
+                            >
+                              <XCircle className="h-4 w-4 mr-2 text-red-600" />
+                              İptal Et
+                            </DropdownMenuItem>
+                          )}
+                          {onWhatsAppNotify && (
+                            <DropdownMenuItem 
+                              onClick={() => onWhatsAppNotify(res)}
+                              data-testid={`action-whatsapp-${res.id}`}
+                            >
+                              <Send className="h-4 w-4 mr-2 text-green-600" />
+                              WhatsApp Bildir
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
                           {res.trackingToken ? (
                             <>
                               <DropdownMenuItem 
