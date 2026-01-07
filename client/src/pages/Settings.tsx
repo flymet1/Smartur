@@ -32,6 +32,13 @@ export default function Settings() {
   const [reminderHours, setReminderHours] = useState(24);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   
+  // Manual reservation confirmation settings
+  const [manualConfirmationEnabled, setManualConfirmationEnabled] = useState(true);
+  const [manualConfirmationTemplate, setManualConfirmationTemplate] = useState(
+    "Merhaba {isim},\n\nRezervasyon talebiniz başarıyla alındı!\n\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\nKişi Sayısı: {kisi}\n\nRezervasyon detayları için:\n{takip_linki}\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!"
+  );
+  const [isSavingManualConfirmation, setIsSavingManualConfirmation] = useState(false);
+  
   // Account password change
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -165,6 +172,15 @@ export default function Settings() {
     },
   });
 
+  // Load Manual Confirmation notification settings
+  const { data: manualConfirmationSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'manualConfirmation'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/manualConfirmation');
+      return res.json();
+    },
+  });
+
   // Load Tenant Integrations (Twilio, WooCommerce, Gmail)
   const { data: tenantIntegrations, refetch: refetchTenantIntegrations } = useQuery<{
     twilioAccountSid: string;
@@ -280,6 +296,19 @@ export default function Settings() {
       } catch {}
     }
   }, [wooNotificationSetting?.value, wooNotificationLoaded]);
+
+  // Apply loaded Manual Confirmation notification settings
+  const [manualConfirmationLoaded, setManualConfirmationLoaded] = useState(false);
+  useEffect(() => {
+    if (manualConfirmationSetting?.value && !manualConfirmationLoaded) {
+      try {
+        const settings = JSON.parse(manualConfirmationSetting.value);
+        if (settings.enabled !== undefined) setManualConfirmationEnabled(settings.enabled);
+        if (settings.template) setManualConfirmationTemplate(settings.template);
+        setManualConfirmationLoaded(true);
+      } catch {}
+    }
+  }, [manualConfirmationSetting?.value, manualConfirmationLoaded]);
 
   // Save WooCommerce notification settings
   const handleSaveWooNotification = async () => {
@@ -821,8 +850,62 @@ export default function Settings() {
                   <Label>Otomatik Onay Mesajı (Manuel Rezervasyonlar için)</Label>
                   <p className="text-sm text-muted-foreground">Manuel rezervasyon oluştuğunda müşteriye WhatsApp mesajı gönder</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={manualConfirmationEnabled} 
+                  onCheckedChange={setManualConfirmationEnabled}
+                  data-testid="switch-manual-confirmation"
+                />
               </div>
+              
+              {manualConfirmationEnabled && (
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
+                  <div className="space-y-2">
+                    <Label htmlFor="manualConfirmationTemplate">Onay Mesajı Şablonu</Label>
+                    <Textarea 
+                      id="manualConfirmationTemplate"
+                      value={manualConfirmationTemplate}
+                      onChange={(e) => setManualConfirmationTemplate(e.target.value)}
+                      placeholder="Mesaj şablonunuzu yazın..."
+                      className="min-h-[150px]"
+                      data-testid="textarea-manual-confirmation-template"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Desteklenen değişkenler: {"{isim}"}, {"{aktivite}"}, {"{tarih}"}, {"{saat}"}, {"{kisi}"}, {"{takip_linki}"}
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={async () => {
+                      setIsSavingManualConfirmation(true);
+                      try {
+                        await fetch('/api/settings/manualConfirmation', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            value: JSON.stringify({
+                              enabled: manualConfirmationEnabled,
+                              template: manualConfirmationTemplate
+                            })
+                          }),
+                        });
+                        toast({ title: "Kaydedildi", description: "Manuel onay mesajı ayarları güncellendi." });
+                      } catch (error) {
+                        toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
+                      } finally {
+                        setIsSavingManualConfirmation(false);
+                      }
+                    }}
+                    disabled={isSavingManualConfirmation}
+                    data-testid="button-save-manual-confirmation"
+                  >
+                    {isSavingManualConfirmation ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Kaydet
+                  </Button>
+                </div>
+              )}
 
               <div className="border-t pt-6">
                 <div className="flex items-center justify-between mb-4">
