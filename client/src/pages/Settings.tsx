@@ -38,7 +38,7 @@ export default function Settings() {
   // Manual reservation confirmation settings
   const [manualConfirmationEnabled, setManualConfirmationEnabled] = useState(true);
   const [manualConfirmationTemplate, setManualConfirmationTemplate] = useState(
-    "Merhaba {isim},\n\nRezervasyon talebiniz başarıyla alındı!\n\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\nKişi Sayısı: {kisi}\n\nRezervasyon detayları için:\n{takip_linki}\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!"
+    "Merhaba {isim},\n\nRezervasyon talebiniz başarıyla alındı!\n\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\nKişi Sayısı: {kisi}\n\nRezervasyon detayları için:\n{takip_linki}\n\nAktivite saati ve tarih değişikliği talepleriniz için, lütfen yukarıdaki takip linkine tıklayın. (Değişiklik talepleriniz müsaitliğe göre değerlendirilecektir.)\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!"
   );
   const [isSavingManualConfirmation, setIsSavingManualConfirmation] = useState(false);
   
@@ -50,7 +50,7 @@ export default function Settings() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [reminderMessage, setReminderMessage] = useState(
-    "Merhaba {isim}! Rezervasyonunuz için hatırlatma:\n\n{aktiviteler}\nTarih: {tarih}\n\nSizi görmek için sabırsızlanıyoruz!"
+    "Merhaba {isim}! Rezervasyonunuz için hatırlatma:\n\n{aktiviteler}\nTarih: {tarih}\n\nRezervasyon detayları için:\n{takip_linki}\n\nAktivite saati ve tarih değişikliği talepleriniz için, lütfen yukarıdaki takip linkine tıklayın. (Değişiklik talepleriniz müsaitliğe göre değerlendirilecektir.)\n\nSizi görmek için sabırsızlanıyoruz!"
   );
   const [botEnabled, setBotEnabled] = useState(true);
   const [botPrompt, setBotPrompt] = useState(
@@ -972,6 +972,7 @@ export default function Settings() {
                         <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
                         <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktiviteler{'}'}</code> - Aktivite adları</div>
                         <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saatler{'}'}</code> - Aktivite saatleri</div>
+                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}takip_linki{'}'}</code> - Takip linki</div>
                       </div>
                     </div>
                   </div>

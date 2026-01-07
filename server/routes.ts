@@ -2701,7 +2701,7 @@ export async function registerRoutes(
               // Check if WooCommerce notification is enabled
               const wooNotificationSetting = await storage.getSetting('wooNotification');
               let wooNotificationEnabled = true;
-              let wooNotificationTemplate = "Merhaba {isim},\n\nSiparişiniz alınmıştır!\n\nSipariş No: {siparis_no}\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nRezervasyon detayları ve değişiklik talepleriniz için:\n{takip_linki}\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!";
+              let wooNotificationTemplate = "Merhaba {isim},\n\nSiparişiniz alınmıştır!\n\nSipariş No: {siparis_no}\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nRezervasyon detayları ve değişiklik talepleriniz için:\n{takip_linki}\n\nAktivite saati ve tarih değişikliği talepleriniz için, lütfen yukarıdaki takip linkine tıklayın. (Değişiklik talepleriniz müsaitliğe göre değerlendirilecektir.)\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!";
               
               if (wooNotificationSetting) {
                 try {
@@ -2840,7 +2840,7 @@ export async function registerRoutes(
                 // Check if WooCommerce notification is enabled
                 const wooNotificationSetting = await storage.getSetting('wooNotification');
                 let wooNotificationEnabled = true;
-                let wooNotificationTemplate = "Merhaba {isim},\n\nSiparişiniz alınmıştır!\n\nSipariş No: {siparis_no}\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nRezervasyon detayları ve değişiklik talepleriniz için:\n{takip_linki}\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!";
+                let wooNotificationTemplate = "Merhaba {isim},\n\nSiparişiniz alınmıştır!\n\nSipariş No: {siparis_no}\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nRezervasyon detayları ve değişiklik talepleriniz için:\n{takip_linki}\n\nAktivite saati ve tarih değişikliği talepleriniz için, lütfen yukarıdaki takip linkine tıklayın. (Değişiklik talepleriniz müsaitliğe göre değerlendirilecektir.)\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!";
                 
                 if (wooNotificationSetting) {
                   try {
@@ -3303,9 +3303,12 @@ Aktivite: ${activityName}
 Tarih: ${date}
 ${time ? `Saat: ${time}` : ''}
 
-Sorularınız için bize bu numaradan yazabilirsiniz.
+Rezervasyon detayları için:
+${trackingLink}
 
-Sky Fethiye`;
+Aktivite saati ve tarih değişikliği talepleriniz için, lütfen yukarıdaki takip linkine tıklayın. (Değişiklik talepleriniz müsaitliğe göre değerlendirilecektir.)
+
+Sorularınız için bize bu numaradan yazabilirsiniz.`;
       }
 
       // Use Twilio API to send WhatsApp message
