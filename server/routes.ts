@@ -4748,6 +4748,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
 
   app.post("/api/finance/dispatches", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const { agencyId, activityId, dispatchDate, dispatchTime, guestCount, unitPayoutTl, notes } = req.body;
       
       if (!agencyId || !dispatchDate) {
@@ -4769,6 +4770,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       const totalPayoutTl = (guestCount || 0) * finalUnitPayoutTl;
       
       const dispatch = await storage.createSupplierDispatch({
+        tenantId,
         agencyId,
         activityId,
         dispatchDate,
