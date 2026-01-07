@@ -1632,7 +1632,21 @@ export async function registerRoutes(
     }
     
     const input = api.reservations.create.input.parse(req.body);
-    const item = await storage.createReservation(input);
+    
+    // Set default status based on source
+    // Manual (panel) reservations are auto-confirmed, web reservations are pending
+    let defaultStatus = input.status;
+    if (!defaultStatus) {
+      if (input.source === 'manual' || !input.source) {
+        defaultStatus = 'confirmed';
+      } else if (input.source === 'web') {
+        defaultStatus = 'pending';
+      } else {
+        defaultStatus = 'pending';
+      }
+    }
+    
+    const item = await storage.createReservation({ ...input, status: defaultStatus });
     
     // Decrease capacity
     const capacitySlots = await storage.getCapacity(item.date, item.activityId || 0);
