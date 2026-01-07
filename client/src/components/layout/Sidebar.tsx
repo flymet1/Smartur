@@ -52,10 +52,9 @@ const allNavItems: NavItem[] = [
   { href: "/settings", label: "Ayarlar", icon: Settings, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
 ];
 
-// Quick access buttons at the top (Talepler, Rezervasyon Talepleri and Destek)
+// Quick access buttons at the top (Talepler and Destek)
 const quickAccessItems = [
   { href: "/customer-requests", label: "Talepler", icon: MessageCircle },
-  { href: "/reservation-requests", label: "Rez. Talepleri", icon: ClipboardList },
 ];
 
 type SupportSummary = {

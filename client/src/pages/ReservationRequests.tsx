@@ -13,7 +13,8 @@ import {
   Calendar,
   Users,
   MessageSquare,
-  Handshake
+  Handshake,
+  Send
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Activity, AppUser } from "@shared/schema";
+import type { Activity } from "@shared/schema";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface AppUserWithPhone {
+  id: number;
+  username: string;
+  name: string | null;
+  phone: string | null;
+}
 
 interface ReservationRequest {
   id: number;
@@ -62,8 +71,24 @@ export default function ReservationRequests() {
     queryKey: ['/api/activities'],
   });
 
-  const { data: users = [] } = useQuery<AppUser[]>({
+  const { data: users = [] } = useQuery<AppUserWithPhone[]>({
     queryKey: ['/api/users'],
+  });
+
+  const [notifyingSenderId, setNotifyingSenderId] = useState<number | null>(null);
+
+  const notifyPartnerMutation = useMutation({
+    mutationFn: async ({ phone, message }: { phone: string; message: string }) => {
+      return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
+    },
+    onSuccess: () => {
+      toast({ title: "Basarili", description: "Is ortagi bilgilendirildi." });
+      setNotifyingSenderId(null);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Mesaj gonderilemedi.", variant: "destructive" });
+      setNotifyingSenderId(null);
+    },
   });
 
   const processMutation = useMutation({
@@ -104,6 +129,30 @@ export default function ReservationRequests() {
     if (!requestedBy) return "Bilinmiyor";
     const user = users.find(u => u.id === requestedBy);
     return user?.name || user?.username || "Bilinmiyor";
+  };
+
+  const getRequesterPhone = (requestedBy: number | null) => {
+    if (!requestedBy) return null;
+    const user = users.find(u => u.id === requestedBy);
+    return user?.phone || null;
+  };
+
+  const notifyPartner = (request: ReservationRequest, statusText: string) => {
+    if (!request.requestedBy) {
+      toast({ title: "Hata", description: "Is ortagi bilgisi bulunamadi.", variant: "destructive" });
+      return;
+    }
+    const partnerPhone = getRequesterPhone(request.requestedBy);
+    if (!partnerPhone) {
+      toast({ title: "Hata", description: "Is ortaginin telefon numarasi bulunamadi.", variant: "destructive" });
+      return;
+    }
+    const activityName = getActivityName(request.activityId);
+    const dateFormatted = format(new Date(request.date), "d MMMM yyyy", { locale: tr });
+    const message = `Merhaba ${getRequesterName(request.requestedBy)},\n\n${request.customerName} isimli musteri icin ${dateFormatted} tarihli ${activityName} aktivitesi rezervasyon talebi ${statusText}.\n\nMusteri: ${request.customerName}\nTelefon: ${request.customerPhone}\nTarih: ${dateFormatted}\nSaat: ${request.time}\nKisi: ${request.guests || 1}`;
+    
+    setNotifyingSenderId(request.id);
+    notifyPartnerMutation.mutate({ phone: partnerPhone, message });
   };
 
   const getStatusBadge = (status: string | null) => {
@@ -284,6 +333,24 @@ export default function ReservationRequests() {
                               </div>
                             </div>
                             <div className="flex gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => notifyPartner(request, "ONAYLANDI")}
+                                    disabled={notifyingSenderId === request.id}
+                                    data-testid={`button-notify-approved-${request.id}`}
+                                  >
+                                    {notifyingSenderId === request.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Send className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Is ortagini WhatsApp ile bilgilendir</TooltipContent>
+                              </Tooltip>
                               <Button
                                 size="sm"
                                 onClick={() => convertMutation.mutate(request.id)}
@@ -333,6 +400,26 @@ export default function ReservationRequests() {
                                 <Handshake className="h-3.5 w-3.5" />
                                 <span>Is Ortagi: {getRequesterName(request.requestedBy)}</span>
                               </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => notifyPartner(request, request.status === "rejected" ? "REDDEDILDI" : request.status === "converted" ? "REZERVASYONA DONUSTURULDU" : "GUNCELLENDI")}
+                                    disabled={notifyingSenderId === request.id}
+                                    data-testid={`button-notify-other-${request.id}`}
+                                  >
+                                    {notifyingSenderId === request.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Send className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Is ortagini WhatsApp ile bilgilendir</TooltipContent>
+                              </Tooltip>
                             </div>
                           </div>
                         </CardContent>

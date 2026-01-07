@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown, Pencil, Save } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown, Pencil, Save, ClipboardList } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -58,6 +58,11 @@ export default function Reservations() {
   const { data: holidays = [] } = useQuery<Holiday[]>({
     queryKey: ['/api/holidays']
   });
+  const { data: reservationRequests = [] } = useQuery<{ id: number; status: string | null }[]>({
+    queryKey: ['/api/reservation-requests'],
+    refetchInterval: 30000,
+  });
+  const pendingRequestsCount = reservationRequests.filter(r => r.status === 'pending').length;
   const { data: bulkTemplatesSetting } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'bulkMessageTemplates'],
     queryFn: async () => {
@@ -715,13 +720,34 @@ export default function Reservations() {
                 </div>
               </PopoverContent>
             </Popover>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setLocation('/reservation-requests')}
+                  className="relative"
+                  data-testid="button-reservation-requests"
+                >
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Rez. Talepleri
+                  {pendingRequestsCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px]"
+                    >
+                      {pendingRequestsCount}
+                    </Badge>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Rezervasyon taleplerini görüntüle</TooltipContent>
+            </Tooltip>
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" data-testid="button-export">
-                      <Download className="h-4 w-4 mr-2" />
-                      Dışa Aktar
+                    <Button variant="outline" size="icon" data-testid="button-export">
+                      <Download className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
