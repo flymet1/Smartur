@@ -2485,11 +2485,12 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       
-      const { from, to } = req.query;
+      const { from, to, agencyId } = req.query;
       
       const stats = await storage.getPartnerActivityStats(tenantId, {
         from: from as string | undefined,
-        to: to as string | undefined
+        to: to as string | undefined,
+        agencyId: agencyId ? parseInt(agencyId as string) : undefined
       });
       
       res.json(stats);

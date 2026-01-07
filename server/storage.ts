@@ -2009,10 +2009,11 @@ export class DatabaseStorage implements IStorage {
 
   async getPartnerActivityStats(
     tenantId: number, 
-    options?: { from?: string; to?: string }
+    options?: { from?: string; to?: string; agencyId?: number }
   ): Promise<{ viewerId: number; viewerName: string; viewerPhone: string | null; activityId: number; activityName: string; totalGuests: number; totalRequests: number; }[]> {
     const from = options?.from;
     const to = options?.to;
+    const agencyId = options?.agencyId;
     
     const result = await db.execute(sql`
       SELECT 
@@ -2030,6 +2031,7 @@ export class DatabaseStorage implements IStorage {
         AND rr.requested_by IS NOT NULL
         ${from ? sql`AND rr.created_at >= ${from}::timestamp` : sql``}
         ${to ? sql`AND rr.created_at <= ${to}::timestamp` : sql``}
+        ${agencyId ? sql`AND rr.agency_id = ${agencyId}` : sql``}
       GROUP BY rr.requested_by, au.name, au.phone, rr.activity_id, a.name
       ORDER BY au.name, a.name
     `);

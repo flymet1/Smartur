@@ -58,6 +58,11 @@ interface PartnerActivityStat {
   totalRequests: number;
 }
 
+interface Agency {
+  id: number;
+  name: string;
+}
+
 export default function ViewerStats() {
   const { toast } = useToast();
   const [groupBy, setGroupBy] = useState<'daily' | 'monthly'>('daily');
@@ -68,6 +73,11 @@ export default function ViewerStats() {
   const [presetRange, setPresetRange] = useState<string>('last30');
   const [bulkMessage, setBulkMessage] = useState("");
   const [isSendingBulk, setIsSendingBulk] = useState(false);
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string>("all");
+
+  const { data: agencies = [] } = useQuery<Agency[]>({
+    queryKey: ['/api/agencies'],
+  });
 
   const { data: partnerUsers = [] } = useQuery<PartnerUser[]>({
     queryKey: ['/api/tenant-users'],
@@ -158,7 +168,7 @@ export default function ViewerStats() {
   });
 
   const { data: activityStats = [], isLoading: isLoadingActivityStats } = useQuery<PartnerActivityStat[]>({
-    queryKey: ['/api/partner-activity-stats', dateRange.from?.toISOString(), dateRange.to?.toISOString()],
+    queryKey: ['/api/partner-activity-stats', dateRange.from?.toISOString(), dateRange.to?.toISOString(), selectedAgencyId],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (dateRange.from) {
@@ -166,6 +176,9 @@ export default function ViewerStats() {
       }
       if (dateRange.to) {
         params.append('to', dateRange.to.toISOString());
+      }
+      if (selectedAgencyId && selectedAgencyId !== 'all') {
+        params.append('agencyId', selectedAgencyId);
       }
       const res = await fetch(`/api/partner-activity-stats?${params}`, { credentials: 'include' });
       const data = await res.json();
@@ -434,7 +447,22 @@ export default function ViewerStats() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Aktivite Bazli Istatistikler</CardTitle>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <CardTitle className="text-base">Aktivite Bazli Istatistikler</CardTitle>
+                <Select value={selectedAgencyId} onValueChange={setSelectedAgencyId}>
+                  <SelectTrigger className="w-[180px]" data-testid="select-agency-filter">
+                    <SelectValue placeholder="Acenta Sec" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tum Acentalar</SelectItem>
+                    {agencies.map((agency) => (
+                      <SelectItem key={agency.id} value={agency.id.toString()}>
+                        {agency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {isLoadingActivityStats ? (
