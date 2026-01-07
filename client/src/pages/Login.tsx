@@ -114,7 +114,28 @@ export default function Login() {
         description: `Hosgeldiniz, ${data.user.name || data.user.username}!`,
       });
       
-      setLocation("/dashboard");
+      // Determine landing page based on permissions
+      // Partner users (only capacity.view) should land on availability page
+      const permissions = data.permissions || [];
+      const mainPermissions = [
+        'reservations.view',
+        'activities.view', 
+        'settings.view',
+        'whatsapp.view',
+        'finance.view',
+        'agencies.view',
+        'users.view'
+      ];
+      
+      const hasMainPermission = permissions.some((p: string) => mainPermissions.includes(p));
+      const hasCapacityView = permissions.includes('capacity.view');
+      
+      // If user only has capacity.view (partner), go to availability page
+      if (hasCapacityView && !hasMainPermission) {
+        setLocation("/musaitlik");
+      } else {
+        setLocation("/dashboard");
+      }
     },
     onError: (error: any) => {
       toast({
