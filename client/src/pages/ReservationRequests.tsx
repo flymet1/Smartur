@@ -72,7 +72,7 @@ export default function ReservationRequests() {
   });
 
   const { data: users = [] } = useQuery<AppUserWithPhone[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/tenant-users'],
   });
 
   const [notifyingSenderId, setNotifyingSenderId] = useState<number | null>(null);
