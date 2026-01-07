@@ -265,6 +265,9 @@ export default function Finance() {
     mutationFn: async (data: typeof dispatchForm) => apiRequest('POST', '/api/finance/dispatches', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        typeof query.queryKey[0] === 'string' && query.queryKey[0].includes('/api/finance/dispatches/summary')
+      });
       setDispatchDialogOpen(false);
       setDispatchForm({
         agencyId: 0,
@@ -286,6 +289,9 @@ export default function Finance() {
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/dispatches/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        typeof query.queryKey[0] === 'string' && query.queryKey[0].includes('/api/finance/dispatches/summary')
+      });
       toast({ title: "Gönderim silindi" });
     },
     onError: () => {
