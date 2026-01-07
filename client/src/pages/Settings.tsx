@@ -91,6 +91,23 @@ export default function Settings() {
   const [bulkTemplatesLoaded, setBulkTemplatesLoaded] = useState(false);
 
   
+  // Load session to check user role
+  const { data: sessionData } = useQuery<{
+    authenticated: boolean;
+    user?: { id: number; tenantId?: number };
+    roles?: number[];
+    permissions?: string[];
+  }>({
+    queryKey: ['/api/auth/session'],
+    queryFn: async () => {
+      const res = await fetch('/api/auth/session');
+      return res.json();
+    },
+  });
+
+  // Check if user is tenant owner (role ID 4) - only owners can edit bot rules
+  const isOwner = sessionData?.roles?.includes(4) || false;
+
   // Load bot access settings
   const { data: botAccessSettings } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'botAccess'],
@@ -995,16 +1012,26 @@ export default function Settings() {
 
                       <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                         <div className="space-y-2">
-                          <Label htmlFor="botRules" className="text-base font-medium">Bot Kuralları (13 Madde)</Label>
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="botRules" className="text-base font-medium">Bot Kuralları</Label>
+                            {!isOwner && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Shield className="w-3 h-3 mr-1" />
+                                Kilitli
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground">
-                            Bot bu kurallara uyarak müşterilerle iletişim kuracak. Her satır ayrı bir kural olarak değerlendirilir.
+                            Bot bu kurallara uyarak müşterilerle iletişim kuracak. {!isOwner && "Bu alan sadece acenta yöneticisi tarafından düzenlenebilir."}
                           </p>
                           <Textarea 
                             id="botRules"
                             value={botRules}
-                            onChange={(e) => setBotRules(e.target.value)}
+                            onChange={(e) => isOwner && setBotRules(e.target.value)}
                             placeholder="1. Müşterilere her zaman nazik ve profesyonel ol&#10;2. Fiyat bilgisi verirken net rakamlar kullan&#10;3. Rezervasyon detaylarını mutlaka teyit et&#10;..."
-                            className="min-h-[250px] font-mono text-sm"
+                            className={cn("min-h-[250px] font-mono text-sm", !isOwner && "bg-muted cursor-not-allowed")}
+                            disabled={!isOwner}
+                            readOnly={!isOwner}
                             data-testid="textarea-bot-rules"
                           />
                           <p className="text-xs text-muted-foreground">
