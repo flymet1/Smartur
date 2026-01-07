@@ -3322,10 +3322,11 @@ Sky Fethiye`;
     }
   });
   
-  // Protected settings endpoint (requires auth)
+  // Protected settings endpoint (requires auth) - tenant-aware
   app.get("/api/settings/:key", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
-      const value = await storage.getSetting(req.params.key);
+      const tenantId = req.session?.tenantId;
+      const value = await storage.getSetting(req.params.key, tenantId);
       res.json({ key: req.params.key, value });
     } catch (err) {
       res.status(400).json({ error: "Ayar alınamadı" });
@@ -3335,18 +3336,16 @@ Sky Fethiye`;
   app.post("/api/settings/:key", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
       let { value } = req.body;
+      const tenantId = req.session?.tenantId;
       const authHeader = req.headers.authorization;
       
-      // Protected settings that require bot rules authentication
+      // Protected settings that require bot rules authentication (only for tenant_owner)
       const protectedSettings = ['botRules', 'developerEmail'];
       if (protectedSettings.includes(req.params.key)) {
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          return res.status(401).json({ error: "Yetkilendirme gerekli" });
-        }
-        const token = authHeader.split(' ')[1];
-        const storedToken = await storage.getSetting('botRulesSessionToken');
-        if (!storedToken || storedToken !== token) {
-          return res.status(401).json({ error: "Geçersiz oturum" });
+        // Check if user is tenant_owner (role ID 4)
+        const userRoles = req.session?.roles || [];
+        if (!userRoles.includes(4)) {
+          return res.status(403).json({ error: "Bu ayarı sadece acenta yöneticisi değiştirebilir" });
         }
       }
       
@@ -3361,7 +3360,7 @@ Sky Fethiye`;
             value = JSON.stringify(creds);
           } else {
             // If no new password provided, keep existing hash
-            const existingSetting = await storage.getSetting('adminCredentials');
+            const existingSetting = await storage.getSetting('adminCredentials', tenantId);
             if (existingSetting) {
               const existingCreds = JSON.parse(existingSetting);
               creds.passwordHash = existingCreds.passwordHash;
@@ -3372,7 +3371,7 @@ Sky Fethiye`;
         } catch {}
       }
       
-      const result = await storage.setSetting(req.params.key, value);
+      const result = await storage.setSetting(req.params.key, value, tenantId);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: "Ayar kaydedilemedi" });
