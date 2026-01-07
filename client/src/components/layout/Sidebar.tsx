@@ -37,12 +37,13 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   requiredPermission?: string;
+  partnerOnly?: boolean;
 }
 
 const allNavItems: NavItem[] = [
   { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
-  { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW },
+  { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, partnerOnly: true },
   { href: "/viewer-stats", label: "Is Ortagi Istatistikleri", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
@@ -77,14 +78,6 @@ export function Sidebar() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const { permissions, hasPermission, hasAnyPermission } = usePermissions();
 
-  // Filter nav items based on user permissions
-  const navItems = useMemo(() => {
-    return allNavItems.filter(item => {
-      if (!item.requiredPermission) return true;
-      return permissions.includes(item.requiredPermission);
-    });
-  }, [permissions]);
-
   // Check if user is a "partner" (İş Ortağı) - only has capacity.view and no other main permissions
   const isPartnerOnly = useMemo(() => {
     const mainPermissions = [
@@ -99,6 +92,16 @@ export function Sidebar() {
     // Has capacity.view but no other main permissions
     return hasPermission(PERMISSION_KEYS.CAPACITY_VIEW) && !hasAnyPermission(mainPermissions);
   }, [permissions, hasPermission, hasAnyPermission]);
+
+  // Filter nav items based on user permissions
+  const navItems = useMemo(() => {
+    return allNavItems.filter(item => {
+      // If item is partner-only, only show to partners
+      if (item.partnerOnly && !isPartnerOnly) return false;
+      if (!item.requiredPermission) return true;
+      return permissions.includes(item.requiredPermission);
+    });
+  }, [permissions, isPartnerOnly]);
 
   // Check for logged in user on mount and when localStorage changes
   useEffect(() => {
