@@ -2,6 +2,16 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    // If 401 Unauthorized, redirect to login page
+    if (res.status === 401) {
+      // Don't redirect if already on login page or public pages
+      const currentPath = window.location.pathname;
+      if (currentPath !== "/login" && !currentPath.startsWith("/takip/") && !currentPath.startsWith("/subscription")) {
+        window.location.href = "/login";
+      }
+      throw new Error("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.");
+    }
+    
     const text = (await res.text()) || res.statusText;
     // Try to parse JSON error response and extract just the error message
     try {

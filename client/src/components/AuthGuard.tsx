@@ -6,7 +6,7 @@ interface AuthGuardProps {
   children: React.ReactNode;
 }
 
-const PUBLIC_ROUTES = ["/login", "/takip", "/sales-presentation", "/super-admin"];
+const PUBLIC_ROUTES = ["/login", "/takip", "/sales-presentation", "/super-admin", "/subscription"];
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const [location, setLocation] = useLocation();
@@ -61,13 +61,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
           setLocation("/login");
         }
       } catch {
-        const userData = localStorage.getItem("userData");
-        if (userData) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-          setLocation("/login");
-        }
+        // Network error - don't trust localStorage, redirect to login
+        localStorage.removeItem("userToken");
+        localStorage.removeItem("userData");
+        localStorage.removeItem("userPermissions");
+        localStorage.removeItem("userRoles");
+        localStorage.removeItem("tenantData");
+        setIsAuthenticated(false);
+        setLocation("/login");
       }
       
       setIsChecking(false);
