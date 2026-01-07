@@ -1193,7 +1193,8 @@ export default function Reservations() {
                       pending: "Merhaba {isim},\n\nRezervasyon talebiniz değerlendiriliyor.\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nEn kısa sürede bilgilendirme yapılacaktır.",
                       cancelled: "Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nSorularınız için bizimle iletişime geçebilirsiniz."
                     };
-                    const template = templates?.[templateType] || defaultTemplates[templateType];
+                    const templateData = templates?.[templateType];
+                    const template = typeof templateData === 'string' ? templateData : (templateData?.content || defaultTemplates[templateType]);
                     
                     let defaultMsg: string;
                     if (selected.length === 1) {
