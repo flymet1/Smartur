@@ -209,6 +209,14 @@ export default function Finance() {
     // Dönem kesişimi: ödeme dönemi seçili tarih aralığıyla örtüşüyorsa dahil et
     if (p.periodEnd && p.periodEnd < startDate) return false;
     if (p.periodStart && p.periodStart > endDate) return false;
+    // Acenta filtresi
+    if (selectedAgencyId && p.agencyId !== selectedAgencyId) return false;
+    return true;
+  });
+
+  // Acenta filtresine göre filtrelenmiş fiyat tablosu
+  const filteredRates = rates.filter(r => {
+    if (selectedAgencyId && r.agencyId !== selectedAgencyId) return false;
     return true;
   });
 
@@ -876,8 +884,28 @@ export default function Finance() {
           </TabsContent>
 
           <TabsContent value="payouts" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Ödeme Kayıtları</h3>
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-semibold">Ödeme Kayıtları</h3>
+                {selectedAgencyId && (
+                  <Badge variant="secondary" className="gap-1">
+                    {suppliers.find(s => s.id === selectedAgencyId)?.name || 'Acenta'}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 ml-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAgencyId(null);
+                      }}
+                      data-testid="button-clear-payout-agency-filter"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                <Badge variant="outline">{filteredPayouts.length} kayıt</Badge>
+              </div>
               <Button onClick={() => {
                 setPayoutForm({
                   agencyId: 0,
@@ -955,8 +983,28 @@ export default function Finance() {
           </TabsContent>
 
           <TabsContent value="rates" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Fiyat Tablosu</h3>
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-semibold">Fiyat Tablosu</h3>
+                {selectedAgencyId && (
+                  <Badge variant="secondary" className="gap-1">
+                    {suppliers.find(s => s.id === selectedAgencyId)?.name || 'Acenta'}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 ml-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAgencyId(null);
+                      }}
+                      data-testid="button-clear-rate-agency-filter"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                <Badge variant="outline">{filteredRates.length} kayıt</Badge>
+              </div>
               <Button onClick={() => { 
                 setEditingRate(null);
                 setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, unitPayoutUsd: 0, currency: 'TRY', notes: '' });
@@ -976,7 +1024,7 @@ export default function Finance() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {rates.map(rate => {
+                  {filteredRates.map(rate => {
                     const supplier = suppliers.find(s => s.id === rate.agencyId);
                     const activity = activities.find(a => a.id === rate.activityId);
                     const isTry = (rate.currency || 'TRY') === 'TRY';
