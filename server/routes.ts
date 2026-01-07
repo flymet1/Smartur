@@ -6502,6 +6502,183 @@ Sky Fethiye`;
     }
   });
 
+  // === DATABASE EXPORT/IMPORT (Super Admin) ===
+  
+  app.get("/api/admin/database/export", async (req, res) => {
+    try {
+      if (!req.session?.platformAdminId) {
+        return res.status(401).json({ error: "Platform admin girişi gerekli" });
+      }
+      
+      // Export all critical tables
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        version: "1.0",
+        tables: {
+          subscription_plans: await storage.getSubscriptionPlans(),
+          plan_features: await storage.getPlanFeatures(),
+          tenants: await storage.getTenants(),
+          app_users: await storage.getAppUsers(),
+          roles: await storage.getRoles(),
+          permissions: await storage.getPermissions(),
+          platform_admins: await storage.getPlatformAdmins(),
+          announcements: await storage.getAnnouncements(),
+        }
+      };
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename=smartur-db-export-${new Date().toISOString().split('T')[0]}.json`);
+      res.json(exportData);
+    } catch (err) {
+      console.error("Database export hatası:", err);
+      res.status(500).json({ error: "Veritabanı dışa aktarılamadı" });
+    }
+  });
+
+  app.post("/api/admin/database/import", async (req, res) => {
+    try {
+      if (!req.session?.platformAdminId) {
+        return res.status(401).json({ error: "Platform admin girişi gerekli" });
+      }
+      
+      const { tables, mode } = req.body;
+      // mode: 'merge' (sadece eksikleri ekle) veya 'replace' (tümünü değiştir)
+      
+      if (!tables) {
+        return res.status(400).json({ error: "Geçersiz veri formatı" });
+      }
+      
+      const results: Record<string, { added: number; skipped: number; errors: string[] }> = {};
+      
+      // Import subscription_plans
+      if (tables.subscription_plans && Array.isArray(tables.subscription_plans)) {
+        results.subscription_plans = { added: 0, skipped: 0, errors: [] };
+        for (const plan of tables.subscription_plans) {
+          try {
+            const existing = await storage.getSubscriptionPlanByCode(plan.code);
+            if (!existing) {
+              await storage.createSubscriptionPlan({
+                code: plan.code,
+                name: plan.name,
+                description: plan.description,
+                priceTl: plan.priceTl,
+                priceUsd: plan.priceUsd,
+                yearlyPriceTl: plan.yearlyPriceTl,
+                yearlyPriceUsd: plan.yearlyPriceUsd,
+                yearlyDiscountPct: plan.yearlyDiscountPct,
+                trialDays: plan.trialDays,
+                maxActivities: plan.maxActivities,
+                maxReservationsPerMonth: plan.maxReservationsPerMonth,
+                maxUsers: plan.maxUsers,
+                maxWhatsappNumbers: plan.maxWhatsappNumbers,
+                features: plan.features,
+                sortOrder: plan.sortOrder,
+                isActive: plan.isActive,
+                isPopular: plan.isPopular,
+              });
+              results.subscription_plans.added++;
+            } else if (mode === 'replace') {
+              await storage.updateSubscriptionPlan(existing.id, plan);
+              results.subscription_plans.added++;
+            } else {
+              results.subscription_plans.skipped++;
+            }
+          } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            results.subscription_plans.errors.push(`Plan ${plan.code}: ${errorMsg}`);
+          }
+        }
+      }
+      
+      // Import plan_features
+      if (tables.plan_features && Array.isArray(tables.plan_features)) {
+        results.plan_features = { added: 0, skipped: 0, errors: [] };
+        for (const feature of tables.plan_features) {
+          try {
+            const existingFeatures = await storage.getPlanFeatures();
+            const existing = existingFeatures.find(f => f.code === feature.code);
+            if (!existing) {
+              await storage.createPlanFeature({
+                code: feature.code,
+                name: feature.name,
+                description: feature.description,
+                category: feature.category,
+                sortOrder: feature.sortOrder,
+              });
+              results.plan_features.added++;
+            } else {
+              results.plan_features.skipped++;
+            }
+          } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            results.plan_features.errors.push(`Feature ${feature.code}: ${errorMsg}`);
+          }
+        }
+      }
+      
+      // Import roles
+      if (tables.roles && Array.isArray(tables.roles)) {
+        results.roles = { added: 0, skipped: 0, errors: [] };
+        for (const role of tables.roles) {
+          try {
+            const existingRoles = await storage.getRoles();
+            const existing = existingRoles.find(r => r.name === role.name);
+            if (!existing) {
+              await storage.createRole({
+                name: role.name,
+                displayName: role.displayName,
+                description: role.description,
+                color: role.color,
+                isSystem: role.isSystem,
+                isActive: role.isActive,
+              });
+              results.roles.added++;
+            } else {
+              results.roles.skipped++;
+            }
+          } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            results.roles.errors.push(`Role ${role.name}: ${errorMsg}`);
+          }
+        }
+      }
+      
+      // Import permissions
+      if (tables.permissions && Array.isArray(tables.permissions)) {
+        results.permissions = { added: 0, skipped: 0, errors: [] };
+        for (const perm of tables.permissions) {
+          try {
+            const existingPerms = await storage.getPermissions();
+            const existing = existingPerms.find(p => p.code === perm.code);
+            if (!existing) {
+              await storage.createPermission({
+                code: perm.code,
+                name: perm.name,
+                description: perm.description,
+                category: perm.category,
+              });
+              results.permissions.added++;
+            } else {
+              results.permissions.skipped++;
+            }
+          } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            results.permissions.errors.push(`Permission ${perm.code}: ${errorMsg}`);
+          }
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Veritabanı içe aktarıldı",
+        results 
+      });
+    } catch (err) {
+      console.error("Database import hatası:", err);
+      res.status(500).json({ error: "Veritabanı içe aktarılamadı" });
+    }
+  });
+
   // === ERROR EVENTS (Super Admin Hata İzleme) ===
   
   app.get("/api/admin/error-events/summary", async (req, res) => {
