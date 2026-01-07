@@ -89,6 +89,14 @@ export default function Settings() {
   const [bulkLabelPending, setBulkLabelPending] = useState("Beklemede");
   const [bulkLabelCancelled, setBulkLabelCancelled] = useState("İptal");
   const [bulkTemplatesLoaded, setBulkTemplatesLoaded] = useState(false);
+  
+  // WooCommerce Auto-Notification Template
+  const [wooNotificationEnabled, setWooNotificationEnabled] = useState(true);
+  const [wooNotificationTemplate, setWooNotificationTemplate] = useState(
+    "Merhaba {isim},\n\nSiparişiniz alınmıştır!\n\nSipariş No: {siparis_no}\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nRezervasyon detayları ve değişiklik talepleriniz için:\n{takip_linki}\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!"
+  );
+  const [wooNotificationLoaded, setWooNotificationLoaded] = useState(false);
+  const [isSavingWooNotification, setIsSavingWooNotification] = useState(false);
 
   
   // Load session to check user role
@@ -144,6 +152,15 @@ export default function Settings() {
     queryKey: ['/api/settings', 'bulkMessageTemplates'],
     queryFn: async () => {
       const res = await fetch('/api/settings/bulkMessageTemplates');
+      return res.json();
+    },
+  });
+
+  // Load WooCommerce notification settings
+  const { data: wooNotificationSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'wooNotification'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/wooNotification');
       return res.json();
     },
   });
@@ -252,7 +269,44 @@ export default function Settings() {
     }
   }, [bulkTemplatesSetting?.value, bulkTemplatesLoaded]);
 
-  
+  // Apply loaded WooCommerce notification settings
+  useEffect(() => {
+    if (wooNotificationSetting?.value && !wooNotificationLoaded) {
+      try {
+        const settings = JSON.parse(wooNotificationSetting.value);
+        if (settings.enabled !== undefined) setWooNotificationEnabled(settings.enabled);
+        if (settings.template) setWooNotificationTemplate(settings.template);
+        setWooNotificationLoaded(true);
+      } catch {}
+    }
+  }, [wooNotificationSetting?.value, wooNotificationLoaded]);
+
+  // Save WooCommerce notification settings
+  const handleSaveWooNotification = async () => {
+    setIsSavingWooNotification(true);
+    try {
+      const response = await fetch('/api/settings/wooNotification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          value: JSON.stringify({
+            enabled: wooNotificationEnabled,
+            template: wooNotificationTemplate
+          })
+        }),
+      });
+      if (response.ok) {
+        toast({ title: "Başarılı", description: "WooCommerce bildirim ayarları kaydedildi." });
+      } else {
+        throw new Error("Kaydetme başarısız");
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
+    } finally {
+      setIsSavingWooNotification(false);
+    }
+  };
+
   const handleSaveGmailSettings = async () => {
     if (!gmailUser || !gmailPassword) {
       toast({ title: "Hata", description: "Gmail adresi ve uygulama şifresi gerekli.", variant: "destructive" });
@@ -1245,6 +1299,66 @@ export default function Settings() {
                 </TabsContent>
 
                 <TabsContent value="templates" className="space-y-6 mt-4">
+                  {/* WooCommerce Auto-Notification */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between gap-2">
+                        <span>WooCommerce Otomatik Bildirim</span>
+                        <Switch 
+                          checked={wooNotificationEnabled}
+                          onCheckedChange={setWooNotificationEnabled}
+                          data-testid="switch-woo-notification"
+                        />
+                      </CardTitle>
+                      <CardDescription>
+                        WooCommerce'den sipariş geldiğinde müşteriye otomatik WhatsApp bildirimi gönder
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Bildirim Mesajı Şablonu</Label>
+                        <Textarea
+                          value={wooNotificationTemplate}
+                          onChange={(e) => setWooNotificationTemplate(e.target.value)}
+                          placeholder="Bildirim mesajı şablonu..."
+                          className="min-h-[150px] font-mono text-sm"
+                          disabled={!wooNotificationEnabled}
+                          data-testid="textarea-woo-notification-template"
+                        />
+                      </div>
+                      
+                      <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
+                        <p className="font-medium">Kullanılabilir Değişkenler:</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}siparis_no{'}'}</code> - Sipariş numarası</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktivite{'}'}</code> - Aktivite/tur adı</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saat{'}'}</code> - Rezervasyon saati</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}takip_linki{'}'}</code> - Takip linki</div>
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        onClick={handleSaveWooNotification}
+                        disabled={isSavingWooNotification}
+                        data-testid="button-save-woo-notification"
+                      >
+                        {isSavingWooNotification ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Kaydediliyor...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Kaydet
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
                   <RequestMessageTemplatesSection />
                   
                   <div className="border-t pt-6">

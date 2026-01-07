@@ -2691,6 +2691,85 @@ export async function registerRoutes(
           }
           
           console.log(`Created ${tourActivities.length} reservations for package tour: ${matchedPackageTour.name} from order: ${order.id}`);
+          
+          // Send WhatsApp notification for package tour (only once, for the parent reservation)
+          const customerPhone = order.billing?.phone || '';
+          const customerName = `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'Değerli Müşteri';
+          if (customerPhone && parentReservationId) {
+            try {
+              // Check if WooCommerce notification is enabled
+              const wooNotificationSetting = await storage.getSetting('wooNotification');
+              let wooNotificationEnabled = true;
+              let wooNotificationTemplate = "Merhaba {isim},\n\nSiparişiniz alınmıştır!\n\nSipariş No: {siparis_no}\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nRezervasyon detayları ve değişiklik talepleriniz için:\n{takip_linki}\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!";
+              
+              if (wooNotificationSetting) {
+                try {
+                  const settings = JSON.parse(wooNotificationSetting);
+                  if (settings.enabled !== undefined) wooNotificationEnabled = settings.enabled;
+                  if (settings.template) wooNotificationTemplate = settings.template;
+                } catch {}
+              }
+              
+              if (wooNotificationEnabled) {
+                // Generate tracking token for parent reservation
+                const trackingToken = await storage.generateTrackingToken(parentReservationId);
+                // Build absolute tracking link using request host or env var
+                const baseUrl = process.env.PUBLIC_APP_URL || 
+                  (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`);
+                const trackingLink = `${baseUrl}/takip/${trackingToken}`;
+                
+                // Build message from template
+                const message = wooNotificationTemplate
+                  .replace(/\{isim\}/gi, customerName)
+                  .replace(/\{siparis_no\}/gi, String(order.id))
+                  .replace(/\{aktivite\}/gi, matchedPackageTour.name)
+                  .replace(/\{tarih\}/gi, bookingDate)
+                  .replace(/\{saat\}/gi, tourActivities[0]?.defaultTime || '09:00')
+                  .replace(/\{takip_linki\}/gi, trackingLink);
+                
+                // Send via Twilio
+                const accountSid = process.env.TWILIO_ACCOUNT_SID;
+                const authToken = process.env.TWILIO_AUTH_TOKEN;
+                const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+                
+                if (accountSid && authToken && twilioWhatsAppNumber) {
+                  // Format phone number
+                  let formattedPhone = customerPhone.replace(/\s+/g, '').replace(/^\+/, '');
+                  if (formattedPhone.startsWith('0')) {
+                    formattedPhone = '90' + formattedPhone.substring(1);
+                  }
+                  if (!formattedPhone.startsWith('90') && formattedPhone.length === 10) {
+                    formattedPhone = '90' + formattedPhone;
+                  }
+                  
+                  const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+                  const formData = new URLSearchParams();
+                  formData.append('From', `whatsapp:${twilioWhatsAppNumber}`);
+                  formData.append('To', `whatsapp:+${formattedPhone}`);
+                  formData.append('Body', message);
+                  
+                  const twilioResponse = await fetch(twilioUrl, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+                      'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData.toString()
+                  });
+                  
+                  if (twilioResponse.ok) {
+                    console.log(`WhatsApp notification sent for WooCommerce package tour order: ${order.id}`);
+                    await logInfo('whatsapp', `WooCommerce paket tur bildirimi gönderildi: ${customerName} - ${matchedPackageTour.name}`);
+                  } else {
+                    const errorText = await twilioResponse.text();
+                    console.error(`WhatsApp notification failed for package tour order ${order.id}:`, errorText);
+                  }
+                }
+              }
+            } catch (notifyErr) {
+              console.error(`WhatsApp notification error for package tour order ${order.id}:`, notifyErr);
+            }
+          }
         } else {
           // Fall back to regular activity matching
           const matchedActivity = findActivity(item.name || '');
@@ -2728,7 +2807,7 @@ export async function registerRoutes(
             const orderTotal = itemTotalWithTax + itemTax;
             const orderTax = itemTax;
             
-            await storage.createReservation({
+            const createdReservation = await storage.createReservation({
               activityId: matchedActivity.id,
               orderNumber: String(order.id),
               customerName: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'WooCommerce Müşteri',
@@ -2751,6 +2830,85 @@ export async function registerRoutes(
             });
             
             console.log(`Created reservation for activity: ${matchedActivity.name} from order: ${order.id}`);
+            
+            // Send WhatsApp notification if enabled and phone exists
+            const customerPhone = order.billing?.phone || '';
+            const customerName = `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim() || 'Değerli Müşteri';
+            if (customerPhone && createdReservation?.id) {
+              try {
+                // Check if WooCommerce notification is enabled
+                const wooNotificationSetting = await storage.getSetting('wooNotification');
+                let wooNotificationEnabled = true;
+                let wooNotificationTemplate = "Merhaba {isim},\n\nSiparişiniz alınmıştır!\n\nSipariş No: {siparis_no}\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nRezervasyon detayları ve değişiklik talepleriniz için:\n{takip_linki}\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!";
+                
+                if (wooNotificationSetting) {
+                  try {
+                    const settings = JSON.parse(wooNotificationSetting);
+                    if (settings.enabled !== undefined) wooNotificationEnabled = settings.enabled;
+                    if (settings.template) wooNotificationTemplate = settings.template;
+                  } catch {}
+                }
+                
+                if (wooNotificationEnabled) {
+                  // Generate tracking token
+                  const trackingToken = await storage.generateTrackingToken(createdReservation.id);
+                  // Build absolute tracking link using request host or env var
+                  const baseUrl = process.env.PUBLIC_APP_URL || 
+                    (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : `${req.protocol}://${req.get('host')}`);
+                  const trackingLink = `${baseUrl}/takip/${trackingToken}`;
+                  
+                  // Build message from template
+                  const message = wooNotificationTemplate
+                    .replace(/\{isim\}/gi, customerName)
+                    .replace(/\{siparis_no\}/gi, String(order.id))
+                    .replace(/\{aktivite\}/gi, matchedActivity.name)
+                    .replace(/\{tarih\}/gi, bookingDate)
+                    .replace(/\{saat\}/gi, bookingTime)
+                    .replace(/\{takip_linki\}/gi, trackingLink);
+                  
+                  // Send via Twilio
+                  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+                  const authToken = process.env.TWILIO_AUTH_TOKEN;
+                  const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+                  
+                  if (accountSid && authToken && twilioWhatsAppNumber) {
+                    // Format phone number
+                    let formattedPhone = customerPhone.replace(/\s+/g, '').replace(/^\+/, '');
+                    if (formattedPhone.startsWith('0')) {
+                      formattedPhone = '90' + formattedPhone.substring(1);
+                    }
+                    if (!formattedPhone.startsWith('90') && formattedPhone.length === 10) {
+                      formattedPhone = '90' + formattedPhone;
+                    }
+                    
+                    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+                    const formData = new URLSearchParams();
+                    formData.append('From', `whatsapp:${twilioWhatsAppNumber}`);
+                    formData.append('To', `whatsapp:+${formattedPhone}`);
+                    formData.append('Body', message);
+                    
+                    const twilioResponse = await fetch(twilioUrl, {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                      },
+                      body: formData.toString()
+                    });
+                    
+                    if (twilioResponse.ok) {
+                      console.log(`WhatsApp notification sent for WooCommerce order: ${order.id}`);
+                      await logInfo('whatsapp', `WooCommerce bildirim gönderildi: ${customerName} - ${matchedActivity.name}`);
+                    } else {
+                      const errorText = await twilioResponse.text();
+                      console.error(`WhatsApp notification failed for order ${order.id}:`, errorText);
+                    }
+                  }
+                }
+              } catch (notifyErr) {
+                console.error(`WhatsApp notification error for order ${order.id}:`, notifyErr);
+              }
+            }
           } else {
             console.log(`No matching activity or package tour found for product: ${item.name}`);
           }
