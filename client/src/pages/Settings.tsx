@@ -1348,7 +1348,8 @@ export default function Settings() {
 
           {/* INTEGRATIONS TAB */}
           <TabsContent value="integrations" className="space-y-6">
-          <WooCommerceCard />
+            <TwilioCard />
+            <WooCommerceCard />
           </TabsContent>
 
           {/* USERS TAB */}
@@ -1391,6 +1392,273 @@ export default function Settings() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Twilio Card Component
+function TwilioCard() {
+  const { toast } = useToast();
+  const [accountSid, setAccountSid] = useState("");
+  const [authToken, setAuthToken] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [showAuthToken, setShowAuthToken] = useState(false);
+
+  const { data: twilioSettings, isLoading, refetch } = useQuery<{
+    twilioAccountSid: string;
+    twilioWhatsappNumber: string;
+    twilioConfigured: boolean;
+    twilioWebhookUrl: string;
+  }>({
+    queryKey: ['/api/tenant-integrations'],
+    queryFn: async () => {
+      const res = await fetch('/api/tenant-integrations');
+      if (!res.ok) return { twilioAccountSid: '', twilioWhatsappNumber: '', twilioConfigured: false, twilioWebhookUrl: '' };
+      return res.json();
+    },
+  });
+
+  const webhookUrl = twilioSettings?.twilioWebhookUrl || (typeof window !== 'undefined' 
+    ? `${window.location.origin}/api/whatsapp/webhook`
+    : '/api/whatsapp/webhook');
+
+  const handleConnect = async () => {
+    if (!accountSid || !authToken || !whatsappNumber) {
+      toast({
+        title: "Hata",
+        description: "Tüm alanları doldurun",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const response = await fetch('/api/tenant-integrations/twilio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountSid, authToken, whatsappNumber }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Başarılı",
+          description: "Twilio bağlantısı kuruldu",
+        });
+        setAccountSid("");
+        setAuthToken("");
+        setWhatsappNumber("");
+        refetch();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Hata",
+          description: error.error || "Bağlantı kurulamadı",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Bağlantı kurulamadı",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setIsDisconnecting(true);
+    try {
+      const response = await fetch('/api/tenant-integrations/twilio', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Başarılı",
+          description: "Twilio bağlantısı kaldırıldı",
+        });
+        refetch();
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Bağlantı kaldırılamadı",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    toast({
+      title: "Kopyalandı",
+      description: "Webhook URL panoya kopyalandı",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Twilio WhatsApp Entegrasyonu</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Yükleniyor...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            <span>Twilio WhatsApp Entegrasyonu</span>
+          </div>
+          {twilioSettings?.twilioConfigured ? (
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Bağlı
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              <XCircle className="w-3 h-3" />
+              Bağlı Değil
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription>
+          WhatsApp üzerinden müşterilerinizle iletişim kurmak için Twilio hesabınızı bağlayın
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {twilioSettings?.twilioConfigured ? (
+          <>
+            <div className="p-4 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                <CheckCircle className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">WhatsApp Bağlantısı Aktif</p>
+                  <p className="text-sm opacity-80">Numara: {twilioSettings.twilioWhatsappNumber}</p>
+                  <p className="text-sm opacity-60">Account SID: {twilioSettings.twilioAccountSid.substring(0, 10)}...</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Webhook URL</Label>
+              <div className="flex gap-2">
+                <Input readOnly value={webhookUrl} className="bg-muted font-mono text-xs" data-testid="input-twilio-webhook-url" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={copyToClipboard} data-testid="button-copy-twilio-webhook">
+                      Kopyala
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Webhook URL'i panoya kopyala</TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Bu URL'i Twilio Console &gt; Messaging &gt; Try it out &gt; Send a WhatsApp message &gt; Sandbox settings'e ekleyin.
+              </p>
+            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDisconnect}
+                  disabled={isDisconnecting}
+                  data-testid="button-disconnect-twilio"
+                >
+                  {isDisconnecting ? "Kaldırılıyor..." : "Bağlantıyı Kaldır"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Twilio bağlantısını kaldır</TooltipContent>
+            </Tooltip>
+          </>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="twilio-account-sid">Account SID</Label>
+                <Input
+                  id="twilio-account-sid"
+                  value={accountSid}
+                  onChange={(e) => setAccountSid(e.target.value)}
+                  placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  data-testid="input-twilio-account-sid"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="twilio-auth-token">Auth Token</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="twilio-auth-token"
+                    type={showAuthToken ? "text" : "password"}
+                    value={authToken}
+                    onChange={(e) => setAuthToken(e.target.value)}
+                    placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    data-testid="input-twilio-auth-token"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => setShowAuthToken(!showAuthToken)}
+                    data-testid="button-toggle-auth-token"
+                  >
+                    {showAuthToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="twilio-whatsapp-number">WhatsApp Numarası</Label>
+                <Input
+                  id="twilio-whatsapp-number"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  placeholder="+14155238886"
+                  data-testid="input-twilio-whatsapp-number"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Twilio'dan aldığınız WhatsApp numarasını girin (örn: +14155238886)
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <p className="text-xs text-blue-900 dark:text-blue-200">
+                <strong>Twilio hesabınız yok mu?</strong> <a href="https://www.twilio.com/try-twilio" target="_blank" rel="noopener noreferrer" className="underline">Twilio'ya ücretsiz kaydolun</a> ve WhatsApp Sandbox'ı etkinleştirin.
+              </p>
+            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                  data-testid="button-connect-twilio"
+                >
+                  {isConnecting ? "Bağlanıyor..." : "Twilio'ya Bağlan"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Twilio hesabına bağlan</TooltipContent>
+            </Tooltip>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
