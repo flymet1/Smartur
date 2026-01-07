@@ -1189,6 +1189,7 @@ export async function registerRoutes(
 
   app.post("/api/holidays", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
       const { name, startDate, endDate, type, keywords, notes, isActive } = req.body;
       
       if (!name || !startDate || !endDate) {
@@ -1211,6 +1212,7 @@ export async function registerRoutes(
       }
       
       const holiday = await storage.createHoliday({
+        tenantId,
         name,
         startDate,
         endDate,
@@ -1454,6 +1456,7 @@ export async function registerRoutes(
         
         if (!exists) {
           const item = await storage.createCapacity({
+            tenantId,
             activityId,
             date,
             time,
@@ -1599,7 +1602,7 @@ export async function registerRoutes(
       }
     }
     
-    const item = await storage.createReservation({ ...input, status: defaultStatus });
+    const item = await storage.createReservation({ ...input, tenantId, status: defaultStatus });
     
     // Decrease capacity
     const capacitySlots = await storage.getCapacity(item.date, item.activityId || 0);
@@ -1980,6 +1983,7 @@ export async function registerRoutes(
       
       // Create the request
       const customerRequest = await storage.createCustomerRequest({
+        tenantId: reservation.tenantId,
         reservationId: reservation.id,
         requestType,
         requestDetails: requestDetails || null,
