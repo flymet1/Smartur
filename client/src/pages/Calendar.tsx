@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -1093,6 +1094,22 @@ export default function CalendarPage() {
             <p className="text-muted-foreground mt-1">Müsaitlik durumunu yönetin</p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" data-testid="button-date-picker">
+                  <CalendarDays className="w-4 h-4 mr-2" />
+                  {format(date, "d MMMM yyyy", { locale: tr })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => d && setDate(d)}
+                  locale={tr}
+                />
+              </PopoverContent>
+            </Popover>
             <Select value={activityFilter} onValueChange={setActivityFilter}>
               <SelectTrigger className="w-[180px]" data-testid="select-activity-filter">
                 <Filter className="w-4 h-4 mr-2" />
@@ -1164,39 +1181,8 @@ export default function CalendarPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-4 space-y-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Aylık Görünüm
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <MonthlyCalendarView 
-                  date={date} 
-                  onDateSelect={setDate}
-                  monthlyData={monthlyData?.dailyStats}
-                  onMonthChange={setDate}
-                />
-              </CardContent>
-            </Card>
-
-            <HistoricalComparisonCard month={date.getMonth()} year={date.getFullYear()} />
-
-            <div className="pt-2">
-              <Link href={`/reservations?date=${format(date, "yyyy-MM-dd")}`}>
-                <Button variant="outline" className="w-full" data-testid="button-view-reservations">
-                  <ClipboardList className="w-4 h-4 mr-2" />
-                  Bu Günün Rezervasyonları
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <div className="lg:col-span-8 space-y-4">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <span className="w-1.5 h-6 bg-primary rounded-full"></span>
                 {format(date, "d MMMM yyyy, EEEE", { locale: tr })}
@@ -1278,7 +1264,6 @@ export default function CalendarPage() {
                 </div>
               )
             )}
-          </div>
         </div>
       </main>
 
