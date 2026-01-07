@@ -3498,13 +3498,17 @@ Sky Fethiye`;
       const tenantId = req.session?.tenantId;
       const authHeader = req.headers.authorization;
       
-      // Protected settings that require bot rules authentication (only for tenant_owner)
-      const protectedSettings = ['botRules', 'developerEmail'];
-      if (protectedSettings.includes(req.params.key)) {
-        // Check if user is tenant_owner (role ID 4)
-        const userRoles = req.session?.roles || [];
-        if (!userRoles.includes(4)) {
-          return res.status(403).json({ error: "Bu ayarı sadece acenta yöneticisi değiştirebilir" });
+      // Template settings that require settings.templates.manage permission (only for tenant_owner)
+      const templateSettings = [
+        'botRules', 'botPrompt', 'developerEmail',
+        'manualConfirmation', 'wooNotification', 
+        'reminderMessage', 'bulkMessageTemplates', 
+        'autoResponseKeywords'
+      ];
+      if (templateSettings.includes(req.params.key)) {
+        const userPermissions = req.session?.permissions || [];
+        if (!userPermissions.includes(PERMISSIONS.SETTINGS_TEMPLATES_MANAGE)) {
+          return res.status(403).json({ error: "Bu ayarı sadece acenta sahibi değiştirebilir" });
         }
       }
       
