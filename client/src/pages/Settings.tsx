@@ -3091,6 +3091,7 @@ function UserManagementSection() {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<TenantUser | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [userForm, setUserForm] = useState({
     username: "",
     email: "",
@@ -3099,6 +3100,19 @@ function UserManagementSection() {
     phone: "",
     roleIds: [] as number[],
   });
+
+  // Get current user id from localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setCurrentUserId(user.id);
+      } catch {
+        setCurrentUserId(null);
+      }
+    }
+  }, []);
 
   // SECURITY: We use the session tenant ID on the server, not client-provided values
   const { data: users = [], isLoading, refetch } = useQuery<TenantUser[]>({
@@ -3253,18 +3267,20 @@ function UserManagementSection() {
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      if (confirm(`"${user.name || user.username}" kullanıcısini silmek istediğinizden emin misiniz?`)) {
-                        deleteUserMutation.mutate(user.id);
-                      }
-                    }}
-                    data-testid={`button-delete-user-${user.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  {user.id !== currentUserId && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        if (confirm(`"${user.name || user.username}" kullanıcısini silmek istediğinizden emin misiniz?`)) {
+                          deleteUserMutation.mutate(user.id);
+                        }
+                      }}
+                      data-testid={`button-delete-user-${user.id}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

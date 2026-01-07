@@ -7839,11 +7839,17 @@ Sky Fethiye`;
     try {
       // SECURITY: Get tenant ID from authenticated session
       const tenantId = req.session?.tenantId;
+      const currentUserId = req.session?.userId;
       if (!tenantId) {
         return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
       }
 
       const id = Number(req.params.id);
+      
+      // SECURITY: Prevent users from deleting themselves
+      if (id === currentUserId) {
+        return res.status(403).json({ error: "Kendinizi silemezsiniz" });
+      }
       
       // SECURITY: Verify the user being deleted belongs to the current tenant
       const existingUser = await storage.getAppUser(id);
