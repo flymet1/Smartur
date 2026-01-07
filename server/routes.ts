@@ -2428,7 +2428,7 @@ export async function registerRoutes(
         time: request.time,
         customerName: request.customerName,
         customerPhone: request.customerPhone,
-        guests: request.guests || 1,
+        quantity: request.guests || 1,
         notes: request.notes || "",
         status: "pending",
         source: "partner",
