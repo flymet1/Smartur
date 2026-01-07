@@ -233,8 +233,9 @@ export default function Reservations() {
     });
     const lastMonthRevenueTl = lastMonthReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0);
 
-    // Pending count
-    const pendingCount = reservations.filter(r => r.status === 'pending').length;
+    // Pending count (reservations + partner requests)
+    const pendingReservationsCount = reservations.filter(r => r.status === 'pending').length;
+    const pendingCount = pendingReservationsCount + pendingRequestsCount;
 
     // Week comparison percentage
     const weekGrowth = lastWeekRevenueTl > 0 
@@ -250,8 +251,9 @@ export default function Reservations() {
       thisWeek: { count: thisWeekReservations.length, revenueTl: thisWeekRevenueTl, revenueUsd: thisWeekRevenueUsd, guests: thisWeekGuests, growth: parseInt(weekGrowth) },
       thisMonth: { count: thisMonthReservations.length, revenueTl: thisMonthRevenueTl, revenueUsd: thisMonthRevenueUsd, guests: thisMonthGuests, growth: parseInt(monthGrowth) },
       pendingCount,
+      pendingReservationsCount,
     };
-  }, [reservations]);
+  }, [reservations, pendingRequestsCount]);
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -1038,7 +1040,9 @@ export default function Reservations() {
                 <div>
                   <p className="text-xs text-muted-foreground">Onay Bekleyen</p>
                   <p className="text-2xl font-bold">{analytics.pendingCount}</p>
-                  <p className="text-xs text-muted-foreground">rezervasyon</p>
+                  <p className="text-xs text-muted-foreground">
+                    {analytics.pendingReservationsCount} rez. + {pendingRequestsCount} talep
+                  </p>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                   <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -1049,9 +1053,12 @@ export default function Reservations() {
                   variant="ghost" 
                   size="sm" 
                   className="p-0 h-auto mt-2 text-xs text-primary"
-                  onClick={() => setStatusFilter("pending")}
+                  onClick={() => {
+                    setStatusFilter("pending");
+                    setViewMode("list");
+                  }}
                 >
-                  Bekleyenleri göster
+                  Bekleyenleri goster
                 </Button>
               )}
             </Card>

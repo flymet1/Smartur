@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote, Handshake } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -160,8 +160,25 @@ export function ReservationTable({
         return <MessageSquare className="h-4 w-4 text-green-600" />;
       case 'web':
         return <Globe className="h-4 w-4 text-blue-600" />;
+      case 'partner':
+        return <Handshake className="h-4 w-4 text-purple-600" />;
       default:
         return <User className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getSourceLabel = (source: string | null) => {
+    switch (source) {
+      case 'whatsapp':
+        return 'WhatsApp';
+      case 'web':
+        return 'Web';
+      case 'partner':
+        return 'Acenta';
+      case 'manual':
+        return 'Manuel';
+      default:
+        return source || 'Manuel';
     }
   };
 
@@ -337,7 +354,7 @@ export function ReservationTable({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getSourceIcon(res.source)}
-                        <span className="capitalize text-sm">{res.source || 'Manuel'}</span>
+                        <span className="text-sm">{getSourceLabel(res.source)}</span>
                       </div>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
