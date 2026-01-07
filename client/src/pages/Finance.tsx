@@ -50,10 +50,31 @@ import {
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate } from "@shared/schema";
 import { format } from "date-fns";
+import { tr } from "date-fns/locale";
 import { Textarea } from "@/components/ui/textarea";
 
 const formatMoney = (amount: number) => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
+};
+
+const formatDateTR = (dateStr: string | null | undefined) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    return format(date, 'd MMMM yyyy', { locale: tr });
+  } catch {
+    return dateStr;
+  }
+};
+
+const formatDateShortTR = (dateStr: string | null | undefined) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    return format(date, 'dd.MM.yyyy', { locale: tr });
+  } catch {
+    return dateStr;
+  }
 };
 
 export default function Finance() {
@@ -807,7 +828,7 @@ export default function Finance() {
                           </div>
                           <div className="text-sm text-muted-foreground flex items-center gap-2">
                             <Calendar className="h-3 w-3" />
-                            {dispatch.dispatchDate} {dispatch.dispatchTime}
+                            {formatDateShortTR(dispatch.dispatchDate)} {dispatch.dispatchTime}
                             {activity && ` - ${activity.name}`}
                           </div>
                         </div>
@@ -886,7 +907,7 @@ export default function Finance() {
                             {supplier?.name || 'Bilinmeyen Acenta'}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {payout.periodStart} - {payout.periodEnd}
+                            {formatDateShortTR(payout.periodStart)} - {formatDateShortTR(payout.periodEnd)}
                             {payout.description && ` | ${payout.description}`}
                           </div>
                         </div>
@@ -970,7 +991,7 @@ export default function Finance() {
                           </div>
                           <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                             <Calendar className="h-4 w-4" />
-                            {rate.validFrom} - {rate.validTo || 'Süresiz'}
+                            {formatDateShortTR(rate.validFrom)} - {rate.validTo ? formatDateShortTR(rate.validTo) : 'Süresiz'}
                           </div>
                           {rate.notes && <p className="text-sm text-muted-foreground mt-1">{rate.notes}</p>}
                         </div>
