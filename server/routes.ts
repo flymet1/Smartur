@@ -7869,11 +7869,22 @@ Sky Fethiye`;
       if (ownerRole && targetUserRoles.some(ur => ur.roleId === ownerRole.id)) {
         return res.status(403).json({ error: "Acenta sahibi silinemez. Sadece süper admin bu işlemi yapabilir." });
       }
+      
+      // Check if user has related reservation requests
+      const userRequests = await storage.getReservationRequests(tenantId);
+      const hasRelatedRequests = userRequests.some(r => r.requestedBy === id);
+      if (hasRelatedRequests) {
+        return res.status(400).json({ error: "Bu kullanıcıya ait rezervasyon talepleri var. Önce talepleri silmeniz veya başka birine atamanız gerekiyor." });
+      }
 
       await storage.deleteAppUser(id);
       res.json({ success: true });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Tenant kullanıcı silme hatası:", err);
+      // Handle foreign key constraint errors
+      if (err.code === '23503') {
+        return res.status(400).json({ error: "Bu kullanıcıya bağlı veriler var. Önce ilişkili verileri silmeniz gerekiyor." });
+      }
       res.status(500).json({ error: "Kullanıcı silinemedi" });
     }
   });
