@@ -63,7 +63,10 @@ export default function Finance() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   });
   const [endDate, setEndDate] = useState(() => {
-    return new Date().toISOString().split('T')[0];
+    // Ay sonunu varsayılan olarak ayarla (gelecek gönderimler de görünsün)
+    const now = new Date();
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return lastDayOfMonth.toISOString().split('T')[0];
   });
   
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
