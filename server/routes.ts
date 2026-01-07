@@ -2198,14 +2198,78 @@ export async function registerRoutes(
         const activity = activities.find(a => a.id === activityId);
         const activityName = activity?.name || "Bilinmiyor";
         
+        // Get requester (partner) name
+        const requester = userId ? await storage.getAppUser(userId) : null;
+        const partnerName = requester?.name || requester?.username || "Is Ortagi";
+        
         await storage.createSupportRequest({
           tenantId,
           type: "reservation_request",
           title: `Yeni Rezervasyon Talebi: ${customerName}`,
-          description: `Partner acenta yeni rezervasyon talebi olusturdu.\n\nAktivite: ${activityName}\nTarih: ${date}\nSaat: ${time}\nMusteri: ${customerName}\nTelefon: ${customerPhone}\nKisi Sayisi: ${guests || 1}\n${notes ? `Not: ${notes}` : ""}`,
+          description: `Partner acenta yeni rezervasyon talebi olusturdu.\n\nIs Ortagi: ${partnerName}\nAktivite: ${activityName}\nTarih: ${date}\nSaat: ${time}\nMusteri: ${customerName}\nTelefon: ${customerPhone}\nKisi Sayisi: ${guests || 1}\n${notes ? `Not: ${notes}` : ""}`,
           priority: "medium",
           metadata: JSON.stringify({ reservationRequestId: request.id })
         });
+        
+        // Send email notification to agency notification email
+        try {
+          const notificationEmailJson = await storage.getSetting("notificationEmail", tenantId);
+          if (notificationEmailJson) {
+            const notificationEmail = JSON.parse(notificationEmailJson);
+            if (notificationEmail.email && notificationEmail.enabled !== false) {
+              const { sendEmail } = await import("./email");
+              await sendEmail({
+                to: notificationEmail.email,
+                subject: `Yeni Rezervasyon Talebi: ${customerName} - ${activityName}`,
+                html: `
+                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Yeni Rezervasyon Talebi</h2>
+                    <p>Is ortaginiz <strong>${partnerName}</strong> yeni bir rezervasyon talebi olusturdu.</p>
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                      <tr style="background: #f5f5f5;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Aktivite</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${activityName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Tarih</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${date}</td>
+                      </tr>
+                      <tr style="background: #f5f5f5;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Saat</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${time}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Musteri Adi</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${customerName}</td>
+                      </tr>
+                      <tr style="background: #f5f5f5;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Telefon</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${customerPhone}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Kisi Sayisi</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${guests || 1}</td>
+                      </tr>
+                      ${notes ? `
+                      <tr style="background: #f5f5f5;">
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Not</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${notes}</td>
+                      </tr>
+                      ` : ''}
+                      <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;"><strong>Is Ortagi</strong></td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${partnerName}</td>
+                      </tr>
+                    </table>
+                    <p style="color: #666;">Bu talebi onaylamak veya reddetmek icin sisteme giris yapin.</p>
+                  </div>
+                `
+              });
+            }
+          }
+        } catch (emailErr) {
+          console.error("Failed to send email notification for reservation request:", emailErr);
+        }
       } catch (notifyErr) {
         console.error("Failed to create notification for reservation request:", notifyErr);
       }
@@ -2229,6 +2293,64 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get reservation requests error:", error);
       res.status(500).json({ error: "Talepler alinamadi" });
+    }
+  });
+
+  // Get my reservation requests (for İş Ortağı - partner users)
+  // Enriches with activity name since partners don't have activities.view permission
+  app.get("/api/my-reservation-requests", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      const allRequests = await storage.getReservationRequests(tenantId);
+      const myRequests = allRequests.filter(r => r.requestedBy === userId);
+      
+      // Enrich with activity names
+      const activities = await storage.getActivities(tenantId);
+      const enrichedRequests = myRequests.map(request => ({
+        ...request,
+        activityName: activities.find(a => a.id === request.activityId)?.name || "Bilinmiyor"
+      }));
+      
+      res.json(enrichedRequests);
+    } catch (error) {
+      console.error("Get my reservation requests error:", error);
+      res.status(500).json({ error: "Talepler alinamadi" });
+    }
+  });
+
+  // Get my reservations (for İş Ortağı - partner users, shows reservations from their approved requests)
+  // Enriches with activity name since partners don't have activities.view permission
+  app.get("/api/my-reservations", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      // Get all requests by this user that were converted to reservations
+      const allRequests = await storage.getReservationRequests(tenantId);
+      const myConvertedRequests = allRequests.filter(r => r.requestedBy === userId && r.status === "converted" && r.reservationId);
+      
+      // Get the corresponding reservations
+      const reservationIds = myConvertedRequests.map(r => r.reservationId).filter(Boolean) as number[];
+      const allReservations = await storage.getReservations(tenantId);
+      const myReservations = allReservations.filter(r => reservationIds.includes(r.id));
+      
+      // Enrich with activity names
+      const activities = await storage.getActivities(tenantId);
+      const enrichedReservations = myReservations.map(reservation => ({
+        ...reservation,
+        activityName: activities.find(a => a.id === reservation.activityId)?.name || "Bilinmiyor"
+      }));
+      
+      res.json(enrichedReservations);
+    } catch (error) {
+      console.error("Get my reservations error:", error);
+      res.status(500).json({ error: "Rezervasyonlar alinamadi" });
     }
   });
   

@@ -20,7 +20,8 @@ import {
   HelpCircle,
   BarChart2,
   Handshake,
-  Eye
+  Eye,
+  ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -28,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
-import type { SupportRequest, CustomerRequest } from "@shared/schema";
+import type { SupportRequest, CustomerRequest, ReservationRequest } from "@shared/schema";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
 
 interface NavItem {
@@ -51,9 +52,10 @@ const allNavItems: NavItem[] = [
   { href: "/settings", label: "Ayarlar", icon: Settings, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
 ];
 
-// Quick access buttons at the top (Talepler and Destek only)
+// Quick access buttons at the top (Talepler, Rezervasyon Talepleri and Destek)
 const quickAccessItems = [
   { href: "/customer-requests", label: "Talepler", icon: MessageCircle },
+  { href: "/reservation-requests", label: "Rez. Talepleri", icon: ClipboardList },
 ];
 
 type SupportSummary = {
@@ -238,8 +240,16 @@ export function Sidebar() {
     refetchInterval: 30000,
   });
 
+  // Fetch pending reservation requests (from partners/viewers)
+  const { data: reservationRequests } = useQuery<ReservationRequest[]>({
+    queryKey: ['/api/reservation-requests'],
+    refetchInterval: 30000,
+    enabled: !isPartnerOnly, // Only fetch for operators/managers
+  });
+
   const openSupportCount = supportSummary?.openCount || 0;
   const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
+  const pendingReservationRequestsCount = reservationRequests?.filter(r => r.status === 'pending').length || 0;
   const logoUrl = logoSetting?.value;
   
   // Get company name from brand settings
@@ -355,29 +365,40 @@ export function Sidebar() {
               {/* Quick Access Buttons for Mobile - Hidden for partner-only users */}
               {!isPartnerOnly && (
                 <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b">
-                  {quickAccessItems.map((item) => (
-                    <Link key={item.href} href={item.href} className="flex-1">
-                      <div className={cn(
-                        "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
-                        pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
-                          ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
-                          : location === item.href 
-                            ? "bg-primary text-primary-foreground border-primary" 
-                            : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
-                      )}>
-                        <item.icon className="h-3.5 w-3.5" />
-                        {item.label}
-                        {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
-                          <Badge 
-                            variant="destructive" 
-                            className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                          >
-                            {pendingCustomerRequestsCount}
-                          </Badge>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
+                  {quickAccessItems.map((item) => {
+                    const hasPendingCount = 
+                      (item.href === "/customer-requests" && pendingCustomerRequestsCount > 0) ||
+                      (item.href === "/reservation-requests" && pendingReservationRequestsCount > 0);
+                    const pendingCount = item.href === "/customer-requests" 
+                      ? pendingCustomerRequestsCount 
+                      : item.href === "/reservation-requests" 
+                        ? pendingReservationRequestsCount 
+                        : 0;
+                    
+                    return (
+                      <Link key={item.href} href={item.href} className="flex-1">
+                        <div className={cn(
+                          "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                          hasPendingCount
+                            ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
+                            : location === item.href 
+                              ? "bg-primary text-primary-foreground border-primary" 
+                              : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
+                        )}>
+                          <item.icon className="h-3.5 w-3.5" />
+                          {item.label}
+                          {hasPendingCount && (
+                            <Badge 
+                              variant="destructive" 
+                              className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                            >
+                              {pendingCount}
+                            </Badge>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
                   <Link href="/messages?filter=human_intervention" className="flex-1">
                     <div className={cn(
                       "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
@@ -412,6 +433,21 @@ export function Sidebar() {
                   </div>
                 </Link>
               ))}
+              
+              {/* Partner Profile Link - Only for İş Ortağı users */}
+              {isPartnerOnly && (
+                <Link href="/partner-profile">
+                  <div className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    location === "/partner-profile" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}>
+                    <User className="h-4 w-4" />
+                    Profilim
+                  </div>
+                </Link>
+              )}
               
               {/* Mobile Login/Logout */}
               <div className="mt-4 pt-4 border-t">
@@ -467,30 +503,41 @@ export function Sidebar() {
         {!isPartnerOnly && (
           <div className="px-4 pb-3">
             <div className="flex gap-2">
-              {quickAccessItems.map((item) => (
-                <Link key={item.href} href={item.href} className="flex-1">
-                  <div className={cn(
-                    "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
-                    pendingCustomerRequestsCount > 0 && item.href === "/customer-requests"
-                      ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
-                      : location === item.href 
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm" 
-                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-                  )} data-testid={`button-quick-${item.href.replace('/', '')}`}>
-                    <item.icon className="h-3.5 w-3.5" />
-                    {item.label}
-                    {item.href === "/customer-requests" && pendingCustomerRequestsCount > 0 && (
-                      <Badge 
-                        variant="destructive" 
-                        className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                        data-testid="badge-customer-requests"
-                      >
-                        {pendingCustomerRequestsCount}
-                      </Badge>
-                    )}
-                  </div>
-                </Link>
-              ))}
+              {quickAccessItems.map((item) => {
+                const hasPendingCount = 
+                  (item.href === "/customer-requests" && pendingCustomerRequestsCount > 0) ||
+                  (item.href === "/reservation-requests" && pendingReservationRequestsCount > 0);
+                const pendingCount = item.href === "/customer-requests" 
+                  ? pendingCustomerRequestsCount 
+                  : item.href === "/reservation-requests" 
+                    ? pendingReservationRequestsCount 
+                    : 0;
+                
+                return (
+                  <Link key={item.href} href={item.href} className="flex-1">
+                    <div className={cn(
+                      "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
+                      hasPendingCount
+                        ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
+                        : location === item.href 
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm" 
+                          : "bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
+                    )} data-testid={`button-quick-${item.href.replace('/', '')}`}>
+                      <item.icon className="h-3.5 w-3.5" />
+                      {item.label}
+                      {hasPendingCount && (
+                        <Badge 
+                          variant="destructive" 
+                          className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                          data-testid={`badge-${item.href.replace('/', '')}`}
+                        >
+                          {pendingCount}
+                        </Badge>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
               <Link href="/messages?filter=human_intervention" className="flex-1">
                 <div className={cn(
                   "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
@@ -532,6 +579,24 @@ export function Sidebar() {
               </div>
             </Link>
           ))}
+          
+          {/* Partner Profile Link - Only for İş Ortağı users */}
+          {isPartnerOnly && (
+            <Link href="/partner-profile">
+              <div className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group",
+                location === "/partner-profile" 
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}>
+                <User className={cn(
+                  "h-5 w-5 transition-transform group-hover:scale-110",
+                  location === "/partner-profile" ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
+                )} />
+                Profilim
+              </div>
+            </Link>
+          )}
         </div>
 
         <div className="p-4 border-t space-y-3">

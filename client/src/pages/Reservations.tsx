@@ -444,7 +444,7 @@ export default function Reservations() {
       r.priceTl || 0,
       r.priceUsd || 0,
       getStatusText(r.status),
-      r.source === "web" ? "Web" : r.source === "whatsapp" ? "WhatsApp" : "Manuel"
+      r.source === "web" ? "Web" : r.source === "whatsapp" ? "WhatsApp" : r.source === "partner" ? "Is Ortagi" : "Manuel"
     ]);
     
     const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
