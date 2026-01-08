@@ -87,15 +87,32 @@ function KeyboardShortcuts() {
 }
 
 function App() {
+  // Check if we're on a public route that doesn't need AuthGuard
+  const isPublicRoute = typeof window !== 'undefined' && (
+    window.location.pathname === '/super-admin' ||
+    window.location.pathname === '/login' ||
+    window.location.pathname === '/sales-presentation' ||
+    window.location.pathname === '/subscription' ||
+    window.location.pathname.startsWith('/takip/')
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthGuard>
-          <KeyboardShortcuts />
-          <StickyAnnouncements />
-          <Toaster />
-          <Router />
-        </AuthGuard>
+        {isPublicRoute ? (
+          <>
+            <KeyboardShortcuts />
+            <Toaster />
+            <Router />
+          </>
+        ) : (
+          <AuthGuard>
+            <KeyboardShortcuts />
+            <StickyAnnouncements />
+            <Toaster />
+            <Router />
+          </AuthGuard>
+        )}
       </TooltipProvider>
     </QueryClientProvider>
   );
