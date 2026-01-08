@@ -6,7 +6,11 @@ async function throwIfResNotOk(res: Response) {
     if (res.status === 401) {
       // Don't redirect if already on login page or public pages
       const currentPath = window.location.pathname;
-      if (currentPath !== "/login" && !currentPath.startsWith("/takip/") && !currentPath.startsWith("/subscription")) {
+      if (currentPath !== "/login" && 
+          !currentPath.startsWith("/takip/") && 
+          !currentPath.startsWith("/subscription") &&
+          !currentPath.startsWith("/super-admin") &&
+          !currentPath.startsWith("/sales-presentation")) {
         window.location.href = "/login";
       }
       throw new Error("Oturumunuz sona erdi. Lütfen tekrar giriş yapın.");
