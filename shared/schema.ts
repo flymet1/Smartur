@@ -1133,3 +1133,74 @@ export const activityPartnerShares = pgTable("activity_partner_shares", {
 export const insertActivityPartnerShareSchema = createInsertSchema(activityPartnerShares).omit({ id: true, createdAt: true });
 export type ActivityPartnerShare = typeof activityPartnerShares.$inferSelect;
 export type InsertActivityPartnerShare = z.infer<typeof insertActivityPartnerShareSchema>;
+
+// === BILDIRIM TERCIHLERI (Notification Preferences) ===
+
+// Notification Types - Bildirim türleri
+export const NOTIFICATION_TYPES = {
+  RESERVATION_NEW: 'reservation_new',
+  RESERVATION_CONFIRMED: 'reservation_confirmed',
+  RESERVATION_CANCELLED: 'reservation_cancelled',
+  CUSTOMER_REQUEST: 'customer_request',
+  PARTNER_REQUEST: 'partner_request',
+  PARTNER_REQUEST_APPROVED: 'partner_request_approved',
+  PARTNER_REQUEST_REJECTED: 'partner_request_rejected',
+  CAPACITY_WARNING: 'capacity_warning',
+  WOOCOMMERCE_ORDER: 'woocommerce_order',
+} as const;
+
+// Notification Channels - Bildirim kanalları
+export const NOTIFICATION_CHANNELS = {
+  APP: 'app',
+  EMAIL: 'email',
+  WHATSAPP: 'whatsapp',
+} as const;
+
+// User Notification Preferences - Kullanici bildirim tercihleri (her kullanici kendi icin ayarlar)
+export const userNotificationPreferences = pgTable("user_notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => appUsers.id).notNull(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
+  notificationType: text("notification_type").notNull(),
+  channels: text("channels").default('["app"]'),
+  enabled: boolean("enabled").default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Tenant Notification Settings - Acenta bildirim ayarlari (musteriye giden bildirimler)
+export const tenantNotificationSettings = pgTable("tenant_notification_settings", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
+  notificationType: text("notification_type").notNull(),
+  channels: text("channels").default('["whatsapp"]'),
+  enabled: boolean("enabled").default(true),
+  templateWhatsapp: text("template_whatsapp"),
+  templateEmail: text("template_email"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// In-App Notifications - Uygulama ici bildirimler
+export const inAppNotifications = pgTable("in_app_notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => appUsers.id).notNull(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
+  notificationType: text("notification_type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  link: text("link"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// === NOTIFICATION SCHEMAS & TYPES ===
+export const insertUserNotificationPreferenceSchema = createInsertSchema(userNotificationPreferences).omit({ id: true, updatedAt: true });
+export type UserNotificationPreference = typeof userNotificationPreferences.$inferSelect;
+export type InsertUserNotificationPreference = z.infer<typeof insertUserNotificationPreferenceSchema>;
+
+export const insertTenantNotificationSettingSchema = createInsertSchema(tenantNotificationSettings).omit({ id: true, updatedAt: true });
+export type TenantNotificationSetting = typeof tenantNotificationSettings.$inferSelect;
+export type InsertTenantNotificationSetting = z.infer<typeof insertTenantNotificationSettingSchema>;
+
+export const insertInAppNotificationSchema = createInsertSchema(inAppNotifications).omit({ id: true, createdAt: true });
+export type InAppNotification = typeof inAppNotifications.$inferSelect;
+export type InsertInAppNotification = z.infer<typeof insertInAppNotificationSchema>;

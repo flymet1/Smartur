@@ -157,6 +157,15 @@ import {
   activityPartnerShares,
   type ActivityPartnerShare,
   type InsertActivityPartnerShare,
+  userNotificationPreferences,
+  tenantNotificationSettings,
+  inAppNotifications,
+  type UserNotificationPreference,
+  type InsertUserNotificationPreference,
+  type TenantNotificationSetting,
+  type InsertTenantNotificationSetting,
+  type InAppNotification,
+  type InsertInAppNotification,
 } from "@shared/schema";
 import { eq, and, gte, lte, lt, desc, sql, isNull, or, like, inArray } from "drizzle-orm";
 
@@ -543,6 +552,22 @@ export interface IStorage {
   createActivityPartnerShare(share: InsertActivityPartnerShare): Promise<ActivityPartnerShare>;
   deleteActivityPartnerShare(activityId: number, partnershipId: number): Promise<void>;
   setActivityPartnerShares(activityId: number, partnershipIds: number[]): Promise<void>;
+
+  // Notification Preferences
+  getUserNotificationPreferences(userId: number): Promise<UserNotificationPreference[]>;
+  setUserNotificationPreference(pref: InsertUserNotificationPreference): Promise<UserNotificationPreference>;
+  deleteUserNotificationPreference(userId: number, notificationType: string): Promise<void>;
+  
+  getTenantNotificationSettings(tenantId: number): Promise<TenantNotificationSetting[]>;
+  setTenantNotificationSetting(setting: InsertTenantNotificationSetting): Promise<TenantNotificationSetting>;
+  deleteTenantNotificationSetting(tenantId: number, notificationType: string): Promise<void>;
+  
+  // In-App Notifications
+  getInAppNotifications(userId: number, unreadOnly?: boolean): Promise<InAppNotification[]>;
+  createInAppNotification(notification: InsertInAppNotification): Promise<InAppNotification>;
+  markNotificationAsRead(id: number): Promise<void>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
+  deleteInAppNotification(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3725,6 +3750,119 @@ Sky Fethiye`,
       }));
       await db.insert(activityPartnerShares).values(values);
     }
+  }
+
+  // === NOTIFICATION PREFERENCES ===
+
+  async getUserNotificationPreferences(userId: number): Promise<UserNotificationPreference[]> {
+    return db.select().from(userNotificationPreferences)
+      .where(eq(userNotificationPreferences.userId, userId));
+  }
+
+  async setUserNotificationPreference(pref: InsertUserNotificationPreference): Promise<UserNotificationPreference> {
+    const existing = await db.select().from(userNotificationPreferences)
+      .where(
+        and(
+          eq(userNotificationPreferences.userId, pref.userId),
+          eq(userNotificationPreferences.notificationType, pref.notificationType)
+        )
+      );
+    
+    if (existing.length > 0) {
+      const [updated] = await db.update(userNotificationPreferences)
+        .set({ ...pref, updatedAt: new Date() })
+        .where(eq(userNotificationPreferences.id, existing[0].id))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db.insert(userNotificationPreferences).values(pref).returning();
+    return created;
+  }
+
+  async deleteUserNotificationPreference(userId: number, notificationType: string): Promise<void> {
+    await db.delete(userNotificationPreferences)
+      .where(
+        and(
+          eq(userNotificationPreferences.userId, userId),
+          eq(userNotificationPreferences.notificationType, notificationType)
+        )
+      );
+  }
+
+  async getTenantNotificationSettings(tenantId: number): Promise<TenantNotificationSetting[]> {
+    return db.select().from(tenantNotificationSettings)
+      .where(eq(tenantNotificationSettings.tenantId, tenantId));
+  }
+
+  async setTenantNotificationSetting(setting: InsertTenantNotificationSetting): Promise<TenantNotificationSetting> {
+    const existing = await db.select().from(tenantNotificationSettings)
+      .where(
+        and(
+          eq(tenantNotificationSettings.tenantId, setting.tenantId),
+          eq(tenantNotificationSettings.notificationType, setting.notificationType)
+        )
+      );
+    
+    if (existing.length > 0) {
+      const [updated] = await db.update(tenantNotificationSettings)
+        .set({ ...setting, updatedAt: new Date() })
+        .where(eq(tenantNotificationSettings.id, existing[0].id))
+        .returning();
+      return updated;
+    }
+    
+    const [created] = await db.insert(tenantNotificationSettings).values(setting).returning();
+    return created;
+  }
+
+  async deleteTenantNotificationSetting(tenantId: number, notificationType: string): Promise<void> {
+    await db.delete(tenantNotificationSettings)
+      .where(
+        and(
+          eq(tenantNotificationSettings.tenantId, tenantId),
+          eq(tenantNotificationSettings.notificationType, notificationType)
+        )
+      );
+  }
+
+  // === IN-APP NOTIFICATIONS ===
+
+  async getInAppNotifications(userId: number, unreadOnly: boolean = false): Promise<InAppNotification[]> {
+    if (unreadOnly) {
+      return db.select().from(inAppNotifications)
+        .where(
+          and(
+            eq(inAppNotifications.userId, userId),
+            eq(inAppNotifications.isRead, false)
+          )
+        )
+        .orderBy(desc(inAppNotifications.createdAt));
+    }
+    return db.select().from(inAppNotifications)
+      .where(eq(inAppNotifications.userId, userId))
+      .orderBy(desc(inAppNotifications.createdAt));
+  }
+
+  async createInAppNotification(notification: InsertInAppNotification): Promise<InAppNotification> {
+    const [created] = await db.insert(inAppNotifications).values(notification).returning();
+    return created;
+  }
+
+  async markNotificationAsRead(id: number): Promise<void> {
+    await db.update(inAppNotifications)
+      .set({ isRead: true })
+      .where(eq(inAppNotifications.id, id));
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    await db.update(inAppNotifications)
+      .set({ isRead: true })
+      .where(eq(inAppNotifications.userId, userId));
+  }
+
+  async deleteInAppNotification(id: number): Promise<void> {
+    await db.delete(inAppNotifications).where(eq(inAppNotifications.id, id));
   }
 }
 
