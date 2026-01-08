@@ -2883,8 +2883,7 @@ export async function registerRoutes(
       }
       
       // Find the activity and its owner tenant
-      const allActivities = await db.select().from(activities).where(eq(activities.id, activityId));
-      const activity = allActivities[0];
+      const activity = await storage.getActivity(activityId);
       
       if (!activity) {
         return res.status(404).json({ error: "Aktivite bulunamadi" });
