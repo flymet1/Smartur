@@ -2944,7 +2944,7 @@ export async function registerRoutes(
   });
 
   // Set activity partner shares (update which partners can see this activity)
-  app.post("/api/activities/:id/partner-shares", requirePermission(PERMISSIONS.ACTIVITIES_EDIT), async (req, res) => {
+  app.post("/api/activities/:id/partner-shares", requirePermission(PERMISSIONS.ACTIVITIES_MANAGE), async (req, res) => {
     try {
       const activityId = parseInt(req.params.id);
       const { partnershipIds } = req.body;

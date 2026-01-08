@@ -189,6 +189,7 @@ export interface IStorage {
 
   // Capacity
   getCapacity(date?: string, activityId?: number): Promise<Capacity[]>;
+  getCapacityRange(tenantId: number, activityId: number, startDate: string, endDate: string): Promise<Capacity[]>;
   createCapacity(capacity: InsertCapacity): Promise<Capacity>;
   updateCapacitySlots(id: number, bookedChange: number): Promise<Capacity>;
   deleteCapacity(id: number): Promise<void>;
@@ -717,6 +718,17 @@ export class DatabaseStorage implements IStorage {
       return await query.where(and(...conditions));
     }
     return await query;
+  }
+
+  async getCapacityRange(tenantId: number, activityId: number, startDate: string, endDate: string): Promise<Capacity[]> {
+    return await db.select().from(capacity).where(
+      and(
+        eq(capacity.tenantId, tenantId),
+        eq(capacity.activityId, activityId),
+        gte(capacity.date, startDate),
+        lte(capacity.date, endDate)
+      )
+    );
   }
 
   async createCapacity(item: InsertCapacity): Promise<Capacity> {
