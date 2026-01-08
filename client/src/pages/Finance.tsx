@@ -222,6 +222,116 @@ const exportToPDF = (
   }
 };
 
+// Payouts Excel export
+const exportPayoutsToExcel = (payouts: AgencyPayout[], suppliers: Agency[]) => {
+  const headers = ['Donem Baslangic', 'Donem Bitis', 'Acenta', 'Aciklama', 'Misafir', 'Tutar', 'Durum', 'Yontem'];
+  const rows = payouts.map(p => {
+    const supplier = suppliers.find(s => s.id === p.agencyId);
+    return [
+      formatDateShortTR(p.periodStart),
+      formatDateShortTR(p.periodEnd),
+      supplier?.name || '',
+      p.description || '',
+      p.guestCount || 0,
+      `${(p.totalAmountTl || 0).toLocaleString('tr-TR')} TL`,
+      p.status === 'paid' ? 'Odendi' : 'Beklemede',
+      p.method === 'cash' ? 'Nakit' : p.method === 'bank' ? 'Banka' : p.method
+    ];
+  });
+  const total = payouts.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
+  rows.push(['', '', '', '', '', '', '', '']);
+  rows.push(['TOPLAM', '', '', '', '', `${total.toLocaleString('tr-TR')} TL`, '', '']);
+  const csvContent = [headers.join(';'), ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))].join('\n');
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `odemeler_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+};
+
+// Payouts PDF export
+const exportPayoutsToPDF = (payouts: AgencyPayout[], suppliers: Agency[]) => {
+  const total = payouts.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
+  const tableRows = payouts.map(p => {
+    const supplier = suppliers.find(s => s.id === p.agencyId);
+    return `<tr>
+      <td style="padding:8px;border:1px solid #ddd;">${formatDateShortTR(p.periodStart)} - ${formatDateShortTR(p.periodEnd)}</td>
+      <td style="padding:8px;border:1px solid #ddd;">${supplier?.name || ''}</td>
+      <td style="padding:8px;border:1px solid #ddd;">${p.description || '-'}</td>
+      <td style="padding:8px;border:1px solid #ddd;text-align:center;">${p.guestCount || 0}</td>
+      <td style="padding:8px;border:1px solid #ddd;text-align:right;">${(p.totalAmountTl || 0).toLocaleString('tr-TR')} TL</td>
+      <td style="padding:8px;border:1px solid #ddd;">${p.status === 'paid' ? 'Odendi' : 'Beklemede'}</td>
+    </tr>`;
+  }).join('');
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Odeme Raporu</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}.totals{margin-top:20px;padding:15px;background:#f9f9f9;border-radius:8px}@media print{.no-print{display:none}}</style></head><body><h1>Odeme Raporu</h1><div>Toplam: ${payouts.length} kayit</div><table><thead><tr><th>Donem</th><th>Acenta</th><th>Aciklama</th><th>Misafir</th><th>Tutar</th><th>Durum</th></tr></thead><tbody>${tableRows}</tbody></table><div class="totals"><strong>Toplam:</strong> ${total.toLocaleString('tr-TR')} TL</div><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdir / PDF</button></body></html>`;
+  const printWindow = window.open('', '_blank');
+  if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); }
+};
+
+// Rates Excel export
+const exportRatesToExcel = (rates: AgencyActivityRate[], suppliers: Agency[], activities: Activity[]) => {
+  const headers = ['Acenta', 'Aktivite', 'Gecerlilik Baslangic', 'Gecerlilik Bitis', 'Birim Fiyat', 'Para Birimi', 'Notlar'];
+  const rows = rates.map(r => {
+    const supplier = suppliers.find(s => s.id === r.agencyId);
+    const activity = activities.find(a => a.id === r.activityId);
+    const price = r.currency === 'USD' ? (r.unitPayoutUsd || 0) : (r.unitPayoutTl || 0);
+    return [supplier?.name || '', activity?.name || '', formatDateShortTR(r.validFrom), formatDateShortTR(r.validTo), price, r.currency, r.notes || ''];
+  });
+  const csvContent = [headers.join(';'), ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))].join('\n');
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `fiyat_tablosu_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+};
+
+// Rates PDF export
+const exportRatesToPDF = (rates: AgencyActivityRate[], suppliers: Agency[], activities: Activity[]) => {
+  const tableRows = rates.map(r => {
+    const supplier = suppliers.find(s => s.id === r.agencyId);
+    const activity = activities.find(a => a.id === r.activityId);
+    const price = r.currency === 'USD' ? `$${r.unitPayoutUsd || 0}` : `${r.unitPayoutTl || 0} TL`;
+    return `<tr><td style="padding:8px;border:1px solid #ddd;">${supplier?.name || ''}</td><td style="padding:8px;border:1px solid #ddd;">${activity?.name || ''}</td><td style="padding:8px;border:1px solid #ddd;">${formatDateShortTR(r.validFrom)} - ${formatDateShortTR(r.validTo)}</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${price}</td></tr>`;
+  }).join('');
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Fiyat Tablosu</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}@media print{.no-print{display:none}}</style></head><body><h1>Fiyat Tablosu</h1><div>Toplam: ${rates.length} kayit</div><table><thead><tr><th>Acenta</th><th>Aktivite</th><th>Gecerlilik</th><th>Birim Fiyat</th></tr></thead><tbody>${tableRows}</tbody></table><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdir / PDF</button></body></html>`;
+  const printWindow = window.open('', '_blank');
+  if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); }
+};
+
+// Partner Transactions Excel export
+const exportPartnerTransactionsToExcel = (transactions: any[]) => {
+  const headers = ['Musteri', 'Partner', 'Yon', 'Tarih', 'Aktivite', 'Misafir', 'Birim Fiyat', 'Toplam', 'Para Birimi', 'Durum'];
+  const rows = transactions.map(tx => {
+    const isSender = tx.currentTenantId === tx.senderTenantId;
+    const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
+    const direction = isSender ? 'Gonderildi' : 'Alindi';
+    return [tx.customerName, partnerName || 'Partner', direction, formatDateShortTR(tx.transactionDate), tx.activityName || '', tx.guestCount, tx.unitPrice || 0, tx.totalAmount || 0, tx.currency, tx.status === 'pending' ? 'Beklemede' : tx.status === 'confirmed' ? 'Onaylandi' : 'Iptal'];
+  });
+  const csvContent = [headers.join(';'), ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))].join('\n');
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `partner_musteriler_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+};
+
+// Partner Transactions PDF export
+const exportPartnerTransactionsToPDF = (transactions: any[]) => {
+  const tableRows = transactions.map(tx => {
+    const isSender = tx.currentTenantId === tx.senderTenantId;
+    const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
+    const direction = isSender ? 'Gonderildi' : 'Alindi';
+    const price = tx.totalAmount ? `${tx.totalAmount} ${tx.currency}` : `${tx.unitPrice || 0} ${tx.currency}/kisi`;
+    return `<tr><td style="padding:8px;border:1px solid #ddd;">${tx.customerName}</td><td style="padding:8px;border:1px solid #ddd;">${partnerName || 'Partner'}</td><td style="padding:8px;border:1px solid #ddd;">${direction}</td><td style="padding:8px;border:1px solid #ddd;">${formatDateShortTR(tx.transactionDate)}</td><td style="padding:8px;border:1px solid #ddd;">${tx.activityName || '-'}</td><td style="padding:8px;border:1px solid #ddd;text-align:center;">${tx.guestCount}</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${price}</td></tr>`;
+  }).join('');
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Partner Musteriler</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}@media print{.no-print{display:none}}</style></head><body><h1>Partner Musteriler</h1><div>Toplam: ${transactions.length} kayit</div><table><thead><tr><th>Musteri</th><th>Partner</th><th>Yon</th><th>Tarih</th><th>Aktivite</th><th>Misafir</th><th>Tutar</th></tr></thead><tbody>${tableRows}</tbody></table><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdir / PDF</button></body></html>`;
+  const printWindow = window.open('', '_blank');
+  if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); }
+};
+
 export default function Finance() {
   const { toast } = useToast();
   const [startDate, setStartDate] = useState(() => {
@@ -306,6 +416,9 @@ export default function Finance() {
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
+  const [payoutSortOrder, setPayoutSortOrder] = useState<'createdNewest' | 'createdOldest' | 'amountHigh' | 'amountLow'>('createdNewest');
+  const [rateSortOrder, setRateSortOrder] = useState<'createdNewest' | 'createdOldest' | 'priceHigh' | 'priceLow'>('createdNewest');
+  const [partnerSortOrder, setPartnerSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
   const [datePreset, setDatePreset] = useState<string>('this-month');
 
   // Exchange Rates
@@ -454,7 +567,7 @@ export default function Finance() {
     }
   });
 
-  // Tarih aralığına göre filtrelenmiş ödemeler (dönem kesişimi)
+  // Tarih aralığına göre filtrelenmiş ve sıralanmış ödemeler (dönem kesişimi)
   const filteredPayouts = payouts.filter(p => {
     // Dönem kesişimi: ödeme dönemi seçili tarih aralığıyla örtüşüyorsa dahil et
     if (p.periodEnd && p.periodEnd < startDate) return false;
@@ -462,12 +575,30 @@ export default function Finance() {
     // Acenta filtresi
     if (selectedAgencyId && p.agencyId !== selectedAgencyId) return false;
     return true;
+  }).sort((a, b) => {
+    switch (payoutSortOrder) {
+      case 'createdNewest': return (b.id || 0) - (a.id || 0);
+      case 'createdOldest': return (a.id || 0) - (b.id || 0);
+      case 'amountHigh': return (b.totalAmountTl || 0) - (a.totalAmountTl || 0);
+      case 'amountLow': return (a.totalAmountTl || 0) - (b.totalAmountTl || 0);
+      default: return 0;
+    }
   });
 
-  // Acenta filtresine göre filtrelenmiş fiyat tablosu
+  // Acenta filtresine göre filtrelenmiş ve sıralanmış fiyat tablosu
   const filteredRates = rates.filter(r => {
     if (selectedAgencyId && r.agencyId !== selectedAgencyId) return false;
     return true;
+  }).sort((a, b) => {
+    const priceA = a.currency === 'USD' ? (a.unitPayoutUsd || 0) : (a.unitPayoutTl || 0);
+    const priceB = b.currency === 'USD' ? (b.unitPayoutUsd || 0) : (b.unitPayoutTl || 0);
+    switch (rateSortOrder) {
+      case 'createdNewest': return (b.id || 0) - (a.id || 0);
+      case 'createdOldest': return (a.id || 0) - (b.id || 0);
+      case 'priceHigh': return priceB - priceA;
+      case 'priceLow': return priceA - priceB;
+      default: return 0;
+    }
   });
 
   // Tarih aralığına göre filtrelenmiş ve sıralanmış gönderimler
@@ -1393,25 +1524,66 @@ export default function Finance() {
                 )}
                 <Badge variant="outline">{filteredPayouts.length} kayıt</Badge>
               </div>
-              <Button onClick={() => {
-                setPayoutForm({
-                  agencyId: 0,
-                  periodStart: startDate,
-                  periodEnd: endDate,
-                  description: '',
-                  guestCount: 0,
-                  baseAmountTl: 0,
-                  vatRatePct: 0,
-                  method: 'cash',
-                  reference: '',
-                  notes: '',
-                  status: 'paid'
-                });
-                setPayoutDialogOpen(true);
-              }} data-testid="button-add-payout">
-                <Plus className="h-4 w-4 mr-2" />
-                Ödeme Ekle
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportPayoutsToExcel(filteredPayouts, suppliers)}
+                  disabled={filteredPayouts.length === 0}
+                  data-testid="button-export-payouts-excel"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportPayoutsToPDF(filteredPayouts, suppliers)}
+                  disabled={filteredPayouts.length === 0}
+                  data-testid="button-export-payouts-pdf"
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  PDF
+                </Button>
+                <Select value={payoutSortOrder} onValueChange={v => setPayoutSortOrder(v as typeof payoutSortOrder)}>
+                  <SelectTrigger className="w-[160px] h-8" data-testid="select-payout-sort">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="createdNewest">
+                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Ekleme (Yeni)</span>
+                    </SelectItem>
+                    <SelectItem value="createdOldest">
+                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Ekleme (Eski)</span>
+                    </SelectItem>
+                    <SelectItem value="amountHigh">
+                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Tutar (Yuksek)</span>
+                    </SelectItem>
+                    <SelectItem value="amountLow">
+                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Tutar (Dusuk)</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={() => {
+                  setPayoutForm({
+                    agencyId: 0,
+                    periodStart: startDate,
+                    periodEnd: endDate,
+                    description: '',
+                    guestCount: 0,
+                    baseAmountTl: 0,
+                    vatRatePct: 0,
+                    method: 'cash',
+                    reference: '',
+                    notes: '',
+                    status: 'paid'
+                  });
+                  setPayoutDialogOpen(true);
+                }} data-testid="button-add-payout">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ödeme Ekle
+                </Button>
+              </div>
             </div>
             <Card>
               <CardContent className="pt-4">
@@ -1492,14 +1664,55 @@ export default function Finance() {
                 )}
                 <Badge variant="outline">{filteredRates.length} kayıt</Badge>
               </div>
-              <Button onClick={() => { 
-                setEditingRate(null);
-                setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, unitPayoutUsd: 0, currency: 'TRY', notes: '' });
-                setRateDialogOpen(true);
-              }} data-testid="button-add-rate">
-                <Plus className="h-4 w-4 mr-2" />
-                Fiyat Ekle
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportRatesToExcel(filteredRates, suppliers, activities)}
+                  disabled={filteredRates.length === 0}
+                  data-testid="button-export-rates-excel"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportRatesToPDF(filteredRates, suppliers, activities)}
+                  disabled={filteredRates.length === 0}
+                  data-testid="button-export-rates-pdf"
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  PDF
+                </Button>
+                <Select value={rateSortOrder} onValueChange={v => setRateSortOrder(v as typeof rateSortOrder)}>
+                  <SelectTrigger className="w-[160px] h-8" data-testid="select-rate-sort">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="createdNewest">
+                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Ekleme (Yeni)</span>
+                    </SelectItem>
+                    <SelectItem value="createdOldest">
+                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Ekleme (Eski)</span>
+                    </SelectItem>
+                    <SelectItem value="priceHigh">
+                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Fiyat (Yuksek)</span>
+                    </SelectItem>
+                    <SelectItem value="priceLow">
+                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Fiyat (Dusuk)</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={() => { 
+                  setEditingRate(null);
+                  setRateForm({ agencyId: 0, activityId: 0, validFrom: new Date().toISOString().split('T')[0], validTo: '', unitPayoutTl: 0, unitPayoutUsd: 0, currency: 'TRY', notes: '' });
+                  setRateDialogOpen(true);
+                }} data-testid="button-add-rate">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Fiyat Ekle
+                </Button>
+              </div>
             </div>
             
             <Card>
@@ -1643,8 +1856,50 @@ export default function Finance() {
 
           <TabsContent value="partner-customers" className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold">Partner Musteriler</h3>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-semibold">Partner Musteriler</h3>
+                <Badge variant="outline">{partnerTransactions.length} kayıt</Badge>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportPartnerTransactionsToExcel(partnerTransactions)}
+                  disabled={partnerTransactions.length === 0}
+                  data-testid="button-export-partner-excel"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-1" />
+                  Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportPartnerTransactionsToPDF(partnerTransactions)}
+                  disabled={partnerTransactions.length === 0}
+                  data-testid="button-export-partner-pdf"
+                >
+                  <FileText className="h-4 w-4 mr-1" />
+                  PDF
+                </Button>
+                <Select value={partnerSortOrder} onValueChange={v => setPartnerSortOrder(v as typeof partnerSortOrder)}>
+                  <SelectTrigger className="w-[160px] h-8" data-testid="select-partner-sort">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="createdNewest">
+                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Ekleme (Yeni)</span>
+                    </SelectItem>
+                    <SelectItem value="createdOldest">
+                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Ekleme (Eski)</span>
+                    </SelectItem>
+                    <SelectItem value="dateNewest">
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Tarih (Yeni)</span>
+                    </SelectItem>
+                    <SelectItem value="dateOldest">
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Tarih (Eski)</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button
                   variant={partnerTransactionRole === 'sender' ? 'default' : 'outline'}
                   size="sm"
@@ -1694,7 +1949,15 @@ export default function Finance() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {partnerTransactions.map(tx => {
+                    {[...partnerTransactions].sort((a, b) => {
+                      switch (partnerSortOrder) {
+                        case 'createdNewest': return (b.id || 0) - (a.id || 0);
+                        case 'createdOldest': return (a.id || 0) - (b.id || 0);
+                        case 'dateNewest': return new Date(b.transactionDate || 0).getTime() - new Date(a.transactionDate || 0).getTime();
+                        case 'dateOldest': return new Date(a.transactionDate || 0).getTime() - new Date(b.transactionDate || 0).getTime();
+                        default: return 0;
+                      }
+                    }).map(tx => {
                       const isSender = tx.currentTenantId === tx.senderTenantId;
                       const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
                       const directionLabel = isSender ? 'Gonderildi' : 'Alindi';
