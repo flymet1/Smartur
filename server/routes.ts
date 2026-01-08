@@ -9274,6 +9274,184 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     }
   });
 
+  // === NOTIFICATION PREFERENCES ===
+
+  // Get user notification preferences
+  app.get("/api/user-notification-preferences", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const prefs = await storage.getUserNotificationPreferences(userId);
+      res.json(prefs);
+    } catch (err) {
+      console.error("Bildirim tercihleri hatası:", err);
+      res.status(500).json({ error: "Bildirim tercihleri alınamadı" });
+    }
+  });
+
+  // Set user notification preference
+  app.post("/api/user-notification-preferences", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      const tenantId = (req as any).session?.tenantId;
+      if (!userId || !tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const pref = await storage.setUserNotificationPreference({
+        userId,
+        tenantId,
+        ...req.body
+      });
+      res.json(pref);
+    } catch (err) {
+      console.error("Bildirim tercihi kaydetme hatası:", err);
+      res.status(500).json({ error: "Bildirim tercihi kaydedilemedi" });
+    }
+  });
+
+  // Delete user notification preference
+  app.delete("/api/user-notification-preferences/:notificationType", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      await storage.deleteUserNotificationPreference(userId, req.params.notificationType);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Bildirim tercihi silme hatası:", err);
+      res.status(500).json({ error: "Bildirim tercihi silinemedi" });
+    }
+  });
+
+  // Get tenant notification settings
+  app.get("/api/tenant-notification-settings", async (req, res) => {
+    try {
+      const tenantId = (req as any).session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const settings = await storage.getTenantNotificationSettings(tenantId);
+      res.json(settings);
+    } catch (err) {
+      console.error("Acenta bildirim ayarlari hatası:", err);
+      res.status(500).json({ error: "Bildirim ayarlari alınamadı" });
+    }
+  });
+
+  // Set tenant notification setting
+  app.post("/api/tenant-notification-settings", async (req, res) => {
+    try {
+      const tenantId = (req as any).session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const setting = await storage.setTenantNotificationSetting({
+        tenantId,
+        ...req.body
+      });
+      res.json(setting);
+    } catch (err) {
+      console.error("Bildirim ayari kaydetme hatası:", err);
+      res.status(500).json({ error: "Bildirim ayari kaydedilemedi" });
+    }
+  });
+
+  // Delete tenant notification setting
+  app.delete("/api/tenant-notification-settings/:notificationType", async (req, res) => {
+    try {
+      const tenantId = (req as any).session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      await storage.deleteTenantNotificationSetting(tenantId, req.params.notificationType);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Bildirim ayari silme hatası:", err);
+      res.status(500).json({ error: "Bildirim ayari silinemedi" });
+    }
+  });
+
+  // === IN-APP NOTIFICATIONS ===
+
+  // Get in-app notifications
+  app.get("/api/in-app-notifications", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const unreadOnly = req.query.unreadOnly === 'true';
+      const notifications = await storage.getInAppNotifications(userId, unreadOnly);
+      res.json(notifications);
+    } catch (err) {
+      console.error("Uygulama bildirimleri hatası:", err);
+      res.status(500).json({ error: "Bildirimler alınamadı" });
+    }
+  });
+
+  // Get unread notification count
+  app.get("/api/in-app-notifications/count", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const notifications = await storage.getInAppNotifications(userId, true);
+      res.json({ count: notifications.length });
+    } catch (err) {
+      console.error("Bildirim sayısı hatası:", err);
+      res.status(500).json({ error: "Bildirim sayısı alınamadı" });
+    }
+  });
+
+  // Mark notification as read
+  app.patch("/api/in-app-notifications/:id/read", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      await storage.markNotificationAsRead(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Bildirim okundu işaretleme hatası:", err);
+      res.status(500).json({ error: "Bildirim okundu işaretlenemedi" });
+    }
+  });
+
+  // Mark all notifications as read
+  app.patch("/api/in-app-notifications/read-all", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      await storage.markAllNotificationsAsRead(userId);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Tüm bildirimleri okundu işaretleme hatası:", err);
+      res.status(500).json({ error: "Bildirimler okundu işaretlenemedi" });
+    }
+  });
+
+  // Delete notification
+  app.delete("/api/in-app-notifications/:id", async (req, res) => {
+    try {
+      const userId = (req as any).session?.userId;
+      if (!userId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      await storage.deleteInAppNotification(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Bildirim silme hatası:", err);
+      res.status(500).json({ error: "Bildirim silinemedi" });
+    }
+  });
+
   return httpServer;
 }
 
