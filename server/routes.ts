@@ -7697,35 +7697,38 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       
       const results: Record<string, { added: number; skipped: number; errors: string[] }> = {};
       
-      // Import subscription_plans
+      // Import subscription_plans (supports both snake_case and camelCase from JSON export)
       if (tables.subscription_plans && Array.isArray(tables.subscription_plans)) {
         results.subscription_plans = { added: 0, skipped: 0, errors: [] };
         for (const plan of tables.subscription_plans) {
           try {
             const existing = await storage.getSubscriptionPlanByCode(plan.code);
+            const planData = {
+              code: plan.code,
+              name: plan.name,
+              description: plan.description,
+              priceTl: plan.priceTl ?? plan.price_tl,
+              priceUsd: plan.priceUsd ?? plan.price_usd,
+              yearlyPriceTl: plan.yearlyPriceTl ?? plan.yearly_price_tl,
+              yearlyPriceUsd: plan.yearlyPriceUsd ?? plan.yearly_price_usd,
+              yearlyDiscountPct: plan.yearlyDiscountPct ?? plan.yearly_discount_pct,
+              trialDays: plan.trialDays ?? plan.trial_days,
+              maxActivities: plan.maxActivities ?? plan.max_activities,
+              maxReservationsPerMonth: plan.maxReservationsPerMonth ?? plan.max_reservations_per_month,
+              maxDailyReservations: plan.maxDailyReservations ?? plan.max_daily_reservations,
+              maxDailyMessages: plan.maxDailyMessages ?? plan.max_daily_messages,
+              maxUsers: plan.maxUsers ?? plan.max_users,
+              maxWhatsappNumbers: plan.maxWhatsappNumbers ?? plan.max_whatsapp_numbers,
+              features: plan.features,
+              sortOrder: plan.sortOrder ?? plan.sort_order,
+              isActive: plan.isActive ?? plan.is_active,
+              isPopular: plan.isPopular ?? plan.is_popular,
+            };
             if (!existing) {
-              await storage.createSubscriptionPlan({
-                code: plan.code,
-                name: plan.name,
-                description: plan.description,
-                priceTl: plan.priceTl,
-                priceUsd: plan.priceUsd,
-                yearlyPriceTl: plan.yearlyPriceTl,
-                yearlyPriceUsd: plan.yearlyPriceUsd,
-                yearlyDiscountPct: plan.yearlyDiscountPct,
-                trialDays: plan.trialDays,
-                maxActivities: plan.maxActivities,
-                maxReservationsPerMonth: plan.maxReservationsPerMonth,
-                maxUsers: plan.maxUsers,
-                maxWhatsappNumbers: plan.maxWhatsappNumbers,
-                features: plan.features,
-                sortOrder: plan.sortOrder,
-                isActive: plan.isActive,
-                isPopular: plan.isPopular,
-              });
+              await storage.createSubscriptionPlan(planData);
               results.subscription_plans.added++;
             } else if (mode === 'replace') {
-              await storage.updateSubscriptionPlan(existing.id, plan);
+              await storage.updateSubscriptionPlan(existing.id, planData);
               results.subscription_plans.added++;
             } else {
               results.subscription_plans.skipped++;
@@ -7737,7 +7740,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         }
       }
       
-      // Import plan_features
+      // Import plan_features (supports both snake_case and camelCase)
       if (tables.plan_features && Array.isArray(tables.plan_features)) {
         results.plan_features = { added: 0, skipped: 0, errors: [] };
         for (const feature of tables.plan_features) {
@@ -7750,7 +7753,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
                 name: feature.name,
                 description: feature.description,
                 category: feature.category,
-                sortOrder: feature.sortOrder,
+                sortOrder: feature.sortOrder ?? feature.sort_order,
               });
               results.plan_features.added++;
             } else {
@@ -7763,7 +7766,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         }
       }
       
-      // Import roles
+      // Import roles (supports both snake_case and camelCase)
       if (tables.roles && Array.isArray(tables.roles)) {
         results.roles = { added: 0, skipped: 0, errors: [] };
         for (const role of tables.roles) {
@@ -7773,11 +7776,11 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
             if (!existing) {
               await storage.createRole({
                 name: role.name,
-                displayName: role.displayName,
+                displayName: role.displayName ?? role.display_name,
                 description: role.description,
                 color: role.color,
-                isSystem: role.isSystem,
-                isActive: role.isActive,
+                isSystem: role.isSystem ?? role.is_system,
+                isActive: role.isActive ?? role.is_active,
               });
               results.roles.added++;
             } else {
