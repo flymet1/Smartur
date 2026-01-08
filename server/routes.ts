@@ -2873,15 +2873,8 @@ export async function registerRoutes(
       }
       
       // Verify that the activity is actually shared with this partnership
-      // Get ALL shares for this activity owner to check if granular sharing is in use
-      const allSharesForOwner = await storage.getActivityPartnerShares(0);
-      const ownerShares = allSharesForOwner.filter(s => {
-        // Check if this share is for an activity owned by the same tenant
-        return s.partnershipId && allSharesForOwner.find(x => x.activityId === activityId);
-      });
-      
-      // More accurate: check if there are any granular shares for this specific activity
-      const sharesForThisActivity = allSharesForOwner.filter(s => s.activityId === activityId);
+      // Get shares for this specific activity
+      const sharesForThisActivity = await storage.getActivityPartnerShares(activityId);
       
       let isActivityShared = false;
       if (sharesForThisActivity.length > 0) {
