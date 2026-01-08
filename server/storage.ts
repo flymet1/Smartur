@@ -252,6 +252,7 @@ export interface IStorage {
     agencyName: string;
     totalGuests: number;
     totalOwedTl: number;
+    totalOwedUsd: number;
     totalPaidTl: number;
     remainingTl: number;
   }[]>;
@@ -1374,6 +1375,7 @@ export class DatabaseStorage implements IStorage {
     agencyName: string;
     totalGuests: number;
     totalOwedTl: number;
+    totalOwedUsd: number;
     totalPaidTl: number;
     remainingTl: number;
   }[]> {
@@ -1402,6 +1404,7 @@ export class DatabaseStorage implements IStorage {
       agencyName: string;
       totalGuests: number;
       totalOwedTl: number;
+      totalOwedUsd: number;
       totalPaidTl: number;
       remainingTl: number;
     }> = {};
@@ -1412,6 +1415,7 @@ export class DatabaseStorage implements IStorage {
         agencyName: agency.name,
         totalGuests: 0,
         totalOwedTl: 0,
+        totalOwedUsd: 0,
         totalPaidTl: 0,
         remainingTl: 0
       };
@@ -1420,7 +1424,12 @@ export class DatabaseStorage implements IStorage {
     for (const dispatch of filteredDispatches) {
       if (summaryMap[dispatch.agencyId]) {
         summaryMap[dispatch.agencyId].totalGuests += dispatch.guestCount || 0;
-        summaryMap[dispatch.agencyId].totalOwedTl += dispatch.totalPayoutTl || 0;
+        // Para birimine göre ayır
+        if (dispatch.currency === 'USD') {
+          summaryMap[dispatch.agencyId].totalOwedUsd += dispatch.totalPayoutTl || 0;
+        } else {
+          summaryMap[dispatch.agencyId].totalOwedTl += dispatch.totalPayoutTl || 0;
+        }
       }
     }
     

@@ -196,6 +196,7 @@ export default function Finance() {
     agencyName: string;
     totalGuests: number;
     totalOwedTl: number;
+    totalOwedUsd: number;
     totalPaidTl: number;
     remainingTl: number;
   };
@@ -803,7 +804,12 @@ export default function Finance() {
                     </div>
                     <div className="flex justify-between gap-2 text-sm">
                       <span className="text-muted-foreground">Toplam Borç:</span>
-                      <span className="font-medium">{summary.totalOwedTl.toLocaleString('tr-TR')} TL</span>
+                      <div className="text-right">
+                        {summary.totalOwedTl > 0 && <span className="font-medium">{summary.totalOwedTl.toLocaleString('tr-TR')} TL</span>}
+                        {summary.totalOwedTl > 0 && summary.totalOwedUsd > 0 && <span className="mx-1">+</span>}
+                        {summary.totalOwedUsd > 0 && <span className="font-medium">${summary.totalOwedUsd.toLocaleString('en-US')}</span>}
+                        {summary.totalOwedTl === 0 && summary.totalOwedUsd === 0 && <span className="font-medium">0 TL</span>}
+                      </div>
                     </div>
                     <div className="flex justify-between gap-2 text-sm">
                       <span className="text-muted-foreground">Ödenen:</span>
