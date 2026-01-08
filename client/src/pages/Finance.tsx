@@ -49,7 +49,9 @@ import {
   X,
   Building2,
   Phone,
-  FileText
+  FileText,
+  Download,
+  FileSpreadsheet
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate } from "@shared/schema";
 import { format } from "date-fns";
@@ -77,6 +79,142 @@ const formatDateShortTR = (dateStr: string | null | undefined) => {
     return format(date, 'dd.MM.yyyy', { locale: tr });
   } catch {
     return dateStr;
+  }
+};
+
+// Excel export fonksiyonu (CSV formatında)
+const exportToExcel = (
+  dispatches: SupplierDispatch[],
+  suppliers: Agency[],
+  activities: Activity[],
+  startDate: string,
+  endDate: string
+) => {
+  const headers = ['Tarih', 'Saat', 'Acenta', 'Müşteri Adı', 'Aktivite', 'Misafir', 'Birim Fiyat', 'Toplam', 'Para Birimi', 'Notlar'];
+  const rows = dispatches.map(d => {
+    const supplier = suppliers.find(s => s.id === d.agencyId);
+    const activity = activities.find(a => a.id === d.activityId);
+    const curr = d.currency || 'TRY';
+    const unitPrice = d.unitPayoutTl || 0;
+    const totalPrice = d.totalPayoutTl || 0;
+    return [
+      formatDateShortTR(d.dispatchDate),
+      d.dispatchTime || '',
+      supplier?.name || '',
+      d.customerName || '',
+      activity?.name || '',
+      d.guestCount || 0,
+      curr === 'USD' ? `$${unitPrice}` : `${unitPrice} TL`,
+      curr === 'USD' ? `$${totalPrice}` : `${totalPrice} TL`,
+      curr,
+      d.notes || ''
+    ];
+  });
+
+  // Özet satırları
+  const totalTRY = dispatches.filter(d => d.currency !== 'USD').reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0);
+  const totalUSD = dispatches.filter(d => d.currency === 'USD').reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0);
+  const totalGuests = dispatches.reduce((sum, d) => sum + (d.guestCount || 0), 0);
+  
+  rows.push(['', '', '', '', '', '', '', '', '', '']);
+  rows.push(['ÖZET', '', '', '', '', `${totalGuests} kişi`, '', '', '', '']);
+  if (totalTRY > 0) rows.push(['Toplam TL', '', '', '', '', '', '', `${totalTRY.toLocaleString('tr-TR')} TL`, 'TRY', '']);
+  if (totalUSD > 0) rows.push(['Toplam USD', '', '', '', '', '', '', `$${totalUSD.toLocaleString('en-US')}`, 'USD', '']);
+
+  const csvContent = [
+    headers.join(';'),
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))
+  ].join('\n');
+
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `gonderimler_${startDate}_${endDate}.csv`;
+  link.click();
+};
+
+// PDF export fonksiyonu (yazdırılabilir HTML)
+const exportToPDF = (
+  dispatches: SupplierDispatch[],
+  suppliers: Agency[],
+  activities: Activity[],
+  startDate: string,
+  endDate: string
+) => {
+  const totalTRY = dispatches.filter(d => d.currency !== 'USD').reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0);
+  const totalUSD = dispatches.filter(d => d.currency === 'USD').reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0);
+  const totalGuests = dispatches.reduce((sum, d) => sum + (d.guestCount || 0), 0);
+
+  const tableRows = dispatches.map(d => {
+    const supplier = suppliers.find(s => s.id === d.agencyId);
+    const activity = activities.find(a => a.id === d.activityId);
+    const priceFormatted = d.currency === 'USD' 
+      ? `$${(d.totalPayoutTl || 0).toLocaleString('en-US')}`
+      : `${(d.totalPayoutTl || 0).toLocaleString('tr-TR')} TL`;
+    return `<tr>
+      <td style="padding:8px;border:1px solid #ddd;">${d.dispatchDate || ''}</td>
+      <td style="padding:8px;border:1px solid #ddd;">${d.dispatchTime || ''}</td>
+      <td style="padding:8px;border:1px solid #ddd;">${supplier?.name || ''}</td>
+      <td style="padding:8px;border:1px solid #ddd;">${d.customerName || '-'}</td>
+      <td style="padding:8px;border:1px solid #ddd;">${activity?.name || '-'}</td>
+      <td style="padding:8px;border:1px solid #ddd;text-align:center;">${d.guestCount || 0}</td>
+      <td style="padding:8px;border:1px solid #ddd;text-align:right;">${priceFormatted}</td>
+    </tr>`;
+  }).join('');
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Gönderim Raporu</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1 { color: #333; font-size: 24px; margin-bottom: 10px; }
+        .meta { color: #666; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; text-align: left; }
+        .totals { margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+        .totals span { margin-right: 30px; }
+        @media print { .no-print { display: none; } }
+      </style>
+    </head>
+    <body>
+      <h1>Gönderim Raporu</h1>
+      <div class="meta">
+        <strong>Dönem:</strong> ${formatDateShortTR(startDate)} - ${formatDateShortTR(endDate)}<br>
+        <strong>Toplam Kayıt:</strong> ${dispatches.length}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>Saat</th>
+            <th>Acenta</th>
+            <th>Müşteri</th>
+            <th>Aktivite</th>
+            <th style="text-align:center;">Misafir</th>
+            <th style="text-align:right;">Toplam</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <div class="totals">
+        <strong>Özet:</strong>
+        <span>${totalGuests} misafir</span>
+        ${totalTRY > 0 ? `<span>${totalTRY.toLocaleString('tr-TR')} TL</span>` : ''}
+        ${totalUSD > 0 ? `<span>$${totalUSD.toLocaleString('en-US')}</span>` : ''}
+      </div>
+      <button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdır / PDF</button>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   }
 };
 
@@ -896,24 +1034,46 @@ export default function Finance() {
                     )}
                     <Badge variant="outline">{filteredDispatches.length} kayıt</Badge>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDispatchSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                    data-testid="button-toggle-sort"
-                  >
-                    {dispatchSortOrder === 'newest' ? (
-                      <>
-                        <ArrowDown className="h-4 w-4 mr-1" />
-                        En Yeni
-                      </>
-                    ) : (
-                      <>
-                        <ArrowUp className="h-4 w-4 mr-1" />
-                        En Eski
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => exportToExcel(filteredDispatches, suppliers, activities, startDate, endDate)}
+                      disabled={filteredDispatches.length === 0}
+                      data-testid="button-export-excel"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-1" />
+                      Excel
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => exportToPDF(filteredDispatches, suppliers, activities, startDate, endDate)}
+                      disabled={filteredDispatches.length === 0}
+                      data-testid="button-export-pdf"
+                    >
+                      <FileText className="h-4 w-4 mr-1" />
+                      PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDispatchSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                      data-testid="button-toggle-sort"
+                    >
+                      {dispatchSortOrder === 'newest' ? (
+                        <>
+                          <ArrowDown className="h-4 w-4 mr-1" />
+                          En Yeni
+                        </>
+                      ) : (
+                        <>
+                          <ArrowUp className="h-4 w-4 mr-1" />
+                          En Eski
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-2">
