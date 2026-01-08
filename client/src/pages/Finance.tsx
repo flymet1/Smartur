@@ -248,17 +248,30 @@ export default function Finance() {
     notes: '',
     status: 'paid'
   });
+  // Dispatch item type
+  type DispatchItemForm = {
+    itemType: 'base' | 'observer' | 'extra';
+    label: string;
+    quantity: number;
+    unitAmount: number;
+    currency: 'TRY' | 'USD';
+  };
+  const defaultDispatchItem: DispatchItemForm = { itemType: 'base', label: '', quantity: 1, unitAmount: 0, currency: 'TRY' };
+  
   const [dispatchForm, setDispatchForm] = useState({
     agencyId: 0,
     activityId: 0,
     dispatchDate: new Date().toISOString().split('T')[0],
     dispatchTime: '10:00',
     customerName: '',
-    guestCount: 1,
-    unitPayoutTl: 0,
-    currency: 'TRY' as 'TRY' | 'USD',
-    notes: ''
+    notes: '',
+    items: [{ ...defaultDispatchItem }] as DispatchItemForm[]
   });
+  const [useLineItems, setUseLineItems] = useState(false);
+  // Basit mod için geri uyumluluk
+  const [simpleGuestCount, setSimpleGuestCount] = useState(1);
+  const [simpleUnitPayout, setSimpleUnitPayout] = useState(0);
+  const [simpleCurrency, setSimpleCurrency] = useState<'TRY' | 'USD'>('TRY');
   const [rateForm, setRateForm] = useState({
     agencyId: 0,
     activityId: 0,
@@ -439,31 +452,44 @@ export default function Finance() {
     }
   });
 
+  // Basit modda eski API'yi, detaylı modda yeni items API'sini kullanacak
   const createDispatchMutation = useMutation({
-    mutationFn: async (data: typeof dispatchForm) => apiRequest('POST', '/api/finance/dispatches', data),
+    mutationFn: async (data: { simple: boolean; payload: Record<string, unknown> }) => {
+      if (data.simple) {
+        return apiRequest('POST', '/api/finance/dispatches', data.payload);
+      } else {
+        return apiRequest('POST', '/api/finance/dispatches-with-items', data.payload);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
       queryClient.invalidateQueries({ predicate: (query) => 
         typeof query.queryKey[0] === 'string' && query.queryKey[0].includes('/api/finance/dispatches/summary')
       });
       setDispatchDialogOpen(false);
-      setDispatchForm({
-        agencyId: 0,
-        activityId: 0,
-        dispatchDate: new Date().toISOString().split('T')[0],
-        dispatchTime: '10:00',
-        customerName: '',
-        guestCount: 1,
-        unitPayoutTl: 0,
-        currency: 'TRY',
-        notes: ''
-      });
+      resetDispatchForm();
       toast({ title: "Gönderim kaydedildi" });
     },
     onError: () => {
       toast({ title: "Hata", description: "Gönderim kaydedilemedi", variant: "destructive" });
     }
   });
+  
+  const resetDispatchForm = () => {
+    setDispatchForm({
+      agencyId: 0,
+      activityId: 0,
+      dispatchDate: new Date().toISOString().split('T')[0],
+      dispatchTime: '10:00',
+      customerName: '',
+      notes: '',
+      items: [{ ...defaultDispatchItem }]
+    });
+    setSimpleGuestCount(1);
+    setSimpleUnitPayout(0);
+    setSimpleCurrency('TRY');
+    setUseLineItems(false);
+  };
 
   const deleteDispatchMutation = useMutation({
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/dispatches/${id}`),
@@ -600,7 +626,43 @@ export default function Finance() {
       toast({ title: "Hata", description: "Tedarikçi seçin", variant: "destructive" });
       return;
     }
-    createDispatchMutation.mutate(dispatchForm);
+    
+    if (useLineItems) {
+      // Detaylı mod - items API
+      const validItems = dispatchForm.items.filter(item => item.label && item.quantity > 0);
+      if (validItems.length === 0) {
+        toast({ title: "Hata", description: "En az bir kalem ekleyin", variant: "destructive" });
+        return;
+      }
+      createDispatchMutation.mutate({
+        simple: false,
+        payload: {
+          agencyId: dispatchForm.agencyId,
+          activityId: dispatchForm.activityId || null,
+          dispatchDate: dispatchForm.dispatchDate,
+          dispatchTime: dispatchForm.dispatchTime,
+          customerName: dispatchForm.customerName || null,
+          notes: dispatchForm.notes,
+          items: validItems
+        }
+      });
+    } else {
+      // Basit mod - eski API
+      createDispatchMutation.mutate({
+        simple: true,
+        payload: {
+          agencyId: dispatchForm.agencyId,
+          activityId: dispatchForm.activityId || null,
+          dispatchDate: dispatchForm.dispatchDate,
+          dispatchTime: dispatchForm.dispatchTime,
+          customerName: dispatchForm.customerName || null,
+          guestCount: simpleGuestCount,
+          unitPayoutTl: simpleUnitPayout,
+          currency: simpleCurrency,
+          notes: dispatchForm.notes
+        }
+      });
+    }
   };
 
   const handleRateSubmit = () => {
@@ -1573,88 +1635,84 @@ export default function Finance() {
         </Dialog>
 
         {/* Gönderim Dialog */}
-        <Dialog open={dispatchDialogOpen} onOpenChange={setDispatchDialogOpen}>
-          <DialogContent className="max-w-lg">
+        <Dialog open={dispatchDialogOpen} onOpenChange={(open) => {
+          setDispatchDialogOpen(open);
+          if (!open) resetDispatchForm();
+        }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Gönderim Kaydı Ekle</DialogTitle>
               <DialogDescription>Tedarikçi firmaya gönderilen misafirleri kaydedin</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label>Tedarikçi</Label>
-                <Select 
-                  value={dispatchForm.agencyId ? String(dispatchForm.agencyId) : ""} 
-                  onValueChange={v => {
-                    const supplierId = parseInt(v);
-                    const supplier = suppliers.find(s => s.id === supplierId);
-                    setDispatchForm(f => {
-                      // Önce Acenta Fiyat Listesinden eşleşen fiyat var mı bak
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tedarikçi</Label>
+                  <Select 
+                    value={dispatchForm.agencyId ? String(dispatchForm.agencyId) : ""} 
+                    onValueChange={v => {
+                      const supplierId = parseInt(v);
+                      const supplier = suppliers.find(s => s.id === supplierId);
+                      setDispatchForm(f => ({ ...f, agencyId: supplierId }));
+                      // Basit mod için fiyat güncelle
                       const matchingRate = rates.find(r => 
                         r.agencyId === supplierId && 
-                        r.activityId === f.activityId &&
-                        (!r.validFrom || r.validFrom <= f.dispatchDate) &&
-                        (!r.validTo || r.validTo >= f.dispatchDate)
+                        (!r.activityId || r.activityId === dispatchForm.activityId) &&
+                        (!r.validFrom || r.validFrom <= dispatchForm.dispatchDate) &&
+                        (!r.validTo || r.validTo >= dispatchForm.dispatchDate)
                       );
                       if (matchingRate) {
                         const price = matchingRate.currency === 'USD' ? (matchingRate.unitPayoutUsd || 0) : matchingRate.unitPayoutTl;
-                        return { 
-                          ...f, 
-                          agencyId: supplierId,
-                          unitPayoutTl: price,
-                          currency: matchingRate.currency as 'TRY' | 'USD'
-                        };
+                        setSimpleUnitPayout(price);
+                        setSimpleCurrency(matchingRate.currency as 'TRY' | 'USD');
+                      } else if (supplier) {
+                        setSimpleUnitPayout(supplier.defaultPayoutPerGuest || 0);
                       }
-                      return { 
-                        ...f, 
-                        agencyId: supplierId,
-                        unitPayoutTl: supplier?.defaultPayoutPerGuest || f.unitPayoutTl
-                      };
-                    });
-                  }}
-                >
-                  <SelectTrigger data-testid="select-dispatch-supplier">
-                    <SelectValue placeholder="Tedarikçi seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map(s => (
-                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Aktivite (Opsiyonel)</Label>
-                <Select 
-                  value={dispatchForm.activityId ? String(dispatchForm.activityId) : ""} 
-                  onValueChange={v => {
-                    const activityId = parseInt(v) || 0;
-                    setDispatchForm(f => {
-                      // Aktivite seçildiğinde de Fiyat Listesinden kontrol et
-                      if (f.agencyId && activityId) {
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-dispatch-supplier">
+                      <SelectValue placeholder="Tedarikçi seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map(s => (
+                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Aktivite (Opsiyonel)</Label>
+                  <Select 
+                    value={dispatchForm.activityId ? String(dispatchForm.activityId) : ""} 
+                    onValueChange={v => {
+                      const activityId = parseInt(v) || 0;
+                      setDispatchForm(f => ({ ...f, activityId }));
+                      // Basit mod için fiyat güncelle
+                      if (dispatchForm.agencyId && activityId) {
                         const matchingRate = rates.find(r => 
-                          r.agencyId === f.agencyId && 
+                          r.agencyId === dispatchForm.agencyId && 
                           r.activityId === activityId &&
-                          (!r.validFrom || r.validFrom <= f.dispatchDate) &&
-                          (!r.validTo || r.validTo >= f.dispatchDate)
+                          (!r.validFrom || r.validFrom <= dispatchForm.dispatchDate) &&
+                          (!r.validTo || r.validTo >= dispatchForm.dispatchDate)
                         );
                         if (matchingRate) {
                           const price = matchingRate.currency === 'USD' ? (matchingRate.unitPayoutUsd || 0) : matchingRate.unitPayoutTl;
-                          return { ...f, activityId, unitPayoutTl: price, currency: matchingRate.currency as 'TRY' | 'USD' };
+                          setSimpleUnitPayout(price);
+                          setSimpleCurrency(matchingRate.currency as 'TRY' | 'USD');
                         }
                       }
-                      return { ...f, activityId };
-                    });
-                  }}
-                >
-                  <SelectTrigger data-testid="select-dispatch-activity">
-                    <SelectValue placeholder="Aktivite seçin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activities.map(a => (
-                      <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-dispatch-activity">
+                      <SelectValue placeholder="Aktivite seçin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activities.map(a => (
+                        <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
                 <Label>Müşteri Adı Soyadı</Label>
@@ -1685,42 +1743,195 @@ export default function Finance() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Misafir Sayısı</Label>
-                  <Input 
-                    type="number"
-                    min="1"
-                    value={dispatchForm.guestCount}
-                    onChange={e => setDispatchForm(f => ({ ...f, guestCount: parseInt(e.target.value) || 1 }))}
-                    data-testid="input-dispatch-guests"
-                  />
-                </div>
-                <div>
-                  <Label>Kişi Başı</Label>
-                  <Input 
-                    type="number"
-                    value={dispatchForm.unitPayoutTl}
-                    onChange={e => setDispatchForm(f => ({ ...f, unitPayoutTl: parseInt(e.target.value) || 0 }))}
-                    data-testid="input-dispatch-unit"
-                  />
-                </div>
-                <div>
-                  <Label>Para Birimi</Label>
-                  <Select 
-                    value={dispatchForm.currency} 
-                    onValueChange={v => setDispatchForm(f => ({ ...f, currency: v as 'TRY' | 'USD' }))}
-                  >
-                    <SelectTrigger data-testid="select-dispatch-currency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="TRY">TL</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+
+              {/* Basit / Detaylı Mod Seçimi */}
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">Fiyatlama Modu:</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={!useLineItems ? "default" : "outline"}
+                  onClick={() => setUseLineItems(false)}
+                  data-testid="button-simple-mode"
+                >
+                  Basit
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={useLineItems ? "default" : "outline"}
+                  onClick={() => setUseLineItems(true)}
+                  data-testid="button-detailed-mode"
+                >
+                  Detaylı (Satır Bazlı)
+                </Button>
               </div>
+
+              {!useLineItems ? (
+                /* Basit Mod */
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Misafir Sayısı</Label>
+                    <Input 
+                      type="number"
+                      min="1"
+                      value={simpleGuestCount}
+                      onChange={e => setSimpleGuestCount(parseInt(e.target.value) || 1)}
+                      data-testid="input-dispatch-guests"
+                    />
+                  </div>
+                  <div>
+                    <Label>Kişi Başı</Label>
+                    <Input 
+                      type="number"
+                      value={simpleUnitPayout}
+                      onChange={e => setSimpleUnitPayout(parseInt(e.target.value) || 0)}
+                      data-testid="input-dispatch-unit"
+                    />
+                  </div>
+                  <div>
+                    <Label>Para Birimi</Label>
+                    <Select 
+                      value={simpleCurrency} 
+                      onValueChange={v => setSimpleCurrency(v as 'TRY' | 'USD')}
+                    >
+                      <SelectTrigger data-testid="select-dispatch-currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TRY">TL</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ) : (
+                /* Detaylı Mod - Satır Bazlı Kalemler */
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-medium">Kalemler</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setDispatchForm(f => ({
+                        ...f,
+                        items: [...f.items, { ...defaultDispatchItem }]
+                      }))}
+                      data-testid="button-add-item"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Kalem Ekle
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {dispatchForm.items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-lg">
+                        <div className="col-span-2">
+                          <Label className="text-xs">Tip</Label>
+                          <Select
+                            value={item.itemType}
+                            onValueChange={v => {
+                              const newItems = [...dispatchForm.items];
+                              newItems[index].itemType = v as 'base' | 'observer' | 'extra';
+                              setDispatchForm(f => ({ ...f, items: newItems }));
+                            }}
+                          >
+                            <SelectTrigger data-testid={`select-item-type-${index}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="base">Dalici</SelectItem>
+                              <SelectItem value="observer">Izleyici</SelectItem>
+                              <SelectItem value="extra">Ekstra</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-3">
+                          <Label className="text-xs">Açıklama</Label>
+                          <Input
+                            placeholder="Örn: Yetişkin dalıcı"
+                            value={item.label}
+                            onChange={e => {
+                              const newItems = [...dispatchForm.items];
+                              newItems[index].label = e.target.value;
+                              setDispatchForm(f => ({ ...f, items: newItems }));
+                            }}
+                            data-testid={`input-item-label-${index}`}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label className="text-xs">Adet</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={e => {
+                              const newItems = [...dispatchForm.items];
+                              newItems[index].quantity = parseInt(e.target.value) || 1;
+                              setDispatchForm(f => ({ ...f, items: newItems }));
+                            }}
+                            data-testid={`input-item-quantity-${index}`}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label className="text-xs">Birim Fiyat</Label>
+                          <Input
+                            type="number"
+                            value={item.unitAmount}
+                            onChange={e => {
+                              const newItems = [...dispatchForm.items];
+                              newItems[index].unitAmount = parseInt(e.target.value) || 0;
+                              setDispatchForm(f => ({ ...f, items: newItems }));
+                            }}
+                            data-testid={`input-item-amount-${index}`}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Label className="text-xs">Para</Label>
+                          <Select
+                            value={item.currency}
+                            onValueChange={v => {
+                              const newItems = [...dispatchForm.items];
+                              newItems[index].currency = v as 'TRY' | 'USD';
+                              setDispatchForm(f => ({ ...f, items: newItems }));
+                            }}
+                          >
+                            <SelectTrigger data-testid={`select-item-currency-${index}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="TRY">TL</SelectItem>
+                              <SelectItem value="USD">USD</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-1">
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              if (dispatchForm.items.length > 1) {
+                                setDispatchForm(f => ({
+                                  ...f,
+                                  items: f.items.filter((_, i) => i !== index)
+                                }));
+                              }
+                            }}
+                            disabled={dispatchForm.items.length <= 1}
+                            data-testid={`button-remove-item-${index}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <Label>Notlar</Label>
                 <Textarea 
@@ -1730,21 +1941,59 @@ export default function Finance() {
                   data-testid="input-dispatch-notes"
                 />
               </div>
-              {dispatchForm.guestCount > 0 && dispatchForm.unitPayoutTl > 0 && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <div className="flex justify-between text-sm">
-                    <span>Toplam Ödeme:</span>
-                    <span className="font-bold text-orange-600">
-                      {dispatchForm.currency === 'USD' 
-                        ? `$${(dispatchForm.guestCount * dispatchForm.unitPayoutTl).toLocaleString('en-US')}` 
-                        : formatMoney(dispatchForm.guestCount * dispatchForm.unitPayoutTl)}
-                    </span>
+
+              {/* Toplam Özeti */}
+              {(() => {
+                let totalTl = 0;
+                let totalUsd = 0;
+                let guestCount = 0;
+                
+                if (useLineItems) {
+                  dispatchForm.items.forEach(item => {
+                    const itemTotal = item.quantity * item.unitAmount;
+                    if (item.currency === 'USD') {
+                      totalUsd += itemTotal;
+                    } else {
+                      totalTl += itemTotal;
+                    }
+                    if (item.itemType === 'base' || item.itemType === 'observer') {
+                      guestCount += item.quantity;
+                    }
+                  });
+                } else {
+                  guestCount = simpleGuestCount;
+                  const total = simpleGuestCount * simpleUnitPayout;
+                  if (simpleCurrency === 'USD') {
+                    totalUsd = total;
+                  } else {
+                    totalTl = total;
+                  }
+                }
+                
+                return (totalTl > 0 || totalUsd > 0) ? (
+                  <div className="p-3 bg-muted rounded-lg space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Misafir Sayısı:</span>
+                      <span className="font-medium">{guestCount}</span>
+                    </div>
+                    {totalTl > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span>Toplam (TL):</span>
+                        <span className="font-bold text-orange-600">{formatMoney(totalTl)}</span>
+                      </div>
+                    )}
+                    {totalUsd > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span>Toplam (USD):</span>
+                        <span className="font-bold text-green-600">${totalUsd.toLocaleString('en-US')}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDispatchDialogOpen(false)} data-testid="button-cancel-dispatch">İptal</Button>
+              <Button variant="outline" onClick={() => { setDispatchDialogOpen(false); resetDispatchForm(); }} data-testid="button-cancel-dispatch">İptal</Button>
               <Button 
                 onClick={handleDispatchSubmit}
                 disabled={createDispatchMutation.isPending}
