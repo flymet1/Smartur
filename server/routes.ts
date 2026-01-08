@@ -2827,8 +2827,12 @@ export async function registerRoutes(
           return null;
         }
         
+        // Create a map of activity ID to share info for partner price
+        const shareInfoMap = new Map(sharesForThisPartnership.map(s => [s.activityId, s]));
+        
         // Get capacity for shared activities
         const activityData = await Promise.all(sharedActivities.map(async (activity: any) => {
+          const shareInfo = shareInfoMap.get(activity.id);
           let capacities: any[] = [];
           let queryStartDate: string;
           let queryEndDate: string;
@@ -2888,6 +2892,8 @@ export async function registerRoutes(
             durationMinutes: activity.durationMinutes,
             color: activity.color,
             defaultTimes: activity.defaultTimes,
+            partnerUnitPrice: shareInfo?.partnerUnitPrice || null,
+            partnerCurrency: shareInfo?.partnerCurrency || 'TRY',
             capacities: capacities.map((c: any) => ({
               date: c.date,
               time: c.time,
@@ -3072,7 +3078,8 @@ export async function registerRoutes(
         ...t,
         senderTenantName: tenantMap.get(t.senderTenantId)?.name || 'Bilinmeyen',
         receiverTenantName: tenantMap.get(t.receiverTenantId)?.name || 'Bilinmeyen',
-        activityName: activityMap.get(t.activityId)?.name || 'Bilinmeyen'
+        activityName: activityMap.get(t.activityId)?.name || 'Bilinmeyen',
+        currentTenantId: tenantId
       }));
       
       res.json(enriched);

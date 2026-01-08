@@ -33,6 +33,8 @@ interface PartnerActivity {
   durationMinutes: number;
   color: string;
   defaultTimes: string;
+  partnerUnitPrice: number | null;
+  partnerCurrency: string;
   capacities: {
     date: string;
     time: string;
@@ -56,6 +58,8 @@ interface RequestDialogData {
   date: string;
   time: string;
   availableSlots: number;
+  partnerUnitPrice: number | null;
+  partnerCurrency: string;
 }
 
 interface ReservationRequest {
@@ -442,9 +446,18 @@ export default function PartnerAvailability() {
                                   )}
                                 </div>
                                 <div className="text-right">
-                                  <Badge variant="secondary" className="mb-1">
-                                    {activity.price.toLocaleString('tr-TR')} TL
-                                  </Badge>
+                                  {activity.partnerUnitPrice ? (
+                                    <Badge variant="default" className="mb-1 bg-green-600">
+                                      {activity.partnerCurrency === 'USD' ? '$' : activity.partnerCurrency === 'EUR' ? '\u20AC' : ''}
+                                      {activity.partnerUnitPrice.toLocaleString('tr-TR')}
+                                      {activity.partnerCurrency === 'TRY' ? ' TL' : ` ${activity.partnerCurrency}`}
+                                      <span className="ml-1 text-xs opacity-75">(Partner)</span>
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="secondary" className="mb-1">
+                                      {activity.price.toLocaleString('tr-TR')} TL
+                                    </Badge>
+                                  )}
                                   <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
                                     <Clock className="w-3 h-3" />
                                     {activity.durationMinutes} dk
@@ -481,7 +494,9 @@ export default function PartnerAvailability() {
                                                 partnerTenantName: partner.partnerTenantName,
                                                 date: cap.date,
                                                 time: cap.time,
-                                                availableSlots: cap.availableSlots
+                                                availableSlots: cap.availableSlots,
+                                                partnerUnitPrice: activity.partnerUnitPrice,
+                                                partnerCurrency: activity.partnerCurrency
                                               })}
                                               disabled={cap.availableSlots === 0}
                                               className={`w-full text-xs px-2 py-1 rounded transition-all ${getAvailabilityColor(cap.availableSlots, cap.totalSlots)} ${cap.availableSlots > 0 ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : 'cursor-not-allowed opacity-60'}`}
@@ -663,6 +678,16 @@ export default function PartnerAvailability() {
                   <span>
                     <strong>{selectedSlot.activityName}</strong> - {selectedSlot.partnerTenantName}<br />
                     {formatDate(selectedSlot.date)} saat {selectedSlot.time} ({selectedSlot.availableSlots} bos yer)
+                    {selectedSlot.partnerUnitPrice && (
+                      <>
+                        <br />
+                        <span className="text-green-600 font-medium">
+                          Fiyat: {selectedSlot.partnerCurrency === 'USD' ? '$' : selectedSlot.partnerCurrency === 'EUR' ? '\u20AC' : ''}
+                          {selectedSlot.partnerUnitPrice.toLocaleString('tr-TR')}
+                          {selectedSlot.partnerCurrency === 'TRY' ? ' TL' : ` ${selectedSlot.partnerCurrency}`} / kisi
+                        </span>
+                      </>
+                    )}
                   </span>
                 )}
               </DialogDescription>

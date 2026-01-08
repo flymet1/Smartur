@@ -51,7 +51,10 @@ import {
   Phone,
   FileText,
   Download,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Handshake,
+  ArrowUpRight,
+  ArrowDownLeft
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate, SupplierDispatchItem } from "@shared/schema";
 import { ChevronDown, ChevronRight, Package } from "lucide-react";
@@ -408,6 +411,41 @@ export default function Finance() {
   // Tarifeler
   const { data: rates = [] } = useQuery<AgencyActivityRate[]>({
     queryKey: ['/api/finance/rates']
+  });
+
+  // Partner Transactions state
+  const [partnerTransactionRole, setPartnerTransactionRole] = useState<'all' | 'sender' | 'receiver'>('all');
+  
+  // Partner Transactions interface
+  interface PartnerTransaction {
+    id: number;
+    senderTenantId: number;
+    receiverTenantId: number;
+    activityId: number;
+    reservationId: number | null;
+    customerName: string;
+    guestCount: number;
+    unitPrice: number | null;
+    totalAmount: number | null;
+    currency: string;
+    transactionDate: string;
+    status: string;
+    notes: string | null;
+    createdAt: string | null;
+    senderTenantName?: string;
+    receiverTenantName?: string;
+    activityName?: string;
+    currentTenantId?: number;
+  }
+  
+  // Partner Transactions query - use array pattern for proper cache invalidation
+  const { data: partnerTransactions = [], isLoading: isLoadingPartnerTransactions } = useQuery<PartnerTransaction[]>({
+    queryKey: ['/api/partner-transactions', partnerTransactionRole],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/partner-transactions?role=${partnerTransactionRole}`);
+      if (!res.ok) return [];
+      return res.json();
+    }
   });
 
   // Tarih aralığına göre filtrelenmiş ödemeler (dönem kesişimi)
@@ -1100,6 +1138,10 @@ export default function Finance() {
               <Building2 className="h-5 w-5" />
               Acentalar
             </TabsTrigger>
+            <TabsTrigger value="partner-customers" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-partner-customers">
+              <Handshake className="h-5 w-5" />
+              Partner Musteriler
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dispatches" className="space-y-4">
@@ -1587,6 +1629,132 @@ export default function Finance() {
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="partner-customers" className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold">Partner Musteriler</h3>
+              <div className="flex gap-2">
+                <Button
+                  variant={partnerTransactionRole === 'sender' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPartnerTransactionRole('sender')}
+                  data-testid="button-partner-sent"
+                >
+                  <ArrowUpRight className="h-4 w-4 mr-1" />
+                  Gonderdiklerim
+                </Button>
+                <Button
+                  variant={partnerTransactionRole === 'receiver' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPartnerTransactionRole('receiver')}
+                  data-testid="button-partner-received"
+                >
+                  <ArrowDownLeft className="h-4 w-4 mr-1" />
+                  Gelen Musteriler
+                </Button>
+                <Button
+                  variant={partnerTransactionRole === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPartnerTransactionRole('all')}
+                  data-testid="button-partner-all"
+                >
+                  Tumu
+                </Button>
+              </div>
+            </div>
+
+            <Card>
+              <CardContent className="pt-6">
+                {isLoadingPartnerTransactions ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : partnerTransactions.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Handshake className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Henuz partner musteri islemi yok</p>
+                    <p className="text-sm mt-2">Partner acentalarla musteri paylasimlari burada gorunecek</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {partnerTransactions.map(tx => {
+                      const isSender = tx.currentTenantId === tx.senderTenantId;
+                      const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
+                      const directionLabel = isSender ? 'Gonderildi' : 'Alindi';
+                      const hasTotal = tx.totalAmount && tx.totalAmount > 0;
+                      const hasUnit = tx.unitPrice && tx.unitPrice > 0;
+                      const currencySymbol = tx.currency === 'USD' ? '$' : tx.currency === 'EUR' ? '\u20AC' : '';
+                      const currencySuffix = tx.currency === 'TRY' ? ' TL' : ` ${tx.currency}`;
+                      
+                      return (
+                        <Card key={tx.id} className="overflow-hidden">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium">{tx.customerName}</span>
+                                  <Badge variant="secondary" className="gap-1">
+                                    <Handshake className="h-3 w-3" />
+                                    {partnerName || 'Partner'}
+                                  </Badge>
+                                  <Badge variant={isSender ? "outline" : "default"} className={isSender ? "" : "bg-blue-600"}>
+                                    {isSender ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownLeft className="h-3 w-3 mr-1" />}
+                                    {directionLabel}
+                                  </Badge>
+                                  {tx.status === 'pending' && (
+                                    <Badge variant="outline">Beklemede</Badge>
+                                  )}
+                                  {tx.status === 'confirmed' && (
+                                    <Badge variant="default" className="bg-green-600">Onaylandi</Badge>
+                                  )}
+                                  {tx.status === 'cancelled' && (
+                                    <Badge variant="destructive">Iptal</Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {formatDateTR(tx.transactionDate)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    {tx.guestCount} kisi
+                                  </span>
+                                  {tx.activityName && (
+                                    <span>{tx.activityName}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                {hasTotal ? (
+                                  <Badge variant="default" className="bg-green-600">
+                                    {currencySymbol}
+                                    {tx.totalAmount!.toLocaleString('tr-TR')}
+                                    {currencySuffix}
+                                  </Badge>
+                                ) : hasUnit ? (
+                                  <Badge variant="secondary">
+                                    {currencySymbol}
+                                    {tx.unitPrice!.toLocaleString('tr-TR')}
+                                    {currencySuffix}
+                                    <span className="opacity-75"> / kisi</span>
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline">Fiyat belirlenmedi</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

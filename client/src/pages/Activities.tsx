@@ -197,6 +197,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     activity ? (activity as any).sharedWithPartners === true : false
   );
   const [selectedPartnershipIds, setSelectedPartnershipIds] = useState<number[]>([]);
+  const [partnerPrices, setPartnerPrices] = useState<Record<number, { unitPrice: string; currency: string }>>({});
   
   // Partner listesini getir
   const { data: partnerships } = useQuery<any[]>({
@@ -212,12 +213,23 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   // Aktif partner acentaları (bağlı olanlar)
   const activePartnerships = partnerships?.filter((p: any) => p.status === 'active') || [];
   
-  // Mevcut paylaşımları state'e yükle
+  // Mevcut paylaşımları ve fiyatları state'e yükle
   useEffect(() => {
     if (activityShares && activityShares.length > 0) {
       setSelectedPartnershipIds(activityShares.map((s: any) => s.partnershipId));
+      const prices: Record<number, { unitPrice: string; currency: string }> = {};
+      activityShares.forEach((s: any) => {
+        if (s.partnerUnitPrice !== null && s.partnerUnitPrice !== undefined) {
+          prices[s.partnershipId] = {
+            unitPrice: String(s.partnerUnitPrice),
+            currency: s.partnerCurrency || 'TRY'
+          };
+        }
+      });
+      setPartnerPrices(prices);
     } else if (activityShares) {
       setSelectedPartnershipIds([]);
+      setPartnerPrices({});
     }
   }, [activityShares]);
   const [transferZones, setTransferZones] = useState(() => {
@@ -269,6 +281,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setHasFreeHotelTransfer(false);
     setSharedWithPartners(false);
     setSelectedPartnershipIds([]);
+    setPartnerPrices({});
     setTransferZones("");
     setExtras([]);
     setFaq([]);
@@ -383,9 +396,14 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         await updateMutation.mutateAsync({ id: activity.id, ...data });
         savedActivityId = activity.id;
         
-        // Partner paylaşımlarını kaydet (düzenleme modunda)
+        // Partner paylaşımlarını ve fiyatlarını kaydet (düzenleme modunda)
         try {
-          await apiRequest('POST', `/api/activities/${savedActivityId}/partner-shares`, { partnershipIds: selectedPartnershipIds });
+          const shares = selectedPartnershipIds.map(partnershipId => ({
+            partnershipId,
+            partnerUnitPrice: partnerPrices[partnershipId]?.unitPrice ? parseInt(partnerPrices[partnershipId].unitPrice) : undefined,
+            partnerCurrency: partnerPrices[partnershipId]?.currency || 'TRY'
+          }));
+          await apiRequest('POST', `/api/activities/${savedActivityId}/partner-shares`, { shares });
           queryClient.invalidateQueries({ queryKey: [`/api/activities/${savedActivityId}/partner-shares`] });
         } catch (shareErr) {
           console.error('Partner paylaşım hatası:', shareErr);
@@ -395,10 +413,15 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       } else {
         const created = await createMutation.mutateAsync(data);
         
-        // Yeni aktivite oluşturulduktan sonra ID'yi al
+        // Yeni aktivite oluşturulduktan sonra partner paylaşımlarını kaydet
         if (created && created.id && selectedPartnershipIds.length > 0) {
           try {
-            await apiRequest('POST', `/api/activities/${created.id}/partner-shares`, { partnershipIds: selectedPartnershipIds });
+            const shares = selectedPartnershipIds.map(partnershipId => ({
+              partnershipId,
+              partnerUnitPrice: partnerPrices[partnershipId]?.unitPrice ? parseInt(partnerPrices[partnershipId].unitPrice) : undefined,
+              partnerCurrency: partnerPrices[partnershipId]?.currency || 'TRY'
+            }));
+            await apiRequest('POST', `/api/activities/${created.id}/partner-shares`, { shares });
           } catch (shareErr) {
             console.error('Partner paylaşım hatası:', shareErr);
           }
@@ -646,44 +669,86 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   {activePartnerships.length === 0 ? (
                     <p className="text-sm text-muted-foreground italic">Henuz aktif partner acentaniz yok. Ayarlar sayfasindan partner ekleyebilirsiniz.</p>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {activePartnerships.map((partnership: any) => {
                         const isSelected = selectedPartnershipIds.includes(partnership.id);
+                        const priceData = partnerPrices[partnership.id] || { unitPrice: '', currency: 'TRY' };
                         return (
                           <div 
                             key={partnership.id} 
-                            className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
+                            className={`p-3 rounded-md border transition-colors ${
                               isSelected 
                                 ? 'border-primary bg-primary/10' 
                                 : 'border-border hover:bg-muted/50'
                             }`}
                           >
-                            <Checkbox
-                              id={`partner-${partnership.id}`}
-                              checked={isSelected}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedPartnershipIds([...selectedPartnershipIds, partnership.id]);
-                                  setSharedWithPartners(true);
-                                } else {
-                                  const newIds = selectedPartnershipIds.filter(id => id !== partnership.id);
-                                  setSelectedPartnershipIds(newIds);
-                                  if (newIds.length === 0) setSharedWithPartners(false);
-                                }
-                              }}
-                              data-testid={`checkbox-partner-${partnership.id}`}
-                            />
-                            <label 
-                              htmlFor={`partner-${partnership.id}`}
-                              className="flex-1 cursor-pointer"
-                            >
-                              <span className="font-medium">{partnership.partnerTenantName || `Partner #${partnership.partnerTenantId}`}</span>
-                              {partnership.requesterTenantId === partnership.partnerTenantId ? (
-                                <span className="text-xs text-muted-foreground ml-2">(Bizi eklediler)</span>
-                              ) : (
-                                <span className="text-xs text-muted-foreground ml-2">(Biz ekledik)</span>
-                              )}
-                            </label>
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                id={`partner-${partnership.id}`}
+                                checked={isSelected}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedPartnershipIds([...selectedPartnershipIds, partnership.id]);
+                                    setSharedWithPartners(true);
+                                  } else {
+                                    const newIds = selectedPartnershipIds.filter(id => id !== partnership.id);
+                                    setSelectedPartnershipIds(newIds);
+                                    if (newIds.length === 0) setSharedWithPartners(false);
+                                    const newPrices = { ...partnerPrices };
+                                    delete newPrices[partnership.id];
+                                    setPartnerPrices(newPrices);
+                                  }
+                                }}
+                                data-testid={`checkbox-partner-${partnership.id}`}
+                              />
+                              <label 
+                                htmlFor={`partner-${partnership.id}`}
+                                className="flex-1 cursor-pointer"
+                              >
+                                <span className="font-medium">{partnership.partnerTenantName || `Partner #${partnership.partnerTenantId}`}</span>
+                                {partnership.requesterTenantId === partnership.partnerTenantId ? (
+                                  <span className="text-xs text-muted-foreground ml-2">(Bizi eklediler)</span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground ml-2">(Biz ekledik)</span>
+                                )}
+                              </label>
+                            </div>
+                            
+                            {isSelected && (
+                              <div className="mt-3 pt-3 border-t border-primary/20 flex flex-wrap items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Partner Fiyati:</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Fiyat"
+                                    value={priceData.unitPrice}
+                                    onChange={(e) => setPartnerPrices({
+                                      ...partnerPrices,
+                                      [partnership.id]: { ...priceData, unitPrice: e.target.value }
+                                    })}
+                                    className="w-24 h-8"
+                                    data-testid={`input-partner-price-${partnership.id}`}
+                                  />
+                                </div>
+                                <Select
+                                  value={priceData.currency}
+                                  onValueChange={(val) => setPartnerPrices({
+                                    ...partnerPrices,
+                                    [partnership.id]: { ...priceData, currency: val }
+                                  })}
+                                >
+                                  <SelectTrigger className="w-20 h-8" data-testid={`select-partner-currency-${partnership.id}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="TRY">TL</SelectItem>
+                                    <SelectItem value="USD">USD</SelectItem>
+                                    <SelectItem value="EUR">EUR</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">Bu fiyat partner acentaya gosterilir</p>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
