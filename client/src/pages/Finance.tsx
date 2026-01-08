@@ -1404,11 +1404,21 @@ export default function Finance() {
                   onValueChange={v => {
                     const supplierId = parseInt(v);
                     const supplier = suppliers.find(s => s.id === supplierId);
-                    setDispatchForm(f => ({ 
-                      ...f, 
-                      agencyId: supplierId,
-                      unitPayoutTl: supplier?.defaultPayoutPerGuest || f.unitPayoutTl
-                    }));
+                    setDispatchForm(f => {
+                      // Önce Acenta Fiyat Listesinden eşleşen fiyat var mı bak
+                      const matchingRate = rates.find(r => 
+                        r.agencyId === supplierId && 
+                        r.activityId === f.activityId &&
+                        (!r.validFrom || r.validFrom <= f.dispatchDate) &&
+                        (!r.validTo || r.validTo >= f.dispatchDate)
+                      );
+                      const newPrice = matchingRate?.unitPayoutTl || supplier?.defaultPayoutPerGuest || f.unitPayoutTl;
+                      return { 
+                        ...f, 
+                        agencyId: supplierId,
+                        unitPayoutTl: newPrice
+                      };
+                    });
                   }}
                 >
                   <SelectTrigger data-testid="select-dispatch-supplier">
@@ -1425,7 +1435,24 @@ export default function Finance() {
                 <Label>Aktivite (Opsiyonel)</Label>
                 <Select 
                   value={dispatchForm.activityId ? String(dispatchForm.activityId) : ""} 
-                  onValueChange={v => setDispatchForm(f => ({ ...f, activityId: parseInt(v) || 0 }))}
+                  onValueChange={v => {
+                    const activityId = parseInt(v) || 0;
+                    setDispatchForm(f => {
+                      // Aktivite seçildiğinde de Fiyat Listesinden kontrol et
+                      if (f.agencyId && activityId) {
+                        const matchingRate = rates.find(r => 
+                          r.agencyId === f.agencyId && 
+                          r.activityId === activityId &&
+                          (!r.validFrom || r.validFrom <= f.dispatchDate) &&
+                          (!r.validTo || r.validTo >= f.dispatchDate)
+                        );
+                        if (matchingRate) {
+                          return { ...f, activityId, unitPayoutTl: matchingRate.unitPayoutTl };
+                        }
+                      }
+                      return { ...f, activityId };
+                    });
+                  }}
                 >
                   <SelectTrigger data-testid="select-dispatch-activity">
                     <SelectValue placeholder="Aktivite seçin" />
