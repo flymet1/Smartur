@@ -46,7 +46,7 @@ const allNavItems: NavItem[] = [
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, partnerOnly: true },
   { href: "/viewer-stats", label: "Is Ortaklari", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
-  { href: "/partner-availability", label: "Partner Musaitlik", icon: Building, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
+  { href: "/partner-availability", label: "Partnerler", icon: Building, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/finance", label: "Finans & Acentalar", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
