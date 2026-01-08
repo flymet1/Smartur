@@ -1104,11 +1104,13 @@ export default function Finance() {
                   dispatchDate: new Date().toISOString().split('T')[0],
                   dispatchTime: '10:00',
                   customerName: '',
-                  guestCount: 1,
-                  unitPayoutTl: 0,
-                  currency: 'TRY',
-                  notes: ''
+                  notes: '',
+                  items: [{ ...defaultDispatchItem }]
                 });
+                setSimpleGuestCount(1);
+                setSimpleUnitPayout(0);
+                setSimpleCurrency('TRY');
+                setUseLineItems(false);
                 setDispatchDialogOpen(true);
               }} data-testid="button-add-dispatch">
                 <Plus className="h-4 w-4 mr-2" />
