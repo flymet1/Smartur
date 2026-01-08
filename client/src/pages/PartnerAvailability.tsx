@@ -331,7 +331,7 @@ export default function PartnerAvailability() {
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Partner Acenta</p>
-                  <p className="text-2xl font-bold mt-1" data-testid="text-partner-count">{partnerData.length}</p>
+                  <p className="text-2xl font-bold mt-1" data-testid="text-partner-count">{partnerData?.length || 0}</p>
                   <p className="text-xs text-muted-foreground mt-1">Aktif partner</p>
                 </div>
                 <div className="p-3 rounded-full shrink-0 bg-muted">
@@ -347,7 +347,7 @@ export default function PartnerAvailability() {
                 <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Paylaşılan Aktivite</p>
                   <p className="text-2xl font-bold mt-1" data-testid="text-activity-count">
-                    {partnerData.reduce((sum, p) => sum + p.activities.length, 0)}
+                    {(partnerData || []).reduce((sum, p) => sum + p.activities.length, 0)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Toplam aktivite</p>
                 </div>
@@ -364,7 +364,7 @@ export default function PartnerAvailability() {
                 <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Müsait Slot</p>
                   <p className="text-2xl font-bold mt-1 text-green-600" data-testid="text-available-slots">
-                    {partnerData.reduce((sum, p) => 
+                    {(partnerData || []).reduce((sum, p) => 
                       sum + p.activities.reduce((actSum, act) => 
                         actSum + act.capacities.reduce((capSum, cap) => capSum + cap.availableSlots, 0), 0), 0)}
                   </p>
