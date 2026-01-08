@@ -1,7 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // === MULTI-TENANT SUPPORT ===
 
@@ -1162,7 +1162,7 @@ export const userNotificationPreferences = pgTable("user_notification_preference
   userId: integer("user_id").references(() => appUsers.id).notNull(),
   tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
   notificationType: text("notification_type").notNull(),
-  channels: text("channels").default('["app"]'),
+  channels: text("channels").array().default(sql`ARRAY['app']::text[]`),
   enabled: boolean("enabled").default(true),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1172,7 +1172,7 @@ export const tenantNotificationSettings = pgTable("tenant_notification_settings"
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
   notificationType: text("notification_type").notNull(),
-  channels: text("channels").default('["whatsapp"]'),
+  channels: text("channels").array().default(sql`ARRAY['whatsapp']::text[]`),
   enabled: boolean("enabled").default(true),
   templateWhatsapp: text("template_whatsapp"),
   templateEmail: text("template_email"),
