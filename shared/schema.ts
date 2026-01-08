@@ -321,6 +321,19 @@ export const supplierDispatches = pgTable("supplier_dispatches", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Gönderim Kalemleri (Dispatch alt satırları - dalış yapan, gözlemci, ekstralar vb.)
+export const supplierDispatchItems = pgTable("supplier_dispatch_items", {
+  id: serial("id").primaryKey(),
+  dispatchId: integer("dispatch_id").references(() => supplierDispatches.id).notNull(),
+  itemType: text("item_type").default("base").notNull(), // base (ana aktivite), observer (gözlemci), extra (ekstra satış)
+  label: text("label").notNull(), // Kalem açıklaması (örn: "Dalış", "Gözlemci", "Fotoğraf Paketi")
+  quantity: integer("quantity").default(1).notNull(), // Adet
+  unitAmount: integer("unit_amount").default(0).notNull(), // Birim fiyat
+  totalAmount: integer("total_amount").default(0).notNull(), // Toplam = quantity * unitAmount
+  currency: text("currency").default("TRY").notNull(), // TRY veya USD
+  notes: text("notes"),
+});
+
 // Tedarikçi Ödeme Tarifeleri (Dönemsel ücretler)
 export const agencyActivityRates = pgTable("agency_activity_rates", {
   id: serial("id").primaryKey(),
@@ -482,6 +495,10 @@ export type InsertAgencyPayout = z.infer<typeof insertAgencyPayoutSchema>;
 export const insertSupplierDispatchSchema = createInsertSchema(supplierDispatches).omit({ id: true, createdAt: true });
 export type SupplierDispatch = typeof supplierDispatches.$inferSelect;
 export type InsertSupplierDispatch = z.infer<typeof insertSupplierDispatchSchema>;
+
+export const insertSupplierDispatchItemSchema = createInsertSchema(supplierDispatchItems).omit({ id: true });
+export type SupplierDispatchItem = typeof supplierDispatchItems.$inferSelect;
+export type InsertSupplierDispatchItem = z.infer<typeof insertSupplierDispatchItemSchema>;
 
 export const insertAgencyActivityRateSchema = createInsertSchema(agencyActivityRates).omit({ id: true, createdAt: true });
 export type AgencyActivityRate = typeof agencyActivityRates.$inferSelect;
