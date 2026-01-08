@@ -2698,6 +2698,95 @@ export async function registerRoutes(
     }
   });
 
+  // Get partner shared availability - activities shared by partners
+  app.get("/api/partner-shared-availability", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { date, startDate, endDate } = req.query;
+      
+      // Get active partnerships where we are the requester (we connected to them)
+      const partnerships = await storage.getTenantPartnerships(tenantId);
+      const activePartnerships = partnerships.filter(p => p.status === 'active' && p.requesterTenantId === tenantId);
+      
+      if (activePartnerships.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get partner tenant IDs
+      const partnerTenantIds = activePartnerships.map(p => p.partnerTenantId);
+      
+      // Get tenants for names
+      const tenants = await storage.getTenants();
+      const tenantMap = new Map(tenants.map(t => [t.id, t]));
+      
+      // For each partner, get their shared activities and capacity
+      const results = await Promise.all(partnerTenantIds.map(async (partnerTenantId) => {
+        // Get shared activities from partner
+        const allActivities = await storage.getActivities(partnerTenantId);
+        const sharedActivities = allActivities.filter((a: any) => a.sharedWithPartners === true && a.active !== false);
+        
+        if (sharedActivities.length === 0) {
+          return null;
+        }
+        
+        // Get capacity for shared activities
+        const activityData = await Promise.all(sharedActivities.map(async (activity: any) => {
+          let capacities: any[] = [];
+          
+          if (date) {
+            // Single date
+            capacities = await storage.getCapacity(partnerTenantId, activity.id, date as string);
+          } else if (startDate && endDate) {
+            // Date range
+            capacities = await storage.getCapacityRange(partnerTenantId, activity.id, startDate as string, endDate as string);
+          } else {
+            // Default: next 7 days
+            const today = new Date();
+            const weekLater = new Date(today);
+            weekLater.setDate(weekLater.getDate() + 7);
+            const start = today.toISOString().split('T')[0];
+            const end = weekLater.toISOString().split('T')[0];
+            capacities = await storage.getCapacityRange(partnerTenantId, activity.id, start, end);
+          }
+          
+          return {
+            id: activity.id,
+            name: activity.name,
+            description: activity.description,
+            price: activity.price,
+            priceUsd: activity.priceUsd,
+            durationMinutes: activity.durationMinutes,
+            color: activity.color,
+            defaultTimes: activity.defaultTimes,
+            capacities: capacities.map((c: any) => ({
+              date: c.date,
+              time: c.time,
+              totalSlots: c.totalSlots,
+              bookedSlots: c.bookedSlots,
+              availableSlots: c.totalSlots - (c.bookedSlots || 0)
+            }))
+          };
+        }));
+        
+        return {
+          partnerTenantId,
+          partnerTenantName: tenantMap.get(partnerTenantId)?.name || 'Bilinmeyen',
+          activities: activityData
+        };
+      }));
+      
+      // Filter out null results
+      res.json(results.filter(r => r !== null));
+    } catch (error) {
+      console.error("Get partner shared availability error:", error);
+      res.status(500).json({ error: "Partner musaitlikleri alinamadi" });
+    }
+  });
+
   // Get dispatch shares (incoming dispatches from partners)
   app.get("/api/dispatch-shares", requirePermission(PERMISSIONS.FINANCE_VIEW), async (req, res) => {
     try {

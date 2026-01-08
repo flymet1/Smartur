@@ -1,7 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useActivities, useCreateActivity, useDeleteActivity, useUpdateActivity } from "@/hooks/use-activities";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit, Clock, Tag } from "lucide-react";
+import { Plus, Trash2, Edit, Clock, Tag, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -189,6 +189,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [hasFreeHotelTransfer, setHasFreeHotelTransfer] = useState(
     activity ? (activity as any).hasFreeHotelTransfer === true : false
   );
+  // Partner Paylaşımı
+  const [sharedWithPartners, setSharedWithPartners] = useState(
+    activity ? (activity as any).sharedWithPartners === true : false
+  );
   const [transferZones, setTransferZones] = useState(() => {
     if (activity && (activity as any).transferZones) {
       try {
@@ -236,6 +240,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setReservationLink("");
     setReservationLinkEn("");
     setHasFreeHotelTransfer(false);
+    setSharedWithPartners(false);
     setTransferZones("");
     setExtras([]);
     setFaq([]);
@@ -340,6 +345,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       transferZones: JSON.stringify(zonesArray),
       extras: JSON.stringify(extras),
       faq: stringifyFaq(faq),
+      sharedWithPartners: sharedWithPartners,
     };
 
     try {
@@ -578,6 +584,27 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
               </TabsContent>
 
               <TabsContent value="extras" className="space-y-4 mt-0">
+                {/* Partner Paylaşımı */}
+                <div className="space-y-4 bg-primary/5 p-4 rounded-lg border border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-base flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Partner Paylasimi
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Bu aktivitenin musaitligini partner acentalarla paylas</p>
+                    </div>
+                    <Switch 
+                      checked={sharedWithPartners}
+                      onCheckedChange={setSharedWithPartners}
+                      data-testid="switch-partner-share"
+                    />
+                  </div>
+                  {sharedWithPartners && (
+                    <p className="text-xs text-green-600 dark:text-green-400">Partner acentalar bu aktivitenin bos kapasitesini gorebilecek</p>
+                  )}
+                </div>
+
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
