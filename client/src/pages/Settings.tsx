@@ -4229,26 +4229,39 @@ function PartnerAgencySection() {
   );
 }
 
-const NOTIFICATION_TYPES = [
+const TENANT_NOTIFICATION_TYPES = [
   { type: 'reservation_new', label: 'Yeni Rezervasyon', description: 'Yeni rezervasyon oluşturulduğunda' },
   { type: 'reservation_confirmed', label: 'Rezervasyon Onayı', description: 'Rezervasyon onaylandığında' },
   { type: 'reservation_cancelled', label: 'Rezervasyon İptali', description: 'Rezervasyon iptal edildiğinde' },
   { type: 'customer_request', label: 'Müşteri Talebi', description: 'Müşteri değişiklik/iptal talebi gönderdiğinde' },
+  { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce siparişi geldiğinde' },
+];
+
+const USER_NOTIFICATION_TYPES = [
+  { type: 'reservation_new', label: 'Yeni Rezervasyon', description: 'Yeni rezervasyon oluşturulduğunda' },
+  { type: 'customer_request', label: 'Müşteri Talebi', description: 'Müşteri değişiklik/iptal talebi gönderdiğinde' },
   { type: 'partner_request', label: 'Partner Talebi', description: 'Partner acentadan rezervasyon talebi geldiğinde' },
+  { type: 'partner_request_approved', label: 'Partner Talebi Onaylandı', description: 'Gönderdiğiniz partner talebi onaylandığında' },
+  { type: 'partner_request_rejected', label: 'Partner Talebi Reddedildi', description: 'Gönderdiğiniz partner talebi reddedildiğinde' },
   { type: 'capacity_warning', label: 'Kapasite Uyarısı', description: 'Aktivite kapasitesi azaldığında' },
   { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce siparişi geldiğinde' },
 ];
 
 function NotificationPreferencesTab() {
   const { toast } = useToast();
-  const [savingType, setSavingType] = useState<string | null>(null);
+  const [savingTenantType, setSavingTenantType] = useState<string | null>(null);
+  const [savingUserType, setSavingUserType] = useState<string | null>(null);
 
-  const { data: settings = [], isLoading } = useQuery<any[]>({
+  const { data: tenantSettings = [], isLoading: isLoadingTenant } = useQuery<any[]>({
     queryKey: ['/api/tenant-notification-settings'],
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async (data: { notificationType: string; channels: string; enabled: boolean; templateWhatsapp?: string; templateEmail?: string }) => {
+  const { data: userPrefs = [], isLoading: isLoadingUser } = useQuery<any[]>({
+    queryKey: ['/api/user-notification-preferences'],
+  });
+
+  const saveTenantMutation = useMutation({
+    mutationFn: async (data: { notificationType: string; channels: string; enabled: boolean }) => {
       return apiRequest('/api/tenant-notification-settings', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -4262,48 +4275,90 @@ function NotificationPreferencesTab() {
       toast({ title: 'Hata', description: 'Bildirim ayarı kaydedilemedi', variant: 'destructive' });
     },
     onSettled: () => {
-      setSavingType(null);
+      setSavingTenantType(null);
     },
   });
 
-  const getSettingForType = (type: string) => {
-    return settings.find((s: any) => s.notificationType === type);
+  const saveUserMutation = useMutation({
+    mutationFn: async (data: { notificationType: string; channels: string; enabled: boolean }) => {
+      return apiRequest('/api/user-notification-preferences', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/user-notification-preferences'] });
+      toast({ title: 'Bildirim tercihiniz kaydedildi' });
+    },
+    onError: () => {
+      toast({ title: 'Hata', description: 'Bildirim tercihi kaydedilemedi', variant: 'destructive' });
+    },
+    onSettled: () => {
+      setSavingUserType(null);
+    },
+  });
+
+  const getTenantSettingForType = (type: string) => {
+    return tenantSettings.find((s: any) => s.notificationType === type);
   };
 
-  const handleToggleChannel = (notificationType: string, channel: string, currentChannels: string[]) => {
-    setSavingType(notificationType);
-    let newChannels: string[];
-    if (currentChannels.includes(channel)) {
-      newChannels = currentChannels.filter(c => c !== channel);
-    } else {
-      newChannels = [...currentChannels, channel];
-    }
+  const getUserPrefForType = (type: string) => {
+    return userPrefs.find((p: any) => p.notificationType === type);
+  };
+
+  const handleTenantToggleChannel = (notificationType: string, channel: string, currentChannels: string[]) => {
+    setSavingTenantType(notificationType);
+    let newChannels = currentChannels.includes(channel)
+      ? currentChannels.filter(c => c !== channel)
+      : [...currentChannels, channel];
     
-    const existing = getSettingForType(notificationType);
-    saveMutation.mutate({
+    const existing = getTenantSettingForType(notificationType);
+    saveTenantMutation.mutate({
       notificationType,
       channels: JSON.stringify(newChannels),
       enabled: existing?.enabled ?? true,
-      templateWhatsapp: existing?.templateWhatsapp,
-      templateEmail: existing?.templateEmail,
     });
   };
 
-  const handleToggleEnabled = (notificationType: string, enabled: boolean) => {
-    setSavingType(notificationType);
-    const existing = getSettingForType(notificationType);
+  const handleTenantToggleEnabled = (notificationType: string, enabled: boolean) => {
+    setSavingTenantType(notificationType);
+    const existing = getTenantSettingForType(notificationType);
     const channels = existing?.channels ? JSON.parse(existing.channels) : ['whatsapp'];
     
-    saveMutation.mutate({
+    saveTenantMutation.mutate({
       notificationType,
       channels: JSON.stringify(channels),
       enabled,
-      templateWhatsapp: existing?.templateWhatsapp,
-      templateEmail: existing?.templateEmail,
     });
   };
 
-  if (isLoading) {
+  const handleUserToggleChannel = (notificationType: string, channel: string, currentChannels: string[]) => {
+    setSavingUserType(notificationType);
+    let newChannels = currentChannels.includes(channel)
+      ? currentChannels.filter(c => c !== channel)
+      : [...currentChannels, channel];
+    
+    const existing = getUserPrefForType(notificationType);
+    saveUserMutation.mutate({
+      notificationType,
+      channels: JSON.stringify(newChannels),
+      enabled: existing?.enabled ?? true,
+    });
+  };
+
+  const handleUserToggleEnabled = (notificationType: string, enabled: boolean) => {
+    setSavingUserType(notificationType);
+    const existing = getUserPrefForType(notificationType);
+    const channels = existing?.channels ? JSON.parse(existing.channels) : ['app'];
+    
+    saveUserMutation.mutate({
+      notificationType,
+      channels: JSON.stringify(channels),
+      enabled,
+    });
+  };
+
+  if (isLoadingTenant || isLoadingUser) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -4319,32 +4374,32 @@ function NotificationPreferencesTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-primary" />
-            Müşteri Bildirim Tercihleri
+            Müşteri Bildirim Ayarları
           </CardTitle>
           <CardDescription>
             Müşterilerinize gönderilecek bildirimlerin kanal ve ayarlarını belirleyin
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {NOTIFICATION_TYPES.map((notif) => {
-            const setting = getSettingForType(notif.type);
+          {TENANT_NOTIFICATION_TYPES.map((notif) => {
+            const setting = getTenantSettingForType(notif.type);
             const enabled = setting?.enabled ?? true;
             const channels: string[] = setting?.channels ? JSON.parse(setting.channels) : ['whatsapp'];
-            const isSaving = savingType === notif.type;
+            const isSaving = savingTenantType === notif.type;
 
             return (
               <div
                 key={notif.type}
                 className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-muted/30 rounded-lg gap-4"
-                data-testid={`notification-setting-${notif.type}`}
+                data-testid={`tenant-notification-${notif.type}`}
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={enabled}
-                      onCheckedChange={(checked) => handleToggleEnabled(notif.type, checked)}
+                      onCheckedChange={(checked) => handleTenantToggleEnabled(notif.type, checked)}
                       disabled={isSaving}
-                      data-testid={`switch-notification-${notif.type}`}
+                      data-testid={`switch-tenant-${notif.type}`}
                     />
                     <span className="font-medium">{notif.label}</span>
                     {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -4360,9 +4415,9 @@ function NotificationPreferencesTab() {
                           size="sm"
                           variant={channels.includes('whatsapp') ? 'default' : 'outline'}
                           className="gap-1"
-                          onClick={() => handleToggleChannel(notif.type, 'whatsapp', channels)}
+                          onClick={() => handleTenantToggleChannel(notif.type, 'whatsapp', channels)}
                           disabled={isSaving}
-                          data-testid={`btn-channel-whatsapp-${notif.type}`}
+                          data-testid={`btn-tenant-whatsapp-${notif.type}`}
                         >
                           <MessageSquare className="h-4 w-4" />
                           WhatsApp
@@ -4377,15 +4432,112 @@ function NotificationPreferencesTab() {
                           size="sm"
                           variant={channels.includes('email') ? 'default' : 'outline'}
                           className="gap-1"
-                          onClick={() => handleToggleChannel(notif.type, 'email', channels)}
+                          onClick={() => handleTenantToggleChannel(notif.type, 'email', channels)}
                           disabled={isSaving}
-                          data-testid={`btn-channel-email-${notif.type}`}
+                          data-testid={`btn-tenant-email-${notif.type}`}
                         >
                           <Mail className="h-4 w-4" />
                           E-posta
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>E-posta ile bildirim gönder</TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Kişisel Bildirim Tercihleriniz
+          </CardTitle>
+          <CardDescription>
+            Size gönderilecek bildirimlerin kanal ve ayarlarını belirleyin
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {USER_NOTIFICATION_TYPES.map((notif) => {
+            const pref = getUserPrefForType(notif.type);
+            const enabled = pref?.enabled ?? true;
+            const channels: string[] = pref?.channels ? JSON.parse(pref.channels) : ['app'];
+            const isSaving = savingUserType === notif.type;
+
+            return (
+              <div
+                key={notif.type}
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-muted/30 rounded-lg gap-4"
+                data-testid={`user-notification-${notif.type}`}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={enabled}
+                      onCheckedChange={(checked) => handleUserToggleEnabled(notif.type, checked)}
+                      disabled={isSaving}
+                      data-testid={`switch-user-${notif.type}`}
+                    />
+                    <span className="font-medium">{notif.label}</span>
+                    {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1 ml-11">{notif.description}</p>
+                </div>
+
+                {enabled && (
+                  <div className="flex items-center gap-2 ml-11 sm:ml-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant={channels.includes('app') ? 'default' : 'outline'}
+                          className="gap-1"
+                          onClick={() => handleUserToggleChannel(notif.type, 'app', channels)}
+                          disabled={isSaving}
+                          data-testid={`btn-user-app-${notif.type}`}
+                        >
+                          <Bell className="h-4 w-4" />
+                          Uygulama
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Uygulama içi bildirim al</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant={channels.includes('email') ? 'default' : 'outline'}
+                          className="gap-1"
+                          onClick={() => handleUserToggleChannel(notif.type, 'email', channels)}
+                          disabled={isSaving}
+                          data-testid={`btn-user-email-${notif.type}`}
+                        >
+                          <Mail className="h-4 w-4" />
+                          E-posta
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>E-posta ile bildirim al</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant={channels.includes('whatsapp') ? 'default' : 'outline'}
+                          className="gap-1"
+                          onClick={() => handleUserToggleChannel(notif.type, 'whatsapp', channels)}
+                          disabled={isSaving}
+                          data-testid={`btn-user-whatsapp-${notif.type}`}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          WhatsApp
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>WhatsApp ile bildirim al</TooltipContent>
                     </Tooltip>
                   </div>
                 )}
@@ -4405,17 +4557,24 @@ function NotificationPreferencesTab() {
         <CardContent>
           <div className="space-y-3 text-sm text-muted-foreground">
             <div className="flex items-start gap-3">
+              <Bell className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-foreground">Uygulama Bildirimleri</p>
+                <p>Uygulama içinde bildirim alırsınız. Her zaman aktiftir ve ek yapılandırma gerektirmez.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
               <MessageSquare className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-foreground">WhatsApp</p>
-                <p>Müşterilerinize WhatsApp üzerinden otomatik bildirim gönderilir. Twilio entegrasyonu gerektirir.</p>
+                <p>WhatsApp üzerinden bildirim gönderilir. Twilio entegrasyonu gerektirir.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Mail className="h-5 w-5 text-blue-600 shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-foreground">E-posta</p>
-                <p>Müşterilerinize e-posta ile bildirim gönderilir. Gmail entegrasyonu gerektirir.</p>
+                <p>E-posta ile bildirim gönderilir. Gmail entegrasyonu gerektirir.</p>
               </div>
             </div>
           </div>
