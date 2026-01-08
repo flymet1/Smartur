@@ -632,9 +632,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   />
                   <p className="text-xs text-muted-foreground">Kullanılabilir etiketler: {'{'}isim{'}'}, {'{'}tarih{'}'}, {'{'}saat{'}'}, {'{'}aktivite{'}'}, {'{'}takip_linki{'}'}</p>
                 </div>
-              </TabsContent>
 
-              <TabsContent value="extras" className="space-y-4 mt-0">
                 {/* Partner Paylaşımı - Granüler Seçim */}
                 <div className="space-y-4 bg-primary/5 p-4 rounded-lg border border-primary/20">
                   <div className="space-y-1">
@@ -698,7 +696,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     </p>
                   )}
                 </div>
+              </TabsContent>
 
+              <TabsContent value="extras" className="space-y-4 mt-0">
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
