@@ -451,7 +451,10 @@ export default function Reservations() {
       r.priceTl || 0,
       r.priceUsd || 0,
       getStatusText(r.status),
-      r.source === "web" ? "Web" : r.source === "whatsapp" ? "WhatsApp" : r.source === "partner" ? "Is Ortagi" : "Manuel"
+      r.source === "web" ? "Web" : r.source === "whatsapp" ? "WhatsApp" : r.source === "partner" ? (() => {
+        const partnerMatch = (r as any).notes?.match(/\[Partner:\s*([^\]]+)\]/);
+        return partnerMatch ? `Partner: ${partnerMatch[1]}` : 'Partner Acenta';
+      })() : "Manuel"
     ]);
     
     const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
@@ -3522,7 +3525,15 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Kaynak</Label>
-                <div className="font-medium">{reservation.source === 'manual' ? 'Manuel' : reservation.source === 'woocommerce' ? 'WooCommerce' : reservation.source === 'partner' ? 'Partner Acenta' : reservation.source}</div>
+                <div className="font-medium">
+                  {reservation.source === 'manual' ? 'Manuel' : 
+                   reservation.source === 'woocommerce' ? 'WooCommerce' : 
+                   reservation.source === 'partner' ? (() => {
+                     const partnerMatch = (reservation as any).notes?.match(/\[Partner:\s*([^\]]+)\]/);
+                     return partnerMatch ? `Partner: ${partnerMatch[1]}` : 'Partner Acenta';
+                   })() : 
+                   reservation.source}
+                </div>
               </div>
               <div>
                 <Label className="text-muted-foreground text-xs">Odeme Durumu</Label>
