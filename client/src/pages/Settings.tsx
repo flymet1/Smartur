@@ -4261,7 +4261,7 @@ function NotificationPreferencesTab() {
   });
 
   const saveTenantMutation = useMutation({
-    mutationFn: async (data: { notificationType: string; channels: string; enabled: boolean }) => {
+    mutationFn: async (data: { notificationType: string; channels: string[]; enabled: boolean }) => {
       return apiRequest('/api/tenant-notification-settings', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -4280,7 +4280,7 @@ function NotificationPreferencesTab() {
   });
 
   const saveUserMutation = useMutation({
-    mutationFn: async (data: { notificationType: string; channels: string; enabled: boolean }) => {
+    mutationFn: async (data: { notificationType: string; channels: string[]; enabled: boolean }) => {
       return apiRequest('/api/user-notification-preferences', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -4315,7 +4315,7 @@ function NotificationPreferencesTab() {
     const existing = getTenantSettingForType(notificationType);
     saveTenantMutation.mutate({
       notificationType,
-      channels: JSON.stringify(newChannels),
+      channels: newChannels,
       enabled: existing?.enabled ?? true,
     });
   };
@@ -4323,11 +4323,11 @@ function NotificationPreferencesTab() {
   const handleTenantToggleEnabled = (notificationType: string, enabled: boolean) => {
     setSavingTenantType(notificationType);
     const existing = getTenantSettingForType(notificationType);
-    const channels = existing?.channels ? JSON.parse(existing.channels) : ['whatsapp'];
+    const channels: string[] = existing?.channels ?? ['whatsapp'];
     
     saveTenantMutation.mutate({
       notificationType,
-      channels: JSON.stringify(channels),
+      channels,
       enabled,
     });
   };
@@ -4341,7 +4341,7 @@ function NotificationPreferencesTab() {
     const existing = getUserPrefForType(notificationType);
     saveUserMutation.mutate({
       notificationType,
-      channels: JSON.stringify(newChannels),
+      channels: newChannels,
       enabled: existing?.enabled ?? true,
     });
   };
@@ -4349,11 +4349,11 @@ function NotificationPreferencesTab() {
   const handleUserToggleEnabled = (notificationType: string, enabled: boolean) => {
     setSavingUserType(notificationType);
     const existing = getUserPrefForType(notificationType);
-    const channels = existing?.channels ? JSON.parse(existing.channels) : ['app'];
+    const channels: string[] = existing?.channels ?? ['app'];
     
     saveUserMutation.mutate({
       notificationType,
-      channels: JSON.stringify(channels),
+      channels,
       enabled,
     });
   };
@@ -4384,7 +4384,7 @@ function NotificationPreferencesTab() {
           {TENANT_NOTIFICATION_TYPES.map((notif) => {
             const setting = getTenantSettingForType(notif.type);
             const enabled = setting?.enabled ?? true;
-            const channels: string[] = setting?.channels ? JSON.parse(setting.channels) : ['whatsapp'];
+            const channels: string[] = setting?.channels ?? ['whatsapp'];
             const isSaving = savingTenantType === notif.type;
 
             return (
@@ -4464,7 +4464,7 @@ function NotificationPreferencesTab() {
           {USER_NOTIFICATION_TYPES.map((notif) => {
             const pref = getUserPrefForType(notif.type);
             const enabled = pref?.enabled ?? true;
-            const channels: string[] = pref?.channels ? JSON.parse(pref.channels) : ['app'];
+            const channels: string[] = pref?.channels ?? ['app'];
             const isSaving = savingUserType === notif.type;
 
             return (
