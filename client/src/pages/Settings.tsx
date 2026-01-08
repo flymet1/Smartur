@@ -313,7 +313,7 @@ export default function Settings() {
     }
   }, [manualConfirmationSetting?.value, manualConfirmationLoaded]);
 
-  // Save WooCommerce notification settings
+  // Save WooCommerce notification template
   const handleSaveWooNotification = async () => {
     setIsSavingWooNotification(true);
     try {
@@ -322,18 +322,17 @@ export default function Settings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           value: JSON.stringify({
-            enabled: wooNotificationEnabled,
             template: wooNotificationTemplate
           })
         }),
       });
       if (response.ok) {
-        toast({ title: "Başarılı", description: "WooCommerce bildirim ayarları kaydedildi." });
+        toast({ title: "Başarılı", description: "WooCommerce bildirim şablonu kaydedildi." });
       } else {
         throw new Error("Kaydetme başarısız");
       }
     } catch (err) {
-      toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Şablon kaydedilemedi.", variant: "destructive" });
     } finally {
       setIsSavingWooNotification(false);
     }
@@ -861,76 +860,69 @@ export default function Settings() {
               <CardTitle>Otomasyon Ayarları</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Otomatik Onay Mesajı (Manuel Rezervasyonlar için)</Label>
-                  <p className="text-sm text-muted-foreground">Manuel rezervasyon oluştuğunda müşteriye WhatsApp mesajı gönder</p>
-                </div>
-                <Switch 
-                  checked={manualConfirmationEnabled} 
-                  onCheckedChange={setManualConfirmationEnabled}
-                  data-testid="switch-manual-confirmation"
-                />
+              <div className="space-y-0.5 mb-4">
+                <Label>Yeni Rezervasyon Onay Mesajı Şablonu</Label>
+                <p className="text-sm text-muted-foreground">
+                  Yeni rezervasyon bildirimi açıkken müşteriye gönderilecek mesaj. 
+                  <span className="text-primary"> Bildirimi açmak/kapatmak için Bildirimler sekmesini kullanın.</span>
+                </p>
               </div>
               
-              {manualConfirmationEnabled && (
-                <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
-                  {!canManageTemplates && (
-                    <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Bu şablonu sadece acenta sahibi düzenleyebilir
-                    </p>
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="manualConfirmationTemplate">Onay Mesajı Şablonu</Label>
-                    <Textarea 
-                      id="manualConfirmationTemplate"
-                      value={manualConfirmationTemplate}
-                      onChange={(e) => setManualConfirmationTemplate(e.target.value)}
-                      placeholder="Mesaj şablonunuzu yazın..."
-                      className="min-h-[150px]"
-                      disabled={!canManageTemplates}
-                      data-testid="textarea-manual-confirmation-template"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Desteklenen değişkenler: {"{isim}"}, {"{aktivite}"}, {"{tarih}"}, {"{saat}"}, {"{kisi}"}, {"{takip_linki}"}
-                    </p>
-                  </div>
-                  {canManageTemplates && (
-                    <Button 
-                      onClick={async () => {
-                        setIsSavingManualConfirmation(true);
-                        try {
-                          await fetch('/api/settings/manualConfirmation', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              value: JSON.stringify({
-                                enabled: manualConfirmationEnabled,
-                                template: manualConfirmationTemplate
-                              })
-                            }),
-                          });
-                          toast({ title: "Kaydedildi", description: "Manuel onay mesajı ayarları güncellendi." });
-                        } catch (error) {
-                          toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
-                        } finally {
-                          setIsSavingManualConfirmation(false);
-                        }
-                      }}
-                      disabled={isSavingManualConfirmation}
-                      data-testid="button-save-manual-confirmation"
-                    >
-                      {isSavingManualConfirmation ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4 mr-2" />
-                      )}
-                      Kaydet
-                    </Button>
-                  )}
+              <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
+                {!canManageTemplates && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Bu şablonu sadece acenta sahibi düzenleyebilir
+                  </p>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="manualConfirmationTemplate">Onay Mesajı Şablonu</Label>
+                  <Textarea 
+                    id="manualConfirmationTemplate"
+                    value={manualConfirmationTemplate}
+                    onChange={(e) => setManualConfirmationTemplate(e.target.value)}
+                    placeholder="Mesaj şablonunuzu yazın..."
+                    className="min-h-[150px]"
+                    disabled={!canManageTemplates}
+                    data-testid="textarea-manual-confirmation-template"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Desteklenen değişkenler: {"{isim}"}, {"{aktivite}"}, {"{tarih}"}, {"{saat}"}, {"{kisi}"}, {"{takip_linki}"}
+                  </p>
                 </div>
-              )}
+                {canManageTemplates && (
+                  <Button 
+                    onClick={async () => {
+                      setIsSavingManualConfirmation(true);
+                      try {
+                        await fetch('/api/settings/manualConfirmation', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            value: JSON.stringify({
+                              template: manualConfirmationTemplate
+                            })
+                          }),
+                        });
+                        toast({ title: "Kaydedildi", description: "Onay mesajı şablonu güncellendi." });
+                      } catch (error) {
+                        toast({ title: "Hata", description: "Şablon kaydedilemedi.", variant: "destructive" });
+                      } finally {
+                        setIsSavingManualConfirmation(false);
+                      }
+                    }}
+                    disabled={isSavingManualConfirmation}
+                    data-testid="button-save-manual-confirmation"
+                  >
+                    {isSavingManualConfirmation ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Şablonu Kaydet
+                  </Button>
+                )}
+              </div>
 
               <div className="border-t pt-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1411,16 +1403,10 @@ export default function Settings() {
                   {/* WooCommerce Auto-Notification */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center justify-between gap-2">
-                        <span>WooCommerce Otomatik Bildirim</span>
-                        <Switch 
-                          checked={wooNotificationEnabled}
-                          onCheckedChange={setWooNotificationEnabled}
-                          data-testid="switch-woo-notification"
-                        />
-                      </CardTitle>
+                      <CardTitle>WooCommerce Sipariş Bildirimi Şablonu</CardTitle>
                       <CardDescription>
-                        WooCommerce'den sipariş geldiğinde müşteriye otomatik WhatsApp bildirimi gönder
+                        WooCommerce siparişi geldiğinde müşteriye gönderilecek mesaj şablonu.
+                        <span className="text-primary"> Bildirimi açmak/kapatmak için Bildirimler sekmesini kullanın.</span>
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -1431,7 +1417,6 @@ export default function Settings() {
                           onChange={(e) => setWooNotificationTemplate(e.target.value)}
                           placeholder="Bildirim mesajı şablonu..."
                           className="min-h-[150px] font-mono text-sm"
-                          disabled={!wooNotificationEnabled}
                           data-testid="textarea-woo-notification-template"
                         />
                       </div>
