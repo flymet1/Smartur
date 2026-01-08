@@ -424,7 +424,7 @@ export function Sidebar() {
                 </div>
               )}
               {navItems.map((item) => {
-                const hasPartnerBadge = item.href === "/partner-availability" && pendingReservationRequestsCount > 0;
+                const hasPartnerBadge = (item.href === "/partner-availability" || item.href === "/viewer-stats") && pendingReservationRequestsCount > 0;
                 return (
                   <Link key={item.href} href={item.href}>
                     <div className={cn(
@@ -578,7 +578,7 @@ export function Sidebar() {
 
         <div className="flex-1 px-4 py-4 space-y-1 border-t overflow-y-auto">
           {navItems.map((item) => {
-            const hasPartnerBadge = item.href === "/partner-availability" && pendingReservationRequestsCount > 0;
+            const hasPartnerBadge = (item.href === "/partner-availability" || item.href === "/viewer-stats") && pendingReservationRequestsCount > 0;
             return (
               <Link key={item.href} href={item.href}>
                 <div className={cn(
