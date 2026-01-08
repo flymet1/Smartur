@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar, Send } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Activity } from "@shared/schema";
@@ -322,6 +322,77 @@ export default function PartnerAvailability() {
             Partner Musaitlikleri
           </h1>
           <p className="text-muted-foreground mt-1">Bagli oldugunuz partner acentalarin paylasilan aktivitelerinin musaitligi</p>
+        </div>
+
+        {/* Analiz Kartları */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Partner Acenta</p>
+                  <p className="text-2xl font-bold mt-1" data-testid="text-partner-count">{partnerData.length}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Aktif partner</p>
+                </div>
+                <div className="p-3 rounded-full shrink-0 bg-muted">
+                  <Building2 className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Paylaşılan Aktivite</p>
+                  <p className="text-2xl font-bold mt-1" data-testid="text-activity-count">
+                    {partnerData.reduce((sum, p) => sum + p.activities.length, 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Toplam aktivite</p>
+                </div>
+                <div className="p-3 rounded-full shrink-0 bg-muted">
+                  <ActivityIcon className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Müsait Slot</p>
+                  <p className="text-2xl font-bold mt-1 text-green-600" data-testid="text-available-slots">
+                    {partnerData.reduce((sum, p) => 
+                      sum + p.activities.reduce((actSum, act) => 
+                        actSum + act.capacities.reduce((capSum, cap) => capSum + cap.availableSlots, 0), 0), 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Seçili dönemde</p>
+                </div>
+                <div className="p-3 rounded-full shrink-0 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+                  <CalendarCheck className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Bekleyen Talep</p>
+                  <p className={`text-2xl font-bold mt-1 ${pendingPartnerRequests.length > 0 ? 'text-orange-600' : ''}`} data-testid="text-pending-requests">
+                    {pendingPartnerRequests.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Onay bekliyor</p>
+                </div>
+                <div className={`p-3 rounded-full shrink-0 ${pendingPartnerRequests.length > 0 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-muted'}`}>
+                  <Users className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="availability" className="space-y-4">
