@@ -115,6 +115,7 @@ export default function Finance() {
     activityId: 0,
     dispatchDate: new Date().toISOString().split('T')[0],
     dispatchTime: '10:00',
+    customerName: '',
     guestCount: 1,
     unitPayoutTl: 0,
     currency: 'TRY' as 'TRY' | 'USD',
@@ -313,6 +314,7 @@ export default function Finance() {
         activityId: 0,
         dispatchDate: new Date().toISOString().split('T')[0],
         dispatchTime: '10:00',
+        customerName: '',
         guestCount: 1,
         unitPayoutTl: 0,
         currency: 'TRY',
@@ -857,6 +859,7 @@ export default function Finance() {
                   activityId: 0,
                   dispatchDate: new Date().toISOString().split('T')[0],
                   dispatchTime: '10:00',
+                  customerName: '',
                   guestCount: 1,
                   unitPayoutTl: 0,
                   currency: 'TRY',
@@ -1489,6 +1492,15 @@ export default function Finance() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Müşteri Adı Soyadı</Label>
+                <Input 
+                  value={dispatchForm.customerName}
+                  onChange={e => setDispatchForm(f => ({ ...f, customerName: e.target.value }))}
+                  placeholder="Örn: Ahmet Yılmaz"
+                  data-testid="input-dispatch-customer-name"
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

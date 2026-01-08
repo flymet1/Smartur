@@ -4754,7 +4754,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
   app.post("/api/finance/dispatches", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
-      const { agencyId, activityId, dispatchDate, dispatchTime, guestCount, unitPayoutTl, currency, notes } = req.body;
+      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, guestCount, unitPayoutTl, currency, notes } = req.body;
       
       if (!agencyId || !dispatchDate) {
         return res.status(400).json({ error: "agencyId ve dispatchDate zorunlu" });
@@ -4787,6 +4787,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         activityId,
         dispatchDate,
         dispatchTime,
+        customerName,
         guestCount: guestCount || 0,
         unitPayoutTl: finalUnitPayoutTl,
         totalPayoutTl,

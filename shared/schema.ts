@@ -310,6 +310,7 @@ export const supplierDispatches = pgTable("supplier_dispatches", {
   activityId: integer("activity_id").references(() => activities.id),
   dispatchDate: text("dispatch_date").notNull(), // YYYY-MM-DD
   dispatchTime: text("dispatch_time"), // HH:mm
+  customerName: text("customer_name"), // Müşteri adı soyadı
   guestCount: integer("guest_count").default(0).notNull(),
   unitPayoutTl: integer("unit_payout_tl").default(0), // Kişi başı ödeme
   totalPayoutTl: integer("total_payout_tl").default(0), // Toplam = guestCount * unitPayoutTl
