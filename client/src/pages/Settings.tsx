@@ -645,42 +645,85 @@ export default function Settings() {
           <p className="text-muted-foreground mt-1">Sistem yapılandırması</p>
         </div>
 
-        {/* Settings Navigation Tabs */}
-        <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 mb-6">
-            <TabsTrigger value="security" data-testid="tab-security">
-              <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
-              Güvenlik
-            </TabsTrigger>
-            <TabsTrigger value="users" data-testid="tab-users">
-              <Users className="w-4 h-4 mr-2 hidden sm:inline" />
-              Kullanıcılar
-            </TabsTrigger>
-            <TabsTrigger value="notifications" data-testid="tab-notifications">
-              <Bell className="w-4 h-4 mr-2 hidden sm:inline" />
+        {/* Settings Navigation - Wide format like SuperAdmin */}
+        <div className="border-b bg-background mb-6">
+          <div className="flex items-center gap-1 overflow-x-auto pb-2">
+            <Button
+              variant={settingsTab === 'security' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('security')}
+              data-testid="tab-security"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Guvenlik
+            </Button>
+            <Button
+              variant={settingsTab === 'users' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('users')}
+              data-testid="tab-users"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Kullanicilar
+            </Button>
+            <Button
+              variant={settingsTab === 'notifications' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('notifications')}
+              data-testid="tab-notifications"
+            >
+              <Bell className="h-4 w-4 mr-2" />
               Bildirimler
-            </TabsTrigger>
-            <TabsTrigger value="whatsapp" data-testid="tab-whatsapp">
-              <MessageSquare className="w-4 h-4 mr-2 hidden sm:inline" />
+            </Button>
+            <Button
+              variant={settingsTab === 'whatsapp' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('whatsapp')}
+              data-testid="tab-whatsapp"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
               WhatsApp
-            </TabsTrigger>
-            <TabsTrigger value="integrations" data-testid="tab-integrations">
-              <ExternalLink className="w-4 h-4 mr-2 hidden sm:inline" />
+            </Button>
+            <Button
+              variant={settingsTab === 'integrations' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('integrations')}
+              data-testid="tab-integrations"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
               Entegrasyonlar
-            </TabsTrigger>
-            <TabsTrigger value="partners" data-testid="tab-partners">
-              <UserPlus className="w-4 h-4 mr-2 hidden sm:inline" />
+            </Button>
+            <Button
+              variant={settingsTab === 'partners' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('partners')}
+              data-testid="tab-partners"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
               Partnerler
-            </TabsTrigger>
-            <TabsTrigger value="holidays" data-testid="tab-holidays">
-              <CalendarHeart className="w-4 h-4 mr-2 hidden sm:inline" />
+            </Button>
+            <Button
+              variant={settingsTab === 'holidays' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('holidays')}
+              data-testid="tab-holidays"
+            >
+              <CalendarHeart className="h-4 w-4 mr-2" />
               Tatiller
-            </TabsTrigger>
-            <TabsTrigger value="data" data-testid="tab-data">
-              <Download className="w-4 h-4 mr-2 hidden sm:inline" />
+            </Button>
+            <Button
+              variant={settingsTab === 'data' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('data')}
+              data-testid="tab-data"
+            >
+              <Download className="h-4 w-4 mr-2" />
               Veri
-            </TabsTrigger>
-          </TabsList>
+            </Button>
+          </div>
+        </div>
+
+        <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
 
           {/* SECURITY TAB */}
           <TabsContent value="security" className="space-y-6">
