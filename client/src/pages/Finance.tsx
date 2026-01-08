@@ -296,7 +296,7 @@ export default function Finance() {
 
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
-  const [dispatchSortOrder, setDispatchSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
   const [datePreset, setDatePreset] = useState<string>('this-month');
 
   // Exchange Rates
@@ -437,12 +437,18 @@ export default function Finance() {
       return true;
     })
     .sort((a, b) => {
-      const dateA = a.dispatchDate || '';
-      const dateB = b.dispatchDate || '';
-      if (dispatchSortOrder === 'newest') {
-        return dateB.localeCompare(dateA);
+      if (dispatchSortOrder === 'createdNewest' || dispatchSortOrder === 'createdOldest') {
+        const createdA = a.createdAt ? new Date(a.createdAt).toISOString() : '';
+        const createdB = b.createdAt ? new Date(b.createdAt).toISOString() : '';
+        return dispatchSortOrder === 'createdNewest' 
+          ? createdB.localeCompare(createdA) 
+          : createdA.localeCompare(createdB);
       } else {
-        return dateA.localeCompare(dateB);
+        const dateA = a.dispatchDate || '';
+        const dateB = b.dispatchDate || '';
+        return dispatchSortOrder === 'dateNewest' 
+          ? dateB.localeCompare(dateA) 
+          : dateA.localeCompare(dateB);
       }
     });
 
@@ -1163,24 +1169,25 @@ export default function Finance() {
                       <FileText className="h-4 w-4 mr-1" />
                       PDF
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setDispatchSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                      data-testid="button-toggle-sort"
-                    >
-                      {dispatchSortOrder === 'newest' ? (
-                        <>
-                          <ArrowDown className="h-4 w-4 mr-1" />
-                          En Yeni
-                        </>
-                      ) : (
-                        <>
-                          <ArrowUp className="h-4 w-4 mr-1" />
-                          En Eski
-                        </>
-                      )}
-                    </Button>
+                    <Select value={dispatchSortOrder} onValueChange={v => setDispatchSortOrder(v as typeof dispatchSortOrder)}>
+                      <SelectTrigger className="w-[180px] h-8" data-testid="select-dispatch-sort">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="createdNewest">
+                          <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Ekleme (Yeni)</span>
+                        </SelectItem>
+                        <SelectItem value="createdOldest">
+                          <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Ekleme (Eski)</span>
+                        </SelectItem>
+                        <SelectItem value="dateNewest">
+                          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Tarih (Yeni)</span>
+                        </SelectItem>
+                        <SelectItem value="dateOldest">
+                          <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Tarih (Eski)</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </CardHeader>
