@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -850,7 +850,15 @@ export default function Settings() {
 
           {/* NOTIFICATIONS TAB */}
           <TabsContent value="notifications" className="space-y-6">
-            <NotificationPreferencesTab />
+            <NotificationPreferencesTab onNavigateToTemplate={(tab, subTab) => {
+              setSettingsTab(tab);
+              if (subTab) {
+                setTimeout(() => {
+                  const subTabTrigger = document.querySelector(`[data-testid="tab-whatsapp-${subTab}"]`) as HTMLButtonElement;
+                  if (subTabTrigger) subTabTrigger.click();
+                }, 100);
+              }
+            }} />
           </TabsContent>
 
           {/* WHATSAPP TAB */}
@@ -4215,11 +4223,11 @@ function PartnerAgencySection() {
 }
 
 const TENANT_NOTIFICATION_TYPES = [
-  { type: 'reservation_new', label: 'Yeni Rezervasyon', description: 'Yeni rezervasyon oluşturulduğunda' },
+  { type: 'reservation_new', label: 'Yeni Rezervasyon', description: 'Yeni rezervasyon oluşturulduğunda', templateTab: 'whatsapp', templateLabel: 'Şablonu Düzenle' },
   { type: 'reservation_confirmed', label: 'Rezervasyon Onayı', description: 'Rezervasyon onaylandığında' },
   { type: 'reservation_cancelled', label: 'Rezervasyon İptali', description: 'Rezervasyon iptal edildiğinde' },
-  { type: 'customer_request', label: 'Müşteri Talebi', description: 'Müşteri değişiklik/iptal talebi gönderdiğinde' },
-  { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce siparişi geldiğinde' },
+  { type: 'customer_request', label: 'Müşteri Talebi', description: 'Müşteri değişiklik/iptal talebi gönderdiğinde', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
+  { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce siparişi geldiğinde', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
 ];
 
 const USER_NOTIFICATION_TYPES = [
@@ -4232,7 +4240,7 @@ const USER_NOTIFICATION_TYPES = [
   { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce siparişi geldiğinde' },
 ];
 
-function NotificationPreferencesTab() {
+function NotificationPreferencesTab({ onNavigateToTemplate }: { onNavigateToTemplate?: (tab: string, subTab?: string) => void }) {
   const { toast } = useToast();
   const [savingTenantType, setSavingTenantType] = useState<string | null>(null);
   const [savingUserType, setSavingUserType] = useState<string | null>(null);
@@ -4421,6 +4429,24 @@ function NotificationPreferencesTab() {
                       </TooltipTrigger>
                       <TooltipContent>E-posta ile bildirim gönder</TooltipContent>
                     </Tooltip>
+
+                    {notif.templateTab && onNavigateToTemplate && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="gap-1"
+                            onClick={() => onNavigateToTemplate(notif.templateTab!, notif.templateSubTab)}
+                            data-testid={`btn-template-${notif.type}`}
+                          >
+                            <Settings2 className="h-4 w-4" />
+                            {notif.templateLabel}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mesaj şablonunu düzenle</TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 )}
               </div>
