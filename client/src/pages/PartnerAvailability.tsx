@@ -1,12 +1,24 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Calendar, Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface PartnerActivity {
   id: number;
@@ -32,6 +44,16 @@ interface PartnerData {
   activities: PartnerActivity[];
 }
 
+interface RequestDialogData {
+  activityId: number;
+  activityName: string;
+  partnerTenantId: number;
+  partnerTenantName: string;
+  date: string;
+  time: string;
+  availableSlots: number;
+}
+
 export default function PartnerAvailability() {
   const today = new Date();
   const [startDate, setStartDate] = useState(today.toISOString().split('T')[0]);
@@ -40,10 +62,70 @@ export default function PartnerAvailability() {
     weekLater.setDate(weekLater.getDate() + 7);
     return weekLater.toISOString().split('T')[0];
   });
+  
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<RequestDialogData | null>(null);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [guests, setGuests] = useState(1);
+  const [notes, setNotes] = useState("");
+  
+  const { toast } = useToast();
 
   const { data: partnerData, isLoading, refetch, isFetching } = useQuery<PartnerData[]>({
     queryKey: [`/api/partner-shared-availability?startDate=${startDate}&endDate=${endDate}`],
   });
+  
+  const createRequestMutation = useMutation({
+    mutationFn: async (data: { activityId: number; date: string; time: string; customerName: string; customerPhone: string; guests: number; notes: string }) => {
+      const res = await apiRequest('POST', '/api/partner-reservation-requests', data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Talep Gonderildi", description: "Rezervasyon talebiniz partner acentaya iletildi." });
+      queryClient.invalidateQueries({ queryKey: ['/api/my-reservation-requests'] });
+      resetForm();
+      setRequestDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Talep gonderilemedi", variant: "destructive" });
+    }
+  });
+  
+  const resetForm = () => {
+    setCustomerName("");
+    setCustomerPhone("");
+    setGuests(1);
+    setNotes("");
+    setSelectedSlot(null);
+  };
+  
+  const openRequestDialog = (slot: RequestDialogData) => {
+    setSelectedSlot(slot);
+    setRequestDialogOpen(true);
+  };
+  
+  const handleSubmitRequest = () => {
+    if (!selectedSlot) return;
+    if (!customerName.trim() || !customerPhone.trim()) {
+      toast({ title: "Hata", description: "Musteri adi ve telefonu zorunludur", variant: "destructive" });
+      return;
+    }
+    if (guests < 1 || guests > selectedSlot.availableSlots) {
+      toast({ title: "Hata", description: `Kisi sayisi 1-${selectedSlot.availableSlots} arasinda olmalidir`, variant: "destructive" });
+      return;
+    }
+    
+    createRequestMutation.mutate({
+      activityId: selectedSlot.activityId,
+      date: selectedSlot.date,
+      time: selectedSlot.time,
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
+      guests,
+      notes: notes.trim()
+    });
+  };
 
   const navigateDates = (days: number) => {
     const newStart = new Date(startDate);
@@ -232,16 +314,27 @@ export default function PartnerAvailability() {
                                     <p className="text-xs font-medium mb-1">{formatDate(date)}</p>
                                     <div className="space-y-1">
                                       {caps.map((cap, idx) => (
-                                        <div 
+                                        <button 
                                           key={idx}
-                                          className={`text-xs px-2 py-1 rounded ${getAvailabilityColor(cap.availableSlots, cap.totalSlots)}`}
+                                          onClick={() => cap.availableSlots > 0 && openRequestDialog({
+                                            activityId: activity.id,
+                                            activityName: activity.name,
+                                            partnerTenantId: partner.partnerTenantId,
+                                            partnerTenantName: partner.partnerTenantName,
+                                            date: cap.date,
+                                            time: cap.time,
+                                            availableSlots: cap.availableSlots
+                                          })}
+                                          disabled={cap.availableSlots === 0}
+                                          className={`w-full text-xs px-2 py-1 rounded transition-all ${getAvailabilityColor(cap.availableSlots, cap.totalSlots)} ${cap.availableSlots > 0 ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : 'cursor-not-allowed opacity-60'}`}
+                                          data-testid={`slot-${cap.date}-${cap.time}`}
                                         >
                                           <span className="font-medium">{cap.time}</span>
                                           <div className="flex items-center justify-center gap-1">
                                             <Users className="w-3 h-3" />
                                             {cap.availableSlots}/{cap.totalSlots}
                                           </div>
-                                        </div>
+                                        </button>
                                       ))}
                                     </div>
                                     <div className={`mt-1 text-xs font-medium px-2 py-0.5 rounded ${getAvailabilityColor(totalAvailable, totalSlots)}`}>
@@ -261,6 +354,91 @@ export default function PartnerAvailability() {
             ))}
           </div>
         )}
+        
+        <Dialog open={requestDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setRequestDialogOpen(open); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Plus className="w-5 h-5 text-primary" />
+                Rezervasyon Talebi
+              </DialogTitle>
+              <DialogDescription>
+                {selectedSlot && (
+                  <span>
+                    <strong>{selectedSlot.activityName}</strong> - {selectedSlot.partnerTenantName}<br />
+                    {formatDate(selectedSlot.date)} saat {selectedSlot.time} ({selectedSlot.availableSlots} bos yer)
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="customerName">Musteri Adi *</Label>
+                <Input
+                  id="customerName"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Ornegin: Ahmet Yilmaz"
+                  data-testid="input-customer-name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customerPhone">Telefon *</Label>
+                <Input
+                  id="customerPhone"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="Ornegin: 5551234567"
+                  data-testid="input-customer-phone"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="guests">Kisi Sayisi *</Label>
+                <Input
+                  id="guests"
+                  type="number"
+                  min={1}
+                  max={selectedSlot?.availableSlots || 10}
+                  value={guests}
+                  onChange={(e) => setGuests(parseInt(e.target.value) || 1)}
+                  data-testid="input-guests"
+                />
+                {selectedSlot && (
+                  <p className="text-xs text-muted-foreground">Maksimum: {selectedSlot.availableSlots} kisi</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notlar (Opsiyonel)</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Ozel istekler, transfer bilgisi vb."
+                  className="resize-none"
+                  rows={3}
+                  data-testid="input-notes"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => { resetForm(); setRequestDialogOpen(false); }} data-testid="button-cancel">
+                Vazgec
+              </Button>
+              <Button 
+                onClick={handleSubmitRequest} 
+                disabled={createRequestMutation.isPending}
+                data-testid="button-submit-request"
+              >
+                {createRequestMutation.isPending ? "Gonderiliyor..." : "Talep Gonder"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

@@ -2800,6 +2800,82 @@ export async function registerRoutes(
     }
   });
 
+  // Create reservation request from partner to activity owner
+  app.post("/api/partner-reservation-requests", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
+    try {
+      const requesterTenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      
+      if (!requesterTenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { activityId, date, time, customerName, customerPhone, guests, notes } = req.body;
+      
+      if (!activityId || !date || !time || !customerName || !customerPhone) {
+        return res.status(400).json({ error: "Eksik parametreler" });
+      }
+      
+      // Find the activity and its owner tenant
+      const allActivities = await db.select().from(activities).where(eq(activities.id, activityId));
+      const activity = allActivities[0];
+      
+      if (!activity) {
+        return res.status(404).json({ error: "Aktivite bulunamadi" });
+      }
+      
+      const ownerTenantId = activity.tenantId;
+      
+      // Verify that there is an active partnership between requester and owner
+      const partnerships = await storage.getTenantPartnerships(requesterTenantId);
+      const hasPartnership = partnerships.some(p => 
+        p.status === 'active' && 
+        p.requesterTenantId === requesterTenantId && 
+        p.partnerTenantId === ownerTenantId
+      );
+      
+      if (!hasPartnership) {
+        return res.status(403).json({ error: "Bu aktiviteye erisim izniniz yok" });
+      }
+      
+      // Create the reservation request in the OWNER's tenant context
+      const request = await storage.createReservationRequest({
+        tenantId: ownerTenantId, // The owner receives the request
+        activityId,
+        date,
+        time,
+        customerName,
+        customerPhone,
+        guests: guests || 1,
+        notes: notes ? `[Partner Talep] ${notes}` : '[Partner Talep]',
+        requestedBy: userId,
+        status: "pending"
+      });
+      
+      // Create notification for owner
+      try {
+        const requester = userId ? await storage.getAppUser(userId) : null;
+        const partnerName = requester?.companyName || requester?.name || 'Partner Acenta';
+        
+        await storage.createSupportRequest({
+          tenantId: ownerTenantId,
+          type: "reservation_request",
+          title: `Partner Rezervasyon Talebi: ${customerName}`,
+          description: `Partner acenta yeni rezervasyon talebi olusturdu.\n\nPartner: ${partnerName}\nAktivite: ${activity.name}\nTarih: ${date}\nSaat: ${time}\nMusteri: ${customerName}\nTelefon: ${customerPhone}\nKisi Sayisi: ${guests || 1}\n${notes ? `Not: ${notes}` : ""}`,
+          priority: "medium",
+          metadata: JSON.stringify({ reservationRequestId: request.id, isPartnerRequest: true })
+        });
+      } catch (notifyErr) {
+        console.error("Failed to create notification for partner reservation request:", notifyErr);
+      }
+      
+      res.status(201).json(request);
+    } catch (error) {
+      console.error("Create partner reservation request error:", error);
+      res.status(500).json({ error: "Talep olusturulamadi" });
+    }
+  });
+
   // Get activity partner shares for an activity
   app.get("/api/activities/:id/partner-shares", requirePermission(PERMISSIONS.ACTIVITIES_VIEW), async (req, res) => {
     try {
