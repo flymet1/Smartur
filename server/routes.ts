@@ -4754,22 +4754,29 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
   app.post("/api/finance/dispatches", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
-      const { agencyId, activityId, dispatchDate, dispatchTime, guestCount, unitPayoutTl, notes } = req.body;
+      const { agencyId, activityId, dispatchDate, dispatchTime, guestCount, unitPayoutTl, currency, notes } = req.body;
       
       if (!agencyId || !dispatchDate) {
         return res.status(400).json({ error: "agencyId ve dispatchDate zorunlu" });
       }
       
-      let finalUnitPayoutTl = unitPayoutTl || 0;
+      // Manuel override: Form'dan gelen fiyat varsa (>0) onu kullan
+      // Aksi halde rate veya agency default'u kullan
+      let finalUnitPayoutTl = unitPayoutTl;
+      let finalCurrency = currency || 'TRY';
       let rateId: number | null = null;
       
-      const activeRate = await storage.getActiveRateForDispatch(agencyId, activityId || null, dispatchDate);
-      if (activeRate) {
-        finalUnitPayoutTl = activeRate.unitPayoutTl || 0;
-        rateId = activeRate.id;
-      } else if (!unitPayoutTl) {
-        const agency = await storage.getAgency(agencyId);
-        finalUnitPayoutTl = agency?.defaultPayoutPerGuest || 0;
+      // Sadece fiyat belirtilmemişse rate/agency'den al
+      if (!unitPayoutTl || unitPayoutTl === 0) {
+        const activeRate = await storage.getActiveRateForDispatch(agencyId, activityId || null, dispatchDate);
+        if (activeRate) {
+          finalUnitPayoutTl = activeRate.currency === 'USD' ? (activeRate.unitPayoutUsd || 0) : activeRate.unitPayoutTl;
+          finalCurrency = activeRate.currency || 'TRY';
+          rateId = activeRate.id;
+        } else {
+          const agency = await storage.getAgency(agencyId);
+          finalUnitPayoutTl = agency?.defaultPayoutPerGuest || 0;
+        }
       }
       
       const totalPayoutTl = (guestCount || 0) * finalUnitPayoutTl;
@@ -4783,6 +4790,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         guestCount: guestCount || 0,
         unitPayoutTl: finalUnitPayoutTl,
         totalPayoutTl,
+        currency: finalCurrency,
         rateId,
         notes
       });
