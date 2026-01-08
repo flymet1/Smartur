@@ -257,7 +257,7 @@ export default function Finance() {
     unitAmount: number;
     currency: 'TRY' | 'USD';
   };
-  const defaultDispatchItem: DispatchItemForm = { itemType: 'base', label: '', quantity: 1, unitAmount: 0, currency: 'TRY' };
+  const defaultDispatchItem: DispatchItemForm = { itemType: 'extra', label: '', quantity: 1, unitAmount: 0, currency: 'TRY' };
   
   const [dispatchForm, setDispatchForm] = useState({
     agencyId: 0,
@@ -1270,17 +1270,13 @@ export default function Finance() {
                                   <Package className="h-3 w-3" />
                                   Fiyat Kalemleri
                                 </div>
-                                <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-2 text-sm">
-                                  <div className="font-medium text-muted-foreground text-xs">Tip</div>
+                                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 text-sm">
                                   <div className="font-medium text-muted-foreground text-xs">Açıklama</div>
                                   <div className="font-medium text-muted-foreground text-xs text-right">Adet</div>
                                   <div className="font-medium text-muted-foreground text-xs text-right">Birim</div>
                                   <div className="font-medium text-muted-foreground text-xs text-right">Toplam</div>
                                   {items.map((item) => (
                                     <div key={item.id} className="contents">
-                                      <Badge variant={item.itemType === 'base' ? 'default' : item.itemType === 'observer' ? 'secondary' : 'outline'} className="text-xs">
-                                        {item.itemType === 'base' ? 'Dalıcı' : item.itemType === 'observer' ? 'İzleyici' : 'Ekstra'}
-                                      </Badge>
                                       <span>{item.label || '-'}</span>
                                       <span className="text-right">{item.quantity}</span>
                                       <span className="text-right">
@@ -1935,27 +1931,7 @@ export default function Finance() {
                   <div className="space-y-2">
                     {dispatchForm.items.map((item, index) => (
                       <div key={index} className="grid grid-cols-12 gap-2 items-end p-2 border rounded-lg">
-                        <div className="col-span-2">
-                          <Label className="text-xs">Tip</Label>
-                          <Select
-                            value={item.itemType}
-                            onValueChange={v => {
-                              const newItems = [...dispatchForm.items];
-                              newItems[index].itemType = v as 'base' | 'observer' | 'extra';
-                              setDispatchForm(f => ({ ...f, items: newItems }));
-                            }}
-                          >
-                            <SelectTrigger data-testid={`select-item-type-${index}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="base">Dalici</SelectItem>
-                              <SelectItem value="observer">Izleyici</SelectItem>
-                              <SelectItem value="extra">Ekstra</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="col-span-3">
+                        <div className="col-span-4">
                           <Label className="text-xs">Açıklama</Label>
                           <Input
                             placeholder="Örn: Yetişkin dalıcı"
