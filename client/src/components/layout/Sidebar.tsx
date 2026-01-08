@@ -423,19 +423,30 @@ export function Sidebar() {
                   </Link>
                 </div>
               )}
-              {navItems.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <div className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    location === item.href 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}>
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </div>
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const hasPartnerBadge = item.href === "/partner-availability" && pendingReservationRequestsCount > 0;
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <div className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
+                      location === item.href 
+                        ? "bg-primary text-primary-foreground" 
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}>
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                      {hasPartnerBadge && (
+                        <Badge 
+                          variant="destructive" 
+                          className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                        >
+                          {pendingReservationRequestsCount}
+                        </Badge>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
               
               {/* Partner Profile Link - Only for İş Ortağı users */}
               {isPartnerOnly && (
@@ -566,22 +577,34 @@ export function Sidebar() {
         )}
 
         <div className="flex-1 px-4 py-4 space-y-1 border-t overflow-y-auto">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <div className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group",
-                location === item.href 
-                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}>
-                <item.icon className={cn(
-                  "h-5 w-5 transition-transform group-hover:scale-110",
-                  location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
-                )} />
-                {item.label}
-              </div>
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const hasPartnerBadge = item.href === "/partner-availability" && pendingReservationRequestsCount > 0;
+            return (
+              <Link key={item.href} href={item.href}>
+                <div className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group relative",
+                  location === item.href 
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}>
+                  <item.icon className={cn(
+                    "h-5 w-5 transition-transform group-hover:scale-110",
+                    location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
+                  )} />
+                  {item.label}
+                  {hasPartnerBadge && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                      data-testid="badge-partner-requests"
+                    >
+                      {pendingReservationRequestsCount}
+                    </Badge>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
           
           {/* Partner Profile Link - Only for İş Ortağı users */}
           {isPartnerOnly && (
