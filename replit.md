@@ -10,6 +10,7 @@ Smartur is a modern reservation and operations management system developed with 
 - **WhatsApp Integration**: Messaging and AI responses via Twilio Webhook (mock).
 - **Reporting**: Basic statistics.
 - **Finance & Agency Management**: Manage activity costs, VAT calculation, agency payments, and reconciliation.
+- **Partner Agency System**: Cross-tenant sharing workflow enabling data flow between agencies using invite codes. Supports partner invitation, connection requests, approval/rejection, and "Smartur User" tagging in supplier forms.
 
 ## User Preferences
 I want the agent to prioritize information in this exact order: Overview, User Preferences, System Architecture, External Dependencies.

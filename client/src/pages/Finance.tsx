@@ -287,7 +287,7 @@ export default function Finance() {
   // Agency management state
   const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
   const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
-  const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
+  const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '', isSmartUser: false, partnerTenantId: null as number | null });
 
   // Currency converter state
   const [converterAmount, setConverterAmount] = useState<string>("100");
@@ -597,7 +597,7 @@ export default function Finance() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       setAgencyDialogOpen(false);
-      setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
+      setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '', isSmartUser: false, partnerTenantId: null });
       toast({ title: "Acenta eklendi" });
     },
     onError: (error: any) => {
@@ -646,14 +646,16 @@ export default function Finance() {
       name: agency.name,
       contactInfo: agency.contactInfo || '',
       defaultPayoutPerGuest: agency.defaultPayoutPerGuest || 0,
-      notes: agency.notes || ''
+      notes: agency.notes || '',
+      isSmartUser: agency.isSmartUser || false,
+      partnerTenantId: agency.partnerTenantId || null
     });
     setAgencyDialogOpen(true);
   };
 
   const openCreateAgencyDialog = () => {
     setEditingAgency(null);
-    setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
+    setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '', isSmartUser: false, partnerTenantId: null });
     setAgencyDialogOpen(true);
   };
 
@@ -2259,6 +2261,20 @@ export default function Finance() {
                   placeholder="Ek bilgiler..."
                   data-testid="input-agency-notes"
                 />
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-md">
+                <input
+                  type="checkbox"
+                  id="agency-smartur"
+                  checked={agencyForm.isSmartUser}
+                  onChange={e => setAgencyForm({ ...agencyForm, isSmartUser: e.target.checked })}
+                  className="w-4 h-4"
+                  data-testid="checkbox-agency-smartur"
+                />
+                <div>
+                  <Label htmlFor="agency-smartur" className="cursor-pointer font-medium">Smartur Kullanicisi</Label>
+                  <p className="text-xs text-muted-foreground">Bu tedarikci Smartur sistemini kullaniyor (ileride otomatik paylasim icin)</p>
+                </div>
               </div>
             </div>
             <DialogFooter>

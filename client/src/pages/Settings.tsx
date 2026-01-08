@@ -632,7 +632,7 @@ export default function Settings() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'users', 'data'].includes(tab)) {
+    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'users', 'data', 'partners'].includes(tab)) {
       setSettingsTab(tab);
     }
   }, [location]);
@@ -648,7 +648,7 @@ export default function Settings() {
 
         {/* Settings Navigation Tabs */}
         <Tabs value={settingsTab} onValueChange={setSettingsTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6">
+          <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 mb-6">
             <TabsTrigger value="security" data-testid="tab-security">
               <Shield className="w-4 h-4 mr-2 hidden sm:inline" />
               Güvenlik
@@ -664,6 +664,10 @@ export default function Settings() {
             <TabsTrigger value="integrations" data-testid="tab-integrations">
               <ExternalLink className="w-4 h-4 mr-2 hidden sm:inline" />
               Entegrasyonlar
+            </TabsTrigger>
+            <TabsTrigger value="partners" data-testid="tab-partners">
+              <UserPlus className="w-4 h-4 mr-2 hidden sm:inline" />
+              Partnerler
             </TabsTrigger>
             <TabsTrigger value="holidays" data-testid="tab-holidays">
               <CalendarHeart className="w-4 h-4 mr-2 hidden sm:inline" />
@@ -1575,6 +1579,11 @@ export default function Settings() {
           {/* DATA EXPORT TAB */}
           <TabsContent value="data" className="space-y-6">
             <DataExportSection />
+          </TabsContent>
+
+          {/* PARTNERS TAB */}
+          <TabsContent value="partners" className="space-y-6">
+            <PartnerAgencySection />
           </TabsContent>
         </Tabs>
 
@@ -3906,5 +3915,307 @@ function UserManagementSection() {
         </Dialog>
       </CardContent>
     </Card>
+  );
+}
+
+// Partner Agency Section Component
+function PartnerAgencySection() {
+  const { toast } = useToast();
+  const [connectCode, setConnectCode] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  // Fetch my invite codes
+  const { data: inviteCodes, isLoading: isLoadingCodes, refetch: refetchCodes } = useQuery<{
+    id: number;
+    tenantId: number;
+    code: string;
+    isActive: boolean;
+    usageCount: number;
+    maxUsage: number | null;
+    expiresAt: string | null;
+    createdAt: string;
+  }[]>({
+    queryKey: ['/api/partner-invite-codes'],
+  });
+
+  // Fetch my partnerships
+  const { data: partnerships, isLoading: isLoadingPartnerships, refetch: refetchPartnerships } = useQuery<{
+    id: number;
+    requesterTenantId: number;
+    partnerTenantId: number;
+    inviteCode: string;
+    status: string;
+    requestedAt: string;
+    respondedAt: string | null;
+    notes: string | null;
+    requesterTenantName: string;
+    partnerTenantName: string;
+    isRequester: boolean;
+  }[]>({
+    queryKey: ['/api/tenant-partnerships'],
+  });
+
+  // Generate new invite code
+  const generateCodeMutation = useMutation({
+    mutationFn: async () => apiRequest('POST', '/api/partner-invite-codes', {}),
+    onSuccess: () => {
+      toast({ title: "Basarili", description: "Yeni davet kodu olusturuldu" });
+      refetchCodes();
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Davet kodu olusturulamadi", variant: "destructive" });
+    },
+  });
+
+  // Delete invite code
+  const deleteCodeMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/partner-invite-codes/${id}`),
+    onSuccess: () => {
+      toast({ title: "Basarili", description: "Davet kodu silindi" });
+      refetchCodes();
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Davet kodu silinemedi", variant: "destructive" });
+    },
+  });
+
+  // Connect to partner
+  const handleConnect = async () => {
+    if (!connectCode.trim()) {
+      toast({ title: "Hata", description: "Davet kodu girin", variant: "destructive" });
+      return;
+    }
+    
+    setIsConnecting(true);
+    try {
+      await apiRequest('POST', '/api/tenant-partnerships/connect', { code: connectCode.trim().toUpperCase() });
+      toast({ title: "Basarili", description: "Baglanti talebi gonderildi. Partner onayladiginda aktif olacak." });
+      setConnectCode("");
+      refetchPartnerships();
+    } catch (err: any) {
+      toast({ title: "Hata", description: err?.message || "Baglanti kurulamadi", variant: "destructive" });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Respond to partnership request
+  const respondMutation = useMutation({
+    mutationFn: async ({ id, action }: { id: number; action: 'accept' | 'reject' }) => 
+      apiRequest('PATCH', `/api/tenant-partnerships/${id}/respond`, { action }),
+    onSuccess: (_, { action }) => {
+      toast({ title: "Basarili", description: action === 'accept' ? "Baglanti kabul edildi" : "Baglanti reddedildi" });
+      refetchPartnerships();
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Islem yapilamadi", variant: "destructive" });
+    },
+  });
+
+  const pendingRequests = partnerships?.filter(p => p.status === 'pending' && !p.isRequester) || [];
+  const activePartnerships = partnerships?.filter(p => p.status === 'active') || [];
+  const sentRequests = partnerships?.filter(p => p.status === 'pending' && p.isRequester) || [];
+
+  return (
+    <>
+      {/* My Invite Codes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5 text-primary" />
+            Partner Davet Kodlarim
+          </CardTitle>
+          <CardDescription>
+            Diger acentalarin size baglanabilmesi icin davet kodu olusturun
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            onClick={() => generateCodeMutation.mutate()}
+            disabled={generateCodeMutation.isPending}
+            data-testid="button-generate-partner-code"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            {generateCodeMutation.isPending ? "Olusturuluyor..." : "Yeni Kod Olustur"}
+          </Button>
+
+          {isLoadingCodes ? (
+            <Skeleton className="h-20 w-full" />
+          ) : inviteCodes && inviteCodes.length > 0 ? (
+            <div className="space-y-2">
+              {inviteCodes.map((code) => (
+                <div
+                  key={code.id}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-md"
+                  data-testid={`invite-code-${code.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <code className="text-lg font-mono font-bold text-primary">{code.code}</code>
+                    <Badge variant={code.isActive ? "default" : "secondary"}>
+                      {code.isActive ? "Aktif" : "Pasif"}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {code.usageCount} kez kullanildi
+                    </span>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => deleteCodeMutation.mutate(code.id)}
+                    disabled={deleteCodeMutation.isPending}
+                    data-testid={`button-delete-code-${code.id}`}
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Henuz davet kodu olusturmadiniz</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Connect to Partner */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-primary" />
+            Partner Acentaya Baglan
+          </CardTitle>
+          <CardDescription>
+            Baska bir acentanin davet kodunu girerek baglanin
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Input
+              value={connectCode}
+              onChange={(e) => setConnectCode(e.target.value.toUpperCase())}
+              placeholder="Davet kodu (ornek: ABC123)"
+              className="font-mono"
+              maxLength={10}
+              data-testid="input-partner-code"
+            />
+            <Button
+              onClick={handleConnect}
+              disabled={isConnecting || !connectCode.trim()}
+              data-testid="button-connect-partner"
+            >
+              {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Baglan"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pending Requests (Incoming) */}
+      {pendingRequests.length > 0 && (
+        <Card className="border-warning">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-warning" />
+              Bekleyen Baglanti Talepleri
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {pendingRequests.map((req) => (
+              <div
+                key={req.id}
+                className="flex items-center justify-between p-3 bg-warning/10 rounded-md"
+                data-testid={`pending-request-${req.id}`}
+              >
+                <div>
+                  <p className="font-medium">{req.requesterTenantName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    baglanmak istiyor
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => respondMutation.mutate({ id: req.id, action: 'accept' })}
+                    disabled={respondMutation.isPending}
+                    data-testid={`button-accept-${req.id}`}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Kabul Et
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => respondMutation.mutate({ id: req.id, action: 'reject' })}
+                    disabled={respondMutation.isPending}
+                    data-testid={`button-reject-${req.id}`}
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Reddet
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active Partnerships */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Aktif Partner Acentalar
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingPartnerships ? (
+            <Skeleton className="h-20 w-full" />
+          ) : activePartnerships.length > 0 ? (
+            <div className="space-y-2">
+              {activePartnerships.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-md"
+                  data-testid={`partnership-${p.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <div>
+                      <p className="font-medium">
+                        {p.isRequester ? p.partnerTenantName : p.requesterTenantName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {p.isRequester ? "Siz baglanti istediniz" : "Size baglandi"}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="default">Aktif</Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Henuz aktif partner acentaniz yok</p>
+          )}
+
+          {/* Sent Requests (Waiting for approval) */}
+          {sentRequests.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm font-medium mb-2">Gonderilen Talepler (Onay Bekliyor)</p>
+              {sentRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="flex items-center justify-between p-3 bg-muted/30 rounded-md"
+                  data-testid={`sent-request-${req.id}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 text-muted-foreground" />
+                    <p>{req.partnerTenantName}</p>
+                  </div>
+                  <Badge variant="secondary">Onay Bekliyor</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 }
