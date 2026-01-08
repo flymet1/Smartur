@@ -53,7 +53,8 @@ import {
   Download,
   FileSpreadsheet
 } from "lucide-react";
-import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate } from "@shared/schema";
+import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate, SupplierDispatchItem } from "@shared/schema";
+import { ChevronDown, ChevronRight, Package } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Textarea } from "@/components/ui/textarea";
@@ -341,6 +342,49 @@ export default function Finance() {
   const { data: dispatches = [] } = useQuery<SupplierDispatch[]>({
     queryKey: ['/api/finance/dispatches']
   });
+
+  // Genişletilmiş dispatch'ler için state ve item'ları tutmak
+  const [expandedDispatchIds, setExpandedDispatchIds] = useState<Set<number>>(new Set());
+  const [dispatchItemsMap, setDispatchItemsMap] = useState<Record<number, SupplierDispatchItem[]>>({});
+  const [loadingItemsFor, setLoadingItemsFor] = useState<Set<number>>(new Set());
+
+  // Dispatch item'ları yükle (on-demand)
+  const loadDispatchItems = async (dispatchId: number) => {
+    if (dispatchItemsMap[dispatchId] || loadingItemsFor.has(dispatchId)) return;
+    setLoadingItemsFor(prev => new Set(prev).add(dispatchId));
+    try {
+      const response = await fetch('/api/finance/dispatch-items/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ dispatchIds: [dispatchId] })
+      });
+      if (!response.ok) throw new Error('Failed to fetch items');
+      const items = await response.json();
+      setDispatchItemsMap(prev => ({ ...prev, [dispatchId]: items || [] }));
+    } catch {
+      setDispatchItemsMap(prev => ({ ...prev, [dispatchId]: [] }));
+    } finally {
+      setLoadingItemsFor(prev => {
+        const next = new Set(prev);
+        next.delete(dispatchId);
+        return next;
+      });
+    }
+  };
+
+  const toggleDispatchExpand = (dispatchId: number) => {
+    setExpandedDispatchIds(prev => {
+      const next = new Set(prev);
+      if (next.has(dispatchId)) {
+        next.delete(dispatchId);
+      } else {
+        next.add(dispatchId);
+        loadDispatchItems(dispatchId);
+      }
+      return next;
+    });
+  };
 
   // Gönderim Özeti (Dispatch Summary)
   type DispatchSummary = {
@@ -1143,56 +1187,117 @@ export default function Finance() {
                   {filteredDispatches.map(dispatch => {
                     const supplier = suppliers.find(s => s.id === dispatch.agencyId);
                     const activity = activities.find(a => a.id === dispatch.activityId);
+                    const isExpanded = expandedDispatchIds.has(dispatch.id);
+                    const items = dispatchItemsMap[dispatch.id] || [];
+                    const isLoadingItems = loadingItemsFor.has(dispatch.id);
+                    const hasItems = items.length > 0;
+                    
                     return (
-                      <div key={dispatch.id} className="flex flex-wrap items-center justify-between gap-4 p-3 border rounded-lg" data-testid={`row-dispatch-${dispatch.id}`}>
-                        <div className="flex-1 min-w-[200px]">
-                          <div className="font-medium flex items-center gap-2">
-                            <Send className="h-4 w-4" />
-                            {supplier?.name || 'Bilinmeyen Acenta'}
-                            {dispatch.customerName && (
-                              <span className="text-muted-foreground font-normal">| {dispatch.customerName}</span>
+                      <div key={dispatch.id} className="border rounded-lg overflow-visible" data-testid={`row-dispatch-${dispatch.id}`}>
+                        <div className="flex flex-wrap items-center justify-between gap-4 p-3">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => toggleDispatchExpand(dispatch.id)}
+                              data-testid={`button-expand-dispatch-${dispatch.id}`}
+                            >
+                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            </Button>
+                            <div className="min-w-[200px]">
+                              <div className="font-medium flex items-center gap-2">
+                                <Send className="h-4 w-4" />
+                                {supplier?.name || 'Bilinmeyen Acenta'}
+                                {dispatch.customerName && (
+                                  <span className="text-muted-foreground font-normal">| {dispatch.customerName}</span>
+                                )}
+                              </div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                <Calendar className="h-3 w-3" />
+                                {formatDateShortTR(dispatch.dispatchDate)} {dispatch.dispatchTime}
+                                {activity && ` - ${activity.name}`}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Misafir:</span>
+                              <span className="ml-1 font-medium">{dispatch.guestCount} kişi</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Birim:</span>
+                              <span className="ml-1 font-medium">
+                                {dispatch.currency === 'USD' 
+                                  ? `$${(dispatch.unitPayoutTl || 0).toLocaleString('en-US')}` 
+                                  : formatMoney(dispatch.unitPayoutTl || 0)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Toplam:</span>
+                              <span className="ml-1 font-medium text-orange-600">
+                                {dispatch.currency === 'USD' 
+                                  ? `$${(dispatch.totalPayoutTl || 0).toLocaleString('en-US')}` 
+                                  : formatMoney(dispatch.totalPayoutTl || 0)}
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (confirm('Bu gönderim kaydını silmek istediğinize emin misiniz?')) {
+                                  deleteDispatchMutation.mutate(dispatch.id);
+                                }
+                              }}
+                              data-testid={`button-delete-dispatch-${dispatch.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="border-t bg-muted/30 p-3">
+                            {isLoadingItems ? (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                Kalemler yükleniyor...
+                              </div>
+                            ) : hasItems ? (
+                              <div className="space-y-2">
+                                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                                  <Package className="h-3 w-3" />
+                                  Fiyat Kalemleri
+                                </div>
+                                <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-2 text-sm">
+                                  <div className="font-medium text-muted-foreground text-xs">Tip</div>
+                                  <div className="font-medium text-muted-foreground text-xs">Açıklama</div>
+                                  <div className="font-medium text-muted-foreground text-xs text-right">Adet</div>
+                                  <div className="font-medium text-muted-foreground text-xs text-right">Birim</div>
+                                  <div className="font-medium text-muted-foreground text-xs text-right">Toplam</div>
+                                  {items.map((item) => (
+                                    <div key={item.id} className="contents">
+                                      <Badge variant={item.itemType === 'base' ? 'default' : item.itemType === 'observer' ? 'secondary' : 'outline'} className="text-xs">
+                                        {item.itemType === 'base' ? 'Dalıcı' : item.itemType === 'observer' ? 'İzleyici' : 'Ekstra'}
+                                      </Badge>
+                                      <span>{item.label || '-'}</span>
+                                      <span className="text-right">{item.quantity}</span>
+                                      <span className="text-right">
+                                        {item.currency === 'USD' ? `$${Number(item.unitAmount || 0).toLocaleString('en-US')}` : `${Number(item.unitAmount || 0).toLocaleString('tr-TR')} TL`}
+                                      </span>
+                                      <span className="text-right font-medium">
+                                        {item.currency === 'USD' ? `$${Number(item.totalAmount || 0).toLocaleString('en-US')}` : `${Number(item.totalAmount || 0).toLocaleString('tr-TR')} TL`}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-sm text-muted-foreground">
+                                Detaylı kalem bilgisi bulunmuyor (basit mod ile oluşturulmuş)
+                              </div>
                             )}
                           </div>
-                          <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Calendar className="h-3 w-3" />
-                            {formatDateShortTR(dispatch.dispatchDate)} {dispatch.dispatchTime}
-                            {activity && ` - ${activity.name}`}
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Misafir:</span>
-                            <span className="ml-1 font-medium">{dispatch.guestCount} kişi</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Birim:</span>
-                            <span className="ml-1 font-medium">
-                              {dispatch.currency === 'USD' 
-                                ? `$${(dispatch.unitPayoutTl || 0).toLocaleString('en-US')}` 
-                                : formatMoney(dispatch.unitPayoutTl || 0)}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Toplam:</span>
-                            <span className="ml-1 font-medium text-orange-600">
-                              {dispatch.currency === 'USD' 
-                                ? `$${(dispatch.totalPayoutTl || 0).toLocaleString('en-US')}` 
-                                : formatMoney(dispatch.totalPayoutTl || 0)}
-                            </span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              if (confirm('Bu gönderim kaydını silmek istediğinize emin misiniz?')) {
-                                deleteDispatchMutation.mutate(dispatch.id);
-                              }
-                            }}
-                            data-testid={`button-delete-dispatch-${dispatch.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                        )}
                       </div>
                     );
                   })}
