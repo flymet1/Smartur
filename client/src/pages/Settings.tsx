@@ -631,7 +631,7 @@ export default function Settings() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'users', 'data', 'partners', 'notifications'].includes(tab)) {
+    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'data', 'partners', 'notifications'].includes(tab)) {
       setSettingsTab(tab);
     }
   }, [location]);
@@ -656,15 +656,6 @@ export default function Settings() {
             >
               <Shield className="h-4 w-4 mr-2" />
               Guvenlik
-            </Button>
-            <Button
-              variant={settingsTab === 'users' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('users')}
-              data-testid="tab-users"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Kullanicilar
             </Button>
             <Button
               variant={settingsTab === 'notifications' ? "default" : "ghost"}
@@ -889,7 +880,10 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-                    </TabsContent>
+          {/* User Management Section - moved from Users tab */}
+          <UserManagementSection />
+
+          </TabsContent>
 
           {/* NOTIFICATIONS TAB */}
           <TabsContent value="notifications" className="space-y-6">
@@ -1609,11 +1603,6 @@ export default function Settings() {
           <TabsContent value="integrations" className="space-y-6">
             <TwilioCard />
             <WooCommerceCard />
-          </TabsContent>
-
-          {/* USERS TAB */}
-          <TabsContent value="users" className="space-y-6">
-            <UserManagementSection />
           </TabsContent>
 
           {/* HOLIDAYS TAB */}
