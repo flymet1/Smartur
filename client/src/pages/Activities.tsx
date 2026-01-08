@@ -1,7 +1,9 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useActivities, useCreateActivity, useDeleteActivity, useUpdateActivity } from "@/hooks/use-activities";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit, Clock, Tag, Users } from "lucide-react";
+import { Plus, Trash2, Edit, Clock, Tag, Users, Building2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -14,13 +16,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { Activity } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FaqEditor, FaqItem, parseFaq, stringifyFaq } from "@/components/FaqEditor";
 import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimitDialog";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
@@ -189,10 +192,34 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [hasFreeHotelTransfer, setHasFreeHotelTransfer] = useState(
     activity ? (activity as any).hasFreeHotelTransfer === true : false
   );
-  // Partner Paylaşımı
+  // Partner Paylaşımı - Granüler seçim
   const [sharedWithPartners, setSharedWithPartners] = useState(
     activity ? (activity as any).sharedWithPartners === true : false
   );
+  const [selectedPartnershipIds, setSelectedPartnershipIds] = useState<number[]>([]);
+  
+  // Partner listesini getir
+  const { data: partnerships } = useQuery<any[]>({
+    queryKey: ['/api/tenant-partnerships'],
+  });
+  
+  // Aktivite için mevcut paylaşımları getir
+  const { data: activityShares } = useQuery<any[]>({
+    queryKey: [`/api/activities/${activity?.id}/partner-shares`],
+    enabled: !!activity?.id && !!open,
+  });
+  
+  // Aktif partner acentaları (bağlı olanlar)
+  const activePartnerships = partnerships?.filter((p: any) => p.status === 'active') || [];
+  
+  // Mevcut paylaşımları state'e yükle
+  useEffect(() => {
+    if (activityShares && activityShares.length > 0) {
+      setSelectedPartnershipIds(activityShares.map((s: any) => s.partnershipId));
+    } else if (activityShares) {
+      setSelectedPartnershipIds([]);
+    }
+  }, [activityShares]);
   const [transferZones, setTransferZones] = useState(() => {
     if (activity && (activity as any).transferZones) {
       try {
@@ -241,6 +268,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setReservationLinkEn("");
     setHasFreeHotelTransfer(false);
     setSharedWithPartners(false);
+    setSelectedPartnershipIds([]);
     setTransferZones("");
     setExtras([]);
     setFaq([]);
@@ -349,13 +377,36 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     };
 
     try {
+      let savedActivityId: number;
+      
       if (isEditing) {
         await updateMutation.mutateAsync({ id: activity.id, ...data });
+        savedActivityId = activity.id;
+        
+        // Partner paylaşımlarını kaydet (düzenleme modunda)
+        try {
+          await apiRequest('POST', `/api/activities/${savedActivityId}/partner-shares`, { partnershipIds: selectedPartnershipIds });
+          queryClient.invalidateQueries({ queryKey: [`/api/activities/${savedActivityId}/partner-shares`] });
+        } catch (shareErr) {
+          console.error('Partner paylaşım hatası:', shareErr);
+        }
+        
         toast({ title: "Güncellendi", description: "Aktivite başarıyla güncellendi." });
       } else {
-        await createMutation.mutateAsync(data);
+        const created = await createMutation.mutateAsync(data);
+        
+        // Yeni aktivite oluşturulduktan sonra ID'yi al
+        if (created && created.id && selectedPartnershipIds.length > 0) {
+          try {
+            await apiRequest('POST', `/api/activities/${created.id}/partner-shares`, { partnershipIds: selectedPartnershipIds });
+          } catch (shareErr) {
+            console.error('Partner paylaşım hatası:', shareErr);
+          }
+        }
+        
         toast({ title: "Oluşturuldu", description: "Yeni aktivite başarıyla eklendi." });
       }
+      
       setOpen(false);
     } catch (err: any) {
       const licenseError = parseLicenseError(err);
@@ -584,24 +635,67 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
               </TabsContent>
 
               <TabsContent value="extras" className="space-y-4 mt-0">
-                {/* Partner Paylaşımı */}
+                {/* Partner Paylaşımı - Granüler Seçim */}
                 <div className="space-y-4 bg-primary/5 p-4 rounded-lg border border-primary/20">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label className="text-base flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Partner Paylasimi
-                      </Label>
-                      <p className="text-xs text-muted-foreground">Bu aktivitenin musaitligini partner acentalarla paylas</p>
-                    </div>
-                    <Switch 
-                      checked={sharedWithPartners}
-                      onCheckedChange={setSharedWithPartners}
-                      data-testid="switch-partner-share"
-                    />
+                  <div className="space-y-1">
+                    <Label className="text-base flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      Partner Paylasimi
+                    </Label>
+                    <p className="text-xs text-muted-foreground">Bu aktivitenin musaitligini hangi partner acentalarla paylasacaginizi secin</p>
                   </div>
-                  {sharedWithPartners && (
-                    <p className="text-xs text-green-600 dark:text-green-400">Partner acentalar bu aktivitenin bos kapasitesini gorebilecek</p>
+                  
+                  {activePartnerships.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">Henuz aktif partner acentaniz yok. Ayarlar sayfasindan partner ekleyebilirsiniz.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activePartnerships.map((partnership: any) => {
+                        const isSelected = selectedPartnershipIds.includes(partnership.id);
+                        return (
+                          <div 
+                            key={partnership.id} 
+                            className={`flex items-center gap-3 p-3 rounded-md border transition-colors ${
+                              isSelected 
+                                ? 'border-primary bg-primary/10' 
+                                : 'border-border hover:bg-muted/50'
+                            }`}
+                          >
+                            <Checkbox
+                              id={`partner-${partnership.id}`}
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedPartnershipIds([...selectedPartnershipIds, partnership.id]);
+                                  setSharedWithPartners(true);
+                                } else {
+                                  const newIds = selectedPartnershipIds.filter(id => id !== partnership.id);
+                                  setSelectedPartnershipIds(newIds);
+                                  if (newIds.length === 0) setSharedWithPartners(false);
+                                }
+                              }}
+                              data-testid={`checkbox-partner-${partnership.id}`}
+                            />
+                            <label 
+                              htmlFor={`partner-${partnership.id}`}
+                              className="flex-1 cursor-pointer"
+                            >
+                              <span className="font-medium">{partnership.partnerTenantName || `Partner #${partnership.partnerTenantId}`}</span>
+                              {partnership.requesterTenantId === partnership.partnerTenantId ? (
+                                <span className="text-xs text-muted-foreground ml-2">(Bizi eklediler)</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground ml-2">(Biz ekledik)</span>
+                              )}
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  {selectedPartnershipIds.length > 0 && (
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      {selectedPartnershipIds.length} partner acenta bu aktivitenin bos kapasitesini gorebilecek
+                    </p>
                   )}
                 </div>
 
