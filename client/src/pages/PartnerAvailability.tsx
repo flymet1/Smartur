@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Activity } from "@shared/schema";
@@ -97,6 +97,7 @@ export default function PartnerAvailability() {
   const [selectedRequest, setSelectedRequest] = useState<ReservationRequest | null>(null);
   const [processAction, setProcessAction] = useState<"approve" | "reject" | null>(null);
   const [processNotes, setProcessNotes] = useState("");
+  const [notifyingSenderId, setNotifyingSenderId] = useState<number | null>(null);
   
   const { toast } = useToast();
 
@@ -147,6 +148,31 @@ export default function PartnerAvailability() {
       toast({ title: "Hata", description: err.message || "Donusturulemedi.", variant: "destructive" });
     },
   });
+
+  const notifyPartnerMutation = useMutation({
+    mutationFn: async ({ phone, message }: { phone: string; message: string }) => {
+      return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
+    },
+    onSuccess: () => {
+      toast({ title: "Basarili", description: "Partner acenta bilgilendirildi." });
+      setNotifyingSenderId(null);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Mesaj gonderilemedi.", variant: "destructive" });
+      setNotifyingSenderId(null);
+    },
+  });
+
+  const notifyPartner = (request: ReservationRequest, statusText: string) => {
+    const partnerName = getPartnerNameFromNotes(request.notes);
+    const activityName = getActivityName(request.activityId);
+    const dateFormatted = format(new Date(request.date), "d MMMM yyyy", { locale: tr });
+    
+    const message = `Merhaba ${partnerName},\n\n${request.customerName} isimli musteri icin ${dateFormatted} tarihli ${activityName} aktivitesi rezervasyon talebi ${statusText}.\n\nMusteri: ${request.customerName}\nTelefon: ${request.customerPhone}\nTarih: ${dateFormatted}\nSaat: ${request.time}\nKisi: ${request.guests || 1}`;
+    
+    setNotifyingSenderId(request.id);
+    notifyPartnerMutation.mutate({ phone: request.customerPhone, message });
+  };
   
   const createRequestMutation = useMutation({
     mutationFn: async (data: { activityId: number; date: string; time: string; customerName: string; customerPhone: string; guests: number; notes: string }) => {
@@ -567,15 +593,27 @@ export default function PartnerAvailability() {
                               </div>
                               <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
                             </div>
-                            <Button 
-                              size="sm" 
-                              onClick={() => convertMutation.mutate(request.id)}
-                              disabled={convertMutation.isPending}
-                              data-testid={`button-convert-${request.id}`}
-                            >
-                              {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
-                              Rezervasyona Donustur
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => notifyPartner(request, "ONAYLANDI")}
+                                disabled={notifyingSenderId === request.id}
+                                data-testid={`button-notify-${request.id}`}
+                              >
+                                {notifyingSenderId === request.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
+                                WhatsApp Bildir
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                onClick={() => convertMutation.mutate(request.id)}
+                                disabled={convertMutation.isPending}
+                                data-testid={`button-convert-${request.id}`}
+                              >
+                                {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
+                                Rezervasyona Donustur
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}

@@ -107,6 +107,7 @@ export default function ViewerStats() {
   const [selectedRequest, setSelectedRequest] = useState<ReservationRequest | null>(null);
   const [processAction, setProcessAction] = useState<"approve" | "reject" | null>(null);
   const [processNotes, setProcessNotes] = useState("");
+  const [notifyingSenderId, setNotifyingSenderId] = useState<number | null>(null);
 
   const { data: partnerUsers = [] } = useQuery<PartnerUser[]>({
     queryKey: ['/api/tenant-users'],
@@ -155,6 +156,20 @@ export default function ViewerStats() {
       toast({ title: "Hata", description: err.message || "Donusturulemedi.", variant: "destructive" });
     },
   });
+
+  const notifyPartnerMutation = useMutation({
+    mutationFn: async ({ phone, message }: { phone: string; message: string }) => {
+      return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
+    },
+    onSuccess: () => {
+      toast({ title: "Basarili", description: "Is ortagi bilgilendirildi." });
+      setNotifyingSenderId(null);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Mesaj gonderilemedi.", variant: "destructive" });
+      setNotifyingSenderId(null);
+    },
+  });
   
   const getActivityName = (activityId: number) => {
     return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
@@ -163,6 +178,30 @@ export default function ViewerStats() {
   const getRequesterName = (requestedBy: number | null) => {
     const user = partnerUsers.find(u => u.id === requestedBy);
     return user?.name || user?.username || "Bilinmiyor";
+  };
+  
+  const getRequesterPhone = (requestedBy: number | null) => {
+    if (!requestedBy) return null;
+    const user = partnerUsers.find(u => u.id === requestedBy);
+    return user?.phone || null;
+  };
+
+  const notifyPartner = (request: ReservationRequest, statusText: string) => {
+    if (!request.requestedBy) {
+      toast({ title: "Hata", description: "Is ortagi bilgisi bulunamadi.", variant: "destructive" });
+      return;
+    }
+    const partnerPhone = getRequesterPhone(request.requestedBy);
+    if (!partnerPhone) {
+      toast({ title: "Hata", description: "Is ortaginin telefon numarasi bulunamadi.", variant: "destructive" });
+      return;
+    }
+    const activityName = getActivityName(request.activityId);
+    const dateFormatted = format(new Date(request.date), "d MMMM yyyy", { locale: tr });
+    const message = `Merhaba ${getRequesterName(request.requestedBy)},\n\n${request.customerName} isimli musteri icin ${dateFormatted} tarihli ${activityName} aktivitesi rezervasyon talebi ${statusText}.\n\nMusteri: ${request.customerName}\nTelefon: ${request.customerPhone}\nTarih: ${dateFormatted}\nSaat: ${request.time}\nKisi: ${request.guests || 1}`;
+    
+    setNotifyingSenderId(request.id);
+    notifyPartnerMutation.mutate({ phone: partnerPhone, message });
   };
   
   const getStatusBadge = (status: string | null) => {
@@ -545,15 +584,27 @@ export default function ViewerStats() {
                               </div>
                               <p className="text-xs text-muted-foreground">Talep eden: {getRequesterName(request.requestedBy)}</p>
                             </div>
-                            <Button 
-                              size="sm" 
-                              onClick={() => convertMutation.mutate(request.id)}
-                              disabled={convertMutation.isPending}
-                              data-testid={`button-convert-${request.id}`}
-                            >
-                              {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
-                              Rezervasyona Donustur
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => notifyPartner(request, "ONAYLANDI")}
+                                disabled={notifyingSenderId === request.id}
+                                data-testid={`button-notify-${request.id}`}
+                              >
+                                {notifyingSenderId === request.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
+                                WhatsApp Bildir
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                onClick={() => convertMutation.mutate(request.id)}
+                                disabled={convertMutation.isPending}
+                                data-testid={`button-convert-${request.id}`}
+                              >
+                                {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
+                                Rezervasyona Donustur
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
