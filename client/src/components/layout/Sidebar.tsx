@@ -47,8 +47,7 @@ const allNavItems: NavItem[] = [
   { href: "/viewer-stats", label: "Is Ortaklari", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
-  { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
-  { href: "/agencies", label: "Acentalar", icon: Building2, requiredPermission: PERMISSION_KEYS.AGENCIES_VIEW },
+  { href: "/finance", label: "Finans & Acentalar", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
   { href: "/messages", label: "WhatsApp", icon: MessageCircle, requiredPermission: PERMISSION_KEYS.WHATSAPP_VIEW },
   { href: "/settings", label: "Ayarlar", icon: Settings, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
 ];
