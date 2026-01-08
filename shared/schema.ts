@@ -1127,12 +1127,39 @@ export const activityPartnerShares = pgTable("activity_partner_shares", {
   id: serial("id").primaryKey(),
   activityId: integer("activity_id").references(() => activities.id).notNull(),
   partnershipId: integer("partnership_id").references(() => tenantPartnerships.id).notNull(),
+  partnerUnitPrice: integer("partner_unit_price"), // Partner için belirlenen birim fiyat
+  partnerCurrency: text("partner_currency").default("TRY"), // Para birimi (TRY, USD, EUR)
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertActivityPartnerShareSchema = createInsertSchema(activityPartnerShares).omit({ id: true, createdAt: true });
 export type ActivityPartnerShare = typeof activityPartnerShares.$inferSelect;
 export type InsertActivityPartnerShare = z.infer<typeof insertActivityPartnerShareSchema>;
+
+// Partner Transactions - Partner müşteri finansal işlemleri
+export const partnerTransactions = pgTable("partner_transactions", {
+  id: serial("id").primaryKey(),
+  reservationId: integer("reservation_id").references(() => reservations.id).notNull(),
+  senderTenantId: integer("sender_tenant_id").references(() => tenants.id).notNull(), // Müşteri gönderen acenta
+  receiverTenantId: integer("receiver_tenant_id").references(() => tenants.id).notNull(), // Müşteri alan acenta
+  activityId: integer("activity_id").references(() => activities.id).notNull(),
+  guestCount: integer("guest_count").notNull(),
+  unitPrice: integer("unit_price").notNull(), // Birim fiyat
+  totalPrice: integer("total_price").notNull(), // Toplam fiyat
+  currency: text("currency").default("TRY").notNull(), // Para birimi
+  customerName: text("customer_name").notNull(),
+  customerPhone: text("customer_phone"),
+  reservationDate: text("reservation_date").notNull(),
+  reservationTime: text("reservation_time"),
+  status: text("status").default("pending").notNull(), // pending, paid, cancelled
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  paidAt: timestamp("paid_at"),
+});
+
+export const insertPartnerTransactionSchema = createInsertSchema(partnerTransactions).omit({ id: true, createdAt: true, paidAt: true });
+export type PartnerTransaction = typeof partnerTransactions.$inferSelect;
+export type InsertPartnerTransaction = z.infer<typeof insertPartnerTransactionSchema>;
 
 // === BILDIRIM TERCIHLERI (Notification Preferences) ===
 
