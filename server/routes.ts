@@ -8566,7 +8566,16 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
 
       const allUsers = await storage.getAppUsers();
       const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
-      res.json(tenantUsers);
+      
+      // Include roles for each user to prevent accidental role deletion on edit
+      const usersWithRoles = await Promise.all(
+        tenantUsers.map(async (user) => {
+          const roles = await storage.getUserRoles(user.id);
+          return { ...user, roles };
+        })
+      );
+      
+      res.json(usersWithRoles);
     } catch (err) {
       console.error("Tenant kullanıcı listesi hatası:", err);
       res.status(500).json({ error: "Kullanıcılar alınamadı" });
