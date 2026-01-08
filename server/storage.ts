@@ -157,6 +157,9 @@ import {
   activityPartnerShares,
   type ActivityPartnerShare,
   type InsertActivityPartnerShare,
+  partnerTransactions,
+  type PartnerTransaction,
+  type InsertPartnerTransaction,
   userNotificationPreferences,
   tenantNotificationSettings,
   inAppNotifications,
@@ -551,8 +554,15 @@ export interface IStorage {
   getActivityPartnerShares(activityId: number): Promise<ActivityPartnerShare[]>;
   getPartnerSharesForTenant(tenantId: number): Promise<ActivityPartnerShare[]>;
   createActivityPartnerShare(share: InsertActivityPartnerShare): Promise<ActivityPartnerShare>;
+  updateActivityPartnerShare(activityId: number, partnershipId: number, data: { partnerUnitPrice?: number; partnerCurrency?: string }): Promise<ActivityPartnerShare | undefined>;
   deleteActivityPartnerShare(activityId: number, partnershipId: number): Promise<void>;
-  setActivityPartnerShares(activityId: number, partnershipIds: number[]): Promise<void>;
+  setActivityPartnerShares(activityId: number, shares: Array<{ partnershipId: number; partnerUnitPrice?: number; partnerCurrency?: string }>): Promise<void>;
+
+  // Partner Transactions
+  getPartnerTransactions(tenantId: number, role: 'sender' | 'receiver' | 'all'): Promise<PartnerTransaction[]>;
+  getPartnerTransaction(id: number): Promise<PartnerTransaction | undefined>;
+  createPartnerTransaction(transaction: InsertPartnerTransaction): Promise<PartnerTransaction>;
+  updatePartnerTransaction(id: number, data: Partial<InsertPartnerTransaction>): Promise<PartnerTransaction>;
 
   // Notification Preferences
   getUserNotificationPreferences(userId: number): Promise<UserNotificationPreference[]>;
@@ -3751,17 +3761,74 @@ Sky Fethiye`,
       );
   }
 
-  async setActivityPartnerShares(activityId: number, partnershipIds: number[]): Promise<void> {
+  async updateActivityPartnerShare(activityId: number, partnershipId: number, data: { partnerUnitPrice?: number; partnerCurrency?: string }): Promise<ActivityPartnerShare | undefined> {
+    const [updated] = await db.update(activityPartnerShares)
+      .set(data)
+      .where(
+        and(
+          eq(activityPartnerShares.activityId, activityId),
+          eq(activityPartnerShares.partnershipId, partnershipId)
+        )
+      )
+      .returning();
+    return updated;
+  }
+
+  async setActivityPartnerShares(activityId: number, shares: Array<{ partnershipId: number; partnerUnitPrice?: number; partnerCurrency?: string }>): Promise<void> {
     await db.delete(activityPartnerShares)
       .where(eq(activityPartnerShares.activityId, activityId));
     
-    if (partnershipIds.length > 0) {
-      const values = partnershipIds.map(partnershipId => ({
+    if (shares.length > 0) {
+      const values = shares.map(share => ({
         activityId,
-        partnershipId
+        partnershipId: share.partnershipId,
+        partnerUnitPrice: share.partnerUnitPrice,
+        partnerCurrency: share.partnerCurrency || 'TRY'
       }));
       await db.insert(activityPartnerShares).values(values);
     }
+  }
+
+  // === PARTNER TRANSACTIONS ===
+
+  async getPartnerTransactions(tenantId: number, role: 'sender' | 'receiver' | 'all'): Promise<PartnerTransaction[]> {
+    if (role === 'sender') {
+      return db.select().from(partnerTransactions)
+        .where(eq(partnerTransactions.senderTenantId, tenantId))
+        .orderBy(desc(partnerTransactions.createdAt));
+    } else if (role === 'receiver') {
+      return db.select().from(partnerTransactions)
+        .where(eq(partnerTransactions.receiverTenantId, tenantId))
+        .orderBy(desc(partnerTransactions.createdAt));
+    } else {
+      return db.select().from(partnerTransactions)
+        .where(
+          or(
+            eq(partnerTransactions.senderTenantId, tenantId),
+            eq(partnerTransactions.receiverTenantId, tenantId)
+          )
+        )
+        .orderBy(desc(partnerTransactions.createdAt));
+    }
+  }
+
+  async getPartnerTransaction(id: number): Promise<PartnerTransaction | undefined> {
+    const [transaction] = await db.select().from(partnerTransactions)
+      .where(eq(partnerTransactions.id, id));
+    return transaction;
+  }
+
+  async createPartnerTransaction(transaction: InsertPartnerTransaction): Promise<PartnerTransaction> {
+    const [created] = await db.insert(partnerTransactions).values(transaction).returning();
+    return created;
+  }
+
+  async updatePartnerTransaction(id: number, data: Partial<InsertPartnerTransaction>): Promise<PartnerTransaction> {
+    const [updated] = await db.update(partnerTransactions)
+      .set(data)
+      .where(eq(partnerTransactions.id, id))
+      .returning();
+    return updated;
   }
 
   // === NOTIFICATION PREFERENCES ===

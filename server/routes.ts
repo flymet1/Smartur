@@ -2449,6 +2449,53 @@ export async function registerRoutes(
         processedAt: new Date()
       });
       
+      // Create partner transaction for financial tracking
+      if (request.requestedBy) {
+        try {
+          const requesterUser = await storage.getAppUser(request.requestedBy);
+          if (requesterUser?.tenantId && requesterUser.tenantId !== tenantId) {
+            // Get partner price from activity partner share if exists
+            const partnerships = await storage.getTenantPartnerships(tenantId);
+            const partnership = partnerships.find(p => 
+              (p.tenantId === requesterUser.tenantId || p.partnerTenantId === requesterUser.tenantId) &&
+              p.status === 'active'
+            );
+            
+            let unitPrice = activity?.priceTl || 0;
+            let currency = 'TRY';
+            
+            if (partnership) {
+              const shares = await storage.getActivityPartnerShares(request.activityId);
+              const share = shares.find(s => s.partnershipId === partnership.id);
+              if (share?.partnerUnitPrice) {
+                unitPrice = share.partnerUnitPrice;
+                currency = share.partnerCurrency || 'TRY';
+              }
+            }
+            
+            const guestCount = request.guests || 1;
+            await storage.createPartnerTransaction({
+              reservationId: reservation.id,
+              senderTenantId: requesterUser.tenantId, // Müşteri gönderen acenta
+              receiverTenantId: tenantId, // Müşteri alan acenta
+              activityId: request.activityId,
+              guestCount,
+              unitPrice,
+              totalPrice: unitPrice * guestCount,
+              currency,
+              customerName: request.customerName,
+              customerPhone: request.customerPhone || null,
+              reservationDate: request.date,
+              reservationTime: request.time || null,
+              status: 'pending',
+              notes: request.notes || null
+            });
+          }
+        } catch (transErr) {
+          console.error("Failed to create partner transaction:", transErr);
+        }
+      }
+      
       // Send email notification to the viewer who created the request
       if (request.requestedBy) {
         try {
@@ -2978,18 +3025,95 @@ export async function registerRoutes(
   app.post("/api/activities/:id/partner-shares", requirePermission(PERMISSIONS.ACTIVITIES_MANAGE), async (req, res) => {
     try {
       const activityId = parseInt(req.params.id);
-      const { partnershipIds } = req.body;
+      const { partnershipIds, shares } = req.body;
       
-      if (!Array.isArray(partnershipIds)) {
-        return res.status(400).json({ error: "partnershipIds array gerekli" });
+      // Support both old format (partnershipIds array) and new format (shares array with prices)
+      if (shares && Array.isArray(shares)) {
+        await storage.setActivityPartnerShares(activityId, shares);
+      } else if (Array.isArray(partnershipIds)) {
+        // Convert old format to new format for backward compatibility
+        const sharesData = partnershipIds.map((partnershipId: number) => ({ partnershipId }));
+        await storage.setActivityPartnerShares(activityId, sharesData);
+      } else {
+        return res.status(400).json({ error: "partnershipIds array veya shares array gerekli" });
       }
       
-      await storage.setActivityPartnerShares(activityId, partnershipIds);
-      const shares = await storage.getActivityPartnerShares(activityId);
-      res.json(shares);
+      const resultShares = await storage.getActivityPartnerShares(activityId);
+      res.json(resultShares);
     } catch (error) {
       console.error("Set activity partner shares error:", error);
       res.status(500).json({ error: "Partner paylasimlari guncellenemedi" });
+    }
+  });
+
+  // === PARTNER TRANSACTIONS API ===
+  
+  // Get partner transactions (for finance page)
+  app.get("/api/partner-transactions", requirePermission(PERMISSIONS.FINANCE_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { role } = req.query;
+      const transactions = await storage.getPartnerTransactions(
+        tenantId, 
+        (role as 'sender' | 'receiver' | 'all') || 'all'
+      );
+      
+      // Enrich with tenant and activity names
+      const tenants = await storage.getTenants();
+      const activities = await storage.getActivities();
+      const tenantMap = new Map(tenants.map(t => [t.id, t]));
+      const activityMap = new Map(activities.map(a => [a.id, a]));
+      
+      const enriched = transactions.map(t => ({
+        ...t,
+        senderTenantName: tenantMap.get(t.senderTenantId)?.name || 'Bilinmeyen',
+        receiverTenantName: tenantMap.get(t.receiverTenantId)?.name || 'Bilinmeyen',
+        activityName: activityMap.get(t.activityId)?.name || 'Bilinmeyen'
+      }));
+      
+      res.json(enriched);
+    } catch (error) {
+      console.error("Get partner transactions error:", error);
+      res.status(500).json({ error: "Partner islemleri alinamadi" });
+    }
+  });
+  
+  // Update partner transaction status (mark as paid)
+  app.patch("/api/partner-transactions/:id", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.session?.tenantId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const transaction = await storage.getPartnerTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Islem bulunamadi" });
+      }
+      
+      // Verify tenant ownership (either sender or receiver)
+      if (transaction.senderTenantId !== tenantId && transaction.receiverTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu isleme erisim yetkiniz yok" });
+      }
+      
+      const { status } = req.body;
+      const updateData: any = { status };
+      
+      if (status === 'paid') {
+        updateData.paidAt = new Date();
+      }
+      
+      const updated = await storage.updatePartnerTransaction(id, updateData);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update partner transaction error:", error);
+      res.status(500).json({ error: "Islem guncellenemedi" });
     }
   });
 
