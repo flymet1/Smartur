@@ -2270,6 +2270,7 @@ export async function registerRoutes(
 
   // Get my reservation requests (for İş Ortağı - partner users)
   // Enriches with activity name since partners don't have activities.view permission
+  // Note: Partner requests are stored in the activity owner's tenant, so we search across connected partners
   app.get("/api/my-reservation-requests", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
@@ -2277,15 +2278,48 @@ export async function registerRoutes(
       if (!tenantId || !userId) {
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
-      const allRequests = await storage.getReservationRequests(tenantId);
-      const myRequests = allRequests.filter(r => r.requestedBy === userId);
       
-      // Enrich with activity names
-      const activities = await storage.getActivities(tenantId);
-      const enrichedRequests = myRequests.map(request => ({
-        ...request,
-        activityName: activities.find(a => a.id === request.activityId)?.name || "Bilinmiyor"
-      }));
+      // First, get requests from current tenant
+      const currentTenantRequests = await storage.getReservationRequests(tenantId);
+      const myCurrentRequests = currentTenantRequests.filter(r => r.requestedBy === userId);
+      
+      // Then, get requests from partner tenants (where I might have sent requests)
+      const partnerships = await storage.getTenantPartnerships(tenantId);
+      const activePartnerships = partnerships.filter(p => p.status === 'active' && p.requesterTenantId === tenantId);
+      
+      let allMyRequests = [...myCurrentRequests];
+      const activityCache: Map<number, any> = new Map();
+      const tenants = await storage.getTenants();
+      const tenantMap = new Map(tenants.map(t => [t.id, t]));
+      
+      for (const partnership of activePartnerships) {
+        const partnerRequests = await storage.getReservationRequests(partnership.partnerTenantId);
+        const myPartnerRequests = partnerRequests.filter(r => r.requestedBy === userId);
+        allMyRequests = [...allMyRequests, ...myPartnerRequests];
+        
+        // Cache partner activities for enrichment
+        if (myPartnerRequests.length > 0) {
+          const partnerActivities = await storage.getActivities(partnership.partnerTenantId);
+          partnerActivities.forEach(a => activityCache.set(a.id, { ...a, tenantName: tenantMap.get(partnership.partnerTenantId)?.name }));
+        }
+      }
+      
+      // Add current tenant activities to cache
+      const currentActivities = await storage.getActivities(tenantId);
+      currentActivities.forEach(a => activityCache.set(a.id, { ...a, tenantName: tenantMap.get(tenantId)?.name }));
+      
+      // Enrich with activity names and tenant info
+      const enrichedRequests = allMyRequests.map(request => {
+        const activity = activityCache.get(request.activityId);
+        return {
+          ...request,
+          activityName: activity?.name || "Bilinmiyor",
+          ownerTenantName: activity?.tenantName || "Bilinmiyor"
+        };
+      });
+      
+      // Sort by createdAt descending
+      enrichedRequests.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       
       res.json(enrichedRequests);
     } catch (error) {
@@ -2801,12 +2835,12 @@ export async function registerRoutes(
   });
 
   // Create reservation request from partner to activity owner
-  app.post("/api/partner-reservation-requests", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
+  app.post("/api/partner-reservation-requests", async (req, res) => {
     try {
       const requesterTenantId = req.session?.tenantId;
       const userId = req.session?.userId;
       
-      if (!requesterTenantId) {
+      if (!requesterTenantId || !userId) {
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       
@@ -2828,15 +2862,43 @@ export async function registerRoutes(
       
       // Verify that there is an active partnership between requester and owner
       const partnerships = await storage.getTenantPartnerships(requesterTenantId);
-      const hasPartnership = partnerships.some(p => 
+      const activePartnership = partnerships.find(p => 
         p.status === 'active' && 
         p.requesterTenantId === requesterTenantId && 
         p.partnerTenantId === ownerTenantId
       );
       
-      if (!hasPartnership) {
+      if (!activePartnership) {
         return res.status(403).json({ error: "Bu aktiviteye erisim izniniz yok" });
       }
+      
+      // Verify that the activity is actually shared with this partnership
+      // Get ALL shares for this activity owner to check if granular sharing is in use
+      const allSharesForOwner = await storage.getActivityPartnerShares(0);
+      const ownerShares = allSharesForOwner.filter(s => {
+        // Check if this share is for an activity owned by the same tenant
+        return s.partnershipId && allSharesForOwner.find(x => x.activityId === activityId);
+      });
+      
+      // More accurate: check if there are any granular shares for this specific activity
+      const sharesForThisActivity = allSharesForOwner.filter(s => s.activityId === activityId);
+      
+      let isActivityShared = false;
+      if (sharesForThisActivity.length > 0) {
+        // Granular sharing is in use for this activity - check if our partnership is included
+        isActivityShared = sharesForThisActivity.some(s => s.partnershipId === activePartnership.id);
+      } else {
+        // No granular shares exist for this activity - fall back to legacy sharedWithPartners flag
+        isActivityShared = activity.sharedWithPartners === true;
+      }
+      
+      if (!isActivityShared) {
+        return res.status(403).json({ error: "Bu aktivite sizinle paylasilmamis" });
+      }
+      
+      // Get requester info for tracking
+      const requester = await storage.getAppUser(userId);
+      const partnerName = requester?.companyName || requester?.name || 'Partner';
       
       // Create the reservation request in the OWNER's tenant context
       const request = await storage.createReservationRequest({
@@ -2847,7 +2909,7 @@ export async function registerRoutes(
         customerName,
         customerPhone,
         guests: guests || 1,
-        notes: notes ? `[Partner Talep] ${notes}` : '[Partner Talep]',
+        notes: `[Partner: ${partnerName}] ${notes || ''}`.trim(),
         requestedBy: userId,
         status: "pending"
       });
