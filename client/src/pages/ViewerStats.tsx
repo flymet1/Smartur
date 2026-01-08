@@ -99,6 +99,7 @@ export default function ViewerStats() {
     to: new Date()
   });
   const [presetRange, setPresetRange] = useState<string>('last30');
+  const [activeTab, setActiveTab] = useState<string>('requests');
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("all");
   const [bulkMessage, setBulkMessage] = useState("");
   const [isSendingBulk, setIsSendingBulk] = useState(false);
@@ -452,8 +453,27 @@ export default function ViewerStats() {
           </div>
         </div>
 
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-          <Card>
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => setActiveTab('requests')}
+            data-testid="card-incoming-requests"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Gelen Talepler</CardTitle>
+              <Send className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="text-viewer-requests">{viewerRequests.length}</div>
+              <p className="text-xs text-muted-foreground">Toplam talep</p>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => setActiveTab('stats')}
+            data-testid="card-total-guests"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Toplam Kisi</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -468,18 +488,11 @@ export default function ViewerStats() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Talep</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-total-requests">{totalRequests}</div>
-              <p className="text-xs text-muted-foreground">Rezervasyon talebi</p>
-            </CardContent>
-          </Card>
-
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => setActiveTab('stats')}
+            data-testid="card-active-partners"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Aktif Is Ortagi</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -489,22 +502,24 @@ export default function ViewerStats() {
               <p className="text-xs text-muted-foreground">Talep gonderen partner</p>
             </CardContent>
           </Card>
+
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => setActiveTab('requests')}
+            data-testid="card-pending-requests"
+          >
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Bekleyen Talep</CardTitle>
+              <Clock className={`h-4 w-4 ${pendingViewerRequests.length > 0 ? 'text-orange-600' : 'text-muted-foreground'}`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${pendingViewerRequests.length > 0 ? 'text-orange-600' : ''}`} data-testid="text-pending-requests">{pendingViewerRequests.length}</div>
+              <p className="text-xs text-muted-foreground">Onay bekliyor</p>
+            </CardContent>
+          </Card>
         </div>
 
-        <Tabs defaultValue="requests" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="requests" data-testid="tab-requests" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Talepler
-              {pendingViewerRequests.length > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 min-w-5 flex items-center justify-center text-xs px-1">
-                  {pendingViewerRequests.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="stats" data-testid="tab-stats">Istatistikler</TabsTrigger>
-            <TabsTrigger value="message" data-testid="tab-message">Toplu Mesaj</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           
           <TabsContent value="requests" className="space-y-4">
             {requestsLoading ? (
