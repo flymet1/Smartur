@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -89,6 +90,7 @@ export default function PartnerAvailability() {
     weekLater.setDate(weekLater.getDate() + 7);
     return weekLater.toISOString().split('T')[0];
   });
+  const [datePreset, setDatePreset] = useState<string>('this-week');
   
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<RequestDialogData | null>(null);
@@ -338,26 +340,90 @@ export default function PartnerAvailability() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => navigateDates(-7)}
+                    onClick={() => { navigateDates(-7); setDatePreset('custom'); }}
                     data-testid="button-prev-week"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
                   
+                  <Select 
+                    value={datePreset}
+                    onValueChange={(value) => {
+                      setDatePreset(value);
+                      const now = new Date();
+                      const todayStr = now.toISOString().split('T')[0];
+                      
+                      if (value === 'today') {
+                        setStartDate(todayStr);
+                        setEndDate(todayStr);
+                      } else if (value === 'this-week') {
+                        const dayOfWeek = now.getDay();
+                        const monday = new Date(now);
+                        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                        const sunday = new Date(monday);
+                        sunday.setDate(monday.getDate() + 6);
+                        setStartDate(monday.toISOString().split('T')[0]);
+                        setEndDate(sunday.toISOString().split('T')[0]);
+                      } else if (value === 'next-week') {
+                        const dayOfWeek = now.getDay();
+                        const monday = new Date(now);
+                        monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + 7);
+                        const sunday = new Date(monday);
+                        sunday.setDate(monday.getDate() + 6);
+                        setStartDate(monday.toISOString().split('T')[0]);
+                        setEndDate(sunday.toISOString().split('T')[0]);
+                      } else if (value === 'this-month') {
+                        const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                        setStartDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+                        setEndDate(lastDayOfMonth.toISOString().split('T')[0]);
+                      } else if (value === 'next-month') {
+                        const firstDayNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                        const lastDayNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+                        setStartDate(firstDayNextMonth.toISOString().split('T')[0]);
+                        setEndDate(lastDayNextMonth.toISOString().split('T')[0]);
+                      } else if (value === 'next-7-days') {
+                        const weekLater = new Date(now);
+                        weekLater.setDate(now.getDate() + 7);
+                        setStartDate(todayStr);
+                        setEndDate(weekLater.toISOString().split('T')[0]);
+                      } else if (value === 'next-30-days') {
+                        const monthLater = new Date(now);
+                        monthLater.setDate(now.getDate() + 30);
+                        setStartDate(todayStr);
+                        setEndDate(monthLater.toISOString().split('T')[0]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[150px]" data-testid="select-date-preset">
+                      <SelectValue placeholder="Hizli Sec" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Bugun</SelectItem>
+                      <SelectItem value="this-week">Bu Hafta</SelectItem>
+                      <SelectItem value="next-week">Gelecek Hafta</SelectItem>
+                      <SelectItem value="next-7-days">Sonraki 7 Gun</SelectItem>
+                      <SelectItem value="this-month">Bu Ay</SelectItem>
+                      <SelectItem value="next-month">Gelecek Ay</SelectItem>
+                      <SelectItem value="next-30-days">Sonraki 30 Gun</SelectItem>
+                      <SelectItem value="custom">Ozel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
                   <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
                     <Input
                       type="date"
                       value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-40"
+                      onChange={(e) => { setStartDate(e.target.value); setDatePreset('custom'); }}
+                      className="w-36"
                       data-testid="input-start-date"
                     />
                     <span className="text-muted-foreground">-</span>
                     <Input
                       type="date"
                       value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-40"
+                      onChange={(e) => { setEndDate(e.target.value); setDatePreset('custom'); }}
+                      className="w-36"
                       data-testid="input-end-date"
                     />
                   </div>
@@ -365,7 +431,7 @@ export default function PartnerAvailability() {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => navigateDates(7)}
+                    onClick={() => { navigateDates(7); setDatePreset('custom'); }}
                     data-testid="button-next-week"
                   >
                     <ChevronRight className="w-4 h-4" />
