@@ -84,11 +84,19 @@ interface ReservationRequest {
 
 export default function PartnerAvailability() {
   const today = new Date();
-  const [startDate, setStartDate] = useState(today.toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(() => {
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    return monday.toISOString().split('T')[0];
+  });
   const [endDate, setEndDate] = useState(() => {
-    const weekLater = new Date(today);
-    weekLater.setDate(weekLater.getDate() + 7);
-    return weekLater.toISOString().split('T')[0];
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return sunday.toISOString().split('T')[0];
   });
   const [datePreset, setDatePreset] = useState<string>('this-week');
   
