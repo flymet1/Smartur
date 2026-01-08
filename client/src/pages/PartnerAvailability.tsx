@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -16,9 +19,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Activity } from "@shared/schema";
 
 interface PartnerActivity {
   id: number;
@@ -54,6 +58,25 @@ interface RequestDialogData {
   availableSlots: number;
 }
 
+interface ReservationRequest {
+  id: number;
+  tenantId: number | null;
+  activityId: number;
+  date: string;
+  time: string;
+  customerName: string;
+  customerPhone: string;
+  guests: number | null;
+  notes: string | null;
+  status: string | null;
+  requestedBy: number | null;
+  processedBy: number | null;
+  processedAt: string | null;
+  processNotes: string | null;
+  reservationId: number | null;
+  createdAt: string | null;
+}
+
 export default function PartnerAvailability() {
   const today = new Date();
   const [startDate, setStartDate] = useState(today.toISOString().split('T')[0]);
@@ -70,10 +93,59 @@ export default function PartnerAvailability() {
   const [guests, setGuests] = useState(1);
   const [notes, setNotes] = useState("");
   
+  const [processDialogOpen, setProcessDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<ReservationRequest | null>(null);
+  const [processAction, setProcessAction] = useState<"approve" | "reject" | null>(null);
+  const [processNotes, setProcessNotes] = useState("");
+  
   const { toast } = useToast();
 
   const { data: partnerData, isLoading, refetch, isFetching } = useQuery<PartnerData[]>({
     queryKey: [`/api/partner-shared-availability?startDate=${startDate}&endDate=${endDate}`],
+  });
+  
+  const { data: allRequests = [], isLoading: requestsLoading } = useQuery<ReservationRequest[]>({
+    queryKey: ['/api/reservation-requests'],
+    refetchInterval: 30000,
+  });
+  
+  const { data: activities = [] } = useQuery<Activity[]>({
+    queryKey: ['/api/activities'],
+  });
+  
+  const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
+  const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
+  const approvedPartnerRequests = partnerRequests.filter(r => r.status === 'approved');
+  const otherPartnerRequests = partnerRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
+  
+  const processMutation = useMutation({
+    mutationFn: async ({ id, status, notes }: { id: number; status: string; notes?: string }) => {
+      return apiRequest('PATCH', `/api/reservation-requests/${id}`, { status, processNotes: notes });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservation-requests'] });
+      toast({ title: "Basarili", description: "Talep durumu guncellendi." });
+      setProcessDialogOpen(false);
+      setSelectedRequest(null);
+      setProcessNotes("");
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Talep guncellenemedi.", variant: "destructive" });
+    },
+  });
+
+  const convertMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('POST', `/api/reservation-requests/${id}/convert`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservation-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      toast({ title: "Basarili", description: "Talep rezervasyona donusturuldu." });
+    },
+    onError: (err: any) => {
+      toast({ title: "Hata", description: err.message || "Donusturulemedi.", variant: "destructive" });
+    },
   });
   
   const createRequestMutation = useMutation({
@@ -91,6 +163,48 @@ export default function PartnerAvailability() {
       toast({ title: "Hata", description: error.message || "Talep gonderilemedi", variant: "destructive" });
     }
   });
+  
+  const getActivityName = (activityId: number) => {
+    return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
+  };
+  
+  const getPartnerNameFromNotes = (notes: string | null) => {
+    if (!notes) return "Partner Acenta";
+    const match = notes.match(/^\[Partner:\s*([^\]]+)\]/);
+    return match ? match[1] : "Partner Acenta";
+  };
+  
+  const getStatusBadge = (status: string | null) => {
+    switch (status) {
+      case "pending":
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Beklemede</Badge>;
+      case "approved":
+        return <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Onaylandi</Badge>;
+      case "rejected":
+        return <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Reddedildi</Badge>;
+      case "converted":
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Rezervasyona Donusturuldu</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const openProcessDialog = (request: ReservationRequest, action: "approve" | "reject") => {
+    setSelectedRequest(request);
+    setProcessAction(action);
+    setProcessNotes("");
+    setProcessDialogOpen(true);
+  };
+
+  const handleProcess = () => {
+    if (!selectedRequest || !processAction) return;
+    
+    processMutation.mutate({
+      id: selectedRequest.id,
+      status: processAction === "approve" ? "approved" : "rejected",
+      notes: processNotes || undefined,
+    });
+  };
   
   const resetForm = () => {
     setCustomerName("");
@@ -170,190 +284,334 @@ export default function PartnerAvailability() {
           <p className="text-muted-foreground mt-1">Bagli oldugunuz partner acentalarin paylasilan aktivitelerinin musaitligi</p>
         </div>
 
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-wrap items-center gap-4">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigateDates(-7)}
-                data-testid="button-prev-week"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              
-              <div className="flex items-center gap-2">
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-40"
-                  data-testid="input-start-date"
-                />
-                <span className="text-muted-foreground">-</span>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-40"
-                  data-testid="input-end-date"
-                />
-              </div>
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigateDates(7)}
-                data-testid="button-next-week"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isFetching}
-                data-testid="button-refresh"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-                Yenile
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
-          </div>
-        ) : !partnerData || partnerData.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Paylasilan Aktivite Yok</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Henuz bagli oldugunuz partner acentalar aktivitelerini sizinle paylasmamis 
-                veya henuz bir partner acentaya baglanmadiniz.
-              </p>
-              <Button variant="outline" className="mt-4" asChild>
-                <a href="/settings?tab=partners">Partnerleri Yonet</a>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            {partnerData.map((partner) => (
-              <Card key={partner.partnerTenantId} className="overflow-hidden">
-                <CardHeader className="bg-muted/50">
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-primary" />
-                    {partner.partnerTenantName}
-                  </CardTitle>
-                  <CardDescription>
-                    {partner.activities.length} aktivite paylasiliyor
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-6">
-                    {partner.activities.map((activity) => {
-                      const grouped = groupCapacitiesByDate(activity.capacities);
-                      const dates = Object.keys(grouped).sort();
-                      
-                      return (
-                        <div key={activity.id} className="border rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h4 className="font-medium flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full" 
-                                  style={{ backgroundColor: activity.color === 'blue' ? '#3b82f6' : 
-                                           activity.color === 'green' ? '#22c55e' :
-                                           activity.color === 'purple' ? '#a855f7' :
-                                           activity.color === 'orange' ? '#f97316' :
-                                           activity.color === 'pink' ? '#ec4899' :
-                                           activity.color === 'cyan' ? '#06b6d4' :
-                                           activity.color === 'red' ? '#ef4444' :
-                                           activity.color === 'yellow' ? '#eab308' : '#3b82f6' 
-                                  }}
-                                />
-                                {activity.name}
-                              </h4>
-                              {activity.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <Badge variant="secondary" className="mb-1">
-                                {activity.price.toLocaleString('tr-TR')} TL
-                              </Badge>
-                              <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
-                                <Clock className="w-3 h-3" />
-                                {activity.durationMinutes} dk
-                              </p>
-                            </div>
-                          </div>
-
-                          {dates.length === 0 ? (
-                            <p className="text-sm text-muted-foreground italic">
-                              Bu tarih araliginda kapasite bilgisi yok
-                            </p>
-                          ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-                              {dates.map(date => {
-                                const caps = grouped[date];
-                                const totalAvailable = caps.reduce((sum, c) => sum + c.availableSlots, 0);
-                                const totalSlots = caps.reduce((sum, c) => sum + c.totalSlots, 0);
-                                
-                                return (
-                                  <div 
-                                    key={date} 
-                                    className="border rounded-md p-2 text-center"
-                                    data-testid={`capacity-${date}`}
-                                  >
-                                    <p className="text-xs font-medium mb-1">{formatDate(date)}</p>
-                                    <div className="space-y-1">
-                                      {caps.map((cap, idx) => (
-                                        <button 
-                                          key={idx}
-                                          onClick={() => cap.availableSlots > 0 && openRequestDialog({
-                                            activityId: activity.id,
-                                            activityName: activity.name,
-                                            partnerTenantId: partner.partnerTenantId,
-                                            partnerTenantName: partner.partnerTenantName,
-                                            date: cap.date,
-                                            time: cap.time,
-                                            availableSlots: cap.availableSlots
-                                          })}
-                                          disabled={cap.availableSlots === 0}
-                                          className={`w-full text-xs px-2 py-1 rounded transition-all ${getAvailabilityColor(cap.availableSlots, cap.totalSlots)} ${cap.availableSlots > 0 ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : 'cursor-not-allowed opacity-60'}`}
-                                          data-testid={`slot-${cap.date}-${cap.time}`}
-                                        >
-                                          <span className="font-medium">{cap.time}</span>
-                                          <div className="flex items-center justify-center gap-1">
-                                            <Users className="w-3 h-3" />
-                                            {cap.availableSlots}/{cap.totalSlots}
-                                          </div>
-                                        </button>
-                                      ))}
-                                    </div>
-                                    <div className={`mt-1 text-xs font-medium px-2 py-0.5 rounded ${getAvailabilityColor(totalAvailable, totalSlots)}`}>
-                                      Toplam: {totalAvailable}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+        <Tabs defaultValue="availability" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="availability" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Musaitlik
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Gelen Talepler
+              {pendingPartnerRequests.length > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 min-w-5 flex items-center justify-center text-xs px-1">
+                  {pendingPartnerRequests.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="availability" className="space-y-4">
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <div className="flex flex-wrap items-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateDates(-7)}
+                    data-testid="button-prev-week"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-40"
+                      data-testid="input-start-date"
+                    />
+                    <span className="text-muted-foreground">-</span>
+                    <Input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-40"
+                      data-testid="input-end-date"
+                    />
                   </div>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => navigateDates(7)}
+                    data-testid="button-next-week"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => refetch()}
+                    disabled={isFetching}
+                    data-testid="button-refresh"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                    Yenile
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
+              </div>
+            ) : !partnerData || partnerData.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Paylasilan Aktivite Yok</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Henuz bagli oldugunuz partner acentalar aktivitelerini sizinle paylasmamis 
+                    veya henuz bir partner acentaya baglanmadiniz.
+                  </p>
+                  <Button variant="outline" className="mt-4" asChild>
+                    <a href="/settings?tab=partners">Partnerleri Yonet</a>
+                  </Button>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="space-y-6">
+                {partnerData.map((partner) => (
+                  <Card key={partner.partnerTenantId} className="overflow-hidden">
+                    <CardHeader className="bg-muted/50">
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-primary" />
+                        {partner.partnerTenantName}
+                      </CardTitle>
+                      <CardDescription>
+                        {partner.activities.length} aktivite paylasiliyor
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <div className="space-y-6">
+                        {partner.activities.map((activity) => {
+                          const grouped = groupCapacitiesByDate(activity.capacities);
+                          const dates = Object.keys(grouped).sort();
+                          
+                          return (
+                            <div key={activity.id} className="border rounded-lg p-4">
+                              <div className="flex items-start justify-between mb-4">
+                                <div>
+                                  <h4 className="font-medium flex items-center gap-2">
+                                    <div 
+                                      className="w-3 h-3 rounded-full" 
+                                      style={{ backgroundColor: activity.color === 'blue' ? '#3b82f6' : 
+                                               activity.color === 'green' ? '#22c55e' :
+                                               activity.color === 'purple' ? '#a855f7' :
+                                               activity.color === 'orange' ? '#f97316' :
+                                               activity.color === 'pink' ? '#ec4899' :
+                                               activity.color === 'cyan' ? '#06b6d4' :
+                                               activity.color === 'red' ? '#ef4444' :
+                                               activity.color === 'yellow' ? '#eab308' : '#3b82f6' 
+                                      }}
+                                    />
+                                    {activity.name}
+                                  </h4>
+                                  {activity.description && (
+                                    <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <Badge variant="secondary" className="mb-1">
+                                    {activity.price.toLocaleString('tr-TR')} TL
+                                  </Badge>
+                                  <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {activity.durationMinutes} dk
+                                  </p>
+                                </div>
+                              </div>
+
+                              {dates.length === 0 ? (
+                                <p className="text-sm text-muted-foreground italic">
+                                  Bu tarih araliginda kapasite bilgisi yok
+                                </p>
+                              ) : (
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                                  {dates.map(date => {
+                                    const caps = grouped[date];
+                                    const totalAvailable = caps.reduce((sum, c) => sum + c.availableSlots, 0);
+                                    const totalSlots = caps.reduce((sum, c) => sum + c.totalSlots, 0);
+                                    
+                                    return (
+                                      <div 
+                                        key={date} 
+                                        className="border rounded-md p-2 text-center"
+                                        data-testid={`capacity-${date}`}
+                                      >
+                                        <p className="text-xs font-medium mb-1">{formatDate(date)}</p>
+                                        <div className="space-y-1">
+                                          {caps.map((cap, idx) => (
+                                            <button 
+                                              key={idx}
+                                              onClick={() => cap.availableSlots > 0 && openRequestDialog({
+                                                activityId: activity.id,
+                                                activityName: activity.name,
+                                                partnerTenantId: partner.partnerTenantId,
+                                                partnerTenantName: partner.partnerTenantName,
+                                                date: cap.date,
+                                                time: cap.time,
+                                                availableSlots: cap.availableSlots
+                                              })}
+                                              disabled={cap.availableSlots === 0}
+                                              className={`w-full text-xs px-2 py-1 rounded transition-all ${getAvailabilityColor(cap.availableSlots, cap.totalSlots)} ${cap.availableSlots > 0 ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : 'cursor-not-allowed opacity-60'}`}
+                                              data-testid={`slot-${cap.date}-${cap.time}`}
+                                            >
+                                              <span className="font-medium">{cap.time}</span>
+                                              <div className="flex items-center justify-center gap-1">
+                                                <Users className="w-3 h-3" />
+                                                {cap.availableSlots}/{cap.totalSlots}
+                                              </div>
+                                            </button>
+                                          ))}
+                                        </div>
+                                        <div className={`mt-1 text-xs font-medium px-2 py-0.5 rounded ${getAvailabilityColor(totalAvailable, totalSlots)}`}>
+                                          Toplam: {totalAvailable}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="requests" className="space-y-4">
+            {requestsLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : partnerRequests.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Henuz Talep Yok</h3>
+                  <p className="text-muted-foreground">Partner acentalardan gelen rezervasyon talebi bulunmuyor.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {pendingPartnerRequests.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-yellow-600" />
+                        Bekleyen Talepler ({pendingPartnerRequests.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {pendingPartnerRequests.map(request => (
+                        <div key={request.id} className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20">
+                          <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="space-y-1">
+                              <p className="font-medium">{request.customerName}</p>
+                              <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                              <div className="flex flex-wrap items-center gap-2 text-sm">
+                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                                <span>{request.time}</span>
+                                <span>{request.guests} kisi</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="outline" onClick={() => openProcessDialog(request, "reject")} data-testid={`button-reject-${request.id}`}>
+                                <X className="w-4 h-4 mr-1" />
+                                Reddet
+                              </Button>
+                              <Button size="sm" onClick={() => openProcessDialog(request, "approve")} data-testid={`button-approve-${request.id}`}>
+                                <Check className="w-4 h-4 mr-1" />
+                                Onayla
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {approvedPartnerRequests.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Check className="w-5 h-5 text-green-600" />
+                        Onaylanan Talepler ({approvedPartnerRequests.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {approvedPartnerRequests.map(request => (
+                        <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
+                          <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="space-y-1">
+                              <p className="font-medium">{request.customerName}</p>
+                              <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                              <div className="flex flex-wrap items-center gap-2 text-sm">
+                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                                <span>{request.time}</span>
+                                <span>{request.guests} kisi</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              onClick={() => convertMutation.mutate(request.id)}
+                              disabled={convertMutation.isPending}
+                              data-testid={`button-convert-${request.id}`}
+                            >
+                              {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
+                              Rezervasyona Donustur
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {otherPartnerRequests.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-muted-foreground">Diger Talepler ({otherPartnerRequests.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {otherPartnerRequests.map(request => (
+                        <div key={request.id} className="border rounded-lg p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="space-y-1">
+                              <p className="font-medium">{request.customerName}</p>
+                              <div className="flex flex-wrap items-center gap-2 text-sm">
+                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                                <span>{request.time}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
+                            </div>
+                            {getStatusBadge(request.status)}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
         
         <Dialog open={requestDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setRequestDialogOpen(open); }}>
           <DialogContent className="sm:max-w-md">
@@ -435,6 +693,43 @@ export default function PartnerAvailability() {
                 data-testid="button-submit-request"
               >
                 {createRequestMutation.isPending ? "Gonderiliyor..." : "Talep Gonder"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        <Dialog open={processDialogOpen} onOpenChange={setProcessDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {processAction === "approve" ? "Talebi Onayla" : "Talebi Reddet"}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedRequest && `${selectedRequest.customerName} - ${getActivityName(selectedRequest.activityId)}`}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Not (Opsiyonel)</Label>
+                <Textarea
+                  value={processNotes}
+                  onChange={(e) => setProcessNotes(e.target.value)}
+                  placeholder="Islem notu..."
+                  className="resize-none"
+                  rows={3}
+                  data-testid="input-process-notes"
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setProcessDialogOpen(false)}>Vazgec</Button>
+              <Button 
+                variant={processAction === "reject" ? "destructive" : "default"}
+                onClick={handleProcess}
+                disabled={processMutation.isPending}
+                data-testid="button-confirm-process"
+              >
+                {processMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : processAction === "approve" ? "Onayla" : "Reddet"}
               </Button>
             </DialogFooter>
           </DialogContent>

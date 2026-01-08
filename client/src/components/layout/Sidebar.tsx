@@ -252,7 +252,10 @@ export function Sidebar() {
 
   const openSupportCount = supportSummary?.openCount || 0;
   const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
-  const pendingReservationRequestsCount = reservationRequests?.filter(r => r.status === 'pending').length || 0;
+  
+  // Separate counts: İş Ortakları (viewer requests) vs Partner Acentalar (partner requests)
+  const pendingViewerRequestsCount = reservationRequests?.filter(r => r.status === 'pending' && !r.notes?.startsWith('[Partner:')).length || 0;
+  const pendingPartnerRequestsCount = reservationRequests?.filter(r => r.status === 'pending' && r.notes?.startsWith('[Partner:')).length || 0;
   const logoUrl = logoSetting?.value;
   
   // Get company name from brand settings
@@ -371,11 +374,11 @@ export function Sidebar() {
                   {quickAccessItems.map((item) => {
                     const hasPendingCount = 
                       (item.href === "/customer-requests" && pendingCustomerRequestsCount > 0) ||
-                      (item.href === "/reservation-requests" && pendingReservationRequestsCount > 0);
+                      (item.href === "/reservation-requests" && pendingViewerRequestsCount > 0);
                     const pendingCount = item.href === "/customer-requests" 
                       ? pendingCustomerRequestsCount 
                       : item.href === "/reservation-requests" 
-                        ? pendingReservationRequestsCount 
+                        ? pendingViewerRequestsCount 
                         : 0;
                     
                     return (
@@ -424,7 +427,10 @@ export function Sidebar() {
                 </div>
               )}
               {navItems.map((item) => {
-                const hasViewerBadge = item.href === "/viewer-stats" && pendingReservationRequestsCount > 0;
+                const hasViewerBadge = item.href === "/viewer-stats" && pendingViewerRequestsCount > 0;
+                const hasPartnerBadge = item.href === "/partner-availability" && pendingPartnerRequestsCount > 0;
+                const badgeCount = item.href === "/viewer-stats" ? pendingViewerRequestsCount : 
+                                   item.href === "/partner-availability" ? pendingPartnerRequestsCount : 0;
                 return (
                   <Link key={item.href} href={item.href}>
                     <div className={cn(
@@ -435,12 +441,12 @@ export function Sidebar() {
                     )}>
                       <item.icon className="h-4 w-4" />
                       {item.label}
-                      {hasViewerBadge && (
+                      {(hasViewerBadge || hasPartnerBadge) && (
                         <Badge 
                           variant="destructive" 
                           className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs px-1"
                         >
-                          {pendingReservationRequestsCount}
+                          {badgeCount}
                         </Badge>
                       )}
                     </div>
@@ -520,11 +526,11 @@ export function Sidebar() {
               {quickAccessItems.map((item) => {
                 const hasPendingCount = 
                   (item.href === "/customer-requests" && pendingCustomerRequestsCount > 0) ||
-                  (item.href === "/reservation-requests" && pendingReservationRequestsCount > 0);
+                  (item.href === "/reservation-requests" && pendingViewerRequestsCount > 0);
                 const pendingCount = item.href === "/customer-requests" 
                   ? pendingCustomerRequestsCount 
                   : item.href === "/reservation-requests" 
-                    ? pendingReservationRequestsCount 
+                    ? pendingViewerRequestsCount 
                     : 0;
                 
                 return (
@@ -578,7 +584,10 @@ export function Sidebar() {
 
         <div className="flex-1 px-4 py-4 space-y-1 border-t overflow-y-auto">
           {navItems.map((item) => {
-            const hasViewerBadge = item.href === "/viewer-stats" && pendingReservationRequestsCount > 0;
+            const hasViewerBadge = item.href === "/viewer-stats" && pendingViewerRequestsCount > 0;
+            const hasPartnerBadge = item.href === "/partner-availability" && pendingPartnerRequestsCount > 0;
+            const badgeCount = item.href === "/viewer-stats" ? pendingViewerRequestsCount : 
+                               item.href === "/partner-availability" ? pendingPartnerRequestsCount : 0;
             return (
               <Link key={item.href} href={item.href}>
                 <div className={cn(
@@ -592,13 +601,13 @@ export function Sidebar() {
                     location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
                   )} />
                   {item.label}
-                  {hasViewerBadge && (
+                  {(hasViewerBadge || hasPartnerBadge) && (
                     <Badge 
                       variant="destructive" 
                       className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                      data-testid="badge-viewer-requests"
+                      data-testid={hasViewerBadge ? "badge-viewer-requests" : "badge-partner-requests"}
                     >
-                      {pendingReservationRequestsCount}
+                      {badgeCount}
                     </Badge>
                   )}
                 </div>
