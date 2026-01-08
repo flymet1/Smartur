@@ -10,24 +10,21 @@ const PUBLIC_ROUTES = ["/login", "/takip", "/sales-presentation", "/super-admin"
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const [location, setLocation] = useLocation();
-  
-  // Use window.location.pathname for initial check to avoid React router timing issues
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : location;
-  
-  const isPublicRoute = PUBLIC_ROUTES.some(route => 
-    currentPath === route || currentPath.startsWith(route + "/") || currentPath.startsWith("/takip/")
-  );
-  
-  const [isChecking, setIsChecking] = useState(!isPublicRoute);
-  const [isAuthenticated, setIsAuthenticated] = useState(isPublicRoute);
+  const [isChecking, setIsChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check if current path is public - use window.location for reliability
+  const checkIsPublicRoute = () => {
+    const path = typeof window !== 'undefined' ? window.location.pathname : location;
+    return PUBLIC_ROUTES.some(route => 
+      path === route || path.startsWith(route + "/") || path.startsWith("/takip/")
+    );
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
-      const isPublic = PUBLIC_ROUTES.some(route => 
-        location === route || location.startsWith(route + "/") || location.startsWith("/takip/")
-      );
-
-      if (isPublic) {
+      // Always check window.location.pathname for public routes
+      if (checkIsPublicRoute()) {
         setIsChecking(false);
         setIsAuthenticated(true);
         return;
@@ -57,7 +54,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
             localStorage.removeItem("userRoles");
             localStorage.removeItem("tenantData");
             setIsAuthenticated(false);
-            setLocation("/login");
+            // Only redirect if not on a public route
+            if (!checkIsPublicRoute()) {
+              setLocation("/login");
+            }
           }
         } else {
           localStorage.removeItem("userToken");
@@ -66,17 +66,22 @@ export function AuthGuard({ children }: AuthGuardProps) {
           localStorage.removeItem("userRoles");
           localStorage.removeItem("tenantData");
           setIsAuthenticated(false);
-          setLocation("/login");
+          // Only redirect if not on a public route
+          if (!checkIsPublicRoute()) {
+            setLocation("/login");
+          }
         }
       } catch {
-        // Network error - don't trust localStorage, redirect to login
         localStorage.removeItem("userToken");
         localStorage.removeItem("userData");
         localStorage.removeItem("userPermissions");
         localStorage.removeItem("userRoles");
         localStorage.removeItem("tenantData");
         setIsAuthenticated(false);
-        setLocation("/login");
+        // Only redirect if not on a public route
+        if (!checkIsPublicRoute()) {
+          setLocation("/login");
+        }
       }
       
       setIsChecking(false);
