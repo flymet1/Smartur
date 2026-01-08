@@ -313,6 +313,7 @@ export const supplierDispatches = pgTable("supplier_dispatches", {
   guestCount: integer("guest_count").default(0).notNull(),
   unitPayoutTl: integer("unit_payout_tl").default(0), // Kişi başı ödeme
   totalPayoutTl: integer("total_payout_tl").default(0), // Toplam = guestCount * unitPayoutTl
+  currency: text("currency").default("TRY").notNull(), // TRY veya USD
   rateId: integer("rate_id"), // Hangi tarife kullanıldı
   payoutId: integer("payout_id").references(() => agencyPayouts.id), // Hangi ödemeye bağlı (null = ödenmemiş)
   notes: text("notes"),

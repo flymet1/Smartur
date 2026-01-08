@@ -117,6 +117,7 @@ export default function Finance() {
     dispatchTime: '10:00',
     guestCount: 1,
     unitPayoutTl: 0,
+    currency: 'TRY' as 'TRY' | 'USD',
     notes: ''
   });
   const [rateForm, setRateForm] = useState({
@@ -313,6 +314,7 @@ export default function Finance() {
         dispatchTime: '10:00',
         guestCount: 1,
         unitPayoutTl: 0,
+        currency: 'TRY',
         notes: ''
       });
       toast({ title: "Gönderim kaydedildi" });
@@ -851,6 +853,7 @@ export default function Finance() {
                   dispatchTime: '10:00',
                   guestCount: 1,
                   unitPayoutTl: 0,
+                  currency: 'TRY',
                   notes: ''
                 });
                 setDispatchDialogOpen(true);
@@ -929,11 +932,19 @@ export default function Finance() {
                           </div>
                           <div>
                             <span className="text-muted-foreground">Birim:</span>
-                            <span className="ml-1 font-medium">{formatMoney(dispatch.unitPayoutTl || 0)}</span>
+                            <span className="ml-1 font-medium">
+                              {dispatch.currency === 'USD' 
+                                ? `$${(dispatch.unitPayoutTl || 0).toLocaleString('en-US')}` 
+                                : formatMoney(dispatch.unitPayoutTl || 0)}
+                            </span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">Toplam:</span>
-                            <span className="ml-1 font-medium text-orange-600">{formatMoney(dispatch.totalPayoutTl || 0)}</span>
+                            <span className="ml-1 font-medium text-orange-600">
+                              {dispatch.currency === 'USD' 
+                                ? `$${(dispatch.totalPayoutTl || 0).toLocaleString('en-US')}` 
+                                : formatMoney(dispatch.totalPayoutTl || 0)}
+                            </span>
                           </div>
                           <Button
                             variant="ghost"
@@ -1412,11 +1423,19 @@ export default function Finance() {
                         (!r.validFrom || r.validFrom <= f.dispatchDate) &&
                         (!r.validTo || r.validTo >= f.dispatchDate)
                       );
-                      const newPrice = matchingRate?.unitPayoutTl || supplier?.defaultPayoutPerGuest || f.unitPayoutTl;
+                      if (matchingRate) {
+                        const price = matchingRate.currency === 'USD' ? (matchingRate.unitPayoutUsd || 0) : matchingRate.unitPayoutTl;
+                        return { 
+                          ...f, 
+                          agencyId: supplierId,
+                          unitPayoutTl: price,
+                          currency: matchingRate.currency as 'TRY' | 'USD'
+                        };
+                      }
                       return { 
                         ...f, 
                         agencyId: supplierId,
-                        unitPayoutTl: newPrice
+                        unitPayoutTl: supplier?.defaultPayoutPerGuest || f.unitPayoutTl
                       };
                     });
                   }}
@@ -1447,7 +1466,8 @@ export default function Finance() {
                           (!r.validTo || r.validTo >= f.dispatchDate)
                         );
                         if (matchingRate) {
-                          return { ...f, activityId, unitPayoutTl: matchingRate.unitPayoutTl };
+                          const price = matchingRate.currency === 'USD' ? (matchingRate.unitPayoutUsd || 0) : matchingRate.unitPayoutTl;
+                          return { ...f, activityId, unitPayoutTl: price, currency: matchingRate.currency as 'TRY' | 'USD' };
                         }
                       }
                       return { ...f, activityId };
@@ -1484,7 +1504,7 @@ export default function Finance() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Misafir Sayısı</Label>
                   <Input 
@@ -1496,13 +1516,28 @@ export default function Finance() {
                   />
                 </div>
                 <div>
-                  <Label>Kişi Başı (TL)</Label>
+                  <Label>Kişi Başı</Label>
                   <Input 
                     type="number"
                     value={dispatchForm.unitPayoutTl}
                     onChange={e => setDispatchForm(f => ({ ...f, unitPayoutTl: parseInt(e.target.value) || 0 }))}
                     data-testid="input-dispatch-unit"
                   />
+                </div>
+                <div>
+                  <Label>Para Birimi</Label>
+                  <Select 
+                    value={dispatchForm.currency} 
+                    onValueChange={v => setDispatchForm(f => ({ ...f, currency: v as 'TRY' | 'USD' }))}
+                  >
+                    <SelectTrigger data-testid="select-dispatch-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TRY">TL</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>
@@ -1518,7 +1553,11 @@ export default function Finance() {
                 <div className="p-3 bg-muted rounded-lg">
                   <div className="flex justify-between text-sm">
                     <span>Toplam Ödeme:</span>
-                    <span className="font-bold text-orange-600">{formatMoney(dispatchForm.guestCount * dispatchForm.unitPayoutTl)}</span>
+                    <span className="font-bold text-orange-600">
+                      {dispatchForm.currency === 'USD' 
+                        ? `$${(dispatchForm.guestCount * dispatchForm.unitPayoutTl).toLocaleString('en-US')}` 
+                        : formatMoney(dispatchForm.guestCount * dispatchForm.unitPayoutTl)}
+                    </span>
                   </div>
                 </div>
               )}
