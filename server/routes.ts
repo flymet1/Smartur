@@ -2783,21 +2783,53 @@ export async function registerRoutes(
         // Get capacity for shared activities
         const activityData = await Promise.all(sharedActivities.map(async (activity: any) => {
           let capacities: any[] = [];
+          let queryStartDate: string;
+          let queryEndDate: string;
           
           if (date) {
-            // Single date
-            capacities = await storage.getCapacity(partnerTenantId, activity.id, date as string);
+            queryStartDate = date as string;
+            queryEndDate = date as string;
           } else if (startDate && endDate) {
-            // Date range
-            capacities = await storage.getCapacityRange(partnerTenantId, activity.id, startDate as string, endDate as string);
+            queryStartDate = startDate as string;
+            queryEndDate = endDate as string;
           } else {
             // Default: next 7 days
             const today = new Date();
             const weekLater = new Date(today);
             weekLater.setDate(weekLater.getDate() + 7);
-            const start = today.toISOString().split('T')[0];
-            const end = weekLater.toISOString().split('T')[0];
-            capacities = await storage.getCapacityRange(partnerTenantId, activity.id, start, end);
+            queryStartDate = today.toISOString().split('T')[0];
+            queryEndDate = weekLater.toISOString().split('T')[0];
+          }
+          
+          // Get real capacity records from database
+          capacities = await storage.getCapacityRange(partnerTenantId, activity.id, queryStartDate, queryEndDate);
+          
+          // If no real capacities exist, generate virtual capacities from activity defaults
+          if (capacities.length === 0) {
+            const defaultTimes = typeof activity.defaultTimes === 'string' 
+              ? JSON.parse(activity.defaultTimes || '[]') 
+              : (activity.defaultTimes || []);
+            const defaultCapacity = activity.defaultCapacity || 10;
+            
+            // Generate virtual capacities for the date range
+            const virtualCapacities: any[] = [];
+            const currentDate = new Date(queryStartDate);
+            const endDateObj = new Date(queryEndDate);
+            
+            while (currentDate <= endDateObj) {
+              const dateStr = currentDate.toISOString().split('T')[0];
+              for (const time of defaultTimes) {
+                virtualCapacities.push({
+                  date: dateStr,
+                  time: time,
+                  totalSlots: defaultCapacity,
+                  bookedSlots: 0,
+                  isVirtual: true
+                });
+              }
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+            capacities = virtualCapacities;
           }
           
           return {
