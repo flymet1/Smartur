@@ -413,21 +413,6 @@ export default function PartnerAvailability() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="availability" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Musaitlik
-            </TabsTrigger>
-            <TabsTrigger value="requests" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Gelen Talepler
-              {pendingPartnerRequests.length > 0 && (
-                <Badge variant="destructive" className="ml-1 h-5 min-w-5 flex items-center justify-center text-xs px-1">
-                  {pendingPartnerRequests.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
           
           <TabsContent value="availability" className="space-y-4">
             <Card className="mb-6">
