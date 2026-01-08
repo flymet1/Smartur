@@ -431,6 +431,7 @@ export function Sidebar() {
                 const hasPartnerBadge = item.href === "/partner-availability" && pendingPartnerRequestsCount > 0;
                 const badgeCount = item.href === "/viewer-stats" ? pendingViewerRequestsCount : 
                                    item.href === "/partner-availability" ? pendingPartnerRequestsCount : 0;
+                const isPartnerPage = item.href === "/partner-availability";
                 return (
                   <Link key={item.href} href={item.href}>
                     <div className={cn(
@@ -439,7 +440,11 @@ export function Sidebar() {
                         ? "bg-primary text-primary-foreground" 
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}>
-                      <item.icon className="h-4 w-4" />
+                      {isPartnerPage && logoUrl ? (
+                        <img src={logoUrl} alt="" className="h-4 w-4 object-contain" />
+                      ) : (
+                        <item.icon className="h-4 w-4" />
+                      )}
                       {item.label}
                       {(hasViewerBadge || hasPartnerBadge) && (
                         <Badge 
@@ -588,6 +593,7 @@ export function Sidebar() {
             const hasPartnerBadge = item.href === "/partner-availability" && pendingPartnerRequestsCount > 0;
             const badgeCount = item.href === "/viewer-stats" ? pendingViewerRequestsCount : 
                                item.href === "/partner-availability" ? pendingPartnerRequestsCount : 0;
+            const isPartnerPage = item.href === "/partner-availability";
             return (
               <Link key={item.href} href={item.href}>
                 <div className={cn(
@@ -596,10 +602,14 @@ export function Sidebar() {
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}>
-                  <item.icon className={cn(
-                    "h-5 w-5 transition-transform group-hover:scale-110",
-                    location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
-                  )} />
+                  {isPartnerPage && logoUrl ? (
+                    <img src={logoUrl} alt="" className="h-5 w-5 object-contain transition-transform group-hover:scale-110" />
+                  ) : (
+                    <item.icon className={cn(
+                      "h-5 w-5 transition-transform group-hover:scale-110",
+                      location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
+                    )} />
+                  )}
                   {item.label}
                   {(hasViewerBadge || hasPartnerBadge) && (
                     <Badge 

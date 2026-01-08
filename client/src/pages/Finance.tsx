@@ -235,6 +235,12 @@ export default function Finance() {
     return lastDayOfMonth.toISOString().split('T')[0];
   });
   
+  // Dinamik partner logo için sidebarLogo
+  const { data: logoSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'sidebarLogo'],
+  });
+  const partnerLogoUrl = logoSetting?.value;
+  
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
@@ -1139,7 +1145,11 @@ export default function Finance() {
               Acentalar
             </TabsTrigger>
             <TabsTrigger value="partner-customers" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-partner-customers">
-              <Handshake className="h-5 w-5" />
+              {partnerLogoUrl ? (
+                <img src={partnerLogoUrl} alt="Partner" className="h-5 w-5 object-contain" />
+              ) : (
+                <Handshake className="h-5 w-5" />
+              )}
               Partner Musteriler
             </TabsTrigger>
           </TabsList>
@@ -1674,7 +1684,11 @@ export default function Finance() {
                   </div>
                 ) : partnerTransactions.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <Handshake className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    {partnerLogoUrl ? (
+                      <img src={partnerLogoUrl} alt="Partner" className="h-12 w-12 mx-auto mb-4 opacity-50 object-contain" />
+                    ) : (
+                      <Handshake className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    )}
                     <p>Henuz partner musteri islemi yok</p>
                     <p className="text-sm mt-2">Partner acentalarla musteri paylasimlari burada gorunecek</p>
                   </div>
@@ -1697,7 +1711,11 @@ export default function Finance() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-medium">{tx.customerName}</span>
                                   <Badge variant="secondary" className="gap-1">
-                                    <Handshake className="h-3 w-3" />
+                                    {partnerLogoUrl ? (
+                                      <img src={partnerLogoUrl} alt="" className="h-3 w-3 object-contain" />
+                                    ) : (
+                                      <Handshake className="h-3 w-3" />
+                                    )}
                                     {partnerName || 'Partner'}
                                   </Badge>
                                   <Badge variant={isSender ? "outline" : "default"} className={isSender ? "" : "bg-blue-600"}>
