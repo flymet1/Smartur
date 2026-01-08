@@ -1426,9 +1426,11 @@ export class DatabaseStorage implements IStorage {
     const allDispatches = tenantId
       ? await db.select().from(supplierDispatches).where(eq(supplierDispatches.tenantId, tenantId))
       : await db.select().from(supplierDispatches);
-    const allPayouts = tenantId
-      ? await db.select().from(agencyPayouts).where(eq(agencyPayouts.tenantId, tenantId))
-      : await db.select().from(agencyPayouts);
+    // Ödemeleri tenant bazlı veya agency bazlı çek (eski kayıtlarda tenantId null olabilir)
+    const agencyIds = allAgencies.map(a => a.id);
+    const allPayouts = agencyIds.length > 0
+      ? await db.select().from(agencyPayouts).where(inArray(agencyPayouts.agencyId, agencyIds))
+      : [];
     
     const filteredDispatches = allDispatches.filter(d => {
       if (!startDate || !endDate) return true;

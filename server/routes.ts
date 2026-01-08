@@ -4709,6 +4709,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       const totalAmount = baseAmountTl + vatAmount;
       
       const payout = await storage.createAgencyPayout({
+        tenantId: req.user!.tenantId,
         agencyId,
         periodStart,
         periodEnd,
