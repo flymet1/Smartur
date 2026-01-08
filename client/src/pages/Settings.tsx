@@ -4262,10 +4262,7 @@ function NotificationPreferencesTab() {
 
   const saveTenantMutation = useMutation({
     mutationFn: async (data: { notificationType: string; channels: string[]; enabled: boolean }) => {
-      return apiRequest('/api/tenant-notification-settings', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', '/api/tenant-notification-settings', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tenant-notification-settings'] });
@@ -4281,10 +4278,7 @@ function NotificationPreferencesTab() {
 
   const saveUserMutation = useMutation({
     mutationFn: async (data: { notificationType: string; channels: string[]; enabled: boolean }) => {
-      return apiRequest('/api/user-notification-preferences', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', '/api/user-notification-preferences', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user-notification-preferences'] });
