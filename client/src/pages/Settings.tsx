@@ -4223,11 +4223,11 @@ function PartnerAgencySection() {
 }
 
 const TENANT_NOTIFICATION_TYPES = [
-  { type: 'reservation_new', label: 'Yeni Rezervasyon', description: 'Yeni rezervasyon oluşturulduğunda', templateTab: 'whatsapp', templateLabel: 'Şablonu Düzenle' },
-  { type: 'reservation_confirmed', label: 'Rezervasyon Onayı', description: 'Rezervasyon onaylandığında' },
-  { type: 'reservation_cancelled', label: 'Rezervasyon İptali', description: 'Rezervasyon iptal edildiğinde' },
-  { type: 'customer_request', label: 'Müşteri Talebi', description: 'Müşteri değişiklik/iptal talebi gönderdiğinde', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
-  { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce siparişi geldiğinde', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
+  { type: 'reservation_new', label: 'Yeni Rezervasyon (Manuel)', description: 'Personel tarafından manuel olarak oluşturulan rezervasyonlarda müşteriye onay bildirimi gönderilir', templateTab: 'whatsapp', templateLabel: 'Şablonu Düzenle' },
+  { type: 'reservation_confirmed', label: 'Rezervasyon Onayı', description: 'Bekleyen bir rezervasyon onaylandığında müşteriye bildirim gönderilir' },
+  { type: 'reservation_cancelled', label: 'Rezervasyon İptali', description: 'Bir rezervasyon iptal edildiğinde müşteriye bildirim gönderilir' },
+  { type: 'customer_request', label: 'Müşteri Talebi Yanıtı', description: 'Müşterinin değişiklik veya iptal talebi işlendiğinde (onay/red) müşteriye bildirim gönderilir', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
+  { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce web sitesinden gelen siparişlerde müşteriye otomatik onay bildirimi gönderilir', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
 ];
 
 const USER_NOTIFICATION_TYPES = [
