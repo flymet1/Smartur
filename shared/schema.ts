@@ -210,6 +210,10 @@ export const agencies = pgTable("agencies", {
   defaultPayoutPerGuest: integer("default_payout_per_guest").default(0), // Kişi başı ödeme (TL)
   notes: text("notes"),
   active: boolean("active").default(true),
+  // Partner Acenta bağlantısı (opsiyonel - tedarikçi Smartur kullanıcısı ise)
+  partnerTenantId: integer("partner_tenant_id").references(() => tenants.id), // Bağlı partner acenta
+  partnershipId: integer("partnership_id"), // Hangi partner ilişkisi üzerinden bağlandı
+  isSmartUser: boolean("is_smart_user").default(false), // Smartur kullanıcısı mı?
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -1061,3 +1065,57 @@ export const databaseBackups = pgTable("database_backups", {
 export const insertDatabaseBackupSchema = createInsertSchema(databaseBackups).omit({ id: true, createdAt: true, restoredAt: true });
 export type DatabaseBackup = typeof databaseBackups.$inferSelect;
 export type InsertDatabaseBackup = z.infer<typeof insertDatabaseBackupSchema>;
+
+// === PARTNER ACENTA (Cross-Tenant Sharing) ===
+
+// Tenant Partnerships - Acentalar arası bağlantılar
+export const tenantPartnerships = pgTable("tenant_partnerships", {
+  id: serial("id").primaryKey(),
+  requesterTenantId: integer("requester_tenant_id").references(() => tenants.id).notNull(), // Bağlantı isteği gönderen
+  partnerTenantId: integer("partner_tenant_id").references(() => tenants.id).notNull(), // Bağlantı isteği alan
+  inviteCode: text("invite_code").notNull(), // Bağlantı için kullanılan davet kodu
+  status: text("status").default("pending").notNull(), // pending, active, rejected, cancelled
+  requestedAt: timestamp("requested_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+  notes: text("notes"), // İlişki hakkında notlar
+});
+
+// Partner Agency Invite Codes - Davet kodları
+export const partnerInviteCodes = pgTable("partner_invite_codes", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
+  code: text("code").notNull().unique(), // Benzersiz davet kodu (örn: ABC123)
+  isActive: boolean("is_active").default(true),
+  usageCount: integer("usage_count").default(0), // Kaç kez kullanıldı
+  maxUsage: integer("max_usage"), // Maksimum kullanım limiti (null = sınırsız)
+  expiresAt: timestamp("expires_at"), // Geçerlilik süresi (null = süresiz)
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Dispatch Shares - Gönderim paylaşımları
+export const dispatchShares = pgTable("dispatch_shares", {
+  id: serial("id").primaryKey(),
+  dispatchId: integer("dispatch_id").references(() => supplierDispatches.id).notNull(), // Paylaşılan gönderim
+  partnershipId: integer("partnership_id").references(() => tenantPartnerships.id).notNull(), // Hangi partner ilişkisi
+  senderTenantId: integer("sender_tenant_id").references(() => tenants.id).notNull(), // Gönderen acenta
+  receiverTenantId: integer("receiver_tenant_id").references(() => tenants.id).notNull(), // Alan acenta
+  status: text("status").default("pending").notNull(), // pending, approved, rejected
+  sharedAt: timestamp("shared_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+  processedBy: integer("processed_by").references(() => appUsers.id), // Onaylayan/reddeden kullanıcı
+  processNotes: text("process_notes"), // İşlem notları
+  linkedReservationId: integer("linked_reservation_id").references(() => reservations.id), // Onaylandığında oluşturulan rezervasyon
+});
+
+// === PARTNER ACENTA SCHEMAS & TYPES ===
+export const insertTenantPartnershipSchema = createInsertSchema(tenantPartnerships).omit({ id: true, requestedAt: true, respondedAt: true });
+export type TenantPartnership = typeof tenantPartnerships.$inferSelect;
+export type InsertTenantPartnership = z.infer<typeof insertTenantPartnershipSchema>;
+
+export const insertPartnerInviteCodeSchema = createInsertSchema(partnerInviteCodes).omit({ id: true, createdAt: true, usageCount: true });
+export type PartnerInviteCode = typeof partnerInviteCodes.$inferSelect;
+export type InsertPartnerInviteCode = z.infer<typeof insertPartnerInviteCodeSchema>;
+
+export const insertDispatchShareSchema = createInsertSchema(dispatchShares).omit({ id: true, sharedAt: true, processedAt: true });
+export type DispatchShare = typeof dispatchShares.$inferSelect;
+export type InsertDispatchShare = z.infer<typeof insertDispatchShareSchema>;

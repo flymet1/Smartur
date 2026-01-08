@@ -2505,6 +2505,275 @@ export async function registerRoutes(
     }
   });
 
+  // === Partner Acenta (Cross-Tenant Sharing) ===
+
+  // Get my partner invite codes
+  app.get("/api/partner-invite-codes", requirePermission(PERMISSIONS.SETTINGS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      const codes = await storage.getPartnerInviteCodes(tenantId);
+      res.json(codes);
+    } catch (error) {
+      console.error("Get partner invite codes error:", error);
+      res.status(500).json({ error: "Davet kodlari alinamadi" });
+    }
+  });
+
+  // Generate new partner invite code
+  app.post("/api/partner-invite-codes", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      const code = await storage.generateUniquePartnerCode(tenantId);
+      const { maxUsage, expiresAt } = req.body;
+      
+      const created = await storage.createPartnerInviteCode({
+        tenantId,
+        code,
+        maxUsage: maxUsage || null,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        isActive: true
+      });
+      res.status(201).json(created);
+    } catch (error) {
+      console.error("Create partner invite code error:", error);
+      res.status(500).json({ error: "Davet kodu olusturulamadi" });
+    }
+  });
+
+  // Delete partner invite code
+  app.delete("/api/partner-invite-codes/:id", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      await storage.deletePartnerInviteCode(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete partner invite code error:", error);
+      res.status(500).json({ error: "Davet kodu silinemedi" });
+    }
+  });
+
+  // Get my tenant partnerships
+  app.get("/api/tenant-partnerships", requirePermission(PERMISSIONS.SETTINGS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      const partnerships = await storage.getTenantPartnerships(tenantId);
+      
+      // Enrich with tenant names
+      const tenants = await storage.getTenants();
+      const tenantMap = new Map(tenants.map(t => [t.id, t]));
+      
+      const enriched = partnerships.map(p => ({
+        ...p,
+        requesterTenantName: tenantMap.get(p.requesterTenantId)?.name || 'Bilinmeyen',
+        partnerTenantName: tenantMap.get(p.partnerTenantId)?.name || 'Bilinmeyen',
+        isRequester: p.requesterTenantId === tenantId
+      }));
+      
+      res.json(enriched);
+    } catch (error) {
+      console.error("Get tenant partnerships error:", error);
+      res.status(500).json({ error: "Partner iliskileri alinamadi" });
+    }
+  });
+
+  // Connect to partner using invite code
+  app.post("/api/tenant-partnerships/connect", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ error: "Davet kodu gerekli" });
+      }
+      
+      // Find invite code
+      const inviteCode = await storage.getPartnerInviteCodeByCode(code);
+      if (!inviteCode) {
+        return res.status(404).json({ error: "Gecersiz davet kodu" });
+      }
+      
+      // Check if code is active
+      if (!inviteCode.isActive) {
+        return res.status(400).json({ error: "Bu davet kodu artik gecerli degil" });
+      }
+      
+      // Check expiration
+      if (inviteCode.expiresAt && new Date(inviteCode.expiresAt) < new Date()) {
+        return res.status(400).json({ error: "Bu davet kodunun suresi dolmus" });
+      }
+      
+      // Check usage limit
+      if (inviteCode.maxUsage && (inviteCode.usageCount || 0) >= inviteCode.maxUsage) {
+        return res.status(400).json({ error: "Bu davet kodu maksimum kullanim sayisina ulasti" });
+      }
+      
+      // Check if trying to connect to self
+      if (inviteCode.tenantId === tenantId) {
+        return res.status(400).json({ error: "Kendi acentaniza baglanamazsiniz" });
+      }
+      
+      // Check if partnership already exists
+      const existing = await storage.getActivePartnership(tenantId, inviteCode.tenantId);
+      if (existing) {
+        return res.status(400).json({ error: "Bu acenta ile zaten baglantisiniz var" });
+      }
+      
+      // Create partnership
+      const partnership = await storage.createTenantPartnership({
+        requesterTenantId: tenantId,
+        partnerTenantId: inviteCode.tenantId,
+        inviteCode: code,
+        status: 'pending'
+      });
+      
+      // Update invite code usage
+      await storage.updatePartnerInviteCode(inviteCode.id, {
+        usageCount: (inviteCode.usageCount || 0) + 1
+      });
+      
+      // Get partner tenant name for response
+      const partnerTenant = await storage.getTenant(inviteCode.tenantId);
+      
+      res.status(201).json({
+        ...partnership,
+        partnerTenantName: partnerTenant?.name || 'Bilinmeyen'
+      });
+    } catch (error) {
+      console.error("Connect to partner error:", error);
+      res.status(500).json({ error: "Partner baglantisi olusturulamadi" });
+    }
+  });
+
+  // Accept/Reject partnership request
+  app.patch("/api/tenant-partnerships/:id/respond", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const partnershipId = parseInt(req.params.id);
+      const { action, notes } = req.body;
+      
+      if (!['accept', 'reject'].includes(action)) {
+        return res.status(400).json({ error: "Gecersiz islem" });
+      }
+      
+      const partnership = await storage.getTenantPartnership(partnershipId);
+      if (!partnership) {
+        return res.status(404).json({ error: "Baglanti bulunamadi" });
+      }
+      
+      // Only the partner (receiver) can respond
+      if (partnership.partnerTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu baglanti talebini yanitlama yetkiniz yok" });
+      }
+      
+      if (partnership.status !== 'pending') {
+        return res.status(400).json({ error: "Bu baglanti talebi zaten yanitlandi" });
+      }
+      
+      const updated = await storage.updateTenantPartnership(partnershipId, {
+        status: action === 'accept' ? 'active' : 'rejected',
+        notes: notes || partnership.notes,
+        respondedAt: new Date()
+      });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Respond to partnership error:", error);
+      res.status(500).json({ error: "Baglanti talebi yanitlanamadi" });
+    }
+  });
+
+  // Get dispatch shares (incoming dispatches from partners)
+  app.get("/api/dispatch-shares", requirePermission(PERMISSIONS.FINANCE_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { status } = req.query;
+      const shares = await storage.getDispatchShares(tenantId, status as string | undefined);
+      
+      // Enrich with sender tenant names and dispatch details
+      const tenants = await storage.getTenants();
+      const tenantMap = new Map(tenants.map(t => [t.id, t]));
+      
+      const enriched = await Promise.all(shares.map(async (share) => {
+        // Get dispatch details (we need to fetch from sender's perspective)
+        const dispatch = await db.select().from(supplierDispatches).where(eq(supplierDispatches.id, share.dispatchId));
+        const dispatchData = dispatch[0];
+        
+        return {
+          ...share,
+          senderTenantName: tenantMap.get(share.senderTenantId)?.name || 'Bilinmeyen',
+          dispatch: dispatchData || null
+        };
+      }));
+      
+      res.json(enriched);
+    } catch (error) {
+      console.error("Get dispatch shares error:", error);
+      res.status(500).json({ error: "Gelen gonderimler alinamadi" });
+    }
+  });
+
+  // Accept/Reject dispatch share
+  app.patch("/api/dispatch-shares/:id/respond", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const shareId = parseInt(req.params.id);
+      const { action, processNotes } = req.body;
+      
+      if (!['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ error: "Gecersiz islem" });
+      }
+      
+      const share = await storage.getDispatchShare(shareId);
+      if (!share) {
+        return res.status(404).json({ error: "Gonderim bulunamadi" });
+      }
+      
+      if (share.receiverTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu gonderiyi yanitlama yetkiniz yok" });
+      }
+      
+      if (share.status !== 'pending') {
+        return res.status(400).json({ error: "Bu gonderim zaten yanitlandi" });
+      }
+      
+      const updated = await storage.updateDispatchShare(shareId, {
+        status: action === 'approve' ? 'approved' : 'rejected',
+        processedAt: new Date(),
+        processedBy: userId,
+        processNotes: processNotes || null
+      });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Respond to dispatch share error:", error);
+      res.status(500).json({ error: "Gonderim yanitlanamadi" });
+    }
+  });
+
   // === Webhooks ===
   app.post(api.webhooks.woocommerce.path, async (req, res) => {
     try {

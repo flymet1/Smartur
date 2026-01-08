@@ -145,6 +145,15 @@ import {
   tenantIntegrations,
   type TenantIntegration,
   type InsertTenantIntegration,
+  tenantPartnerships,
+  partnerInviteCodes,
+  dispatchShares,
+  type TenantPartnership,
+  type InsertTenantPartnership,
+  type PartnerInviteCode,
+  type InsertPartnerInviteCode,
+  type DispatchShare,
+  type InsertDispatchShare,
 } from "@shared/schema";
 import { eq, and, gte, lte, lt, desc, sql, isNull, or, like, inArray } from "drizzle-orm";
 
@@ -500,6 +509,30 @@ export interface IStorage {
   // User Login Logs
   getUserLoginLogs(userId?: number, limit?: number): Promise<UserLoginLog[]>;
   createUserLoginLog(log: InsertUserLoginLog): Promise<UserLoginLog>;
+
+  // Partner Acenta - Invite Codes
+  getPartnerInviteCodes(tenantId: number): Promise<PartnerInviteCode[]>;
+  getPartnerInviteCodeByCode(code: string): Promise<PartnerInviteCode | undefined>;
+  createPartnerInviteCode(code: InsertPartnerInviteCode): Promise<PartnerInviteCode>;
+  updatePartnerInviteCode(id: number, data: Partial<InsertPartnerInviteCode>): Promise<PartnerInviteCode>;
+  deletePartnerInviteCode(id: number): Promise<void>;
+  generateUniquePartnerCode(tenantId: number): Promise<string>;
+
+  // Partner Acenta - Partnerships
+  getTenantPartnerships(tenantId: number): Promise<TenantPartnership[]>;
+  getTenantPartnership(id: number): Promise<TenantPartnership | undefined>;
+  createTenantPartnership(partnership: InsertTenantPartnership): Promise<TenantPartnership>;
+  updateTenantPartnership(id: number, data: Partial<InsertTenantPartnership>): Promise<TenantPartnership>;
+  deleteTenantPartnership(id: number): Promise<void>;
+  getActivePartnership(requesterTenantId: number, partnerTenantId: number): Promise<TenantPartnership | undefined>;
+
+  // Partner Acenta - Dispatch Shares
+  getDispatchShares(receiverTenantId: number, status?: string): Promise<DispatchShare[]>;
+  getSentDispatchShares(senderTenantId: number): Promise<DispatchShare[]>;
+  getDispatchShare(id: number): Promise<DispatchShare | undefined>;
+  createDispatchShare(share: InsertDispatchShare): Promise<DispatchShare>;
+  updateDispatchShare(id: number, data: Partial<InsertDispatchShare>): Promise<DispatchShare>;
+  deleteDispatchShare(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3467,6 +3500,166 @@ Sky Fethiye`,
   async createUserLoginLog(log: InsertUserLoginLog): Promise<UserLoginLog> {
     const [created] = await db.insert(userLoginLogs).values(log).returning();
     return created;
+  }
+
+  // === PARTNER ACENTA - INVITE CODES ===
+
+  async getPartnerInviteCodes(tenantId: number): Promise<PartnerInviteCode[]> {
+    return db.select().from(partnerInviteCodes)
+      .where(eq(partnerInviteCodes.tenantId, tenantId))
+      .orderBy(desc(partnerInviteCodes.createdAt));
+  }
+
+  async getPartnerInviteCodeByCode(code: string): Promise<PartnerInviteCode | undefined> {
+    const [result] = await db.select().from(partnerInviteCodes)
+      .where(eq(partnerInviteCodes.code, code.toUpperCase()));
+    return result;
+  }
+
+  async createPartnerInviteCode(data: InsertPartnerInviteCode): Promise<PartnerInviteCode> {
+    const [created] = await db.insert(partnerInviteCodes).values({
+      ...data,
+      code: data.code.toUpperCase()
+    }).returning();
+    return created;
+  }
+
+  async updatePartnerInviteCode(id: number, data: Partial<InsertPartnerInviteCode>): Promise<PartnerInviteCode> {
+    const [updated] = await db.update(partnerInviteCodes)
+      .set(data)
+      .where(eq(partnerInviteCodes.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePartnerInviteCode(id: number): Promise<void> {
+    await db.delete(partnerInviteCodes).where(eq(partnerInviteCodes.id, id));
+  }
+
+  async generateUniquePartnerCode(tenantId: number): Promise<string> {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code: string;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    do {
+      code = '';
+      for (let i = 0; i < 6; i++) {
+        code += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      const existing = await this.getPartnerInviteCodeByCode(code);
+      if (!existing) break;
+      attempts++;
+    } while (attempts < maxAttempts);
+
+    if (attempts >= maxAttempts) {
+      code = `${Date.now().toString(36).toUpperCase()}`.slice(-6);
+    }
+
+    return code;
+  }
+
+  // === PARTNER ACENTA - PARTNERSHIPS ===
+
+  async getTenantPartnerships(tenantId: number): Promise<TenantPartnership[]> {
+    return db.select().from(tenantPartnerships)
+      .where(
+        or(
+          eq(tenantPartnerships.requesterTenantId, tenantId),
+          eq(tenantPartnerships.partnerTenantId, tenantId)
+        )
+      )
+      .orderBy(desc(tenantPartnerships.requestedAt));
+  }
+
+  async getTenantPartnership(id: number): Promise<TenantPartnership | undefined> {
+    const [result] = await db.select().from(tenantPartnerships)
+      .where(eq(tenantPartnerships.id, id));
+    return result;
+  }
+
+  async createTenantPartnership(partnership: InsertTenantPartnership): Promise<TenantPartnership> {
+    const [created] = await db.insert(tenantPartnerships).values(partnership).returning();
+    return created;
+  }
+
+  async updateTenantPartnership(id: number, data: Partial<InsertTenantPartnership>): Promise<TenantPartnership> {
+    const [updated] = await db.update(tenantPartnerships)
+      .set(data)
+      .where(eq(tenantPartnerships.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteTenantPartnership(id: number): Promise<void> {
+    await db.delete(tenantPartnerships).where(eq(tenantPartnerships.id, id));
+  }
+
+  async getActivePartnership(requesterTenantId: number, partnerTenantId: number): Promise<TenantPartnership | undefined> {
+    const [result] = await db.select().from(tenantPartnerships)
+      .where(
+        and(
+          or(
+            and(
+              eq(tenantPartnerships.requesterTenantId, requesterTenantId),
+              eq(tenantPartnerships.partnerTenantId, partnerTenantId)
+            ),
+            and(
+              eq(tenantPartnerships.requesterTenantId, partnerTenantId),
+              eq(tenantPartnerships.partnerTenantId, requesterTenantId)
+            )
+          ),
+          eq(tenantPartnerships.status, 'active')
+        )
+      );
+    return result;
+  }
+
+  // === PARTNER ACENTA - DISPATCH SHARES ===
+
+  async getDispatchShares(receiverTenantId: number, status?: string): Promise<DispatchShare[]> {
+    if (status) {
+      return db.select().from(dispatchShares)
+        .where(
+          and(
+            eq(dispatchShares.receiverTenantId, receiverTenantId),
+            eq(dispatchShares.status, status)
+          )
+        )
+        .orderBy(desc(dispatchShares.sharedAt));
+    }
+    return db.select().from(dispatchShares)
+      .where(eq(dispatchShares.receiverTenantId, receiverTenantId))
+      .orderBy(desc(dispatchShares.sharedAt));
+  }
+
+  async getSentDispatchShares(senderTenantId: number): Promise<DispatchShare[]> {
+    return db.select().from(dispatchShares)
+      .where(eq(dispatchShares.senderTenantId, senderTenantId))
+      .orderBy(desc(dispatchShares.sharedAt));
+  }
+
+  async getDispatchShare(id: number): Promise<DispatchShare | undefined> {
+    const [result] = await db.select().from(dispatchShares)
+      .where(eq(dispatchShares.id, id));
+    return result;
+  }
+
+  async createDispatchShare(share: InsertDispatchShare): Promise<DispatchShare> {
+    const [created] = await db.insert(dispatchShares).values(share).returning();
+    return created;
+  }
+
+  async updateDispatchShare(id: number, data: Partial<InsertDispatchShare>): Promise<DispatchShare> {
+    const [updated] = await db.update(dispatchShares)
+      .set(data)
+      .where(eq(dispatchShares.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDispatchShare(id: number): Promise<void> {
+    await db.delete(dispatchShares).where(eq(dispatchShares.id, id));
   }
 }
 
