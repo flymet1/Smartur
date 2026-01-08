@@ -10,16 +10,24 @@ const PUBLIC_ROUTES = ["/login", "/takip", "/sales-presentation", "/super-admin"
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const [location, setLocation] = useLocation();
-  const [isChecking, setIsChecking] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Use window.location.pathname for initial check to avoid React router timing issues
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : location;
+  
+  const isPublicRoute = PUBLIC_ROUTES.some(route => 
+    currentPath === route || currentPath.startsWith(route + "/") || currentPath.startsWith("/takip/")
+  );
+  
+  const [isChecking, setIsChecking] = useState(!isPublicRoute);
+  const [isAuthenticated, setIsAuthenticated] = useState(isPublicRoute);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const isPublicRoute = PUBLIC_ROUTES.some(route => 
+      const isPublic = PUBLIC_ROUTES.some(route => 
         location === route || location.startsWith(route + "/") || location.startsWith("/takip/")
       );
 
-      if (isPublicRoute) {
+      if (isPublic) {
         setIsChecking(false);
         setIsAuthenticated(true);
         return;
