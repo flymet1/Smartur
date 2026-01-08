@@ -57,6 +57,8 @@ export const activities = pgTable("activities", {
   extras: text("extras").default("[]"), // JSON array of {name, priceTl, priceUsd, description}
   // Sık Sorulan Sorular
   faq: text("faq").default("[]"), // JSON array of {question, answer}
+  // Partner Paylaşımı
+  sharedWithPartners: boolean("shared_with_partners").default(false), // Bu aktivite partner acentalarla paylaşılsın mı?
 });
 
 export const capacity = pgTable("capacity", {
