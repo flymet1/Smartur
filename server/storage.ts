@@ -154,6 +154,9 @@ import {
   type InsertPartnerInviteCode,
   type DispatchShare,
   type InsertDispatchShare,
+  activityPartnerShares,
+  type ActivityPartnerShare,
+  type InsertActivityPartnerShare,
 } from "@shared/schema";
 import { eq, and, gte, lte, lt, desc, sql, isNull, or, like, inArray } from "drizzle-orm";
 
@@ -533,6 +536,13 @@ export interface IStorage {
   createDispatchShare(share: InsertDispatchShare): Promise<DispatchShare>;
   updateDispatchShare(id: number, data: Partial<InsertDispatchShare>): Promise<DispatchShare>;
   deleteDispatchShare(id: number): Promise<void>;
+
+  // Partner Acenta - Activity Partner Shares
+  getActivityPartnerShares(activityId: number): Promise<ActivityPartnerShare[]>;
+  getPartnerSharesForTenant(tenantId: number): Promise<ActivityPartnerShare[]>;
+  createActivityPartnerShare(share: InsertActivityPartnerShare): Promise<ActivityPartnerShare>;
+  deleteActivityPartnerShare(activityId: number, partnershipId: number): Promise<void>;
+  setActivityPartnerShares(activityId: number, partnershipIds: number[]): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3660,6 +3670,61 @@ Sky Fethiye`,
 
   async deleteDispatchShare(id: number): Promise<void> {
     await db.delete(dispatchShares).where(eq(dispatchShares.id, id));
+  }
+
+  // === PARTNER ACENTA - ACTIVITY PARTNER SHARES ===
+
+  async getActivityPartnerShares(activityId: number): Promise<ActivityPartnerShare[]> {
+    if (activityId === 0) {
+      // Return all shares
+      return db.select().from(activityPartnerShares);
+    }
+    return db.select().from(activityPartnerShares)
+      .where(eq(activityPartnerShares.activityId, activityId));
+  }
+
+  async getPartnerSharesForTenant(tenantId: number): Promise<ActivityPartnerShare[]> {
+    const partnerships = await db.select().from(tenantPartnerships)
+      .where(
+        and(
+          eq(tenantPartnerships.partnerTenantId, tenantId),
+          eq(tenantPartnerships.status, 'active')
+        )
+      );
+    
+    if (partnerships.length === 0) return [];
+    
+    const partnershipIds = partnerships.map(p => p.id);
+    return db.select().from(activityPartnerShares)
+      .where(inArray(activityPartnerShares.partnershipId, partnershipIds));
+  }
+
+  async createActivityPartnerShare(share: InsertActivityPartnerShare): Promise<ActivityPartnerShare> {
+    const [created] = await db.insert(activityPartnerShares).values(share).returning();
+    return created;
+  }
+
+  async deleteActivityPartnerShare(activityId: number, partnershipId: number): Promise<void> {
+    await db.delete(activityPartnerShares)
+      .where(
+        and(
+          eq(activityPartnerShares.activityId, activityId),
+          eq(activityPartnerShares.partnershipId, partnershipId)
+        )
+      );
+  }
+
+  async setActivityPartnerShares(activityId: number, partnershipIds: number[]): Promise<void> {
+    await db.delete(activityPartnerShares)
+      .where(eq(activityPartnerShares.activityId, activityId));
+    
+    if (partnershipIds.length > 0) {
+      const values = partnershipIds.map(partnershipId => ({
+        activityId,
+        partnershipId
+      }));
+      await db.insert(activityPartnerShares).values(values);
+    }
   }
 }
 

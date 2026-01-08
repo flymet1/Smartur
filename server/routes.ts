@@ -2724,10 +2724,23 @@ export async function registerRoutes(
       const tenantMap = new Map(tenants.map(t => [t.id, t]));
       
       // For each partner, get their shared activities and capacity
-      const results = await Promise.all(partnerTenantIds.map(async (partnerTenantId) => {
-        // Get shared activities from partner
-        const allActivities = await storage.getActivities(partnerTenantId);
-        const sharedActivities = allActivities.filter((a: any) => a.sharedWithPartners === true && a.active !== false);
+      const results = await Promise.all(activePartnerships.map(async (partnership) => {
+        const partnerTenantId = partnership.partnerTenantId;
+        
+        // Get activities specifically shared with this partnership
+        const activityShares = await storage.getActivityPartnerShares(0); // Get all shares
+        const sharesForThisPartnership = activityShares.filter(s => s.partnershipId === partnership.id);
+        
+        if (sharesForThisPartnership.length === 0) {
+          // Fall back to sharedWithPartners flag for backward compatibility
+          const allActivities = await storage.getActivities(partnerTenantId);
+          var sharedActivities = allActivities.filter((a: any) => a.sharedWithPartners === true && a.active !== false);
+        } else {
+          // Use granular activity shares
+          const allActivities = await storage.getActivities(partnerTenantId);
+          const sharedActivityIds = new Set(sharesForThisPartnership.map(s => s.activityId));
+          var sharedActivities = allActivities.filter((a: any) => sharedActivityIds.has(a.id) && a.active !== false);
+        }
         
         if (sharedActivities.length === 0) {
           return null;
@@ -2784,6 +2797,37 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get partner shared availability error:", error);
       res.status(500).json({ error: "Partner musaitlikleri alinamadi" });
+    }
+  });
+
+  // Get activity partner shares for an activity
+  app.get("/api/activities/:id/partner-shares", requirePermission(PERMISSIONS.ACTIVITIES_VIEW), async (req, res) => {
+    try {
+      const activityId = parseInt(req.params.id);
+      const shares = await storage.getActivityPartnerShares(activityId);
+      res.json(shares);
+    } catch (error) {
+      console.error("Get activity partner shares error:", error);
+      res.status(500).json({ error: "Partner paylasimlari alinamadi" });
+    }
+  });
+
+  // Set activity partner shares (update which partners can see this activity)
+  app.post("/api/activities/:id/partner-shares", requirePermission(PERMISSIONS.ACTIVITIES_EDIT), async (req, res) => {
+    try {
+      const activityId = parseInt(req.params.id);
+      const { partnershipIds } = req.body;
+      
+      if (!Array.isArray(partnershipIds)) {
+        return res.status(400).json({ error: "partnershipIds array gerekli" });
+      }
+      
+      await storage.setActivityPartnerShares(activityId, partnershipIds);
+      const shares = await storage.getActivityPartnerShares(activityId);
+      res.json(shares);
+    } catch (error) {
+      console.error("Set activity partner shares error:", error);
+      res.status(500).json({ error: "Partner paylasimlari guncellenemedi" });
     }
   });
 
