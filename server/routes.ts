@@ -7766,6 +7766,74 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         }
       }
       
+      // Import tenants (supports both snake_case and camelCase)
+      if (tables.tenants && Array.isArray(tables.tenants)) {
+        results.tenants = { added: 0, skipped: 0, errors: [] };
+        for (const tenant of tables.tenants) {
+          try {
+            const existingTenants = await storage.getTenants();
+            const existing = existingTenants.find(t => t.slug === tenant.slug);
+            if (!existing) {
+              await storage.createTenant({
+                name: tenant.name,
+                slug: tenant.slug,
+                email: tenant.email,
+                phone: tenant.phone,
+                address: tenant.address,
+                logoUrl: tenant.logoUrl ?? tenant.logo_url,
+                primaryColor: tenant.primaryColor ?? tenant.primary_color,
+                subscriptionStatus: tenant.subscriptionStatus ?? tenant.subscription_status,
+                subscriptionPlanId: tenant.subscriptionPlanId ?? tenant.subscription_plan_id,
+                trialEndsAt: tenant.trialEndsAt ?? tenant.trial_ends_at,
+                isActive: tenant.isActive ?? tenant.is_active ?? true,
+              });
+              results.tenants.added++;
+            } else {
+              results.tenants.skipped++;
+            }
+          } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            results.tenants.errors.push(`Tenant ${tenant.slug}: ${errorMsg}`);
+          }
+        }
+      }
+      
+      // Import app_users (supports both snake_case and camelCase)
+      if (tables.app_users && Array.isArray(tables.app_users)) {
+        results.app_users = { added: 0, skipped: 0, errors: [] };
+        for (const user of tables.app_users) {
+          try {
+            const existingUsers = await storage.getAppUsers();
+            const existing = existingUsers.find(u => u.email === user.email);
+            if (!existing) {
+              await storage.createAppUser({
+                tenantId: user.tenantId ?? user.tenant_id,
+                email: user.email,
+                password: user.password,
+                name: user.name,
+                phone: user.phone,
+                roleId: user.roleId ?? user.role_id,
+                planId: user.planId ?? user.plan_id,
+                isActive: user.isActive ?? user.is_active ?? true,
+                isSuspended: user.isSuspended ?? user.is_suspended ?? false,
+                suspendReason: user.suspendReason ?? user.suspend_reason,
+                isSystemProtected: user.isSystemProtected ?? user.is_system_protected ?? false,
+                maxActivities: user.maxActivities ?? user.max_activities,
+                maxReservationsPerMonth: user.maxReservationsPerMonth ?? user.max_reservations_per_month,
+                createdBy: user.createdBy ?? user.created_by,
+                notes: user.notes,
+              });
+              results.app_users.added++;
+            } else {
+              results.app_users.skipped++;
+            }
+          } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            results.app_users.errors.push(`User ${user.email}: ${errorMsg}`);
+          }
+        }
+      }
+      
       // Import roles (supports both snake_case and camelCase)
       if (tables.roles && Array.isArray(tables.roles)) {
         results.roles = { added: 0, skipped: 0, errors: [] };
@@ -7814,6 +7882,32 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
           } catch (e: unknown) {
             const errorMsg = e instanceof Error ? e.message : String(e);
             results.permissions.errors.push(`Permission ${perm.code}: ${errorMsg}`);
+          }
+        }
+      }
+      
+      // Import platform_admins (supports both snake_case and camelCase)
+      if (tables.platform_admins && Array.isArray(tables.platform_admins)) {
+        results.platform_admins = { added: 0, skipped: 0, errors: [] };
+        for (const admin of tables.platform_admins) {
+          try {
+            const existingAdmins = await storage.getPlatformAdmins();
+            const existing = existingAdmins.find(a => a.email === admin.email);
+            if (!existing) {
+              await storage.createPlatformAdmin({
+                email: admin.email,
+                password: admin.password,
+                name: admin.name,
+                role: admin.role,
+                isActive: admin.isActive ?? admin.is_active ?? true,
+              });
+              results.platform_admins.added++;
+            } else {
+              results.platform_admins.skipped++;
+            }
+          } catch (e: unknown) {
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            results.platform_admins.errors.push(`Admin ${admin.email}: ${errorMsg}`);
           }
         }
       }
