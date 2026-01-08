@@ -46,7 +46,10 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  X
+  X,
+  Building2,
+  Phone,
+  FileText
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate } from "@shared/schema";
 import { format } from "date-fns";
@@ -126,6 +129,11 @@ export default function Finance() {
     currency: 'TRY',
     notes: ''
   });
+
+  // Agency management state
+  const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
+  const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
+  const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
 
   // Currency converter state
   const [converterAmount, setConverterAmount] = useState<string>("100");
@@ -364,6 +372,72 @@ export default function Finance() {
     }
   });
 
+  // Agency mutations
+  const createAgencyMutation = useMutation({
+    mutationFn: async (data: typeof agencyForm) => apiRequest('POST', '/api/finance/agencies', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
+      setAgencyDialogOpen(false);
+      setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
+      toast({ title: "Acenta eklendi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Acenta eklenemedi", variant: "destructive" });
+    }
+  });
+
+  const updateAgencyMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: typeof agencyForm }) => 
+      apiRequest('PATCH', `/api/finance/agencies/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
+      setAgencyDialogOpen(false);
+      setEditingAgency(null);
+      toast({ title: "Acenta güncellendi" });
+    }
+  });
+
+  const deleteAgencyMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/agencies/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
+      toast({ title: "Acenta silindi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Acenta silinemedi", variant: "destructive" });
+    }
+  });
+
+  const handleAgencySubmit = () => {
+    if (!agencyForm.name.trim()) {
+      toast({ title: "Hata", description: "Acenta adı zorunludur", variant: "destructive" });
+      return;
+    }
+    if (editingAgency) {
+      updateAgencyMutation.mutate({ id: editingAgency.id, data: agencyForm });
+    } else {
+      createAgencyMutation.mutate(agencyForm);
+    }
+  };
+
+  const openEditAgencyDialog = (agency: Agency) => {
+    setEditingAgency(agency);
+    setAgencyForm({
+      name: agency.name,
+      contactInfo: agency.contactInfo || '',
+      defaultPayoutPerGuest: agency.defaultPayoutPerGuest || 0,
+      notes: agency.notes || ''
+    });
+    setAgencyDialogOpen(true);
+  };
+
+  const openCreateAgencyDialog = () => {
+    setEditingAgency(null);
+    setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
+    setAgencyDialogOpen(true);
+  };
+
   const handlePayoutSubmit = () => {
     if (!payoutForm.agencyId) {
       toast({ title: "Hata", description: "Tedarikçi seçin", variant: "destructive" });
@@ -417,7 +491,7 @@ export default function Finance() {
       <Sidebar />
       <main className="flex-1 md:ml-64 p-8 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold" data-testid="text-page-title">Tedarikçi Yönetimi</h1>
+          <h1 className="text-3xl font-bold" data-testid="text-page-title">Finans & Acentalar</h1>
           <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
         </div>
 
@@ -760,6 +834,10 @@ export default function Finance() {
               <TableProperties className="h-5 w-5" />
               Fiyat Tablosu
             </TabsTrigger>
+            <TabsTrigger value="agencies" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-agencies">
+              <Building2 className="h-5 w-5" />
+              Acentalar
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dispatches" className="space-y-4">
@@ -1079,14 +1157,79 @@ export default function Finance() {
                       </div>
                     );
                   })}
-                  {rates.length === 0 && (
+                  {filteredRates.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      Henuz fiyat tanımlanmamis
+                      Henüz fiyat tanımlanmamış
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="agencies" className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold">Acenta Yönetimi</h3>
+              <Button onClick={openCreateAgencyDialog} data-testid="button-add-agency">
+                <Plus className="h-4 w-4 mr-2" />
+                Acenta Ekle
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {suppliers.map(agency => (
+                <Card key={agency.id} data-testid={`card-agency-${agency.id}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        {agency.name}
+                      </CardTitle>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => openEditAgencyDialog(agency)} data-testid={`button-edit-agency-${agency.id}`}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          if (confirm(`${agency.name} acentasını ve tüm ödeme kayıtlarını silmek istediğinize emin misiniz?`)) {
+                            deleteAgencyMutation.mutate(agency.id);
+                          }
+                        }} data-testid={`button-delete-agency-${agency.id}`}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {agency.contactInfo && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span>{agency.contactInfo}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-sm">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span>Kişi başı: {formatMoney(agency.defaultPayoutPerGuest || 0)}</span>
+                    </div>
+                    {agency.notes && (
+                      <div className="flex items-start gap-2 text-sm pt-2 border-t">
+                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <span className="text-muted-foreground">{agency.notes}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+              {suppliers.length === 0 && (
+                <div className="col-span-full text-center py-12 text-muted-foreground">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Henüz acenta eklenmemiş</p>
+                  <Button variant="outline" className="mt-4" onClick={openCreateAgencyDialog}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    İlk Acentayı Ekle
+                  </Button>
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -1477,6 +1620,69 @@ export default function Finance() {
                 data-testid="button-save-rate"
               >
                 Kaydet
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Agency Dialog */}
+        <Dialog open={agencyDialogOpen} onOpenChange={setAgencyDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingAgency ? 'Acenta Düzenle' : 'Yeni Acenta'}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="agency-name">Acenta Adı *</Label>
+                <Input
+                  id="agency-name"
+                  value={agencyForm.name}
+                  onChange={e => setAgencyForm({ ...agencyForm, name: e.target.value })}
+                  placeholder="Örnek: ABC Turizm"
+                  data-testid="input-agency-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agency-contactInfo">İletişim Bilgisi (Telefon)</Label>
+                <Input
+                  id="agency-contactInfo"
+                  value={agencyForm.contactInfo}
+                  onChange={e => setAgencyForm({ ...agencyForm, contactInfo: e.target.value })}
+                  placeholder="+905xxxxxxxxx"
+                  data-testid="input-agency-contact"
+                />
+                <p className="text-xs text-muted-foreground">WhatsApp bildirimleri için telefon numarası</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agency-payout">Kişi Başı Ödeme (TL)</Label>
+                <Input
+                  id="agency-payout"
+                  type="number"
+                  value={agencyForm.defaultPayoutPerGuest}
+                  onChange={e => setAgencyForm({ ...agencyForm, defaultPayoutPerGuest: Number(e.target.value) })}
+                  placeholder="0"
+                  data-testid="input-agency-payout"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agency-notes">Notlar</Label>
+                <Textarea
+                  id="agency-notes"
+                  value={agencyForm.notes}
+                  onChange={e => setAgencyForm({ ...agencyForm, notes: e.target.value })}
+                  placeholder="Ek bilgiler..."
+                  data-testid="input-agency-notes"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAgencyDialogOpen(false)}>İptal</Button>
+              <Button 
+                onClick={handleAgencySubmit} 
+                disabled={createAgencyMutation.isPending || updateAgencyMutation.isPending}
+                data-testid="button-save-agency"
+              >
+                {editingAgency ? 'Güncelle' : 'Ekle'}
               </Button>
             </DialogFooter>
           </DialogContent>
