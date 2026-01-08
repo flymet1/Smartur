@@ -16,6 +16,7 @@ import {
   payments,
   agencyPayouts,
   supplierDispatches,
+  supplierDispatchItems,
   agencyActivityRates,
   packageTours,
   packageTourActivities,
@@ -55,6 +56,8 @@ import {
   type InsertAgencyPayout,
   type SupplierDispatch,
   type InsertSupplierDispatch,
+  type SupplierDispatchItem,
+  type InsertSupplierDispatchItem,
   type AgencyActivityRate,
   type InsertAgencyActivityRate,
   type PackageTour,
@@ -143,7 +146,7 @@ import {
   type TenantIntegration,
   type InsertTenantIntegration,
 } from "@shared/schema";
-import { eq, and, gte, lte, lt, desc, sql, isNull, or, like } from "drizzle-orm";
+import { eq, and, gte, lte, lt, desc, sql, isNull, or, like, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Tenants
@@ -239,6 +242,14 @@ export interface IStorage {
   createSupplierDispatch(dispatch: InsertSupplierDispatch): Promise<SupplierDispatch>;
   updateSupplierDispatch(id: number, dispatch: Partial<InsertSupplierDispatch>): Promise<SupplierDispatch>;
   deleteSupplierDispatch(id: number): Promise<void>;
+  
+  // Finance - Supplier Dispatch Items (Alt Kalemler)
+  getDispatchItems(dispatchId: number): Promise<SupplierDispatchItem[]>;
+  createDispatchItem(item: InsertSupplierDispatchItem): Promise<SupplierDispatchItem>;
+  updateDispatchItem(id: number, item: Partial<InsertSupplierDispatchItem>): Promise<SupplierDispatchItem>;
+  deleteDispatchItem(id: number): Promise<void>;
+  deleteDispatchItemsByDispatchId(dispatchId: number): Promise<void>;
+  getDispatchItemsByDispatchIds(dispatchIds: number[]): Promise<SupplierDispatchItem[]>;
   
   // Finance - Agency Activity Rates (Dönemsel Tarifeler)
   getAgencyActivityRates(agencyId?: number): Promise<AgencyActivityRate[]>;
@@ -1367,7 +1378,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSupplierDispatch(id: number): Promise<void> {
+    // Önce alt kalemleri sil
+    await db.delete(supplierDispatchItems).where(eq(supplierDispatchItems.dispatchId, id));
     await db.delete(supplierDispatches).where(eq(supplierDispatches.id, id));
+  }
+
+  // Finance - Supplier Dispatch Items (Alt Kalemler)
+  async getDispatchItems(dispatchId: number): Promise<SupplierDispatchItem[]> {
+    return await db.select().from(supplierDispatchItems).where(eq(supplierDispatchItems.dispatchId, dispatchId));
+  }
+
+  async createDispatchItem(item: InsertSupplierDispatchItem): Promise<SupplierDispatchItem> {
+    const [created] = await db.insert(supplierDispatchItems).values(item).returning();
+    return created;
+  }
+
+  async updateDispatchItem(id: number, item: Partial<InsertSupplierDispatchItem>): Promise<SupplierDispatchItem> {
+    const [updated] = await db.update(supplierDispatchItems).set(item).where(eq(supplierDispatchItems.id, id)).returning();
+    return updated;
+  }
+
+  async deleteDispatchItem(id: number): Promise<void> {
+    await db.delete(supplierDispatchItems).where(eq(supplierDispatchItems.id, id));
+  }
+
+  async deleteDispatchItemsByDispatchId(dispatchId: number): Promise<void> {
+    await db.delete(supplierDispatchItems).where(eq(supplierDispatchItems.dispatchId, dispatchId));
+  }
+
+  async getDispatchItemsByDispatchIds(dispatchIds: number[]): Promise<SupplierDispatchItem[]> {
+    if (dispatchIds.length === 0) return [];
+    return await db.select().from(supplierDispatchItems).where(inArray(supplierDispatchItems.dispatchId, dispatchIds));
   }
 
   async getSupplierDispatchSummary(startDate?: string, endDate?: string, tenantId?: number | null): Promise<{

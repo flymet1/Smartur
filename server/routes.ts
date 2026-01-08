@@ -4829,6 +4829,158 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     }
   });
 
+  // === Finance - Dispatch Items (Alt Kalemler) ===
+  app.get("/api/finance/dispatches/:dispatchId/items", async (req, res) => {
+    try {
+      const dispatchId = parseInt(req.params.dispatchId);
+      const items = await storage.getDispatchItems(dispatchId);
+      res.json(items);
+    } catch (err) {
+      res.status(500).json({ error: "Kalemler alınamadı" });
+    }
+  });
+
+  app.post("/api/finance/dispatches/:dispatchId/items", async (req, res) => {
+    try {
+      const dispatchId = parseInt(req.params.dispatchId);
+      const { itemType, label, quantity, unitAmount, currency, notes } = req.body;
+      
+      if (!label) {
+        return res.status(400).json({ error: "label zorunlu" });
+      }
+      
+      const totalAmount = (quantity || 1) * (unitAmount || 0);
+      
+      const item = await storage.createDispatchItem({
+        dispatchId,
+        itemType: itemType || 'base',
+        label,
+        quantity: quantity || 1,
+        unitAmount: unitAmount || 0,
+        totalAmount,
+        currency: currency || 'TRY',
+        notes
+      });
+      res.json(item);
+    } catch (err) {
+      console.error('Dispatch item error:', err);
+      res.status(400).json({ error: "Kalem kaydedilemedi" });
+    }
+  });
+
+  app.patch("/api/finance/dispatch-items/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { quantity, unitAmount, ...rest } = req.body;
+      const totalAmount = (quantity || 1) * (unitAmount || 0);
+      
+      const item = await storage.updateDispatchItem(id, {
+        ...rest,
+        quantity,
+        unitAmount,
+        totalAmount
+      });
+      res.json(item);
+    } catch (err) {
+      res.status(400).json({ error: "Kalem güncellenemedi" });
+    }
+  });
+
+  app.delete("/api/finance/dispatch-items/:id", async (req, res) => {
+    try {
+      await storage.deleteDispatchItem(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(400).json({ error: "Kalem silinemedi" });
+    }
+  });
+
+  // Toplu kalem işlemi - Gönderim oluştururken/güncellerken kalemlerle birlikte
+  app.post("/api/finance/dispatches-with-items", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, notes, items } = req.body;
+      
+      if (!agencyId || !dispatchDate) {
+        return res.status(400).json({ error: "agencyId ve dispatchDate zorunlu" });
+      }
+      
+      // Kalemlerin toplamını hesapla (currency bazında)
+      const itemsArray = items || [];
+      let totalGuestCount = 0;
+      let totalPayoutTl = 0;
+      let totalPayoutUsd = 0;
+      
+      for (const item of itemsArray) {
+        const itemTotal = (item.quantity || 1) * (item.unitAmount || 0);
+        if (item.currency === 'USD') {
+          totalPayoutUsd += itemTotal;
+        } else {
+          totalPayoutTl += itemTotal;
+        }
+        // base ve observer tipindeki kalemler misafir sayısına eklenir
+        if (item.itemType === 'base' || item.itemType === 'observer') {
+          totalGuestCount += item.quantity || 1;
+        }
+      }
+      
+      // Ana para birimi: TL varsa TL, yoksa USD
+      const mainCurrency = totalPayoutTl > 0 ? 'TRY' : 'USD';
+      const mainTotal = mainCurrency === 'TRY' ? totalPayoutTl : totalPayoutUsd;
+      
+      // Dispatch oluştur
+      const dispatch = await storage.createSupplierDispatch({
+        tenantId,
+        agencyId,
+        activityId,
+        dispatchDate,
+        dispatchTime,
+        customerName,
+        guestCount: totalGuestCount,
+        unitPayoutTl: totalGuestCount > 0 ? Math.round(mainTotal / totalGuestCount) : 0,
+        totalPayoutTl: mainTotal,
+        currency: mainCurrency,
+        notes
+      });
+      
+      // Kalemleri oluştur
+      const createdItems = [];
+      for (const item of itemsArray) {
+        const itemTotal = (item.quantity || 1) * (item.unitAmount || 0);
+        const createdItem = await storage.createDispatchItem({
+          dispatchId: dispatch.id,
+          itemType: item.itemType || 'base',
+          label: item.label,
+          quantity: item.quantity || 1,
+          unitAmount: item.unitAmount || 0,
+          totalAmount: itemTotal,
+          currency: item.currency || 'TRY',
+          notes: item.notes
+        });
+        createdItems.push(createdItem);
+      }
+      
+      res.json({ dispatch, items: createdItems });
+    } catch (err) {
+      console.error('Dispatch with items error:', err);
+      res.status(400).json({ error: "Gönderim ve kalemler kaydedilemedi" });
+    }
+  });
+
+  // Tüm dispatch'lerin itemlarını toplu getir
+  app.post("/api/finance/dispatch-items/batch", async (req, res) => {
+    try {
+      const { dispatchIds } = req.body;
+      if (!Array.isArray(dispatchIds)) {
+        return res.status(400).json({ error: "dispatchIds dizisi zorunlu" });
+      }
+      const items = await storage.getDispatchItemsByDispatchIds(dispatchIds);
+      res.json(items);
+    } catch (err) {
+      res.status(500).json({ error: "Kalemler alınamadı" });
+    }
+  });
+
   app.get("/api/finance/dispatches/summary", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
