@@ -586,17 +586,24 @@ export default function Finance() {
   });
 
   // Acenta filtresine göre filtrelenmiş ve sıralanmış fiyat tablosu
+  // Fiyat sıralaması için TRY'ye normalize et (exchange rates kullanarak)
+  const getNormalizedPriceTRY = (rate: AgencyActivityRate): number => {
+    if (rate.currency === 'USD') {
+      const usdAmount = rate.unitPayoutUsd || 0;
+      const usdToTry = exchangeRates?.USD?.TRY || 35;
+      return usdAmount * usdToTry;
+    }
+    return rate.unitPayoutTl || 0;
+  };
   const filteredRates = rates.filter(r => {
     if (selectedAgencyId && r.agencyId !== selectedAgencyId) return false;
     return true;
   }).sort((a, b) => {
-    const priceA = a.currency === 'USD' ? (a.unitPayoutUsd || 0) : (a.unitPayoutTl || 0);
-    const priceB = b.currency === 'USD' ? (b.unitPayoutUsd || 0) : (b.unitPayoutTl || 0);
     switch (rateSortOrder) {
       case 'createdNewest': return (b.id || 0) - (a.id || 0);
       case 'createdOldest': return (a.id || 0) - (b.id || 0);
-      case 'priceHigh': return priceB - priceA;
-      case 'priceLow': return priceA - priceB;
+      case 'priceHigh': return getNormalizedPriceTRY(b) - getNormalizedPriceTRY(a);
+      case 'priceLow': return getNormalizedPriceTRY(a) - getNormalizedPriceTRY(b);
       default: return 0;
     }
   });
