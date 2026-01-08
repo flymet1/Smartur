@@ -927,6 +927,9 @@ export default function Finance() {
                           <div className="font-medium flex items-center gap-2">
                             <Send className="h-4 w-4" />
                             {supplier?.name || 'Bilinmeyen Acenta'}
+                            {dispatch.customerName && (
+                              <span className="text-muted-foreground font-normal">| {dispatch.customerName}</span>
+                            )}
                           </div>
                           <div className="text-sm text-muted-foreground flex items-center gap-2">
                             <Calendar className="h-3 w-3" />
