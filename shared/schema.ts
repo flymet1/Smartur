@@ -1121,3 +1121,15 @@ export type InsertPartnerInviteCode = z.infer<typeof insertPartnerInviteCodeSche
 export const insertDispatchShareSchema = createInsertSchema(dispatchShares).omit({ id: true, sharedAt: true, processedAt: true });
 export type DispatchShare = typeof dispatchShares.$inferSelect;
 export type InsertDispatchShare = z.infer<typeof insertDispatchShareSchema>;
+
+// Activity Partner Shares - Aktivite bazlı partner paylaşımları
+export const activityPartnerShares = pgTable("activity_partner_shares", {
+  id: serial("id").primaryKey(),
+  activityId: integer("activity_id").references(() => activities.id).notNull(),
+  partnershipId: integer("partnership_id").references(() => tenantPartnerships.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertActivityPartnerShareSchema = createInsertSchema(activityPartnerShares).omit({ id: true, createdAt: true });
+export type ActivityPartnerShare = typeof activityPartnerShares.$inferSelect;
+export type InsertActivityPartnerShare = z.infer<typeof insertActivityPartnerShareSchema>;
