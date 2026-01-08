@@ -424,7 +424,7 @@ export function Sidebar() {
                 </div>
               )}
               {navItems.map((item) => {
-                const hasPartnerBadge = item.href === "/partner-availability" && pendingReservationRequestsCount > 0;
+                const hasViewerBadge = item.href === "/viewer-stats" && pendingReservationRequestsCount > 0;
                 return (
                   <Link key={item.href} href={item.href}>
                     <div className={cn(
@@ -435,7 +435,7 @@ export function Sidebar() {
                     )}>
                       <item.icon className="h-4 w-4" />
                       {item.label}
-                      {hasPartnerBadge && (
+                      {hasViewerBadge && (
                         <Badge 
                           variant="destructive" 
                           className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs px-1"
@@ -578,7 +578,7 @@ export function Sidebar() {
 
         <div className="flex-1 px-4 py-4 space-y-1 border-t overflow-y-auto">
           {navItems.map((item) => {
-            const hasPartnerBadge = item.href === "/partner-availability" && pendingReservationRequestsCount > 0;
+            const hasViewerBadge = item.href === "/viewer-stats" && pendingReservationRequestsCount > 0;
             return (
               <Link key={item.href} href={item.href}>
                 <div className={cn(
@@ -592,11 +592,11 @@ export function Sidebar() {
                     location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
                   )} />
                   {item.label}
-                  {hasPartnerBadge && (
+                  {hasViewerBadge && (
                     <Badge 
                       variant="destructive" 
                       className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                      data-testid="badge-partner-requests"
+                      data-testid="badge-viewer-requests"
                     >
                       {pendingReservationRequestsCount}
                     </Badge>
