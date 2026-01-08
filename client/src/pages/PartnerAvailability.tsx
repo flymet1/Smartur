@@ -99,6 +99,7 @@ export default function PartnerAvailability() {
     return sunday.toISOString().split('T')[0];
   });
   const [datePreset, setDatePreset] = useState<string>('this-week');
+  const [activeTab, setActiveTab] = useState<string>('availability');
   
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<RequestDialogData | null>(null);
@@ -326,22 +327,30 @@ export default function PartnerAvailability() {
 
         {/* Analiz Kartları */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => setActiveTab('requests')}
+            data-testid="card-incoming-requests"
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-sm text-muted-foreground">Partner Acenta</p>
-                  <p className="text-2xl font-bold mt-1" data-testid="text-partner-count">{partnerData?.length || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Aktif partner</p>
+                  <p className="text-sm text-muted-foreground">Gelen Talepler</p>
+                  <p className="text-2xl font-bold mt-1" data-testid="text-total-requests">{partnerRequests.length}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Toplam talep</p>
                 </div>
                 <div className="p-3 rounded-full shrink-0 bg-muted">
-                  <Building2 className="w-5 h-5" />
+                  <Send className="w-5 h-5" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => setActiveTab('availability')}
+            data-testid="card-shared-activities"
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -358,7 +367,11 @@ export default function PartnerAvailability() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => setActiveTab('availability')}
+            data-testid="card-available-slots"
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -377,7 +390,11 @@ export default function PartnerAvailability() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => setActiveTab('requests')}
+            data-testid="card-pending-requests"
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -395,7 +412,7 @@ export default function PartnerAvailability() {
           </Card>
         </div>
 
-        <Tabs defaultValue="availability" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="availability" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
