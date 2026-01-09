@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
@@ -133,6 +133,17 @@ export default function PartnerAvailability() {
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
   const approvedPartnerRequests = partnerRequests.filter(r => r.status === 'approved');
   const otherPartnerRequests = partnerRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
+  
+  // Auto-switch to requests tab if there are pending requests on initial load
+  const [initialTabSet, setInitialTabSet] = useState(false);
+  useEffect(() => {
+    if (!requestsLoading && !initialTabSet) {
+      if (pendingPartnerRequests.length > 0) {
+        setActiveTab('requests');
+      }
+      setInitialTabSet(true);
+    }
+  }, [requestsLoading, pendingPartnerRequests.length, initialTabSet]);
   
   const processMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: number; status: string; notes?: string }) => {
