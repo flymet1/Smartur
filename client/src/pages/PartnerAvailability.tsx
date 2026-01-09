@@ -169,6 +169,11 @@ export default function PartnerAvailability() {
       toast({
         title: `${pendingPartnerRequests.length} bekleyen talep var`,
         description: "Talepler sekmesinden inceleyin.",
+        action: (
+          <Button size="sm" variant="outline" onClick={() => setActiveTab('requests')}>
+            Görüntüle
+          </Button>
+        ),
       });
       setInitialToastShown(true);
     }
