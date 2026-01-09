@@ -373,14 +373,8 @@ export function Sidebar() {
               {!isViewerOnly && (
                 <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b">
                   {quickAccessItems.map((item) => {
-                    const hasPendingCount = 
-                      (item.href === "/customer-requests" && pendingCustomerRequestsCount > 0) ||
-                      (item.href === "/reservation-requests" && pendingViewerRequestsCount > 0);
-                    const pendingCount = item.href === "/customer-requests" 
-                      ? pendingCustomerRequestsCount 
-                      : item.href === "/reservation-requests" 
-                        ? pendingViewerRequestsCount 
-                        : 0;
+                    const hasPendingCount = item.href === "/customer-requests" && pendingCustomerRequestsCount > 0;
+                    const pendingCount = item.href === "/customer-requests" ? pendingCustomerRequestsCount : 0;
                     
                     return (
                       <Link key={item.href} href={item.href} className="flex-1">
@@ -530,14 +524,8 @@ export function Sidebar() {
           <div className="px-4 pb-3">
             <div className="flex gap-2">
               {quickAccessItems.map((item) => {
-                const hasPendingCount = 
-                  (item.href === "/customer-requests" && pendingCustomerRequestsCount > 0) ||
-                  (item.href === "/reservation-requests" && pendingViewerRequestsCount > 0);
-                const pendingCount = item.href === "/customer-requests" 
-                  ? pendingCustomerRequestsCount 
-                  : item.href === "/reservation-requests" 
-                    ? pendingViewerRequestsCount 
-                    : 0;
+                const hasPendingCount = item.href === "/customer-requests" && pendingCustomerRequestsCount > 0;
+                const pendingCount = item.href === "/customer-requests" ? pendingCustomerRequestsCount : 0;
                 
                 return (
                   <Link key={item.href} href={item.href} className="flex-1">

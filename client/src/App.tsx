@@ -30,7 +30,6 @@ import Developer from "@/pages/Developer";
 import Login from "@/pages/Login";
 import Musaitlik from "@/pages/Musaitlik";
 import ViewerStats from "@/pages/ViewerStats";
-import ReservationRequests from "@/pages/ReservationRequests";
 import PartnerProfile from "@/pages/PartnerProfile";
 import PartnerAvailability from "@/pages/PartnerAvailability";
 
@@ -61,7 +60,6 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/musaitlik" component={Musaitlik} />
       <Route path="/viewer-stats" component={ViewerStats} />
-      <Route path="/reservation-requests" component={ReservationRequests} />
       <Route path="/partner-profile" component={PartnerProfile} />
       <Route path="/partner-availability" component={PartnerAvailability} />
       <Route component={NotFound} />

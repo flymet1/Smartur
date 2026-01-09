@@ -408,12 +408,6 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Link href="/reservation-requests">
-              <Button size="lg" variant="outline" data-testid="button-reservation-requests-dashboard">
-                <Handshake className="w-5 h-5 mr-2" />
-                Rez. Talepleri
-              </Button>
-            </Link>
             <Link href={`/reservations?date=${today}&view=list`}>
               <Button size="lg" data-testid="button-today-reservations">
                 <CalendarDays className="w-5 h-5 mr-2" />
