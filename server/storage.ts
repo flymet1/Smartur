@@ -541,6 +541,7 @@ export interface IStorage {
   updateTenantPartnership(id: number, data: Partial<InsertTenantPartnership>): Promise<TenantPartnership>;
   deleteTenantPartnership(id: number): Promise<void>;
   getActivePartnership(requesterTenantId: number, partnerTenantId: number): Promise<TenantPartnership | undefined>;
+  checkIfPhoneIsPartner(phone: string, tenantId: number): Promise<{ isPartner: boolean; partnerTenant?: Tenant; partnership?: TenantPartnership }>;
 
   // Partner Acenta - Dispatch Shares
   getDispatchShares(receiverTenantId: number, status?: string): Promise<DispatchShare[]>;
@@ -3670,6 +3671,57 @@ Sky Fethiye`,
         )
       );
     return result;
+  }
+
+  async checkIfPhoneIsPartner(phone: string, tenantId: number): Promise<{ isPartner: boolean; partnerTenant?: Tenant; partnership?: TenantPartnership }> {
+    // Normalize phone number: remove whatsapp prefix, all non-digit characters
+    const normalizePhone = (p: string): string => {
+      return p.replace(/^whatsapp:/, '').replace(/[^\d]/g, '');
+    };
+    
+    const normalizedPhone = normalizePhone(phone);
+    if (normalizedPhone.length < 10) {
+      return { isPartner: false };
+    }
+    
+    // Get last 10 digits for comparison (handles country code differences)
+    const senderLast10 = normalizedPhone.slice(-10);
+    
+    // Get active partnerships for this tenant
+    const partnerships = await this.getTenantPartnerships(tenantId);
+    const activePartnerships = partnerships.filter(p => p.status === 'active');
+    
+    if (activePartnerships.length === 0) {
+      return { isPartner: false };
+    }
+    
+    // Get only partner tenant IDs to query
+    const partnerTenantIds = activePartnerships.map(p => 
+      p.requesterTenantId === tenantId ? p.partnerTenantId : p.requesterTenantId
+    );
+    
+    // Query only partner tenants (not full table scan)
+    const partnerTenants = await db.select().from(tenants)
+      .where(inArray(tenants.id, partnerTenantIds));
+    
+    // Find matching partner by normalized phone
+    for (const partner of partnerTenants) {
+      if (!partner.phone) continue;
+      const partnerPhoneNormalized = normalizePhone(partner.phone);
+      if (partnerPhoneNormalized.length < 10) continue;
+      
+      const partnerLast10 = partnerPhoneNormalized.slice(-10);
+      if (senderLast10 === partnerLast10) {
+        const partnership = activePartnerships.find(p => 
+          (p.requesterTenantId === partner.id || p.partnerTenantId === partner.id)
+        );
+        if (partnership) {
+          return { isPartner: true, partnerTenant: partner, partnership };
+        }
+      }
+    }
+    
+    return { isPartner: false };
   }
 
   // === PARTNER ACENTA - DISPATCH SHARES ===

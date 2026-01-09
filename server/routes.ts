@@ -740,6 +740,28 @@ Eğer müşteri mevcut bir rezervasyon hakkında soru soruyorsa, kibarca SİPAR�
 Yeni rezervasyon yapmak istiyorlarsa normal şekilde yardımcı ol.`;
   }
 
+  // Build partner context
+  let partnerContext = "";
+  if (context.isPartner && context.partnerName) {
+    partnerContext = `
+=== İŞ ORTAĞI (PARTNER) BİLGİSİ ===
+DİKKAT: Bu mesaj bir İŞ ORTAĞINDAN (${context.partnerName}) geliyor, normal bir müşteriden DEĞİL!
+
+İş ortaklarına FARKLI davran:
+1. Rezervasyon linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
+2. "Smartur panelinizden rezervasyon oluşturabilirsiniz" de
+3. Partner fiyatlarını kullan (eğer varsa)
+4. Daha profesyonel ve iş odaklı iletişim kur
+5. Web sitesi linklerini paylaşma - sadece müsaitlik bilgisi ver
+
+Örnek yanıt formatı:
+"Merhaba [Partner Adı], [tarih] için [aktivite] müsaitlik durumu:
+- Saat 10:00: 8 kişilik yer mevcut
+- Saat 14:00: 12 kişilik yer mevcut
+Smartur panelinizden rezervasyon oluşturabilirsiniz."
+`;
+  }
+
   // Build customer request context
   let customerRequestContext = "";
   if (context.pendingRequests && context.pendingRequests.length > 0) {
@@ -791,7 +813,7 @@ Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı
   const systemPrompt = `${basePrompt}
 
 ${dateContext}
-
+${partnerContext}
 === MEVCUT AKTİVİTELER ===
 ${activityDescriptions}
 ${packageToursSection}${capacityInfo}
@@ -3705,6 +3727,11 @@ export async function registerRoutes(
         return;
       }
 
+      // Check if sender is a partner agency
+      const partnerCheck = await storage.checkIfPhoneIsPartner(From, tenantId);
+      const isPartner = partnerCheck.isPartner;
+      const partnerTenant = partnerCheck.partnerTenant;
+
       // Check reservation
       const orderNumberMatch = Body.match(/\b(\d{4,})\b/);
       const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
@@ -3761,7 +3788,9 @@ export async function registerRoutes(
         customerRequests: customerRequestsForPhone,
         pendingRequests,
         botAccess,
-        botRules
+        botRules,
+        isPartner,
+        partnerName: partnerTenant?.name
       }, botPrompt || undefined);
       
       // Check if needs human intervention
