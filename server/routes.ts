@@ -2337,13 +2337,16 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       
-      const { activityId, date, time, customerName, customerPhone, guests, notes } = req.body;
+      const { 
+        activityId, date, time, customerName, customerPhone, guests, notes,
+        paymentCollectionType, amountCollectedBySender, paymentCurrency, paymentNotes 
+      } = req.body;
       
       if (!activityId || !date || !time || !customerName || !customerPhone) {
         return res.status(400).json({ error: "Eksik parametreler" });
       }
       
-      // Create the reservation request
+      // Create the reservation request with payment allocation
       const request = await storage.createReservationRequest({
         tenantId,
         activityId,
@@ -2354,7 +2357,11 @@ export async function registerRoutes(
         guests: guests || 1,
         notes,
         requestedBy: userId,
-        status: "pending"
+        status: "pending",
+        paymentCollectionType: paymentCollectionType || "receiver_full",
+        amountCollectedBySender: amountCollectedBySender || 0,
+        paymentCurrency: paymentCurrency || "TRY",
+        paymentNotes: paymentNotes || null
       });
       
       // Create in-app notification for reservation request
@@ -2736,6 +2743,36 @@ export async function registerRoutes(
             }
             
             const guestCount = request.guests || 1;
+            const totalPrice = unitPrice * guestCount;
+            
+            // Calculate payment allocation
+            // balanceOwed = amount sender must remit to receiver (always positive or zero)
+            // This represents the cash sender collected that belongs to receiver for the service
+            const collectionType = request.paymentCollectionType || 'receiver_full';
+            let amountCollectedBySender = 0;
+            let amountDueToReceiver = 0;
+            let balanceOwed = 0;
+            
+            if (collectionType === 'sender_full') {
+              // Sender collected full amount from customer
+              amountCollectedBySender = totalPrice;
+              amountDueToReceiver = 0;
+              // Sender has all the money, must transfer to receiver
+              balanceOwed = totalPrice;
+            } else if (collectionType === 'sender_partial') {
+              // Sender collected partial amount from customer
+              amountCollectedBySender = request.amountCollectedBySender || 0;
+              amountDueToReceiver = totalPrice - amountCollectedBySender;
+              // Sender has partial money, must transfer what they collected
+              balanceOwed = amountCollectedBySender;
+            } else {
+              // receiver_full - Receiver will collect full amount from customer
+              amountCollectedBySender = 0;
+              amountDueToReceiver = totalPrice;
+              // Sender has no money to transfer, receiver gets paid directly
+              balanceOwed = 0;
+            }
+            
             await storage.createPartnerTransaction({
               reservationId: reservation.id,
               senderTenantId: requesterUser.tenantId, // Müşteri gönderen acenta
@@ -2743,14 +2780,18 @@ export async function registerRoutes(
               activityId: request.activityId,
               guestCount,
               unitPrice,
-              totalPrice: unitPrice * guestCount,
+              totalPrice,
               currency,
               customerName: request.customerName,
               customerPhone: request.customerPhone || null,
               reservationDate: request.date,
               reservationTime: request.time || null,
               status: 'pending',
-              notes: request.notes || null
+              notes: request.paymentNotes || request.notes || null,
+              paymentCollectionType: collectionType,
+              amountCollectedBySender,
+              amountDueToReceiver,
+              balanceOwed
             });
           }
         } catch (transErr) {

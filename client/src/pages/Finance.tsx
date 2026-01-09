@@ -54,7 +54,8 @@ import {
   FileSpreadsheet,
   Handshake,
   ArrowUpRight,
-  ArrowDownLeft
+  ArrowDownLeft,
+  Wallet
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate, SupplierDispatchItem } from "@shared/schema";
 import { ChevronDown, ChevronRight, Package } from "lucide-react";
@@ -565,6 +566,10 @@ export default function Finance() {
     receiverTenantName?: string;
     activityName?: string;
     currentTenantId?: number;
+    paymentCollectionType?: string;
+    amountCollectedBySender?: number;
+    amountDueToReceiver?: number;
+    balanceOwed?: number;
   }
   
   // Partner Transactions query - use array pattern for proper cache invalidation
@@ -617,28 +622,45 @@ export default function Finance() {
   );
 
   // Mutabakat özeti hesaplama
+  // balanceOwed: sender perspektifinden, pozitif = sender borclu, negatif = sender alacakli
   const partnerReconciliation = {
     sentCount: 0,
     sentGuests: 0,
     sentAmount: 0,
+    sentCollected: 0,
+    sentBalanceOwed: 0,
     receivedCount: 0,
     receivedGuests: 0,
     receivedAmount: 0,
+    receivedCollected: 0,
+    receivedBalanceOwed: 0,
+    netBalanceOwed: 0,
   };
 
   filteredPartnerTransactions.forEach(tx => {
     const isSender = tx.currentTenantId === tx.senderTenantId;
     const amount = tx.totalAmount || (tx.unitPrice || 0) * tx.guestCount;
+    const collected = tx.amountCollectedBySender || 0;
+    const balance = tx.balanceOwed || 0;
+    
     if (isSender) {
       partnerReconciliation.sentCount++;
       partnerReconciliation.sentGuests += tx.guestCount;
       partnerReconciliation.sentAmount += amount;
+      partnerReconciliation.sentCollected += collected;
+      partnerReconciliation.sentBalanceOwed += balance;
     } else {
       partnerReconciliation.receivedCount++;
       partnerReconciliation.receivedGuests += tx.guestCount;
       partnerReconciliation.receivedAmount += amount;
+      partnerReconciliation.receivedCollected += collected;
+      partnerReconciliation.receivedBalanceOwed += balance;
     }
   });
+  
+  // Net balance: what I owe (as sender) minus what others owe me (as receiver)
+  // Positive = I owe more, Negative = I'm owed more
+  partnerReconciliation.netBalanceOwed = partnerReconciliation.sentBalanceOwed - partnerReconciliation.receivedBalanceOwed;
 
   const netBalance = partnerReconciliation.sentAmount - partnerReconciliation.receivedAmount;
 
@@ -2014,7 +2036,7 @@ export default function Finance() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <ArrowUpRight className="h-4 w-4 text-blue-500" />
@@ -2026,6 +2048,11 @@ export default function Finance() {
                     <div className="text-sm text-muted-foreground">
                       {partnerReconciliation.sentCount} işlem • {formatMoney(partnerReconciliation.sentAmount)}
                     </div>
+                    {partnerReconciliation.sentCollected > 0 && (
+                      <div className="text-xs text-green-600">
+                        Tahsil edildi: {formatMoney(partnerReconciliation.sentCollected)}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -2038,17 +2065,34 @@ export default function Finance() {
                     <div className="text-sm text-muted-foreground">
                       {partnerReconciliation.receivedCount} işlem • {formatMoney(partnerReconciliation.receivedAmount)}
                     </div>
+                    {partnerReconciliation.receivedCollected > 0 && (
+                      <div className="text-xs text-orange-600">
+                        Partner tahsil etti: {formatMoney(partnerReconciliation.receivedCollected)}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <ArrowRightLeft className="h-4 w-4" />
-                      Net Bakiye
+                      Net Bakiye (Toplam)
                     </div>
                     <div className={`text-lg font-semibold ${netBalance > 0 ? 'text-green-600' : netBalance < 0 ? 'text-red-600' : ''}`}>
                       {netBalance > 0 ? '+' : ''}{formatMoney(netBalance)}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {netBalance > 0 ? 'Size borçlular' : netBalance < 0 ? 'Siz borçlusunuz' : 'Eşit'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Wallet className="h-4 w-4 text-purple-500" />
+                      Tahsilat Dengesi
+                    </div>
+                    <div className={`text-lg font-semibold ${partnerReconciliation.netBalanceOwed > 0 ? 'text-red-600' : partnerReconciliation.netBalanceOwed < 0 ? 'text-green-600' : ''}`}>
+                      {partnerReconciliation.netBalanceOwed > 0 ? '-' : partnerReconciliation.netBalanceOwed < 0 ? '+' : ''}{formatMoney(Math.abs(partnerReconciliation.netBalanceOwed))}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {partnerReconciliation.netBalanceOwed > 0 ? 'Partnerlere borçlusunuz' : partnerReconciliation.netBalanceOwed < 0 ? 'Partnerler size borçlu' : 'Denk'}
                     </div>
                   </div>
                 </div>
@@ -2208,8 +2252,24 @@ export default function Finance() {
                                     <span>{tx.activityName}</span>
                                   )}
                                 </div>
+                                {tx.paymentCollectionType && tx.paymentCollectionType !== 'receiver_full' && (
+                                  <div className="flex items-center gap-2 text-xs mt-1">
+                                    <Badge variant="outline" className="text-xs">
+                                      {tx.paymentCollectionType === 'sender_full' 
+                                        ? 'Gonderen Tam Tahsil Etti' 
+                                        : tx.paymentCollectionType === 'sender_partial'
+                                        ? `Gonderen ${(tx.amountCollectedBySender || 0).toLocaleString('tr-TR')} ${tx.currency} Tahsil Etti`
+                                        : ''}
+                                    </Badge>
+                                    {tx.amountDueToReceiver !== undefined && tx.amountDueToReceiver > 0 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        Alici Alacak: {tx.amountDueToReceiver.toLocaleString('tr-TR')} {tx.currency}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                              <div className="text-right">
+                              <div className="text-right space-y-1">
                                 {hasTotal ? (
                                   <Badge variant="default" className="bg-green-600">
                                     {currencySymbol}
@@ -2225,6 +2285,26 @@ export default function Finance() {
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline">Fiyat belirlenmedi</Badge>
+                                )}
+                                {tx.balanceOwed !== undefined && tx.balanceOwed > 0 && (
+                                  <div className="text-xs">
+                                    <Badge 
+                                      variant="outline" 
+                                      className={
+                                        // balanceOwed = amount sender must pay to receiver (always >= 0)
+                                        // When isSender: this is my liability (red/-)
+                                        // When isReceiver: this is my receivable (green/+)
+                                        isSender 
+                                          ? 'border-red-500 text-red-600' 
+                                          : 'border-green-500 text-green-600'
+                                      }
+                                    >
+                                      {isSender 
+                                        ? `-${tx.balanceOwed.toLocaleString('tr-TR')}` 
+                                        : `+${tx.balanceOwed.toLocaleString('tr-TR')}`
+                                      } {tx.currency}
+                                    </Badge>
+                                  </div>
                                 )}
                               </div>
                             </div>

@@ -20,7 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Activity } from "@shared/schema";
@@ -115,6 +117,9 @@ export default function PartnerAvailability() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [guests, setGuests] = useState(1);
   const [notes, setNotes] = useState("");
+  const [paymentCollectionType, setPaymentCollectionType] = useState<string>("receiver_full");
+  const [amountCollectedBySender, setAmountCollectedBySender] = useState<number>(0);
+  const [paymentNotes, setPaymentNotes] = useState("");
   
   const [processDialogOpen, setProcessDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ReservationRequest | null>(null);
@@ -225,7 +230,10 @@ export default function PartnerAvailability() {
   };
   
   const createRequestMutation = useMutation({
-    mutationFn: async (data: { activityId: number; date: string; time: string; customerName: string; customerPhone: string; guests: number; notes: string }) => {
+    mutationFn: async (data: { 
+      activityId: number; date: string; time: string; customerName: string; customerPhone: string; guests: number; notes: string;
+      paymentCollectionType: string; amountCollectedBySender: number; paymentCurrency: string; paymentNotes: string;
+    }) => {
       const res = await apiRequest('POST', '/api/partner-reservation-requests', data);
       return res.json();
     },
@@ -288,6 +296,9 @@ export default function PartnerAvailability() {
     setGuests(1);
     setNotes("");
     setSelectedSlot(null);
+    setPaymentCollectionType("receiver_full");
+    setAmountCollectedBySender(0);
+    setPaymentNotes("");
   };
   
   const openRequestDialog = (slot: RequestDialogData) => {
@@ -313,7 +324,11 @@ export default function PartnerAvailability() {
       customerName: customerName.trim(),
       customerPhone: customerPhone.trim(),
       guests,
-      notes: notes.trim()
+      notes: notes.trim(),
+      paymentCollectionType,
+      amountCollectedBySender: paymentCollectionType === 'sender_partial' ? amountCollectedBySender : 0,
+      paymentCurrency: selectedSlot.partnerCurrency || 'TRY',
+      paymentNotes: paymentNotes.trim()
     });
   };
 
@@ -1257,6 +1272,77 @@ export default function PartnerAvailability() {
                   rows={3}
                   data-testid="input-notes"
                 />
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4" />
+                  Odeme Tahsilat Bilgisi
+                </Label>
+                <RadioGroup
+                  value={paymentCollectionType}
+                  onValueChange={setPaymentCollectionType}
+                  className="space-y-2"
+                  data-testid="radio-payment-type"
+                >
+                  <div className="flex items-center space-x-2 p-2 rounded-md hover-elevate">
+                    <RadioGroupItem value="receiver_full" id="receiver_full" data-testid="radio-receiver-full" />
+                    <Label htmlFor="receiver_full" className="flex-1 cursor-pointer">
+                      <span className="font-medium">Tamamini Partner Alacak</span>
+                      <p className="text-xs text-muted-foreground">Musteri odemeyi partner acentaya yapacak</p>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-2 rounded-md hover-elevate">
+                    <RadioGroupItem value="sender_full" id="sender_full" data-testid="radio-sender-full" />
+                    <Label htmlFor="sender_full" className="flex-1 cursor-pointer">
+                      <span className="font-medium">Tamamini Biz Aldik</span>
+                      <p className="text-xs text-muted-foreground">Musteri tum odemeyi bize yapti</p>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-2 rounded-md hover-elevate">
+                    <RadioGroupItem value="sender_partial" id="sender_partial" data-testid="radio-sender-partial" />
+                    <Label htmlFor="sender_partial" className="flex-1 cursor-pointer">
+                      <span className="font-medium">Kismi Odeme Aldik</span>
+                      <p className="text-xs text-muted-foreground">Musteriden bir miktar aldik, kalani partner alacak</p>
+                    </Label>
+                  </div>
+                </RadioGroup>
+                
+                {paymentCollectionType === 'sender_partial' && (
+                  <div className="space-y-2 pl-6 border-l-2 border-primary/30">
+                    <Label htmlFor="amountCollected">Aldigimiz Tutar ({selectedSlot?.partnerCurrency || 'TRY'})</Label>
+                    <Input
+                      id="amountCollected"
+                      type="number"
+                      min={0}
+                      value={amountCollectedBySender}
+                      onChange={(e) => setAmountCollectedBySender(parseInt(e.target.value) || 0)}
+                      placeholder="Ornegin: 500"
+                      data-testid="input-amount-collected"
+                    />
+                    {selectedSlot?.partnerUnitPrice && guests > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Toplam: {(selectedSlot.partnerUnitPrice * guests).toLocaleString('tr-TR')} {selectedSlot.partnerCurrency}
+                        {amountCollectedBySender > 0 && (
+                          <> | Kalan: {((selectedSlot.partnerUnitPrice * guests) - amountCollectedBySender).toLocaleString('tr-TR')} {selectedSlot.partnerCurrency}</>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <Label htmlFor="paymentNotes">Odeme Notu (Opsiyonel)</Label>
+                  <Input
+                    id="paymentNotes"
+                    value={paymentNotes}
+                    onChange={(e) => setPaymentNotes(e.target.value)}
+                    placeholder="Ornegin: Nakit odendi, Havale yapildi vb."
+                    data-testid="input-payment-notes"
+                  />
+                </div>
               </div>
             </div>
             
