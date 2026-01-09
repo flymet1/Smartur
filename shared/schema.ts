@@ -990,6 +990,11 @@ export const reservationRequests = pgTable("reservation_requests", {
   processNotes: text("process_notes"),
   reservationId: integer("reservation_id").references(() => reservations.id),
   createdAt: timestamp("created_at").defaultNow(),
+  // Payment allocation fields
+  paymentCollectionType: text("payment_collection_type").default("receiver_full"), // sender_full, sender_partial, receiver_full
+  amountCollectedBySender: integer("amount_collected_by_sender").default(0), // Amount collected by sending agency
+  paymentCurrency: text("payment_currency").default("TRY"), // Currency for payment
+  paymentNotes: text("payment_notes"), // Notes about payment arrangement
 });
 
 // === APP USER SCHEMAS & TYPES ===
@@ -1155,6 +1160,11 @@ export const partnerTransactions = pgTable("partner_transactions", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   paidAt: timestamp("paid_at"),
+  // Payment allocation fields
+  paymentCollectionType: text("payment_collection_type").default("receiver_full"), // sender_full, sender_partial, receiver_full
+  amountCollectedBySender: integer("amount_collected_by_sender").default(0), // Gönderen acenta tarafından tahsil edilen
+  amountDueToReceiver: integer("amount_due_to_receiver").default(0), // Alıcı acenta tarafından tahsil edilecek
+  balanceOwed: integer("balance_owed").default(0), // Pozitif: Alıcı gönderene borçlu, Negatif: Gönderen alıcıya borçlu
 });
 
 export const insertPartnerTransactionSchema = createInsertSchema(partnerTransactions).omit({ id: true, createdAt: true, paidAt: true });
