@@ -2,8 +2,8 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
-import { sql, eq } from "drizzle-orm";
-import { supplierDispatches } from "@shared/schema";
+import { sql, eq, and } from "drizzle-orm";
+import { supplierDispatches, reservations, userRoles, roles } from "@shared/schema";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
@@ -3206,6 +3206,278 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Update partner transaction error:", error);
       res.status(500).json({ error: "Islem guncellenemedi" });
+    }
+  });
+
+  // === VIEWER ACTIVITY SHARES (İzleyici Aktivite Paylaşımları ve Fiyatlandırma) ===
+  
+  // Get viewer activity shares for a specific viewer
+  app.get("/api/viewer-activity-shares/:viewerUserId", requirePermission(PERMISSIONS.USERS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const viewerUserId = parseInt(req.params.viewerUserId);
+      const shares = await storage.getViewerActivityShares(tenantId, viewerUserId);
+      res.json(shares);
+    } catch (error) {
+      console.error("Get viewer activity shares error:", error);
+      res.status(500).json({ error: "Izleyici aktivite paylasimları alinamadi" });
+    }
+  });
+  
+  // Set viewer activity shares (bulk update)
+  app.put("/api/viewer-activity-shares/:viewerUserId", requirePermission(PERMISSIONS.USERS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const viewerUserId = parseInt(req.params.viewerUserId);
+      const { shares } = req.body;
+      
+      if (!Array.isArray(shares)) {
+        return res.status(400).json({ error: "Gecersiz veri formati" });
+      }
+      
+      await storage.setViewerActivityShares(tenantId, viewerUserId, shares);
+      const updatedShares = await storage.getViewerActivityShares(tenantId, viewerUserId);
+      res.json(updatedShares);
+    } catch (error) {
+      console.error("Set viewer activity shares error:", error);
+      res.status(500).json({ error: "Izleyici aktivite paylasimları guncellenemedi" });
+    }
+  });
+
+  // === RESERVATION CHANGE REQUESTS (Değişiklik Talepleri) ===
+  
+  // Get all change requests for tenant
+  app.get("/api/reservation-change-requests", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const requests = await storage.getReservationChangeRequests(tenantId);
+      
+      // Enrich with reservation info
+      const reservations = await storage.getReservations(tenantId);
+      const reservationMap = new Map(reservations.map(r => [r.id, r]));
+      
+      const enriched = requests.map(req => ({
+        ...req,
+        reservation: reservationMap.get(req.reservationId) || null
+      }));
+      
+      res.json(enriched);
+    } catch (error) {
+      console.error("Get reservation change requests error:", error);
+      res.status(500).json({ error: "Degisiklik talepleri alinamadi" });
+    }
+  });
+  
+  // Create a change request (for viewers/partners)
+  app.post("/api/reservation-change-requests", requireAuth, async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const { reservationId, requestType, requestedDate, requestedTime, requestDetails } = req.body;
+      
+      // Get the reservation with tenant check for security
+      const reservation = await db.select().from(reservations).where(
+        and(
+          eq(reservations.id, reservationId),
+          eq(reservations.tenantId, tenantId)
+        )
+      );
+      if (reservation.length === 0) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadi veya erisim yetkiniz yok" });
+      }
+      
+      const reservationData = reservation[0];
+      
+      // Determine initiator type
+      let initiatedByType = 'customer';
+      if (userId) {
+        // Check if user is viewer
+        const userRolesResult = await db.select().from(userRoles)
+          .innerJoin(roles, eq(userRoles.roleId, roles.id))
+          .where(
+            and(
+              eq(userRoles.userId, userId),
+              eq(roles.name, 'viewer')
+            )
+          );
+        
+        if (userRolesResult.length > 0) {
+          initiatedByType = 'viewer';
+        } else {
+          // Could also check for partner here if needed
+          initiatedByType = 'partner';
+        }
+      }
+      
+      const newRequest = await storage.createReservationChangeRequest({
+        reservationId,
+        tenantId,
+        initiatedByType,
+        initiatedById: userId || null,
+        requestType,
+        originalDate: reservationData.date,
+        originalTime: reservationData.time,
+        requestedDate,
+        requestedTime,
+        requestDetails,
+        status: 'pending'
+      });
+      
+      res.status(201).json(newRequest);
+    } catch (error) {
+      console.error("Create reservation change request error:", error);
+      res.status(500).json({ error: "Degisiklik talebi olusturulamadi" });
+    }
+  });
+  
+  // Update change request (approve/reject)
+  app.patch("/api/reservation-change-requests/:id", requirePermission(PERMISSIONS.RESERVATIONS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const { status, processNotes } = req.body;
+      
+      const request = await storage.getReservationChangeRequest(id);
+      if (!request) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+      
+      if (request.tenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu talebe erisim yetkiniz yok" });
+      }
+      
+      const updateData: any = {
+        status,
+        processNotes,
+        processedBy: userId,
+        processedAt: new Date()
+      };
+      
+      // If approved, also update the reservation (with tenant check for security)
+      if (status === 'approved') {
+        const reservation = await db.select().from(reservations).where(
+          and(
+            eq(reservations.id, request.reservationId),
+            eq(reservations.tenantId, tenantId)
+          )
+        );
+        if (reservation.length > 0) {
+          const updateReservation: any = {};
+          if (request.requestedDate) updateReservation.date = request.requestedDate;
+          if (request.requestedTime) updateReservation.time = request.requestedTime;
+          
+          if (Object.keys(updateReservation).length > 0) {
+            await storage.updateReservation(request.reservationId, updateReservation);
+          }
+          updateData.status = 'applied';
+        } else {
+          return res.status(404).json({ error: "Rezervasyon bulunamadi veya erisim yetkiniz yok" });
+        }
+      }
+      
+      const updated = await storage.updateReservationChangeRequest(id, updateData);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update reservation change request error:", error);
+      res.status(500).json({ error: "Talep guncellenemedi" });
+    }
+  });
+  
+  // Update change request (edit by requester before approval)
+  app.put("/api/reservation-change-requests/:id", requireAuth, async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const request = await storage.getReservationChangeRequest(id);
+      
+      if (!request) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+      
+      // Only allow editing if pending and by the original requester
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Sadece bekleyen talepler duzenlenebilir" });
+      }
+      
+      if (request.initiatedById !== userId) {
+        return res.status(403).json({ error: "Sadece kendi talebinizi duzenleyebilirsiniz" });
+      }
+      
+      const { requestedDate, requestedTime, requestDetails } = req.body;
+      
+      const updated = await storage.updateReservationChangeRequest(id, {
+        requestedDate,
+        requestedTime,
+        requestDetails
+      });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Edit reservation change request error:", error);
+      res.status(500).json({ error: "Talep duzenlenemedi" });
+    }
+  });
+  
+  // Delete change request (cancel by requester before approval)
+  app.delete("/api/reservation-change-requests/:id", requireAuth, async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const request = await storage.getReservationChangeRequest(id);
+      
+      if (!request) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+      
+      // Only allow deletion if pending and by the original requester
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Sadece bekleyen talepler iptal edilebilir" });
+      }
+      
+      if (request.initiatedById !== userId) {
+        return res.status(403).json({ error: "Sadece kendi talebinizi iptal edebilirsiniz" });
+      }
+      
+      await storage.deleteReservationChangeRequest(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete reservation change request error:", error);
+      res.status(500).json({ error: "Talep silinemedi" });
     }
   });
 

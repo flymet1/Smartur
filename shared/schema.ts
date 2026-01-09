@@ -1231,3 +1231,51 @@ export type InsertTenantNotificationSetting = z.infer<typeof insertTenantNotific
 export const insertInAppNotificationSchema = createInsertSchema(inAppNotifications).omit({ id: true, createdAt: true });
 export type InAppNotification = typeof inAppNotifications.$inferSelect;
 export type InsertInAppNotification = z.infer<typeof insertInAppNotificationSchema>;
+
+// === İZLEYİCİ AKTİVİTE ERİŞİMİ VE FİYATLANDIRMA ===
+
+// Viewer Activity Shares - İzleyici bazlı aktivite paylaşımları ve fiyatlandırma
+export const viewerActivityShares = pgTable("viewer_activity_shares", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
+  viewerUserId: integer("viewer_user_id").references(() => appUsers.id).notNull(),
+  activityId: integer("activity_id").references(() => activities.id).notNull(),
+  viewerUnitPriceTry: integer("viewer_unit_price_try"), // İzleyici için TRY fiyatı
+  viewerUnitPriceUsd: integer("viewer_unit_price_usd"), // İzleyici için USD fiyatı
+  viewerUnitPriceEur: integer("viewer_unit_price_eur"), // İzleyici için EUR fiyatı
+  isShared: boolean("is_shared").default(true).notNull(), // Bu aktivite izleyici ile paylaşılıyor mu
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertViewerActivityShareSchema = createInsertSchema(viewerActivityShares).omit({ id: true, createdAt: true, updatedAt: true });
+export type ViewerActivityShare = typeof viewerActivityShares.$inferSelect;
+export type InsertViewerActivityShare = z.infer<typeof insertViewerActivityShareSchema>;
+
+// === REZERVASYON DEĞİŞİKLİK TALEPLERİ ===
+
+// Reservation Change Requests - Partner/İzleyici/Müşteri değişiklik talepleri
+export const reservationChangeRequests = pgTable("reservation_change_requests", {
+  id: serial("id").primaryKey(),
+  reservationId: integer("reservation_id").references(() => reservations.id).notNull(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
+  initiatedByType: text("initiated_by_type").notNull(), // customer, viewer, partner
+  initiatedById: integer("initiated_by_id"), // appUsers.id veya null (müşteri için)
+  initiatedByPhone: text("initiated_by_phone"), // Müşteri telefonu
+  requestType: text("request_type").notNull(), // time_change, date_change, cancellation, other
+  originalDate: text("original_date"), // Mevcut tarih
+  originalTime: text("original_time"), // Mevcut saat
+  requestedDate: text("requested_date"), // İstenen yeni tarih
+  requestedTime: text("requested_time"), // İstenen yeni saat
+  requestDetails: text("request_details"), // Detaylı açıklama
+  status: text("status").default("pending").notNull(), // pending, approved, rejected, applied
+  processedBy: integer("processed_by").references(() => appUsers.id),
+  processedAt: timestamp("processed_at"),
+  processNotes: text("process_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertReservationChangeRequestSchema = createInsertSchema(reservationChangeRequests).omit({ id: true, createdAt: true, updatedAt: true, processedAt: true });
+export type ReservationChangeRequest = typeof reservationChangeRequests.$inferSelect;
+export type InsertReservationChangeRequest = z.infer<typeof insertReservationChangeRequestSchema>;

@@ -169,6 +169,12 @@ import {
   type InsertTenantNotificationSetting,
   type InAppNotification,
   type InsertInAppNotification,
+  viewerActivityShares,
+  type ViewerActivityShare,
+  type InsertViewerActivityShare,
+  reservationChangeRequests,
+  type ReservationChangeRequest,
+  type InsertReservationChangeRequest,
 } from "@shared/schema";
 import { eq, and, gte, lte, lt, desc, sql, isNull, or, like, inArray } from "drizzle-orm";
 
@@ -580,6 +586,22 @@ export interface IStorage {
   markNotificationAsRead(id: number): Promise<void>;
   markAllNotificationsAsRead(userId: number): Promise<void>;
   deleteInAppNotification(id: number): Promise<void>;
+
+  // Viewer Activity Shares - İzleyici bazlı aktivite paylaşımları ve fiyatlandırma
+  getViewerActivityShares(tenantId: number, viewerUserId?: number): Promise<ViewerActivityShare[]>;
+  getViewerActivityShare(id: number): Promise<ViewerActivityShare | undefined>;
+  createViewerActivityShare(share: InsertViewerActivityShare): Promise<ViewerActivityShare>;
+  updateViewerActivityShare(id: number, data: Partial<InsertViewerActivityShare>): Promise<ViewerActivityShare>;
+  deleteViewerActivityShare(id: number): Promise<void>;
+  setViewerActivityShares(tenantId: number, viewerUserId: number, shares: Array<{ activityId: number; isShared: boolean; viewerUnitPriceTry?: number; viewerUnitPriceUsd?: number; viewerUnitPriceEur?: number }>): Promise<void>;
+
+  // Reservation Change Requests - Partner/İzleyici/Müşteri değişiklik talepleri
+  getReservationChangeRequests(tenantId: number): Promise<ReservationChangeRequest[]>;
+  getReservationChangeRequest(id: number): Promise<ReservationChangeRequest | undefined>;
+  getReservationChangeRequestsByReservation(reservationId: number): Promise<ReservationChangeRequest[]>;
+  createReservationChangeRequest(request: InsertReservationChangeRequest): Promise<ReservationChangeRequest>;
+  updateReservationChangeRequest(id: number, data: Partial<InsertReservationChangeRequest>): Promise<ReservationChangeRequest>;
+  deleteReservationChangeRequest(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4046,6 +4068,112 @@ Sky Fethiye`,
 
   async deleteInAppNotification(id: number): Promise<void> {
     await db.delete(inAppNotifications).where(eq(inAppNotifications.id, id));
+  }
+
+  // === VIEWER ACTIVITY SHARES ===
+
+  async getViewerActivityShares(tenantId: number, viewerUserId?: number): Promise<ViewerActivityShare[]> {
+    if (viewerUserId) {
+      return db.select().from(viewerActivityShares)
+        .where(
+          and(
+            eq(viewerActivityShares.tenantId, tenantId),
+            eq(viewerActivityShares.viewerUserId, viewerUserId)
+          )
+        );
+    }
+    return db.select().from(viewerActivityShares)
+      .where(eq(viewerActivityShares.tenantId, tenantId));
+  }
+
+  async getViewerActivityShare(id: number): Promise<ViewerActivityShare | undefined> {
+    const [share] = await db.select().from(viewerActivityShares)
+      .where(eq(viewerActivityShares.id, id));
+    return share;
+  }
+
+  async createViewerActivityShare(share: InsertViewerActivityShare): Promise<ViewerActivityShare> {
+    const [created] = await db.insert(viewerActivityShares).values(share).returning();
+    return created;
+  }
+
+  async updateViewerActivityShare(id: number, data: Partial<InsertViewerActivityShare>): Promise<ViewerActivityShare> {
+    const [updated] = await db.update(viewerActivityShares)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(viewerActivityShares.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteViewerActivityShare(id: number): Promise<void> {
+    await db.delete(viewerActivityShares).where(eq(viewerActivityShares.id, id));
+  }
+
+  async setViewerActivityShares(
+    tenantId: number, 
+    viewerUserId: number, 
+    shares: Array<{ activityId: number; isShared: boolean; viewerUnitPriceTry?: number; viewerUnitPriceUsd?: number; viewerUnitPriceEur?: number }>
+  ): Promise<void> {
+    // Delete existing shares for this viewer
+    await db.delete(viewerActivityShares)
+      .where(
+        and(
+          eq(viewerActivityShares.tenantId, tenantId),
+          eq(viewerActivityShares.viewerUserId, viewerUserId)
+        )
+      );
+    
+    // Insert new shares
+    if (shares.length > 0) {
+      await db.insert(viewerActivityShares).values(
+        shares.map(share => ({
+          tenantId,
+          viewerUserId,
+          activityId: share.activityId,
+          isShared: share.isShared,
+          viewerUnitPriceTry: share.viewerUnitPriceTry,
+          viewerUnitPriceUsd: share.viewerUnitPriceUsd,
+          viewerUnitPriceEur: share.viewerUnitPriceEur,
+        }))
+      );
+    }
+  }
+
+  // === RESERVATION CHANGE REQUESTS ===
+
+  async getReservationChangeRequests(tenantId: number): Promise<ReservationChangeRequest[]> {
+    return db.select().from(reservationChangeRequests)
+      .where(eq(reservationChangeRequests.tenantId, tenantId))
+      .orderBy(desc(reservationChangeRequests.createdAt));
+  }
+
+  async getReservationChangeRequest(id: number): Promise<ReservationChangeRequest | undefined> {
+    const [request] = await db.select().from(reservationChangeRequests)
+      .where(eq(reservationChangeRequests.id, id));
+    return request;
+  }
+
+  async getReservationChangeRequestsByReservation(reservationId: number): Promise<ReservationChangeRequest[]> {
+    return db.select().from(reservationChangeRequests)
+      .where(eq(reservationChangeRequests.reservationId, reservationId))
+      .orderBy(desc(reservationChangeRequests.createdAt));
+  }
+
+  async createReservationChangeRequest(request: InsertReservationChangeRequest): Promise<ReservationChangeRequest> {
+    const [created] = await db.insert(reservationChangeRequests).values(request).returning();
+    return created;
+  }
+
+  async updateReservationChangeRequest(id: number, data: Partial<InsertReservationChangeRequest>): Promise<ReservationChangeRequest> {
+    const [updated] = await db.update(reservationChangeRequests)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(reservationChangeRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteReservationChangeRequest(id: number): Promise<void> {
+    await db.delete(reservationChangeRequests).where(eq(reservationChangeRequests.id, id));
   }
 }
 
