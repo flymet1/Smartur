@@ -851,12 +851,17 @@ ${context.viewerPrompt}
 DİKKAT: Bu mesaj bir İZLEYİCİDEN (${context.viewerName}) geliyor, normal bir müşteriden DEĞİL!
 
 İzleyicilere FARKLI davran:
-1. Rezervasyon veya web sitesi linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
+1. Rezervasyon veya web sitesi linki VERME
 2. Daha profesyonel ve iş odaklı iletişim kur
+3. İzleyicinin sisteme giriş yaparak işlem yapması gerektiğini belirt
 
 MÜSAİTLİK SORGULARINDA:
 - Sorulan tarih ve saat için müsaitlik bilgisini paylaş
-- Ardından "Smartur panelinizden rezervasyon talebinizi oluşturabilirsiniz" de
+- Ardından "Smartur panelinize giriş yaparak istediğiniz aktiviteyi seçip rezervasyon talebi oluşturabilirsiniz" de
+
+REZERVASYON TALEPLERİNDE:
+- İzleyici WhatsApp'tan rezervasyon yapmak isterse "Smartur panelinize giriş yaparak kolayca rezervasyon talebi oluşturabilirsiniz. Aktiviteyi seçin, tarih ve kişi sayısını belirtin" de
+- WhatsApp üzerinden rezervasyon ALMA - panele yönlendir
 
 DEĞİŞİKLİK TALEPLERİNDE:
 - İzleyici tarih/saat değişikliği isterse "Smartur panelinizden değişiklik talebinizi oluşturabilirsiniz" de
