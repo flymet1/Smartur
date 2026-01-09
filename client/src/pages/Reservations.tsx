@@ -58,11 +58,6 @@ export default function Reservations() {
   const { data: holidays = [] } = useQuery<Holiday[]>({
     queryKey: ['/api/holidays']
   });
-  const { data: reservationRequests = [] } = useQuery<{ id: number; status: string | null }[]>({
-    queryKey: ['/api/reservation-requests'],
-    refetchInterval: 30000,
-  });
-  const pendingRequestsCount = reservationRequests.filter(r => r.status === 'pending').length;
   const { data: bulkTemplatesSetting } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'bulkMessageTemplates'],
     queryFn: async () => {
@@ -238,9 +233,9 @@ export default function Reservations() {
     });
     const lastMonthRevenueTl = lastMonthReservations.reduce((sum, r) => sum + (r.priceTl || 0), 0);
 
-    // Pending count (reservations + partner requests)
+    // Pending count
     const pendingReservationsCount = reservations.filter(r => r.status === 'pending').length;
-    const pendingCount = pendingReservationsCount + pendingRequestsCount;
+    const pendingCount = pendingReservationsCount;
 
     // Week comparison percentage
     const weekGrowth = lastWeekRevenueTl > 0 
@@ -258,7 +253,7 @@ export default function Reservations() {
       pendingCount,
       pendingReservationsCount,
     };
-  }, [reservations, pendingRequestsCount]);
+  }, [reservations]);
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -730,28 +725,6 @@ export default function Reservations() {
                 </div>
               </PopoverContent>
             </Popover>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setLocation('/reservation-requests')}
-                  className="relative"
-                  data-testid="button-reservation-requests"
-                >
-                  <Handshake className="h-4 w-4 mr-2" />
-                  Rez. Talepleri
-                  {pendingRequestsCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px]"
-                    >
-                      {pendingRequestsCount}
-                    </Badge>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Is ortaklarindan gelen rezervasyon taleplerini goruntule</TooltipContent>
-            </Tooltip>
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1049,7 +1022,7 @@ export default function Reservations() {
                   <p className="text-xs text-muted-foreground">Onay Bekleyen</p>
                   <p className="text-2xl font-bold">{analytics.pendingCount}</p>
                   <p className="text-xs text-muted-foreground">
-                    {analytics.pendingReservationsCount} rez. + {pendingRequestsCount} talep
+                    {analytics.pendingReservationsCount} rezervasyon
                   </p>
                 </div>
                 <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
