@@ -72,10 +72,17 @@ export default function Reservations() {
   });
   const searchParams = useSearch();
   const [, setLocation] = useLocation();
-  const urlDate = new URLSearchParams(searchParams).get("date");
+  const urlParams = new URLSearchParams(searchParams);
+  const urlDate = urlParams.get("date");
+  const urlView = urlParams.get("view");
   
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"calendar" | "list" | "mini">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "list" | "mini">(() => {
+    if (urlView === "list" || urlView === "mini" || urlView === "calendar") {
+      return urlView;
+    }
+    return "calendar";
+  });
   const [miniSelectedDate, setMiniSelectedDate] = useState<Date>(urlDate ? new Date(urlDate) : new Date());
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(new Date());

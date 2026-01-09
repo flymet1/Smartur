@@ -342,7 +342,7 @@ export default function Dashboard() {
               Hoş geldiniz! Hızlı erişim menüsü ile işlemlerinizi yönetin.
             </p>
           </div>
-          <Link href={`/reservations?date=${today}`}>
+          <Link href={`/reservations?date=${today}&view=list`}>
             <Button size="lg" data-testid="button-today-reservations">
               <CalendarDays className="w-5 h-5 mr-2" />
               Bugünün Rezervasyonları
