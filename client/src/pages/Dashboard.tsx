@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useReservations } from "@/hooks/use-reservations";
 import { 
   Bell, ClipboardList, Clock, Package, ChevronDown, 
   Calendar, Users, Eye, Handshake, HeadphonesIcon,
-  CalendarDays, ArrowRight, RefreshCw, XCircle as CancelIcon
+  CalendarDays, ArrowRight, RefreshCw, XCircle as CancelIcon,
+  MessageCircle, AlertCircle
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format } from "date-fns";
@@ -82,6 +83,18 @@ interface SupportRequest {
   createdAt: string;
 }
 
+interface InAppNotification {
+  id: number;
+  userId: number;
+  tenantId: number;
+  notificationType: string;
+  title: string;
+  message: string;
+  link: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export default function Dashboard() {
   const [, navigate] = useLocation();
   const [reservationsDialogOpen, setReservationsDialogOpen] = useState(false);
@@ -127,7 +140,59 @@ export default function Dashboard() {
     refetchInterval: 30000,
   });
 
+  const { data: inAppNotifications = [] } = useQuery<InAppNotification[]>({
+    queryKey: ['/api/in-app-notifications'],
+    refetchInterval: 30000,
+  });
+
   const { toast } = useToast();
+  const notificationsShownRef = useRef<Set<number>>(new Set());
+
+  const markNotificationRead = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('PATCH', `/api/in-app-notifications/${id}/read`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/in-app-notifications'] });
+    },
+  });
+
+  useEffect(() => {
+    const unreadNotifications = inAppNotifications.filter(n => !n.isRead);
+    const timeoutIds: NodeJS.Timeout[] = [];
+    
+    unreadNotifications.slice(0, 5).forEach((notification, index) => {
+      if (notificationsShownRef.current.has(notification.id)) return;
+      notificationsShownRef.current.add(notification.id);
+      
+      const timeoutId = setTimeout(() => {
+        const getNotificationVariant = (type: string): "default" | "destructive" => {
+          switch (type) {
+            case 'support_request':
+            case 'change_request':
+              return 'destructive';
+            default:
+              return 'default';
+          }
+        };
+
+        toast({
+          title: notification.title,
+          description: notification.message,
+          variant: getNotificationVariant(notification.notificationType),
+          duration: 8000,
+        });
+
+        markNotificationRead.mutate(notification.id);
+      }, index * 1500);
+      
+      timeoutIds.push(timeoutId);
+    });
+
+    return () => {
+      timeoutIds.forEach(id => clearTimeout(id));
+    };
+  }, [inAppNotifications]);
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {

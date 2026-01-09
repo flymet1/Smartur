@@ -47,6 +47,55 @@ function formatUptime(seconds: number): string {
   return parts.join(' ');
 }
 
+// Helper function to create in-app notifications for users with reservation management permission
+async function notifyTenantAdmins(
+  tenantId: number,
+  notificationType: string,
+  title: string,
+  message: string,
+  link?: string
+): Promise<void> {
+  try {
+    const allUsers = await storage.getAppUsers();
+    const tenantUsers = allUsers.filter(u => u.tenantId === tenantId && u.isActive);
+    
+    // Get users with reservations.manage permission using bulk query
+    const eligibleUserIds: number[] = [];
+    
+    // Get all user roles for tenant users in one query
+    for (const user of tenantUsers) {
+      const permissions = await storage.getUserPermissions(user.id);
+      // Only notify users who can manage reservations (not viewers)
+      // Using string literals since PERMISSIONS constant is defined later in the file
+      if (permissions.includes('reservations.create') || 
+          permissions.includes('reservations.edit')) {
+        eligibleUserIds.push(user.id);
+      }
+    }
+    
+    // If no eligible users found, don't send any notifications (no fallback to all users)
+    if (eligibleUserIds.length === 0) {
+      console.log(`No eligible users found for tenant ${tenantId} to receive notification`);
+      return;
+    }
+    
+    // Create notifications for eligible users
+    for (const userId of eligibleUserIds) {
+      await storage.createInAppNotification({
+        userId,
+        tenantId,
+        notificationType,
+        title,
+        message,
+        link: link || null,
+        isRead: false
+      });
+    }
+  } catch (error) {
+    console.error('Bildirim oluşturma hatası:', error);
+  }
+}
+
 // Permission middleware - checks if user has required permissions
 import type { Request, Response, NextFunction } from "express";
 
@@ -1690,6 +1739,19 @@ export async function registerRoutes(
     
     const item = await storage.createReservation({ ...input, tenantId, status: defaultStatus });
     
+    // Create in-app notification for new reservation
+    if (tenantId) {
+      const activity = input.activityId ? (await storage.getActivities(tenantId)).find(a => a.id === input.activityId) : null;
+      const activityName = activity?.name || 'Aktivite';
+      await notifyTenantAdmins(
+        tenantId,
+        'new_reservation',
+        'Yeni Rezervasyon',
+        `${input.customerName} - ${activityName} (${input.date})`,
+        '/reservations'
+      );
+    }
+    
     // Decrease capacity
     const capacitySlots = await storage.getCapacity(item.date, item.activityId || 0);
     // Logic to find exact time slot and update would go here
@@ -2249,11 +2311,21 @@ export async function registerRoutes(
         status: "pending"
       });
       
+      // Create in-app notification for reservation request
+      const activities = await storage.getActivities(tenantId);
+      const activity = activities.find(a => a.id === activityId);
+      const activityName = activity?.name || "Aktivite";
+      
+      await notifyTenantAdmins(
+        tenantId,
+        'reservation_request',
+        'Yeni Rezervasyon Talebi',
+        `${customerName} - ${activityName} (${date})`,
+        '/reservations'
+      );
+      
       // Create a system notification for operators
       try {
-        const activities = await storage.getActivities(tenantId);
-        const activity = activities.find(a => a.id === activityId);
-        const activityName = activity?.name || "Bilinmiyor";
         
         // Get requester (partner) name
         const requester = userId ? await storage.getAppUser(userId) : null;
@@ -3339,6 +3411,16 @@ export async function registerRoutes(
         requestDetails,
         status: 'pending'
       });
+      
+      // Create in-app notification for change request
+      const requestTypeText = requestType === 'cancellation' ? 'Iptal Talebi' : 'Degisiklik Talebi';
+      await notifyTenantAdmins(
+        tenantId,
+        'change_request',
+        requestTypeText,
+        `${reservationData.customerName} - ${requestDetails || 'Yeni talep'}`,
+        '/reservations'
+      );
       
       res.status(201).json(newRequest);
     } catch (error) {
@@ -5251,6 +5333,17 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       
       await attachLogsToSupportRequest(created.id, phone);
       await logInfo('system', `Destek talebi oluşturuldu: #${created.id}`, { phone, reservationId }, phone);
+      
+      // Create in-app notification for support request
+      if (tenantId) {
+        await notifyTenantAdmins(
+          tenantId,
+          'support_request',
+          'Yeni Destek Talebi',
+          `${phone} - ${description || 'Destek talebi'}`,
+          '/customer-requests'
+        );
+      }
       
       res.json(created);
     } catch (err) {
