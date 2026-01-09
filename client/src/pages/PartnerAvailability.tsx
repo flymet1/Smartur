@@ -1196,7 +1196,7 @@ export default function PartnerAvailability() {
         )}
         
         <Dialog open={requestDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setRequestDialogOpen(open); }}>
-          <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5 text-primary" />
