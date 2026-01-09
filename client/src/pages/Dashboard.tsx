@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import type { Activity, PackageTour, Reservation } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import {
   Dialog,
   DialogContent,
@@ -158,6 +159,25 @@ export default function Dashboard() {
     },
   });
 
+  const getNotificationRoute = (type: string): string => {
+    switch (type) {
+      case 'support_request':
+        return '/support-requests';
+      case 'change_request':
+        return '/reservations';
+      case 'new_reservation':
+        return '/reservations';
+      case 'viewer_request':
+        return '/viewer-stats';
+      case 'partner_request':
+        return '/partner-availability';
+      case 'customer_request':
+        return '/reservations';
+      default:
+        return '/dashboard';
+    }
+  };
+
   useEffect(() => {
     const unreadNotifications = inAppNotifications.filter(n => !n.isRead);
     const timeoutIds: NodeJS.Timeout[] = [];
@@ -177,11 +197,17 @@ export default function Dashboard() {
           }
         };
 
+        const route = getNotificationRoute(notification.notificationType);
+
         toast({
           title: notification.title,
           description: notification.message,
           variant: getNotificationVariant(notification.notificationType),
-          duration: 8000,
+          action: (
+            <ToastAction altText="Görüntüle" onClick={() => navigate(route)}>
+              Görüntüle
+            </ToastAction>
+          ),
         });
 
         markNotificationRead.mutate(notification.id);
@@ -193,7 +219,7 @@ export default function Dashboard() {
     return () => {
       timeoutIds.forEach(id => clearTimeout(id));
     };
-  }, [inAppNotifications]);
+  }, [inAppNotifications, navigate]);
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -264,10 +290,14 @@ export default function Dashboard() {
         title: `${totalPartnerRequests} bekleyen partner talebi var`,
         description: "Partner Müsaitlik sayfasından inceleyin.",
         variant: "default",
-        duration: 8000,
+        action: (
+          <ToastAction altText="Görüntüle" onClick={() => navigate('/partner-availability')}>
+            Görüntüle
+          </ToastAction>
+        ),
       });
     }
-  }, [totalPartnerRequests, toast]);
+  }, [totalPartnerRequests, toast, navigate]);
   
   const markReservationsAsViewed = () => {
     const now = new Date();
