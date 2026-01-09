@@ -77,13 +77,12 @@ export default function Reservations() {
   const urlView = urlParams.get("view");
   
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"calendar" | "list" | "mini">(() => {
-    if (urlView === "list" || urlView === "mini" || urlView === "calendar") {
+  const [viewMode, setViewMode] = useState<"calendar" | "list">(() => {
+    if (urlView === "list" || urlView === "calendar") {
       return urlView;
     }
     return "calendar";
   });
-  const [miniSelectedDate, setMiniSelectedDate] = useState<Date>(urlDate ? new Date(urlDate) : new Date());
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -180,7 +179,6 @@ export default function Reservations() {
     if (urlDate) {
       setDateFilter(urlDate);
       setCurrentDate(new Date(urlDate));
-      setMiniSelectedDate(new Date(urlDate));
     }
   }, [urlDate]);
 
@@ -1585,24 +1583,10 @@ export default function Reservations() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant={viewMode === "mini" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setViewMode("mini")}
-                      className="rounded-none border-x"
-                      data-testid="button-view-mini"
-                    >
-                      <CalendarDays className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Mini takvim görünümü</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
                       variant={viewMode === "list" ? "default" : "ghost"}
                       size="sm"
                       onClick={() => setViewMode("list")}
-                      className="rounded-l-none"
+                      className="rounded-l-none border-l"
                       data-testid="button-view-list"
                     >
                       <List className="h-4 w-4" />
@@ -1658,16 +1642,6 @@ export default function Reservations() {
               setBulkWhatsAppMessage(msg);
               setBulkWhatsAppOpen(true);
             }}
-          />
-        ) : viewMode === "mini" ? (
-          <MiniCalendarView 
-            reservations={reservations || []}
-            activities={activities || []}
-            packageTours={packageTours}
-            selectedDate={miniSelectedDate}
-            onDateSelect={setMiniSelectedDate}
-            onReservationSelect={setSelectedReservation}
-            onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
           />
         ) : (
           <>
@@ -4286,350 +4260,5 @@ function RecentReservations({ reservations, activities }: RecentReservationsProp
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-interface MiniCalendarViewProps {
-  reservations: Reservation[];
-  activities: Activity[];
-  packageTours: PackageTour[];
-  selectedDate: Date;
-  onDateSelect: (date: Date) => void;
-  onReservationSelect: (reservation: Reservation) => void;
-  onStatusChange: (reservationId: number, newStatus: string) => void;
-}
-
-function MiniCalendarView({ reservations, activities, packageTours, selectedDate, onDateSelect, onReservationSelect, onStatusChange }: MiniCalendarViewProps) {
-  const [currentMonth, setCurrentMonth] = useState(selectedDate);
-  
-  // Fetch monthly capacity data for occupancy display
-  const { data: monthlyData } = useQuery<{ dailyStats: Record<string, { totalSlots: number; bookedSlots: number; occupancy: number }> }>({
-    queryKey: ['/api/capacity/monthly', currentMonth.getMonth(), currentMonth.getFullYear()],
-    queryFn: async () => {
-      const res = await fetch(`/api/capacity/monthly?month=${currentMonth.getMonth()}&year=${currentMonth.getFullYear()}`);
-      return res.json();
-    }
-  });
-  
-  useEffect(() => {
-    if (!isSameMonth(currentMonth, selectedDate)) {
-      setCurrentMonth(selectedDate);
-    }
-  }, [selectedDate]);
-  
-  const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
-  
-  const dayReservations = reservations.filter(r => r.date === selectedDateStr);
-  
-  
-  const getActivityName = (activityId: number | null) => 
-    activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
-  
-  const getPackageName = (packageTourId: number | null) =>
-    packageTours.find(p => p.id === packageTourId)?.name || "Bilinmiyor";
-  
-  const getActivityColor = (activityId: number | null) => {
-    const activity = activities.find(a => a.id === activityId);
-    const colorMap: Record<string, string> = {
-      blue: "bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300",
-      purple: "bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-300",
-      green: "bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300",
-      orange: "bg-orange-100 border-orange-300 text-orange-800 dark:bg-orange-900/30 dark:border-orange-700 dark:text-orange-300",
-      pink: "bg-pink-100 border-pink-300 text-pink-800 dark:bg-pink-900/30 dark:border-pink-700 dark:text-pink-300",
-      cyan: "bg-cyan-100 border-cyan-300 text-cyan-800 dark:bg-cyan-900/30 dark:border-cyan-700 dark:text-cyan-300",
-      red: "bg-red-100 border-red-300 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300",
-      yellow: "bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300",
-    };
-    return colorMap[activity?.color || "blue"] || colorMap.blue;
-  };
-  
-  const getStatusInfo = (status: string | null) => {
-    if (status === "confirmed") return { label: "Onaylı", className: "bg-green-500/10 text-green-700 dark:text-green-400" };
-    if (status === "cancelled") return { label: "İptal", className: "bg-red-500/10 text-red-700 dark:text-red-400" };
-    return { label: "Beklemede", className: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400" };
-  };
-  
-  // Build calendar grid
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  const startPadding = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1;
-  const paddedDays = Array(startPadding).fill(null).concat(days);
-  const weekDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-  
-  return (
-    <div className="flex flex-col lg:flex-row gap-4">
-      <Card className="lg:w-80">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <CardTitle className="text-base">
-              {format(currentMonth, "MMMM yyyy", { locale: tr })}
-            </CardTitle>
-            <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-7 gap-1">
-            {weekDays.map(day => (
-              <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1">
-                {day}
-              </div>
-            ))}
-            
-            {paddedDays.map((day, index) => {
-              if (!day) {
-                return <div key={`empty-${index}`} className="aspect-square" />;
-              }
-              
-              const dateStr = format(day, 'yyyy-MM-dd');
-              const stats = monthlyData?.dailyStats?.[dateStr];
-              const occupancy = stats?.occupancy || 0;
-              const isSelected = selectedDateStr === dateStr;
-              const isTodayDate = isToday(day);
-              
-              return (
-                <Tooltip key={dateStr}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onDateSelect(day)}
-                      className={`aspect-square rounded-md flex flex-col items-center justify-center text-sm transition-all relative ${
-                        isSelected 
-                          ? 'ring-2 ring-primary ring-offset-2' 
-                          : ''
-                      } ${isTodayDate ? 'font-bold' : ''}`}
-                      data-testid={`button-mini-month-day-${dateStr}`}
-                    >
-                      <span className={isTodayDate ? 'text-primary' : ''}>{format(day, 'd')}</span>
-                      {stats && stats.totalSlots > 0 && (
-                        <div className={`w-3 h-1.5 rounded-full mt-0.5 ${getOccupancyColor(occupancy)}`} />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="text-center">
-                      <p className="font-medium">{format(day, 'd MMMM', { locale: tr })}</p>
-                      {stats ? (
-                        <>
-                          <p className="text-xs">Doluluk: %{occupancy}</p>
-                          <p className="text-xs">{stats.bookedSlots}/{stats.totalSlots} kişi</p>
-                        </>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Veri yok</p>
-                      )}
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </div>
-          
-          <div className="flex items-center justify-center gap-3 text-xs pt-2 border-t">
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded bg-green-500" />
-              <span>%0-50</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded bg-yellow-500" />
-              <span>%50-80</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded bg-orange-500" />
-              <span>%80+</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded bg-red-600" />
-              <span>Dolu</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="flex-1">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" />
-            {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {dayReservations.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Bu tarihte rezervasyon yok
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {(() => {
-                const packageGroups = new Map<string, Reservation[]>();
-                const standaloneReservations: Reservation[] = [];
-                
-                dayReservations.forEach(r => {
-                  if (r.packageTourId) {
-                    const groupKey = `${r.packageTourId}-${r.orderNumber || r.customerName}`;
-                    const existing = packageGroups.get(groupKey) || [];
-                    existing.push(r);
-                    packageGroups.set(groupKey, existing);
-                  } else {
-                    standaloneReservations.push(r);
-                  }
-                });
-                
-                const elements: JSX.Element[] = [];
-                
-                packageGroups.forEach((groupReservations, groupKey) => {
-                  const firstRes = groupReservations[0];
-                  elements.push(
-                    <div key={`package-${groupKey}`} className="rounded-md border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20 p-2">
-                      <div className="flex items-center gap-2 mb-2 px-1 flex-wrap">
-                        <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                        <span className="font-medium text-purple-700 dark:text-purple-300">
-                          {getPackageName(firstRes.packageTourId)}
-                        </span>
-                        <span className="text-sm text-muted-foreground">-</span>
-                        <span className="text-sm font-medium">{firstRes.customerName}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {groupReservations.length} aktivite
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        {groupReservations.map(reservation => {
-                          const status = getStatusInfo(reservation.status);
-                          return (
-                            <div 
-                              key={reservation.id}
-                              className={`p-2 rounded-md border hover-elevate ${getActivityColor(reservation.activityId)}`}
-                              data-testid={`mini-reservation-${reservation.id}`}
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <div 
-                                  className="flex-1 min-w-0 cursor-pointer"
-                                  onClick={() => onReservationSelect(reservation)}
-                                >
-                                  <div className="font-medium text-sm truncate flex items-center gap-1">
-                                    {reservation.customerName}
-                                    {reservation.hasTransfer && <Bus className="h-3 w-3 text-blue-500 flex-shrink-0" />}
-                                  </div>
-                                  <div className="text-xs opacity-80">{getActivityName(reservation.activityId)}</div>
-                                  <div className="text-xs opacity-70">
-                                    {reservation.time} - {reservation.quantity} kişi
-                                  </div>
-                                </div>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button 
-                                      onClick={(e) => e.stopPropagation()} 
-                                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium cursor-pointer ${status.className}`}
-                                      data-testid={`mini-status-dropdown-${reservation.id}`}
-                                    >
-                                      {status.label}
-                                      <ChevronDown className="h-3 w-3 ml-1" />
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem 
-                                      onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "pending"); }}
-                                      data-testid={`mini-status-pending-${reservation.id}`}
-                                    >
-                                      <Clock className="h-4 w-4 mr-2 text-yellow-500" />
-                                      Beklemede
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "confirmed"); }}
-                                      data-testid={`mini-status-confirmed-${reservation.id}`}
-                                    >
-                                      <Check className="h-4 w-4 mr-2 text-green-500" />
-                                      Onaylı
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "cancelled"); }}
-                                      data-testid={`mini-status-cancelled-${reservation.id}`}
-                                    >
-                                      <X className="h-4 w-4 mr-2 text-red-500" />
-                                      İptal
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                });
-                
-                standaloneReservations.forEach(reservation => {
-                  const status = getStatusInfo(reservation.status);
-                  elements.push(
-                    <div 
-                      key={reservation.id}
-                      className={`p-3 rounded-md border hover-elevate ${getActivityColor(reservation.activityId)}`}
-                      data-testid={`mini-reservation-${reservation.id}`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div 
-                          className="flex-1 min-w-0 cursor-pointer"
-                          onClick={() => onReservationSelect(reservation)}
-                        >
-                          <div className="font-medium truncate flex items-center gap-1">
-                            {reservation.customerName}
-                            {reservation.hasTransfer && <Bus className="h-3 w-3 text-blue-500 flex-shrink-0" />}
-                          </div>
-                          <div className="text-sm opacity-80">{getActivityName(reservation.activityId)}</div>
-                          <div className="text-xs opacity-70 mt-1">
-                            {reservation.time} - {reservation.quantity} kişi
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button 
-                              onClick={(e) => e.stopPropagation()} 
-                              className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium cursor-pointer ${status.className}`}
-                              data-testid={`mini-status-dropdown-${reservation.id}`}
-                            >
-                              {status.label}
-                              <ChevronDown className="h-3 w-3 ml-1" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "pending"); }}
-                              data-testid={`mini-status-pending-${reservation.id}`}
-                            >
-                              <Clock className="h-4 w-4 mr-2 text-yellow-500" />
-                              Beklemede
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "confirmed"); }}
-                              data-testid={`mini-status-confirmed-${reservation.id}`}
-                            >
-                              <Check className="h-4 w-4 mr-2 text-green-500" />
-                              Onaylı
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={(e) => { e.stopPropagation(); onStatusChange(reservation.id, "cancelled"); }}
-                              data-testid={`mini-status-cancelled-${reservation.id}`}
-                            >
-                              <X className="h-4 w-4 mr-2 text-red-500" />
-                              İptal
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  );
-                });
-                
-                return elements;
-              })()}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
   );
 }
