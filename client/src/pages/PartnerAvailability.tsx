@@ -645,9 +645,8 @@ export default function PartnerAvailability() {
           </Card>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          
-          <TabsContent value="availability" className="space-y-4">
+        {/* Müsaitlik Bölümü */}
+        <div className="space-y-4">
             <Card className="mb-6">
               <CardContent className="pt-6">
                 <div className="flex flex-wrap items-center gap-4">
@@ -915,144 +914,128 @@ export default function PartnerAvailability() {
                 ))}
               </div>
             )}
-          </TabsContent>
-          
-          <TabsContent value="requests" className="space-y-4">
-            {requestsLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-32 w-full" />
-              </div>
-            ) : partnerRequests.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Henuz Talep Yok</h3>
-                  <p className="text-muted-foreground">Partner acentalardan gelen rezervasyon talebi bulunmuyor.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-6">
-                {pendingPartnerRequests.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-yellow-600" />
-                        Bekleyen Talepler ({pendingPartnerRequests.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {pendingPartnerRequests.map(request => (
-                        <div key={request.id} className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20">
-                          <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="space-y-1">
-                              <p className="font-medium">{request.customerName}</p>
-                              <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
-                              <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                                <span>{request.time}</span>
-                                <span>{request.guests} kisi</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" onClick={() => openProcessDialog(request, "reject")} data-testid={`button-reject-${request.id}`}>
-                                <X className="w-4 h-4 mr-1" />
-                                Reddet
-                              </Button>
-                              <Button size="sm" onClick={() => openProcessDialog(request, "approve")} data-testid={`button-approve-${request.id}`}>
-                                <Check className="w-4 h-4 mr-1" />
-                                Onayla
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {approvedPartnerRequests.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Check className="w-5 h-5 text-green-600" />
-                        Onaylanan Talepler ({approvedPartnerRequests.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {approvedPartnerRequests.map(request => (
-                        <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
-                          <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="space-y-1">
-                              <p className="font-medium">{request.customerName}</p>
-                              <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
-                              <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                                <span>{request.time}</span>
-                                <span>{request.guests} kisi</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => notifyPartner(request, "ONAYLANDI")}
-                                disabled={notifyingSenderId === request.id}
-                                data-testid={`button-notify-${request.id}`}
-                              >
-                                {notifyingSenderId === request.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
-                                WhatsApp Bildir
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                onClick={() => convertMutation.mutate(request.id)}
-                                disabled={convertMutation.isPending}
-                                data-testid={`button-convert-${request.id}`}
-                              >
-                                {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
-                                Rezervasyona Donustur
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {otherPartnerRequests.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-muted-foreground">Onaylanan Talepler ({otherPartnerRequests.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {otherPartnerRequests.map(request => (
-                        <div key={request.id} className="border rounded-lg p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="space-y-1">
-                              <p className="font-medium">{request.customerName}</p>
-                              <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                                <span>{request.time}</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
-                            </div>
-                            {getStatusBadge(request.status)}
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        </div>
+
+        {/* Bekleyen Talepler Bölümü - Takvimin Altında */}
+        {pendingPartnerRequests.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-yellow-600" />
+                Bekleyen Talepler ({pendingPartnerRequests.length})
+              </CardTitle>
+              <CardDescription>Partner acentalardan gelen onay bekleyen talepler</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pendingPartnerRequests.map(request => (
+                <div key={request.id} className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="font-medium">{request.customerName}</p>
+                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                        <span>{request.time}</span>
+                        <span>{request.guests} kisi</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openProcessDialog(request, "reject")} data-testid={`button-reject-${request.id}`}>
+                        <X className="w-4 h-4 mr-1" />
+                        Reddet
+                      </Button>
+                      <Button size="sm" onClick={() => openProcessDialog(request, "approve")} data-testid={`button-approve-${request.id}`}>
+                        <Check className="w-4 h-4 mr-1" />
+                        Onayla
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Onaylanan Talepler Bölümü */}
+        {approvedPartnerRequests.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-green-600" />
+                Onaylanan Talepler ({approvedPartnerRequests.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {approvedPartnerRequests.map(request => (
+                <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="font-medium">{request.customerName}</p>
+                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                        <span>{request.time}</span>
+                        <span>{request.guests} kisi</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => notifyPartner(request, "ONAYLANDI")}
+                        disabled={notifyingSenderId === request.id}
+                        data-testid={`button-notify-${request.id}`}
+                      >
+                        {notifyingSenderId === request.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
+                        WhatsApp Bildir
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        onClick={() => convertMutation.mutate(request.id)}
+                        disabled={convertMutation.isPending}
+                        data-testid={`button-convert-${request.id}`}
+                      >
+                        {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
+                        Rezervasyona Donustur
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Diğer Talepler Bölümü */}
+        {otherPartnerRequests.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-muted-foreground">İşlenen Talepler ({otherPartnerRequests.length})</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {otherPartnerRequests.map(request => (
+                <div key={request.id} className="border rounded-lg p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="font-medium">{request.customerName}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                        <span>{request.time}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
+                    </div>
+                    {getStatusBadge(request.status)}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
         
         <Dialog open={requestDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setRequestDialogOpen(open); }}>
           <DialogContent className="sm:max-w-md">
