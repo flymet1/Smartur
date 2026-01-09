@@ -147,6 +147,7 @@ export default function Dashboard() {
 
   const { toast } = useToast();
   const notificationsShownRef = useRef<Set<number>>(new Set());
+  const partnerNotificationShownRef = useRef(false);
 
   const markNotificationRead = useMutation({
     mutationFn: async (id: number) => {
@@ -254,6 +255,19 @@ export default function Dashboard() {
 
   // Toplam bekleyen talepler (çift sayımı önle - viewer ve partner ayrı sayıldığından basit toplam)
   const totalPendingRequests = totalViewerRequests + totalPartnerRequests + totalCustomerRequests;
+
+  // Partner taleplerinde bekleyen varsa bildirim göster
+  useEffect(() => {
+    if (!partnerNotificationShownRef.current && totalPartnerRequests > 0) {
+      partnerNotificationShownRef.current = true;
+      toast({
+        title: `${totalPartnerRequests} bekleyen partner talebi var`,
+        description: "Partner Müsaitlik sayfasından inceleyin.",
+        variant: "default",
+        duration: 8000,
+      });
+    }
+  }, [totalPartnerRequests, toast]);
   
   const markReservationsAsViewed = () => {
     const now = new Date();
