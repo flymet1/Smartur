@@ -14,7 +14,8 @@ import {
   Users,
   MessageSquare,
   Handshake,
-  Send
+  Send,
+  Eye
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -125,6 +126,23 @@ export default function ReservationRequests() {
     return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
   };
 
+  const getRequestType = (notes: string | null): 'viewer' | 'partner' => {
+    if (!notes) return 'partner';
+    const lowerNotes = notes.toLowerCase();
+    if (lowerNotes.includes('[viewer:') || lowerNotes.includes('[izleyici:')) {
+      return 'viewer';
+    }
+    return 'partner';
+  };
+
+  const getRequesterLabel = (request: ReservationRequest) => {
+    const type = getRequestType(request.notes);
+    if (type === 'viewer') {
+      return 'Izleyici';
+    }
+    return 'Is Ortagi';
+  };
+
   const getRequesterName = (requestedBy: number | null) => {
     if (!requestedBy) return "Bilinmiyor";
     const user = users.find(u => u.id === requestedBy);
@@ -187,9 +205,16 @@ export default function ReservationRequests() {
     });
   };
 
-  const pendingRequests = requests.filter(r => r.status === "pending");
-  const approvedRequests = requests.filter(r => r.status === "approved");
-  const otherRequests = requests.filter(r => r.status !== "pending" && r.status !== "approved");
+  const viewerRequests = requests.filter(r => getRequestType(r.notes) === 'viewer');
+  const partnerRequests = requests.filter(r => getRequestType(r.notes) === 'partner');
+  
+  const pendingViewerRequests = viewerRequests.filter(r => r.status === "pending");
+  const approvedViewerRequests = viewerRequests.filter(r => r.status === "approved");
+  const otherViewerRequests = viewerRequests.filter(r => r.status !== "pending" && r.status !== "approved");
+  
+  const pendingPartnerRequests = partnerRequests.filter(r => r.status === "pending");
+  const approvedPartnerRequests = partnerRequests.filter(r => r.status === "approved");
+  const otherPartnerRequests = partnerRequests.filter(r => r.status !== "pending" && r.status !== "approved");
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -215,218 +240,246 @@ export default function ReservationRequests() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-6">
-              {pendingRequests.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-yellow-500" />
-                    Bekleyen Talepler ({pendingRequests.length})
-                  </h2>
-                  <div className="grid gap-4">
-                    {pendingRequests.map((request) => (
-                      <Card key={request.id} className="border-yellow-200 dark:border-yellow-800">
-                        <CardContent className="p-4">
-                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
+            <div className="space-y-8">
+              {viewerRequests.length > 0 && (
+                <Card className="border-blue-200 dark:border-blue-800">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Eye className="h-5 w-5 text-blue-500" />
+                      Izleyici Talepleri ({viewerRequests.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {pendingViewerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+                          <Clock className="h-4 w-4" />
+                          Bekleyen ({pendingViewerRequests.length})
+                        </h3>
+                        <div className="grid gap-3">
+                          {pendingViewerRequests.map((request) => (
+                            <div key={request.id} className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                    {getStatusBadge(request.status)}
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5 text-muted-foreground" />{request.customerName}</span>
+                                    <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-muted-foreground" />{request.customerPhone}</span>
+                                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-muted-foreground" />{format(new Date(request.date), "d MMM", { locale: tr })} {request.time}</span>
+                                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5 text-muted-foreground" />{request.guests || 1} kisi</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span>Izleyici: {getRequesterName(request.requestedBy)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => openProcessDialog(request, "reject")} data-testid={`button-reject-viewer-${request.id}`}>
+                                    <X className="h-4 w-4 mr-1" />Reddet
+                                  </Button>
+                                  <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openProcessDialog(request, "approve")} data-testid={`button-approve-viewer-${request.id}`}>
+                                    <Check className="h-4 w-4 mr-1" />Onayla
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {approvedViewerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-green-600 dark:text-green-400">
+                          <Check className="h-4 w-4" />
+                          Onaylanan ({approvedViewerRequests.length})
+                        </h3>
+                        <div className="grid gap-3">
+                          {approvedViewerRequests.map((request) => (
+                            <div key={request.id} className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                    {getStatusBadge(request.status)}
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5 text-muted-foreground" />{request.customerName}</span>
+                                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-muted-foreground" />{format(new Date(request.date), "d MMM", { locale: tr })} {request.time}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span>Izleyici: {getRequesterName(request.requestedBy)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button size="sm" onClick={() => convertMutation.mutate(request.id)} disabled={convertMutation.isPending} data-testid={`button-convert-viewer-${request.id}`}>
+                                    {convertMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-1" />}
+                                    Rezervasyona Donustur
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {otherViewerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 text-muted-foreground">Diger ({otherViewerRequests.length})</h3>
+                        <div className="grid gap-3">
+                          {otherViewerRequests.map((request) => (
+                            <div key={request.id} className="bg-muted/50 border rounded-lg p-3 opacity-70">
+                              <div className="flex flex-wrap items-center gap-2 text-sm">
                                 <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
                                 {getStatusBadge(request.status)}
-                              </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                                <div className="flex items-center gap-1.5">
-                                  <User className="h-4 w-4 text-muted-foreground" />
-                                  <span>{request.customerName}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Phone className="h-4 w-4 text-muted-foreground" />
-                                  <span>{request.customerPhone}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                                  <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })} - {request.time}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Users className="h-4 w-4 text-muted-foreground" />
-                                  <span>{request.guests || 1} kisi</span>
-                                </div>
-                              </div>
-                              {request.notes && (
-                                <div className="flex items-start gap-1.5 text-sm text-muted-foreground">
-                                  <MessageSquare className="h-4 w-4 mt-0.5" />
-                                  <span>{request.notes}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Handshake className="h-3.5 w-3.5" />
-                                <span>Is Ortagi: {getRequesterName(request.requestedBy)}</span>
-                                {request.createdAt && (
-                                  <span className="ml-2">({format(new Date(request.createdAt), "d MMM yyyy HH:mm", { locale: tr })})</span>
-                                )}
+                                <span>{request.customerName}</span>
+                                <span className="text-muted-foreground">{format(new Date(request.date), "d MMM", { locale: tr })}</span>
                               </div>
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-red-600 border-red-200 hover:bg-red-50"
-                                onClick={() => openProcessDialog(request, "reject")}
-                                data-testid={`button-reject-${request.id}`}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Reddet
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700"
-                                onClick={() => openProcessDialog(request, "approve")}
-                                data-testid={`button-approve-${request.id}`}
-                              >
-                                <Check className="h-4 w-4 mr-1" />
-                                Onayla
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
 
-              {approvedRequests.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    Onaylanan Talepler ({approvedRequests.length})
-                  </h2>
-                  <div className="grid gap-4">
-                    {approvedRequests.map((request) => (
-                      <Card key={request.id} className="border-green-200 dark:border-green-800">
-                        <CardContent className="p-4">
-                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                {getStatusBadge(request.status)}
-                              </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                                <div className="flex items-center gap-1.5">
-                                  <User className="h-4 w-4 text-muted-foreground" />
-                                  <span>{request.customerName}</span>
+              {partnerRequests.length > 0 && (
+                <Card className="border-purple-200 dark:border-purple-800">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Handshake className="h-5 w-5 text-purple-500" />
+                      Is Ortagi Talepleri ({partnerRequests.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {pendingPartnerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+                          <Clock className="h-4 w-4" />
+                          Bekleyen ({pendingPartnerRequests.length})
+                        </h3>
+                        <div className="grid gap-3">
+                          {pendingPartnerRequests.map((request) => (
+                            <div key={request.id} className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                    {getStatusBadge(request.status)}
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5 text-muted-foreground" />{request.customerName}</span>
+                                    <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-muted-foreground" />{request.customerPhone}</span>
+                                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-muted-foreground" />{format(new Date(request.date), "d MMM", { locale: tr })} {request.time}</span>
+                                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5 text-muted-foreground" />{request.guests || 1} kisi</span>
+                                  </div>
+                                  {request.notes && (
+                                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                                      <MessageSquare className="h-3.5 w-3.5 mt-0.5" />
+                                      <span>{request.notes}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Handshake className="h-3.5 w-3.5" />
+                                    <span>Is Ortagi: {getRequesterName(request.requestedBy)}</span>
+                                    {request.createdAt && <span className="ml-1">({format(new Date(request.createdAt), "d MMM HH:mm", { locale: tr })})</span>}
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Phone className="h-4 w-4 text-muted-foreground" />
-                                  <span>{request.customerPhone}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                                  <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })} - {request.time}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Users className="h-4 w-4 text-muted-foreground" />
-                                  <span>{request.guests || 1} kisi</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Handshake className="h-3.5 w-3.5" />
-                                <span>Is Ortagi: {getRequesterName(request.requestedBy)}</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => notifyPartner(request, "ONAYLANDI")}
-                                    disabled={notifyingSenderId === request.id}
-                                    data-testid={`button-notify-approved-${request.id}`}
-                                  >
-                                    {notifyingSenderId === request.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Send className="h-4 w-4" />
-                                    )}
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => openProcessDialog(request, "reject")} data-testid={`button-reject-partner-${request.id}`}>
+                                    <X className="h-4 w-4 mr-1" />Reddet
                                   </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Is ortagini WhatsApp ile bilgilendir</TooltipContent>
-                              </Tooltip>
-                              <Button
-                                size="sm"
-                                onClick={() => convertMutation.mutate(request.id)}
-                                disabled={convertMutation.isPending}
-                                data-testid={`button-convert-${request.id}`}
-                              >
-                                {convertMutation.isPending ? (
-                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                ) : (
-                                  <ArrowRight className="h-4 w-4 mr-1" />
-                                )}
-                                Rezervasyona Donustur
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {otherRequests.length > 0 && (
-                <div>
-                  <h2 className="text-lg font-semibold mb-3">Diger Talepler ({otherRequests.length})</h2>
-                  <div className="grid gap-4">
-                    {otherRequests.map((request) => (
-                      <Card key={request.id} className="opacity-70">
-                        <CardContent className="p-4">
-                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                {getStatusBadge(request.status)}
-                              </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                                <div className="flex items-center gap-1.5">
-                                  <User className="h-4 w-4 text-muted-foreground" />
-                                  <span>{request.customerName}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                                  <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })} - {request.time}</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Handshake className="h-3.5 w-3.5" />
-                                <span>Is Ortagi: {getRequesterName(request.requestedBy)}</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => notifyPartner(request, request.status === "rejected" ? "REDDEDILDI" : request.status === "converted" ? "REZERVASYONA DONUSTURULDU" : "GUNCELLENDI")}
-                                    disabled={notifyingSenderId === request.id}
-                                    data-testid={`button-notify-other-${request.id}`}
-                                  >
-                                    {notifyingSenderId === request.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Send className="h-4 w-4" />
-                                    )}
+                                  <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openProcessDialog(request, "approve")} data-testid={`button-approve-partner-${request.id}`}>
+                                    <Check className="h-4 w-4 mr-1" />Onayla
                                   </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Is ortagini WhatsApp ile bilgilendir</TooltipContent>
-                              </Tooltip>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {approvedPartnerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-green-600 dark:text-green-400">
+                          <Check className="h-4 w-4" />
+                          Onaylanan ({approvedPartnerRequests.length})
+                        </h3>
+                        <div className="grid gap-3">
+                          {approvedPartnerRequests.map((request) => (
+                            <div key={request.id} className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                    {getStatusBadge(request.status)}
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5 text-muted-foreground" />{request.customerName}</span>
+                                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-muted-foreground" />{format(new Date(request.date), "d MMM", { locale: tr })} {request.time}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Handshake className="h-3.5 w-3.5" />
+                                    <span>Is Ortagi: {getRequesterName(request.requestedBy)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button size="sm" variant="outline" onClick={() => notifyPartner(request, "ONAYLANDI")} disabled={notifyingSenderId === request.id} data-testid={`button-notify-partner-${request.id}`}>
+                                        {notifyingSenderId === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Is ortagini WhatsApp ile bilgilendir</TooltipContent>
+                                  </Tooltip>
+                                  <Button size="sm" onClick={() => convertMutation.mutate(request.id)} disabled={convertMutation.isPending} data-testid={`button-convert-partner-${request.id}`}>
+                                    {convertMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-1" />}
+                                    Rezervasyona Donustur
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {otherPartnerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 text-muted-foreground">Diger ({otherPartnerRequests.length})</h3>
+                        <div className="grid gap-3">
+                          {otherPartnerRequests.map((request) => (
+                            <div key={request.id} className="bg-muted/50 border rounded-lg p-3 opacity-70">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                <div className="flex flex-wrap items-center gap-2 text-sm">
+                                  <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                  {getStatusBadge(request.status)}
+                                  <span>{request.customerName}</span>
+                                  <span className="text-muted-foreground">{format(new Date(request.date), "d MMM", { locale: tr })}</span>
+                                </div>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button size="sm" variant="outline" onClick={() => notifyPartner(request, request.status === "rejected" ? "REDDEDILDI" : request.status === "converted" ? "REZERVASYONA DONUSTURULDU" : "GUNCELLENDI")} disabled={notifyingSenderId === request.id} data-testid={`button-notify-other-partner-${request.id}`}>
+                                      {notifyingSenderId === request.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Is ortagini WhatsApp ile bilgilendir</TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
             </div>
           )}
