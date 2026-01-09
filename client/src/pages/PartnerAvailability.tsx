@@ -140,16 +140,17 @@ export default function PartnerAvailability() {
     selectedPartnerFilter === 'all' || partner.partnerTenantId.toString() === selectedPartnerFilter
   );
   
-  // Auto-switch to requests tab if there are pending requests on initial load
-  const [initialTabSet, setInitialTabSet] = useState(false);
+  // Show toast notification for pending requests instead of auto-switching tab
+  const [initialToastShown, setInitialToastShown] = useState(false);
   useEffect(() => {
-    if (!requestsLoading && !initialTabSet) {
-      if (pendingPartnerRequests.length > 0) {
-        setActiveTab('requests');
-      }
-      setInitialTabSet(true);
+    if (!requestsLoading && !initialToastShown && pendingPartnerRequests.length > 0) {
+      toast({
+        title: `${pendingPartnerRequests.length} bekleyen talep var`,
+        description: "Talepler sekmesinden inceleyin.",
+      });
+      setInitialToastShown(true);
     }
-  }, [requestsLoading, pendingPartnerRequests.length, initialTabSet]);
+  }, [requestsLoading, pendingPartnerRequests.length, initialToastShown, toast]);
   
   const processMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: number; status: string; notes?: string }) => {
