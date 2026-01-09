@@ -3065,19 +3065,24 @@ export async function registerRoutes(
       const results = await Promise.all(activePartnerships.map(async (partnership) => {
         const partnerTenantId = getOtherTenantId(partnership);
         
-        // Get activities specifically shared with this partnership
-        const activityShares = await storage.getActivityPartnerShares(0); // Get all shares
-        const sharesForThisPartnership = activityShares.filter(s => s.partnershipId === partnership.id);
+        // Get all activities from the partner tenant first
+        const allActivities = await storage.getActivities(partnerTenantId);
+        const partnerActivityIds = new Set(allActivities.map((a: any) => a.id));
         
+        // Get activities specifically shared with this partnership, but only for the partner's activities
+        const activityShares = await storage.getActivityPartnerShares(0); // Get all shares
+        const sharesForThisPartnership = activityShares.filter(s => 
+          s.partnershipId === partnership.id && partnerActivityIds.has(s.activityId)
+        );
+        
+        var sharedActivities: any[];
         if (sharesForThisPartnership.length === 0) {
           // Fall back to sharedWithPartners flag for backward compatibility
-          const allActivities = await storage.getActivities(partnerTenantId);
-          var sharedActivities = allActivities.filter((a: any) => a.sharedWithPartners === true && a.active !== false);
+          sharedActivities = allActivities.filter((a: any) => a.sharedWithPartners === true && a.active !== false);
         } else {
           // Use granular activity shares
-          const allActivities = await storage.getActivities(partnerTenantId);
           const sharedActivityIds = new Set(sharesForThisPartnership.map(s => s.activityId));
-          var sharedActivities = allActivities.filter((a: any) => sharedActivityIds.has(a.id) && a.active !== false);
+          sharedActivities = allActivities.filter((a: any) => sharedActivityIds.has(a.id) && a.active !== false);
         }
         
         if (sharedActivities.length === 0) {
