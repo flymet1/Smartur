@@ -2651,6 +2651,112 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Talep bulunamadi" });
       }
       
+      // For partner requests being approved, also create reservation and partner transaction
+      if (status === "approved" && existingRequest.requestedBy) {
+        const requesterUser = await storage.getAppUser(existingRequest.requestedBy);
+        
+        // Check if this is a partner request (requester is from a different tenant)
+        if (requesterUser?.tenantId && requesterUser.tenantId !== tenantId) {
+          // Get activity info
+          const activities = await storage.getActivities(tenantId);
+          const activity = activities.find(a => a.id === existingRequest.activityId);
+          
+          // Create the reservation
+          const reservation = await storage.createReservation({
+            tenantId,
+            activityId: existingRequest.activityId,
+            date: existingRequest.date,
+            time: existingRequest.time,
+            customerName: existingRequest.customerName,
+            customerPhone: existingRequest.customerPhone,
+            quantity: existingRequest.guests || 1,
+            notes: existingRequest.notes || "",
+            status: "pending",
+            source: "partner",
+            paymentStatus: "unpaid"
+          });
+          
+          // Get partner price from activity partner share if exists
+          const partnerships = await storage.getTenantPartnerships(tenantId);
+          const partnership = partnerships.find(p => 
+            (p.requesterTenantId === requesterUser.tenantId || p.partnerTenantId === requesterUser.tenantId) &&
+            p.status === 'active'
+          );
+          
+          let unitPrice = activity?.price || 0;
+          let currency = 'TRY';
+          
+          if (partnership) {
+            const shares = await storage.getActivityPartnerShares(existingRequest.activityId);
+            const share = shares.find(s => s.partnershipId === partnership.id);
+            if (share?.partnerUnitPrice) {
+              unitPrice = share.partnerUnitPrice;
+              currency = share.partnerCurrency || 'TRY';
+            }
+          }
+          
+          const guestCount = existingRequest.guests || 1;
+          const totalPrice = unitPrice * guestCount;
+          
+          // Calculate payment allocation
+          const collectionType = existingRequest.paymentCollectionType || 'receiver_full';
+          let amountCollectedBySender = 0;
+          let amountDueToReceiver = 0;
+          let balanceOwed = 0;
+          
+          if (collectionType === 'sender_full') {
+            amountCollectedBySender = totalPrice;
+            amountDueToReceiver = 0;
+            balanceOwed = totalPrice;
+          } else if (collectionType === 'sender_partial') {
+            amountCollectedBySender = existingRequest.amountCollectedBySender || 0;
+            amountDueToReceiver = totalPrice - amountCollectedBySender;
+            balanceOwed = amountCollectedBySender;
+          } else {
+            amountCollectedBySender = 0;
+            amountDueToReceiver = totalPrice;
+            balanceOwed = 0;
+          }
+          
+          // Create partner transaction for financial tracking
+          try {
+            await storage.createPartnerTransaction({
+              reservationId: reservation.id,
+              senderTenantId: requesterUser.tenantId,
+              receiverTenantId: tenantId,
+              activityId: existingRequest.activityId,
+              guestCount,
+              unitPrice,
+              totalPrice,
+              currency,
+              customerName: existingRequest.customerName,
+              customerPhone: existingRequest.customerPhone || null,
+              reservationDate: existingRequest.date,
+              reservationTime: existingRequest.time || null,
+              status: 'pending',
+              notes: existingRequest.paymentNotes || existingRequest.notes || null,
+              paymentCollectionType: collectionType,
+              amountCollectedBySender,
+              amountDueToReceiver,
+              balanceOwed
+            });
+          } catch (transErr) {
+            console.error("Failed to create partner transaction in PATCH:", transErr);
+          }
+          
+          // Update status to converted with reservationId
+          const updated = await storage.updateReservationRequest(id, {
+            status: "converted",
+            reservationId: reservation.id,
+            processedBy: userId,
+            processedAt: new Date(),
+            processNotes: processNotes || null
+          });
+          
+          return res.json(updated);
+        }
+      }
+      
       const updateData: any = {
         status,
         processedBy: userId,
