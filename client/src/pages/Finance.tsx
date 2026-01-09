@@ -327,7 +327,7 @@ const exportPartnerTransactionsToPDF = (transactions: any[]) => {
     const price = tx.totalAmount ? `${tx.totalAmount} ${tx.currency}` : `${tx.unitPrice || 0} ${tx.currency}/kisi`;
     return `<tr><td style="padding:8px;border:1px solid #ddd;">${tx.customerName}</td><td style="padding:8px;border:1px solid #ddd;">${partnerName || 'Partner'}</td><td style="padding:8px;border:1px solid #ddd;">${direction}</td><td style="padding:8px;border:1px solid #ddd;">${formatDateShortTR(tx.transactionDate)}</td><td style="padding:8px;border:1px solid #ddd;">${tx.activityName || '-'}</td><td style="padding:8px;border:1px solid #ddd;text-align:center;">${tx.guestCount}</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${price}</td></tr>`;
   }).join('');
-  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Partner Musteriler</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}@media print{.no-print{display:none}}</style></head><body><h1>Partner Musteriler</h1><div>Toplam: ${transactions.length} kayit</div><table><thead><tr><th>Musteri</th><th>Partner</th><th>Yon</th><th>Tarih</th><th>Aktivite</th><th>Misafir</th><th>Tutar</th></tr></thead><tbody>${tableRows}</tbody></table><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdir / PDF</button></body></html>`;
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Partner Acentalar</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}@media print{.no-print{display:none}}</style></head><body><h1>Partner Acentalar</h1><div>Toplam: ${transactions.length} kayit</div><table><thead><tr><th>Musteri</th><th>Partner</th><th>Yon</th><th>Tarih</th><th>Aktivite</th><th>Misafir</th><th>Tutar</th></tr></thead><tbody>${tableRows}</tbody></table><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdir / PDF</button></body></html>`;
   const printWindow = window.open('', '_blank');
   if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); }
 };
@@ -1363,7 +1363,7 @@ export default function Finance() {
               ) : (
                 <Handshake className="h-5 w-5" />
               )}
-              Partner Musteriler
+              Partner Acentalar
             </TabsTrigger>
           </TabsList>
 
@@ -2057,7 +2057,7 @@ export default function Finance() {
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-lg font-semibold">Partner Müşteriler</h3>
+                <h3 className="text-lg font-semibold">Partner Acentalar</h3>
                 <Badge variant="outline">{filteredPartnerTransactions.length} kayıt</Badge>
               </div>
               <div className="flex gap-2 flex-wrap">
