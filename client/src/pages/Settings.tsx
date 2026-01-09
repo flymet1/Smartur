@@ -1631,6 +1631,9 @@ DEĞİŞİKLİK TALEPLERİNDE:
                           </p>
                         </div>
                       </div>
+
+                      {/* Otomatik Yanıtlar - anahtar kelime eşleşmesiyle hızlı cevaplar */}
+                      <AutoResponsesCard />
                     </div>
                   )}
                 </TabsContent>
@@ -1802,8 +1805,6 @@ DEĞİŞİKLİK TALEPLERİNDE:
               </Tabs>
             </CardContent>
           </Card>
-          
-          <AutoResponsesCard />
           </TabsContent>
 
           {/* INTEGRATIONS TAB */}
