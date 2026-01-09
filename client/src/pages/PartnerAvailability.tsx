@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Activity } from "@shared/schema";
@@ -330,6 +330,97 @@ export default function PartnerAvailability() {
     return grouped;
   };
 
+  const exportToExcel = () => {
+    const headers = ['Partner', 'Aktivite', 'Tarih', 'Saat', 'Toplam Kapasite', 'Dolu', 'Musait'];
+    const rows: string[][] = [];
+    
+    filteredPartnerData.forEach(partner => {
+      partner.activities.forEach(activity => {
+        activity.capacities.forEach(cap => {
+          rows.push([
+            partner.partnerTenantName,
+            activity.name,
+            format(new Date(cap.date), 'd MMM yyyy', { locale: tr }),
+            cap.time,
+            cap.totalSlots.toString(),
+            cap.bookedSlots.toString(),
+            cap.availableSlots.toString()
+          ]);
+        });
+      });
+    });
+    
+    const csvContent = [headers, ...rows].map(r => r.join('\t')).join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `partner-musaitlikleri-${format(new Date(), 'yyyy-MM-dd')}.xls`;
+    link.click();
+    toast({ title: "Basarili", description: "Excel dosyasi indirildi." });
+  };
+
+  const exportToPDF = () => {
+    const printContent = `
+      <html>
+        <head>
+          <title>Partner Musaitlikleri - ${format(new Date(startDate), 'd MMM', { locale: tr })} - ${format(new Date(endDate), 'd MMM yyyy', { locale: tr })}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; margin-bottom: 10px; }
+            h2 { color: #666; margin-top: 20px; }
+            h3 { color: #888; margin-top: 15px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; }
+            .available { color: green; }
+            .full { color: red; }
+            .date-range { color: #666; font-size: 14px; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <h1>Partner Musaitlikleri Raporu</h1>
+          <p class="date-range">${format(new Date(startDate), 'd MMMM yyyy', { locale: tr })} - ${format(new Date(endDate), 'd MMMM yyyy', { locale: tr })}</p>
+          ${filteredPartnerData.map(partner => `
+            <h2>${partner.partnerTenantName}</h2>
+            ${partner.activities.map(activity => `
+              <h3>${activity.name}</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tarih</th>
+                    <th>Saat</th>
+                    <th>Toplam</th>
+                    <th>Dolu</th>
+                    <th>Musait</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${activity.capacities.map(cap => `
+                    <tr>
+                      <td>${format(new Date(cap.date), 'd MMM yyyy', { locale: tr })}</td>
+                      <td>${cap.time}</td>
+                      <td>${cap.totalSlots}</td>
+                      <td>${cap.bookedSlots}</td>
+                      <td class="${cap.availableSlots > 0 ? 'available' : 'full'}">${cap.availableSlots}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `).join('')}
+          `).join('')}
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+    toast({ title: "Basarili", description: "PDF olarak yazdirilmaya hazirlandi." });
+  };
+
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
@@ -452,6 +543,16 @@ export default function PartnerAvailability() {
               data-testid="button-refresh-top"
             >
               <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            </Button>
+
+            <Button variant="outline" onClick={exportToExcel} data-testid="button-export-excel">
+              <Download className="h-4 w-4 mr-2" />
+              Excel
+            </Button>
+
+            <Button variant="outline" onClick={exportToPDF} data-testid="button-export-pdf">
+              <FileText className="h-4 w-4 mr-2" />
+              PDF
             </Button>
           </div>
         </div>
