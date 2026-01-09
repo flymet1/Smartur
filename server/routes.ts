@@ -3206,12 +3206,14 @@ export async function registerRoutes(
       
       const ownerTenantId = activity.tenantId;
       
-      // Verify that there is an active partnership between requester and owner
+      // Verify that there is an active partnership between requester and owner (bidirectional)
       const partnerships = await storage.getTenantPartnerships(requesterTenantId);
       const activePartnership = partnerships.find(p => 
         p.status === 'active' && 
-        p.requesterTenantId === requesterTenantId && 
-        p.partnerTenantId === ownerTenantId
+        (
+          (p.requesterTenantId === requesterTenantId && p.partnerTenantId === ownerTenantId) ||
+          (p.partnerTenantId === requesterTenantId && p.requesterTenantId === ownerTenantId)
+        )
       );
       
       if (!activePartnership) {
