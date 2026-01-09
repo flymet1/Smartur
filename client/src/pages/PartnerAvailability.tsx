@@ -1230,6 +1230,7 @@ export default function PartnerAvailability() {
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Ornegin: Ahmet Yilmaz"
+                  autoComplete="off"
                   data-testid="input-customer-name"
                 />
               </div>
@@ -1241,6 +1242,7 @@ export default function PartnerAvailability() {
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="Ornegin: 5551234567"
+                  autoComplete="off"
                   data-testid="input-customer-phone"
                 />
               </div>
