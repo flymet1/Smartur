@@ -3724,6 +3724,58 @@ Sky Fethiye`,
     return { isPartner: false };
   }
 
+  // Check if phone belongs to a viewer user of this tenant
+  async checkIfPhoneIsViewer(phone: string, tenantId: number): Promise<{ isViewer: boolean; viewerUser?: AppUser }> {
+    // Normalize phone number: remove whatsapp prefix, all non-digit characters
+    const normalizePhone = (p: string): string => {
+      return p.replace(/^whatsapp:/, '').replace(/[^\d]/g, '');
+    };
+    
+    const normalizedPhone = normalizePhone(phone);
+    if (normalizedPhone.length < 10) {
+      return { isViewer: false };
+    }
+    
+    // Get last 10 digits for comparison (handles country code differences)
+    const senderLast10 = normalizedPhone.slice(-10);
+    
+    // Find viewer role ID
+    const [viewerRole] = await db.select().from(roles)
+      .where(eq(roles.name, 'viewer'));
+    
+    if (!viewerRole) {
+      return { isViewer: false };
+    }
+    
+    // Query users with viewer role for this tenant via userRoles join
+    const viewerUsersWithRole = await db.select({
+      user: appUsers
+    })
+      .from(appUsers)
+      .innerJoin(userRoles, eq(userRoles.userId, appUsers.id))
+      .where(
+        and(
+          eq(appUsers.tenantId, tenantId),
+          eq(appUsers.isActive, true),
+          eq(userRoles.roleId, viewerRole.id)
+        )
+      );
+    
+    // Find matching viewer by normalized phone
+    for (const { user } of viewerUsersWithRole) {
+      if (!user.phone) continue;
+      const viewerPhoneNormalized = normalizePhone(user.phone);
+      if (viewerPhoneNormalized.length < 10) continue;
+      
+      const viewerLast10 = viewerPhoneNormalized.slice(-10);
+      if (senderLast10 === viewerLast10) {
+        return { isViewer: true, viewerUser: user };
+      }
+    }
+    
+    return { isViewer: false };
+  }
+
   // === PARTNER ACENTA - DISPATCH SHARES ===
 
   async getDispatchShares(receiverTenantId: number, status?: string): Promise<DispatchShare[]> {

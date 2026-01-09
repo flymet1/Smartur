@@ -744,10 +744,10 @@ Yeni rezervasyon yapmak istiyorlarsa normal şekilde yardımcı ol.`;
   let partnerContext = "";
   if (context.isPartner && context.partnerName) {
     partnerContext = `
-=== İŞ ORTAĞI (PARTNER) BİLGİSİ ===
-DİKKAT: Bu mesaj bir İŞ ORTAĞINDAN (${context.partnerName}) geliyor, normal bir müşteriden DEĞİL!
+=== PARTNER ACENTA BİLGİSİ ===
+DİKKAT: Bu mesaj bir PARTNER ACENTADAN (${context.partnerName}) geliyor, normal bir müşteriden DEĞİL!
 
-İş ortaklarına FARKLI davran:
+Partner acentalara FARKLI davran:
 1. Rezervasyon linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
 2. "Smartur panelinizden rezervasyon oluşturabilirsiniz" de
 3. Partner fiyatlarını kullan (eğer varsa)
@@ -759,6 +759,28 @@ DİKKAT: Bu mesaj bir İŞ ORTAĞINDAN (${context.partnerName}) geliyor, normal 
 - Saat 10:00: 8 kişilik yer mevcut
 - Saat 14:00: 12 kişilik yer mevcut
 Smartur panelinizden rezervasyon oluşturabilirsiniz."
+`;
+  }
+
+  // Build viewer context
+  let viewerContext = "";
+  if (context.isViewer && context.viewerName) {
+    viewerContext = `
+=== İZLEYİCİ KULLANICI BİLGİSİ ===
+DİKKAT: Bu mesaj bir İZLEYİCİDEN (${context.viewerName}) geliyor, normal bir müşteriden DEĞİL!
+
+İzleyicilere FARKLI davran:
+1. Rezervasyon linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
+2. "Smartur panelinizden müsaitlik durumunu görebilirsiniz" de
+3. Daha profesyonel ve iş odaklı iletişim kur
+4. Web sitesi linklerini paylaşma - sadece müsaitlik bilgisi ver
+5. Rezervasyon talebi için operatörlerle iletişime geçmelerini öner
+
+Örnek yanıt formatı:
+"Merhaba ${context.viewerName}, [tarih] için [aktivite] müsaitlik durumu:
+- Saat 10:00: 8 kişilik yer mevcut
+- Saat 14:00: 12 kişilik yer mevcut
+Rezervasyon talebi için lütfen operatörlerimizle iletişime geçin."
 `;
   }
 
@@ -813,7 +835,7 @@ Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı
   const systemPrompt = `${basePrompt}
 
 ${dateContext}
-${partnerContext}
+${partnerContext}${viewerContext}
 === MEVCUT AKTİVİTELER ===
 ${activityDescriptions}
 ${packageToursSection}${capacityInfo}
@@ -3732,6 +3754,11 @@ export async function registerRoutes(
       const isPartner = partnerCheck.isPartner;
       const partnerTenant = partnerCheck.partnerTenant;
 
+      // Check if sender is a viewer user
+      const viewerCheck = await storage.checkIfPhoneIsViewer(From, tenantId);
+      const isViewer = viewerCheck.isViewer;
+      const viewerUser = viewerCheck.viewerUser;
+
       // Check reservation
       const orderNumberMatch = Body.match(/\b(\d{4,})\b/);
       const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
@@ -3790,7 +3817,9 @@ export async function registerRoutes(
         botAccess,
         botRules,
         isPartner,
-        partnerName: partnerTenant?.name
+        partnerName: partnerTenant?.name,
+        isViewer,
+        viewerName: viewerUser?.name
       }, botPrompt || undefined);
       
       // Check if needs human intervention
