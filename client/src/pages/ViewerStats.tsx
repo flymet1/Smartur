@@ -163,7 +163,7 @@ export default function ViewerStats() {
       return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
     },
     onSuccess: () => {
-      toast({ title: "Basarili", description: "Is ortagi bilgilendirildi." });
+      toast({ title: "Basarili", description: "Izleyici bilgilendirildi." });
       setNotifyingSenderId(null);
     },
     onError: () => {
@@ -189,12 +189,12 @@ export default function ViewerStats() {
 
   const notifyPartner = (request: ReservationRequest, statusText: string) => {
     if (!request.requestedBy) {
-      toast({ title: "Hata", description: "Is ortagi bilgisi bulunamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Izleyici bilgisi bulunamadi.", variant: "destructive" });
       return;
     }
     const partnerPhone = getRequesterPhone(request.requestedBy);
     if (!partnerPhone) {
-      toast({ title: "Hata", description: "Is ortaginin telefon numarasi bulunamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Izleyicinin telefon numarasi bulunamadi.", variant: "destructive" });
       return;
     }
     const activityName = getActivityName(request.activityId);
@@ -248,7 +248,7 @@ export default function ViewerStats() {
       return;
     }
     if (partnersWithPhone.length === 0) {
-      toast({ title: "Hata", description: "Telefon numarasi olan is ortagi bulunamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Telefon numarasi olan izleyici bulunamadi.", variant: "destructive" });
       return;
     }
 
@@ -274,7 +274,7 @@ export default function ViewerStats() {
     if (successCount > 0) {
       toast({ 
         title: "Toplu mesaj gonderildi", 
-        description: `${successCount} is ortagina mesaj gonderildi${failCount > 0 ? `, ${failCount} basarisiz` : ''}.` 
+        description: `${successCount} izleyiciye mesaj gonderildi${failCount > 0 ? `, ${failCount} basarisiz` : ''}.` 
       });
     } else {
       toast({ title: "Hata", description: "Mesajlar gonderilemedi.", variant: "destructive" });
@@ -372,7 +372,7 @@ export default function ViewerStats() {
   );
 
   const exportToCSV = () => {
-    const headers = ['Is Ortagi', 'Aktivite', 'Kisi Sayisi', 'Talep Sayisi'];
+    const headers = ['Izleyici', 'Aktivite', 'Kisi Sayisi', 'Talep Sayisi'];
     const rows: string[][] = [];
     
     filteredStats.forEach(partner => {
@@ -385,7 +385,7 @@ export default function ViewerStats() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `is-ortagi-istatistikleri-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.download = `izleyici-istatistikleri-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     link.click();
   };
 
@@ -394,16 +394,16 @@ export default function ViewerStats() {
       <Sidebar />
       <main className="flex-1 md:ml-64 p-4 md:p-6 space-y-6">
         <div className="flex flex-col gap-4">
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Is Ortaklari</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Izleyiciler</h1>
           
           <div className="flex flex-wrap items-center gap-3">
             <Select value={selectedPartnerId} onValueChange={setSelectedPartnerId}>
               <SelectTrigger className="w-[200px]" data-testid="select-partner-filter">
                 <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Is Ortagi Sec" />
+                <SelectValue placeholder="Izleyici Sec" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tum Is Ortaklari</SelectItem>
+                <SelectItem value="all">Tum Izleyiciler</SelectItem>
                 {groupedStats.map((partner) => (
                   <SelectItem key={partner.viewerId} value={partner.viewerId.toString()}>
                     {partner.name}
@@ -494,12 +494,12 @@ export default function ViewerStats() {
             data-testid="card-active-partners"
           >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Aktif Is Ortagi</CardTitle>
+              <CardTitle className="text-sm font-medium">Aktif Izleyici</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="text-active-partners">{groupedStats.length}</div>
-              <p className="text-xs text-muted-foreground">Talep gonderen partner</p>
+              <p className="text-xs text-muted-foreground">Talep gonderen izleyici</p>
             </CardContent>
           </Card>
 
@@ -531,7 +531,7 @@ export default function ViewerStats() {
                 <CardContent className="py-12 text-center">
                   <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">Henuz Talep Yok</h3>
-                  <p className="text-muted-foreground">Is ortaklarindan gelen rezervasyon talebi bulunmuyor.</p>
+                  <p className="text-muted-foreground">Izleyicilerden gelen rezervasyon talebi bulunmuyor.</p>
                 </CardContent>
               </Card>
             ) : (
@@ -659,7 +659,7 @@ export default function ViewerStats() {
           <TabsContent value="stats" className="space-y-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Is Ortagi Performansi</CardTitle>
+                <CardTitle className="text-base">Izleyici Performansi</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {isLoading ? (
@@ -675,7 +675,7 @@ export default function ViewerStats() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Is Ortagi</TableHead>
+                          <TableHead>Izleyici</TableHead>
                           <TableHead>Aktiviteler</TableHead>
                           <TableHead className="text-right">Kisi</TableHead>
                           <TableHead className="text-right">Talep</TableHead>
@@ -733,12 +733,12 @@ export default function ViewerStats() {
                     data-testid="input-bulk-message"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Kullanilabilir degiskenler: {"{isim}"} - Is ortaginin adi
+                    Kullanilabilir degiskenler: {"{isim}"} - Izleyicinin adi
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm text-muted-foreground">
-                    {partnersWithPhone.length} is ortagina mesaj gonderilecek
+                    {partnersWithPhone.length} izleyiciye mesaj gonderilecek
                   </p>
                   <Button 
                     onClick={sendBulkMessage} 

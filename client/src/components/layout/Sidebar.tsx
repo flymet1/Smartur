@@ -38,14 +38,14 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   requiredPermission?: string;
-  partnerOnly?: boolean;
+  viewerOnly?: boolean;
 }
 
 const allNavItems: NavItem[] = [
   { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
-  { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, partnerOnly: true },
-  { href: "/viewer-stats", label: "Is Ortaklari", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
+  { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, viewerOnly: true },
+  { href: "/viewer-stats", label: "Izleyiciler", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/partner-availability", label: "Partnerler", icon: Building, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
@@ -79,8 +79,8 @@ export function Sidebar() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const { permissions, hasPermission, hasAnyPermission } = usePermissions();
 
-  // Check if user is a "partner" (İş Ortağı) - only has capacity.view and no other main permissions
-  const isPartnerOnly = useMemo(() => {
+  // Check if user is a "viewer" (İzleyici) - only has capacity.view and no other main permissions
+  const isViewerOnly = useMemo(() => {
     const mainPermissions = [
       PERMISSION_KEYS.RESERVATIONS_VIEW,
       PERMISSION_KEYS.ACTIVITIES_VIEW,
@@ -97,12 +97,12 @@ export function Sidebar() {
   // Filter nav items based on user permissions
   const navItems = useMemo(() => {
     return allNavItems.filter(item => {
-      // If item is partner-only, only show to partners
-      if (item.partnerOnly && !isPartnerOnly) return false;
+      // If item is viewer-only, only show to viewers
+      if (item.viewerOnly && !isViewerOnly) return false;
       if (!item.requiredPermission) return true;
       return permissions.includes(item.requiredPermission);
     });
-  }, [permissions, isPartnerOnly]);
+  }, [permissions, isViewerOnly]);
 
   // Check for logged in user on mount and when localStorage changes
   useEffect(() => {
@@ -247,7 +247,7 @@ export function Sidebar() {
   const { data: reservationRequests } = useQuery<ReservationRequest[]>({
     queryKey: ['/api/reservation-requests'],
     refetchInterval: 30000,
-    enabled: !isPartnerOnly, // Only fetch for operators/managers
+    enabled: !isViewerOnly, // Only fetch for operators/managers
   });
 
   const openSupportCount = supportSummary?.openCount || 0;
@@ -368,8 +368,8 @@ export function Sidebar() {
           </Tooltip>
           <SheetContent side="left" className="w-[240px] sm:w-[300px]">
             <nav className="flex flex-col gap-2 mt-8">
-              {/* Quick Access Buttons for Mobile - Hidden for partner-only users */}
-              {!isPartnerOnly && (
+              {/* Quick Access Buttons for Mobile - Hidden for viewer-only users */}
+              {!isViewerOnly && (
                 <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b">
                   {quickAccessItems.map((item) => {
                     const hasPendingCount = 
@@ -459,8 +459,8 @@ export function Sidebar() {
                 );
               })}
               
-              {/* Partner Profile Link - Only for İş Ortağı users */}
-              {isPartnerOnly && (
+              {/* Viewer Profile Link - Only for İzleyici users */}
+              {isViewerOnly && (
                 <Link href="/partner-profile">
                   <div className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
@@ -524,8 +524,8 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Quick Access Buttons - Hidden for partner-only users */}
-        {!isPartnerOnly && (
+        {/* Quick Access Buttons - Hidden for viewer-only users */}
+        {!isViewerOnly && (
           <div className="px-4 pb-3">
             <div className="flex gap-2">
               {quickAccessItems.map((item) => {
@@ -625,8 +625,8 @@ export function Sidebar() {
             );
           })}
           
-          {/* Partner Profile Link - Only for İş Ortağı users */}
-          {isPartnerOnly && (
+          {/* Viewer Profile Link - Only for İzleyici users */}
+          {isViewerOnly && (
             <Link href="/partner-profile">
               <div className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer group",
@@ -645,8 +645,8 @@ export function Sidebar() {
         </div>
 
         <div className="p-4 border-t space-y-3">
-          {/* System Status and Links - Hidden for partner-only users */}
-          {!isPartnerOnly && (
+          {/* System Status and Links - Hidden for viewer-only users */}
+          {!isViewerOnly && (
             <>
               <div className="bg-muted/50 rounded-lg p-3">
                 <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sistem Durumu</div>
