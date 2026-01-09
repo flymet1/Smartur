@@ -3138,27 +3138,44 @@ export async function registerRoutes(
         // Create a map of activity ID to share info for partner price
         const shareInfoMap = new Map(sharesForThisPartnership.map(s => [s.activityId, s]));
         
+        // Calculate date range
+        let queryStartDate: string;
+        let queryEndDate: string;
+        
+        if (date) {
+          queryStartDate = date as string;
+          queryEndDate = date as string;
+        } else if (startDate && endDate) {
+          queryStartDate = startDate as string;
+          queryEndDate = endDate as string;
+        } else {
+          // Default: next 7 days
+          const today = new Date();
+          const weekLater = new Date(today);
+          weekLater.setDate(weekLater.getDate() + 7);
+          queryStartDate = today.toISOString().split('T')[0];
+          queryEndDate = weekLater.toISOString().split('T')[0];
+        }
+        
+        // Get all reservations for the partner tenant to calculate bookedSlots dynamically
+        const partnerReservations = await storage.getReservations(partnerTenantId);
+        const activeReservations = partnerReservations.filter(r => 
+          r.status !== 'cancelled' && r.date >= queryStartDate && r.date <= queryEndDate
+        );
+        
+        // Build reservation counts map: key = "activityId-date-time" -> sum of quantity
+        const reservationCounts: Record<string, number> = {};
+        for (const r of activeReservations) {
+          if (r.activityId && r.time) {
+            const key = `${r.activityId}-${r.date}-${r.time}`;
+            reservationCounts[key] = (reservationCounts[key] || 0) + r.quantity;
+          }
+        }
+        
         // Get capacity for shared activities
         const activityData = await Promise.all(sharedActivities.map(async (activity: any) => {
           const shareInfo = shareInfoMap.get(activity.id);
           let capacities: any[] = [];
-          let queryStartDate: string;
-          let queryEndDate: string;
-          
-          if (date) {
-            queryStartDate = date as string;
-            queryEndDate = date as string;
-          } else if (startDate && endDate) {
-            queryStartDate = startDate as string;
-            queryEndDate = endDate as string;
-          } else {
-            // Default: next 7 days
-            const today = new Date();
-            const weekLater = new Date(today);
-            weekLater.setDate(weekLater.getDate() + 7);
-            queryStartDate = today.toISOString().split('T')[0];
-            queryEndDate = weekLater.toISOString().split('T')[0];
-          }
           
           // Get real capacity records from database
           capacities = await storage.getCapacityRange(partnerTenantId, activity.id, queryStartDate, queryEndDate);
@@ -3202,13 +3219,18 @@ export async function registerRoutes(
             defaultTimes: activity.defaultTimes,
             partnerUnitPrice: shareInfo?.partnerUnitPrice || null,
             partnerCurrency: shareInfo?.partnerCurrency || 'TRY',
-            capacities: capacities.map((c: any) => ({
-              date: c.date,
-              time: c.time,
-              totalSlots: c.totalSlots,
-              bookedSlots: c.bookedSlots,
-              availableSlots: c.totalSlots - (c.bookedSlots || 0)
-            }))
+            capacities: capacities.map((c: any) => {
+              // Calculate bookedSlots from actual reservations
+              const slotKey = `${activity.id}-${c.date}-${c.time}`;
+              const bookedFromReservations = reservationCounts[slotKey] || 0;
+              return {
+                date: c.date,
+                time: c.time,
+                totalSlots: c.totalSlots,
+                bookedSlots: bookedFromReservations,
+                availableSlots: c.totalSlots - bookedFromReservations
+              };
+            })
           };
         }));
         
