@@ -3181,6 +3181,48 @@ export async function registerRoutes(
         respondedAt: new Date()
       });
       
+      // If accepted, auto-create agency records for both sides
+      if (action === 'accept') {
+        const requesterTenant = await storage.getTenant(partnership.requesterTenantId);
+        const partnerTenant = await storage.getTenant(partnership.partnerTenantId);
+        
+        // Create agency in requester's tenant for the partner (if not exists)
+        const existingAgencyInRequester = await storage.getAgencyByPartnerTenantId(
+          partnership.requesterTenantId, 
+          partnership.partnerTenantId
+        );
+        if (!existingAgencyInRequester && partnerTenant) {
+          await storage.createAgency({
+            tenantId: partnership.requesterTenantId,
+            name: partnerTenant.name,
+            contactInfo: '',
+            notes: 'Partner bağlantısı ile otomatik oluşturuldu',
+            partnerTenantId: partnership.partnerTenantId,
+            partnershipId: partnershipId,
+            isSmartUser: true,
+            active: true
+          });
+        }
+        
+        // Create agency in partner's tenant for the requester (if not exists)
+        const existingAgencyInPartner = await storage.getAgencyByPartnerTenantId(
+          partnership.partnerTenantId, 
+          partnership.requesterTenantId
+        );
+        if (!existingAgencyInPartner && requesterTenant) {
+          await storage.createAgency({
+            tenantId: partnership.partnerTenantId,
+            name: requesterTenant.name,
+            contactInfo: '',
+            notes: 'Partner bağlantısı ile otomatik oluşturuldu',
+            partnerTenantId: partnership.requesterTenantId,
+            partnershipId: partnershipId,
+            isSmartUser: true,
+            active: true
+          });
+        }
+      }
+      
       res.json(updated);
     } catch (error) {
       console.error("Respond to partnership error:", error);

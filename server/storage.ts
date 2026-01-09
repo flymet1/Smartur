@@ -243,6 +243,7 @@ export interface IStorage {
   getAgencies(tenantId?: number): Promise<Agency[]>;
   getAgency(id: number): Promise<Agency | undefined>;
   getAgencyByName(name: string, tenantId: number): Promise<Agency | undefined>;
+  getAgencyByPartnerTenantId(tenantId: number, partnerTenantId: number): Promise<Agency | undefined>;
   createAgency(agency: InsertAgency): Promise<Agency>;
   updateAgency(id: number, agency: Partial<InsertAgency>): Promise<Agency>;
   deleteAgency(id: number): Promise<void>;
@@ -1338,6 +1339,12 @@ export class DatabaseStorage implements IStorage {
   async getAgencyByName(name: string, tenantId: number): Promise<Agency | undefined> {
     const [agency] = await db.select().from(agencies)
       .where(and(eq(agencies.name, name), eq(agencies.tenantId, tenantId)));
+    return agency;
+  }
+
+  async getAgencyByPartnerTenantId(tenantId: number, partnerTenantId: number): Promise<Agency | undefined> {
+    const [agency] = await db.select().from(agencies)
+      .where(and(eq(agencies.tenantId, tenantId), eq(agencies.partnerTenantId, partnerTenantId)));
     return agency;
   }
 
