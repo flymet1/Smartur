@@ -72,7 +72,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 
 const searchableContent = [
   { id: "genel-bakis", keywords: ["genel", "bakis", "woocommerce", "whatsapp", "takvim", "kapasite", "finans", "müşteri", "acenta"], title: "Genel Bakış" },
-  { id: "panel-sayfalari", keywords: ["panel", "sayfa", "dashboard", "takvim", "rezervasyon", "aktivite", "paket", "finans", "acenta", "mesaj", "talep", "destek", "bot", "test", "ayar", "geliştirici", "tatil", "sunum"], title: "Panel Sayfaları" },
+  { id: "panel-sayfalari", keywords: ["panel", "sayfa", "dashboard", "takvim", "rezervasyon", "aktivite", "paket", "finans", "acenta", "mesaj", "talep", "destek", "bot", "test", "ayar", "geliştirici", "tatil"], title: "Panel Sayfaları" },
   { id: "whatsapp-bot", keywords: ["whatsapp", "bot", "mesaj", "onay", "sablon", "template", "eskalasyon", "bilgi", "müsaitlik", "tarih", "bayram", "tatil", "rezervasyon", "cok", "dil", "sss", "fallback", "takip", "talep", "toplu", "bildirim", "hiyerarşi", "partner", "izleyici", "viewer", "destek", "sessiz", "otomatik", "yanıt", "kural"], title: "WhatsApp Bot" },
   { id: "rezervasyon-yönetimi", keywords: ["rezervasyon", "yönetim", "durum", "onay", "iptal", "beklemede", "paket", "tur", "sipariş", "filtre", "takvim", "liste"], title: "Rezervasyon Yönetimi" },
   { id: "müşteri-takip", keywords: ["müşteri", "takip", "link", "token", "talep", "iptal", "saat", "değişiklik", "bildirim", "whatsapp", "acenta"], title: "Müşteri Takip" },
@@ -492,19 +492,6 @@ export default function UserGuide() {
                 ]}
               />
 
-              <PageGuideCard 
-                icon={<FileText className="h-5 w-5 text-indigo-500" />}
-                title="Satış Sunumu"
-                path="/sales-presentation"
-                features={[
-                  "Smartur'un tüm özelliklerini gösteren profesyonel sunum",
-                  "PDF olarak kaydetme ve yazdırma",
-                  "Potansiyel müşterilere göstermek için hazır materyal",
-                  "Fiyatlandırma planları ve özellik karşılaştırması",
-                  "Sektörel kullanım senaryoları (Tur, Kuaför, Otel)",
-                  "Değer önerisi ve avantajlar"
-                ]}
-              />
             </div>
           </Section>
 
