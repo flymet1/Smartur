@@ -84,6 +84,11 @@ interface ReservationRequest {
   requesterType?: 'viewer' | 'partner' | 'unknown';
 }
 
+interface OutgoingRequest extends ReservationRequest {
+  activityName?: string;
+  ownerTenantName?: string;
+}
+
 export default function PartnerAvailability() {
   const today = new Date();
   const [startDate, setStartDate] = useState(() => {
@@ -131,6 +136,16 @@ export default function PartnerAvailability() {
   const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities'],
   });
+  
+  // Giden talepler (benim gönderdiğim)
+  const { data: outgoingRequests = [], isLoading: outgoingLoading } = useQuery<OutgoingRequest[]>({
+    queryKey: ['/api/my-reservation-requests'],
+    refetchInterval: 30000,
+  });
+  
+  const pendingOutgoingRequests = outgoingRequests.filter(r => r.status === 'pending');
+  const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved');
+  const otherOutgoingRequests = outgoingRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
   
   const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
@@ -1023,11 +1038,11 @@ export default function PartnerAvailability() {
           </Card>
         )}
         
-        {/* Diğer Talepler Bölümü */}
+        {/* Diğer Gelen Talepler Bölümü */}
         {otherPartnerRequests.length > 0 && (
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle className="text-muted-foreground">İşlenen Talepler ({otherPartnerRequests.length})</CardTitle>
+              <CardTitle className="text-muted-foreground">Gelen İşlenen Talepler ({otherPartnerRequests.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {otherPartnerRequests.map(request => (
@@ -1050,6 +1065,117 @@ export default function PartnerAvailability() {
                   </div>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ========== GİDEN TALEPLER BÖLÜMÜ ========== */}
+        {outgoingRequests.length > 0 && (
+          <Card className="mt-8 border-2 border-purple-200 dark:border-purple-800">
+            <CardHeader className="bg-purple-50 dark:bg-purple-950/30">
+              <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                <Send className="w-5 h-5" />
+                Giden Talepler (Benim Gönderdiğim)
+              </CardTitle>
+              <CardDescription>Partner acentalara gönderdiğiniz rezervasyon talepleri</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              {/* Bekleyen Giden Talepler */}
+              {pendingOutgoingRequests.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
+                    <Clock className="w-4 h-4" />
+                    Bekleyen ({pendingOutgoingRequests.length})
+                  </h4>
+                  {pendingOutgoingRequests.map(request => (
+                    <div key={request.id} className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">{request.customerName}</p>
+                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
+                              Giden: {request.ownerTenantName || 'Partner'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
+                            <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                            <span>{request.time}</span>
+                            <span>{request.guests} kisi</span>
+                          </div>
+                        </div>
+                        <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
+                          Onay Bekliyor
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Onaylanan Giden Talepler */}
+              {approvedOutgoingRequests.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2 text-green-700 dark:text-green-400">
+                    <Check className="w-4 h-4" />
+                    Onaylanan ({approvedOutgoingRequests.length})
+                  </h4>
+                  {approvedOutgoingRequests.map(request => (
+                    <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">{request.customerName}</p>
+                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
+                              Giden: {request.ownerTenantName || 'Partner'}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
+                            <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                            <span>{request.time}</span>
+                          </div>
+                        </div>
+                        <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                          Onaylandı
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* İşlenen Giden Talepler */}
+              {otherOutgoingRequests.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-muted-foreground">İşlenen ({otherOutgoingRequests.length})</h4>
+                  {otherOutgoingRequests.map(request => (
+                    <div key={request.id} className="border rounded-lg p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium">{request.customerName}</p>
+                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
+                              Giden: {request.ownerTenantName || 'Partner'}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
+                            <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                            <span>{request.time}</span>
+                          </div>
+                        </div>
+                        {getStatusBadge(request.status)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {outgoingRequests.length === 0 && (
+                <p className="text-center text-muted-foreground py-4">Henüz gönderilmiş talep yok.</p>
+              )}
             </CardContent>
           </Card>
         )}

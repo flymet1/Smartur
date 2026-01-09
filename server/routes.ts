@@ -2540,9 +2540,9 @@ export async function registerRoutes(
       const currentTenantRequests = await storage.getReservationRequests(tenantId);
       const myCurrentRequests = currentTenantRequests.filter(r => r.requestedBy === userId);
       
-      // Then, get requests from partner tenants (where I might have sent requests)
+      // Then, get requests from partner tenants (where I might have sent requests) - bidirectional
       const partnerships = await storage.getTenantPartnerships(tenantId);
-      const activePartnerships = partnerships.filter(p => p.status === 'active' && p.requesterTenantId === tenantId);
+      const activePartnerships = partnerships.filter(p => p.status === 'active');
       
       let allMyRequests = [...myCurrentRequests];
       const activityCache: Map<number, any> = new Map();
@@ -2550,14 +2550,19 @@ export async function registerRoutes(
       const tenantMap = new Map(tenants.map(t => [t.id, t]));
       
       for (const partnership of activePartnerships) {
-        const partnerRequests = await storage.getReservationRequests(partnership.partnerTenantId);
+        // Get the other tenant's ID (bidirectional)
+        const otherTenantId = partnership.requesterTenantId === tenantId 
+          ? partnership.partnerTenantId 
+          : partnership.requesterTenantId;
+        
+        const partnerRequests = await storage.getReservationRequests(otherTenantId);
         const myPartnerRequests = partnerRequests.filter(r => r.requestedBy === userId);
         allMyRequests = [...allMyRequests, ...myPartnerRequests];
         
         // Cache partner activities for enrichment
         if (myPartnerRequests.length > 0) {
-          const partnerActivities = await storage.getActivities(partnership.partnerTenantId);
-          partnerActivities.forEach(a => activityCache.set(a.id, { ...a, tenantName: tenantMap.get(partnership.partnerTenantId)?.name }));
+          const partnerActivities = await storage.getActivities(otherTenantId);
+          partnerActivities.forEach(a => activityCache.set(a.id, { ...a, tenantName: tenantMap.get(otherTenantId)?.name }));
         }
       }
       
