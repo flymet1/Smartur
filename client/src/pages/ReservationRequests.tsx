@@ -29,11 +29,18 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Activity } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface AppUserWithPhone {
+interface UserRole {
+  id: number;
+  userId: number;
+  roleId: number;
+}
+
+interface AppUserWithRoles {
   id: number;
   username: string;
   name: string | null;
   phone: string | null;
+  roles: UserRole[];
 }
 
 interface ReservationRequest {
@@ -72,7 +79,7 @@ export default function ReservationRequests() {
     queryKey: ['/api/activities'],
   });
 
-  const { data: users = [] } = useQuery<AppUserWithPhone[]>({
+  const { data: users = [] } = useQuery<AppUserWithRoles[]>({
     queryKey: ['/api/tenant-users'],
   });
 
@@ -132,15 +139,10 @@ export default function ReservationRequests() {
     if (lowerNotes.includes('[viewer:') || lowerNotes.includes('[izleyici:')) {
       return 'viewer';
     }
-    return 'partner';
-  };
-
-  const getRequesterLabel = (request: ReservationRequest) => {
-    const type = getRequestType(request.notes);
-    if (type === 'viewer') {
-      return 'Izleyici';
+    if (lowerNotes.includes('[partner:')) {
+      return 'partner';
     }
-    return 'Is Ortagi';
+    return 'partner';
   };
 
   const getRequesterName = (requestedBy: number | null) => {
