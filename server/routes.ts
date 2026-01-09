@@ -233,36 +233,38 @@ async function checkPlanForWrite(tenantId?: number): Promise<{ allowed: boolean;
 }
 
 // Default bot rules (used when no custom rules are defined in database) - 14 Madde
+// These rules are ONLY for normal customers. Partner/Viewer rules are in persona-specific prompts.
 const DEFAULT_BOT_RULES = `
 === BOT KURALLARI (14 MADDE) ===
+⚠️ ÖNEMLİ: Bu kurallar SADECE normal müşteriler için geçerlidir. Partner veya İzleyici ise yukarıdaki PERSONA KURALLARINI uygula!
 
-1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+1. ETKİNLİK BİLGİSİ: Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 
-2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
+2. MÜSAİTLİK/KONTENJAN: Yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
 
-3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+3. MÜSAİTLİK BİLGİSİ YOKSA: "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
 
 4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
 
-5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+5. ÖZEL TALEPLER: Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
 
-6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+6. REZERVASYON SORGUSU: Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
 
-7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+7. TRANSFER: Aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
 
-8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+8. EKSTRA HİZMET: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
 
-9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+9. PAKET TUR: Birden fazla aktivite içeren paket turlar hakkında soru sorarsa PAKET TURLAR bölümünü kullan ve bilgi ver.
 
-10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı SSS bölümünü kontrol et. Soruyla eşleşen varsa oradaki cevabı kullan.
 
-11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, "Türkçe Sipariş Onay Mesajı" alanını olduğu gibi ilet.
 
-12. MÜŞTERİ MÜSAİTLİK SORGULARI: Müşteri müsaitlik sorduğunda, istenen tarih ve saat için müsaitlik bilgisini paylaş. Sonra rezervasyon yapmak isterse ilgili aktivitenin web sitesi linkini paylaş.
+12. MÜŞTERİ MÜSAİTLİK SORGULARI (SADECE MÜŞTERİLER İÇİN): Müşteri müsaitlik sorduğunda, istenen tarih ve saat için müsaitlik bilgisini paylaş. Sonra rezervasyon yapmak isterse ilgili aktivitenin web sitesi linkini paylaş. (⚠️ Partner/İzleyicilere link VERME!)
 
-13. MÜŞTERİ DEĞİŞİKLİK TALEPLERİ: Müşteri saat/tarih değişikliği veya iptal istediğinde, önce istenen yeni tarih/saat için müsaitlik bilgisini paylaş. Ardından kendilerine gönderilen takip linkinden değişiklik talebini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+13. MÜŞTERİ DEĞİŞİKLİK TALEPLERİ (SADECE MÜŞTERİLER İÇİN): Müşteri saat/tarih değişikliği veya iptal istediğinde, önce istenen yeni tarih/saat için müsaitlik bilgisini paylaş. Ardından kendilerine gönderilen takip linkinden değişiklik talebini oluşturabileceklerini söyle. (⚠️ Partner/İzleyicilere takip linki VERME - panele yönlendir!)
 
-14. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.
+14. REZERVASYON LİNKİ SEÇİMİ (SADECE MÜŞTERİLER İÇİN): Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder. Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan. (⚠️ Partner/İzleyicilere link VERME!)
 `;
 
 // Gemini AI Integration - supports both Replit integration and standalone API key
@@ -927,17 +929,56 @@ Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı
     ? `\n=== PAKET TURLAR ===\n${packageTourDescriptions}\n` 
     : "";
 
+  // Build system overview section explaining the hierarchy
+  const systemOverview = `=== SİSTEM HİYERARŞİSİ VE KARAR AĞACI ===
+
+SMARTUR BOT ÇALIŞMA MANTIĞI:
+1. Önce mesaj atan kişinin KİMLİĞİNİ belirle (Partner, İzleyici veya Müşteri)
+2. Kimliğe göre DOĞRU KURALLARI uygula - aşağıdaki öncelik sırasına göre
+
+KURAL ÖNCELİK SIRASI (Üstteki alttakini geçersiz kılar):
+  1. PERSONA KURALLARI (Partner/İzleyici talimatları) → EN YÜKSEK ÖNCELİK
+  2. Genel Bot Kuralları → Sadece normal müşteriler için geçerli
+  3. Baz Davranış → En düşük öncelik
+
+ÖNEMLİ:
+- Eğer mesaj bir PARTNER veya İZLEYİCİDEN geliyorsa, aşağıdaki "PERSONA KURALLARI" bölümünü oku ve SADECE oradaki talimatları uygula.
+- Genel kurallar (web sitesi linki gönderme, rezervasyon linki paylaşma) SADECE normal müşteriler için geçerlidir.
+- Partner/İzleyicilere HİÇBİR ZAMAN rezervasyon linki veya web sitesi linki gönderme.
+
+KİMLİK TESPİTİ:
+${context.isPartner ? `✓ Bu kişi bir PARTNER ACENTADIR → Partner kurallarını uygula!` : ''}
+${context.isViewer ? `✓ Bu kişi bir İZLEYİCİDİR → İzleyici kurallarını uygula!` : ''}
+${!context.isPartner && !context.isViewer ? `✓ Bu kişi normal bir MÜŞTERİDİR → Genel kuralları uygula` : ''}
+`;
+
+  // Build persona-specific rules section (highest priority)
+  let personaRulesSection = "";
+  if (context.isPartner || context.isViewer) {
+    personaRulesSection = `
+=== PERSONA KURALLARI (EN YÜKSEK ÖNCELİK) ===
+⚠️ DİKKAT: Bu bölümdeki kurallar genel kuralların ÜSTÜNDEDİR!
+${partnerContext}${viewerContext}
+`;
+  }
+
+  // Update general rules to be explicitly for customers only
+  const customerOnlyRulesNote = context.isPartner || context.isViewer 
+    ? `\n⚠️ NOT: Aşağıdaki genel kurallar sadece referans içindir. Bu kişi ${context.isPartner ? 'Partner' : 'İzleyici'} olduğu için yukarıdaki PERSONA KURALLARINI uygula!\n`
+    : `\n✓ Bu kişi normal müşteri olduğu için aşağıdaki kuralları uygula:\n`;
+
   const systemPrompt = `${basePrompt}
 
+${systemOverview}
 ${dateContext}
-${partnerContext}${viewerContext}
+${personaRulesSection}
 === MEVCUT AKTİVİTELER ===
 ${activityDescriptions}
 ${packageToursSection}${capacityInfo}
 ${reservationContext}
 ${customerRequestContext}
 
-=== ÖNEMLİ KURALLAR ===
+=== GENEL BOT KURALLARI (MÜŞTERİLER İÇİN) ===${customerOnlyRulesNote}
 ${context.botRules || DEFAULT_BOT_RULES}`;
 
   // Helper function to check if error is rate limit related

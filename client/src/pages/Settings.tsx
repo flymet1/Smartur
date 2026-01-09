@@ -271,33 +271,36 @@ export default function Settings() {
   }, [botPromptSetting?.value, botPromptLoaded]);
 
   // Default bot rules (14 Madde) - must match backend DEFAULT_BOT_RULES
-  const DEFAULT_BOT_RULES = `1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+  // These rules are ONLY for normal customers. Partner/Viewer rules are in persona-specific prompts.
+  const DEFAULT_BOT_RULES = `Bu kurallar SADECE normal müşteriler için geçerlidir. Partner veya İzleyici ise PERSONA KURALLARINI uygula!
 
-2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
+1. ETKİNLİK BİLGİSİ: Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 
-3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+2. MÜSAİTLİK/KONTENJAN: Yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
 
-4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
+3. MÜSAİTLİK BİLGİSİ YOKSA: "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
 
-5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de.
 
-6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+5. ÖZEL TALEPLER: Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
 
-7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+6. REZERVASYON SORGUSU: Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
 
-8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+7. TRANSFER: Aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et.
 
-9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+8. EKSTRA HİZMET: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda "Ekstra Hizmetler" listesini kullan.
 
-10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+9. PAKET TUR: Birden fazla aktivite içeren paket turlar hakkında soru sorarsa PAKET TURLAR bölümünü kullan.
 
-11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+10. SIK SORULAN SORULAR: Her aktivite için tanımlı SSS bölümünü kontrol et.
 
-12. MÜŞTERİ MÜSAİTLİK SORGULARI: Müşteri müsaitlik sorduğunda, istenen tarih ve saat için müsaitlik bilgisini paylaş. Sonra rezervasyon yapmak isterse ilgili aktivitenin web sitesi linkini paylaş.
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, "Türkçe Sipariş Onay Mesajı" alanını olduğu gibi ilet.
 
-13. MÜŞTERİ DEĞİŞİKLİK TALEPLERİ: Müşteri saat/tarih değişikliği veya iptal istediğinde, önce istenen yeni tarih/saat için müsaitlik bilgisini paylaş. Ardından kendilerine gönderilen takip linkinden değişiklik talebini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+12. MÜŞTERİ MÜSAİTLİK (SADECE MÜŞTERİLER): Müsaitlik bilgisini paylaş, rezervasyon yapmak isterse web sitesi linkini paylaş. (Partner/İzleyicilere link VERME!)
 
-14. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.`;
+13. MÜŞTERİ DEĞİŞİKLİK (SADECE MÜŞTERİLER): Takip linkinden değişiklik talebini oluşturabileceklerini söyle. (Partner/İzleyicilere takip linki VERME - panele yönlendir!)
+
+14. REZERVASYON LİNKİ (SADECE MÜŞTERİLER): İngilizce konuşuyorsan "EN Reservation Link", Türkçe konuşuyorsan "TR Rezervasyon Linki" kullan. (Partner/İzleyicilere link VERME!)`;
 
   // Apply loaded bot rules when data arrives
   useEffect(() => {
@@ -1334,10 +1337,30 @@ DEĞİŞİKLİK TALEPLERİNDE:
                         </div>
                       </div>
 
+                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
+                        <div className="flex items-start gap-2">
+                          <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">Bot Kural Hiyerarşisi</h4>
+                            <p className="text-xs text-amber-800 dark:text-amber-300">
+                              Bot, mesaj atan kişinin kimliğine göre farklı kurallar uygular:
+                            </p>
+                            <ul className="text-xs text-amber-800 dark:text-amber-300 space-y-1 ml-4 list-disc">
+                              <li><strong>Partner:</strong> Partner talimatları uygulanır (link paylaşılmaz, panele yönlendirilir)</li>
+                              <li><strong>İzleyici:</strong> İzleyici talimatları uygulanır (panelden talep oluşturması istenir)</li>
+                              <li><strong>Müşteri:</strong> Aşağıdaki genel kurallar uygulanır (link paylaşılır, takip linki verilir)</li>
+                            </ul>
+                            <p className="text-xs text-amber-800 dark:text-amber-300 mt-2">
+                              <strong>Öncelik:</strong> Partner/İzleyici talimatları, genel kuralların üstündedir.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <Label htmlFor="botRules" className="text-base font-medium">Bot Kuralları</Label>
+                            <Label htmlFor="botRules" className="text-base font-medium">Bot Kuralları (Müşteriler İçin)</Label>
                             {!isOwner && (
                               <Badge variant="secondary" className="text-xs">
                                 <Shield className="w-3 h-3 mr-1" />
@@ -1346,7 +1369,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Bot bu kurallara uyarak müşterilerle iletişim kuracak. {!isOwner && "Bu alan sadece acenta yöneticisi tarafından düzenlenebilir."}
+                            Bu kurallar sadece normal müşteriler için geçerlidir. Partner ve izleyiciler için aşağıdaki özel talimatlar kullanılır. {!isOwner && "Bu alan sadece acenta yöneticisi tarafından düzenlenebilir."}
                           </p>
                           <Textarea 
                             id="botRules"
