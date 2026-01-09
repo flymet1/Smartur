@@ -64,7 +64,9 @@ import {
   TrendingUp,
   PieChart,
   ArrowRight,
-  X
+  X,
+  User,
+  Home
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 
