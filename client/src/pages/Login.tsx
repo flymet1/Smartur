@@ -6,10 +6,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, Eye, EyeOff, Loader2, Phone, Mail, Check, Star, Activity, Users, MessageSquare, Zap, Package, CreditCard, Crown, Settings2 } from "lucide-react";
-import type { SubscriptionPlan } from "@shared/schema";
+import { LogIn, Eye, EyeOff, Loader2, Phone, Mail } from "lucide-react";
 
 interface BrandSettings {
   companyName?: string;
@@ -59,39 +57,6 @@ export default function Login() {
     ? JSON.parse(brandSettingsData.value) 
     : {};
 
-  // Fetch subscription plans
-  const { data: plans = [] } = useQuery<SubscriptionPlan[]>({
-    queryKey: ["/api/subscription-plans"],
-  });
-
-  const activePlans = plans.filter(p => p.isActive && p.code !== "trial");
-
-  const formatPrice = (amount: number | null | undefined) => {
-    if (!amount) return "0";
-    return (amount / 100).toLocaleString("tr-TR");
-  };
-
-  const FEATURE_LABELS: Record<string, { label: string; icon: typeof Activity }> = {
-    basic_calendar: { label: "Temel Takvim", icon: Activity },
-    manual_reservations: { label: "Manuel Rezervasyon", icon: Activity },
-    whatsapp_notifications: { label: "WhatsApp Bildirim", icon: MessageSquare },
-    basic_reports: { label: "Temel Raporlar", icon: Activity },
-    advanced_reports: { label: "Gelişmiş Raporlar", icon: Activity },
-    ai_bot: { label: "AI Bot", icon: Zap },
-    woocommerce: { label: "WooCommerce", icon: CreditCard },
-    package_tours: { label: "Paket Turlar", icon: Package },
-    api_access: { label: "API Erişimi", icon: Settings2 },
-    priority_support: { label: "Öncelikli Destek", icon: Star },
-    custom_branding: { label: "Özel Marka", icon: Crown },
-  };
-
-  const getFeatures = (plan: SubscriptionPlan) => {
-    try {
-      return JSON.parse(plan.features || "[]");
-    } catch {
-      return [];
-    }
-  };
 
   const loginMutation = useMutation({
     mutationFn: async (data: { username: string; password: string }) => {
@@ -285,90 +250,6 @@ export default function Login() {
         </Card>
       </div>
 
-      {/* Subscription Plans Section */}
-      {activePlans.length > 0 && (
-        <div className="w-full max-w-6xl mx-auto pb-8">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold">Abonelik Paketleri</h2>
-            <p className="text-sm text-muted-foreground">İşletmenize uygun planı seçin</p>
-          </div>
-          
-          <div className="grid gap-4 md:grid-cols-3">
-            {activePlans.map((plan) => (
-              <Card 
-                key={plan.id} 
-                className={`relative flex flex-col ${plan.isPopular ? "border-primary border-2" : ""}`}
-                data-testid={`card-plan-${plan.code}`}
-              >
-                {plan.isPopular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary">
-                    <Star className="h-3 w-3 mr-1" />
-                    En Popüler
-                  </Badge>
-                )}
-
-                <CardHeader className="text-center pb-2">
-                  <CardTitle className="text-lg">{plan.name}</CardTitle>
-                  <CardDescription className="text-xs">{plan.description}</CardDescription>
-                </CardHeader>
-
-                <CardContent className="flex-1 space-y-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold">
-                      {formatPrice(plan.yearlyPriceTl || 0)}
-                      <span className="text-sm font-normal text-muted-foreground"> TL/yıl</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      ${formatPrice(plan.yearlyPriceUsd || 0)}/yıl
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-3 w-3 text-primary" />
-                      <span>{plan.maxActivities === 9999 ? "Sınırsız" : plan.maxActivities} aktivite</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3 w-3 text-primary" />
-                      <span>{plan.maxReservationsPerMonth === 99999 ? "Sınırsız" : plan.maxReservationsPerMonth?.toLocaleString()} rezervasyon/ay</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-3 w-3 text-primary" />
-                      <span>{plan.maxWhatsappNumbers} WhatsApp numarası</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3 w-3 text-primary" />
-                      <span>{plan.maxUsers} kullanıcı</span>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-3 space-y-1">
-                    {getFeatures(plan).slice(0, 5).map((featureKey: string) => {
-                      const feature = FEATURE_LABELS[featureKey];
-                      if (!feature) return null;
-                      return (
-                        <div key={featureKey} className="flex items-center gap-2 text-xs">
-                          <Check className="h-3 w-3 text-green-600 flex-shrink-0" />
-                          <span>{feature.label}</span>
-                        </div>
-                      );
-                    })}
-                    {getFeatures(plan).length > 5 && (
-                      <div className="text-xs text-muted-foreground">
-                        +{getFeatures(plan).length - 5} daha fazla özellik
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            Abonelik için yukarıdaki iletişim bilgilerinden bize ulaşabilirsiniz.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
