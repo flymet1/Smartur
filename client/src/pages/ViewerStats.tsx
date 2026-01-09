@@ -14,8 +14,7 @@ import {
   Filter,
   Clock,
   Check,
-  X,
-  ArrowRight
+  X
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -144,19 +143,6 @@ export default function ViewerStats() {
     },
   });
 
-  const convertMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest('POST', `/api/reservation-requests/${id}/convert`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/reservation-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
-      toast({ title: "Basarili", description: "Talep rezervasyona donusturuldu." });
-    },
-    onError: (err: any) => {
-      toast({ title: "Hata", description: err.message || "Donusturulemedi.", variant: "destructive" });
-    },
-  });
 
   const notifyPartnerMutation = useMutation({
     mutationFn: async ({ phone, message }: { phone: string; message: string }) => {
@@ -615,15 +601,6 @@ export default function ViewerStats() {
                               >
                                 {notifyingSenderId === request.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
                                 WhatsApp Bildir
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                onClick={() => convertMutation.mutate(request.id)}
-                                disabled={convertMutation.isPending}
-                                data-testid={`button-convert-${request.id}`}
-                              >
-                                {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
-                                Rezervasyona Donustur
                               </Button>
                             </div>
                           </div>

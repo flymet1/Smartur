@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, ArrowRight, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -179,19 +179,6 @@ export default function PartnerAvailability() {
     },
   });
 
-  const convertMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest('POST', `/api/reservation-requests/${id}/convert`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/reservation-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
-      toast({ title: "Basarili", description: "Talep rezervasyona donusturuldu." });
-    },
-    onError: (err: any) => {
-      toast({ title: "Hata", description: err.message || "Donusturulemedi.", variant: "destructive" });
-    },
-  });
 
   const notifyPartnerMutation = useMutation({
     mutationFn: async ({ phone, message }: { phone: string; message: string }) => {
@@ -1024,15 +1011,6 @@ export default function PartnerAvailability() {
                       >
                         {notifyingSenderId === request.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
                         WhatsApp Bildir
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        onClick={() => convertMutation.mutate(request.id)}
-                        disabled={convertMutation.isPending}
-                        data-testid={`button-convert-${request.id}`}
-                      >
-                        {convertMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <ArrowRight className="w-4 h-4 mr-1" />}
-                        Rezervasyona Donustur
                       </Button>
                     </div>
                   </div>
