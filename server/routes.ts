@@ -3046,16 +3046,16 @@ export async function registerRoutes(
       
       const { date, startDate, endDate } = req.query;
       
-      // Get active partnerships where we are the requester (we connected to them)
+      // Get active partnerships where we are either the requester OR the partner (bidirectional)
       const partnerships = await storage.getTenantPartnerships(tenantId);
-      const activePartnerships = partnerships.filter(p => p.status === 'active' && p.requesterTenantId === tenantId);
+      const activePartnerships = partnerships.filter(p => p.status === 'active');
       
       if (activePartnerships.length === 0) {
         return res.json([]);
       }
       
-      // Get partner tenant IDs
-      const partnerTenantIds = activePartnerships.map(p => p.partnerTenantId);
+      // Get the OTHER tenant ID (the one that is not us)
+      const getOtherTenantId = (p: any) => p.requesterTenantId === tenantId ? p.partnerTenantId : p.requesterTenantId;
       
       // Get tenants for names
       const tenants = await storage.getTenants();
@@ -3063,7 +3063,7 @@ export async function registerRoutes(
       
       // For each partner, get their shared activities and capacity
       const results = await Promise.all(activePartnerships.map(async (partnership) => {
-        const partnerTenantId = partnership.partnerTenantId;
+        const partnerTenantId = getOtherTenantId(partnership);
         
         // Get activities specifically shared with this partnership
         const activityShares = await storage.getActivityPartnerShares(0); // Get all shares
