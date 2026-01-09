@@ -15,8 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import type { Activity, PackageTour, Reservation } from "@shared/schema";
-import { useToast } from "@/hooks/use-toast";
-import { ToastAction } from "@/components/ui/toast";
 import {
   Dialog,
   DialogContent,
@@ -84,18 +82,6 @@ interface SupportRequest {
   createdAt: string;
 }
 
-interface InAppNotification {
-  id: number;
-  userId: number;
-  tenantId: number;
-  notificationType: string;
-  title: string;
-  message: string;
-  link: string | null;
-  isRead: boolean;
-  createdAt: string;
-}
-
 export default function Dashboard() {
   const [, navigate] = useLocation();
   const [reservationsDialogOpen, setReservationsDialogOpen] = useState(false);
@@ -141,85 +127,6 @@ export default function Dashboard() {
     refetchInterval: 30000,
   });
 
-  const { data: inAppNotifications = [] } = useQuery<InAppNotification[]>({
-    queryKey: ['/api/in-app-notifications'],
-    refetchInterval: 30000,
-  });
-
-  const { toast } = useToast();
-  const notificationsShownRef = useRef<Set<number>>(new Set());
-  const partnerNotificationShownRef = useRef(false);
-
-  const markNotificationRead = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest('PATCH', `/api/in-app-notifications/${id}/read`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/in-app-notifications'] });
-    },
-  });
-
-  const getNotificationRoute = (type: string): string => {
-    switch (type) {
-      case 'support_request':
-        return '/support-requests';
-      case 'change_request':
-        return '/reservations';
-      case 'new_reservation':
-        return '/reservations';
-      case 'viewer_request':
-        return '/viewer-stats';
-      case 'partner_request':
-        return '/partner-availability';
-      case 'customer_request':
-        return '/reservations';
-      default:
-        return '/dashboard';
-    }
-  };
-
-  useEffect(() => {
-    const unreadNotifications = inAppNotifications.filter(n => !n.isRead);
-    const timeoutIds: NodeJS.Timeout[] = [];
-    
-    unreadNotifications.slice(0, 5).forEach((notification, index) => {
-      if (notificationsShownRef.current.has(notification.id)) return;
-      notificationsShownRef.current.add(notification.id);
-      
-      const timeoutId = setTimeout(() => {
-        const getNotificationVariant = (type: string): "default" | "destructive" => {
-          switch (type) {
-            case 'support_request':
-            case 'change_request':
-              return 'destructive';
-            default:
-              return 'default';
-          }
-        };
-
-        const route = getNotificationRoute(notification.notificationType);
-
-        toast({
-          title: notification.title,
-          description: notification.message,
-          variant: getNotificationVariant(notification.notificationType),
-          action: (
-            <ToastAction altText="Görüntüle" onClick={() => navigate(route)}>
-              Görüntüle
-            </ToastAction>
-          ),
-        });
-
-        markNotificationRead.mutate(notification.id);
-      }, index * 1500);
-      
-      timeoutIds.push(timeoutId);
-    });
-
-    return () => {
-      timeoutIds.forEach(id => clearTimeout(id));
-    };
-  }, [inAppNotifications, navigate]);
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -282,23 +189,6 @@ export default function Dashboard() {
   // Toplam bekleyen talepler (çift sayımı önle - viewer ve partner ayrı sayıldığından basit toplam)
   const totalPendingRequests = totalViewerRequests + totalPartnerRequests + totalCustomerRequests;
 
-  // Partner taleplerinde bekleyen varsa bildirim göster
-  useEffect(() => {
-    if (!partnerNotificationShownRef.current && totalPartnerRequests > 0) {
-      partnerNotificationShownRef.current = true;
-      toast({
-        title: `${totalPartnerRequests} bekleyen partner talebi var`,
-        description: "Partner Müsaitlik sayfasından inceleyin.",
-        variant: "default",
-        action: (
-          <ToastAction altText="Görüntüle" onClick={() => navigate('/partner-availability')}>
-            Görüntüle
-          </ToastAction>
-        ),
-      });
-    }
-  }, [totalPartnerRequests, toast, navigate]);
-  
   const markReservationsAsViewed = () => {
     const now = new Date();
     localStorage.setItem('lastViewedReservations', now.toISOString());

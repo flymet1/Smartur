@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthGuard } from "@/components/AuthGuard";
 import { StickyAnnouncements } from "@/components/layout/StickyAnnouncements";
+import { GlobalNotifications } from "@/components/GlobalNotifications";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Activities from "@/pages/Activities";
@@ -107,6 +108,7 @@ function App() {
           <AuthGuard>
             <KeyboardShortcuts />
             <StickyAnnouncements />
+            <GlobalNotifications />
             <Toaster />
             <Router />
           </AuthGuard>
