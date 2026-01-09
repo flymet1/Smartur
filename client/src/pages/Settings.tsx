@@ -3814,11 +3814,37 @@ interface Role {
   color?: string;
 }
 
+interface ViewerActivityShare {
+  id: number;
+  tenantId: number;
+  viewerUserId: number;
+  activityId: number;
+  isShared: boolean;
+  viewerUnitPriceTry: string | null;
+  viewerUnitPriceUsd: string | null;
+  viewerUnitPriceEur: string | null;
+}
+
+interface Activity {
+  id: number;
+  name: string;
+  unitPrice: string | null;
+}
+
 function UserManagementSection() {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<TenantUser | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [viewerSharesUser, setViewerSharesUser] = useState<TenantUser | null>(null);
+  const [viewerShares, setViewerShares] = useState<Array<{
+    activityId: number;
+    isShared: boolean;
+    viewerUnitPriceTry: string;
+    viewerUnitPriceUsd: string;
+    viewerUnitPriceEur: string;
+  }>>([]);
+  const [isSavingShares, setIsSavingShares] = useState(false);
   const [userForm, setUserForm] = useState({
     username: "",
     email: "",
@@ -3849,6 +3875,64 @@ function UserManagementSection() {
   const { data: allRoles = [] } = useQuery<Role[]>({
     queryKey: ['/api/roles'],
   });
+
+  const { data: activities = [] } = useQuery<Activity[]>({
+    queryKey: ['/api/activities'],
+  });
+
+  // Load viewer shares when dialog opens
+  const loadViewerShares = async (user: TenantUser) => {
+    try {
+      const res = await fetch(`/api/viewer-activity-shares/${user.id}`);
+      const existingShares: ViewerActivityShare[] = await res.json();
+      
+      // Initialize shares for all activities
+      const sharesMap = new Map(existingShares.map(s => [s.activityId, s]));
+      const allShares = activities.map(activity => {
+        const existing = sharesMap.get(activity.id);
+        return {
+          activityId: activity.id,
+          isShared: existing?.isShared ?? true,
+          viewerUnitPriceTry: existing?.viewerUnitPriceTry || "",
+          viewerUnitPriceUsd: existing?.viewerUnitPriceUsd || "",
+          viewerUnitPriceEur: existing?.viewerUnitPriceEur || "",
+        };
+      });
+      
+      setViewerShares(allShares);
+      setViewerSharesUser(user);
+    } catch (error) {
+      console.error("Failed to load viewer shares:", error);
+      toast({ title: "Hata", description: "Aktivite paylaşımları yüklenemedi", variant: "destructive" });
+    }
+  };
+
+  const saveViewerShares = async () => {
+    if (!viewerSharesUser) return;
+    
+    setIsSavingShares(true);
+    try {
+      await apiRequest('PUT', `/api/viewer-activity-shares/${viewerSharesUser.id}`, {
+        shares: viewerShares.map(s => ({
+          activityId: s.activityId,
+          isShared: s.isShared,
+          viewerUnitPriceTry: s.viewerUnitPriceTry ? parseFloat(s.viewerUnitPriceTry) : undefined,
+          viewerUnitPriceUsd: s.viewerUnitPriceUsd ? parseFloat(s.viewerUnitPriceUsd) : undefined,
+          viewerUnitPriceEur: s.viewerUnitPriceEur ? parseFloat(s.viewerUnitPriceEur) : undefined,
+        }))
+      });
+      toast({ title: "Başarılı", description: "Aktivite paylaşımları kaydedildi" });
+      setViewerSharesUser(null);
+    } catch (error: any) {
+      toast({ title: "Hata", description: error.message || "Kaydedilemedi", variant: "destructive" });
+    } finally {
+      setIsSavingShares(false);
+    }
+  };
+
+  const isViewerUser = (user: TenantUser) => {
+    return user.roles?.some(r => r.role?.name === 'viewer');
+  };
 
   // Filter to only show tenant-specific roles (Manager, Operator, Viewer)
   // Owner role is only assigned automatically when tenant is created
@@ -3986,6 +4070,21 @@ function UserManagementSection() {
                   <Badge variant={user.isActive ? "default" : "secondary"}>
                     {user.isActive ? "Aktif" : "Pasif"}
                   </Badge>
+                  {isViewerUser(user) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => loadViewerShares(user)}
+                          data-testid={`button-viewer-shares-${user.id}`}
+                        >
+                          <Settings2 className="h-4 w-4 text-blue-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Aktivite Paylaşımları</TooltipContent>
+                    </Tooltip>
+                  )}
                   <Button
                     size="icon"
                     variant="ghost"
@@ -4122,6 +4221,121 @@ function UserManagementSection() {
                 data-testid="button-save-user"
               >
                 {(createUserMutation.isPending || updateUserMutation.isPending) ? "Kaydediliyor..." : "Kaydet"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Viewer Activity Shares Dialog */}
+        <Dialog open={!!viewerSharesUser} onOpenChange={(open) => !open && setViewerSharesUser(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings2 className="h-5 w-5" />
+                Aktivite Paylaşımları - {viewerSharesUser?.name || viewerSharesUser?.username}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                Bu izleyici kullanıcının görebileceği aktiviteleri ve özel fiyatlarını belirleyin.
+              </p>
+
+              {activities.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Henüz aktivite bulunmuyor.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activities.map((activity) => {
+                    const share = viewerShares.find(s => s.activityId === activity.id);
+                    if (!share) return null;
+                    
+                    return (
+                      <div key={activity.id} className="p-4 bg-muted/50 rounded-lg space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">{activity.name}</div>
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={`share-${activity.id}`} className="text-sm">Paylaş</Label>
+                            <Switch
+                              id={`share-${activity.id}`}
+                              checked={share.isShared}
+                              onCheckedChange={(checked) => {
+                                setViewerShares(prev => prev.map(s => 
+                                  s.activityId === activity.id ? { ...s, isShared: checked } : s
+                                ));
+                              }}
+                              data-testid={`switch-share-${activity.id}`}
+                            />
+                          </div>
+                        </div>
+
+                        {share.isShared && (
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Fiyat (TRY)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder={activity.unitPrice || "Varsayılan"}
+                                value={share.viewerUnitPriceTry}
+                                onChange={(e) => {
+                                  setViewerShares(prev => prev.map(s => 
+                                    s.activityId === activity.id ? { ...s, viewerUnitPriceTry: e.target.value } : s
+                                  ));
+                                }}
+                                data-testid={`input-price-try-${activity.id}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Fiyat (USD)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="USD"
+                                value={share.viewerUnitPriceUsd}
+                                onChange={(e) => {
+                                  setViewerShares(prev => prev.map(s => 
+                                    s.activityId === activity.id ? { ...s, viewerUnitPriceUsd: e.target.value } : s
+                                  ));
+                                }}
+                                data-testid={`input-price-usd-${activity.id}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Fiyat (EUR)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="EUR"
+                                value={share.viewerUnitPriceEur}
+                                onChange={(e) => {
+                                  setViewerShares(prev => prev.map(s => 
+                                    s.activityId === activity.id ? { ...s, viewerUnitPriceEur: e.target.value } : s
+                                  ));
+                                }}
+                                data-testid={`input-price-eur-${activity.id}`}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setViewerSharesUser(null)}>
+                İptal
+              </Button>
+              <Button
+                onClick={saveViewerShares}
+                disabled={isSavingShares}
+                data-testid="button-save-viewer-shares"
+              >
+                {isSavingShares ? "Kaydediliyor..." : "Kaydet"}
               </Button>
             </DialogFooter>
           </DialogContent>
