@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useReservations } from "@/hooks/use-reservations";
-import { Bell, ClipboardList, X, Clock, Package, ChevronDown } from "lucide-react";
+import { Bell, ClipboardList, X, Clock, Package, ChevronDown, RefreshCw, Check, XCircle, Calendar } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import type { Activity, PackageTour } from "@shared/schema";
+import type { Activity, PackageTour, Reservation } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,54 @@ export default function Dashboard() {
   const { data: packageTours = [] } = useQuery<PackageTour[]>({
     queryKey: ['/api/package-tours']
   });
+
+  interface ChangeRequest {
+    id: number;
+    reservationId: number;
+    tenantId: number;
+    initiatedByType: string;
+    initiatedById: number | null;
+    requestType: string;
+    originalDate: string | null;
+    originalTime: string | null;
+    requestedDate: string | null;
+    requestedTime: string | null;
+    requestDetails: string | null;
+    status: string;
+    processNotes: string | null;
+    processedBy: number | null;
+    processedAt: string | null;
+    createdAt: string;
+    reservation: Reservation | null;
+  }
+
+  const { data: changeRequests = [], refetch: refetchChangeRequests } = useQuery<ChangeRequest[]>({
+    queryKey: ['/api/reservation-change-requests'],
+    refetchInterval: 30000,
+  });
+
+  const pendingChangeRequests = changeRequests.filter(r => r.status === 'pending');
+  const { toast } = useToast();
+
+  const handleChangeRequestAction = async (id: number, action: 'approved' | 'rejected') => {
+    try {
+      await apiRequest('PATCH', `/api/reservation-change-requests/${id}`, { status: action });
+      refetchChangeRequests();
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      toast({
+        title: action === 'approved' ? 'Talep Onaylandı' : 'Talep Reddedildi',
+        description: action === 'approved' 
+          ? 'Rezervasyon değişikliği uygulandı' 
+          : 'Değişiklik talebi reddedildi',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Hata',
+        description: error.message || 'İşlem gerçekleştirilemedi',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -158,6 +207,88 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Değişiklik Talepleri Kartı */}
+        {pendingChangeRequests.length > 0 && (
+          <Card className="border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <RefreshCw className="w-5 h-5 text-orange-600" />
+                Bekleyen Değişiklik Talepleri
+                <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-700">
+                  {pendingChangeRequests.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pendingChangeRequests.slice(0, 5).map(request => (
+                <div 
+                  key={request.id} 
+                  className="p-3 bg-background rounded-lg border flex flex-col sm:flex-row justify-between gap-3"
+                  data-testid={`change-request-${request.id}`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium">{request.reservation?.customerName || 'Bilinmeyen'}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {request.initiatedByType === 'customer' ? 'Müşteri' : 
+                         request.initiatedByType === 'viewer' ? 'İzleyici' : 'Partner'}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Calendar className="w-3 h-3" />
+                      <span>
+                        {request.originalDate} {request.originalTime}
+                        {' → '}
+                        <span className="text-foreground font-medium">
+                          {request.requestedDate} {request.requestedTime}
+                        </span>
+                      </span>
+                    </div>
+                    {request.requestDetails && (
+                      <p className="text-xs text-muted-foreground mt-1 italic">"{request.requestDetails}"</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="text-green-600 border-green-200 hover:bg-green-50"
+                          onClick={() => handleChangeRequestAction(request.id, 'approved')}
+                          data-testid={`button-approve-${request.id}`}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Onayla</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          onClick={() => handleChangeRequestAction(request.id, 'rejected')}
+                          data-testid={`button-reject-${request.id}`}
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Reddet</TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              ))}
+              {pendingChangeRequests.length > 5 && (
+                <p className="text-sm text-muted-foreground text-center">
+                  +{pendingChangeRequests.length - 5} daha fazla talep
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <ClipboardList className="w-16 h-16 text-muted-foreground/30 mb-4" />
