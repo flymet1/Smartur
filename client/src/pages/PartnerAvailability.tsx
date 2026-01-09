@@ -1287,21 +1287,21 @@ export default function PartnerAvailability() {
                   className="space-y-2"
                   data-testid="radio-payment-type"
                 >
-                  <div className="flex items-center space-x-2 p-2 rounded-md hover-elevate">
+                  <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
                     <RadioGroupItem value="receiver_full" id="receiver_full" data-testid="radio-receiver-full" />
                     <Label htmlFor="receiver_full" className="flex-1 cursor-pointer">
                       <span className="font-medium">Tamamini Partner Alacak</span>
                       <p className="text-xs text-muted-foreground">Musteri odemeyi partner acentaya yapacak</p>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2 p-2 rounded-md hover-elevate">
+                  <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
                     <RadioGroupItem value="sender_full" id="sender_full" data-testid="radio-sender-full" />
                     <Label htmlFor="sender_full" className="flex-1 cursor-pointer">
                       <span className="font-medium">Tamamini Biz Aldik</span>
                       <p className="text-xs text-muted-foreground">Musteri tum odemeyi bize yapti</p>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2 p-2 rounded-md hover-elevate">
+                  <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
                     <RadioGroupItem value="sender_partial" id="sender_partial" data-testid="radio-sender-partial" />
                     <Label htmlFor="sender_partial" className="flex-1 cursor-pointer">
                       <span className="font-medium">Kismi Odeme Aldik</span>
