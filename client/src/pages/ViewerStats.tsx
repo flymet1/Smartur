@@ -630,7 +630,7 @@ export default function ViewerStats() {
                 {otherViewerRequests.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-muted-foreground">Diger Talepler ({otherViewerRequests.length})</CardTitle>
+                      <CardTitle className="text-muted-foreground">Onaylanan Talepler ({otherViewerRequests.length})</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {otherViewerRequests.map(request => (

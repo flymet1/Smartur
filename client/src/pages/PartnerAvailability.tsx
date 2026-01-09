@@ -797,7 +797,7 @@ export default function PartnerAvailability() {
                 {otherPartnerRequests.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-muted-foreground">Diger Talepler ({otherPartnerRequests.length})</CardTitle>
+                      <CardTitle className="text-muted-foreground">Onaylanan Talepler ({otherPartnerRequests.length})</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {otherPartnerRequests.map(request => (
