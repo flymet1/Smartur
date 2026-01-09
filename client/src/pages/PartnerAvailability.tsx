@@ -100,6 +100,7 @@ export default function PartnerAvailability() {
   });
   const [datePreset, setDatePreset] = useState<string>('this-week');
   const [activeTab, setActiveTab] = useState<string>('availability');
+  const [selectedPartnerFilter, setSelectedPartnerFilter] = useState<string>('all');
   
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<RequestDialogData | null>(null);
@@ -133,6 +134,11 @@ export default function PartnerAvailability() {
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
   const approvedPartnerRequests = partnerRequests.filter(r => r.status === 'approved');
   const otherPartnerRequests = partnerRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
+  
+  // Filter partner data based on selected partner
+  const filteredPartnerData = (partnerData || []).filter(partner => 
+    selectedPartnerFilter === 'all' || partner.partnerTenantId.toString() === selectedPartnerFilter
+  );
   
   // Auto-switch to requests tab if there are pending requests on initial load
   const [initialTabSet, setInitialTabSet] = useState(false);
@@ -328,12 +334,126 @@ export default function PartnerAvailability() {
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
       <main className="flex-1 md:ml-64 p-4 md:p-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold font-display flex items-center gap-2">
-            <Building2 className="w-8 h-8 text-primary" />
-            Partner Musaitlikleri
-          </h1>
-          <p className="text-muted-foreground mt-1">Bagli oldugunuz partner acentalarin paylasilan aktivitelerinin musaitligi</p>
+        <div className="flex flex-col gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold font-display flex items-center gap-2">
+              <Building2 className="w-8 h-8 text-primary" />
+              Partner Musaitlikleri
+            </h1>
+            <p className="text-muted-foreground mt-1">Bagli oldugunuz partner acentalarin paylasilan aktivitelerinin musaitligi</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={selectedPartnerFilter} onValueChange={setSelectedPartnerFilter}>
+              <SelectTrigger className="w-[200px]" data-testid="select-partner-filter">
+                <Building2 className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Partner Sec" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tum Partnerler</SelectItem>
+                {(partnerData || []).map((partner) => (
+                  <SelectItem key={partner.partnerTenantId} value={partner.partnerTenantId.toString()}>
+                    {partner.partnerTenantName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={datePreset}
+              onValueChange={(value) => {
+                setDatePreset(value);
+                const now = new Date();
+                const todayStr = now.toISOString().split('T')[0];
+                
+                if (value === 'today') {
+                  setStartDate(todayStr);
+                  setEndDate(todayStr);
+                } else if (value === 'this-week') {
+                  const dayOfWeek = now.getDay();
+                  const monday = new Date(now);
+                  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                  const sunday = new Date(monday);
+                  sunday.setDate(monday.getDate() + 6);
+                  setStartDate(monday.toISOString().split('T')[0]);
+                  setEndDate(sunday.toISOString().split('T')[0]);
+                } else if (value === 'next-week') {
+                  const dayOfWeek = now.getDay();
+                  const monday = new Date(now);
+                  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + 7);
+                  const sunday = new Date(monday);
+                  sunday.setDate(monday.getDate() + 6);
+                  setStartDate(monday.toISOString().split('T')[0]);
+                  setEndDate(sunday.toISOString().split('T')[0]);
+                } else if (value === 'this-month') {
+                  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                  setStartDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+                  setEndDate(lastDayOfMonth.toISOString().split('T')[0]);
+                } else if (value === 'next-month') {
+                  const firstDayNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                  const lastDayNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+                  setStartDate(firstDayNextMonth.toISOString().split('T')[0]);
+                  setEndDate(lastDayNextMonth.toISOString().split('T')[0]);
+                } else if (value === 'next-7-days') {
+                  const weekLater = new Date(now);
+                  weekLater.setDate(now.getDate() + 7);
+                  setStartDate(todayStr);
+                  setEndDate(weekLater.toISOString().split('T')[0]);
+                } else if (value === 'next-30-days') {
+                  const monthLater = new Date(now);
+                  monthLater.setDate(now.getDate() + 30);
+                  setStartDate(todayStr);
+                  setEndDate(monthLater.toISOString().split('T')[0]);
+                }
+              }}
+            >
+              <SelectTrigger className="w-[150px]" data-testid="select-date-preset-top">
+                <SelectValue placeholder="Tarih Sec" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Bugun</SelectItem>
+                <SelectItem value="this-week">Bu Hafta</SelectItem>
+                <SelectItem value="next-week">Gelecek Hafta</SelectItem>
+                <SelectItem value="next-7-days">Sonraki 7 Gun</SelectItem>
+                <SelectItem value="this-month">Bu Ay</SelectItem>
+                <SelectItem value="next-month">Gelecek Ay</SelectItem>
+                <SelectItem value="next-30-days">Sonraki 30 Gun</SelectItem>
+                <SelectItem value="custom">Ozel</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => { navigateDates(-7); setDatePreset('custom'); }}
+                data-testid="button-prev-week-top"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground min-w-[180px] text-center">
+                {format(new Date(startDate), "d MMM", { locale: tr })} - {format(new Date(endDate), "d MMM yyyy", { locale: tr })}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => { navigateDates(7); setDatePreset('custom'); }}
+                data-testid="button-next-week-top"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => refetch()}
+              disabled={isFetching}
+              data-testid="button-refresh-top"
+            >
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
 
         {/* Analiz Kartları */}
@@ -367,7 +487,7 @@ export default function PartnerAvailability() {
                 <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Paylaşılan Aktivite</p>
                   <p className="text-2xl font-bold mt-1" data-testid="text-activity-count">
-                    {(partnerData || []).reduce((sum, p) => sum + p.activities.length, 0)}
+                    {filteredPartnerData.reduce((sum, p) => sum + p.activities.length, 0)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Toplam aktivite</p>
                 </div>
@@ -388,7 +508,7 @@ export default function PartnerAvailability() {
                 <div className="min-w-0">
                   <p className="text-sm text-muted-foreground">Müsait Slot</p>
                   <p className="text-2xl font-bold mt-1 text-green-600" data-testid="text-available-slots">
-                    {(partnerData || []).reduce((sum, p) => 
+                    {filteredPartnerData.reduce((sum, p) => 
                       sum + p.activities.reduce((actSum, act) => 
                         actSum + act.capacities.reduce((capSum, cap) => capSum + cap.availableSlots, 0), 0), 0)}
                   </p>
@@ -561,9 +681,17 @@ export default function PartnerAvailability() {
                   </Button>
                 </CardContent>
               </Card>
+            ) : filteredPartnerData.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Building2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Secili Partner Bulunamadi</h3>
+                  <p className="text-muted-foreground">Filtreyi degistirerek diger partnerleri gorebilirsiniz.</p>
+                </CardContent>
+              </Card>
             ) : (
               <div className="space-y-6">
-                {partnerData.map((partner) => (
+                {filteredPartnerData.map((partner) => (
                   <Card key={partner.partnerTenantId} className="overflow-hidden">
                     <CardHeader className="bg-muted/50">
                       <CardTitle className="flex items-center gap-2">
