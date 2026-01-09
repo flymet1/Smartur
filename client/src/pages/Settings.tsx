@@ -3931,7 +3931,9 @@ function UserManagementSection() {
   };
 
   const isViewerUser = (user: TenantUser) => {
-    return user.roles?.some(r => r.role?.name === 'viewer');
+    const viewerRole = allRoles.find(r => r.name === 'viewer');
+    if (!viewerRole) return false;
+    return user.roles?.some(r => r.roleId === viewerRole.id);
   };
 
   // Filter to only show tenant-specific roles (Manager, Operator, Viewer)
