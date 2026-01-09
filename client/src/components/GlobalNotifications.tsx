@@ -34,6 +34,11 @@ interface CustomerRequest {
   status: string;
 }
 
+interface SessionData {
+  authenticated: boolean;
+  user?: { id: number; tenantId: number };
+}
+
 export function GlobalNotifications() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -43,6 +48,24 @@ export function GlobalNotifications() {
   const previousViewerCountRef = useRef<number | null>(null);
   const previousCustomerCountRef = useRef<number | null>(null);
   const previousSupportCountRef = useRef<number | null>(null);
+  const previousUserIdRef = useRef<number | null>(null);
+
+  const { data: session } = useQuery<SessionData>({
+    queryKey: ['/api/auth/session'],
+    refetchInterval: 15000,
+  });
+
+  useEffect(() => {
+    const currentUserId = session?.user?.id ?? null;
+    if (previousUserIdRef.current !== null && previousUserIdRef.current !== currentUserId) {
+      previousPartnerCountRef.current = null;
+      previousViewerCountRef.current = null;
+      previousCustomerCountRef.current = null;
+      previousSupportCountRef.current = null;
+      notificationsShownRef.current = new Set();
+    }
+    previousUserIdRef.current = currentUserId;
+  }, [session?.user?.id]);
 
   const { data: inAppNotifications = [] } = useQuery<InAppNotification[]>({
     queryKey: ['/api/in-app-notifications'],
