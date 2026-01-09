@@ -45,7 +45,7 @@ const allNavItems: NavItem[] = [
   { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, partnerOnly: true },
-  { href: "/viewer-stats", label: "İzleyiciler", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
+  { href: "/viewer-stats", label: "Is Ortaklari", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/partner-availability", label: "Partnerler", icon: Building, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
@@ -79,7 +79,7 @@ export function Sidebar() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const { permissions, hasPermission, hasAnyPermission } = usePermissions();
 
-  // Check if user is a "viewer" (İzleyici) - only has capacity.view and no other main permissions
+  // Check if user is a "partner" (İş Ortağı) - only has capacity.view and no other main permissions
   const isPartnerOnly = useMemo(() => {
     const mainPermissions = [
       PERMISSION_KEYS.RESERVATIONS_VIEW,
@@ -459,7 +459,7 @@ export function Sidebar() {
                 );
               })}
               
-              {/* Partner Profile Link - Only for İzleyici users */}
+              {/* Partner Profile Link - Only for İş Ortağı users */}
               {isPartnerOnly && (
                 <Link href="/partner-profile">
                   <div className={cn(
@@ -625,7 +625,7 @@ export function Sidebar() {
             );
           })}
           
-          {/* Partner Profile Link - Only for İzleyici users */}
+          {/* Partner Profile Link - Only for İş Ortağı users */}
           {isPartnerOnly && (
             <Link href="/partner-profile">
               <div className={cn(

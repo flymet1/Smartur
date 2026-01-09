@@ -394,7 +394,7 @@ export default function ViewerStats() {
       <Sidebar />
       <main className="flex-1 md:ml-64 p-4 md:p-6 space-y-6">
         <div className="flex flex-col gap-4">
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">İzleyiciler</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Is Ortaklari</h1>
           
           <div className="flex flex-wrap items-center gap-3">
             <Select value={selectedPartnerId} onValueChange={setSelectedPartnerId}>
@@ -494,7 +494,7 @@ export default function ViewerStats() {
             data-testid="card-active-partners"
           >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Aktif İzleyici</CardTitle>
+              <CardTitle className="text-sm font-medium">Aktif Is Ortagi</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -659,7 +659,7 @@ export default function ViewerStats() {
           <TabsContent value="stats" className="space-y-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">İzleyici Performansı</CardTitle>
+                <CardTitle className="text-base">Is Ortagi Performansi</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {isLoading ? (
