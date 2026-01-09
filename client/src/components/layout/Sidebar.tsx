@@ -21,8 +21,7 @@ import {
   BarChart2,
   Handshake,
   Eye,
-  ClipboardList,
-  Building
+  ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -45,8 +44,8 @@ const allNavItems: NavItem[] = [
   { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, viewerOnly: true },
-  { href: "/viewer-stats", label: "Izleyiciler", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
-  { href: "/partner-availability", label: "Partnerler", icon: Building, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
+  { href: "/viewer-stats", label: "Izleyiciler", icon: Eye, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
+  { href: "/partner-availability", label: "Partnerler", icon: Handshake, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/finance", label: "Finans & Acentalar", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
