@@ -81,7 +81,7 @@ export function GlobalNotifications() {
   const getNotificationRoute = (type: string): string => {
     switch (type) {
       case 'support_request':
-        return '/support';
+        return '/messages?filter=human_intervention';
       case 'change_request':
         return '/reservations';
       case 'new_reservation':
@@ -203,8 +203,8 @@ export function GlobalNotifications() {
       previousSupportCountRef,
       '{count} açık destek talebi var',
       '{count} yeni destek talebi geldi',
-      'Destek sayfasından inceleyin.',
-      '/support',
+      'Mesajlar sayfasından inceleyin.',
+      '/messages?filter=human_intervention',
       'destructive'
     );
   }, [openSupportRequests]);
