@@ -4072,21 +4072,19 @@ function UserManagementSection() {
                   <Badge variant={user.isActive ? "default" : "secondary"}>
                     {user.isActive ? "Aktif" : "Pasif"}
                   </Badge>
-                  {isViewerUser(user) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => loadViewerShares(user)}
-                          data-testid={`button-viewer-shares-${user.id}`}
-                        >
-                          <Settings2 className="h-4 w-4 text-blue-500" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Aktivite Paylaşımları</TooltipContent>
-                    </Tooltip>
-                  )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => loadViewerShares(user)}
+                        data-testid={`button-viewer-shares-${user.id}`}
+                      >
+                        <Settings2 className="h-4 w-4 text-blue-500" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Aktivite Erişimi ve Fiyatları</TooltipContent>
+                  </Tooltip>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -4234,13 +4232,13 @@ function UserManagementSection() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Settings2 className="h-5 w-5" />
-                Aktivite Paylaşımları - {viewerSharesUser?.name || viewerSharesUser?.username}
+                Aktivite Erişimi - {viewerSharesUser?.name || viewerSharesUser?.username}
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 py-4">
               <p className="text-sm text-muted-foreground">
-                Bu izleyici kullanıcının görebileceği aktiviteleri ve özel fiyatlarını belirleyin.
+                Bu kullanıcının görebileceği aktiviteleri ve özel fiyatlarını belirleyin.
               </p>
 
               {activities.length === 0 ? (
