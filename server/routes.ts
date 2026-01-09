@@ -740,10 +740,20 @@ Eğer müşteri mevcut bir rezervasyon hakkında soru soruyorsa, kibarca SİPAR�
 Yeni rezervasyon yapmak istiyorlarsa normal şekilde yardımcı ol.`;
   }
 
-  // Build partner context
+  // Build partner context - use settings if available, otherwise use default
   let partnerContext = "";
   if (context.isPartner && context.partnerName) {
-    partnerContext = `
+    if (context.partnerPrompt) {
+      // Use custom partner prompt from settings
+      partnerContext = `
+=== PARTNER ACENTA BİLGİSİ ===
+DİKKAT: Bu mesaj bir PARTNER ACENTADAN (${context.partnerName}) geliyor, normal bir müşteriden DEĞİL!
+
+${context.partnerPrompt}
+`;
+    } else {
+      // Use default partner instructions
+      partnerContext = `
 === PARTNER ACENTA BİLGİSİ ===
 DİKKAT: Bu mesaj bir PARTNER ACENTADAN (${context.partnerName}) geliyor, normal bir müşteriden DEĞİL!
 
@@ -760,12 +770,23 @@ Partner acentalara FARKLI davran:
 - Saat 14:00: 12 kişilik yer mevcut
 Smartur panelinizden rezervasyon oluşturabilirsiniz."
 `;
+    }
   }
 
-  // Build viewer context
+  // Build viewer context - use settings if available, otherwise use default
   let viewerContext = "";
   if (context.isViewer && context.viewerName) {
-    viewerContext = `
+    if (context.viewerPrompt) {
+      // Use custom viewer prompt from settings
+      viewerContext = `
+=== İZLEYİCİ KULLANICI BİLGİSİ ===
+DİKKAT: Bu mesaj bir İZLEYİCİDEN (${context.viewerName}) geliyor, normal bir müşteriden DEĞİL!
+
+${context.viewerPrompt}
+`;
+    } else {
+      // Use default viewer instructions
+      viewerContext = `
 === İZLEYİCİ KULLANICI BİLGİSİ ===
 DİKKAT: Bu mesaj bir İZLEYİCİDEN (${context.viewerName}) geliyor, normal bir müşteriden DEĞİL!
 
@@ -782,6 +803,7 @@ DİKKAT: Bu mesaj bir İZLEYİCİDEN (${context.viewerName}) geliyor, normal bir
 - Saat 14:00: 12 kişilik yer mevcut
 Rezervasyon talebi için lütfen operatörlerimizle iletişime geçin."
 `;
+    }
   }
 
   // Build customer request context
@@ -3795,6 +3817,8 @@ export async function registerRoutes(
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
       const botRules = await storage.getSetting('botRules');
+      const partnerPrompt = await storage.getSetting('partner_prompt');
+      const viewerPrompt = await storage.getSetting('viewer_prompt');
       
       // If bot is disabled, just log the message and don't respond
       if (botAccess.enabled === false) {
@@ -3818,8 +3842,10 @@ export async function registerRoutes(
         botRules,
         isPartner,
         partnerName: partnerTenant?.name,
+        partnerPrompt,
         isViewer,
-        viewerName: viewerUser?.name
+        viewerName: viewerUser?.name,
+        viewerPrompt
       }, botPrompt || undefined);
       
       // Check if needs human intervention

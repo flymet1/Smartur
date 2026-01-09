@@ -58,6 +58,10 @@ export default function Settings() {
   );
   const [botRules, setBotRules] = useState("");
   const [botRulesLoaded, setBotRulesLoaded] = useState(false);
+  const [partnerPrompt, setPartnerPrompt] = useState("");
+  const [partnerPromptLoaded, setPartnerPromptLoaded] = useState(false);
+  const [viewerPrompt, setViewerPrompt] = useState("");
+  const [viewerPromptLoaded, setViewerPromptLoaded] = useState(false);
   const [customerSupportEmail, setCustomerSupportEmail] = useState("");
   const [whatsappConnected, setWhatsappConnected] = useState(false);
   const [isRefreshingQR, setIsRefreshingQR] = useState(false);
@@ -150,6 +154,24 @@ export default function Settings() {
     queryKey: ['/api/settings', 'botRules'],
     queryFn: async () => {
       const res = await fetch('/api/settings/botRules');
+      return res.json();
+    },
+  });
+
+  // Load partner prompt
+  const { data: partnerPromptSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'partner_prompt'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/partner_prompt');
+      return res.json();
+    },
+  });
+
+  // Load viewer prompt
+  const { data: viewerPromptSetting } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'viewer_prompt'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/viewer_prompt');
       return res.json();
     },
   });
@@ -252,6 +274,22 @@ export default function Settings() {
       setBotRulesLoaded(true);
     }
   }, [botRulesSetting?.value, botRulesLoaded]);
+
+  // Apply loaded partner prompt when data arrives
+  useEffect(() => {
+    if (partnerPromptSetting?.value && !partnerPromptLoaded) {
+      setPartnerPrompt(partnerPromptSetting.value);
+      setPartnerPromptLoaded(true);
+    }
+  }, [partnerPromptSetting?.value, partnerPromptLoaded]);
+
+  // Apply loaded viewer prompt when data arrives
+  useEffect(() => {
+    if (viewerPromptSetting?.value && !viewerPromptLoaded) {
+      setViewerPrompt(viewerPromptSetting.value);
+      setViewerPromptLoaded(true);
+    }
+  }, [viewerPromptSetting?.value, viewerPromptLoaded]);
 
   // Apply loaded bulk message templates when data arrives (with backwards compatibility)
   useEffect(() => {
@@ -511,6 +549,16 @@ export default function Settings() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: botRules })
+        }),
+        fetch("/api/settings/partner_prompt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: partnerPrompt })
+        }),
+        fetch("/api/settings/viewer_prompt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: viewerPrompt })
         }),
         fetch("/api/settings/reminderHours", {
           method: "POST",
@@ -1242,6 +1290,66 @@ export default function Settings() {
                         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                           <p className="text-xs text-amber-900 dark:text-amber-200">
                             <strong>Önemli:</strong> Bu kurallar bot'un davranışını doğrudan etkiler. Yaptığınız değişiklikler kaydedildikten sonra bot yeni kurallara göre çalışmaya başlar.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="partnerPrompt" className="text-base font-medium">Partner Acenta Talimatları</Label>
+                            {!isOwner && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Shield className="w-3 h-3 mr-1" />
+                                Kilitli
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Partner acentalardan gelen mesajlara bot'un nasıl yanıt vereceğini belirleyin. {!isOwner && "Bu alan sadece acenta yöneticisi tarafından düzenlenebilir."}
+                          </p>
+                          <Textarea 
+                            id="partnerPrompt"
+                            value={partnerPrompt}
+                            onChange={(e) => isOwner && setPartnerPrompt(e.target.value)}
+                            placeholder="Partner acentalara rezervasyon linki verme, sadece müsaitlik bilgisi paylaş. Smartur panelinizden rezervasyon oluşturabilirsiniz de..."
+                            className={cn("min-h-[150px] font-mono text-sm", !isOwner && "bg-muted cursor-not-allowed")}
+                            disabled={!isOwner}
+                            readOnly={!isOwner}
+                            data-testid="textarea-partner-prompt"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Partner acentalar Smartur kullanan diğer acentalardır. Bu talimatlar partner telefonundan mesaj geldiğinde kullanılır.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor="viewerPrompt" className="text-base font-medium">İzleyici Kullanıcı Talimatları</Label>
+                            {!isOwner && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Shield className="w-3 h-3 mr-1" />
+                                Kilitli
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            İzleyici rolündeki kullanıcılardan gelen mesajlara bot'un nasıl yanıt vereceğini belirleyin. {!isOwner && "Bu alan sadece acenta yöneticisi tarafından düzenlenebilir."}
+                          </p>
+                          <Textarea 
+                            id="viewerPrompt"
+                            value={viewerPrompt}
+                            onChange={(e) => isOwner && setViewerPrompt(e.target.value)}
+                            placeholder="İzleyicilere rezervasyon linki verme, sadece müsaitlik bilgisi paylaş. Rezervasyon talebi için operatörlerle iletişime geçmelerini öner..."
+                            className={cn("min-h-[150px] font-mono text-sm", !isOwner && "bg-muted cursor-not-allowed")}
+                            disabled={!isOwner}
+                            readOnly={!isOwner}
+                            data-testid="textarea-viewer-prompt"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            İzleyiciler acentanızın sadece müsaitlik görebilen kullanıcılarıdır. Bu talimatlar izleyici telefonundan mesaj geldiğinde kullanılır.
                           </p>
                         </div>
                       </div>
