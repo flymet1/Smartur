@@ -29,12 +29,20 @@ interface ChangeRequest {
   initiatedByType: string;
 }
 
+interface CustomerRequest {
+  id: number;
+  status: string;
+}
+
 export function GlobalNotifications() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const notificationsShownRef = useRef<Set<number>>(new Set());
-  const partnerNotificationShownRef = useRef(false);
+  
   const previousPartnerCountRef = useRef<number | null>(null);
+  const previousViewerCountRef = useRef<number | null>(null);
+  const previousCustomerCountRef = useRef<number | null>(null);
+  const previousSupportCountRef = useRef<number | null>(null);
 
   const { data: inAppNotifications = [] } = useQuery<InAppNotification[]>({
     queryKey: ['/api/in-app-notifications'],
@@ -48,6 +56,16 @@ export function GlobalNotifications() {
 
   const { data: changeRequests = [] } = useQuery<ChangeRequest[]>({
     queryKey: ['/api/reservation-change-requests'],
+    refetchInterval: 15000,
+  });
+
+  const { data: customerRequests = [] } = useQuery<CustomerRequest[]>({
+    queryKey: ['/api/customer-requests'],
+    refetchInterval: 15000,
+  });
+
+  const { data: supportSummary } = useQuery<{ openCount: number }>({
+    queryKey: ['/api/support-requests/summary'],
     refetchInterval: 15000,
   });
 
@@ -87,6 +105,11 @@ export function GlobalNotifications() {
   };
 
   const pendingReservationRequests = reservationRequests.filter(r => r.status === 'pending');
+  
+  const viewerReservationRequests = pendingReservationRequests.filter(r => getInitiatorTypeFromNotes(r.notes) === 'viewer');
+  const viewerChangeRequests = changeRequests.filter(r => r.status === 'pending' && r.initiatedByType === 'viewer');
+  const totalViewerRequests = viewerReservationRequests.length + viewerChangeRequests.length;
+
   const partnerReservationRequests = pendingReservationRequests.filter(r => {
     const type = getInitiatorTypeFromNotes(r.notes);
     return type === 'partner' || type === 'unknown';
@@ -94,39 +117,97 @@ export function GlobalNotifications() {
   const partnerChangeRequests = changeRequests.filter(r => r.status === 'pending' && r.initiatedByType === 'partner');
   const totalPartnerRequests = partnerReservationRequests.length + partnerChangeRequests.length;
 
-  useEffect(() => {
-    if (previousPartnerCountRef.current === null) {
-      previousPartnerCountRef.current = totalPartnerRequests;
-      if (totalPartnerRequests > 0 && !partnerNotificationShownRef.current) {
-        partnerNotificationShownRef.current = true;
+  const pendingCustomerRequests = customerRequests.filter(r => r.status === 'pending');
+  const customerChangeRequests = changeRequests.filter(r => r.status === 'pending' && r.initiatedByType === 'customer');
+  const totalCustomerRequests = pendingCustomerRequests.length + customerChangeRequests.length;
+
+  const openSupportRequests = supportSummary?.openCount || 0;
+
+  const showRequestNotification = (
+    count: number,
+    previousRef: React.MutableRefObject<number | null>,
+    title: string,
+    newTitle: string,
+    description: string,
+    route: string,
+    variant: "default" | "destructive" = "default"
+  ) => {
+    if (previousRef.current === null) {
+      previousRef.current = count;
+      if (count > 0) {
         toast({
-          title: `${totalPartnerRequests} bekleyen partner talebi var`,
-          description: "Partner Müsaitlik sayfasından inceleyin.",
-          variant: "default",
+          title: title.replace('{count}', count.toString()),
+          description,
+          variant,
           action: (
-            <ToastAction altText="Görüntüle" onClick={() => navigate('/partner-availability')}>
+            <ToastAction altText="Görüntüle" onClick={() => navigate(route)}>
               Görüntüle
             </ToastAction>
           ),
         });
       }
-    } else if (totalPartnerRequests > previousPartnerCountRef.current) {
-      const newCount = totalPartnerRequests - previousPartnerCountRef.current;
+    } else if (count > previousRef.current) {
+      const newCount = count - previousRef.current;
       toast({
-        title: `${newCount} yeni partner talebi geldi`,
-        description: "Partner Müsaitlik sayfasından inceleyin.",
-        variant: "default",
+        title: newTitle.replace('{count}', newCount.toString()),
+        description,
+        variant,
         action: (
-          <ToastAction altText="Görüntüle" onClick={() => navigate('/partner-availability')}>
+          <ToastAction altText="Görüntüle" onClick={() => navigate(route)}>
             Görüntüle
           </ToastAction>
         ),
       });
-      previousPartnerCountRef.current = totalPartnerRequests;
+      previousRef.current = count;
     } else {
-      previousPartnerCountRef.current = totalPartnerRequests;
+      previousRef.current = count;
     }
-  }, [totalPartnerRequests, toast, navigate]);
+  };
+
+  useEffect(() => {
+    showRequestNotification(
+      totalPartnerRequests,
+      previousPartnerCountRef,
+      '{count} bekleyen partner talebi var',
+      '{count} yeni partner talebi geldi',
+      'Partner Müsaitlik sayfasından inceleyin.',
+      '/partner-availability'
+    );
+  }, [totalPartnerRequests]);
+
+  useEffect(() => {
+    showRequestNotification(
+      totalViewerRequests,
+      previousViewerCountRef,
+      '{count} bekleyen izleyici talebi var',
+      '{count} yeni izleyici talebi geldi',
+      'İzleyici İstatistikleri sayfasından inceleyin.',
+      '/viewer-stats'
+    );
+  }, [totalViewerRequests]);
+
+  useEffect(() => {
+    showRequestNotification(
+      totalCustomerRequests,
+      previousCustomerCountRef,
+      '{count} bekleyen müşteri talebi var',
+      '{count} yeni müşteri talebi geldi',
+      'Müşteri Talepleri sayfasından inceleyin.',
+      '/customer-requests'
+    );
+  }, [totalCustomerRequests]);
+
+  useEffect(() => {
+    showRequestNotification(
+      openSupportRequests,
+      previousSupportCountRef,
+      '{count} açık destek talebi var',
+      '{count} yeni destek talebi geldi',
+      'Destek sayfasından inceleyin.',
+      '/support',
+      'destructive'
+    );
+  }, [openSupportRequests]);
 
   useEffect(() => {
     const unreadNotifications = inAppNotifications.filter(n => !n.isRead);
