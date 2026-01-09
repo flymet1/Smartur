@@ -80,6 +80,8 @@ interface ReservationRequest {
   processNotes: string | null;
   reservationId: number | null;
   createdAt: string | null;
+  requesterName?: string;
+  requesterType?: 'viewer' | 'partner' | 'unknown';
 }
 
 export default function PartnerAvailability() {
@@ -934,7 +936,12 @@ export default function PartnerAvailability() {
                 <div key={request.id} className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <p className="font-medium">{request.customerName}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{request.customerName}</p>
+                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300">
+                          Gelen: {request.requesterName || getPartnerNameFromNotes(request.notes)}
+                        </Badge>
+                      </div>
                       <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
                       <div className="flex flex-wrap items-center gap-2 text-sm">
                         <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
@@ -942,7 +949,6 @@ export default function PartnerAvailability() {
                         <span>{request.time}</span>
                         <span>{request.guests} kisi</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant="outline" onClick={() => openProcessDialog(request, "reject")} data-testid={`button-reject-${request.id}`}>
@@ -975,7 +981,12 @@ export default function PartnerAvailability() {
                 <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <p className="font-medium">{request.customerName}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{request.customerName}</p>
+                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300">
+                          Gelen: {request.requesterName || getPartnerNameFromNotes(request.notes)}
+                        </Badge>
+                      </div>
                       <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
                       <div className="flex flex-wrap items-center gap-2 text-sm">
                         <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
@@ -983,7 +994,6 @@ export default function PartnerAvailability() {
                         <span>{request.time}</span>
                         <span>{request.guests} kisi</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button 
@@ -1024,13 +1034,17 @@ export default function PartnerAvailability() {
                 <div key={request.id} className="border rounded-lg p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <p className="font-medium">{request.customerName}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{request.customerName}</p>
+                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300">
+                          Gelen: {request.requesterName || getPartnerNameFromNotes(request.notes)}
+                        </Badge>
+                      </div>
                       <div className="flex flex-wrap items-center gap-2 text-sm">
                         <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
                         <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
                         <span>{request.time}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground">Partner: {getPartnerNameFromNotes(request.notes)}</p>
                     </div>
                     {getStatusBadge(request.status)}
                   </div>
