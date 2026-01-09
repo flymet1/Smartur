@@ -75,6 +75,7 @@ const searchableContent = [
   { id: "rezervasyon-yönetimi", keywords: ["rezervasyon", "yönetim", "durum", "onay", "iptal", "beklemede", "paket", "tur", "sipariş", "filtre", "takvim", "liste"], title: "Rezervasyon Yönetimi" },
   { id: "müşteri-takip", keywords: ["müşteri", "takip", "link", "token", "talep", "iptal", "saat", "değişiklik", "bildirim", "whatsapp", "acenta"], title: "Müşteri Takip" },
   { id: "finans", keywords: ["finans", "acenta", "ödeme", "sevk", "dispatch", "payout", "kdv", "fatura", "rapor", "hesaplasma"], title: "Finans" },
+  { id: "partner-izleyici", keywords: ["partner", "izleyici", "viewer", "davet", "kod", "bağlantı", "paylaşım", "özel", "fiyat", "döviz", "usd", "eur", "try", "erişim", "aktivite"], title: "Partner ve İzleyici" },
   { id: "ayarlar", keywords: ["ayar", "güvenlik", "whatsapp", "entegrasyon", "sistem", "şifre", "logo", "prompt", "otomatik", "yanit", "kara", "liste", "tatil", "gmail", "güncelleme", "hata", "sablon", "toplu", "bildirim"], title: "Ayarlar" },
   { id: "lisans", keywords: ["lisans", "üyelik", "plan", "trial", "başıc", "professional", "enterprise", "sure", "limit"], title: "Lisans" },
   { id: "sorun-giderme", keywords: ["sorun", "hata", "problem", "mesaj", "sipariş", "bot", "kapasite", "bildirim"], title: "Sorun Giderme" },
@@ -363,6 +364,30 @@ export default function UserGuide() {
                   "Varsayılan kişi başı ödeme tutarı",
                   "Aktif/pasif durumu",
                   "Telefon numarası ile WhatsApp bilgilendirme"
+                ]}
+              />
+
+              <PageGuideCard 
+                icon={<Users className="h-5 w-5 text-purple-500" />}
+                title="İş Ortağı Paneli"
+                path="/partner-profile"
+                features={[
+                  "Rezervasyon taleplerinizi takip edin",
+                  "Onaylanan/reddedilen talep durumları",
+                  "Oluşturduğunuz rezervasyonlar listesi",
+                  "Talep istatistikleri (bekleyen, onaylı, red)"
+                ]}
+              />
+
+              <PageGuideCard 
+                icon={<CalendarDays className="h-5 w-5 text-cyan-500" />}
+                title="Partner Müsaitlik"
+                path="/partner-availability"
+                features={[
+                  "Bağlı tedarikçilerin paylaştığı aktiviteler",
+                  "Tarih aralığına göre müsaitlik görüntüleme",
+                  "Size özel fiyatları görme",
+                  "Hızlı rezervasyon talebi oluşturma"
                 ]}
               />
 
@@ -1268,8 +1293,151 @@ export default function UserGuide() {
           </Section>
 
           <Section 
+            icon={<Users className="h-5 w-5" />}
+            title="7. Partner ve İzleyici Sistemi"
+            id="partner-izleyici"
+          >
+            <div className="space-y-6">
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-purple-600">
+                  <Building2 className="h-4 w-4" />
+                  Partner ve İzleyici Kavramları
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Smartur, farklı iş ortaklığı modellerini destekler. <strong>Partnerler</strong> (İş Ortakları),
+                  sizin adınıza müşteri toplayan ve rezervasyon talebi gönderen acentalardır. <strong>İzleyiciler</strong> ise
+                  sınırlı panel erişimi olan harici kullanıcılardır. Her iki rol için de WhatsApp botu özel davranış sergiler.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-3">İş Ortağı Paneli (Partner Profile)</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Partner rolüyle giriş yapan kullanıcılar /partner-profile sayfasına erişir:
+                </p>
+                <ul className="list-disc list-inside text-sm text-muted-foreground ml-4 space-y-1">
+                  <li>Gönderdikleri rezervasyon taleplerini görürler</li>
+                  <li>Talep durumları: Beklemede, Onaylandı, Reddedildi</li>
+                  <li>Oluşturdukları onaylı rezervasyonların listesi</li>
+                  <li>İstatistik kartları ile özet bilgi</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-3">Partner Müsaitlik Sayfası</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Partner rolündeki kullanıcılar /partner-availability sayfasında:
+                </p>
+                <ul className="list-disc list-inside text-sm text-muted-foreground ml-4 space-y-1">
+                  <li>Tedarikçilerin paylaştığı aktiviteleri görürler</li>
+                  <li>Tarih aralığına göre müsaitlik durumunu kontrol edebilirler</li>
+                  <li>Kendilerine tanımlanan özel fiyatları görürler</li>
+                  <li>Hızlı rezervasyon talebi oluşturabilirler</li>
+                </ul>
+              </div>
+
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 text-green-600">
+                  <DollarSign className="h-4 w-4" />
+                  Özel Fiyatlandırma Sistemi
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Partner ve izleyiciler için aktivite bazlı özel fiyatlar tanımlanabilir:
+                </p>
+                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                  <li>Her aktivite için TRY, USD veya EUR cinsinden fiyat</li>
+                  <li>Partner/izleyici sadece kendine tanımlı fiyatları görür</li>
+                  <li>Tanımsız aktivitelerde standart fiyat gösterilir</li>
+                  <li>Rezervasyon talebi oluştururken özel fiyat otomatik uygulanır</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-3">Aktivite Paylaşımı</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Aktivitelerinizi partnerlerle paylaşmak için:
+                </p>
+                <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground ml-4">
+                  <li>Aktiviteler sayfasına gidin</li>
+                  <li>Düzenlemek istediğiniz aktiviteyi seçin</li>
+                  <li>"Partnerlerle Paylaş" seçeneğini aktif edin</li>
+                  <li>Paylaşılan aktiviteler partner panelinde görünür hale gelir</li>
+                </ol>
+              </div>
+
+              <Separator />
+
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-blue-600">
+                  <Eye className="h-4 w-4" />
+                  İzleyici (Viewer) Rolü
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  İzleyiciler, sınırlı yetkilere sahip kullanıcılardır. "viewer" rolü atanmış kullanıcılar:
+                </p>
+                <ul className="list-disc list-inside text-xs text-muted-foreground mt-2 space-y-1">
+                  <li>Kendilerine atanan aktiviteleri görür</li>
+                  <li>Müsaitlik ve kapasite bilgilerine erişir</li>
+                  <li>Rezervasyon talebi oluşturabilir</li>
+                  <li>Finans ve sistem ayarlarına erişemez</li>
+                </ul>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h5 className="font-medium mb-2">İzleyici Yetkiler</h5>
+                  <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                    <li>Atanan aktiviteleri görme</li>
+                    <li>Müsaitlik kontrolü</li>
+                    <li>Özel fiyatları görme</li>
+                    <li>Rezervasyon talebi</li>
+                  </ul>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h5 className="font-medium mb-2">İzleyici Kısıtlamalar</h5>
+                  <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                    <li>Diğer aktiviteleri göremez</li>
+                    <li>Ayarları değiştiremez</li>
+                    <li>Finans erişimi yok</li>
+                    <li>Kullanıcı yönetimi yok</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-primary">
+                  <MessageCircle className="h-4 w-4" />
+                  WhatsApp Bot Davranışı (Partner/İzleyici İçin)
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Partner veya izleyici olarak kayıtlı telefon numarasından WhatsApp mesajı geldiğinde,
+                  bot bu kişiyi otomatik tanır ve özel davranış uygular:
+                </p>
+                <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                  <li>Telefon numarası kullanıcı kayıtlarıyla eşleştirilir</li>
+                  <li>Rezervasyon veya takip linkleri paylaşılmaz</li>
+                  <li>Smartur paneline giriş yapması yönlendirilir</li>
+                  <li>Partner/izleyici için açık destek talebi varsa bot sessiz kalır</li>
+                </ul>
+                <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Bot Talimatları:</strong> Ayarlar &gt; WhatsApp &gt; Bot Ayarları bölümünde
+                    partner ve izleyici kullanıcılar için özel bot talimatları (prompt) tanımlayabilirsiniz.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex gap-2 flex-wrap">
+                <NavLink href="/partner-profile" label="İş Ortağı Paneli" icon={<User className="h-4 w-4" />} />
+                <NavLink href="/partner-availability" label="Partner Müsaitlik" icon={<CalendarDays className="h-4 w-4" />} />
+                <NavLink href="/viewer-stats" label="İzleyici İstatistikleri" icon={<Eye className="h-4 w-4" />} />
+              </div>
+            </div>
+          </Section>
+
+          <Section 
             icon={<Settings className="h-5 w-5" />}
-            title="7. Ayarlar Detayları"
+            title="8. Ayarlar Detayları"
             id="ayarlar"
           >
             <div className="space-y-6">
@@ -1328,7 +1496,7 @@ export default function UserGuide() {
 
           <Section 
             icon={<Key className="h-5 w-5" />}
-            title="8. Lisans ve Üyelik Sistemi"
+            title="9. Lisans ve Üyelik Sistemi"
             id="lisans"
           >
             <div className="space-y-6">
@@ -1384,7 +1552,7 @@ export default function UserGuide() {
 
           <Section 
             icon={<HelpCircle className="h-5 w-5" />}
-            title="9. Sorun Giderme"
+            title="10. Sorun Giderme"
             id="sorun-giderme"
           >
             <div className="space-y-4">
@@ -1413,7 +1581,7 @@ export default function UserGuide() {
 
           <Section 
             icon={<RefreshCw className="h-5 w-5" />}
-            title="10. Son Güncellemeler"
+            title="11. Son Güncellemeler"
             id="güncellemeler"
           >
             <div className="space-y-4">
