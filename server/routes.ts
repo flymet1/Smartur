@@ -2411,6 +2411,7 @@ export async function registerRoutes(
   });
   
   // Get reservation requests (requires RESERVATIONS_VIEW or RESERVATIONS_CREATE permission - operator/manager role)
+  // Enriched with requester info (name, phone, type: viewer/partner)
   app.get("/api/reservation-requests", requirePermission(PERMISSIONS.RESERVATIONS_VIEW, PERMISSIONS.RESERVATIONS_CREATE), async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
@@ -2418,7 +2419,59 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       const requests = await storage.getReservationRequests(tenantId);
-      res.json(requests);
+      
+      // Get all app users (including from other tenants for partner lookup)
+      const allUsers = await storage.getAppUsers();
+      const userMap = new Map(allUsers.map(u => [u.id, u]));
+      
+      // Get viewer role ID
+      const allRoles = await storage.getRoles();
+      const viewerRole = allRoles.find(r => r.name.toLowerCase() === 'viewer');
+      
+      // Enrich requests with requester info
+      const enrichedRequests = await Promise.all(requests.map(async (request) => {
+        let requesterName = "Bilinmiyor";
+        let requesterPhone = null;
+        let requesterType: 'viewer' | 'partner' | 'unknown' = 'unknown';
+        
+        if (request.requestedBy) {
+          const user = userMap.get(request.requestedBy);
+          if (user) {
+            requesterName = user.name || user.username || "Bilinmiyor";
+            requesterPhone = user.phone;
+            
+            // Check if user is a viewer (same tenant, viewer role)
+            if (user.tenantId === tenantId) {
+              const userRoles = await storage.getUserRoles(user.id);
+              const isViewer = viewerRole && userRoles.some(ur => ur.roleId === viewerRole.id);
+              requesterType = isViewer ? 'viewer' : 'partner';
+            } else {
+              // User from different tenant = partner
+              requesterType = 'partner';
+            }
+          }
+        }
+        
+        // Also parse notes for fallback type detection
+        if (requesterType === 'unknown' && request.notes) {
+          const lowerNotes = request.notes.toLowerCase();
+          if (lowerNotes.includes('[viewer:') || lowerNotes.includes('[izleyici:')) {
+            requesterType = 'viewer';
+          } else if (lowerNotes.includes('[partner:')) {
+            requesterType = 'partner';
+          }
+        }
+        
+        return {
+          ...request,
+          requesterName,
+          requesterPhone,
+          requesterType,
+          requestCategory: 'new_reservation' as const
+        };
+      }));
+      
+      res.json(enrichedRequests);
     } catch (error) {
       console.error("Get reservation requests error:", error);
       res.status(500).json({ error: "Talepler alinamadi" });

@@ -60,6 +60,10 @@ interface ReservationRequest {
   processNotes: string | null;
   reservationId: number | null;
   createdAt: string | null;
+  requesterName?: string;
+  requesterPhone?: string | null;
+  requesterType?: 'viewer' | 'partner' | 'unknown';
+  requestCategory?: 'new_reservation';
 }
 
 export default function ReservationRequests() {
@@ -133,16 +137,27 @@ export default function ReservationRequests() {
     return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
   };
 
-  const getRequestType = (notes: string | null): 'viewer' | 'partner' => {
-    if (!notes) return 'partner';
-    const lowerNotes = notes.toLowerCase();
+  const getRequestType = (request: ReservationRequest): 'viewer' | 'partner' => {
+    // Use backend-provided requesterType if available
+    if (request.requesterType === 'viewer') return 'viewer';
+    if (request.requesterType === 'partner') return 'partner';
+    
+    // Fallback to notes parsing
+    if (!request.notes) return 'partner';
+    const lowerNotes = request.notes.toLowerCase();
     if (lowerNotes.includes('[viewer:') || lowerNotes.includes('[izleyici:')) {
       return 'viewer';
     }
-    if (lowerNotes.includes('[partner:')) {
-      return 'partner';
-    }
     return 'partner';
+  };
+  
+  const getRequesterDisplayName = (request: ReservationRequest): string => {
+    // Use backend-provided requesterName if available
+    if (request.requesterName && request.requesterName !== 'Bilinmiyor') {
+      return request.requesterName;
+    }
+    // Fallback to local lookup
+    return getRequesterName(request.requestedBy);
   };
 
   const getRequesterName = (requestedBy: number | null) => {
@@ -207,8 +222,8 @@ export default function ReservationRequests() {
     });
   };
 
-  const viewerRequests = requests.filter(r => getRequestType(r.notes) === 'viewer');
-  const partnerRequests = requests.filter(r => getRequestType(r.notes) === 'partner');
+  const viewerRequests = requests.filter(r => getRequestType(r) === 'viewer');
+  const partnerRequests = requests.filter(r => getRequestType(r) === 'partner');
   
   const pendingViewerRequests = viewerRequests.filter(r => r.status === "pending");
   const approvedViewerRequests = viewerRequests.filter(r => r.status === "approved");
@@ -275,7 +290,7 @@ export default function ReservationRequests() {
                                   </div>
                                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <Eye className="h-3.5 w-3.5" />
-                                    <span>Izleyici: {getRequesterName(request.requestedBy)}</span>
+                                    <span>Izleyici: {getRequesterDisplayName(request)}</span>
                                   </div>
                                 </div>
                                 <div className="flex gap-2">
@@ -314,7 +329,7 @@ export default function ReservationRequests() {
                                   </div>
                                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <Eye className="h-3.5 w-3.5" />
-                                    <span>Izleyici: {getRequesterName(request.requestedBy)}</span>
+                                    <span>Izleyici: {getRequesterDisplayName(request)}</span>
                                   </div>
                                 </div>
                                 <div className="flex gap-2">
@@ -389,7 +404,7 @@ export default function ReservationRequests() {
                                   )}
                                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <Handshake className="h-3.5 w-3.5" />
-                                    <span>Is Ortagi: {getRequesterName(request.requestedBy)}</span>
+                                    <span>Is Ortagi: {getRequesterDisplayName(request)}</span>
                                     {request.createdAt && <span className="ml-1">({format(new Date(request.createdAt), "d MMM HH:mm", { locale: tr })})</span>}
                                   </div>
                                 </div>
@@ -429,7 +444,7 @@ export default function ReservationRequests() {
                                   </div>
                                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                     <Handshake className="h-3.5 w-3.5" />
-                                    <span>Is Ortagi: {getRequesterName(request.requestedBy)}</span>
+                                    <span>Is Ortagi: {getRequesterDisplayName(request)}</span>
                                   </div>
                                 </div>
                                 <div className="flex gap-2">
