@@ -150,28 +150,31 @@ export default function Settings() {
   });
 
   // Load bot rules
-  const { data: botRulesSetting } = useQuery<{ key: string; value: string | null }>({
+  const { data: botRulesSetting, isFetched: botRulesIsFetched } = useQuery<{ key: string; value: string | null } | null>({
     queryKey: ['/api/settings', 'botRules'],
     queryFn: async () => {
       const res = await fetch('/api/settings/botRules');
+      if (!res.ok) return null;
       return res.json();
     },
   });
 
   // Load partner prompt
-  const { data: partnerPromptSetting } = useQuery<{ key: string; value: string | null }>({
+  const { data: partnerPromptSetting, isFetched: partnerPromptIsFetched } = useQuery<{ key: string; value: string | null } | null>({
     queryKey: ['/api/settings', 'partner_prompt'],
     queryFn: async () => {
       const res = await fetch('/api/settings/partner_prompt');
+      if (!res.ok) return null;
       return res.json();
     },
   });
 
   // Load viewer prompt
-  const { data: viewerPromptSetting } = useQuery<{ key: string; value: string | null }>({
+  const { data: viewerPromptSetting, isFetched: viewerPromptIsFetched } = useQuery<{ key: string; value: string | null } | null>({
     queryKey: ['/api/settings', 'viewer_prompt'],
     queryFn: async () => {
       const res = await fetch('/api/settings/viewer_prompt');
+      if (!res.ok) return null;
       return res.json();
     },
   });
@@ -267,29 +270,97 @@ export default function Settings() {
     }
   }, [botPromptSetting?.value, botPromptLoaded]);
 
+  // Default bot rules (14 Madde) - must match backend DEFAULT_BOT_RULES
+  const DEFAULT_BOT_RULES = `1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+
+2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
+
+3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+
+4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
+
+5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+
+6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+
+7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+
+8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+
+9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+
+12. MÜŞTERİ MÜSAİTLİK SORGULARI: Müşteri müsaitlik sorduğunda, istenen tarih ve saat için müsaitlik bilgisini paylaş. Sonra rezervasyon yapmak isterse ilgili aktivitenin web sitesi linkini paylaş.
+
+13. MÜŞTERİ DEĞİŞİKLİK TALEPLERİ: Müşteri saat/tarih değişikliği veya iptal istediğinde, önce istenen yeni tarih/saat için müsaitlik bilgisini paylaş. Ardından kendilerine gönderilen takip linkinden değişiklik talebini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+
+14. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.`;
+
   // Apply loaded bot rules when data arrives
   useEffect(() => {
-    if (botRulesSetting?.value && !botRulesLoaded) {
-      setBotRules(botRulesSetting.value);
+    if (!botRulesLoaded && botRulesIsFetched) {
+      if (botRulesSetting?.value) {
+        setBotRules(botRulesSetting.value);
+      } else {
+        setBotRules(DEFAULT_BOT_RULES);
+      }
       setBotRulesLoaded(true);
     }
-  }, [botRulesSetting?.value, botRulesLoaded]);
+  }, [botRulesSetting, botRulesLoaded, botRulesIsFetched]);
+
+  // Default partner prompt
+  const DEFAULT_PARTNER_PROMPT = `Partner acentalara FARKLI davran:
+1. Rezervasyon veya web sitesi linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
+2. Partner fiyatlarını kullan (eğer varsa)
+3. Daha profesyonel ve iş odaklı iletişim kur
+
+MÜSAİTLİK SORGULARINDA:
+- Sorulan tarih ve saat için müsaitlik bilgisini paylaş
+- Ardından "Smartur panelinizden rezervasyon talebinizi oluşturabilirsiniz" de
+
+DEĞİŞİKLİK TALEPLERİNDE:
+- Partner tarih/saat değişikliği isterse "Smartur panelinizden değişiklik talebinizi oluşturabilirsiniz" de
+- Takip linki veya web sitesi linki VERME`;
+
+  // Default viewer prompt
+  const DEFAULT_VIEWER_PROMPT = `İzleyicilere FARKLI davran:
+1. Rezervasyon veya web sitesi linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
+2. Daha profesyonel ve iş odaklı iletişim kur
+
+MÜSAİTLİK SORGULARINDA:
+- Sorulan tarih ve saat için müsaitlik bilgisini paylaş
+- Ardından "Smartur panelinizden rezervasyon talebinizi oluşturabilirsiniz" de
+
+DEĞİŞİKLİK TALEPLERİNDE:
+- İzleyici tarih/saat değişikliği isterse "Smartur panelinizden değişiklik talebinizi oluşturabilirsiniz" de
+- Takip linki veya web sitesi linki VERME`;
 
   // Apply loaded partner prompt when data arrives
   useEffect(() => {
-    if (partnerPromptSetting?.value && !partnerPromptLoaded) {
-      setPartnerPrompt(partnerPromptSetting.value);
+    if (!partnerPromptLoaded && partnerPromptIsFetched) {
+      if (partnerPromptSetting?.value) {
+        setPartnerPrompt(partnerPromptSetting.value);
+      } else {
+        setPartnerPrompt(DEFAULT_PARTNER_PROMPT);
+      }
       setPartnerPromptLoaded(true);
     }
-  }, [partnerPromptSetting?.value, partnerPromptLoaded]);
+  }, [partnerPromptSetting, partnerPromptLoaded, partnerPromptIsFetched]);
 
   // Apply loaded viewer prompt when data arrives
   useEffect(() => {
-    if (viewerPromptSetting?.value && !viewerPromptLoaded) {
-      setViewerPrompt(viewerPromptSetting.value);
+    if (!viewerPromptLoaded && viewerPromptIsFetched) {
+      if (viewerPromptSetting?.value) {
+        setViewerPrompt(viewerPromptSetting.value);
+      } else {
+        setViewerPrompt(DEFAULT_VIEWER_PROMPT);
+      }
       setViewerPromptLoaded(true);
     }
-  }, [viewerPromptSetting?.value, viewerPromptLoaded]);
+  }, [viewerPromptSetting, viewerPromptLoaded, viewerPromptIsFetched]);
 
   // Apply loaded bulk message templates when data arrives (with backwards compatibility)
   useEffect(() => {

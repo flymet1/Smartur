@@ -183,9 +183,9 @@ async function checkPlanForWrite(tenantId?: number): Promise<{ allowed: boolean;
   return { allowed: true, message: "OK", status: verification.status };
 }
 
-// Default bot rules (used when no custom rules are defined in database) - 13 Madde
+// Default bot rules (used when no custom rules are defined in database) - 14 Madde
 const DEFAULT_BOT_RULES = `
-=== BOT KURALLARI (13 MADDE) ===
+=== BOT KURALLARI (14 MADDE) ===
 
 1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 
@@ -209,9 +209,11 @@ const DEFAULT_BOT_RULES = `
 
 11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
 
-12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+12. MÜŞTERİ MÜSAİTLİK SORGULARI: Müşteri müsaitlik sorduğunda, istenen tarih ve saat için müsaitlik bilgisini paylaş. Sonra rezervasyon yapmak isterse ilgili aktivitenin web sitesi linkini paylaş.
 
-13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.
+13. MÜŞTERİ DEĞİŞİKLİK TALEPLERİ: Müşteri saat/tarih değişikliği veya iptal istediğinde, önce istenen yeni tarih/saat için müsaitlik bilgisini paylaş. Ardından kendilerine gönderilen takip linkinden değişiklik talebini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+
+14. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.
 `;
 
 // Gemini AI Integration - supports both Replit integration and standalone API key
@@ -758,17 +760,26 @@ ${context.partnerPrompt}
 DİKKAT: Bu mesaj bir PARTNER ACENTADAN (${context.partnerName}) geliyor, normal bir müşteriden DEĞİL!
 
 Partner acentalara FARKLI davran:
-1. Rezervasyon linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
-2. "Smartur panelinizden rezervasyon oluşturabilirsiniz" de
-3. Partner fiyatlarını kullan (eğer varsa)
-4. Daha profesyonel ve iş odaklı iletişim kur
-5. Web sitesi linklerini paylaşma - sadece müsaitlik bilgisi ver
+1. Rezervasyon veya web sitesi linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
+2. Partner fiyatlarını kullan (eğer varsa)
+3. Daha profesyonel ve iş odaklı iletişim kur
 
-Örnek yanıt formatı:
+MÜSAİTLİK SORGULARINDA:
+- Sorulan tarih ve saat için müsaitlik bilgisini paylaş
+- Ardından "Smartur panelinizden rezervasyon talebinizi oluşturabilirsiniz" de
+
+DEĞİŞİKLİK TALEPLERİNDE:
+- Partner tarih/saat değişikliği isterse "Smartur panelinizden değişiklik talebinizi oluşturabilirsiniz" de
+- Takip linki veya web sitesi linki VERME
+
+Örnek yanıt formatı (müsaitlik sorgusu):
 "Merhaba [Partner Adı], [tarih] için [aktivite] müsaitlik durumu:
 - Saat 10:00: 8 kişilik yer mevcut
 - Saat 14:00: 12 kişilik yer mevcut
-Smartur panelinizden rezervasyon oluşturabilirsiniz."
+Smartur panelinizden rezervasyon talebinizi oluşturabilirsiniz."
+
+Örnek yanıt formatı (değişiklik talebi):
+"Merhaba [Partner Adı], değişiklik talebiniz için Smartur panelinizi kullanabilirsiniz. Değişiklik talebinizi panel üzerinden oluşturabilirsiniz."
 `;
     }
   }
@@ -791,17 +802,25 @@ ${context.viewerPrompt}
 DİKKAT: Bu mesaj bir İZLEYİCİDEN (${context.viewerName}) geliyor, normal bir müşteriden DEĞİL!
 
 İzleyicilere FARKLI davran:
-1. Rezervasyon linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
-2. "Smartur panelinizden müsaitlik durumunu görebilirsiniz" de
-3. Daha profesyonel ve iş odaklı iletişim kur
-4. Web sitesi linklerini paylaşma - sadece müsaitlik bilgisi ver
-5. Rezervasyon talebi için operatörlerle iletişime geçmelerini öner
+1. Rezervasyon veya web sitesi linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
+2. Daha profesyonel ve iş odaklı iletişim kur
 
-Örnek yanıt formatı:
+MÜSAİTLİK SORGULARINDA:
+- Sorulan tarih ve saat için müsaitlik bilgisini paylaş
+- Ardından "Smartur panelinizden rezervasyon talebinizi oluşturabilirsiniz" de
+
+DEĞİŞİKLİK TALEPLERİNDE:
+- İzleyici tarih/saat değişikliği isterse "Smartur panelinizden değişiklik talebinizi oluşturabilirsiniz" de
+- Takip linki veya web sitesi linki VERME
+
+Örnek yanıt formatı (müsaitlik sorgusu):
 "Merhaba ${context.viewerName}, [tarih] için [aktivite] müsaitlik durumu:
 - Saat 10:00: 8 kişilik yer mevcut
 - Saat 14:00: 12 kişilik yer mevcut
-Rezervasyon talebi için lütfen operatörlerimizle iletişime geçin."
+Smartur panelinizden rezervasyon talebinizi oluşturabilirsiniz."
+
+Örnek yanıt formatı (değişiklik talebi):
+"Merhaba ${context.viewerName}, değişiklik talebiniz için Smartur panelinizi kullanabilirsiniz. Değişiklik talebinizi panel üzerinden oluşturabilirsiniz."
 `;
     }
   }
