@@ -1196,8 +1196,8 @@ export default function PartnerAvailability() {
         )}
         
         <Dialog open={requestDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setRequestDialogOpen(open); }}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle className="flex items-center gap-2">
                 <Plus className="w-5 h-5 text-primary" />
                 Rezervasyon Talebi
@@ -1222,7 +1222,7 @@ export default function PartnerAvailability() {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 overflow-y-auto flex-1">
               <div className="space-y-2">
                 <Label htmlFor="customerName">Musteri Adi *</Label>
                 <Input
@@ -1346,7 +1346,7 @@ export default function PartnerAvailability() {
               </div>
             </div>
             
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 flex-shrink-0 pt-4 border-t">
               <Button variant="outline" onClick={() => { resetForm(); setRequestDialogOpen(false); }} data-testid="button-cancel">
                 Vazgec
               </Button>
