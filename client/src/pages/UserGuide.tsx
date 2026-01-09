@@ -71,7 +71,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 const searchableContent = [
   { id: "genel-bakis", keywords: ["genel", "bakis", "woocommerce", "whatsapp", "takvim", "kapasite", "finans", "müşteri", "acenta"], title: "Genel Bakış" },
   { id: "panel-sayfalari", keywords: ["panel", "sayfa", "dashboard", "takvim", "rezervasyon", "aktivite", "paket", "finans", "acenta", "mesaj", "talep", "destek", "bot", "test", "ayar", "geliştirici", "tatil", "sunum"], title: "Panel Sayfaları" },
-  { id: "whatsapp-bot", keywords: ["whatsapp", "bot", "mesaj", "onay", "sablon", "template", "eskalasyon", "bilgi", "müsaitlik", "tarih", "bayram", "tatil", "rezervasyon", "cok", "dil", "sss", "fallback", "takip", "talep", "toplu", "bildirim"], title: "WhatsApp Bot" },
+  { id: "whatsapp-bot", keywords: ["whatsapp", "bot", "mesaj", "onay", "sablon", "template", "eskalasyon", "bilgi", "müsaitlik", "tarih", "bayram", "tatil", "rezervasyon", "cok", "dil", "sss", "fallback", "takip", "talep", "toplu", "bildirim", "hiyerarşi", "partner", "izleyici", "viewer", "destek", "sessiz", "otomatik", "yanıt", "kural"], title: "WhatsApp Bot" },
   { id: "rezervasyon-yönetimi", keywords: ["rezervasyon", "yönetim", "durum", "onay", "iptal", "beklemede", "paket", "tur", "sipariş", "filtre", "takvim", "liste"], title: "Rezervasyon Yönetimi" },
   { id: "müşteri-takip", keywords: ["müşteri", "takip", "link", "token", "talep", "iptal", "saat", "değişiklik", "bildirim", "whatsapp", "acenta"], title: "Müşteri Takip" },
   { id: "finans", keywords: ["finans", "acenta", "ödeme", "sevk", "dispatch", "payout", "kdv", "fatura", "rapor", "hesaplasma"], title: "Finans" },
@@ -401,7 +401,9 @@ export default function UserGuide() {
                   "Bot tarafından oluşturulan eskalasyonlar",
                   "Müşteri şikayetleri ve özel talepler",
                   "Talep durumu (açık/çözüldü)",
-                  "Destek talebi oluşturma formu"
+                  "Destek talebi oluşturma formu",
+                  "Açık talep varken bot o müşteriye cevap vermez",
+                  "Talep kapatıldığında bot tekrar aktif olur"
                 ]}
               />
 
@@ -553,6 +555,134 @@ export default function UserGuide() {
                   <li>Özel talepler ve istisnai durumlar</li>
                 </ul>
               </div>
+
+              <Separator />
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 text-primary">
+                  <Shield className="h-4 w-4" />
+                  Bot Kural Hiyerarşisi (Kime Nasıl Davranır)
+                </h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Bot, WhatsApp'tan mesaj atan kişinin kim olduğunu otomatik tespit eder ve ona göre farklı kurallar uygular.
+                  Bu sayede partnerler, izleyiciler ve normal müşteriler için ayrı davranış modelleri çalışır.
+                </p>
+                <div className="space-y-3">
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                    <p className="text-sm font-medium text-purple-600 mb-1">1. Partner (En Yüksek Öncelik)</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 ml-2">
+                      <li>Partner olarak kayıtlı telefon numarası tespit edilir</li>
+                      <li>Rezervasyon veya takip linkleri paylaşılmaz</li>
+                      <li>Smartur paneline giriş yapması yönlendirilir</li>
+                      <li>Partner özel fiyatları ve aktivite erişimi dikkate alınır</li>
+                    </ul>
+                  </div>
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                    <p className="text-sm font-medium text-blue-600 mb-1">2. İzleyici (Viewer)</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 ml-2">
+                      <li>İzleyici rolüyle kayıtlı telefon numarası tespit edilir</li>
+                      <li>Harici iş ortakları bu kategoride yer alır</li>
+                      <li>Rezervasyon talepleri için panele yönlendirilir</li>
+                      <li>Link paylaşılmaz, panel üzerinden işlem yapması istenir</li>
+                    </ul>
+                  </div>
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                    <p className="text-sm font-medium text-green-600 mb-1">3. Normal Müşteri</p>
+                    <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1 ml-2">
+                      <li>Partner veya izleyici değilse normal müşteri olarak işlenir</li>
+                      <li>Müsaitlik bilgisi paylaşılır</li>
+                      <li>Rezervasyon yapmak isterse web sitesi linki gönderilir</li>
+                      <li>Değişiklik/iptal için takip linki paylaşılır</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Nasıl Ayarlanır:</strong> Ayarlar &gt; WhatsApp &gt; Bot Ayarları sekmesinde 
+                    "Bot Kural Hiyerarşisi" bilgi kutusunu görebilirsiniz. Bot kuralları sadece normal 
+                    müşteriler için geçerlidir; partner ve izleyiciler için özel talimatlar otomatik uygulanır.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 text-red-600">
+                  <Bell className="h-4 w-4" />
+                  Destek Talebi ve Bot Sessizliği
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Bot bir eskalasyon yaptığında (örn: şikayet, çözülemeyen soru) otomatik olarak 
+                  destek talebi oluşturulur. Bu talep açık olduğu sürece bot o müşteriye cevap vermez.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
+                    <p className="text-xs text-muted-foreground">Bot eskalasyon yapar: "Bu konuyu yetkili arkadaşımıza iletiyorum"</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
+                    <p className="text-xs text-muted-foreground">Destek talebi "açık" durumda oluşturulur, sidebar'da bildirim görünür</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
+                    <p className="text-xs text-muted-foreground">Müşteri tekrar mesaj atarsa bot sessiz kalır (siz devralırsınız)</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">4</div>
+                    <p className="text-xs text-muted-foreground">Destek sayfasından talebi "Çözüldü" olarak işaretlersiniz</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">5</div>
+                    <p className="text-xs text-muted-foreground">Bot tekrar o müşteriye cevap vermeye başlar</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Nasıl Görüntülenir:</strong> Sidebar'daki "Destek" butonuna tıklayarak açık 
+                    destek taleplerini görebilirsiniz. Bekleyen talep varsa kırmızı badge ile sayı gösterilir.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  Otomatik Yanıtlar (Hızlı Cevaplar)
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Belirli anahtar kelimelere göre AI'a gitmeden direkt cevap verilmesini sağlar. 
+                  Bu özellik hem AI maliyetini düşürür hem de anında cevap verilmesini sağlar.
+                </p>
+                <div className="grid md:grid-cols-2 gap-3 mb-3">
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium">Anahtar Kelimeler</p>
+                    <p className="text-xs text-muted-foreground">Türkçe ve İngilizce ayrı ayrı tanımlanır</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-sm font-medium">Yanıt Mesajları</p>
+                    <p className="text-xs text-muted-foreground">Her dil için ayrı yanıt mesajı yazılır</p>
+                  </div>
+                </div>
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-3">
+                  <p className="text-xs font-medium text-green-600 mb-1">Örnek Kullanım</p>
+                  <p className="text-xs text-muted-foreground">
+                    Anahtar kelimeler: "merhaba, selam, hello, hi" → Yanıt: "Merhaba! Size nasıl yardımcı olabilirim?"
+                  </p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Nasıl Ayarlanır:</strong> Ayarlar &gt; WhatsApp &gt; Bot Ayarları sekmesinin 
+                    alt kısmında "Otomatik Yanıtlar" bölümünü bulabilirsiniz. Yeni kural ekleyebilir, 
+                    mevcut kuralları düzenleyebilir veya silebilirsiniz.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
 
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <h4 className="font-semibold mb-2 flex items-center gap-2 text-amber-600">
@@ -964,6 +1094,60 @@ export default function UserGuide() {
                   <li>İptal talebinde bulunabilir</li>
                   <li>Diğer özel talepler iletebilir</li>
                 </ul>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <h4 className="font-semibold mb-3 flex items-center gap-2 text-primary">
+                  <ArrowRight className="h-4 w-4" />
+                  Müşteri Talep Akışı (WhatsApp'tan Onaya)
+                </h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Müşterinin WhatsApp'tan değişiklik istemesinden onayınıza kadar sürecin tam akışı:
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+                    <div>
+                      <p className="text-sm font-medium">Müşteri WhatsApp'tan Yazar</p>
+                      <p className="text-xs text-muted-foreground">"Yarınki rezervasyonumun saatini değiştirmek istiyorum"</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+                    <div>
+                      <p className="text-sm font-medium">Bot Takip Linkini Gönderir</p>
+                      <p className="text-xs text-muted-foreground">"Değişiklik talebinizi takip linkinizden oluşturabilirsiniz: [link]"</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-purple-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+                    <div>
+                      <p className="text-sm font-medium">Müşteri Takip Sayfasından Talep Oluşturur</p>
+                      <p className="text-xs text-muted-foreground">Yeni saat/tarih seçer ve talebini gönderir</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">4</div>
+                    <div>
+                      <p className="text-sm font-medium">Sidebar'da "Talepler" Badge Güncellenir</p>
+                      <p className="text-xs text-muted-foreground">Bekleyen talep sayısı gösterilir</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">5</div>
+                    <div>
+                      <p className="text-sm font-medium">Siz Talebi İnceler ve Onay/Red Verirsiniz</p>
+                      <p className="text-xs text-muted-foreground">/customer-requests sayfasından işlem yapılır</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-cyan-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">6</div>
+                    <div>
+                      <p className="text-sm font-medium">Müşteriye WhatsApp Bildirimi Gönderilir</p>
+                      <p className="text-xs text-muted-foreground">Onay/red sonucu otomatik bildirim dialogu açılır</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div>
