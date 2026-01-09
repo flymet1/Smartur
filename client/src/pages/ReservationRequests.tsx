@@ -258,114 +258,6 @@ export default function ReservationRequests() {
             </Card>
           ) : (
             <div className="space-y-8">
-              {viewerRequests.length > 0 && (
-                <Card className="border-blue-200 dark:border-blue-800">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Eye className="h-5 w-5 text-blue-500" />
-                      Izleyici Talepleri ({viewerRequests.length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {pendingViewerRequests.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                          <Clock className="h-4 w-4" />
-                          Bekleyen ({pendingViewerRequests.length})
-                        </h3>
-                        <div className="grid gap-3">
-                          {pendingViewerRequests.map((request) => (
-                            <div key={request.id} className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                    {getStatusBadge(request.status)}
-                                  </div>
-                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5 text-muted-foreground" />{request.customerName}</span>
-                                    <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-muted-foreground" />{request.customerPhone}</span>
-                                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-muted-foreground" />{format(new Date(request.date), "d MMM", { locale: tr })} {request.time}</span>
-                                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5 text-muted-foreground" />{request.guests || 1} kisi</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    <Eye className="h-3.5 w-3.5" />
-                                    <span>Izleyici: {getRequesterDisplayName(request)}</span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => openProcessDialog(request, "reject")} data-testid={`button-reject-viewer-${request.id}`}>
-                                    <X className="h-4 w-4 mr-1" />Reddet
-                                  </Button>
-                                  <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openProcessDialog(request, "approve")} data-testid={`button-approve-viewer-${request.id}`}>
-                                    <Check className="h-4 w-4 mr-1" />Onayla
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {approvedViewerRequests.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-green-600 dark:text-green-400">
-                          <Check className="h-4 w-4" />
-                          Onaylanan ({approvedViewerRequests.length})
-                        </h3>
-                        <div className="grid gap-3">
-                          {approvedViewerRequests.map((request) => (
-                            <div key={request.id} className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                    {getStatusBadge(request.status)}
-                                  </div>
-                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5 text-muted-foreground" />{request.customerName}</span>
-                                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-muted-foreground" />{format(new Date(request.date), "d MMM", { locale: tr })} {request.time}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                    <Eye className="h-3.5 w-3.5" />
-                                    <span>Izleyici: {getRequesterDisplayName(request)}</span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button size="sm" onClick={() => convertMutation.mutate(request.id)} disabled={convertMutation.isPending} data-testid={`button-convert-viewer-${request.id}`}>
-                                    {convertMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-1" />}
-                                    Rezervasyona Donustur
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {otherViewerRequests.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-medium mb-2 text-muted-foreground">Diger ({otherViewerRequests.length})</h3>
-                        <div className="grid gap-3">
-                          {otherViewerRequests.map((request) => (
-                            <div key={request.id} className="bg-muted/50 border rounded-lg p-3 opacity-70">
-                              <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                {getStatusBadge(request.status)}
-                                <span>{request.customerName}</span>
-                                <span className="text-muted-foreground">{format(new Date(request.date), "d MMM", { locale: tr })}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
               {partnerRequests.length > 0 && (
                 <Card className="border-purple-200 dark:border-purple-800">
                   <CardHeader className="pb-3">
@@ -489,6 +381,114 @@ export default function ReservationRequests() {
                                   </TooltipTrigger>
                                   <TooltipContent>Is ortagini WhatsApp ile bilgilendir</TooltipContent>
                                 </Tooltip>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {viewerRequests.length > 0 && (
+                <Card className="border-blue-200 dark:border-blue-800">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Eye className="h-5 w-5 text-blue-500" />
+                      Izleyici Talepleri ({viewerRequests.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {pendingViewerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+                          <Clock className="h-4 w-4" />
+                          Bekleyen ({pendingViewerRequests.length})
+                        </h3>
+                        <div className="grid gap-3">
+                          {pendingViewerRequests.map((request) => (
+                            <div key={request.id} className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                    {getStatusBadge(request.status)}
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5 text-muted-foreground" />{request.customerName}</span>
+                                    <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-muted-foreground" />{request.customerPhone}</span>
+                                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-muted-foreground" />{format(new Date(request.date), "d MMM", { locale: tr })} {request.time}</span>
+                                    <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5 text-muted-foreground" />{request.guests || 1} kisi</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span>Izleyici: {getRequesterDisplayName(request)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => openProcessDialog(request, "reject")} data-testid={`button-reject-viewer-${request.id}`}>
+                                    <X className="h-4 w-4 mr-1" />Reddet
+                                  </Button>
+                                  <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openProcessDialog(request, "approve")} data-testid={`button-approve-viewer-${request.id}`}>
+                                    <Check className="h-4 w-4 mr-1" />Onayla
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {approvedViewerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-green-600 dark:text-green-400">
+                          <Check className="h-4 w-4" />
+                          Onaylanan ({approvedViewerRequests.length})
+                        </h3>
+                        <div className="grid gap-3">
+                          {approvedViewerRequests.map((request) => (
+                            <div key={request.id} className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                    {getStatusBadge(request.status)}
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                                    <span className="flex items-center gap-1"><User className="h-3.5 w-3.5 text-muted-foreground" />{request.customerName}</span>
+                                    <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-muted-foreground" />{format(new Date(request.date), "d MMM", { locale: tr })} {request.time}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    <span>Izleyici: {getRequesterDisplayName(request)}</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button size="sm" onClick={() => convertMutation.mutate(request.id)} disabled={convertMutation.isPending} data-testid={`button-convert-viewer-${request.id}`}>
+                                    {convertMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-1" />}
+                                    Rezervasyona Donustur
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {otherViewerRequests.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 text-muted-foreground">Diger ({otherViewerRequests.length})</h3>
+                        <div className="grid gap-3">
+                          {otherViewerRequests.map((request) => (
+                            <div key={request.id} className="bg-muted/50 border rounded-lg p-3 opacity-70">
+                              <div className="flex flex-wrap items-center gap-2 text-sm">
+                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                                {getStatusBadge(request.status)}
+                                <span>{request.customerName}</span>
+                                <span className="text-muted-foreground">{format(new Date(request.date), "d MMM", { locale: tr })}</span>
                               </div>
                             </div>
                           ))}

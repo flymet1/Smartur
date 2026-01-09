@@ -2424,9 +2424,10 @@ export async function registerRoutes(
       const allUsers = await storage.getAppUsers();
       const userMap = new Map(allUsers.map(u => [u.id, u]));
       
-      // Get viewer role ID
+      // Get viewer role ID - check for 'viewer', 'izleyici', or similar names
       const allRoles = await storage.getRoles();
-      const viewerRole = allRoles.find(r => r.name.toLowerCase() === 'viewer');
+      const viewerRoleNames = ['viewer', 'izleyici', 'görüntüleyici'];
+      const viewerRole = allRoles.find(r => viewerRoleNames.includes(r.name.toLowerCase()));
       
       // Enrich requests with requester info
       const enrichedRequests = await Promise.all(requests.map(async (request) => {
