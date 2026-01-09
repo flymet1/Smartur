@@ -535,6 +535,16 @@ export default function Finance() {
   // Partner Transactions state
   const [partnerTransactionRole, setPartnerTransactionRole] = useState<'all' | 'sender' | 'receiver'>('all');
   
+  // Partner Mutabakat state
+  const [partnerDateRange, setPartnerDateRange] = useState<'week' | 'month' | 'custom'>('week');
+  const [partnerStartDate, setPartnerStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
+  });
+  const [partnerEndDate, setPartnerEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<number | null>(null);
+  
   // Partner Transactions interface
   interface PartnerTransaction {
     id: number;
@@ -566,6 +576,71 @@ export default function Finance() {
       return res.json();
     }
   });
+
+  // Partner Mutabakat hesaplamaları
+  const handlePartnerDateRangeChange = (range: 'week' | 'month' | 'custom') => {
+    setPartnerDateRange(range);
+    const today = new Date();
+    if (range === 'week') {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      setPartnerStartDate(weekAgo.toISOString().split('T')[0]);
+      setPartnerEndDate(today.toISOString().split('T')[0]);
+    } else if (range === 'month') {
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      setPartnerStartDate(monthAgo.toISOString().split('T')[0]);
+      setPartnerEndDate(today.toISOString().split('T')[0]);
+    }
+  };
+
+  // Tarih ve partner filtrelenmiş işlemler
+  const filteredPartnerTransactions = partnerTransactions.filter(tx => {
+    if (tx.transactionDate < partnerStartDate || tx.transactionDate > partnerEndDate) return false;
+    if (selectedPartnerId) {
+      const partnerId = tx.currentTenantId === tx.senderTenantId ? tx.receiverTenantId : tx.senderTenantId;
+      if (partnerId !== selectedPartnerId) return false;
+    }
+    return true;
+  });
+
+  // Benzersiz partner listesi
+  const uniquePartners = Array.from(
+    new Map(
+      partnerTransactions.map(tx => {
+        const isSender = tx.currentTenantId === tx.senderTenantId;
+        const partnerId = isSender ? tx.receiverTenantId : tx.senderTenantId;
+        const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
+        return [partnerId, { id: partnerId, name: partnerName || 'Partner' }];
+      })
+    ).values()
+  );
+
+  // Mutabakat özeti hesaplama
+  const partnerReconciliation = {
+    sentCount: 0,
+    sentGuests: 0,
+    sentAmount: 0,
+    receivedCount: 0,
+    receivedGuests: 0,
+    receivedAmount: 0,
+  };
+
+  filteredPartnerTransactions.forEach(tx => {
+    const isSender = tx.currentTenantId === tx.senderTenantId;
+    const amount = tx.totalAmount || (tx.unitPrice || 0) * tx.guestCount;
+    if (isSender) {
+      partnerReconciliation.sentCount++;
+      partnerReconciliation.sentGuests += tx.guestCount;
+      partnerReconciliation.sentAmount += amount;
+    } else {
+      partnerReconciliation.receivedCount++;
+      partnerReconciliation.receivedGuests += tx.guestCount;
+      partnerReconciliation.receivedAmount += amount;
+    }
+  });
+
+  const netBalance = partnerReconciliation.sentAmount - partnerReconciliation.receivedAmount;
 
   // Tarih aralığına göre filtrelenmiş ve sıralanmış ödemeler (dönem kesişimi)
   const filteredPayouts = payouts.filter(p => {
@@ -1862,10 +1937,128 @@ export default function Finance() {
           </TabsContent>
 
           <TabsContent value="partner-customers" className="space-y-4">
+            {/* Partner Mutabakat Özeti */}
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Partner Mutabakat Özeti
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-muted-foreground">Dönem:</Label>
+                    <div className="flex gap-1">
+                      <Button
+                        variant={partnerDateRange === 'week' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handlePartnerDateRangeChange('week')}
+                        data-testid="button-partner-week"
+                      >
+                        Son 7 Gün
+                      </Button>
+                      <Button
+                        variant={partnerDateRange === 'month' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handlePartnerDateRangeChange('month')}
+                        data-testid="button-partner-month"
+                      >
+                        Son 30 Gün
+                      </Button>
+                      <Button
+                        variant={partnerDateRange === 'custom' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setPartnerDateRange('custom')}
+                        data-testid="button-partner-custom"
+                      >
+                        Özel
+                      </Button>
+                    </div>
+                  </div>
+                  {partnerDateRange === 'custom' && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        value={partnerStartDate}
+                        onChange={e => setPartnerStartDate(e.target.value)}
+                        className="h-8 w-[140px]"
+                        data-testid="input-partner-start-date"
+                      />
+                      <span className="text-muted-foreground">-</span>
+                      <Input
+                        type="date"
+                        value={partnerEndDate}
+                        onChange={e => setPartnerEndDate(e.target.value)}
+                        className="h-8 w-[140px]"
+                        data-testid="input-partner-end-date"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-muted-foreground">Partner:</Label>
+                    <Select 
+                      value={selectedPartnerId?.toString() || 'all'} 
+                      onValueChange={v => setSelectedPartnerId(v === 'all' ? null : parseInt(v))}
+                    >
+                      <SelectTrigger className="w-[180px] h-8" data-testid="select-partner-filter">
+                        <SelectValue placeholder="Tüm Partnerlar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tüm Partnerlar</SelectItem>
+                        {uniquePartners.map(p => (
+                          <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ArrowUpRight className="h-4 w-4 text-blue-500" />
+                      Gönderilen
+                    </div>
+                    <div className="text-lg font-semibold">
+                      {partnerReconciliation.sentGuests} kişi
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {partnerReconciliation.sentCount} işlem • {formatMoney(partnerReconciliation.sentAmount)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ArrowDownLeft className="h-4 w-4 text-green-500" />
+                      Gelen
+                    </div>
+                    <div className="text-lg font-semibold">
+                      {partnerReconciliation.receivedGuests} kişi
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {partnerReconciliation.receivedCount} işlem • {formatMoney(partnerReconciliation.receivedAmount)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ArrowRightLeft className="h-4 w-4" />
+                      Net Bakiye
+                    </div>
+                    <div className={`text-lg font-semibold ${netBalance > 0 ? 'text-green-600' : netBalance < 0 ? 'text-red-600' : ''}`}>
+                      {netBalance > 0 ? '+' : ''}{formatMoney(netBalance)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {netBalance > 0 ? 'Size borçlular' : netBalance < 0 ? 'Siz borçlusunuz' : 'Eşit'}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-lg font-semibold">Partner Musteriler</h3>
-                <Badge variant="outline">{partnerTransactions.length} kayıt</Badge>
+                <h3 className="text-lg font-semibold">Partner Müşteriler</h3>
+                <Badge variant="outline">{filteredPartnerTransactions.length} kayıt</Badge>
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Button
@@ -1944,19 +2137,19 @@ export default function Finance() {
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                   </div>
-                ) : partnerTransactions.length === 0 ? (
+                ) : filteredPartnerTransactions.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     {partnerLogoUrl ? (
                       <img src={partnerLogoUrl} alt="Partner" className="h-12 w-12 mx-auto mb-4 opacity-50 object-contain" />
                     ) : (
                       <Handshake className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     )}
-                    <p>Henuz partner musteri islemi yok</p>
-                    <p className="text-sm mt-2">Partner acentalarla musteri paylasimlari burada gorunecek</p>
+                    <p>Seçili dönemde partner müşteri işlemi yok</p>
+                    <p className="text-sm mt-2">Farklı bir tarih aralığı veya partner seçin</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {[...partnerTransactions].sort((a, b) => {
+                    {[...filteredPartnerTransactions].sort((a, b) => {
                       switch (partnerSortOrder) {
                         case 'createdNewest': return (b.id || 0) - (a.id || 0);
                         case 'createdOldest': return (a.id || 0) - (b.id || 0);
