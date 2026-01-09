@@ -1222,7 +1222,7 @@ export default function PartnerAvailability() {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4 py-4 overflow-y-auto flex-1">
+            <div className="space-y-4 py-4 px-1 overflow-y-auto flex-1">
               <div className="space-y-2">
                 <Label htmlFor="customerName">Musteri Adi *</Label>
                 <Input
