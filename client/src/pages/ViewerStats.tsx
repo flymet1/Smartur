@@ -505,7 +505,13 @@ export default function ViewerStats() {
 
           <Card 
             className={`cursor-pointer hover-elevate ${pendingViewerRequests.length > 0 ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-600' : ''}`}
-            onClick={() => setActiveTab('requests')}
+            onClick={() => {
+              setActiveTab('requests');
+              setTimeout(() => {
+                const el = document.getElementById('pending-viewer-requests-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 100);
+            }}
             data-testid="card-pending-requests"
           >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
@@ -537,7 +543,7 @@ export default function ViewerStats() {
             ) : (
               <div className="space-y-6">
                 {pendingViewerRequests.length > 0 && (
-                  <Card>
+                  <Card id="pending-viewer-requests-section">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Clock className="w-5 h-5 text-yellow-600" />

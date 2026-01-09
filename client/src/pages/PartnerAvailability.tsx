@@ -625,6 +625,10 @@ export default function PartnerAvailability() {
 
           <Card 
             className={`cursor-pointer hover-elevate ${pendingPartnerRequests.length > 0 ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-600' : ''}`}
+            onClick={() => {
+              const el = document.getElementById('pending-requests-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
             data-testid="card-pending-requests"
           >
             <CardContent className="p-4">
@@ -917,7 +921,7 @@ export default function PartnerAvailability() {
 
         {/* Bekleyen Talepler Bölümü - Takvimin Altında */}
         {pendingPartnerRequests.length > 0 && (
-          <Card className="mt-6">
+          <Card id="pending-requests-section" className="mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="w-5 h-5 text-yellow-600" />
