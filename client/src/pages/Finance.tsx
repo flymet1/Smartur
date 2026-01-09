@@ -877,10 +877,10 @@ export default function Finance() {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
       setAgencyDialogOpen(false);
       setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '', isSmartUser: false, partnerTenantId: null });
-      toast({ title: "Tedarikçi eklendi" });
+      toast({ title: "Acenta eklendi" });
     },
     onError: (error: any) => {
-      toast({ title: "Hata", description: error?.message || "Tedarikçi eklenemedi", variant: "destructive" });
+      toast({ title: "Hata", description: error?.message || "Acenta eklenemedi", variant: "destructive" });
     }
   });
 
@@ -1027,8 +1027,8 @@ export default function Finance() {
       <Sidebar />
       <main className="flex-1 md:ml-64 p-8 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold" data-testid="text-page-title">Finans & Tedarikçiler</h1>
-          <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip (Partner acentalar ayrı bölümde)</p>
+          <h1 className="text-3xl font-bold" data-testid="text-page-title">Finans & Acentalar</h1>
+          <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
         </div>
 
         {/* Currency Exchange Rates & Converter Widget */}
@@ -1214,7 +1214,7 @@ export default function Finance() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600" data-testid="text-total-paid">{formatMoney(totalPaid)}</div>
-              <p className="text-xs text-muted-foreground">Tedarikçilere ödenen</p>
+              <p className="text-xs text-muted-foreground">Acentalara ödenen</p>
             </CardContent>
           </Card>
         </div>
@@ -1377,7 +1377,7 @@ export default function Finance() {
             </TabsTrigger>
             <TabsTrigger value="agencies" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-agencies">
               <Building2 className="h-5 w-5" />
-              Tedarikçiler
+              Acentalar
             </TabsTrigger>
             <TabsTrigger value="partner-customers" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-partner-customers">
               {partnerLogoUrl ? (
@@ -1895,10 +1895,10 @@ export default function Finance() {
 
           <TabsContent value="agencies" className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold">Tedarikçi Yönetimi</h3>
+              <h3 className="text-lg font-semibold">Acenta Yönetimi</h3>
               <Button onClick={openCreateAgencyDialog} data-testid="button-add-agency">
                 <Plus className="h-4 w-4 mr-2" />
-                Tedarikçi Ekle
+                Acenta Ekle
               </Button>
             </div>
 
@@ -1916,7 +1916,7 @@ export default function Finance() {
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => {
-                          if (confirm(`${agency.name} tedarikçisini ve tüm ödeme kayıtlarını silmek istediğinize emin misiniz?`)) {
+                          if (confirm(`${agency.name} acentasını ve tüm ödeme kayıtlarını silmek istediğinize emin misiniz?`)) {
                             deleteAgencyMutation.mutate(agency.id);
                           }
                         }} data-testid={`button-delete-agency-${agency.id}`}>
@@ -1948,10 +1948,10 @@ export default function Finance() {
               {suppliers.length === 0 && (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
                   <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Henüz tedarikçi eklenmemiş</p>
+                  <p>Henüz acenta eklenmemiş</p>
                   <Button variant="outline" className="mt-4" onClick={openCreateAgencyDialog}>
                     <Plus className="h-4 w-4 mr-2" />
-                    İlk Tedarikçiyi Ekle
+                    İlk Acentayı Ekle
                   </Button>
                 </div>
               )}
@@ -2946,11 +2946,11 @@ export default function Finance() {
         <Dialog open={agencyDialogOpen} onOpenChange={setAgencyDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingAgency ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi'}</DialogTitle>
+              <DialogTitle>{editingAgency ? 'Acenta Düzenle' : 'Yeni Acenta'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="agency-name">Tedarikçi Adı *</Label>
+                <Label htmlFor="agency-name">Acenta Adı *</Label>
                 <Input
                   id="agency-name"
                   value={agencyForm.name}
