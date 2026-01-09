@@ -21,7 +21,8 @@ import {
   BarChart2,
   Handshake,
   Eye,
-  ClipboardList
+  ClipboardList,
+  Home
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -41,6 +42,7 @@ interface NavItem {
 }
 
 const allNavItems: NavItem[] = [
+  { href: "/dashboard", label: "Anasayfa", icon: Home },
   { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, viewerOnly: true },
