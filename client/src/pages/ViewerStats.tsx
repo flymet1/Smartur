@@ -504,17 +504,17 @@ export default function ViewerStats() {
           </Card>
 
           <Card 
-            className="cursor-pointer hover-elevate" 
+            className={`cursor-pointer hover-elevate ${pendingViewerRequests.length > 0 ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-600' : ''}`}
             onClick={() => setActiveTab('requests')}
             data-testid="card-pending-requests"
           >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Bekleyen Talep</CardTitle>
+              <CardTitle className={`text-sm font-medium ${pendingViewerRequests.length > 0 ? 'text-orange-700 dark:text-orange-300' : ''}`}>Bekleyen Talep</CardTitle>
               <Clock className={`h-4 w-4 ${pendingViewerRequests.length > 0 ? 'text-orange-600' : 'text-muted-foreground'}`} />
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${pendingViewerRequests.length > 0 ? 'text-orange-600' : ''}`} data-testid="text-pending-requests">{pendingViewerRequests.length}</div>
-              <p className="text-xs text-muted-foreground">Onay bekliyor</p>
+              <p className={`text-xs ${pendingViewerRequests.length > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>Onay bekliyor</p>
             </CardContent>
           </Card>
         </div>

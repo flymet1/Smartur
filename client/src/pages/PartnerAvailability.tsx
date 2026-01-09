@@ -624,20 +624,19 @@ export default function PartnerAvailability() {
           </Card>
 
           <Card 
-            className="cursor-pointer hover-elevate" 
-            onClick={() => setActiveTab('requests')}
+            className={`cursor-pointer hover-elevate ${pendingPartnerRequests.length > 0 ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-600' : ''}`}
             data-testid="card-pending-requests"
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-sm text-muted-foreground">Bekleyen Talep</p>
+                  <p className={`text-sm ${pendingPartnerRequests.length > 0 ? 'text-orange-700 dark:text-orange-300' : 'text-muted-foreground'}`}>Bekleyen Talep</p>
                   <p className={`text-2xl font-bold mt-1 ${pendingPartnerRequests.length > 0 ? 'text-orange-600' : ''}`} data-testid="text-pending-requests">
                     {pendingPartnerRequests.length}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">Onay bekliyor</p>
+                  <p className={`text-xs mt-1 ${pendingPartnerRequests.length > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>Onay bekliyor</p>
                 </div>
-                <div className={`p-3 rounded-full shrink-0 ${pendingPartnerRequests.length > 0 ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-muted'}`}>
+                <div className={`p-3 rounded-full shrink-0 ${pendingPartnerRequests.length > 0 ? 'bg-orange-200 text-orange-700 dark:bg-orange-800/50 dark:text-orange-300' : 'bg-muted'}`}>
                   <Users className="w-5 h-5" />
                 </div>
               </div>
