@@ -5246,15 +5246,14 @@ function AgencyManagementSection() {
                           <span>{agency.contactInfo}</span>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span>Ki\u015fi ba\u015f\u0131: {formatMoney(agency.defaultPayoutPerGuest || 0)}</span>
-                      </div>
                       {agency.notes && (
-                        <div className="flex items-start gap-2 text-sm pt-2 border-t">
+                        <div className="flex items-start gap-2 text-sm">
                           <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
                           <span className="text-muted-foreground">{agency.notes}</span>
                         </div>
+                      )}
+                      {!agency.contactInfo && !agency.notes && (
+                        <p className="text-sm text-muted-foreground">İletişim bilgisi eklenmemiş</p>
                       )}
                     </CardContent>
                   </Card>

@@ -420,7 +420,6 @@ export default function Finance() {
 
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
-  const [agencySearchOpen, setAgencySearchOpen] = useState(false);
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
   const [payoutSortOrder, setPayoutSortOrder] = useState<'createdNewest' | 'createdOldest' | 'amountHigh' | 'amountLow'>('createdNewest');
   const [rateSortOrder, setRateSortOrder] = useState<'createdNewest' | 'createdOldest' | 'priceHigh' | 'priceLow'>('createdNewest');
@@ -1282,116 +1281,6 @@ export default function Finance() {
           </div>
         </div>
 
-        {/* Acenta Seçici - Arama özellikli açılır menü */}
-        {dispatchSummary.length > 0 && (
-          <div className="flex flex-wrap items-center gap-4">
-            <Popover open={agencySearchOpen} onOpenChange={setAgencySearchOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={agencySearchOpen}
-                  className="w-[280px] justify-between"
-                  data-testid="button-agency-select"
-                >
-                  {selectedAgencyId
-                    ? dispatchSummary.find(s => s.agencyId === selectedAgencyId)?.agencyName || "Acenta seçin..."
-                    : "Acenta seçin..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[280px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Acenta ara..." />
-                  <CommandList>
-                    <CommandEmpty>Acenta bulunamad\u0131.</CommandEmpty>
-                    <CommandGroup>
-                      {dispatchSummary.map(summary => {
-                        const isDebt = summary.remainingTl > 0;
-                        const isCredit = summary.remainingTl < 0;
-                        return (
-                          <CommandItem
-                            key={summary.agencyId}
-                            value={summary.agencyName}
-                            onSelect={() => {
-                              setSelectedAgencyId(selectedAgencyId === summary.agencyId ? null : summary.agencyId);
-                              setAgencySearchOpen(false);
-                            }}
-                            className="flex items-center justify-between gap-2"
-                            data-testid={`agency-option-${summary.agencyId}`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Umbrella className="h-4 w-4" />
-                              <span>{summary.agencyName}</span>
-                            </div>
-                            <Badge 
-                              variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}
-                              className="text-xs"
-                            >
-                              {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
-                            </Badge>
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            
-            {/* Seçili acenta özet kartı */}
-            {selectedAgencyId && (() => {
-              const summary = dispatchSummary.find(s => s.agencyId === selectedAgencyId);
-              if (!summary) return null;
-              const isDebt = summary.remainingTl > 0;
-              const isCredit = summary.remainingTl < 0;
-              return (
-                <Card className="flex-1 min-w-[300px]" data-testid={`card-summary-${summary.agencyId}`}>
-                  <CardContent className="py-3 px-4">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <Umbrella className="h-4 w-4" />
-                        <span className="font-medium">{summary.agencyName}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5"
-                          onClick={() => setSelectedAgencyId(null)}
-                          data-testid="button-clear-agency"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">Ki\u015fi:</span>
-                          <span className="font-medium">{summary.totalGuests}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">Bor\u00e7:</span>
-                          <span className="font-medium">
-                            {summary.totalOwedTl > 0 && `${summary.totalOwedTl.toLocaleString('tr-TR')} TL`}
-                            {summary.totalOwedTl > 0 && summary.totalOwedUsd > 0 && ' + '}
-                            {summary.totalOwedUsd > 0 && `$${summary.totalOwedUsd.toLocaleString('en-US')}`}
-                            {summary.totalOwedTl === 0 && summary.totalOwedUsd === 0 && '0 TL'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">\u00d6denen:</span>
-                          <span className="font-medium text-green-600">{summary.totalPaidTl.toLocaleString('tr-TR')} TL</span>
-                        </div>
-                        <Badge variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}>
-                          Kalan: {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })()}
-          </div>
-        )}
-
         <Tabs defaultValue="dispatches" className="space-y-4">
           <TabsList className="h-14 p-1.5 gap-1">
             <TabsTrigger value="dispatches" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-dispatches">
@@ -1413,6 +1302,10 @@ export default function Finance() {
                 <Handshake className="h-5 w-5" />
               )}
               Partner Acentalar
+            </TabsTrigger>
+            <TabsTrigger value="agencies" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-agencies">
+              <Building2 className="h-5 w-5" />
+              Acentalar
             </TabsTrigger>
           </TabsList>
 
@@ -1445,23 +1338,6 @@ export default function Finance() {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <CardTitle className="text-base">Gönderim Listesi</CardTitle>
-                    {selectedAgencyId && (
-                      <Badge variant="secondary" className="gap-1">
-                        {suppliers.find(s => s.id === selectedAgencyId)?.name || 'Acenta'}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 p-0 ml-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAgencyId(null);
-                          }}
-                          data-testid="button-clear-agency-filter"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </Badge>
-                    )}
                     <Badge variant="outline">{filteredDispatches.length} kayıt</Badge>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1636,23 +1512,6 @@ export default function Finance() {
             <div className="flex flex-wrap justify-between items-center gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-lg font-semibold">Ödeme Kayıtları</h3>
-                {selectedAgencyId && (
-                  <Badge variant="secondary" className="gap-1">
-                    {suppliers.find(s => s.id === selectedAgencyId)?.name || 'Acenta'}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-4 w-4 p-0 ml-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedAgencyId(null);
-                      }}
-                      data-testid="button-clear-payout-agency-filter"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
                 <Badge variant="outline">{filteredPayouts.length} kayıt</Badge>
               </div>
               <div className="flex items-center gap-2">
@@ -1776,23 +1635,6 @@ export default function Finance() {
             <div className="flex flex-wrap justify-between items-center gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-lg font-semibold">Fiyat Tablosu</h3>
-                {selectedAgencyId && (
-                  <Badge variant="secondary" className="gap-1">
-                    {suppliers.find(s => s.id === selectedAgencyId)?.name || 'Acenta'}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-4 w-4 p-0 ml-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedAgencyId(null);
-                      }}
-                      data-testid="button-clear-rate-agency-filter"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
                 <Badge variant="outline">{filteredRates.length} kayıt</Badge>
               </div>
               <div className="flex items-center gap-2">
@@ -2649,6 +2491,116 @@ export default function Finance() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="agencies" className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold">Acentalar</h3>
+              <Badge variant="outline">{dispatchSummary.length} acenta</Badge>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Acenta Listesi</CardTitle>
+                <CardDescription>
+                  Tedarikçi acentalarınızın finansal durumu ve detayları
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {dispatchSummary.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Henüz acenta kaydı bulunamadı</p>
+                    <p className="text-sm mt-2">Gönderim ekleyerek acentaları sisteme tanıtabilirsiniz.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {dispatchSummary.map(summary => {
+                      const supplier = suppliers.find(s => s.id === summary.agencyId);
+                      const isDebt = summary.remainingTl > 0;
+                      const isCredit = summary.remainingTl < 0;
+                      const isPartner = supplier?.isSmartUser && supplier?.partnerTenantId;
+                      return (
+                        <Card 
+                          key={summary.agencyId} 
+                          className={`hover-elevate cursor-pointer ${isPartner ? 'border-purple-300 dark:border-purple-700' : ''}`}
+                          onClick={() => setSelectedAgencyId(selectedAgencyId === summary.agencyId ? null : summary.agencyId)}
+                          data-testid={`card-agency-summary-${summary.agencyId}`}
+                        >
+                          <CardContent className="py-4">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                              <div className="flex items-center gap-3">
+                                <Building2 className="h-5 w-5 text-muted-foreground" />
+                                <div>
+                                  <div className="font-medium flex items-center gap-2">
+                                    {summary.agencyName}
+                                    {isPartner && (
+                                      <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 text-xs">
+                                        Partner
+                                      </Badge>
+                                    )}
+                                    {selectedAgencyId === summary.agencyId && (
+                                      <Badge variant="default" className="text-xs">Seçili</Badge>
+                                    )}
+                                  </div>
+                                  {supplier?.contactInfo && (
+                                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      {supplier.contactInfo}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-4 text-sm">
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">Kişi:</span>
+                                  <span className="font-medium">{summary.totalGuests}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">Borç:</span>
+                                  <span className="font-medium">
+                                    {summary.totalOwedTl > 0 && `${summary.totalOwedTl.toLocaleString('tr-TR')} TL`}
+                                    {summary.totalOwedTl > 0 && summary.totalOwedUsd > 0 && ' + '}
+                                    {summary.totalOwedUsd > 0 && `$${summary.totalOwedUsd.toLocaleString('en-US')}`}
+                                    {summary.totalOwedTl === 0 && summary.totalOwedUsd === 0 && '0 TL'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-muted-foreground">Ödenen:</span>
+                                  <span className="font-medium text-green-600">{summary.totalPaidTl.toLocaleString('tr-TR')} TL</span>
+                                </div>
+                                <Badge variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}>
+                                  Kalan: {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {selectedAgencyId && (
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">{suppliers.find(s => s.id === selectedAgencyId)?.name}</span> seçili. 
+                  Diğer sekmelerde bu acentaya ait kayıtlar filtrelenecek.
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedAgencyId(null)}
+                    className="ml-2"
+                    data-testid="button-clear-agency-selection"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Filtreyi Kaldır
+                  </Button>
+                </p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
