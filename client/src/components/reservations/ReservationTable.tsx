@@ -62,7 +62,7 @@ export function ReservationTable({
 
   // Fetch dispatches to check which reservations have dispatches
   const { data: dispatches = [] } = useQuery<{ id: number; customerName: string | null; dispatchDate: string; activityId: number | null }[]>({
-    queryKey: ['/api/supplier-dispatches']
+    queryKey: ['/api/finance/dispatches']
   });
 
   // Create a lookup set for reservations that have dispatches (by activityId + date, and optionally customerName)
