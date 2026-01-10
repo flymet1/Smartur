@@ -2061,26 +2061,35 @@ export default function Finance() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {suppliers.map(agency => (
-                <Card key={agency.id} data-testid={`card-agency-${agency.id}`}>
+              {suppliers.map(agency => {
+                const isPartnerAgency = agency.isSmartUser && agency.partnerTenantId;
+                return (
+                <Card key={agency.id} data-testid={`card-agency-${agency.id}`} className={isPartnerAgency ? 'border-purple-300 dark:border-purple-700' : ''}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Building2 className="h-5 w-5" />
                         {agency.name}
+                        {isPartnerAgency && (
+                          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 text-xs">
+                            Partner
+                          </Badge>
+                        )}
                       </CardTitle>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEditAgencyDialog(agency)} data-testid={`button-edit-agency-${agency.id}`}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => {
-                          if (confirm(`${agency.name} acentasını ve tüm ödeme kayıtlarını silmek istediğinize emin misiniz?`)) {
-                            deleteAgencyMutation.mutate(agency.id);
-                          }
-                        }} data-testid={`button-delete-agency-${agency.id}`}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+                      {!isPartnerAgency && (
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => openEditAgencyDialog(agency)} data-testid={`button-edit-agency-${agency.id}`}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => {
+                            if (confirm(`${agency.name} acentasını ve tüm ödeme kayıtlarını silmek istediğinize emin misiniz?`)) {
+                              deleteAgencyMutation.mutate(agency.id);
+                            }
+                          }} data-testid={`button-delete-agency-${agency.id}`}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -2102,7 +2111,8 @@ export default function Finance() {
                     )}
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
               {suppliers.length === 0 && (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
                   <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
