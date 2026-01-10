@@ -1833,7 +1833,7 @@ export async function registerRoutes(
   });
 
   // Search reservations by customer name for autocomplete
-  app.get("/api/reservations/search", async (req, res) => {
+  app.get("/api/reservations/search", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
     const query = (req.query.q as string) || '';
     const tenantId = req.session?.tenantId;
     

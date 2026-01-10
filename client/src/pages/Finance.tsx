@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -399,10 +399,55 @@ export default function Finance() {
     dispatchDate: new Date().toISOString().split('T')[0],
     dispatchTime: '10:00',
     customerName: '',
+    customerPhone: '',
     notes: '',
     items: [{ ...defaultDispatchItem }] as DispatchItemForm[]
   });
   const [useLineItems, setUseLineItems] = useState(false);
+  
+  // Customer autocomplete state
+  type CustomerSuggestion = {
+    id: number;
+    customerName: string;
+    customerPhone: string | null;
+    date: string;
+    time: string;
+    activityId: number | null;
+  };
+  const [customerSuggestions, setCustomerSuggestions] = useState<CustomerSuggestion[]>([]);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [searchingCustomers, setSearchingCustomers] = useState(false);
+  
+  // Debounced customer search
+  const searchCustomers = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setCustomerSuggestions([]);
+      setShowCustomerSuggestions(false);
+      return;
+    }
+    
+    setSearchingCustomers(true);
+    try {
+      const response = await fetch(`/api/reservations/search?q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCustomerSuggestions(data);
+        setShowCustomerSuggestions(data.length > 0);
+      }
+    } catch (error) {
+      console.error('Customer search error:', error);
+    } finally {
+      setSearchingCustomers(false);
+    }
+  }, []);
+  
+  // Debounce effect for customer name input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchCustomers(dispatchForm.customerName);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [dispatchForm.customerName, searchCustomers]);
   // Basit mod için geri uyumluluk
   const [simpleGuestCount, setSimpleGuestCount] = useState(1);
   const [simpleUnitPayout, setSimpleUnitPayout] = useState(0);
@@ -968,6 +1013,7 @@ export default function Finance() {
       dispatchDate: new Date().toISOString().split('T')[0],
       dispatchTime: '10:00',
       customerName: '',
+      customerPhone: '',
       notes: '',
       items: [{ ...defaultDispatchItem }]
     });
@@ -975,6 +1021,8 @@ export default function Finance() {
     setSimpleUnitPayout(0);
     setSimpleCurrency('TRY');
     setUseLineItems(false);
+    setCustomerSuggestions([]);
+    setShowCustomerSuggestions(false);
   };
 
   const deleteDispatchMutation = useMutation({
@@ -1416,6 +1464,7 @@ export default function Finance() {
                   dispatchDate: new Date().toISOString().split('T')[0],
                   dispatchTime: '10:00',
                   customerName: '',
+                  customerPhone: '',
                   notes: '',
                   items: [{ ...defaultDispatchItem }]
                 });
@@ -1423,6 +1472,8 @@ export default function Finance() {
                 setSimpleUnitPayout(0);
                 setSimpleCurrency('TRY');
                 setUseLineItems(false);
+                setCustomerSuggestions([]);
+                setShowCustomerSuggestions(false);
                 setDispatchDialogOpen(true);
               }} data-testid="button-add-dispatch">
                 <Plus className="h-4 w-4 mr-2" />
@@ -2983,14 +3034,71 @@ export default function Finance() {
                   </Select>
                 </div>
               </div>
-              <div>
-                <Label>Müşteri Adı Soyadı</Label>
-                <Input 
-                  value={dispatchForm.customerName}
-                  onChange={e => setDispatchForm(f => ({ ...f, customerName: e.target.value }))}
-                  placeholder="Örn: Ahmet Yılmaz"
-                  data-testid="input-dispatch-customer-name"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="relative">
+                  <Label>Müşteri Adı Soyadı</Label>
+                  <Input 
+                    value={dispatchForm.customerName}
+                    onChange={e => {
+                      setDispatchForm(f => ({ ...f, customerName: e.target.value }));
+                    }}
+                    onFocus={() => {
+                      if (customerSuggestions.length > 0) {
+                        setShowCustomerSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowCustomerSuggestions(false), 200);
+                    }}
+                    placeholder="Örn: Ahmet Yılmaz"
+                    data-testid="input-dispatch-customer-name"
+                  />
+                  {showCustomerSuggestions && customerSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {customerSuggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.id}
+                          className="p-2 hover:bg-muted cursor-pointer border-b last:border-b-0"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setDispatchForm(f => ({
+                              ...f,
+                              customerName: suggestion.customerName,
+                              customerPhone: suggestion.customerPhone || ''
+                            }));
+                            setShowCustomerSuggestions(false);
+                          }}
+                          data-testid={`suggestion-customer-${suggestion.id}`}
+                        >
+                          <div className="font-medium text-sm">{suggestion.customerName}</div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {suggestion.customerPhone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {suggestion.customerPhone}
+                              </span>
+                            )}
+                            <span>{suggestion.date}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {searchingCustomers && (
+                    <div className="absolute right-2 top-8">
+                      <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label>Müşteri Telefon</Label>
+                  <Input 
+                    value={dispatchForm.customerPhone}
+                    onChange={e => setDispatchForm(f => ({ ...f, customerPhone: e.target.value }))}
+                    placeholder="Örn: +90 555 123 4567"
+                    data-testid="input-dispatch-customer-phone"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
