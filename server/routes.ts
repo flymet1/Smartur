@@ -6226,13 +6226,18 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
 
   app.post("/api/finance/payouts", async (req, res) => {
     try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
       const { agencyId, periodStart, periodEnd, description, guestCount, baseAmountTl, vatRatePct, method, reference, notes } = req.body;
       
       const vatAmount = Math.round(baseAmountTl * (vatRatePct / 100));
       const totalAmount = baseAmountTl + vatAmount;
       
       const payout = await storage.createAgencyPayout({
-        tenantId: req.user!.tenantId,
+        tenantId,
         agencyId,
         periodStart,
         periodEnd,
