@@ -413,6 +413,9 @@ export default function Finance() {
     date: string;
     time: string;
     activityId: number | null;
+    dispatchedToAgencyId: number | null;
+    dispatchedToAgencyName: string | null;
+    lastDispatchDate: string | null;
   };
   const [customerSuggestions, setCustomerSuggestions] = useState<CustomerSuggestion[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
@@ -3070,7 +3073,15 @@ export default function Finance() {
                           }}
                           data-testid={`suggestion-customer-${suggestion.id}`}
                         >
-                          <div className="font-medium text-sm">{suggestion.customerName}</div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="font-medium text-sm">{suggestion.customerName}</div>
+                            {suggestion.dispatchedToAgencyName && (
+                              <Badge variant="secondary" className="text-xs h-5">
+                                <Building2 className="h-3 w-3 mr-1" />
+                                {suggestion.dispatchedToAgencyName}
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             {suggestion.customerPhone && (
                               <span className="flex items-center gap-1">
@@ -3079,6 +3090,11 @@ export default function Finance() {
                               </span>
                             )}
                             <span>{suggestion.date}</span>
+                            {suggestion.lastDispatchDate && (
+                              <span className="text-orange-600">
+                                Son gönderim: {suggestion.lastDispatchDate}
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}
