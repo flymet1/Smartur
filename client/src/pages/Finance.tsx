@@ -420,11 +420,6 @@ export default function Finance() {
   const [rejectingPaymentId, setRejectingPaymentId] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  // Currency converter state
-  const [converterAmount, setConverterAmount] = useState<string>("100");
-  const [converterFrom, setConverterFrom] = useState<string>("USD");
-  const [converterTo, setConverterTo] = useState<string>("TRY");
-
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
@@ -448,7 +443,7 @@ export default function Finance() {
     refetchInterval: 1000 * 60 * 60, // 1 hour
   });
 
-  // Convert currency
+  // Convert currency (used for dispatch calculations)
   const convertCurrency = (amount: number, from: string, to: string): number => {
     if (!exchangeRates || from === to) return amount;
     const fromRates = exchangeRates[from as keyof typeof exchangeRates];
@@ -457,10 +452,6 @@ export default function Finance() {
     }
     return amount;
   };
-
-  const convertedAmount = converterAmount && !isNaN(parseFloat(converterAmount)) 
-    ? convertCurrency(parseFloat(converterAmount), converterFrom, converterTo)
-    : 0;
 
   // Tedarikçiler (Suppliers)
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery<Agency[]>({
@@ -850,7 +841,8 @@ export default function Finance() {
     });
 
   // Özet hesaplamalar
-  const totalGuests = filteredPayouts.reduce((sum, p) => sum + (p.guestCount || 0), 0);
+  const totalGuests = filteredDispatches.reduce((sum, d) => sum + (d.guestCount || 0), 0);
+  const totalOwed = filteredDispatches.reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0);
   const totalPaid = filteredPayouts.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
   const supplierSummary = suppliers.map(s => {
     const supplierPayouts = filteredPayouts.filter(p => p.agencyId === s.id);
@@ -1227,162 +1219,8 @@ export default function Finance() {
           <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
         </div>
 
-        {/* Currency Exchange Rates & Converter Widget */}
-        <Card className="border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <Banknote className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">Guncel Doviz Kurlari</CardTitle>
-                {exchangeRates?.stale && (
-                  <Badge variant="outline" className="text-xs">Eski veri</Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {exchangeRates?.date && (
-                  <span className="text-xs text-muted-foreground">
-                    {exchangeRates.date}
-                  </span>
-                )}
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  onClick={() => refetchRates()}
-                  disabled={ratesLoading}
-                  data-testid="button-refresh-rates"
-                >
-                  <RefreshCw className={`h-4 w-4 ${ratesLoading ? 'animate-spin' : ''}`} />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Current Rates Display */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium text-muted-foreground">Günlük Kurlar</h4>
-                {ratesLoading ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                  </div>
-                ) : exchangeRates ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-lg bg-muted/50 border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-green-600" />
-                        <span className="text-xs font-medium text-muted-foreground">USD/TRY</span>
-                      </div>
-                      <div className="text-xl font-bold" data-testid="text-usd-try-rate">
-                        {exchangeRates.USD.TRY.toFixed(4)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">1 USD = {exchangeRates.USD.TRY.toFixed(2)} TL</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/50 border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Euro className="h-4 w-4 text-blue-600" />
-                        <span className="text-xs font-medium text-muted-foreground">EUR/TRY</span>
-                      </div>
-                      <div className="text-xl font-bold" data-testid="text-eur-try-rate">
-                        {exchangeRates.EUR.TRY.toFixed(4)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">1 EUR = {exchangeRates.EUR.TRY.toFixed(2)} TL</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/50 border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-green-600" />
-                        <span className="text-xs font-medium text-muted-foreground">USD/EUR</span>
-                      </div>
-                      <div className="text-xl font-bold" data-testid="text-usd-eur-rate">
-                        {exchangeRates.USD.EUR.toFixed(4)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">1 USD = {exchangeRates.USD.EUR.toFixed(4)} EUR</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/50 border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Euro className="h-4 w-4 text-blue-600" />
-                        <span className="text-xs font-medium text-muted-foreground">EUR/USD</span>
-                      </div>
-                      <div className="text-xl font-bold" data-testid="text-eur-usd-rate">
-                        {exchangeRates.EUR.USD.toFixed(4)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">1 EUR = {exchangeRates.EUR.USD.toFixed(4)} USD</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    Kur bilgisi alınamadı
-                  </div>
-                )}
-              </div>
-
-              {/* Currency Converter */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Calculator className="h-4 w-4 text-primary" />
-                  <h4 className="text-sm font-medium text-muted-foreground">Doviz Hesaplayiçi</h4>
-                </div>
-                <div className="p-4 rounded-lg border bg-background">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        value={converterAmount}
-                        onChange={(e) => setConverterAmount(e.target.value)}
-                        placeholder="Miktar"
-                        className="flex-1"
-                        data-testid="input-converter-amount"
-                      />
-                      <Select value={converterFrom} onValueChange={setConverterFrom}>
-                        <SelectTrigger className="w-24" data-testid="select-converter-from">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="TRY">TRY</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex justify-center">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => {
-                          const temp = converterFrom;
-                          setConverterFrom(converterTo);
-                          setConverterTo(temp);
-                        }}
-                        data-testid="button-swap-currencies"
-                      >
-                        <ArrowRightLeft className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 p-3 rounded-md bg-muted/50 border">
-                        <div className="text-xl font-bold" data-testid="text-converted-amount">
-                          {convertedAmount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                      </div>
-                      <Select value={converterTo} onValueChange={setConverterTo}>
-                        <SelectTrigger className="w-24" data-testid="select-converter-to">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="TRY">TRY</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Özet Kartları */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm font-medium">Toplam Acenta</CardTitle>
@@ -1411,6 +1249,16 @@ export default function Finance() {
             <CardContent>
               <div className="text-2xl font-bold text-orange-600" data-testid="text-total-paid">{formatMoney(totalPaid)}</div>
               <p className="text-xs text-muted-foreground">Acentalara ödenen</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+              <CardTitle className="text-sm font-medium">Kalan Borç</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600" data-testid="text-remaining-debt">{formatMoney(totalOwed - totalPaid)}</div>
+              <p className="text-xs text-muted-foreground">Ödenmesi gereken</p>
             </CardContent>
           </Card>
         </div>
