@@ -2836,7 +2836,7 @@ export async function registerRoutes(
               p.status === 'active'
             );
             
-            let unitPrice = activity?.priceTl || 0;
+            let unitPrice = activity?.price || 0;
             let currency = 'TRY';
             
             if (partnership) {
