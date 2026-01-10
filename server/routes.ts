@@ -2325,6 +2325,59 @@ export async function registerRoutes(
     }
   });
 
+  // Get viewer customer requests with reservation and activity details
+  app.get("/api/viewer-customer-requests", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+
+      // Get all customer requests for this tenant
+      const requests = await storage.getCustomerRequests(tenantId);
+      
+      // Get all reservations and activities for enrichment
+      const allReservations = await storage.getReservations(tenantId);
+      const allActivities = await storage.getActivities(tenantId);
+      
+      // Enrich with reservation and activity details
+      const enrichedRequests = requests.map((request) => {
+        let activityName: string | undefined;
+        let reservationDate: string | undefined;
+        let reservationTime: string | undefined;
+
+        // Get reservation details if available
+        if (request.reservationId) {
+          const reservation = allReservations.find(r => r.id === request.reservationId);
+          if (reservation) {
+            reservationDate = reservation.date;
+            reservationTime = reservation.time;
+            
+            // Get activity name
+            if (reservation.activityId) {
+              const activity = allActivities.find(a => a.id === reservation.activityId);
+              if (activity) {
+                activityName = activity.name;
+              }
+            }
+          }
+        }
+
+        return {
+          ...request,
+          activityName,
+          reservationDate,
+          reservationTime,
+        };
+      });
+
+      res.json(enrichedRequests);
+    } catch (error) {
+      console.error("Get viewer customer requests error:", error);
+      res.status(500).json({ error: "Talepler alinamadi" });
+    }
+  });
+
   // === Partner Agency Reservation Requests ===
   
   // Create a reservation request (requires RESERVATIONS_REQUEST permission - viewer role)

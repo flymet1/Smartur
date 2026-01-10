@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Calendar, User, Clock, Users, MapPin, CheckCircle, XCircle, HourglassIcon, Trash2, Wallet, Check, X, AlertCircle } from "lucide-react";
+import { ClipboardList, Calendar, User, Clock, Users, MapPin, CheckCircle, XCircle, HourglassIcon, Trash2, Wallet, Check, X, AlertCircle, MessageSquare, Phone, Ban, RefreshCw } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -65,6 +65,24 @@ interface PartnerTransaction {
   currentTenantId: number;
 }
 
+interface ViewerCustomerRequest {
+  id: number;
+  reservationId: number;
+  requestType: string;
+  requestDetails: string | null;
+  preferredTime: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  customerEmail: string | null;
+  status: string;
+  adminNotes: string | null;
+  createdAt: string;
+  processedAt: string | null;
+  activityName?: string;
+  reservationDate?: string;
+  reservationTime?: string;
+}
+
 export default function PartnerProfile() {
   const { toast } = useToast();
 
@@ -78,6 +96,23 @@ export default function PartnerProfile() {
 
   const { data: partnerTransactions, isLoading: transactionsLoading } = useQuery<PartnerTransaction[]>({
     queryKey: ["/api/partner-transactions"],
+  });
+
+  const { data: viewerRequests, isLoading: viewerRequestsLoading, refetch: refetchViewerRequests } = useQuery<ViewerCustomerRequest[]>({
+    queryKey: ["/api/viewer-customer-requests"],
+  });
+
+  const updateViewerRequestMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      return await apiRequest('PATCH', `/api/customer-requests/${id}`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/viewer-customer-requests'] });
+      toast({ title: "Basarili", description: "Talep durumu guncellendi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Talep guncellenemedi", variant: "destructive" });
+    }
   });
 
   const requestDeletionMutation = useMutation({
@@ -146,6 +181,29 @@ export default function PartnerProfile() {
   const approvedCount = myRequests?.filter(r => r.status === "approved" || r.status === "converted").length || 0;
   const rejectedCount = myRequests?.filter(r => r.status === "rejected").length || 0;
   const transactionCount = partnerTransactions?.length || 0;
+  const pendingViewerRequestCount = viewerRequests?.filter(r => r.status === "pending").length || 0;
+
+  const getRequestTypeText = (type: string) => {
+    switch (type) {
+      case 'time_change': return 'Saat Degisikligi';
+      case 'cancellation': return 'Iptal Talebi';
+      case 'other': return 'Diger Talep';
+      default: return type;
+    }
+  };
+
+  const getViewerRequestStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"><Clock className="w-3 h-3 mr-1" />Beklemede</Badge>;
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"><Check className="w-3 h-3 mr-1" />Onaylandi</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"><X className="w-3 h-3 mr-1" />Reddedildi</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -157,7 +215,7 @@ export default function PartnerProfile() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-2">
@@ -210,10 +268,23 @@ export default function PartnerProfile() {
             </div>
           </CardContent>
         </Card>
+        <Card className={pendingViewerRequestCount > 0 ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-600' : ''}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className={`text-sm ${pendingViewerRequestCount > 0 ? 'text-orange-700 dark:text-orange-300' : 'text-muted-foreground'}`}>Musteri Talepleri</p>
+                <p className={`text-2xl font-bold ${pendingViewerRequestCount > 0 ? 'text-orange-600' : ''}`}>{pendingViewerRequestCount}</p>
+              </div>
+              <div className={`p-3 rounded-full ${pendingViewerRequestCount > 0 ? 'bg-orange-200 text-orange-700 dark:bg-orange-800/50 dark:text-orange-300' : 'bg-muted'}`}>
+                <MessageSquare className="w-5 h-5" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="requests" className="w-full">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="requests" className="gap-2" data-testid="tab-requests">
             <ClipboardList className="w-4 h-4" />
             Taleplerim
@@ -225,6 +296,13 @@ export default function PartnerProfile() {
           <TabsTrigger value="transactions" className="gap-2" data-testid="tab-transactions">
             <Wallet className="w-4 h-4" />
             Islemlerim
+          </TabsTrigger>
+          <TabsTrigger value="viewer-requests" className="gap-2" data-testid="tab-viewer-requests">
+            <MessageSquare className="w-4 h-4" />
+            Musteri Talepleri
+            {pendingViewerRequestCount > 0 && (
+              <Badge variant="destructive" className="ml-1 px-1.5 py-0 text-xs">{pendingViewerRequestCount}</Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -470,6 +548,121 @@ export default function PartnerProfile() {
                 <Wallet className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>Henuz isleminiz bulunmuyor.</p>
                 <p className="text-sm mt-2">Rezervasyonlariniz onaylandiktan sonra islemler burada gorunecek.</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="viewer-requests" className="mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium">Izleyici Musteri Talepleri</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => refetchViewerRequests()}
+              data-testid="button-refresh-viewer-requests"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Yenile
+            </Button>
+          </div>
+          {viewerRequestsLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : viewerRequests && viewerRequests.length > 0 ? (
+            <div className="space-y-4">
+              {viewerRequests.map(request => (
+                <Card key={request.id} className={request.status === 'pending' ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''} data-testid={`card-viewer-request-${request.id}`}>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold">{request.customerName}</h3>
+                          {getViewerRequestStatusBadge(request.status)}
+                          <Badge variant="outline" className={request.requestType === 'cancellation' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : ''}>
+                            {request.requestType === 'cancellation' ? <Ban className="w-3 h-3 mr-1" /> : null}
+                            {getRequestTypeText(request.requestType)}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          {request.customerPhone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="w-4 h-4" />
+                              {request.customerPhone}
+                            </span>
+                          )}
+                          {request.activityName && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {request.activityName}
+                            </span>
+                          )}
+                          {request.reservationDate && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {format(new Date(request.reservationDate), "d MMMM yyyy", { locale: tr })}
+                            </span>
+                          )}
+                          {request.reservationTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {request.reservationTime}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {format(new Date(request.createdAt), "d MMM yyyy HH:mm", { locale: tr })}
+                          </span>
+                        </div>
+                        {request.requestDetails && (
+                          <p className="text-sm bg-muted/50 p-2 rounded mt-2">
+                            <strong>Detay:</strong> {request.requestDetails}
+                          </p>
+                        )}
+                        {request.preferredTime && request.requestType === 'time_change' && (
+                          <p className="text-sm text-blue-600 dark:text-blue-400">
+                            <strong>Tercih edilen saat:</strong> {request.preferredTime}
+                          </p>
+                        )}
+                      </div>
+                      {request.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => updateViewerRequestMutation.mutate({ id: request.id, status: 'approved' })}
+                            disabled={updateViewerRequestMutation.isPending}
+                            data-testid={`button-approve-viewer-request-${request.id}`}
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Onayla
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 border-red-300"
+                            onClick={() => updateViewerRequestMutation.mutate({ id: request.id, status: 'rejected' })}
+                            disabled={updateViewerRequestMutation.isPending}
+                            data-testid={`button-reject-viewer-request-${request.id}`}
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Reddet
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Henuz musteri talebi bulunmuyor.</p>
+                <p className="text-sm mt-2">Izleyicilerin musteri talepleri burada gorunecek.</p>
               </CardContent>
             </Card>
           )}
