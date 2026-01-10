@@ -27,7 +27,7 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "text-foreground",
+        default: "text-black",
         destructive:
           "destructive group text-red-900 dark:text-red-100 [&]:bg-red-50/70 [&]:dark:bg-red-900/50 [&]:border-red-200/50 [&]:dark:border-red-500/30",
       },
@@ -75,7 +75,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-accent-foreground/70 group-[.destructive]:hover:text-accent-foreground group-[.destructive]:focus:ring-accent group-[.destructive]:focus:ring-offset-accent",
+      "absolute right-2 top-2 rounded-md p-1 text-black/50 opacity-0 transition-opacity hover:text-black focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-700 group-[.destructive]:hover:text-red-900 group-[.destructive]:focus:ring-accent group-[.destructive]:focus:ring-offset-accent",
       className
     )}
     toast-close=""
@@ -92,7 +92,7 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={cn("text-sm font-semibold text-foreground group-[.destructive]:text-red-900 dark:group-[.destructive]:text-red-100", className)}
+    className={cn("text-sm font-semibold text-black group-[.destructive]:text-red-900 dark:group-[.destructive]:text-red-100", className)}
     {...props}
   />
 ))
@@ -104,7 +104,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn("text-sm opacity-90 text-foreground/80 group-[.destructive]:text-red-800 dark:group-[.destructive]:text-red-200", className)}
+    className={cn("text-sm opacity-90 text-black/80 group-[.destructive]:text-red-800 dark:group-[.destructive]:text-red-200", className)}
     {...props}
   />
 ))
