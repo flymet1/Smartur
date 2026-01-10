@@ -964,9 +964,9 @@ export default function Dashboard() {
                 </Card>
               ))}
               <div className="pt-4 border-t">
-                <Link href="/whatsapp">
+                <Link href="/messages">
                   <Button className="w-full" data-testid="button-view-support-requests">
-                    WhatsApp Sayfasında Görüntüle
+                    Mesajlar Sayfasında Görüntüle
                   </Button>
                 </Link>
               </div>
