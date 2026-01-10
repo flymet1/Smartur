@@ -103,22 +103,6 @@ export default function Reservations() {
   const [moveAgencyId, setMoveAgencyId] = useState("");
   const { toast } = useToast();
 
-  // Navigate to Finance page with dispatch prefill from reservation
-  const handleAddToDispatch = (reservation: Reservation) => {
-    const activityName = activities?.find(a => a.id === reservation.activityId)?.name || '';
-    const params = new URLSearchParams({
-      tab: 'dispatches',
-      openDispatch: 'true',
-      customerName: reservation.customerName,
-      customerPhone: reservation.customerPhone || '',
-      dispatchDate: reservation.date,
-      dispatchTime: reservation.time || '10:00',
-      activityId: String(reservation.activityId || 0),
-      guestCount: String(reservation.quantity || 1)
-    });
-    setLocation(`/finance?${params.toString()}`);
-  };
-
   const generateMoveCustomerMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
     const oldDateFormatted = format(new Date(oldDate), "d MMMM yyyy", { locale: tr });
     const newDateFormatted = format(new Date(newDate), "d MMMM yyyy", { locale: tr });
@@ -1648,7 +1632,6 @@ export default function Reservations() {
               onDateClick={handleAddReservationForDate}
               onDateSelect={setCurrentDate}
               onReservationSelect={setSelectedReservation}
-              onAddToDispatch={handleAddToDispatch}
               statusFilter={statusFilter}
               activityFilter={activityFilter}
               onActivityFilterChange={setActivityFilter}
@@ -1865,7 +1848,6 @@ interface BigCalendarProps {
   onDateClick: (dateStr: string) => void;
   onDateSelect: (date: Date) => void;
   onReservationSelect: (reservation: Reservation) => void;
-  onAddToDispatch: (reservation: Reservation) => void;
   statusFilter: string;
   activityFilter: string;
   onActivityFilterChange: (value: string) => void;
@@ -1887,7 +1869,6 @@ function BigCalendar({
   onDateClick,
   onDateSelect,
   onReservationSelect,
-  onAddToDispatch,
   statusFilter,
   activityFilter,
   onActivityFilterChange,
@@ -2700,7 +2681,6 @@ function BigCalendar({
                                 activityColor={getActivityColor(res.activityId)}
                                 onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                                 onSelect={onReservationSelect}
-                                onAddToDispatch={onAddToDispatch}
                                 draggable
                                 onDragStart={handleDragStart}
                               />
@@ -2719,7 +2699,6 @@ function BigCalendar({
                           activityColor={getActivityColor(res.activityId)}
                           onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                           onSelect={onReservationSelect}
-                          onAddToDispatch={onAddToDispatch}
                           draggable
                           onDragStart={handleDragStart}
                         />
@@ -2893,7 +2872,6 @@ function BigCalendar({
                                           activityColor={getActivityColor(res.activityId)}
                                           onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                                           onSelect={onReservationSelect}
-                                          onAddToDispatch={onAddToDispatch}
                                           expanded
                                         />
                                       ))}
@@ -2911,7 +2889,6 @@ function BigCalendar({
                                     activityColor={getActivityColor(res.activityId)}
                                     onStatusChange={(status) => statusMutation.mutate({ id: res.id, status })}
                                     onSelect={onReservationSelect}
-                                    onAddToDispatch={onAddToDispatch}
                                     expanded
                                     draggable
                                     onDragStart={handleDragStart}
@@ -3263,10 +3240,9 @@ interface ReservationCardProps {
   packageTourName?: string | null;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent, reservation: Reservation) => void;
-  onAddToDispatch?: (reservation: Reservation) => void;
 }
 
-function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded, packageTourName, draggable, onDragStart, onAddToDispatch }: ReservationCardProps) {
+function ReservationCard({ reservation, activityName, activityColor, onStatusChange, onSelect, expanded, packageTourName, draggable, onDragStart }: ReservationCardProps) {
   const statusConfig = {
     confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700 border-green-200" },
     pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200" },
@@ -3340,18 +3316,6 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
               <DropdownMenuItem onClick={() => onStatusChange('cancelled')} className="text-red-700">
                 İptal
               </DropdownMenuItem>
-              {onAddToDispatch && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={(e) => { e.stopPropagation(); onAddToDispatch(reservation); }}
-                    data-testid={`button-add-dispatch-${reservation.id}`}
-                  >
-                    <DollarSign className="h-3.5 w-3.5 mr-2" />
-                    Gönderime Ekle
-                  </DropdownMenuItem>
-                </>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -3391,18 +3355,6 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
             <DropdownMenuItem onClick={() => onStatusChange('pending')}>Beklemede</DropdownMenuItem>
             <DropdownMenuItem onClick={() => onStatusChange('confirmed')}>Onaylı</DropdownMenuItem>
             <DropdownMenuItem onClick={() => onStatusChange('cancelled')}>İptal</DropdownMenuItem>
-            {onAddToDispatch && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={(e) => { e.stopPropagation(); onAddToDispatch(reservation); }}
-                  data-testid={`button-add-dispatch-compact-${reservation.id}`}
-                >
-                  <DollarSign className="h-3.5 w-3.5 mr-2" />
-                  Gönderime Ekle
-                </DropdownMenuItem>
-              </>
-            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

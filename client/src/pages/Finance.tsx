@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -348,7 +347,6 @@ export default function Finance() {
   const { toast } = useToast();
   const { hasPermission } = usePermissions();
   const canManageAgencies = hasPermission(PERMISSION_KEYS.FINANCE_MANAGE);
-  const searchParams = useSearch();
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
@@ -415,9 +413,6 @@ export default function Finance() {
     date: string;
     time: string;
     activityId: number | null;
-    dispatchedToAgencyId: number | null;
-    dispatchedToAgencyName: string | null;
-    lastDispatchDate: string | null;
   };
   const [customerSuggestions, setCustomerSuggestions] = useState<CustomerSuggestion[]>([]);
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
@@ -476,39 +471,6 @@ export default function Finance() {
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
   const [financeTab, setFinanceTab] = useState<'dispatches' | 'payouts' | 'rates' | 'partner-customers' | 'agencies'>('dispatches');
-  
-  // Handle URL params for dispatch prefill from Reservations page
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    const tab = params.get('tab');
-    const openDispatch = params.get('openDispatch');
-    
-    if (tab === 'dispatches' && openDispatch === 'true') {
-      setFinanceTab('dispatches');
-      
-      // Prefill dispatch form from URL params
-      const customerName = params.get('customerName') || '';
-      const customerPhone = params.get('customerPhone') || '';
-      const dispatchDate = params.get('dispatchDate') || new Date().toISOString().split('T')[0];
-      const dispatchTime = params.get('dispatchTime') || '10:00';
-      const activityId = parseInt(params.get('activityId') || '0') || 0;
-      const guestCount = parseInt(params.get('guestCount') || '1') || 1;
-      
-      setDispatchForm(f => ({
-        ...f,
-        customerName,
-        customerPhone,
-        dispatchDate,
-        dispatchTime,
-        activityId
-      }));
-      setSimpleGuestCount(guestCount);
-      setDispatchDialogOpen(true);
-      
-      // Clear URL params after processing
-      window.history.replaceState({}, '', '/finance');
-    }
-  }, [searchParams]);
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
   const [payoutSortOrder, setPayoutSortOrder] = useState<'createdNewest' | 'createdOldest' | 'amountHigh' | 'amountLow'>('createdNewest');
   const [rateSortOrder, setRateSortOrder] = useState<'createdNewest' | 'createdOldest' | 'priceHigh' | 'priceLow'>('createdNewest');
@@ -3108,15 +3070,7 @@ export default function Finance() {
                           }}
                           data-testid={`suggestion-customer-${suggestion.id}`}
                         >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="font-medium text-sm">{suggestion.customerName}</div>
-                            {suggestion.dispatchedToAgencyName && (
-                              <Badge variant="secondary" className="text-xs h-5">
-                                <Building2 className="h-3 w-3 mr-1" />
-                                {suggestion.dispatchedToAgencyName}
-                              </Badge>
-                            )}
-                          </div>
+                          <div className="font-medium text-sm">{suggestion.customerName}</div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             {suggestion.customerPhone && (
                               <span className="flex items-center gap-1">
@@ -3125,11 +3079,6 @@ export default function Finance() {
                               </span>
                             )}
                             <span>{suggestion.date}</span>
-                            {suggestion.lastDispatchDate && (
-                              <span className="text-orange-600">
-                                Son gönderim: {suggestion.lastDispatchDate}
-                              </span>
-                            )}
                           </div>
                         </div>
                       ))}

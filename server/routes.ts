@@ -1843,8 +1843,6 @@ export async function registerRoutes(
     
     try {
       const allReservations = await storage.getReservations(tenantId);
-      const allDispatches = await storage.getSupplierDispatches(undefined, tenantId);
-      const allAgencies = await storage.getAgencies(tenantId);
       const searchLower = query.toLowerCase();
       
       const matched = allReservations
@@ -1853,30 +1851,14 @@ export async function registerRoutes(
           r.customerPhone?.includes(query)
         )
         .slice(0, 15)
-        .map(r => {
-          // Find if this customer was dispatched to any agency
-          const customerDispatches = allDispatches.filter(d => 
-            d.customerName?.toLowerCase() === r.customerName?.toLowerCase()
-          );
-          const lastDispatch = customerDispatches.length > 0 
-            ? customerDispatches.sort((a, b) => (b.dispatchDate || '').localeCompare(a.dispatchDate || ''))[0]
-            : null;
-          const dispatchAgency = lastDispatch 
-            ? allAgencies.find(a => a.id === lastDispatch.agencyId)
-            : null;
-          
-          return {
-            id: r.id,
-            customerName: r.customerName,
-            customerPhone: r.customerPhone,
-            date: r.date,
-            time: r.time,
-            activityId: r.activityId,
-            dispatchedToAgencyId: lastDispatch?.agencyId || null,
-            dispatchedToAgencyName: dispatchAgency?.name || null,
-            lastDispatchDate: lastDispatch?.dispatchDate || null
-          };
-        });
+        .map(r => ({
+          id: r.id,
+          customerName: r.customerName,
+          customerPhone: r.customerPhone,
+          date: r.date,
+          time: r.time,
+          activityId: r.activityId
+        }));
       
       // Deduplicate by customerName + customerPhone
       const unique = Array.from(
