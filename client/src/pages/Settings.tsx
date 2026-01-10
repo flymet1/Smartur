@@ -758,7 +758,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'data', 'partners', 'notifications', 'agencies'].includes(tab)) {
+    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'data', 'partners', 'notifications'].includes(tab)) {
       setSettingsTab(tab);
     }
   }, [location]);
@@ -837,15 +837,6 @@ DEĞİŞİKLİK TALEPLERİNDE:
             >
               <Download className="h-4 w-4 mr-2" />
               Veri
-            </Button>
-            <Button
-              variant={settingsTab === 'agencies' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('agencies')}
-              data-testid="tab-agencies"
-            >
-              <Building2 className="h-4 w-4 mr-2" />
-              Acentalar
             </Button>
           </div>
         </div>
@@ -1837,10 +1828,6 @@ DEĞİŞİKLİK TALEPLERİNDE:
             <PartnerAgencySection />
           </TabsContent>
 
-          {/* AGENCIES TAB */}
-          <TabsContent value="agencies" className="space-y-6">
-            <AgencyManagementSection />
-          </TabsContent>
         </Tabs>
 
         {/* Save Button at the end of content */}

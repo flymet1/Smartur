@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -344,6 +345,8 @@ const exportPartnerTransactionsToPDF = (transactions: any[]) => {
 
 export default function Finance() {
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
+  const canManageAgencies = hasPermission(PERMISSION_KEYS.FINANCE_MANAGE);
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
@@ -364,6 +367,8 @@ export default function Finance() {
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
+  const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
+  const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
   const [editingRate, setEditingRate] = useState<AgencyActivityRate | null>(null);
   const [payoutForm, setPayoutForm] = useState({
     agencyId: 0,
@@ -891,6 +896,22 @@ export default function Finance() {
     },
     onError: () => {
       toast({ title: "Hata", description: "Ödeme silinemedi", variant: "destructive" });
+    }
+  });
+
+  const createAgencyMutation = useMutation({
+    mutationFn: async (data: { name: string; contactInfo: string; defaultPayoutPerGuest: number; notes: string }) => {
+      const res = await apiRequest('POST', '/api/finance/agencies', data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
+      setAgencyDialogOpen(false);
+      setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
+      toast({ title: "Acenta eklendi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Acenta eklenemedi", variant: "destructive" });
     }
   });
 
@@ -2520,8 +2541,16 @@ export default function Finance() {
           {financeTab === 'agencies' && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold">Acentalar</h3>
-              <Badge variant="outline">{dispatchSummary.length} acenta</Badge>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">Acentalar</h3>
+                <Badge variant="outline">{dispatchSummary.length} acenta</Badge>
+              </div>
+              {canManageAgencies && (
+                <Button onClick={() => setAgencyDialogOpen(true)} data-testid="button-add-agency">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Yeni Acenta Ekle
+                </Button>
+              )}
             </div>
 
             {/* Özet Kartları */}
@@ -3292,6 +3321,75 @@ export default function Finance() {
                 onClick={handleRateSubmit}
                 disabled={createRateMutation.isPending || updateRateMutation.isPending}
                 data-testid="button-save-rate"
+              >
+                Kaydet
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Acenta Ekleme Dialog */}
+        <Dialog open={agencyDialogOpen} onOpenChange={setAgencyDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Yeni Acenta Ekle</DialogTitle>
+              <DialogDescription>Tedarikçi acenta bilgilerini girin</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Acenta Adı *</Label>
+                <Input 
+                  value={agencyForm.name}
+                  onChange={e => setAgencyForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Acenta adı"
+                  data-testid="input-agency-name"
+                />
+              </div>
+              <div>
+                <Label>İletişim Bilgisi</Label>
+                <Input 
+                  value={agencyForm.contactInfo}
+                  onChange={e => setAgencyForm(f => ({ ...f, contactInfo: e.target.value }))}
+                  placeholder="Telefon veya e-posta"
+                  data-testid="input-agency-contact"
+                />
+              </div>
+              <div>
+                <Label>Kişi Başı Varsayılan Ödeme (TL)</Label>
+                <Input 
+                  type="number"
+                  min="0"
+                  value={agencyForm.defaultPayoutPerGuest}
+                  onChange={e => setAgencyForm(f => ({ ...f, defaultPayoutPerGuest: parseInt(e.target.value) || 0 }))}
+                  data-testid="input-agency-payout"
+                />
+              </div>
+              <div>
+                <Label>Notlar</Label>
+                <Textarea 
+                  value={agencyForm.notes}
+                  onChange={e => setAgencyForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Ek bilgiler..."
+                  data-testid="input-agency-notes"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAgencyDialogOpen(false)} data-testid="button-cancel-agency">İptal</Button>
+              <Button 
+                onClick={() => {
+                  if (!agencyForm.name.trim()) {
+                    toast({ title: "Hata", description: "Acenta adı zorunludur", variant: "destructive" });
+                    return;
+                  }
+                  const sanitizedForm = {
+                    ...agencyForm,
+                    defaultPayoutPerGuest: Math.max(0, agencyForm.defaultPayoutPerGuest || 0)
+                  };
+                  createAgencyMutation.mutate(sanitizedForm);
+                }}
+                disabled={createAgencyMutation.isPending}
+                data-testid="button-save-agency"
               >
                 Kaydet
               </Button>
