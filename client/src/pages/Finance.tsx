@@ -2216,13 +2216,13 @@ export default function Finance() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <ArrowRightLeft className="h-4 w-4" />
-                      Net Bakiye (Toplam)
+                      İş Hacmi Farkı
                     </div>
-                    <div className={`text-lg font-semibold ${netBalance > 0 ? 'text-green-600' : netBalance < 0 ? 'text-red-600' : ''}`}>
+                    <div className={`text-lg font-semibold ${netBalance > 0 ? 'text-blue-600' : netBalance < 0 ? 'text-blue-600' : ''}`}>
                       {netBalance > 0 ? '+' : ''}{formatMoney(netBalance)}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {netBalance > 0 ? 'Size borçlular' : netBalance < 0 ? 'Siz borçlusunuz' : 'Eşit'}
+                      {netBalance > 0 ? 'Gönderilen fazla' : netBalance < 0 ? 'Alınan fazla' : 'Dengeli'}
                     </div>
                   </div>
                   <div className="space-y-1">
