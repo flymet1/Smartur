@@ -413,11 +413,6 @@ export default function Finance() {
     notes: ''
   });
 
-  // Agency management state
-  const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
-  const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
-  const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
-
   // Partner payment rejection dialog state
   const [rejectPaymentDialogOpen, setRejectPaymentDialogOpen] = useState(false);
   const [rejectingPaymentId, setRejectingPaymentId] = useState<number | null>(null);
@@ -1011,43 +1006,6 @@ export default function Finance() {
     }
   });
 
-  // Agency mutations
-  const createAgencyMutation = useMutation({
-    mutationFn: async (data: typeof agencyForm) => apiRequest('POST', '/api/finance/agencies', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
-      setAgencyDialogOpen(false);
-      setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
-      toast({ title: "Acenta eklendi" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Hata", description: error?.message || "Acenta eklenemedi", variant: "destructive" });
-    }
-  });
-
-  const updateAgencyMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: typeof agencyForm }) => 
-      apiRequest('PATCH', `/api/finance/agencies/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
-      setAgencyDialogOpen(false);
-      setEditingAgency(null);
-      toast({ title: "Acenta güncellendi" });
-    }
-  });
-
-  const deleteAgencyMutation = useMutation({
-    mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/agencies/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
-      toast({ title: "Acenta silindi" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Hata", description: error?.message || "Acenta silinemedi", variant: "destructive" });
-    }
-  });
-
   // Partner Transaction Deletion Mutations
   const requestDeletionMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -1100,35 +1058,6 @@ export default function Finance() {
       toast({ title: "Hata", description: error?.message || "Silme talebi iptal edilemedi", variant: "destructive" });
     }
   });
-
-  const handleAgencySubmit = () => {
-    if (!agencyForm.name.trim()) {
-      toast({ title: "Hata", description: "Acenta adı zorunludur", variant: "destructive" });
-      return;
-    }
-    if (editingAgency) {
-      updateAgencyMutation.mutate({ id: editingAgency.id, data: agencyForm });
-    } else {
-      createAgencyMutation.mutate(agencyForm);
-    }
-  };
-
-  const openEditAgencyDialog = (agency: Agency) => {
-    setEditingAgency(agency);
-    setAgencyForm({
-      name: agency.name,
-      contactInfo: agency.contactInfo || '',
-      defaultPayoutPerGuest: agency.defaultPayoutPerGuest || 0,
-      notes: agency.notes || ''
-    });
-    setAgencyDialogOpen(true);
-  };
-
-  const openCreateAgencyDialog = () => {
-    setEditingAgency(null);
-    setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
-    setAgencyDialogOpen(true);
-  };
 
   const handlePayoutSubmit = () => {
     if (!payoutForm.agencyId) {
@@ -3343,69 +3272,6 @@ export default function Finance() {
                 data-testid="button-save-rate"
               >
                 Kaydet
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Agency Dialog */}
-        <Dialog open={agencyDialogOpen} onOpenChange={setAgencyDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingAgency ? 'Acenta Düzenle' : 'Yeni Acenta'}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="agency-name">Acenta Adı *</Label>
-                <Input
-                  id="agency-name"
-                  value={agencyForm.name}
-                  onChange={e => setAgencyForm({ ...agencyForm, name: e.target.value })}
-                  placeholder="Örnek: ABC Turizm"
-                  data-testid="input-agency-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="agency-contactInfo">İletişim Bilgisi (Telefon)</Label>
-                <Input
-                  id="agency-contactInfo"
-                  value={agencyForm.contactInfo}
-                  onChange={e => setAgencyForm({ ...agencyForm, contactInfo: e.target.value })}
-                  placeholder="+905xxxxxxxxx"
-                  data-testid="input-agency-contact"
-                />
-                <p className="text-xs text-muted-foreground">WhatsApp bildirimleri için telefon numarası</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="agency-payout">Kişi Başı Ödeme (TL)</Label>
-                <Input
-                  id="agency-payout"
-                  type="number"
-                  value={agencyForm.defaultPayoutPerGuest}
-                  onChange={e => setAgencyForm({ ...agencyForm, defaultPayoutPerGuest: Number(e.target.value) })}
-                  placeholder="0"
-                  data-testid="input-agency-payout"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="agency-notes">Notlar</Label>
-                <Textarea
-                  id="agency-notes"
-                  value={agencyForm.notes}
-                  onChange={e => setAgencyForm({ ...agencyForm, notes: e.target.value })}
-                  placeholder="Ek bilgiler..."
-                  data-testid="input-agency-notes"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAgencyDialogOpen(false)}>İptal</Button>
-              <Button 
-                onClick={handleAgencySubmit} 
-                disabled={createAgencyMutation.isPending || updateAgencyMutation.isPending}
-                data-testid="button-save-agency"
-              >
-                {editingAgency ? 'Güncelle' : 'Ekle'}
               </Button>
             </DialogFooter>
           </DialogContent>

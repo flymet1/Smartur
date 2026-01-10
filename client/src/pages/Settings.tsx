@@ -14,9 +14,9 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2 } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import type { Holiday } from "@shared/schema";
+import type { Holiday, Agency } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -758,7 +758,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'data', 'partners', 'notifications'].includes(tab)) {
+    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'data', 'partners', 'notifications', 'agencies'].includes(tab)) {
       setSettingsTab(tab);
     }
   }, [location]);
@@ -837,6 +837,15 @@ DEĞİŞİKLİK TALEPLERİNDE:
             >
               <Download className="h-4 w-4 mr-2" />
               Veri
+            </Button>
+            <Button
+              variant={settingsTab === 'agencies' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSettingsTab('agencies')}
+              data-testid="tab-agencies"
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              Acentalar
             </Button>
           </div>
         </div>
@@ -1826,6 +1835,11 @@ DEĞİŞİKLİK TALEPLERİNDE:
           {/* PARTNERS TAB */}
           <TabsContent value="partners" className="space-y-6">
             <PartnerAgencySection />
+          </TabsContent>
+
+          {/* AGENCIES TAB */}
+          <TabsContent value="agencies" className="space-y-6">
+            <AgencyManagementSection />
           </TabsContent>
         </Tabs>
 
@@ -5039,6 +5053,280 @@ function NotificationPreferencesTab({ onNavigateToTemplate }: { onNavigateToTemp
           </div>
         </CardContent>
       </Card>
+    </>
+  );
+}
+
+// Agency Management Section Component
+function AgencyManagementSection() {
+  const { toast } = useToast();
+  const { hasPermission } = usePermissions();
+  const canManageAgencies = hasPermission(PERMISSION_KEYS.FINANCE_MANAGE);
+  const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
+  const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
+  const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
+
+  const formatMoney = (amount: number) => {
+    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
+  };
+
+  // Fetch agencies (suppliers)
+  const { data: agencies = [], isLoading } = useQuery<Agency[]>({
+    queryKey: ['/api/finance/agencies']
+  });
+
+  // Create agency mutation
+  const createAgencyMutation = useMutation({
+    mutationFn: async (data: { name: string; contactInfo: string; defaultPayoutPerGuest: number; notes: string }) => {
+      const res = await apiRequest('POST', '/api/finance/agencies', data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
+      setAgencyDialogOpen(false);
+      toast({ title: "Acenta eklendi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Acenta eklenemedi", variant: "destructive" });
+    }
+  });
+
+  // Update agency mutation
+  const updateAgencyMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { name: string; contactInfo: string; defaultPayoutPerGuest: number; notes: string } }) => {
+      const res = await apiRequest('PATCH', `/api/finance/agencies/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
+      setAgencyDialogOpen(false);
+      toast({ title: "Acenta g\u00fcncellendi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Acenta g\u00fcncellenemedi", variant: "destructive" });
+    }
+  });
+
+  // Delete agency mutation
+  const deleteAgencyMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('DELETE', `/api/finance/agencies/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/agencies'] });
+      toast({ title: "Acenta silindi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Acenta silinemedi", variant: "destructive" });
+    }
+  });
+
+  const openCreateAgencyDialog = () => {
+    setEditingAgency(null);
+    setAgencyForm({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
+    setAgencyDialogOpen(true);
+  };
+
+  const openEditAgencyDialog = (agency: Agency) => {
+    setEditingAgency(agency);
+    setAgencyForm({
+      name: agency.name,
+      contactInfo: agency.contactInfo || '',
+      defaultPayoutPerGuest: agency.defaultPayoutPerGuest || 0,
+      notes: agency.notes || ''
+    });
+    setAgencyDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (!agencyForm.name.trim()) {
+      toast({ title: "Hata", description: "Acenta ad\u0131 zorunludur", variant: "destructive" });
+      return;
+    }
+    if (editingAgency) {
+      updateAgencyMutation.mutate({ id: editingAgency.id, data: agencyForm });
+    } else {
+      createAgencyMutation.mutate(agencyForm);
+    }
+  };
+
+  if (!canManageAgencies) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="text-center text-muted-foreground">
+            <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Acenta y\u00f6netimi i\u00e7in finans yetkisi gereklidir.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Acenta Y\u00f6netimi
+              </CardTitle>
+              <CardDescription>
+                Tedarik\u00e7i acentalar\u0131n\u0131z\u0131 y\u00f6netin
+              </CardDescription>
+            </div>
+            <Button onClick={openCreateAgencyDialog} data-testid="button-add-agency">
+              <Plus className="h-4 w-4 mr-2" />
+              Acenta Ekle
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {agencies.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Hen\u00fcz acenta eklenmemi\u015f</p>
+              <Button variant="outline" className="mt-4" onClick={openCreateAgencyDialog}>
+                <Plus className="h-4 w-4 mr-2" />
+                \u0130lk Acentay\u0131 Ekle
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {agencies.map(agency => {
+                const isPartnerAgency = agency.isSmartUser && agency.partnerTenantId;
+                return (
+                  <Card key={agency.id} data-testid={`card-agency-${agency.id}`} className={isPartnerAgency ? 'border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-950/30' : ''}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Building2 className="h-4 w-4" />
+                          {agency.name}
+                          {isPartnerAgency && (
+                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 text-xs">
+                              Partner
+                            </Badge>
+                          )}
+                        </CardTitle>
+                        {!isPartnerAgency && (
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEditAgencyDialog(agency)} data-testid={`button-edit-agency-${agency.id}`}>
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => {
+                              if (confirm(`${agency.name} acentas\u0131n\u0131 ve t\u00fcm \u00f6deme kay\u0131tlar\u0131n\u0131 silmek istedi\u011finize emin misiniz?`)) {
+                                deleteAgencyMutation.mutate(agency.id);
+                              }
+                            }} data-testid={`button-delete-agency-${agency.id}`}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 pt-0">
+                      {agency.contactInfo && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span>{agency.contactInfo}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 text-sm">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <span>Ki\u015fi ba\u015f\u0131: {formatMoney(agency.defaultPayoutPerGuest || 0)}</span>
+                      </div>
+                      {agency.notes && (
+                        <div className="flex items-start gap-2 text-sm pt-2 border-t">
+                          <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                          <span className="text-muted-foreground">{agency.notes}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Agency Dialog */}
+      <Dialog open={agencyDialogOpen} onOpenChange={setAgencyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingAgency ? 'Acenta D\u00fczenle' : 'Yeni Acenta'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="agencyName">Acenta Ad\u0131 *</Label>
+              <Input
+                id="agencyName"
+                value={agencyForm.name}
+                onChange={e => setAgencyForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Acenta ad\u0131n\u0131 girin"
+                data-testid="input-agency-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="agencyContact">\u0130leti\u015fim</Label>
+              <Input
+                id="agencyContact"
+                value={agencyForm.contactInfo}
+                onChange={e => setAgencyForm(f => ({ ...f, contactInfo: e.target.value }))}
+                placeholder="Telefon veya e-posta"
+                data-testid="input-agency-contact"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="agencyPayout">Ki\u015fi Ba\u015f\u0131 \u00d6deme (TL)</Label>
+              <Input
+                id="agencyPayout"
+                type="number"
+                value={agencyForm.defaultPayoutPerGuest}
+                onChange={e => setAgencyForm(f => ({ ...f, defaultPayoutPerGuest: parseFloat(e.target.value) || 0 }))}
+                placeholder="0"
+                data-testid="input-agency-payout"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="agencyNotes">Notlar</Label>
+              <Textarea
+                id="agencyNotes"
+                value={agencyForm.notes}
+                onChange={e => setAgencyForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Ek notlar..."
+                data-testid="input-agency-notes"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAgencyDialogOpen(false)}>
+              \u0130ptal
+            </Button>
+            <Button onClick={handleSubmit} disabled={createAgencyMutation.isPending || updateAgencyMutation.isPending} data-testid="button-save-agency">
+              {(createAgencyMutation.isPending || updateAgencyMutation.isPending) ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {editingAgency ? 'G\u00fcncelle' : 'Ekle'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
