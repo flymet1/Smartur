@@ -39,6 +39,13 @@ interface SessionData {
   user?: { id: number; tenantId: number };
 }
 
+interface PartnerTransaction {
+  id: number;
+  deletionStatus: string | null;
+  deletionRequestedByTenantId: number | null;
+  currentTenantId: number;
+}
+
 export function GlobalNotifications() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -48,6 +55,7 @@ export function GlobalNotifications() {
   const previousViewerCountRef = useRef<number | null>(null);
   const previousCustomerCountRef = useRef<number | null>(null);
   const previousSupportCountRef = useRef<number | null>(null);
+  const previousDeletionRequestCountRef = useRef<number | null>(null);
   const previousUserIdRef = useRef<number | null>(null);
 
   const { data: session } = useQuery<SessionData>({
@@ -62,6 +70,7 @@ export function GlobalNotifications() {
       previousViewerCountRef.current = null;
       previousCustomerCountRef.current = null;
       previousSupportCountRef.current = null;
+      previousDeletionRequestCountRef.current = null;
       notificationsShownRef.current = new Set();
     }
     previousUserIdRef.current = currentUserId;
@@ -92,6 +101,11 @@ export function GlobalNotifications() {
     refetchInterval: 15000,
   });
 
+  const { data: partnerTransactions = [] } = useQuery<PartnerTransaction[]>({
+    queryKey: ['/api/partner-transactions'],
+    refetchInterval: 15000,
+  });
+
   const markNotificationRead = useMutation({
     mutationFn: async (id: number) => {
       return apiRequest('PATCH', `/api/in-app-notifications/${id}/read`, {});
@@ -115,6 +129,8 @@ export function GlobalNotifications() {
         return '/partner-availability';
       case 'customer_request':
         return '/customer-requests';
+      case 'partner_deletion_request':
+        return '/finance';
       default:
         return '/dashboard';
     }
@@ -145,6 +161,12 @@ export function GlobalNotifications() {
   const totalCustomerRequests = pendingCustomerRequests.length + customerChangeRequests.length;
 
   const openSupportRequests = supportSummary?.openCount || 0;
+
+  // Partner transaction deletion requests awaiting my approval (not requested by me)
+  const pendingDeletionRequests = partnerTransactions.filter(tx => 
+    tx.deletionStatus === 'pending' && 
+    tx.deletionRequestedByTenantId !== tx.currentTenantId
+  ).length;
 
   const showRequestNotification = (
     count: number,
@@ -231,6 +253,18 @@ export function GlobalNotifications() {
       'destructive'
     );
   }, [openSupportRequests]);
+
+  useEffect(() => {
+    showRequestNotification(
+      pendingDeletionRequests,
+      previousDeletionRequestCountRef,
+      '{count} partner silme talebi onayınızı bekliyor',
+      '{count} yeni partner silme talebi geldi',
+      'Finans > Partner Müşteriler sayfasından inceleyin.',
+      '/finance',
+      'destructive'
+    );
+  }, [pendingDeletionRequests]);
 
   useEffect(() => {
     const unreadNotifications = inAppNotifications.filter(n => !n.isRead);
