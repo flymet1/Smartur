@@ -61,24 +61,33 @@ export function ReservationTable({
   });
 
   // Fetch dispatches to check which reservations have dispatches
-  const { data: dispatches = [] } = useQuery<{ id: number; customerName: string | null; dispatchDate: string }[]>({
+  const { data: dispatches = [] } = useQuery<{ id: number; customerName: string | null; dispatchDate: string; activityId: number | null }[]>({
     queryKey: ['/api/supplier-dispatches']
   });
 
-  // Create a lookup set for reservations that have dispatches (by customerName + date)
+  // Create a lookup set for reservations that have dispatches (by activityId + date, and optionally customerName)
   const dispatchLookup = useMemo(() => {
     const lookup = new Set<string>();
     dispatches.forEach(d => {
-      if (d.customerName && d.dispatchDate) {
-        lookup.add(`${d.customerName.toLowerCase().trim()}-${d.dispatchDate}`);
+      if (d.dispatchDate) {
+        // Primary key: activityId + date
+        if (d.activityId) {
+          lookup.add(`activity-${d.activityId}-${d.dispatchDate}`);
+        }
+        // Secondary key: customerName + date (if available)
+        if (d.customerName) {
+          lookup.add(`customer-${d.customerName.toLowerCase().trim()}-${d.dispatchDate}`);
+        }
       }
     });
     return lookup;
   }, [dispatches]);
 
   const hasDispatch = (res: Reservation) => {
-    const key = `${res.customerName.toLowerCase().trim()}-${res.date}`;
-    return dispatchLookup.has(key);
+    // Check by activityId + date first, then by customerName + date
+    const activityKey = `activity-${res.activityId}-${res.date}`;
+    const customerKey = `customer-${res.customerName.toLowerCase().trim()}-${res.date}`;
+    return dispatchLookup.has(activityKey) || dispatchLookup.has(customerKey);
   };
 
   const statusMutation = useMutation({
