@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet, Trash2, AlertCircle } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -91,6 +91,33 @@ interface OutgoingRequest extends ReservationRequest {
   ownerTenantName?: string;
 }
 
+interface PartnerTransaction {
+  id: number;
+  reservationId: number | null;
+  senderTenantId: number;
+  receiverTenantId: number;
+  activityId: number;
+  guestCount: number;
+  unitPrice: number;
+  totalPrice: number;
+  currency: string;
+  customerName: string;
+  customerPhone: string;
+  reservationDate: string;
+  reservationTime: string;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+  deletionRequestedAt: string | null;
+  deletionRequestedByTenantId: number | null;
+  deletionStatus: string | null;
+  deletionRejectionReason: string | null;
+  senderTenantName: string;
+  receiverTenantName: string;
+  activityName: string;
+  currentTenantId: number;
+}
+
 export default function PartnerAvailability() {
   const today = new Date();
   const [startDate, setStartDate] = useState(() => {
@@ -127,6 +154,10 @@ export default function PartnerAvailability() {
   const [processNotes, setProcessNotes] = useState("");
   const [notifyingSenderId, setNotifyingSenderId] = useState<number | null>(null);
   
+  const [deletionRejectDialogOpen, setDeletionRejectDialogOpen] = useState(false);
+  const [deletionRejectReason, setDeletionRejectReason] = useState("");
+  const [selectedTransactionForDeletion, setSelectedTransactionForDeletion] = useState<number | null>(null);
+  
   const { toast } = useToast();
 
   const { data: partnerData, isLoading, refetch, isFetching } = useQuery<PartnerData[]>({
@@ -150,6 +181,12 @@ export default function PartnerAvailability() {
   
   const pendingOutgoingRequests = outgoingRequests.filter(r => r.status === 'pending');
   const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved' || r.status === 'converted');
+  
+  // Partner işlemleri (financial transactions)
+  const { data: partnerTransactions = [], isLoading: transactionsLoading } = useQuery<PartnerTransaction[]>({
+    queryKey: ['/api/partner-transactions'],
+    refetchInterval: 30000,
+  });
   
   const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
@@ -222,6 +259,46 @@ export default function PartnerAvailability() {
     }
   });
   
+  // Partner transaction deletion mutations
+  const requestDeletionMutation = useMutation({
+    mutationFn: async (transactionId: number) => {
+      return apiRequest('POST', `/api/partner-transactions/${transactionId}/request-deletion`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
+      toast({ title: "Basarili", description: "Silme talebi gonderildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Silme talebi gonderilemedi.", variant: "destructive" });
+    }
+  });
+
+  const approveDeletionMutation = useMutation({
+    mutationFn: async (transactionId: number) => {
+      return apiRequest('POST', `/api/partner-transactions/${transactionId}/approve-deletion`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
+      toast({ title: "Basarili", description: "Silme onaylandi, islem kaldirildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Silme onaylanamadi.", variant: "destructive" });
+    }
+  });
+
+  const rejectDeletionMutation = useMutation({
+    mutationFn: async ({ transactionId, reason }: { transactionId: number; reason: string }) => {
+      return apiRequest('POST', `/api/partner-transactions/${transactionId}/reject-deletion`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
+      toast({ title: "Basarili", description: "Silme talebi reddedildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Red islemi basarisiz.", variant: "destructive" });
+    }
+  });
+
   const getActivityName = (activityId: number) => {
     return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
   };
@@ -648,6 +725,30 @@ export default function PartnerAvailability() {
                 </div>
                 <div className={`p-3 rounded-full shrink-0 ${pendingPartnerRequests.length > 0 ? 'bg-orange-200 text-orange-700 dark:bg-orange-800/50 dark:text-orange-300' : 'bg-muted'}`}>
                   <Users className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="cursor-pointer hover-elevate" 
+            onClick={() => {
+              const el = document.getElementById('partner-transactions-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+            data-testid="card-partner-transactions"
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm text-muted-foreground">Partner Islemlerim</p>
+                  <p className="text-2xl font-bold mt-1" data-testid="text-transaction-count">
+                    {partnerTransactions.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Toplam islem</p>
+                </div>
+                <div className="p-3 rounded-full shrink-0 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                  <CreditCard className="w-5 h-5" />
                 </div>
               </div>
             </CardContent>
@@ -1087,6 +1188,140 @@ export default function PartnerAvailability() {
             </CardContent>
           </Card>
         )}
+
+        {/* Partner İşlemlerim Bölümü */}
+        <Card id="partner-transactions-section" className="mt-6 border-2 border-purple-200 dark:border-purple-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-purple-600" />
+              Partner Islemlerim ({partnerTransactions.length})
+            </CardTitle>
+            <CardDescription>Partner acentalarla yapilan finansal islemler - silme talebi gonderebilir veya onaylayabilirsiniz</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {transactionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : partnerTransactions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Henuz partner islemi bulunmuyor</p>
+              </div>
+            ) : (
+              partnerTransactions.map(tx => {
+                const isSender = tx.currentTenantId === tx.senderTenantId;
+                const isReceiver = tx.currentTenantId === tx.receiverTenantId;
+                const canRequestDeletion = !tx.deletionStatus || tx.deletionStatus === 'rejected';
+                const hasPendingDeletion = tx.deletionStatus === 'pending';
+                const isRequester = tx.deletionRequestedByTenantId === tx.currentTenantId;
+                const canApprove = hasPendingDeletion && !isRequester;
+
+                return (
+                  <div key={tx.id} className={`border rounded-lg p-4 ${
+                    tx.deletionStatus === 'pending' 
+                      ? 'bg-orange-50/50 dark:bg-orange-950/20 border-orange-300' 
+                      : 'bg-muted/30'
+                  }`}>
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium">{tx.customerName}</p>
+                          <Badge className={isSender 
+                            ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300" 
+                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300"
+                          }>
+                            {isSender ? `Giden: ${tx.receiverTenantName}` : `Gelen: ${tx.senderTenantName}`}
+                          </Badge>
+                          {tx.deletionStatus === 'pending' && (
+                            <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              Silme Bekliyor
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{tx.customerPhone}</p>
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          <Badge variant="outline">{tx.activityName}</Badge>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {format(new Date(tx.reservationDate), "d MMM yyyy", { locale: tr })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {tx.reservationTime}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {tx.guestCount} kisi
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-lg font-bold text-green-600">
+                            {tx.currency === 'USD' ? '$' : tx.currency === 'EUR' ? '\u20AC' : ''}
+                            {tx.totalPrice.toLocaleString('tr-TR')}
+                            {tx.currency === 'TRY' ? ' TL' : ` ${tx.currency}`}
+                          </span>
+                          {tx.notes && (
+                            <span className="text-xs text-muted-foreground">| {tx.notes}</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        {canRequestDeletion && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => requestDeletionMutation.mutate(tx.id)}
+                            disabled={requestDeletionMutation.isPending}
+                            data-testid={`button-request-deletion-${tx.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Silme Talep Et
+                          </Button>
+                        )}
+                        {canApprove && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="default"
+                              onClick={() => approveDeletionMutation.mutate(tx.id)}
+                              disabled={approveDeletionMutation.isPending}
+                              data-testid={`button-approve-deletion-${tx.id}`}
+                            >
+                              <Check className="w-4 h-4 mr-1" />
+                              Silmeyi Onayla
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedTransactionForDeletion(tx.id);
+                                setDeletionRejectReason("");
+                                setDeletionRejectDialogOpen(true);
+                              }}
+                              data-testid={`button-reject-deletion-${tx.id}`}
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Reddet
+                            </Button>
+                          </>
+                        )}
+                        {hasPendingDeletion && isRequester && (
+                          <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
+                            Onay Bekleniyor
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
         
         <Dialog open={requestDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setRequestDialogOpen(open); }}>
           <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
@@ -1288,6 +1523,49 @@ export default function PartnerAvailability() {
                 data-testid="button-confirm-process"
               >
                 {processMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : processAction === "approve" ? "Onayla" : "Reddet"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={deletionRejectDialogOpen} onOpenChange={setDeletionRejectDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Silme Talebini Reddet</DialogTitle>
+              <DialogDescription>
+                Bu islemi silme talebini reddetmek icin bir neden yazin
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Red Nedeni</Label>
+                <Textarea
+                  value={deletionRejectReason}
+                  onChange={(e) => setDeletionRejectReason(e.target.value)}
+                  placeholder="Ornegin: Islem kayitlari tutulmali..."
+                  className="resize-none"
+                  rows={3}
+                  data-testid="input-deletion-reject-reason"
+                />
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setDeletionRejectDialogOpen(false)}>Vazgec</Button>
+              <Button 
+                variant="destructive"
+                onClick={() => {
+                  if (selectedTransactionForDeletion) {
+                    rejectDeletionMutation.mutate({ 
+                      transactionId: selectedTransactionForDeletion, 
+                      reason: deletionRejectReason.trim() || 'Reddedildi' 
+                    });
+                    setDeletionRejectDialogOpen(false);
+                  }
+                }}
+                disabled={rejectDeletionMutation.isPending}
+                data-testid="button-confirm-reject-deletion"
+              >
+                {rejectDeletionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reddet"}
               </Button>
             </DialogFooter>
           </DialogContent>
