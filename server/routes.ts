@@ -1832,6 +1832,46 @@ export async function registerRoutes(
     res.json(details);
   });
 
+  // Search reservations by customer name for autocomplete
+  app.get("/api/reservations/search", async (req, res) => {
+    const query = (req.query.q as string) || '';
+    const tenantId = req.session?.tenantId;
+    
+    if (!tenantId || query.length < 2) {
+      return res.json([]);
+    }
+    
+    try {
+      const allReservations = await storage.getReservations(tenantId);
+      const searchLower = query.toLowerCase();
+      
+      const matched = allReservations
+        .filter(r => 
+          r.customerName?.toLowerCase().includes(searchLower) ||
+          r.customerPhone?.includes(query)
+        )
+        .slice(0, 15)
+        .map(r => ({
+          id: r.id,
+          customerName: r.customerName,
+          customerPhone: r.customerPhone,
+          date: r.date,
+          time: r.time,
+          activityId: r.activityId
+        }));
+      
+      // Deduplicate by customerName + customerPhone
+      const unique = Array.from(
+        new Map(matched.map(r => [`${r.customerName}-${r.customerPhone}`, r])).values()
+      );
+      
+      res.json(unique.slice(0, 10));
+    } catch (error) {
+      console.error('Reservation search error:', error);
+      res.json([]);
+    }
+  });
+
   // Occupancy rate for a specific date
   app.get("/api/occupancy", async (req, res) => {
     const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
