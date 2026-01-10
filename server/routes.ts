@@ -3604,6 +3604,167 @@ export async function registerRoutes(
     }
   });
 
+  // Request deletion of a partner transaction (requires partner approval)
+  app.post("/api/partner-transactions/:id/request-deletion", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.session?.tenantId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const transaction = await storage.getPartnerTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Islem bulunamadi" });
+      }
+      
+      // Only sender or receiver can request deletion
+      if (transaction.senderTenantId !== tenantId && transaction.receiverTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu isleme erisim yetkiniz yok" });
+      }
+      
+      // Check if already has a pending deletion request
+      if (transaction.deletionStatus === 'pending') {
+        return res.status(400).json({ error: "Bu islem icin zaten bir silme talebi bekliyor" });
+      }
+      
+      const updated = await storage.updatePartnerTransaction(id, {
+        deletionStatus: 'pending',
+        deletionRequestedAt: new Date(),
+        deletionRequestedByTenantId: tenantId,
+        deletionRejectionReason: null
+      });
+      
+      res.json({ message: "Silme talebi olusturuldu", transaction: updated });
+    } catch (error) {
+      console.error("Request deletion error:", error);
+      res.status(500).json({ error: "Silme talebi olusturulamadi" });
+    }
+  });
+
+  // Approve deletion request (by the other party)
+  app.post("/api/partner-transactions/:id/approve-deletion", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.session?.tenantId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const transaction = await storage.getPartnerTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Islem bulunamadi" });
+      }
+      
+      // Only sender or receiver can approve
+      if (transaction.senderTenantId !== tenantId && transaction.receiverTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu isleme erisim yetkiniz yok" });
+      }
+      
+      // Cannot approve your own request - the other party must approve
+      if (transaction.deletionRequestedByTenantId === tenantId) {
+        return res.status(400).json({ error: "Kendi silme talebinizi onaylayamazsiniz" });
+      }
+      
+      // Must have a pending deletion request
+      if (transaction.deletionStatus !== 'pending') {
+        return res.status(400).json({ error: "Bekleyen bir silme talebi yok" });
+      }
+      
+      // Delete the transaction
+      await storage.deletePartnerTransaction(id);
+      
+      res.json({ message: "Silme talebi onaylandi ve islem silindi" });
+    } catch (error) {
+      console.error("Approve deletion error:", error);
+      res.status(500).json({ error: "Silme talebi onaylanamadi" });
+    }
+  });
+
+  // Reject deletion request (by the other party)
+  app.post("/api/partner-transactions/:id/reject-deletion", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.session?.tenantId;
+      const { reason } = req.body;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const transaction = await storage.getPartnerTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Islem bulunamadi" });
+      }
+      
+      // Only sender or receiver can reject
+      if (transaction.senderTenantId !== tenantId && transaction.receiverTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu isleme erisim yetkiniz yok" });
+      }
+      
+      // Cannot reject your own request
+      if (transaction.deletionRequestedByTenantId === tenantId) {
+        return res.status(400).json({ error: "Kendi silme talebinizi reddedemezsiniz" });
+      }
+      
+      // Must have a pending deletion request
+      if (transaction.deletionStatus !== 'pending') {
+        return res.status(400).json({ error: "Bekleyen bir silme talebi yok" });
+      }
+      
+      const updated = await storage.updatePartnerTransaction(id, {
+        deletionStatus: 'rejected',
+        deletionRejectionReason: reason || 'Sebep belirtilmedi'
+      });
+      
+      res.json({ message: "Silme talebi reddedildi", transaction: updated });
+    } catch (error) {
+      console.error("Reject deletion error:", error);
+      res.status(500).json({ error: "Silme talebi reddedilemedi" });
+    }
+  });
+
+  // Cancel deletion request (by the requester)
+  app.post("/api/partner-transactions/:id/cancel-deletion", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tenantId = req.session?.tenantId;
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const transaction = await storage.getPartnerTransaction(id);
+      if (!transaction) {
+        return res.status(404).json({ error: "Islem bulunamadi" });
+      }
+      
+      // Only the requester can cancel
+      if (transaction.deletionRequestedByTenantId !== tenantId) {
+        return res.status(403).json({ error: "Sadece talep sahibi iptal edebilir" });
+      }
+      
+      // Must have a pending deletion request
+      if (transaction.deletionStatus !== 'pending') {
+        return res.status(400).json({ error: "Bekleyen bir silme talebi yok" });
+      }
+      
+      const updated = await storage.updatePartnerTransaction(id, {
+        deletionStatus: null,
+        deletionRequestedAt: null,
+        deletionRequestedByTenantId: null,
+        deletionRejectionReason: null
+      });
+      
+      res.json({ message: "Silme talebi iptal edildi", transaction: updated });
+    } catch (error) {
+      console.error("Cancel deletion error:", error);
+      res.status(500).json({ error: "Silme talebi iptal edilemedi" });
+    }
+  });
+
   // Get payments made to/received from partner agencies
   app.get("/api/partner-payments", requirePermission(PERMISSIONS.FINANCE_VIEW), async (req, res) => {
     try {

@@ -572,6 +572,7 @@ export interface IStorage {
   getPartnerTransaction(id: number): Promise<PartnerTransaction | undefined>;
   createPartnerTransaction(transaction: InsertPartnerTransaction): Promise<PartnerTransaction>;
   updatePartnerTransaction(id: number, data: Partial<InsertPartnerTransaction>): Promise<PartnerTransaction>;
+  deletePartnerTransaction(id: number): Promise<void>;
 
   // Notification Preferences
   getUserNotificationPreferences(userId: number): Promise<UserNotificationPreference[]>;
@@ -3969,6 +3970,11 @@ Sky Fethiye`,
       .where(eq(partnerTransactions.id, id))
       .returning();
     return updated;
+  }
+
+  async deletePartnerTransaction(id: number): Promise<void> {
+    await db.delete(partnerTransactions)
+      .where(eq(partnerTransactions.id, id));
   }
 
   // === NOTIFICATION PREFERENCES ===
