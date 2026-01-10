@@ -1219,7 +1219,7 @@ export default function Finance() {
       <Sidebar />
       <main className="flex-1 md:ml-64 p-8 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold" data-testid="text-page-title">Finans & Acentalar</h1>
+          <h1 className="text-3xl font-bold" data-testid="text-page-title">Finans</h1>
           <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
         </div>
 
