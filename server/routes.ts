@@ -3639,7 +3639,7 @@ export async function registerRoutes(
       for (const agency of allTenantAgencies) {
         const agencyPayouts = await storage.getAgencyPayouts(agency.id);
         // Get the payer tenant name
-        const payerTenant = await storage.getUser(agency.tenantId);
+        const payerTenant = await storage.getAppUser(agency.tenantId);
         const payerName = payerTenant?.companyName || payerTenant?.name || `Tenant ${agency.tenantId}`;
         
         agencyPayouts.forEach(p => {
