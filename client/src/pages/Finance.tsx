@@ -700,33 +700,39 @@ export default function Finance() {
 
   filteredPartnerTransactions.forEach(tx => {
     const isSender = tx.currentTenantId === tx.senderTenantId;
-    const amount = tx.totalAmount || (tx.unitPrice || 0) * tx.guestCount;
+    const amount = tx.totalPrice || (tx.unitPrice || 0) * tx.guestCount;
     const collected = tx.amountCollectedBySender || 0;
-    const balance = tx.balanceOwed || 0;
+    // Use amountDueToReceiver as the actual liability - if we're the sender, we owe this amount
+    // If we're the receiver, they owe us this amount
+    const amountDue = tx.amountDueToReceiver || amount;
     
     if (isSender) {
       partnerReconciliation.sentCount++;
       partnerReconciliation.sentGuests += tx.guestCount;
       partnerReconciliation.sentAmount += amount;
       partnerReconciliation.sentCollected += collected;
-      partnerReconciliation.sentBalanceOwed += balance;
+      // As sender, we owe amountDue to the receiver
+      partnerReconciliation.sentBalanceOwed += amountDue;
     } else {
       partnerReconciliation.receivedCount++;
       partnerReconciliation.receivedGuests += tx.guestCount;
       partnerReconciliation.receivedAmount += amount;
       partnerReconciliation.receivedCollected += collected;
-      partnerReconciliation.receivedBalanceOwed += balance;
+      // As receiver, they owe us amountDue
+      partnerReconciliation.receivedBalanceOwed += amountDue;
     }
   });
   
   // Net balance: what I owe (as sender) minus what others owe me (as receiver)
-  // Positive = I owe more, Negative = I'm owed more
+  // Positive = I owe more (Siz Borçlusunuz), Negative = I'm owed more (Size Borçlular)
   partnerReconciliation.netBalanceOwed = partnerReconciliation.sentBalanceOwed - partnerReconciliation.receivedBalanceOwed;
   partnerReconciliation.totalPaymentsMade = totalOutgoingPayments; // Biz ödedik
   partnerReconciliation.totalPaymentsReceived = totalIncomingPayments; // Bize ödendi
-  // Kalan bakiye = Net borç - Yapılan ödemeler + Alınan ödemeler
-  // Eğer biz borçluysak (net > 0): ödediğimiz kadar azalır
-  // Eğer bize borçlularsa (net < 0): aldığımız kadar azalır (mutlak değer azalır)
+  // Kalan bakiye hesabı:
+  // - Eğer biz borçluysak (net > 0): ödediğimiz kadar azalır (outgoing düşer)
+  // - Eğer bize borçlularsa (net < 0): aldığımız kadar azalır (incoming düşer, yani 0'a yaklaşır)
+  // Formula: netBalanceOwed - outgoing + incoming
+  // Örnek: net=-20000 (bize 20k borç), incoming=7000 → remaining = -20000 + 7000 = -13000 (hala 13k alacak)
   partnerReconciliation.remainingBalance = partnerReconciliation.netBalanceOwed - totalOutgoingPayments + totalIncomingPayments;
 
   const netBalance = partnerReconciliation.sentAmount - partnerReconciliation.receivedAmount;
