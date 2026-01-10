@@ -1165,6 +1165,11 @@ export const partnerTransactions = pgTable("partner_transactions", {
   amountCollectedBySender: integer("amount_collected_by_sender").default(0), // Gönderen acenta tarafından tahsil edilen
   amountDueToReceiver: integer("amount_due_to_receiver").default(0), // Alıcı acenta tarafından tahsil edilecek
   balanceOwed: integer("balance_owed").default(0), // Pozitif: Alıcı gönderene borçlu, Negatif: Gönderen alıcıya borçlu
+  // Deletion request fields - Silme talebi alanları
+  deletionRequestedAt: timestamp("deletion_requested_at"), // Silme talebinin yapıldığı zaman
+  deletionRequestedByTenantId: integer("deletion_requested_by_tenant_id").references(() => tenants.id), // Silme talebini yapan tenant
+  deletionStatus: text("deletion_status"), // null: yok, pending: bekliyor, approved: onaylandi, rejected: reddedildi
+  deletionRejectionReason: text("deletion_rejection_reason"), // Red sebebi
 });
 
 export const insertPartnerTransactionSchema = createInsertSchema(partnerTransactions).omit({ id: true, createdAt: true, paidAt: true });
