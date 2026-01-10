@@ -2204,7 +2204,7 @@ function PopupAppearanceSection() {
             Popup Görünüm Ayarları
           </CardTitle>
           <CardDescription>
-            Toast bildirimleri, diyaloglar ve dropdown menülerin buzlu cam efekti ayarları
+            Sadece toast bildirimlerinin buzlu cam efekti ayarları
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
