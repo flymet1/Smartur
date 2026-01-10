@@ -86,7 +86,7 @@ export default function PartnerProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
-      toast({ title: "Silme talebi gonderildi", description: "İş ortağı onayını bekliyor" });
+      toast({ title: "Silme talebi gonderildi", description: "Partner onayini bekliyor" });
     },
     onError: (error: any) => {
       toast({ title: "Hata", description: error?.message || "Silme talebi gonderilemedi", variant: "destructive" });
@@ -201,7 +201,7 @@ export default function PartnerProfile() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">İş Ortağı İşlemleri</p>
+                <p className="text-sm text-muted-foreground">Partner Islemleri</p>
                 <p className="text-2xl font-bold">{transactionCount}</p>
               </div>
               <div className="p-3 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
@@ -224,7 +224,7 @@ export default function PartnerProfile() {
           </TabsTrigger>
           <TabsTrigger value="transactions" className="gap-2" data-testid="tab-transactions">
             <Wallet className="w-4 h-4" />
-            İş Ortağı İşlemleri
+            Partner Islemleri
           </TabsTrigger>
         </TabsList>
 
@@ -400,7 +400,7 @@ export default function PartnerProfile() {
                           </div>
                           <div className="flex items-center gap-4 text-sm">
                             <span className="font-medium">{formatMoney(tx.totalPrice, tx.currency)}</span>
-                            <span className="text-muted-foreground">İş Ortağı: {partnerName}</span>
+                            <span className="text-muted-foreground">Partner: {partnerName}</span>
                           </div>
                           {tx.notes && (
                             <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
@@ -468,8 +468,8 @@ export default function PartnerProfile() {
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
                 <Wallet className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Henüz iş ortağı işleminiz bulunmuyor.</p>
-                <p className="text-sm mt-2">İş ortağı rezervasyonları onaylandıktan sonra işlemler burada görünecek.</p>
+                <p>Henuz partner isleminiz bulunmuyor.</p>
+                <p className="text-sm mt-2">Partner rezervasyonlari onaylandiktan sonra islemler burada gorunecek.</p>
               </CardContent>
             </Card>
           )}

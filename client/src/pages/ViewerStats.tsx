@@ -122,7 +122,7 @@ export default function ViewerStats() {
     queryKey: ['/api/activities'],
   });
   
-  const viewerRequests = allRequests.filter(r => !r.notes?.startsWith('[Partner:') && !r.notes?.startsWith('[İş Ortağı:'));
+  const viewerRequests = allRequests.filter(r => !r.notes?.startsWith('[Partner:'));
   const pendingViewerRequests = viewerRequests.filter(r => r.status === 'pending');
   
   const processMutation = useMutation({

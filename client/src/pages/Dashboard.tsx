@@ -158,7 +158,7 @@ export default function Dashboard() {
   const getInitiatorTypeFromNotes = (notes: string | null): 'viewer' | 'partner' | 'unknown' => {
     if (!notes) return 'unknown';
     if (notes.includes('[Viewer:') || notes.includes('[İzleyici:')) return 'viewer';
-    if (notes.includes('[Partner:') || notes.includes('[İş Ortağı:')) return 'partner';
+    if (notes.includes('[Partner:')) return 'partner';
     return 'unknown';
   };
 

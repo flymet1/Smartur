@@ -452,8 +452,8 @@ export default function Reservations() {
       r.priceUsd || 0,
       getStatusText(r.status),
       r.source === "web" ? "Web" : r.source === "whatsapp" ? "WhatsApp" : r.source === "partner" ? (() => {
-        const partnerMatch = (r as any).notes?.match(/\[(?:Partner|İş Ortağı):\s*([^\]]+)\]/);
-        return partnerMatch ? `İş Ortağı: ${partnerMatch[1]}` : 'İş Ortağı Acenta';
+        const partnerMatch = (r as any).notes?.match(/\[Partner:\s*([^\]]+)\]/);
+        return partnerMatch ? `Partner: ${partnerMatch[1]}` : 'Partner Acenta';
       })() : "Manuel"
     ]);
     
@@ -3483,8 +3483,8 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
                   {reservation.source === 'manual' ? 'Manuel' : 
                    reservation.source === 'woocommerce' ? 'WooCommerce' : 
                    reservation.source === 'partner' ? (() => {
-                     const partnerMatch = (reservation as any).notes?.match(/\[(?:Partner|İş Ortağı):\s*([^\]]+)\]/);
-                     return partnerMatch ? `İş Ortağı: ${partnerMatch[1]}` : 'İş Ortağı Acenta';
+                     const partnerMatch = (reservation as any).notes?.match(/\[Partner:\s*([^\]]+)\]/);
+                     return partnerMatch ? `Partner: ${partnerMatch[1]}` : 'Partner Acenta';
                    })() : 
                    reservation.source}
                 </div>
