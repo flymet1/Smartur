@@ -2178,7 +2178,7 @@ export default function Finance() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 pt-2 border-t">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 pt-2 border-t">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <ArrowUpRight className="h-4 w-4 text-blue-500" />
@@ -2190,11 +2190,6 @@ export default function Finance() {
                     <div className="text-sm text-muted-foreground">
                       {partnerReconciliation.sentCount} işlem • {formatMoney(partnerReconciliation.sentAmount)}
                     </div>
-                    {partnerReconciliation.sentCollected > 0 && (
-                      <div className="text-xs text-green-600">
-                        Tahsil edildi: {formatMoney(partnerReconciliation.sentCollected)}
-                      </div>
-                    )}
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -2207,42 +2202,49 @@ export default function Finance() {
                     <div className="text-sm text-muted-foreground">
                       {partnerReconciliation.receivedCount} işlem • {formatMoney(partnerReconciliation.receivedAmount)}
                     </div>
-                    {partnerReconciliation.receivedCollected > 0 && (
-                      <div className="text-xs text-orange-600">
-                        Partner tahsil etti: {formatMoney(partnerReconciliation.receivedCollected)}
-                      </div>
-                    )}
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <ArrowRightLeft className="h-4 w-4" />
-                      İş Hacmi Farkı
+                      <ArrowUpRight className="h-4 w-4 text-red-500" />
+                      Borcumuz
                     </div>
-                    <div className={`text-lg font-semibold ${netBalance > 0 ? 'text-blue-600' : netBalance < 0 ? 'text-blue-600' : ''}`}>
-                      {netBalance > 0 ? '+' : ''}{formatMoney(netBalance)}
+                    <div className={`text-lg font-semibold ${partnerReconciliation.sentBalanceOwed > 0 ? 'text-red-600' : ''}`}>
+                      {partnerReconciliation.sentBalanceOwed > 0 ? '-' : ''}{formatMoney(partnerReconciliation.sentBalanceOwed)}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {netBalance > 0 ? 'Gönderilen fazla' : netBalance < 0 ? 'Alınan fazla' : 'Dengeli'}
+                      Partnerlere ödenecek
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ArrowDownLeft className="h-4 w-4 text-green-500" />
+                      Alacağımız
+                    </div>
+                    <div className={`text-lg font-semibold ${partnerReconciliation.receivedBalanceOwed > 0 ? 'text-green-600' : ''}`}>
+                      {partnerReconciliation.receivedBalanceOwed > 0 ? '+' : ''}{formatMoney(partnerReconciliation.receivedBalanceOwed)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Partnerlerden alınacak
                     </div>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Wallet className="h-4 w-4 text-purple-500" />
-                      Tahsilat Dengesi
+                      Net Durum
                     </div>
                     <div className={`text-lg font-semibold ${partnerReconciliation.netBalanceOwed > 0 ? 'text-red-600' : partnerReconciliation.netBalanceOwed < 0 ? 'text-green-600' : ''}`}>
                       {partnerReconciliation.netBalanceOwed > 0 ? '-' : partnerReconciliation.netBalanceOwed < 0 ? '+' : ''}{formatMoney(Math.abs(partnerReconciliation.netBalanceOwed))}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {partnerReconciliation.netBalanceOwed > 0 ? 'Partnerlere borçlusunuz' : partnerReconciliation.netBalanceOwed < 0 ? 'Partnerler size borçlu' : 'Denk'}
+                      {partnerReconciliation.netBalanceOwed > 0 ? 'Borçlusunuz' : partnerReconciliation.netBalanceOwed < 0 ? 'Alacaklısınız' : 'Denk'}
                     </div>
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <ArrowUpRight className="h-4 w-4 text-red-500" />
-                      Yapılan Ödemeler
+                      <ArrowUpRight className="h-4 w-4 text-orange-500" />
+                      Ödedik
                     </div>
-                    <div className="text-lg font-semibold text-red-600">
+                    <div className="text-lg font-semibold text-orange-600">
                       -{formatMoney(partnerReconciliation.totalPaymentsMade)}
                     </div>
                     <div className="text-sm text-muted-foreground">
@@ -2252,7 +2254,7 @@ export default function Finance() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
-                      Alınan Ödemeler
+                      Aldık
                     </div>
                     <div className="text-lg font-semibold text-emerald-600">
                       +{formatMoney(partnerReconciliation.totalPaymentsReceived)}
@@ -2263,8 +2265,8 @@ export default function Finance() {
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Scale className="h-4 w-4 text-orange-500" />
-                      Kalan Bakiye
+                      <Scale className="h-4 w-4 text-purple-500" />
+                      Kalan
                     </div>
                     <div className={`text-lg font-semibold ${partnerReconciliation.remainingBalance > 0 ? 'text-red-600' : partnerReconciliation.remainingBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}>
                       {partnerReconciliation.remainingBalance > 0 ? '-' : partnerReconciliation.remainingBalance < 0 ? '+' : ''}{formatMoney(Math.abs(partnerReconciliation.remainingBalance))}
