@@ -2093,6 +2093,307 @@ function BrandingSection() {
   );
 }
 
+// Popup Appearance Settings Interface
+interface PopupAppearanceSettings {
+  backgroundColor: string;
+  backgroundOpacity: number;
+  borderColor: string;
+  borderOpacity: number;
+  blurIntensity: 'none' | 'low' | 'medium' | 'high' | 'ultra';
+}
+
+function PopupAppearanceSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [backgroundOpacity, setBackgroundOpacity] = useState(70);
+  const [borderColor, setBorderColor] = useState("#ffffff");
+  const [borderOpacity, setBorderOpacity] = useState(30);
+  const [blurIntensity, setBlurIntensity] = useState<'none' | 'low' | 'medium' | 'high' | 'ultra'>('high');
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  
+  const blurOptions = [
+    { value: 'none', label: 'Yok', blur: '0' },
+    { value: 'low', label: 'Düşük', blur: '8px' },
+    { value: 'medium', label: 'Orta', blur: '12px' },
+    { value: 'high', label: 'Yüksek', blur: '24px' },
+    { value: 'ultra', label: 'Ultra', blur: '40px' },
+  ];
+  
+  const { data: popupSettings } = useQuery<{ key: string; value: string | null }>({
+    queryKey: ['/api/settings', 'popupAppearance'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/popupAppearance');
+      return res.json();
+    },
+  });
+  
+  useEffect(() => {
+    if (popupSettings?.value && !settingsLoaded) {
+      try {
+        const settings: PopupAppearanceSettings = JSON.parse(popupSettings.value);
+        setBackgroundColor(settings.backgroundColor || "#ffffff");
+        setBackgroundOpacity(settings.backgroundOpacity ?? 70);
+        setBorderColor(settings.borderColor || "#ffffff");
+        setBorderOpacity(settings.borderOpacity ?? 30);
+        setBlurIntensity(settings.blurIntensity || 'high');
+        setSettingsLoaded(true);
+      } catch {}
+    }
+  }, [popupSettings, settingsLoaded]);
+  
+  const saveMutation = useMutation({
+    mutationFn: async (settings: PopupAppearanceSettings) => {
+      return apiRequest("POST", "/api/settings/popupAppearance", { value: JSON.stringify(settings) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings', 'popupAppearance'] });
+      applyPopupStyles();
+      toast({ title: "Başarılı", description: "Popup görünüm ayarları kaydedildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
+    },
+  });
+  
+  const applyPopupStyles = () => {
+    const root = document.documentElement;
+    const bgOpacity = backgroundOpacity / 100;
+    const borderOp = borderOpacity / 100;
+    const blur = blurOptions.find(b => b.value === blurIntensity)?.blur || '24px';
+    
+    root.style.setProperty('--popup-bg-color', backgroundColor);
+    root.style.setProperty('--popup-bg-opacity', bgOpacity.toString());
+    root.style.setProperty('--popup-border-color', borderColor);
+    root.style.setProperty('--popup-border-opacity', borderOp.toString());
+    root.style.setProperty('--popup-blur', blur);
+  };
+  
+  useEffect(() => {
+    if (settingsLoaded) {
+      applyPopupStyles();
+    }
+  }, [settingsLoaded, backgroundColor, backgroundOpacity, borderColor, borderOpacity, blurIntensity]);
+  
+  const handleSave = () => {
+    saveMutation.mutate({
+      backgroundColor,
+      backgroundOpacity,
+      borderColor,
+      borderOpacity,
+      blurIntensity,
+    });
+  };
+  
+  const hexToRgba = (hex: string, opacity: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
+  };
+  
+  const previewBlur = blurOptions.find(b => b.value === blurIntensity)?.blur || '24px';
+  
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Layers className="h-5 w-5" />
+            Popup Görünüm Ayarları
+          </CardTitle>
+          <CardDescription>
+            Toast bildirimleri, diyaloglar ve dropdown menülerin buzlu cam efekti ayarları
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <Label>Arkaplan Rengi</Label>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
+                  style={{ backgroundColor: backgroundColor }}
+                  onClick={() => document.getElementById('popupBgColor')?.click()}
+                />
+                <input
+                  type="color"
+                  id="popupBgColor"
+                  value={backgroundColor}
+                  onChange={(e) => setBackgroundColor(e.target.value)}
+                  className="sr-only"
+                  data-testid="input-popup-bg-color"
+                />
+                <Input
+                  value={backgroundColor}
+                  onChange={(e) => setBackgroundColor(e.target.value)}
+                  placeholder="#ffffff"
+                  className="font-mono flex-1"
+                  data-testid="input-popup-bg-color-hex"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Arkaplan Opaklığı: {backgroundOpacity}%</Label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={backgroundOpacity}
+                  onChange={(e) => setBackgroundOpacity(Number(e.target.value))}
+                  className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                  data-testid="input-popup-bg-opacity"
+                />
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={backgroundOpacity}
+                  onChange={(e) => setBackgroundOpacity(Math.min(100, Math.max(0, Number(e.target.value))))}
+                  className="w-20"
+                  data-testid="input-popup-bg-opacity-number"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <Label>Kenar Çizgi Rengi</Label>
+              <div className="flex items-center gap-3">
+                <div 
+                  className="w-12 h-12 rounded-lg border-2 border-border cursor-pointer"
+                  style={{ backgroundColor: borderColor }}
+                  onClick={() => document.getElementById('popupBorderColor')?.click()}
+                />
+                <input
+                  type="color"
+                  id="popupBorderColor"
+                  value={borderColor}
+                  onChange={(e) => setBorderColor(e.target.value)}
+                  className="sr-only"
+                  data-testid="input-popup-border-color"
+                />
+                <Input
+                  value={borderColor}
+                  onChange={(e) => setBorderColor(e.target.value)}
+                  placeholder="#ffffff"
+                  className="font-mono flex-1"
+                  data-testid="input-popup-border-color-hex"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Kenar Çizgi Opaklığı: {borderOpacity}%</Label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={borderOpacity}
+                  onChange={(e) => setBorderOpacity(Number(e.target.value))}
+                  className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                  data-testid="input-popup-border-opacity"
+                />
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={borderOpacity}
+                  onChange={(e) => setBorderOpacity(Math.min(100, Math.max(0, Number(e.target.value))))}
+                  className="w-20"
+                  data-testid="input-popup-border-opacity-number"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <Label>Bulanıklık Yoğunluğu</Label>
+            <Select value={blurIntensity} onValueChange={(v) => setBlurIntensity(v as any)}>
+              <SelectTrigger data-testid="select-blur-intensity">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {blurOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label} ({option.blur})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="border rounded-lg p-4 space-y-4">
+            <Label className="text-sm font-medium">Canlı Önizleme</Label>
+            <div 
+              className="relative h-48 rounded-lg overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)'
+              }}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div 
+                  className="p-6 rounded-xl shadow-xl max-w-xs text-center"
+                  style={{
+                    backgroundColor: hexToRgba(backgroundColor, backgroundOpacity),
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: hexToRgba(borderColor, borderOpacity),
+                    backdropFilter: `blur(${previewBlur}) saturate(150%)`,
+                    WebkitBackdropFilter: `blur(${previewBlur}) saturate(150%)`,
+                  }}
+                >
+                  <h4 className="font-semibold text-foreground mb-2">Bildirim Başlığı</h4>
+                  <p className="text-sm text-foreground/80">Bu bir örnek popup bildirim içeriğidir.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+        <CardContent className="pt-0">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBackgroundColor("#ffffff");
+                setBackgroundOpacity(70);
+                setBorderColor("#ffffff");
+                setBorderOpacity(30);
+                setBlurIntensity('high');
+              }}
+              data-testid="button-reset-popup-appearance"
+            >
+              Varsayılana Dön
+            </Button>
+            <Button 
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+              data-testid="button-save-popup-appearance"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Kaydediliyor...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Kaydet
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function AnalyticsSection() {
   const { data: platformAnalytics, isLoading: platformLoading } = useQuery<PlatformAnalytics>({
     queryKey: ['/api/analytics/platform'],
@@ -5376,6 +5677,7 @@ export default function SuperAdmin() {
     ],
     configuration: [
       { id: "branding", label: "Marka Ayarları", icon: Palette },
+      { id: "popup-appearance", label: "Popup Görünümü", icon: Layers },
     ],
   };
 
@@ -5682,6 +5984,7 @@ export default function SuperAdmin() {
             {activeSubTab === "support" && <AgencySupportSection />}
 
             {activeSubTab === "branding" && <BrandingSection />}
+            {activeSubTab === "popup-appearance" && <PopupAppearanceSection />}
           </div>
         </ScrollArea>
       </div>
