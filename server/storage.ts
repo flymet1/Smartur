@@ -355,6 +355,7 @@ export interface IStorage {
   getReservationRequests(tenantId?: number): Promise<ReservationRequest[]>;
   getReservationRequest(id: number): Promise<ReservationRequest | undefined>;
   updateReservationRequest(id: number, data: Partial<InsertReservationRequest>): Promise<ReservationRequest>;
+  deleteReservationRequest(id: number): Promise<void>;
   getReservationRequestStats(tenantId: number, options: { groupBy: 'daily' | 'monthly'; from?: string; to?: string; viewerId?: number }): Promise<{ viewerId: number; viewerName: string; viewerEmail: string; period: string; count: number; }[]>;
   getPartnerActivityStats(tenantId: number, options?: { from?: string; to?: string }): Promise<{ viewerId: number; viewerName: string; viewerPhone: string | null; activityId: number; activityName: string; totalGuests: number; totalRequests: number; }[]>;
 
@@ -2151,6 +2152,10 @@ export class DatabaseStorage implements IStorage {
   async updateReservationRequest(id: number, data: Partial<InsertReservationRequest>): Promise<ReservationRequest> {
     const [updated] = await db.update(reservationRequests).set(data).where(eq(reservationRequests.id, id)).returning();
     return updated;
+  }
+
+  async deleteReservationRequest(id: number): Promise<void> {
+    await db.delete(reservationRequests).where(eq(reservationRequests.id, id));
   }
 
   async getReservationRequestStats(
