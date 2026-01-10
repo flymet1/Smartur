@@ -104,6 +104,7 @@ export default function Reservations() {
   const [agencyNotifyOpen, setAgencyNotifyOpen] = useState(false);
   const [agencyNotifyReservation, setAgencyNotifyReservation] = useState<Reservation | null>(null);
   const [selectedAgencyForNotify, setSelectedAgencyForNotify] = useState<string>("");
+  const [agencyNotifyMessage, setAgencyNotifyMessage] = useState<string>("");
   const { toast } = useToast();
 
   const generateMoveCustomerMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
@@ -1853,7 +1854,7 @@ export default function Reservations() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Phone className="h-5 w-5 text-green-600" />
-                Acentaya Bildir
+                Acentaya Whatsapp Bildirimi
               </DialogTitle>
               <DialogDescription>
                 Rezervasyon bilgilerini seçili acentaya WhatsApp ile gönderin
@@ -1862,22 +1863,18 @@ export default function Reservations() {
             
             {agencyNotifyReservation && (
               <div className="space-y-4">
-                <div className="bg-muted/50 p-3 rounded-lg space-y-1">
-                  <div className="font-medium">{agencyNotifyReservation.customerName}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {activities?.find(a => a.id === agencyNotifyReservation.activityId)?.name || 'Aktivite'}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {format(new Date(agencyNotifyReservation.date), "d MMMM yyyy", { locale: tr })} • {agencyNotifyReservation.time}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {agencyNotifyReservation.quantity} Kişi
-                  </div>
-                </div>
-
                 <div className="space-y-2">
                   <Label>Acenta Seçin</Label>
-                  <Select value={selectedAgencyForNotify} onValueChange={setSelectedAgencyForNotify}>
+                  <Select 
+                    value={selectedAgencyForNotify} 
+                    onValueChange={(value) => {
+                      setSelectedAgencyForNotify(value);
+                      const activityName = activities?.find(a => a.id === agencyNotifyReservation.activityId)?.name || '';
+                      const dateFormatted = format(new Date(agencyNotifyReservation.date), "d MMMM yyyy", { locale: tr });
+                      const defaultMsg = `Merhaba,\n\nYeni rezervasyon bilgisi:\n\nMüşteri: ${agencyNotifyReservation.customerName}\nTelefon: ${agencyNotifyReservation.customerPhone}\nAktivite: ${activityName}\nTarih: ${dateFormatted}\nSaat: ${agencyNotifyReservation.time}\nKişi Sayısı: ${agencyNotifyReservation.quantity}\n${agencyNotifyReservation.hotelName ? `Otel: ${agencyNotifyReservation.hotelName}\n` : ''}${agencyNotifyReservation.notes ? `Not: ${agencyNotifyReservation.notes}\n` : ''}\nİyi çalışmalar.`;
+                      setAgencyNotifyMessage(defaultMsg);
+                    }}
+                  >
                     <SelectTrigger data-testid="select-agency-notify">
                       <SelectValue placeholder="Acenta seçin..." />
                     </SelectTrigger>
@@ -1893,6 +1890,19 @@ export default function Reservations() {
                   </Select>
                 </div>
 
+                {selectedAgencyForNotify && (
+                  <div className="space-y-2">
+                    <Label>Mesaj</Label>
+                    <Textarea
+                      value={agencyNotifyMessage}
+                      onChange={(e) => setAgencyNotifyMessage(e.target.value)}
+                      rows={10}
+                      className="resize-none"
+                      data-testid="textarea-agency-notify-message"
+                    />
+                  </div>
+                )}
+
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setAgencyNotifyOpen(false)}>
                     İptal
@@ -1905,19 +1915,15 @@ export default function Reservations() {
                         return;
                       }
                       
-                      const activityName = activities?.find(a => a.id === agencyNotifyReservation.activityId)?.name || '';
-                      const dateFormatted = format(new Date(agencyNotifyReservation.date), "d MMMM yyyy", { locale: tr });
-                      
-                      const message = `Merhaba,\n\nYeni rezervasyon bilgisi:\n\nMüşteri: ${agencyNotifyReservation.customerName}\nTelefon: ${agencyNotifyReservation.customerPhone}\nAktivite: ${activityName}\nTarih: ${dateFormatted}\nSaat: ${agencyNotifyReservation.time}\nKişi Sayısı: ${agencyNotifyReservation.quantity}\n${agencyNotifyReservation.hotelName ? `Otel: ${agencyNotifyReservation.hotelName}\n` : ''}${agencyNotifyReservation.notes ? `Not: ${agencyNotifyReservation.notes}\n` : ''}\nİyi çalışmalar.`;
-                      
                       const phone = agency.contactInfo.replace(/\D/g, '');
-                      const whatsappUrl = `https://wa.me/${phone.startsWith('90') ? phone : '90' + phone}?text=${encodeURIComponent(message)}`;
+                      const whatsappUrl = `https://wa.me/${phone.startsWith('90') ? phone : '90' + phone}?text=${encodeURIComponent(agencyNotifyMessage)}`;
                       window.open(whatsappUrl, '_blank');
                       
                       setAgencyNotifyOpen(false);
+                      setAgencyNotifyMessage("");
                       toast({ title: "Başarılı", description: "WhatsApp açıldı" });
                     }}
-                    disabled={!selectedAgencyForNotify}
+                    disabled={!selectedAgencyForNotify || !agencyNotifyMessage.trim()}
                     className="bg-green-600 hover:bg-green-700"
                     data-testid="button-send-agency-notify"
                   >
