@@ -816,6 +816,8 @@ export default function Finance() {
     mutationFn: async (data: typeof payoutForm) => apiRequest('POST', '/api/finance/payouts', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches/summary'] });
       setPayoutDialogOpen(false);
       setPayoutForm({
         agencyId: 0,
@@ -841,6 +843,8 @@ export default function Finance() {
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/payouts/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches/summary'] });
       toast({ title: "Ödeme silindi" });
     },
     onError: () => {
