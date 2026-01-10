@@ -151,7 +151,7 @@ export default function PartnerAvailability() {
   const pendingOutgoingRequests = outgoingRequests.filter(r => r.status === 'pending');
   const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved' || r.status === 'converted');
   
-  const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
+  const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:') || r.notes?.startsWith('[İş Ortağı:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
   const convertedPartnerRequests = partnerRequests.filter(r => r.status === 'converted');
   
@@ -183,7 +183,7 @@ export default function PartnerAvailability() {
       return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
     },
     onSuccess: () => {
-      toast({ title: "Basarili", description: "Partner acenta bilgilendirildi." });
+      toast({ title: "Basarili", description: "İş ortağı acenta bilgilendirildi." });
       setNotifyingSenderId(null);
     },
     onError: () => {
@@ -212,7 +212,7 @@ export default function PartnerAvailability() {
       return res.json();
     },
     onSuccess: () => {
-      toast({ title: "Talep Gonderildi", description: "Rezervasyon talebiniz partner acentaya iletildi." });
+      toast({ title: "Talep Gonderildi", description: "Rezervasyon talebiniz iş ortağı acentaya iletildi." });
       queryClient.invalidateQueries({ queryKey: ['/api/my-reservation-requests'] });
       resetForm();
       setRequestDialogOpen(false);
@@ -227,9 +227,9 @@ export default function PartnerAvailability() {
   };
   
   const getPartnerNameFromNotes = (notes: string | null) => {
-    if (!notes) return "Partner Acenta";
-    const match = notes.match(/^\[Partner:\s*([^\]]+)\]/);
-    return match ? match[1] : "Partner Acenta";
+    if (!notes) return "İş Ortağı Acenta";
+    const match = notes.match(/^\[(?:Partner|İş Ortağı):\s*([^\]]+)\]/);
+    return match ? match[1] : "İş Ortağı Acenta";
   };
   
   const getStatusBadge = (status: string | null) => {

@@ -3466,7 +3466,7 @@ export async function registerRoutes(
         customerName,
         customerPhone,
         guests: guests || 1,
-        notes: `[Partner: ${partnerName}] ${notes || ''}`.trim(),
+        notes: `[İş Ortağı: ${partnerName}] ${notes || ''}`.trim(),
         requestedBy: userId,
         status: "pending"
       });
@@ -3479,8 +3479,8 @@ export async function registerRoutes(
         await storage.createSupportRequest({
           tenantId: ownerTenantId,
           type: "reservation_request",
-          title: `Partner Rezervasyon Talebi: ${customerName}`,
-          description: `Partner acenta yeni rezervasyon talebi olusturdu.\n\nPartner: ${partnerName}\nAktivite: ${activity.name}\nTarih: ${date}\nSaat: ${time}\nMusteri: ${customerName}\nTelefon: ${customerPhone}\nKisi Sayisi: ${guests || 1}\n${notes ? `Not: ${notes}` : ""}`,
+          title: `İş Ortağı Rezervasyon Talebi: ${customerName}`,
+          description: `İş ortağı acenta yeni rezervasyon talebi oluşturdu.\n\nİş Ortağı: ${partnerName}\nAktivite: ${activity.name}\nTarih: ${date}\nSaat: ${time}\nMusteri: ${customerName}\nTelefon: ${customerPhone}\nKisi Sayisi: ${guests || 1}\n${notes ? `Not: ${notes}` : ""}`,
           priority: "medium",
           metadata: JSON.stringify({ reservationRequestId: request.id, isPartnerRequest: true })
         });

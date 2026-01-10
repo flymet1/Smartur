@@ -255,8 +255,8 @@ export function Sidebar() {
   const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
   
   // Separate counts: İş Ortakları (viewer requests) vs Partner Acentalar (partner requests)
-  const pendingViewerRequestsCount = reservationRequests?.filter(r => r.status === 'pending' && !r.notes?.startsWith('[Partner:')).length || 0;
-  const pendingPartnerRequestsCount = reservationRequests?.filter(r => r.status === 'pending' && r.notes?.startsWith('[Partner:')).length || 0;
+  const pendingViewerRequestsCount = reservationRequests?.filter(r => r.status === 'pending' && !r.notes?.startsWith('[Partner:') && !r.notes?.startsWith('[İş Ortağı:')).length || 0;
+  const pendingPartnerRequestsCount = reservationRequests?.filter(r => r.status === 'pending' && (r.notes?.startsWith('[Partner:') || r.notes?.startsWith('[İş Ortağı:'))).length || 0;
   const logoUrl = logoSetting?.value;
   
   // Get company name from brand settings
