@@ -657,17 +657,23 @@ export default function Finance() {
     return true;
   });
 
-  // Benzersiz partner listesi
-  const uniquePartners = Array.from(
-    new Map(
-      partnerTransactions.map(tx => {
-        const isSender = tx.currentTenantId === tx.senderTenantId;
-        const partnerId = isSender ? tx.receiverTenantId : tx.senderTenantId;
-        const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
-        return [partnerId, { id: partnerId, name: partnerName || 'Partner' }];
-      })
-    ).values()
-  );
+  // Benzersiz partner listesi - önce bağlı partner acentalardan, sonra işlemlerden
+  // isSmartUser = true olan acentalar partner acentalardır
+  const partnerAgencies = suppliers.filter(s => s.isSmartUser && s.partnerTenantId);
+  
+  // Partner listesini agencies'den al (işlem olmasa bile görünsün)
+  const uniquePartners = partnerAgencies.length > 0
+    ? partnerAgencies.map(a => ({ id: a.partnerTenantId!, name: a.name }))
+    : Array.from(
+        new Map(
+          partnerTransactions.map(tx => {
+            const isSender = tx.currentTenantId === tx.senderTenantId;
+            const partnerId = isSender ? tx.receiverTenantId : tx.senderTenantId;
+            const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
+            return [partnerId, { id: partnerId, name: partnerName || 'Partner' }];
+          })
+        ).values()
+      );
 
   // Tarih ve partner filtrelenmiş ödemeler
   const filteredPartnerPayments = partnerPayments.filter(p => {
