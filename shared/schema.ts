@@ -305,6 +305,10 @@ export const agencyPayouts = pgTable("agency_payouts", {
   reference: text("reference"), // Dekont/referans no
   notes: text("notes"),
   status: text("status").default("paid"), // paid, pending
+  confirmationStatus: text("confirmation_status").default("pending"), // pending, confirmed, rejected (for partner payments)
+  confirmedByTenantId: integer("confirmed_by_tenant_id"), // Hangi tenant onayladı
+  confirmedAt: timestamp("confirmed_at"), // Ne zaman onaylandı
+  rejectionReason: text("rejection_reason"), // Red sebebi
   createdAt: timestamp("created_at").defaultNow(),
 });
 
