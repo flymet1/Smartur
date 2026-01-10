@@ -319,7 +319,6 @@ export const supplierDispatches = pgTable("supplier_dispatches", {
   tenantId: integer("tenant_id").references(() => tenants.id),
   agencyId: integer("agency_id").references(() => agencies.id).notNull(),
   activityId: integer("activity_id").references(() => activities.id),
-  sourceReservationId: integer("source_reservation_id").references(() => reservations.id), // Kaynak rezervasyon (silme için bağlantı)
   dispatchDate: text("dispatch_date").notNull(), // YYYY-MM-DD
   dispatchTime: text("dispatch_time"), // HH:mm
   customerName: text("customer_name"), // Müşteri adı soyadı
