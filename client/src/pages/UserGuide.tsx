@@ -371,7 +371,7 @@ export default function UserGuide() {
 
               <PageGuideCard 
                 icon={<Users className="h-5 w-5 text-purple-500" />}
-                title="İş Ortağı Paneli"
+                title="İzleyiciler"
                 path="/partner-profile"
                 features={[
                   "Rezervasyon taleplerinizi takip edin",
@@ -1300,9 +1300,9 @@ export default function UserGuide() {
               </div>
 
               <div>
-                <h4 className="font-semibold mb-3">İş Ortağı Paneli (Partner Profile)</h4>
+                <h4 className="font-semibold mb-3">İzleyiciler Sayfası</h4>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Partner rolüyle giriş yapan kullanıcılar /partner-profile sayfasına erişir:
+                  İzleyici rolüyle giriş yapan kullanıcılar /partner-profile sayfasına erişir:
                 </p>
                 <ul className="list-disc list-inside text-sm text-muted-foreground ml-4 space-y-1">
                   <li>Gönderdikleri rezervasyon taleplerini görürler</li>
@@ -1417,7 +1417,7 @@ export default function UserGuide() {
               </div>
 
               <div className="mt-3 flex gap-2 flex-wrap">
-                <NavLink href="/partner-profile" label="İş Ortağı Paneli" icon={<User className="h-4 w-4" />} />
+                <NavLink href="/partner-profile" label="İzleyiciler" icon={<User className="h-4 w-4" />} />
                 <NavLink href="/partner-availability" label="Partner Müsaitlik" icon={<CalendarDays className="h-4 w-4" />} />
                 <NavLink href="/viewer-stats" label="İzleyici İstatistikleri" icon={<Eye className="h-4 w-4" />} />
               </div>

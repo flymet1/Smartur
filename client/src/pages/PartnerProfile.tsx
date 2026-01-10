@@ -86,7 +86,7 @@ export default function PartnerProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
-      toast({ title: "Silme talebi gonderildi", description: "Partner onayini bekliyor" });
+      toast({ title: "Silme talebi gonderildi", description: "Onay bekleniyor" });
     },
     onError: (error: any) => {
       toast({ title: "Hata", description: error?.message || "Silme talebi gonderilemedi", variant: "destructive" });
@@ -152,7 +152,7 @@ export default function PartnerProfile() {
       <div className="flex items-center gap-3">
         <User className="w-8 h-8 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Is Ortagi Paneli</h1>
+          <h1 className="text-2xl font-bold">Izleyiciler</h1>
           <p className="text-muted-foreground">Rezervasyon talepleriniz ve durumlarini buradan takip edebilirsiniz</p>
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function PartnerProfile() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">Partner Islemleri</p>
+                <p className="text-sm text-muted-foreground">Islemlerim</p>
                 <p className="text-2xl font-bold">{transactionCount}</p>
               </div>
               <div className="p-3 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
@@ -224,7 +224,7 @@ export default function PartnerProfile() {
           </TabsTrigger>
           <TabsTrigger value="transactions" className="gap-2" data-testid="tab-transactions">
             <Wallet className="w-4 h-4" />
-            Partner Islemleri
+            Islemlerim
           </TabsTrigger>
         </TabsList>
 
@@ -400,7 +400,7 @@ export default function PartnerProfile() {
                           </div>
                           <div className="flex items-center gap-4 text-sm">
                             <span className="font-medium">{formatMoney(tx.totalPrice, tx.currency)}</span>
-                            <span className="text-muted-foreground">Partner: {partnerName}</span>
+                            <span className="text-muted-foreground">Acenta: {partnerName}</span>
                           </div>
                           {tx.notes && (
                             <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
@@ -428,7 +428,7 @@ export default function PartnerProfile() {
                           )}
 
                           {isMyDeletionRequest && (
-                            <p className="text-xs text-orange-600">Silme talebiniz partner onayini bekliyor</p>
+                            <p className="text-xs text-orange-600">Silme talebiniz onay bekliyor</p>
                           )}
 
                           {canApproveDeletion && (
@@ -468,8 +468,8 @@ export default function PartnerProfile() {
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
                 <Wallet className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Henuz partner isleminiz bulunmuyor.</p>
-                <p className="text-sm mt-2">Partner rezervasyonlari onaylandiktan sonra islemler burada gorunecek.</p>
+                <p>Henuz isleminiz bulunmuyor.</p>
+                <p className="text-sm mt-2">Rezervasyonlariniz onaylandiktan sonra islemler burada gorunecek.</p>
               </CardContent>
             </Card>
           )}
