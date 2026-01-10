@@ -154,7 +154,6 @@ export default function PartnerAvailability() {
   
   const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
-  const approvedPartnerRequests = partnerRequests.filter(r => r.status === 'approved');
   const otherPartnerRequests = partnerRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
   
   // Filter partner data based on selected partner
@@ -973,54 +972,7 @@ export default function PartnerAvailability() {
           </Card>
         )}
 
-        {/* Onaylanan Talepler Bölümü */}
-        {approvedPartnerRequests.length > 0 && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-green-600" />
-                Onaylanan Talepler ({approvedPartnerRequests.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {approvedPartnerRequests.map(request => (
-                <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">{request.customerName}</p>
-                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300">
-                          Gelen: {request.requesterName || getPartnerNameFromNotes(request.notes)}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
-                      <div className="flex flex-wrap items-center gap-2 text-sm">
-                        <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                        <span>{request.time}</span>
-                        <span>{request.guests} kisi</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => notifyPartner(request, "ONAYLANDI")}
-                        disabled={notifyingSenderId === request.id}
-                        data-testid={`button-notify-${request.id}`}
-                      >
-                        {notifyingSenderId === request.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
-                        WhatsApp Bildir
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-        
-        {/* Diğer Gelen Talepler Bölümü */}
+        {/* İşlenen Gelen Talepler Bölümü */}
         {otherPartnerRequests.length > 0 && (
           <Card className="mt-6">
             <CardHeader>

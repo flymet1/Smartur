@@ -124,7 +124,6 @@ export default function ViewerStats() {
   
   const viewerRequests = allRequests.filter(r => !r.notes?.startsWith('[Partner:'));
   const pendingViewerRequests = viewerRequests.filter(r => r.status === 'pending');
-  const approvedViewerRequests = viewerRequests.filter(r => r.status === 'approved');
   const otherViewerRequests = viewerRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
   
   const processMutation = useMutation({
@@ -568,52 +567,10 @@ export default function ViewerStats() {
                   </Card>
                 )}
                 
-                {approvedViewerRequests.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Check className="w-5 h-5 text-green-600" />
-                        Onaylanan Talepler ({approvedViewerRequests.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {approvedViewerRequests.map(request => (
-                        <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
-                          <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="space-y-1">
-                              <p className="font-medium">{request.customerName}</p>
-                              <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
-                              <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                                <span>{request.time}</span>
-                                <span>{request.guests} kisi</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">Talep eden: {getRequesterName(request.requestedBy)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => notifyPartner(request, "ONAYLANDI")}
-                                disabled={notifyingSenderId === request.id}
-                                data-testid={`button-notify-${request.id}`}
-                              >
-                                {notifyingSenderId === request.id ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Send className="w-4 h-4 mr-1" />}
-                                WhatsApp Bildir
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-                
                 {otherViewerRequests.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-muted-foreground">Onaylanan Talepler ({otherViewerRequests.length})</CardTitle>
+                      <CardTitle className="text-muted-foreground">İşlenen Talepler ({otherViewerRequests.length})</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {otherViewerRequests.map(request => (
