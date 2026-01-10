@@ -426,7 +426,7 @@ export function ReservationTable({
                               data-testid={`action-whatsapp-${res.id}`}
                             >
                               <Send className="h-4 w-4 mr-2 text-green-600" />
-                              WhatsApp Bildir
+                              Müşteriye Whatsapp Bildirimi
                             </DropdownMenuItem>
                           )}
                           {onAddDispatch && (
@@ -444,7 +444,7 @@ export function ReservationTable({
                               data-testid={`action-notify-agency-${res.id}`}
                             >
                               <Phone className="h-4 w-4 mr-2 text-green-600" />
-                              Acentaya Bildir
+                              Acentaya Whatsapp Bildirimi
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
