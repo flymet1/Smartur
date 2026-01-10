@@ -150,7 +150,6 @@ export default function PartnerAvailability() {
   
   const pendingOutgoingRequests = outgoingRequests.filter(r => r.status === 'pending');
   const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved');
-  const otherOutgoingRequests = outgoingRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
   
   const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
@@ -1080,32 +1079,6 @@ export default function PartnerAvailability() {
                 </div>
               )}
 
-              {/* İşlenen Giden Talepler */}
-              {otherOutgoingRequests.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-medium text-muted-foreground">İşlenen ({otherOutgoingRequests.length})</h4>
-                  {otherOutgoingRequests.map(request => (
-                    <div key={request.id} className="border rounded-lg p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium">{request.customerName}</p>
-                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
-                              Giden: {request.ownerTenantName || 'Partner'}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
-                            <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                            <span>{request.time}</span>
-                          </div>
-                        </div>
-                        {getStatusBadge(request.status)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
 
               {outgoingRequests.length === 0 && (
                 <p className="text-center text-muted-foreground py-4">Henüz gönderilmiş talep yok.</p>
