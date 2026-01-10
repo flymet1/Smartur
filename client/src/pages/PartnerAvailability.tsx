@@ -1011,86 +1011,79 @@ export default function PartnerAvailability() {
         )}
 
         {/* ========== GİDEN TALEPLER BÖLÜMÜ ========== */}
-        {outgoingRequests.length > 0 && (
-          <Card className="mt-8 border-2 border-purple-200 dark:border-purple-800">
-            <CardHeader className="bg-purple-50 dark:bg-purple-950/30">
-              <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                <Send className="w-5 h-5" />
-                Giden Talepler (Benim Gönderdiğim)
+        {/* Bekleyen Giden Talepler */}
+        {pendingOutgoingRequests.length > 0 && (
+          <Card className="mt-6 border-2 border-purple-200 dark:border-purple-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-yellow-600" />
+                Giden Bekleyen Talepler ({pendingOutgoingRequests.length})
               </CardTitle>
-              <CardDescription>Partner acentalara gönderdiğiniz rezervasyon talepleri</CardDescription>
+              <CardDescription>Partner acentalara gönderdiğiniz onay bekleyen talepler</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              {/* Bekleyen Giden Talepler */}
-              {pendingOutgoingRequests.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
-                    <Clock className="w-4 h-4" />
-                    Bekleyen ({pendingOutgoingRequests.length})
-                  </h4>
-                  {pendingOutgoingRequests.map(request => (
-                    <div key={request.id} className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20">
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium">{request.customerName}</p>
-                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
-                              Giden: {request.ownerTenantName || 'Partner'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
-                          <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
-                            <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                            <span>{request.time}</span>
-                            <span>{request.guests} kisi</span>
-                          </div>
-                        </div>
-                        <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
-                          Onay Bekliyor
+            <CardContent className="space-y-3">
+              {pendingOutgoingRequests.map(request => (
+                <div key={request.id} className="border rounded-lg p-4 bg-yellow-50/50 dark:bg-yellow-950/20">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{request.customerName}</p>
+                        <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
+                          Giden: {request.ownerTenantName || 'Partner'}
                         </Badge>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Onaylanan Giden Talepler */}
-              {approvedOutgoingRequests.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-medium flex items-center gap-2 text-green-700 dark:text-green-400">
-                    <Check className="w-4 h-4" />
-                    Onaylanan ({approvedOutgoingRequests.length})
-                  </h4>
-                  {approvedOutgoingRequests.map(request => (
-                    <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium">{request.customerName}</p>
-                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
-                              Giden: {request.ownerTenantName || 'Partner'}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
-                            <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                            <span>{request.time}</span>
-                          </div>
-                        </div>
-                        <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                          Onaylandı
-                        </Badge>
+                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
+                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                        <span>{request.time}</span>
+                        <span>{request.guests} kisi</span>
                       </div>
                     </div>
-                  ))}
+                    <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
+                      Onay Bekliyor
+                    </Badge>
+                  </div>
                 </div>
-              )}
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
-
-              {outgoingRequests.length === 0 && (
-                <p className="text-center text-muted-foreground py-4">Henüz gönderilmiş talep yok.</p>
-              )}
+        {/* Onaylanan Giden Talepler */}
+        {approvedOutgoingRequests.length > 0 && (
+          <Card className="mt-6 border-2 border-purple-200 dark:border-purple-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-green-600" />
+                Giden Onaylanan Talepler ({approvedOutgoingRequests.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {approvedOutgoingRequests.map(request => (
+                <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{request.customerName}</p>
+                        <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
+                          Giden: {request.ownerTenantName || 'Partner'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
+                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                        <span>{request.time}</span>
+                        <span>{request.guests} kisi</span>
+                      </div>
+                    </div>
+                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                      Rezervasyon Oluşturuldu
+                    </Badge>
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         )}
