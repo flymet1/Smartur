@@ -993,12 +993,7 @@ export default function Finance() {
   // Partner Transaction Deletion Mutations
   const requestDeletionMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest('POST', `/api/partner-transactions/${id}/request-deletion`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Silme talebi oluşturulamadı');
-      }
-      return res.json();
+      return await apiRequest('POST', `/api/partner-transactions/${id}/request-deletion`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
@@ -1011,12 +1006,7 @@ export default function Finance() {
 
   const approveDeletionMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest('POST', `/api/partner-transactions/${id}/approve-deletion`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Silme talebi onaylanamadı');
-      }
-      return res.json();
+      return await apiRequest('POST', `/api/partner-transactions/${id}/approve-deletion`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
@@ -1029,12 +1019,7 @@ export default function Finance() {
 
   const rejectDeletionMutation = useMutation({
     mutationFn: async ({ id, reason }: { id: number; reason?: string }) => {
-      const res = await apiRequest('POST', `/api/partner-transactions/${id}/reject-deletion`, { reason });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Silme talebi reddedilemedi');
-      }
-      return res.json();
+      return await apiRequest('POST', `/api/partner-transactions/${id}/reject-deletion`, { reason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
@@ -1047,12 +1032,7 @@ export default function Finance() {
 
   const cancelDeletionMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest('POST', `/api/partner-transactions/${id}/cancel-deletion`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Silme talebi iptal edilemedi');
-      }
-      return res.json();
+      return await apiRequest('POST', `/api/partner-transactions/${id}/cancel-deletion`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
