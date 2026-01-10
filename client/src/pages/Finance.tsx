@@ -1030,6 +1030,8 @@ export default function Finance() {
     setUseLineItems(false);
     setCustomerSuggestions([]);
     setShowCustomerSuggestions(false);
+    // Reset the flag so another dispatch can be opened from reservations
+    processedDispatchParams.current = false;
   };
 
   const deleteDispatchMutation = useMutation({
@@ -1224,10 +1226,14 @@ export default function Finance() {
         customerName,
         customerPhone,
         activityId,
-        dispatchDate
+        dispatchDate,
+        // Update first item's quantity for line-item mode, keeping the rest of the structure
+        items: f.items.length > 0 
+          ? [{ ...f.items[0], quantity: guestCount }, ...f.items.slice(1)]
+          : [{ ...defaultDispatchItem, quantity: guestCount }]
       }));
       setSimpleGuestCount(guestCount);
-      setUseLineItems(false); // Use simple mode for dispatch from reservations
+      // Don't force useLineItems - respect the agency's rate-driven mode
       setFinanceTab('dispatches');
       setDispatchDialogOpen(true);
       
@@ -1235,6 +1241,7 @@ export default function Finance() {
       setLocation('/finance', { replace: true });
     }
   }, [searchParams, setLocation]);
+  
 
   if (suppliersLoading || payoutsLoading) {
     return (
