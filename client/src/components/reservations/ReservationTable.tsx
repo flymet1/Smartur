@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -33,7 +33,6 @@ interface ReservationTableProps {
   selectedIds?: Set<number>;
   onToggleSelection?: (id: number) => void;
   onSelectAll?: () => void;
-  onCustomerClick?: (phone: string, name: string) => void;
   onWhatsAppNotify?: (reservation: Reservation) => void;
   onAddDispatch?: (reservation: Reservation) => void;
 }
@@ -44,7 +43,6 @@ export function ReservationTable({
   selectedIds, 
   onToggleSelection, 
   onSelectAll,
-  onCustomerClick,
   onWhatsAppNotify,
   onAddDispatch
 }: ReservationTableProps) {
@@ -326,17 +324,7 @@ export function ReservationTable({
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-medium">{res.customerName}</span>
-                            {hasDispatch(res) && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <ArrowRightLeft className="h-3.5 w-3.5 text-blue-600" data-testid={`icon-dispatch-${res.id}`} />
-                                </TooltipTrigger>
-                                <TooltipContent>Gönderim mevcut</TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
+                          <div className="font-medium">{res.customerName}</div>
                           <div 
                             className="text-xs text-primary hover:underline cursor-pointer"
                             onClick={(e) => {
@@ -347,20 +335,14 @@ export function ReservationTable({
                             {res.customerPhone}
                           </div>
                         </div>
-                        {onCustomerClick && (
+                        {hasDispatch(res) && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6"
-                                onClick={() => onCustomerClick(res.customerPhone, res.customerName)}
-                                data-testid={`button-customer-history-${res.id}`}
-                              >
-                                <History className="h-3 w-3" />
-                              </Button>
+                              <div className="h-6 w-6 flex items-center justify-center">
+                                <ArrowRightLeft className="h-4 w-4 text-blue-600" data-testid={`icon-dispatch-${res.id}`} />
+                              </div>
                             </TooltipTrigger>
-                            <TooltipContent>Müşteri Geçmişi</TooltipContent>
+                            <TooltipContent>Gönderim mevcut</TooltipContent>
                           </Tooltip>
                         )}
                       </div>

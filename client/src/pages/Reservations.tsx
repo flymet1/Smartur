@@ -1584,10 +1584,6 @@ export default function Reservations() {
             selectedIds={selectedIds}
             onToggleSelection={toggleSelection}
             onSelectAll={selectAll}
-            onCustomerClick={(phone, name) => {
-              setCustomerHistoryPhone(phone);
-              setCustomerHistoryName(name);
-            }}
             onWhatsAppNotify={(reservation) => {
               // Select this single reservation and open WhatsApp dialog
               setSelectedIds(new Set([reservation.id]));
