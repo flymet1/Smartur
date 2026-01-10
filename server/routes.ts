@@ -2771,7 +2771,7 @@ export async function registerRoutes(
           const activities = await storage.getActivities(tenantId);
           const activity = activities.find(a => a.id === existingRequest.activityId);
           
-          // Create the reservation
+          // Create the reservation with confirmed status since request is approved
           const reservation = await storage.createReservation({
             tenantId,
             activityId: existingRequest.activityId,
@@ -2781,7 +2781,7 @@ export async function registerRoutes(
             customerPhone: existingRequest.customerPhone,
             quantity: existingRequest.guests || 1,
             notes: existingRequest.notes || "",
-            status: "pending",
+            status: "confirmed",
             source: "partner",
             paymentStatus: "unpaid"
           });
