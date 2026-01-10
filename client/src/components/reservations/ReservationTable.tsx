@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote, Handshake, Send, CheckCircle, XCircle, Truck } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -59,6 +59,27 @@ export function ReservationTable({
   const { data: packageTours = [] } = useQuery<PackageTour[]>({
     queryKey: ['/api/package-tours']
   });
+
+  // Fetch dispatches to check which reservations have dispatches
+  const { data: dispatches = [] } = useQuery<{ id: number; customerName: string | null; dispatchDate: string }[]>({
+    queryKey: ['/api/supplier-dispatches']
+  });
+
+  // Create a lookup set for reservations that have dispatches (by customerName + date)
+  const dispatchLookup = useMemo(() => {
+    const lookup = new Set<string>();
+    dispatches.forEach(d => {
+      if (d.customerName && d.dispatchDate) {
+        lookup.add(`${d.customerName.toLowerCase().trim()}-${d.dispatchDate}`);
+      }
+    });
+    return lookup;
+  }, [dispatches]);
+
+  const hasDispatch = (res: Reservation) => {
+    const key = `${res.customerName.toLowerCase().trim()}-${res.date}`;
+    return dispatchLookup.has(key);
+  };
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -296,7 +317,17 @@ export function ReservationTable({
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         <div>
-                          <div className="font-medium">{res.customerName}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium">{res.customerName}</span>
+                            {hasDispatch(res) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <ArrowRightLeft className="h-3.5 w-3.5 text-blue-600" data-testid={`icon-dispatch-${res.id}`} />
+                                </TooltipTrigger>
+                                <TooltipContent>Gönderim mevcut</TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                           <div 
                             className="text-xs text-primary hover:underline cursor-pointer"
                             onClick={(e) => {
@@ -410,7 +441,7 @@ export function ReservationTable({
                               onClick={() => onAddDispatch(res)}
                               data-testid={`action-dispatch-${res.id}`}
                             >
-                              <Truck className="h-4 w-4 mr-2 text-blue-600" />
+                              <ArrowRightLeft className="h-4 w-4 mr-2 text-blue-600" />
                               Gönderim Ekle
                             </DropdownMenuItem>
                           )}
