@@ -1316,6 +1316,62 @@ export default function Finance() {
 
         <div className="space-y-4">
 
+          {/* Acenta filtresi aktifken özet göster */}
+          {selectedAgencyId && financeTab === 'dispatches' && (
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{suppliers.find(s => s.id === selectedAgencyId)?.name}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedAgencyId(null)} className="h-6 px-2">
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Toplam Misafir:</span>
+                    <span className="font-bold">{filteredDispatches.reduce((sum, d) => sum + (d.guestCount || 0), 0)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Toplam Tutar:</span>
+                    <span className="font-bold text-orange-600">
+                      {formatMoney(filteredDispatches.reduce((sum, d) => sum + (d.totalAmountTl || 0), 0))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedAgencyId && financeTab === 'payouts' && (
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{suppliers.find(s => s.id === selectedAgencyId)?.name}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedAgencyId(null)} className="h-6 px-2">
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Toplam Ödeme:</span>
+                    <span className="font-bold text-green-600">
+                      {formatMoney(filteredPayouts.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0))}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Kayıt:</span>
+                    <span className="font-bold">{filteredPayouts.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {financeTab === 'dispatches' && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
