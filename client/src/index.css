@@ -39,6 +39,16 @@
   --popover-border: 250 20% 90%;
   
   --radius: 0.75rem;
+  
+  --popup-bg-r: 255;
+  --popup-bg-g: 255;
+  --popup-bg-b: 255;
+  --popup-bg-opacity: 0.7;
+  --popup-border-r: 255;
+  --popup-border-g: 255;
+  --popup-border-b: 255;
+  --popup-border-opacity: 0.3;
+  --popup-blur: 24px;
 }
 
 .dark {
@@ -70,6 +80,16 @@
   --popover: 255 30% 12%;
   --popover-foreground: 250 20% 95%;
   --popover-border: 255 25% 20%;
+  
+  --popup-bg-r: 30;
+  --popup-bg-g: 25;
+  --popup-bg-b: 40;
+  --popup-bg-opacity: 0.75;
+  --popup-border-r: 80;
+  --popup-border-g: 70;
+  --popup-border-b: 100;
+  --popup-border-opacity: 0.4;
+  --popup-blur: 24px;
 }
 
 @layer base {
@@ -91,5 +111,13 @@
   
   .glass-panel {
     @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
+  }
+  
+  .glassmorphism-popup {
+    background: rgba(var(--popup-bg-r), var(--popup-bg-g), var(--popup-bg-b), var(--popup-bg-opacity)) !important;
+    border: 1px solid rgba(var(--popup-border-r), var(--popup-border-g), var(--popup-border-b), var(--popup-border-opacity)) !important;
+    backdrop-filter: blur(var(--popup-blur)) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(var(--popup-blur)) saturate(150%) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   }
 }

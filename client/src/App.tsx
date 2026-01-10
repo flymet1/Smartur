@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthGuard } from "@/components/AuthGuard";
 import { StickyAnnouncements } from "@/components/layout/StickyAnnouncements";
 import { GlobalNotifications } from "@/components/GlobalNotifications";
+import { PopupThemeProvider } from "@/components/PopupThemeProvider";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Activities from "@/pages/Activities";
@@ -97,23 +98,25 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        {isPublicRoute ? (
-          <>
-            <KeyboardShortcuts />
-            <Toaster />
-            <Router />
-          </>
-        ) : (
-          <AuthGuard>
-            <KeyboardShortcuts />
-            <StickyAnnouncements />
-            <GlobalNotifications />
-            <Toaster />
-            <Router />
-          </AuthGuard>
-        )}
-      </TooltipProvider>
+      <PopupThemeProvider>
+        <TooltipProvider>
+          {isPublicRoute ? (
+            <>
+              <KeyboardShortcuts />
+              <Toaster />
+              <Router />
+            </>
+          ) : (
+            <AuthGuard>
+              <KeyboardShortcuts />
+              <StickyAnnouncements />
+              <GlobalNotifications />
+              <Toaster />
+              <Router />
+            </AuthGuard>
+          )}
+        </TooltipProvider>
+      </PopupThemeProvider>
     </QueryClientProvider>
   );
 }
