@@ -119,5 +119,16 @@
     backdrop-filter: blur(var(--popup-blur)) saturate(150%) !important;
     -webkit-backdrop-filter: blur(var(--popup-blur)) saturate(150%) !important;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    color: #000000 !important;
+  }
+  
+  .glassmorphism-popup * {
+    color: #000000 !important;
+  }
+  
+  .glassmorphism-popup .group-\[\.destructive\]\:text-red-900,
+  .glassmorphism-popup .group-\[\.destructive\]\:text-red-800,
+  .glassmorphism-popup .group-\[\.destructive\]\:text-red-700 {
+    color: inherit !important;
   }
 }
