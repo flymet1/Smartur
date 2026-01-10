@@ -2940,9 +2940,11 @@ export default function Finance() {
                       <SelectValue placeholder="Tedarikçi seçin" />
                     </SelectTrigger>
                     <SelectContent>
-                      {suppliers.map(s => (
-                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                      ))}
+                      {suppliers
+                        .filter(s => !(s.isSmartUser && s.partnerTenantId))
+                        .map(s => (
+                          <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
