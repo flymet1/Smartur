@@ -818,12 +818,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteReservation(id: number): Promise<void> {
-    // First, delete related customer requests
-    await db.delete(customerRequests).where(eq(customerRequests.reservationId, id));
+    // Mark related customer requests as 'cancelled' instead of deleting them (preserve history)
+    await db.update(customerRequests)
+      .set({ status: 'cancelled' })
+      .where(eq(customerRequests.reservationId, id));
     
-    // Clear reservationId in related reservation requests (set to null)
+    // Update related reservation requests to 'deleted' status and clear reservationId
     await db.update(reservationRequests)
-      .set({ reservationId: null })
+      .set({ status: 'deleted', reservationId: null })
       .where(eq(reservationRequests.reservationId, id));
     
     // Now delete the reservation

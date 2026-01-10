@@ -181,7 +181,7 @@ export default function PartnerAvailability() {
   
   const pendingOutgoingRequests = outgoingRequests.filter(r => r.status === 'pending');
   const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved' || r.status === 'converted');
-  const cancelledOutgoingRequests = outgoingRequests.filter(r => r.status === 'cancelled' || r.status === 'rejected');
+  const cancelledOutgoingRequests = outgoingRequests.filter(r => r.status === 'cancelled' || r.status === 'rejected' || r.status === 'deleted');
   
   // Partner işlemleri (financial transactions)
   const { data: partnerTransactions = [], isLoading: transactionsLoading } = useQuery<PartnerTransaction[]>({
@@ -202,7 +202,7 @@ export default function PartnerAvailability() {
   const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
   const convertedPartnerRequests = partnerRequests.filter(r => r.status === 'converted');
-  const cancelledPartnerRequests = partnerRequests.filter(r => r.status === 'cancelled' || r.status === 'rejected');
+  const cancelledPartnerRequests = partnerRequests.filter(r => r.status === 'cancelled' || r.status === 'rejected' || r.status === 'deleted');
   
   // Filter partner data based on selected partner
   const filteredPartnerData = (partnerData || []).filter(partner => 
@@ -1409,7 +1409,7 @@ export default function PartnerAvailability() {
                               Giden: {request.ownerTenantName || 'Partner'}
                             </Badge>
                             <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
-                              {request.status === 'cancelled' ? 'Iptal Edildi' : 'Reddedildi'}
+                              {request.status === 'cancelled' ? 'Iptal Edildi' : request.status === 'deleted' ? 'Silindi' : 'Reddedildi'}
                             </Badge>
                           </div>
                           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -1442,7 +1442,7 @@ export default function PartnerAvailability() {
                               Gelen: {getPartnerNameFromNotes(request.notes)}
                             </Badge>
                             <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
-                              {request.status === 'cancelled' ? 'Iptal Edildi' : 'Reddedildi'}
+                              {request.status === 'cancelled' ? 'Iptal Edildi' : request.status === 'deleted' ? 'Silindi' : 'Reddedildi'}
                             </Badge>
                           </div>
                           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
