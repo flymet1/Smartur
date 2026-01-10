@@ -2671,6 +2671,42 @@ export async function registerRoutes(
     }
   });
 
+  // Delete my outgoing reservation request
+  app.delete("/api/my-reservation-requests/:id", async (req, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      // Get the request to verify ownership
+      const request = await storage.getReservationRequest(requestId);
+      if (!request) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+      
+      // User must be the requester
+      if (request.requestedBy !== userId) {
+        return res.status(403).json({ error: "Bu talebi silme yetkiniz yok" });
+      }
+      
+      // Mark as deleted (soft delete to preserve history)
+      await storage.updateReservationRequest(requestId, { 
+        status: 'deleted',
+        processedBy: userId,
+        processedAt: new Date()
+      });
+      
+      res.json({ success: true, message: "Talep silindi" });
+    } catch (error) {
+      console.error("Delete my reservation request error:", error);
+      res.status(500).json({ error: "Talep silinemedi" });
+    }
+  });
+
   // Get my reservations (for İş Ortağı - partner users, shows reservations from their approved requests)
   // Enriches with activity name since partners don't have activities.view permission
   app.get("/api/my-reservations", async (req, res) => {

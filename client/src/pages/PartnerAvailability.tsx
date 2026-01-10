@@ -311,6 +311,19 @@ export default function PartnerAvailability() {
     }
   });
 
+  const deleteOutgoingRequestMutation = useMutation({
+    mutationFn: async (requestId: number) => {
+      return apiRequest('DELETE', `/api/my-reservation-requests/${requestId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/my-reservation-requests'] });
+      toast({ title: "Basarili", description: "Talep silindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Talep silinemedi.", variant: "destructive" });
+    }
+  });
+
   const getActivityName = (activityId: number) => {
     return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
   };
@@ -1182,6 +1195,16 @@ export default function PartnerAvailability() {
                         <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
                           Giden: {request.ownerTenantName || 'Partner'}
                         </Badge>
+                        {request.status === 'approved' && (
+                          <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
+                            Onaylandi
+                          </Badge>
+                        )}
+                        {request.status === 'converted' && (
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                            Rezervasyona Donusturuldu
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
                       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -1191,9 +1214,37 @@ export default function PartnerAvailability() {
                         <span>{request.guests} kisi</span>
                       </div>
                     </div>
-                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                      Rezervasyon Oluşturuldu
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            data-testid={`button-delete-outgoing-request-${request.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Sil
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Talebi Sil</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              "{request.customerName}" için olan talebi silmek istediginizden emin misiniz? Bu islem geri alinamaz.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Vazgec</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteOutgoingRequestMutation.mutate(request.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Sil
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               ))}
