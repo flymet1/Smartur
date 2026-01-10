@@ -1955,6 +1955,27 @@ export async function registerRoutes(
     }
   });
 
+  // Delete reservation
+  app.delete("/api/reservations/:id", requirePermission(PERMISSIONS.RESERVATIONS_DELETE), async (req, res) => {
+    const id = parseInt(req.params.id);
+    
+    try {
+      const tenantId = req.session?.tenantId;
+      const allReservations = await storage.getReservations(tenantId);
+      const reservation = allReservations.find(r => r.id === id);
+      
+      if (!reservation) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadı" });
+      }
+      
+      await storage.deleteReservation(id);
+      res.json({ success: true, message: "Rezervasyon silindi" });
+    } catch (error) {
+      console.error("Reservation delete error:", error);
+      res.status(500).json({ error: "Rezervasyon silinemedi" });
+    }
+  });
+
   // Update reservation status
   app.patch("/api/reservations/:id/status", requirePermission(PERMISSIONS.RESERVATIONS_EDIT), async (req, res) => {
     const id = parseInt(req.params.id);

@@ -207,6 +207,7 @@ export interface IStorage {
   getReservations(tenantId?: number): Promise<Reservation[]>;
   createReservation(reservation: InsertReservation): Promise<Reservation>;
   updateReservation(id: number, data: Partial<InsertReservation>): Promise<Reservation>;
+  deleteReservation(id: number): Promise<void>;
   getReservationsStats(): Promise<any>;
   getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<any>;
   getDateDetails(date: string): Promise<any>;
@@ -814,6 +815,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(reservations.id, id))
       .returning();
     return updated;
+  }
+
+  async deleteReservation(id: number): Promise<void> {
+    await db.delete(reservations).where(eq(reservations.id, id));
   }
 
   async getReservationsStats(): Promise<any> {
