@@ -704,6 +704,8 @@ export default function Finance() {
     receivedAmount: 0,
     receivedCollected: 0,
     receivedBalanceOwed: 0,
+    receiverCollectedFromCustomer: 0,
+    senderCollectedFromCustomer: 0,
     netBalanceOwed: 0,
     totalPaymentsMade: 0,
     totalPaymentsReceived: 0,
@@ -719,6 +721,7 @@ export default function Finance() {
     // - sender_full: totalPrice (gönderen tamamını tahsil etti, alıcıya aktarmalı)
     // - sender_partial: amountCollectedBySender (gönderen kısmen tahsil etti)
     const balanceOwedAmount = tx.balanceOwed || 0;
+    const collectionType = tx.paymentCollectionType;
     
     if (isSender) {
       partnerReconciliation.sentCount++;
@@ -727,6 +730,12 @@ export default function Finance() {
       partnerReconciliation.sentCollected += collected;
       // As sender, we owe balanceOwed to the receiver (the money we collected that belongs to them)
       partnerReconciliation.sentBalanceOwed += balanceOwedAmount;
+      // Track what sender collected from customer (sender_full or sender_partial)
+      if (collectionType === 'sender_full') {
+        partnerReconciliation.senderCollectedFromCustomer += amount;
+      } else if (collectionType === 'sender_partial') {
+        partnerReconciliation.senderCollectedFromCustomer += collected;
+      }
     } else {
       partnerReconciliation.receivedCount++;
       partnerReconciliation.receivedGuests += tx.guestCount;
@@ -734,6 +743,13 @@ export default function Finance() {
       partnerReconciliation.receivedCollected += collected;
       // As receiver, they owe us balanceOwed (the money they collected that belongs to us)
       partnerReconciliation.receivedBalanceOwed += balanceOwedAmount;
+      // Track what receiver collected from customer (receiver_full or remaining from sender_partial)
+      if (collectionType === 'receiver_full') {
+        partnerReconciliation.receiverCollectedFromCustomer += amount;
+      } else if (collectionType === 'sender_partial') {
+        // Receiver collects the remaining amount (totalPrice - amountCollectedBySender)
+        partnerReconciliation.receiverCollectedFromCustomer += (amount - collected);
+      }
     }
   });
   
@@ -2178,7 +2194,7 @@ export default function Finance() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 pt-2 border-t">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2 border-t">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <ArrowUpRight className="h-4 w-4 text-blue-500" />
@@ -2190,6 +2206,11 @@ export default function Finance() {
                     <div className="text-sm text-muted-foreground">
                       {partnerReconciliation.sentCount} işlem • {formatMoney(partnerReconciliation.sentAmount)}
                     </div>
+                    {partnerReconciliation.senderCollectedFromCustomer > 0 && (
+                      <div className="text-xs text-green-600">
+                        Biz tahsil ettik: {formatMoney(partnerReconciliation.senderCollectedFromCustomer)}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -2202,6 +2223,11 @@ export default function Finance() {
                     <div className="text-sm text-muted-foreground">
                       {partnerReconciliation.receivedCount} işlem • {formatMoney(partnerReconciliation.receivedAmount)}
                     </div>
+                    {partnerReconciliation.receiverCollectedFromCustomer > 0 && (
+                      <div className="text-xs text-green-600">
+                        Müşteriden tahsil: {formatMoney(partnerReconciliation.receiverCollectedFromCustomer)}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -2229,7 +2255,7 @@ export default function Finance() {
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Wallet className="h-4 w-4 text-purple-500" />
+                      <Scale className="h-4 w-4 text-purple-500" />
                       Net Durum
                     </div>
                     <div className={`text-lg font-semibold ${partnerReconciliation.netBalanceOwed > 0 ? 'text-red-600' : partnerReconciliation.netBalanceOwed < 0 ? 'text-green-600' : ''}`}>
@@ -2239,43 +2265,48 @@ export default function Finance() {
                       {partnerReconciliation.netBalanceOwed > 0 ? 'Borçlusunuz' : partnerReconciliation.netBalanceOwed < 0 ? 'Alacaklısınız' : 'Denk'}
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <ArrowUpRight className="h-4 w-4 text-orange-500" />
-                      Ödedik
-                    </div>
-                    <div className="text-lg font-semibold text-orange-600">
-                      -{formatMoney(partnerReconciliation.totalPaymentsMade)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {outgoingPartnerPayments.length} ödeme
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
-                      Aldık
-                    </div>
-                    <div className="text-lg font-semibold text-emerald-600">
-                      +{formatMoney(partnerReconciliation.totalPaymentsReceived)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {incomingPartnerPayments.length} ödeme
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Scale className="h-4 w-4 text-purple-500" />
-                      Kalan
-                    </div>
-                    <div className={`text-lg font-semibold ${partnerReconciliation.remainingBalance > 0 ? 'text-red-600' : partnerReconciliation.remainingBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                      {partnerReconciliation.remainingBalance > 0 ? '-' : partnerReconciliation.remainingBalance < 0 ? '+' : ''}{formatMoney(Math.abs(partnerReconciliation.remainingBalance))}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {partnerReconciliation.remainingBalance > 0 ? 'Ödenecek' : partnerReconciliation.remainingBalance < 0 ? 'Alacak' : 'Kapandı'}
-                    </div>
-                  </div>
                 </div>
+                
+                {(partnerReconciliation.totalPaymentsMade > 0 || partnerReconciliation.totalPaymentsReceived > 0 || partnerReconciliation.remainingBalance !== 0) && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-2 mt-2 border-t border-dashed">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <ArrowUpRight className="h-4 w-4 text-orange-500" />
+                        Partner Ödemeleri (Ödedik)
+                      </div>
+                      <div className="text-lg font-semibold text-orange-600">
+                        -{formatMoney(partnerReconciliation.totalPaymentsMade)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {outgoingPartnerPayments.length} ödeme
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
+                        Partner Ödemeleri (Aldık)
+                      </div>
+                      <div className="text-lg font-semibold text-emerald-600">
+                        +{formatMoney(partnerReconciliation.totalPaymentsReceived)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {incomingPartnerPayments.length} ödeme
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Wallet className="h-4 w-4 text-purple-500" />
+                        Kalan Bakiye
+                      </div>
+                      <div className={`text-lg font-semibold ${partnerReconciliation.remainingBalance > 0 ? 'text-red-600' : partnerReconciliation.remainingBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                        {partnerReconciliation.remainingBalance > 0 ? '-' : partnerReconciliation.remainingBalance < 0 ? '+' : ''}{formatMoney(Math.abs(partnerReconciliation.remainingBalance))}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {partnerReconciliation.remainingBalance > 0 ? 'Ödenecek' : partnerReconciliation.remainingBalance < 0 ? 'Alacak' : 'Kapandı'}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
