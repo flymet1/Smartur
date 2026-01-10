@@ -1311,6 +1311,21 @@ export default function Finance() {
               className="w-36"
               data-testid="input-end-date"
             />
+            <Select
+              value={selectedAgencyId ? String(selectedAgencyId) : "all"}
+              onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
+            >
+              <SelectTrigger className="w-[180px]" data-testid="select-agency-filter">
+                <Building2 className="h-4 w-4 mr-1" />
+                <SelectValue placeholder="Tüm Acentalar" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm Acentalar</SelectItem>
+                {suppliers.map(s => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -1337,7 +1352,7 @@ export default function Finance() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Toplam Tutar:</span>
                     <span className="font-bold text-orange-600">
-                      {formatMoney(filteredDispatches.reduce((sum, d) => sum + (d.totalAmountTl || 0), 0))}
+                      {formatMoney(filteredDispatches.reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0))}
                     </span>
                   </div>
                 </div>
@@ -1405,21 +1420,6 @@ export default function Finance() {
                     <Badge variant="outline">{filteredDispatches.length} kayıt</Badge>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Select
-                      value={selectedAgencyId ? String(selectedAgencyId) : "all"}
-                      onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
-                    >
-                      <SelectTrigger className="w-[180px] h-8" data-testid="select-dispatch-agency-filter">
-                        <Building2 className="h-3 w-3 mr-1" />
-                        <SelectValue placeholder="Tüm Acentalar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tüm Acentalar</SelectItem>
-                        {suppliers.map(s => (
-                          <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <Button
                       variant="outline"
                       size="sm"
@@ -1596,21 +1596,6 @@ export default function Finance() {
                 <Badge variant="outline">{filteredPayouts.length} kayıt</Badge>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <Select
-                  value={selectedAgencyId ? String(selectedAgencyId) : "all"}
-                  onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
-                >
-                  <SelectTrigger className="w-[180px] h-8" data-testid="select-payout-agency-filter">
-                    <Building2 className="h-3 w-3 mr-1" />
-                    <SelectValue placeholder="Tüm Acentalar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm Acentalar</SelectItem>
-                    {suppliers.map(s => (
-                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <Button
                   variant="outline"
                   size="sm"
