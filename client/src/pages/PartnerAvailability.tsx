@@ -149,10 +149,11 @@ export default function PartnerAvailability() {
   });
   
   const pendingOutgoingRequests = outgoingRequests.filter(r => r.status === 'pending');
-  const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved');
+  const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved' || r.status === 'converted');
   
   const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
+  const convertedPartnerRequests = partnerRequests.filter(r => r.status === 'converted');
   
   // Filter partner data based on selected partner
   const filteredPartnerData = (partnerData || []).filter(partner => 
@@ -970,6 +971,44 @@ export default function PartnerAvailability() {
           </Card>
         )}
 
+
+        {/* Onaylanan (Dönüştürülen) Gelen Talepler */}
+        {convertedPartnerRequests.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-green-600" />
+                Onaylanan Talepler ({convertedPartnerRequests.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {convertedPartnerRequests.map(request => (
+                <div key={request.id} className="border rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{request.customerName}</p>
+                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300">
+                          Gelen: {request.requesterName || getPartnerNameFromNotes(request.notes)}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                        <span>{request.time}</span>
+                        <span>{request.guests} kisi</span>
+                      </div>
+                    </div>
+                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                      Rezervasyon Oluşturuldu
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* ========== GİDEN TALEPLER BÖLÜMÜ ========== */}
         {outgoingRequests.length > 0 && (
