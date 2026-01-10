@@ -818,6 +818,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteReservation(id: number): Promise<void> {
+    // First, delete related customer requests
+    await db.delete(customerRequests).where(eq(customerRequests.reservationId, id));
+    
+    // Clear reservationId in related reservation requests (set to null)
+    await db.update(reservationRequests)
+      .set({ reservationId: null })
+      .where(eq(reservationRequests.reservationId, id));
+    
+    // Now delete the reservation
     await db.delete(reservations).where(eq(reservations.id, id));
   }
 
