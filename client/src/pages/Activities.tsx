@@ -335,18 +335,24 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     const errors: Record<string, string> = {};
     const trimmedName = name.trim();
     
+    // Debug log for validation
+    console.log('Form validation:', { name: trimmedName, price, durationMinutes });
+    
     if (!trimmedName) {
       errors.name = "Aktivite adı zorunludur";
     }
-    if (!price || Number(price) < 0) {
+    // Allow 0 as valid price
+    if (price === '' || price === null || price === undefined || Number(price) < 0 || isNaN(Number(price))) {
       errors.price = "Geçerli bir fiyat giriniz";
     }
-    if (!durationMinutes || Number(durationMinutes) <= 0) {
+    // Duration must be > 0
+    if (durationMinutes === '' || durationMinutes === null || durationMinutes === undefined || Number(durationMinutes) <= 0 || isNaN(Number(durationMinutes))) {
       errors.durationMinutes = "Geçerli bir süre giriniz";
     }
     
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
+      console.log('Form validation errors:', errors);
       toast({
         title: "Form Hatası",
         description: "Lütfen zorunlu alanları doldurunuz",

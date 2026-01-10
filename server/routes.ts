@@ -5404,6 +5404,28 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     }
   });
   
+  // Popup Appearance settings (tenant-aware)
+  app.get("/api/settings/popupAppearance", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const value = await storage.getSetting('popupAppearance', tenantId);
+      res.json({ key: 'popupAppearance', value });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar alınamadı" });
+    }
+  });
+  
+  app.post("/api/settings/popupAppearance", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const { value } = req.body;
+      await storage.setSetting('popupAppearance', value, tenantId);
+      res.json({ success: true, message: "Popup görünüm ayarları kaydedildi" });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar kaydedilemedi" });
+    }
+  });
+  
   // Tenant-specific notification email setting
   app.get("/api/settings/tenantNotificationEmail", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {
