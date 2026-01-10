@@ -3604,7 +3604,7 @@ export async function registerRoutes(
     }
   });
 
-  // Get payments made to partner agencies
+  // Get payments made to/received from partner agencies
   app.get("/api/partner-payments", requirePermission(PERMISSIONS.FINANCE_VIEW), async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
@@ -3612,23 +3612,44 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       
-      // Get all agencies with partner_tenant_id for this tenant
-      const agencies = await storage.getAgencies(tenantId);
-      const partnerAgencies = agencies.filter(a => a.partnerTenantId);
-      
-      if (partnerAgencies.length === 0) {
-        return res.json([]);
-      }
-      
-      // Get payouts for each partner agency
       const allPayouts: any[] = [];
-      for (const agency of partnerAgencies) {
+      
+      // 1. Payments made BY this tenant TO partner agencies (outgoing)
+      const myAgencies = await storage.getAgencies(tenantId);
+      const myPartnerAgencies = myAgencies.filter(a => a.partnerTenantId);
+      
+      for (const agency of myPartnerAgencies) {
         const agencyPayouts = await storage.getAgencyPayouts(agency.id);
         agencyPayouts.forEach(p => {
           allPayouts.push({
             ...p,
             partnerTenantId: agency.partnerTenantId,
-            partnerName: agency.name
+            partnerName: agency.name,
+            direction: 'outgoing', // Bu tenant ödeme yaptı
+            fromTenantId: tenantId,
+            toTenantId: agency.partnerTenantId
+          });
+        });
+      }
+      
+      // 2. Payments received FROM other tenants (incoming)
+      // Find agencies in OTHER tenants where partner_tenant_id = this tenant
+      const allTenantAgencies = await storage.getAllAgenciesWithPartnerTenantId(tenantId);
+      
+      for (const agency of allTenantAgencies) {
+        const agencyPayouts = await storage.getAgencyPayouts(agency.id);
+        // Get the payer tenant name
+        const payerTenant = await storage.getUser(agency.tenantId);
+        const payerName = payerTenant?.companyName || payerTenant?.name || `Tenant ${agency.tenantId}`;
+        
+        agencyPayouts.forEach(p => {
+          allPayouts.push({
+            ...p,
+            partnerTenantId: agency.tenantId,
+            partnerName: payerName,
+            direction: 'incoming', // Bu tenant ödeme aldı
+            fromTenantId: agency.tenantId,
+            toTenantId: tenantId
           });
         });
       }

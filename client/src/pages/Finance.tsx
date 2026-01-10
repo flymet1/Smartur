@@ -609,6 +609,9 @@ export default function Finance() {
     periodStart?: string;
     periodEnd?: string;
     notes?: string;
+    direction?: 'outgoing' | 'incoming'; // outgoing = we paid, incoming = we received
+    fromTenantId?: number;
+    toTenantId?: number;
   }
 
   // Partner Payments query - ödemeleri al
@@ -670,8 +673,11 @@ export default function Finance() {
     return true;
   });
 
-  // Toplam partner ödemeleri
-  const totalPartnerPayments = filteredPartnerPayments.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
+  // Toplam partner ödemeleri - ayrı ayrı hesapla (outgoing: biz ödedik, incoming: bize ödendi)
+  const outgoingPartnerPayments = filteredPartnerPayments.filter(p => p.direction === 'outgoing');
+  const incomingPartnerPayments = filteredPartnerPayments.filter(p => p.direction === 'incoming');
+  const totalOutgoingPayments = outgoingPartnerPayments.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
+  const totalIncomingPayments = incomingPartnerPayments.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
 
   // Mutabakat özeti hesaplama
   // balanceOwed: sender perspektifinden, pozitif = sender borclu, negatif = sender alacakli
@@ -688,6 +694,7 @@ export default function Finance() {
     receivedBalanceOwed: 0,
     netBalanceOwed: 0,
     totalPaymentsMade: 0,
+    totalPaymentsReceived: 0,
     remainingBalance: 0,
   };
 
@@ -715,9 +722,12 @@ export default function Finance() {
   // Net balance: what I owe (as sender) minus what others owe me (as receiver)
   // Positive = I owe more, Negative = I'm owed more
   partnerReconciliation.netBalanceOwed = partnerReconciliation.sentBalanceOwed - partnerReconciliation.receivedBalanceOwed;
-  partnerReconciliation.totalPaymentsMade = totalPartnerPayments;
-  // Kalan bakiye = Net borç - Yapılan ödemeler
-  partnerReconciliation.remainingBalance = partnerReconciliation.netBalanceOwed - totalPartnerPayments;
+  partnerReconciliation.totalPaymentsMade = totalOutgoingPayments; // Biz ödedik
+  partnerReconciliation.totalPaymentsReceived = totalIncomingPayments; // Bize ödendi
+  // Kalan bakiye = Net borç - Yapılan ödemeler + Alınan ödemeler
+  // Eğer biz borçluysak (net > 0): ödediğimiz kadar azalır
+  // Eğer bize borçlularsa (net < 0): aldığımız kadar azalır (mutlak değer azalır)
+  partnerReconciliation.remainingBalance = partnerReconciliation.netBalanceOwed - totalOutgoingPayments + totalIncomingPayments;
 
   const netBalance = partnerReconciliation.sentAmount - partnerReconciliation.receivedAmount;
 
@@ -2152,14 +2162,26 @@ export default function Finance() {
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CreditCard className="h-4 w-4 text-emerald-500" />
+                      <ArrowUpRight className="h-4 w-4 text-red-500" />
                       Yapılan Ödemeler
                     </div>
-                    <div className="text-lg font-semibold text-emerald-600">
-                      {formatMoney(partnerReconciliation.totalPaymentsMade)}
+                    <div className="text-lg font-semibold text-red-600">
+                      -{formatMoney(partnerReconciliation.totalPaymentsMade)}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {filteredPartnerPayments.length} ödeme
+                      {outgoingPartnerPayments.length} ödeme
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
+                      Alınan Ödemeler
+                    </div>
+                    <div className="text-lg font-semibold text-emerald-600">
+                      +{formatMoney(partnerReconciliation.totalPaymentsReceived)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {incomingPartnerPayments.length} ödeme
                     </div>
                   </div>
                   <div className="space-y-1">
