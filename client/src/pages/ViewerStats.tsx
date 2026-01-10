@@ -124,7 +124,6 @@ export default function ViewerStats() {
   
   const viewerRequests = allRequests.filter(r => !r.notes?.startsWith('[Partner:'));
   const pendingViewerRequests = viewerRequests.filter(r => r.status === 'pending');
-  const otherViewerRequests = viewerRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
   
   const processMutation = useMutation({
     mutationFn: async ({ id, status, notes }: { id: number; status: string; notes?: string }) => {
@@ -567,31 +566,6 @@ export default function ViewerStats() {
                   </Card>
                 )}
                 
-                {otherViewerRequests.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-muted-foreground">İşlenen Talepler ({otherViewerRequests.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {otherViewerRequests.map(request => (
-                        <div key={request.id} className="border rounded-lg p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="space-y-1">
-                              <p className="font-medium">{request.customerName}</p>
-                              <div className="flex flex-wrap items-center gap-2 text-sm">
-                                <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                                <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                                <span>{request.time}</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">Talep eden: {getRequesterName(request.requestedBy)}</p>
-                            </div>
-                            {getStatusBadge(request.status)}
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             )}
           </TabsContent>

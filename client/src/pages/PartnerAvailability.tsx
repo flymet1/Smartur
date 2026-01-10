@@ -153,7 +153,6 @@ export default function PartnerAvailability() {
   
   const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
-  const otherPartnerRequests = partnerRequests.filter(r => r.status !== 'pending' && r.status !== 'approved');
   
   // Filter partner data based on selected partner
   const filteredPartnerData = (partnerData || []).filter(partner => 
@@ -971,36 +970,6 @@ export default function PartnerAvailability() {
           </Card>
         )}
 
-        {/* İşlenen Gelen Talepler Bölümü */}
-        {otherPartnerRequests.length > 0 && (
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle className="text-muted-foreground">Gelen İşlenen Talepler ({otherPartnerRequests.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {otherPartnerRequests.map(request => (
-                <div key={request.id} className="border rounded-lg p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium">{request.customerName}</p>
-                        <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300">
-                          Gelen: {request.requesterName || getPartnerNameFromNotes(request.notes)}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-sm">
-                        <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
-                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
-                        <span>{request.time}</span>
-                      </div>
-                    </div>
-                    {getStatusBadge(request.status)}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
 
         {/* ========== GİDEN TALEPLER BÖLÜMÜ ========== */}
         {outgoingRequests.length > 0 && (
