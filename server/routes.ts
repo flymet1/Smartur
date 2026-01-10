@@ -2650,43 +2650,6 @@ export async function registerRoutes(
     }
   });
 
-  // Cancel/Delete my reservation request (for pending requests only)
-  app.delete("/api/my-reservation-requests/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const tenantId = req.session?.tenantId;
-      const userId = req.session?.userId;
-      
-      if (!tenantId || !userId) {
-        return res.status(401).json({ error: "Oturum bulunamadi" });
-      }
-      
-      // Get the request
-      const request = await storage.getReservationRequest(id);
-      if (!request) {
-        return res.status(404).json({ error: "Talep bulunamadi" });
-      }
-      
-      // Verify the request was created by this user
-      if (request.requestedBy !== userId) {
-        return res.status(403).json({ error: "Bu talebi iptal etme yetkiniz yok" });
-      }
-      
-      // Only allow cancelling pending requests
-      if (request.status !== 'pending') {
-        return res.status(400).json({ error: "Sadece bekleyen talepler iptal edilebilir" });
-      }
-      
-      // Delete the request
-      await storage.deleteReservationRequest(id);
-      
-      res.json({ success: true, message: "Talep iptal edildi" });
-    } catch (error) {
-      console.error("Cancel reservation request error:", error);
-      res.status(500).json({ error: "Talep iptal edilemedi" });
-    }
-  });
-
   // Get my reservations (for İş Ortağı - partner users, shows reservations from their approved requests)
   // Enriches with activity name since partners don't have activities.view permission
   app.get("/api/my-reservations", async (req, res) => {

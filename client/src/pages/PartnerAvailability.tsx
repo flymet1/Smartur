@@ -299,20 +299,6 @@ export default function PartnerAvailability() {
     }
   });
 
-  // Cancel outgoing reservation request mutation
-  const cancelRequestMutation = useMutation({
-    mutationFn: async (requestId: number) => {
-      return apiRequest('DELETE', `/api/my-reservation-requests/${requestId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/my-reservation-requests'] });
-      toast({ title: "Basarili", description: "Talep iptal edildi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Talep iptal edilemedi.", variant: "destructive" });
-    }
-  });
-
   const getActivityName = (activityId: number) => {
     return activities.find(a => a.id === activityId)?.name || "Bilinmiyor";
   };
@@ -1155,21 +1141,9 @@ export default function PartnerAvailability() {
                         <span>{request.guests} kisi</span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
-                        Onay Bekliyor
-                      </Badge>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => cancelRequestMutation.mutate(request.id)}
-                        disabled={cancelRequestMutation.isPending}
-                        data-testid={`button-cancel-request-${request.id}`}
-                      >
-                        {cancelRequestMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 mr-1" />}
-                        Iptal Et
-                      </Button>
-                    </div>
+                    <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
+                      Onay Bekliyor
+                    </Badge>
                   </div>
                 </div>
               ))}
