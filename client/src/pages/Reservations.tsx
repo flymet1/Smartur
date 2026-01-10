@@ -101,6 +101,9 @@ export default function Reservations() {
   const [moveCustomerMsg, setMoveCustomerMsg] = useState("");
   const [moveAgencyMsg, setMoveAgencyMsg] = useState("");
   const [moveAgencyId, setMoveAgencyId] = useState("");
+  const [agencyNotifyOpen, setAgencyNotifyOpen] = useState(false);
+  const [agencyNotifyReservation, setAgencyNotifyReservation] = useState<Reservation | null>(null);
+  const [selectedAgencyForNotify, setSelectedAgencyForNotify] = useState<string>("");
   const { toast } = useToast();
 
   const generateMoveCustomerMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
@@ -1624,6 +1627,11 @@ export default function Reservations() {
               });
               setLocation(`/finance?${params.toString()}`);
             }}
+            onNotifyAgency={(reservation) => {
+              setAgencyNotifyReservation(reservation);
+              setSelectedAgencyForNotify("");
+              setAgencyNotifyOpen(true);
+            }}
           />
         ) : (
           <>
@@ -1836,6 +1844,89 @@ export default function Reservations() {
                 </div>
               );
             })()}
+          </DialogContent>
+        </Dialog>
+
+        {/* Agency Notify Dialog */}
+        <Dialog open={agencyNotifyOpen} onOpenChange={setAgencyNotifyOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Phone className="h-5 w-5 text-green-600" />
+                Acentaya Bildir
+              </DialogTitle>
+              <DialogDescription>
+                Rezervasyon bilgilerini seçili acentaya WhatsApp ile gönderin
+              </DialogDescription>
+            </DialogHeader>
+            
+            {agencyNotifyReservation && (
+              <div className="space-y-4">
+                <div className="bg-muted/50 p-3 rounded-lg space-y-1">
+                  <div className="font-medium">{agencyNotifyReservation.customerName}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {activities?.find(a => a.id === agencyNotifyReservation.activityId)?.name || 'Aktivite'}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {format(new Date(agencyNotifyReservation.date), "d MMMM yyyy", { locale: tr })} • {agencyNotifyReservation.time}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {agencyNotifyReservation.quantity} Kişi
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Acenta Seçin</Label>
+                  <Select value={selectedAgencyForNotify} onValueChange={setSelectedAgencyForNotify}>
+                    <SelectTrigger data-testid="select-agency-notify">
+                      <SelectValue placeholder="Acenta seçin..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agencies
+                        .filter(a => !a.isSmartUser || !a.partnerTenantId)
+                        .map(agency => (
+                          <SelectItem key={agency.id} value={String(agency.id)}>
+                            {agency.name} {agency.contactInfo ? `(${agency.contactInfo})` : ''}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setAgencyNotifyOpen(false)}>
+                    İptal
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const agency = agencies.find(a => a.id === parseInt(selectedAgencyForNotify));
+                      if (!agency?.contactInfo) {
+                        toast({ title: "Hata", description: "Seçili acentanın telefon numarası yok", variant: "destructive" });
+                        return;
+                      }
+                      
+                      const activityName = activities?.find(a => a.id === agencyNotifyReservation.activityId)?.name || '';
+                      const dateFormatted = format(new Date(agencyNotifyReservation.date), "d MMMM yyyy", { locale: tr });
+                      
+                      const message = `Merhaba,\n\nYeni rezervasyon bilgisi:\n\nMüşteri: ${agencyNotifyReservation.customerName}\nTelefon: ${agencyNotifyReservation.customerPhone}\nAktivite: ${activityName}\nTarih: ${dateFormatted}\nSaat: ${agencyNotifyReservation.time}\nKişi Sayısı: ${agencyNotifyReservation.quantity}\n${agencyNotifyReservation.hotelName ? `Otel: ${agencyNotifyReservation.hotelName}\n` : ''}${agencyNotifyReservation.notes ? `Not: ${agencyNotifyReservation.notes}\n` : ''}\nİyi çalışmalar.`;
+                      
+                      const phone = agency.contactInfo.replace(/\D/g, '');
+                      const whatsappUrl = `https://wa.me/${phone.startsWith('90') ? phone : '90' + phone}?text=${encodeURIComponent(message)}`;
+                      window.open(whatsappUrl, '_blank');
+                      
+                      setAgencyNotifyOpen(false);
+                      toast({ title: "Başarılı", description: "WhatsApp açıldı" });
+                    }}
+                    disabled={!selectedAgencyForNotify}
+                    className="bg-green-600 hover:bg-green-700"
+                    data-testid="button-send-agency-notify"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    WhatsApp ile Gönder
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </main>

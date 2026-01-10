@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -35,6 +35,7 @@ interface ReservationTableProps {
   onSelectAll?: () => void;
   onWhatsAppNotify?: (reservation: Reservation) => void;
   onAddDispatch?: (reservation: Reservation) => void;
+  onNotifyAgency?: (reservation: Reservation) => void;
 }
 
 export function ReservationTable({ 
@@ -44,7 +45,8 @@ export function ReservationTable({
   onToggleSelection, 
   onSelectAll,
   onWhatsAppNotify,
-  onAddDispatch
+  onAddDispatch,
+  onNotifyAgency
 }: ReservationTableProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -434,6 +436,15 @@ export function ReservationTable({
                             >
                               <ArrowRightLeft className="h-4 w-4 mr-2 text-blue-600" />
                               Gönderim Ekle
+                            </DropdownMenuItem>
+                          )}
+                          {onNotifyAgency && (
+                            <DropdownMenuItem 
+                              onClick={() => onNotifyAgency(res)}
+                              data-testid={`action-notify-agency-${res.id}`}
+                            >
+                              <Phone className="h-4 w-4 mr-2 text-green-600" />
+                              Acentaya Bildir
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
