@@ -56,7 +56,9 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Wallet,
-  Scale
+  Scale,
+  AlertTriangle,
+  Check
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate, SupplierDispatchItem } from "@shared/schema";
 import { ChevronDown, ChevronRight, Package } from "lucide-react";
@@ -586,6 +588,10 @@ export default function Finance() {
     amountCollectedBySender?: number;
     amountDueToReceiver?: number;
     balanceOwed?: number;
+    deletionStatus?: string | null;
+    deletionRequestedAt?: string | null;
+    deletionRequestedByTenantId?: number | null;
+    deletionRejectionReason?: string | null;
   }
   
   // Partner Transactions query - use array pattern for proper cache invalidation
@@ -981,6 +987,79 @@ export default function Finance() {
     },
     onError: (error: any) => {
       toast({ title: "Hata", description: error?.message || "Acenta silinemedi", variant: "destructive" });
+    }
+  });
+
+  // Partner Transaction Deletion Mutations
+  const requestDeletionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('POST', `/api/partner-transactions/${id}/request-deletion`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Silme talebi oluşturulamadı');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
+      toast({ title: "Silme talebi gönderildi", description: "Partner acentanın onayı bekleniyor" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Silme talebi gönderilemedi", variant: "destructive" });
+    }
+  });
+
+  const approveDeletionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('POST', `/api/partner-transactions/${id}/approve-deletion`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Silme talebi onaylanamadı');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
+      toast({ title: "Silme talebi onaylandı", description: "İşlem silindi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Silme talebi onaylanamadı", variant: "destructive" });
+    }
+  });
+
+  const rejectDeletionMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason?: string }) => {
+      const res = await apiRequest('POST', `/api/partner-transactions/${id}/reject-deletion`, { reason });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Silme talebi reddedilemedi');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
+      toast({ title: "Silme talebi reddedildi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Silme talebi reddedilemedi", variant: "destructive" });
+    }
+  });
+
+  const cancelDeletionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('POST', `/api/partner-transactions/${id}/cancel-deletion`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Silme talebi iptal edilemedi');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-transactions'] });
+      toast({ title: "Silme talebi iptal edildi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error?.message || "Silme talebi iptal edilemedi", variant: "destructive" });
     }
   });
 
@@ -2362,6 +2441,24 @@ export default function Finance() {
                                   {tx.status === 'cancelled' && (
                                     <Badge variant="destructive">Iptal</Badge>
                                   )}
+                                  {tx.deletionStatus === 'pending' && tx.deletionRequestedByTenantId === tx.currentTenantId && (
+                                    <Badge variant="outline" className="border-orange-500 text-orange-600">
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Silme Talebi Gönderildi
+                                    </Badge>
+                                  )}
+                                  {tx.deletionStatus === 'pending' && tx.deletionRequestedByTenantId !== tx.currentTenantId && (
+                                    <Badge variant="outline" className="border-red-500 text-red-600 animate-pulse">
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                      Silme Onayı Bekleniyor
+                                    </Badge>
+                                  )}
+                                  {tx.deletionStatus === 'rejected' && (
+                                    <Badge variant="outline" className="border-gray-500 text-gray-600">
+                                      <X className="h-3 w-3 mr-1" />
+                                      Silme Reddedildi
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span className="flex items-center gap-1">
@@ -2482,6 +2579,91 @@ export default function Finance() {
                                     )}
                                   </div>
                                 )}
+                                
+                                {/* Silme İşlemleri */}
+                                <div className="pt-3 border-t mt-3">
+                                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                                    İşlemler
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {/* Silme Talebi Yok - Talep Et butonu */}
+                                    {!tx.deletionStatus && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-red-600 border-red-300 hover:bg-red-50"
+                                        onClick={() => requestDeletionMutation.mutate(tx.id)}
+                                        disabled={requestDeletionMutation.isPending}
+                                        data-testid={`button-request-deletion-${tx.id}`}
+                                      >
+                                        <Trash2 className="h-3 w-3 mr-1" />
+                                        Silme Talebi Gönder
+                                      </Button>
+                                    )}
+                                    
+                                    {/* Pending ve ben talep ettim - İptal Et */}
+                                    {tx.deletionStatus === 'pending' && tx.deletionRequestedByTenantId === tx.currentTenantId && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => cancelDeletionMutation.mutate(tx.id)}
+                                        disabled={cancelDeletionMutation.isPending}
+                                        data-testid={`button-cancel-deletion-${tx.id}`}
+                                      >
+                                        <X className="h-3 w-3 mr-1" />
+                                        Talebi İptal Et
+                                      </Button>
+                                    )}
+                                    
+                                    {/* Pending ve karşı taraf talep etti - Onayla/Reddet */}
+                                    {tx.deletionStatus === 'pending' && tx.deletionRequestedByTenantId !== tx.currentTenantId && (
+                                      <>
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          className="bg-green-600 hover:bg-green-700"
+                                          onClick={() => approveDeletionMutation.mutate(tx.id)}
+                                          disabled={approveDeletionMutation.isPending}
+                                          data-testid={`button-approve-deletion-${tx.id}`}
+                                        >
+                                          <Check className="h-3 w-3 mr-1" />
+                                          Silmeyi Onayla
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="text-red-600 border-red-300"
+                                          onClick={() => rejectDeletionMutation.mutate({ id: tx.id })}
+                                          disabled={rejectDeletionMutation.isPending}
+                                          data-testid={`button-reject-deletion-${tx.id}`}
+                                        >
+                                          <X className="h-3 w-3 mr-1" />
+                                          Reddet
+                                        </Button>
+                                      </>
+                                    )}
+                                    
+                                    {/* Reddedildi - Tekrar Talep Et */}
+                                    {tx.deletionStatus === 'rejected' && (
+                                      <>
+                                        <div className="w-full text-xs text-muted-foreground mb-1">
+                                          Ret sebebi: {tx.deletionRejectionReason || 'Belirtilmedi'}
+                                        </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="text-red-600 border-red-300 hover:bg-red-50"
+                                          onClick={() => requestDeletionMutation.mutate(tx.id)}
+                                          disabled={requestDeletionMutation.isPending}
+                                          data-testid={`button-retry-deletion-${tx.id}`}
+                                        >
+                                          <Trash2 className="h-3 w-3 mr-1" />
+                                          Tekrar Silme Talebi Gönder
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           )}
