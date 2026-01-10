@@ -1,4 +1,4 @@
-import { useEffect, createContext, useContext, useState } from "react";
+import { useEffect, createContext, useContext, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 interface PopupAppearanceSettings {
@@ -10,7 +10,7 @@ interface PopupAppearanceSettings {
 }
 
 interface PopupThemeContextValue {
-  settings: PopupAppearanceSettings | null;
+  settings: PopupAppearanceSettings;
   isLoading: boolean;
 }
 
@@ -31,7 +31,7 @@ const blurMap: Record<string, string> = {
 };
 
 const PopupThemeContext = createContext<PopupThemeContextValue>({
-  settings: null,
+  settings: defaultSettings,
   isLoading: true,
 });
 
@@ -68,7 +68,8 @@ function applyPopupCssVariables(settings: PopupAppearanceSettings) {
 }
 
 export function PopupThemeProvider({ children }: { children: React.ReactNode }) {
-  const [settingsApplied, setSettingsApplied] = useState(false);
+  const lastAppliedRef = useRef<string>("");
+  const hasInitialized = useRef(false);
   
   const { data: popupSettingsResponse, isLoading } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'popupAppearance'],
@@ -76,35 +77,40 @@ export function PopupThemeProvider({ children }: { children: React.ReactNode }) 
       const res = await fetch('/api/settings/popupAppearance');
       return res.json();
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30,
+    refetchOnWindowFocus: true,
   });
   
-  const settings: PopupAppearanceSettings | null = popupSettingsResponse?.value 
+  const settings: PopupAppearanceSettings = popupSettingsResponse?.value 
     ? (() => {
         try {
           return JSON.parse(popupSettingsResponse.value);
         } catch {
-          return null;
+          return defaultSettings;
         }
       })()
-    : null;
+    : defaultSettings;
   
   useEffect(() => {
-    if (!isLoading && !settingsApplied) {
-      const effectiveSettings = settings || defaultSettings;
-      applyPopupCssVariables(effectiveSettings);
-      setSettingsApplied(true);
+    if (!hasInitialized.current) {
+      applyPopupCssVariables(defaultSettings);
+      lastAppliedRef.current = JSON.stringify(defaultSettings);
+      hasInitialized.current = true;
     }
-  }, [isLoading, settings, settingsApplied]);
+  }, []);
   
   useEffect(() => {
-    if (settings && settingsApplied) {
-      applyPopupCssVariables(settings);
+    if (hasInitialized.current) {
+      const settingsJson = JSON.stringify(settings);
+      if (settingsJson !== lastAppliedRef.current) {
+        applyPopupCssVariables(settings);
+        lastAppliedRef.current = settingsJson;
+      }
     }
-  }, [settings, settingsApplied]);
+  }, [settings]);
   
   return (
-    <PopupThemeContext.Provider value={{ settings: settings || defaultSettings, isLoading }}>
+    <PopupThemeContext.Provider value={{ settings, isLoading }}>
       {children}
     </PopupThemeContext.Provider>
   );
