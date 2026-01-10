@@ -3604,6 +3604,42 @@ export async function registerRoutes(
     }
   });
 
+  // Get payments made to partner agencies
+  app.get("/api/partner-payments", requirePermission(PERMISSIONS.FINANCE_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      // Get all agencies with partner_tenant_id for this tenant
+      const agencies = await storage.getAgencies(tenantId);
+      const partnerAgencies = agencies.filter(a => a.partnerTenantId);
+      
+      if (partnerAgencies.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get payouts for each partner agency
+      const allPayouts: any[] = [];
+      for (const agency of partnerAgencies) {
+        const agencyPayouts = await storage.getAgencyPayouts(agency.id);
+        agencyPayouts.forEach(p => {
+          allPayouts.push({
+            ...p,
+            partnerTenantId: agency.partnerTenantId,
+            partnerName: agency.name
+          });
+        });
+      }
+      
+      res.json(allPayouts);
+    } catch (error) {
+      console.error("Get partner payments error:", error);
+      res.status(500).json({ error: "Partner odemeleri alinamadi" });
+    }
+  });
+
   // === VIEWER ACTIVITY SHARES (İzleyici Aktivite Paylaşımları ve Fiyatlandırma) ===
   
   // Get viewer activity shares for a specific viewer

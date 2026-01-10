@@ -55,7 +55,8 @@ import {
   Handshake,
   ArrowUpRight,
   ArrowDownLeft,
-  Wallet
+  Wallet,
+  Scale
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate, SupplierDispatchItem } from "@shared/schema";
 import { ChevronDown, ChevronRight, Package } from "lucide-react";
@@ -582,6 +583,29 @@ export default function Finance() {
     }
   });
 
+  // Partner Payments interface
+  interface PartnerPayment {
+    id: number;
+    agencyId: number;
+    partnerTenantId: number;
+    partnerName: string;
+    totalAmountTl: number;
+    createdAt: string;
+    periodStart?: string;
+    periodEnd?: string;
+    notes?: string;
+  }
+
+  // Partner Payments query - ödemeleri al
+  const { data: partnerPayments = [] } = useQuery<PartnerPayment[]>({
+    queryKey: ['/api/partner-payments'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/partner-payments');
+      if (!res.ok) return [];
+      return res.json();
+    }
+  });
+
   // Partner Mutabakat hesaplamaları
   const handlePartnerDateRangeChange = (range: 'week' | 'month' | 'custom') => {
     setPartnerDateRange(range);
@@ -621,6 +645,19 @@ export default function Finance() {
     ).values()
   );
 
+  // Tarih ve partner filtrelenmiş ödemeler
+  const filteredPartnerPayments = partnerPayments.filter(p => {
+    // Tarih aralığı filtresi (createdAt veya periodStart/periodEnd)
+    const paymentDate = p.createdAt?.split('T')[0] || '';
+    if (paymentDate < partnerStartDate || paymentDate > partnerEndDate) return false;
+    // Partner filtresi
+    if (selectedPartnerId && p.partnerTenantId !== selectedPartnerId) return false;
+    return true;
+  });
+
+  // Toplam partner ödemeleri
+  const totalPartnerPayments = filteredPartnerPayments.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
+
   // Mutabakat özeti hesaplama
   // balanceOwed: sender perspektifinden, pozitif = sender borclu, negatif = sender alacakli
   const partnerReconciliation = {
@@ -635,6 +672,8 @@ export default function Finance() {
     receivedCollected: 0,
     receivedBalanceOwed: 0,
     netBalanceOwed: 0,
+    totalPaymentsMade: 0,
+    remainingBalance: 0,
   };
 
   filteredPartnerTransactions.forEach(tx => {
@@ -661,6 +700,9 @@ export default function Finance() {
   // Net balance: what I owe (as sender) minus what others owe me (as receiver)
   // Positive = I owe more, Negative = I'm owed more
   partnerReconciliation.netBalanceOwed = partnerReconciliation.sentBalanceOwed - partnerReconciliation.receivedBalanceOwed;
+  partnerReconciliation.totalPaymentsMade = totalPartnerPayments;
+  // Kalan bakiye = Net borç - Yapılan ödemeler
+  partnerReconciliation.remainingBalance = partnerReconciliation.netBalanceOwed - totalPartnerPayments;
 
   const netBalance = partnerReconciliation.sentAmount - partnerReconciliation.receivedAmount;
 
@@ -2034,7 +2076,7 @@ export default function Finance() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 pt-2 border-t">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <ArrowUpRight className="h-4 w-4 text-blue-500" />
@@ -2091,6 +2133,30 @@ export default function Finance() {
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {partnerReconciliation.netBalanceOwed > 0 ? 'Partnerlere borçlusunuz' : partnerReconciliation.netBalanceOwed < 0 ? 'Partnerler size borçlu' : 'Denk'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CreditCard className="h-4 w-4 text-emerald-500" />
+                      Yapılan Ödemeler
+                    </div>
+                    <div className="text-lg font-semibold text-emerald-600">
+                      {formatMoney(partnerReconciliation.totalPaymentsMade)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {filteredPartnerPayments.length} ödeme
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Scale className="h-4 w-4 text-orange-500" />
+                      Kalan Bakiye
+                    </div>
+                    <div className={`text-lg font-semibold ${partnerReconciliation.remainingBalance > 0 ? 'text-red-600' : partnerReconciliation.remainingBalance < 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                      {partnerReconciliation.remainingBalance > 0 ? '-' : partnerReconciliation.remainingBalance < 0 ? '+' : ''}{formatMoney(Math.abs(partnerReconciliation.remainingBalance))}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {partnerReconciliation.remainingBalance > 0 ? 'Ödenecek' : partnerReconciliation.remainingBalance < 0 ? 'Alacak' : 'Kapandı'}
                     </div>
                   </div>
                 </div>
