@@ -1477,10 +1477,6 @@ export default function Finance() {
               <TableProperties className="h-5 w-5" />
               Fiyat Tablosu
             </TabsTrigger>
-            <TabsTrigger value="agencies" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-agencies">
-              <Building2 className="h-5 w-5" />
-              Acentalar
-            </TabsTrigger>
             <TabsTrigger value="partner-customers" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-partner-customers">
               {partnerLogoUrl ? (
                 <img src={partnerLogoUrl} alt="Partner" className="h-5 w-5 object-contain" />
@@ -1993,81 +1989,6 @@ export default function Finance() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="agencies" className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-lg font-semibold">Acenta Yönetimi</h3>
-              <Button onClick={openCreateAgencyDialog} data-testid="button-add-agency">
-                <Plus className="h-4 w-4 mr-2" />
-                Acenta Ekle
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {suppliers.map(agency => {
-                const isPartnerAgency = agency.isSmartUser && agency.partnerTenantId;
-                return (
-                <Card key={agency.id} data-testid={`card-agency-${agency.id}`} className={isPartnerAgency ? 'border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-950/30' : ''}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Building2 className="h-5 w-5" />
-                        {agency.name}
-                        {isPartnerAgency && (
-                          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 text-xs">
-                            Partner
-                          </Badge>
-                        )}
-                      </CardTitle>
-                      {!isPartnerAgency && (
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEditAgencyDialog(agency)} data-testid={`button-edit-agency-${agency.id}`}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => {
-                            if (confirm(`${agency.name} acentasını ve tüm ödeme kayıtlarını silmek istediğinize emin misiniz?`)) {
-                              deleteAgencyMutation.mutate(agency.id);
-                            }
-                          }} data-testid={`button-delete-agency-${agency.id}`}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {agency.contactInfo && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{agency.contactInfo}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 text-sm">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>Kişi başı: {formatMoney(agency.defaultPayoutPerGuest || 0)}</span>
-                    </div>
-                    {agency.notes && (
-                      <div className="flex items-start gap-2 text-sm pt-2 border-t">
-                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                        <span className="text-muted-foreground">{agency.notes}</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                );
-              })}
-              {suppliers.length === 0 && (
-                <div className="col-span-full text-center py-12 text-muted-foreground">
-                  <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Henüz acenta eklenmemiş</p>
-                  <Button variant="outline" className="mt-4" onClick={openCreateAgencyDialog}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    İlk Acentayı Ekle
-                  </Button>
-                </div>
-              )}
-            </div>
           </TabsContent>
 
           <TabsContent value="partner-customers" className="space-y-4">
