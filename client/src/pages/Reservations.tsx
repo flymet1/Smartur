@@ -3250,6 +3250,14 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
   };
   const status = statusConfig[reservation.status as keyof typeof statusConfig] || { label: reservation.status, className: "" };
 
+  // Extract partner name from notes for partner reservations
+  const getPartnerName = () => {
+    if (reservation.source !== 'partner') return null;
+    const match = reservation.notes?.match(/\[Partner:\s*([^\]]+)\]/);
+    return match ? match[1] : null;
+  };
+  const partnerName = getPartnerName();
+
   const handleDragStart = (e: React.DragEvent) => {
     if (draggable && onDragStart) {
       onDragStart(e, reservation);
@@ -3276,6 +3284,12 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
               <div className="flex items-center gap-1 mt-0.5">
                 <Package className="h-3 w-3 text-purple-500" />
                 <span className="text-xs text-purple-600 dark:text-purple-400 truncate">{packageTourName}</span>
+              </div>
+            )}
+            {partnerName && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Handshake className="h-3 w-3 text-purple-500" />
+                <span className="text-xs text-purple-600 dark:text-purple-400 truncate">{partnerName}</span>
               </div>
             )}
             <div className="text-xs mt-1">
@@ -3324,6 +3338,7 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
       <div className="flex items-center gap-1">
         <span className="text-muted-foreground truncate">{activityName}</span>
         {packageTourName && <Package className="h-3 w-3 text-purple-500 flex-shrink-0" />}
+        {partnerName && <Handshake className="h-3 w-3 text-purple-500 flex-shrink-0" title={partnerName} />}
       </div>
       <div className="flex items-center justify-between mt-1">
         <span>{reservation.time} - {reservation.quantity}p</span>

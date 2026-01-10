@@ -100,6 +100,7 @@ export const reservations = pgTable("reservations", {
   hotelName: text("hotel_name"), // WooCommerce'den gelen otel ismi
   hasTransfer: boolean("has_transfer").default(false), // Otel transferi istendi mi
   paymentStatus: text("payment_status").default("unpaid"), // unpaid, partial, paid - Odeme durumu
+  notes: text("notes"), // Notlar (partner rezervasyonlarında "[Partner: isim]" formatı)
   createdAt: timestamp("created_at").defaultNow(),
 });
 

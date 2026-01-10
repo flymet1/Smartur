@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { 
   Table, 
   TableBody, 
@@ -169,14 +170,16 @@ export function ReservationTable({
     }
   };
 
-  const getSourceLabel = (source: string | null) => {
+  const getSourceLabel = (source: string | null, notes?: string | null) => {
     switch (source) {
       case 'whatsapp':
         return 'WhatsApp';
       case 'web':
         return 'Web';
       case 'partner':
-        return 'Acenta';
+        // Extract partner name from notes format "[Partner: Name]"
+        const partnerMatch = notes?.match(/\[Partner:\s*([^\]]+)\]/);
+        return partnerMatch ? partnerMatch[1] : 'Acenta';
       case 'manual':
         return 'Manuel';
       default:
@@ -246,7 +249,7 @@ export function ReservationTable({
             </TableRow>
           ) : (
             groupedReservations.map((group, groupIdx) => (
-              <>
+              <Fragment key={group.type === 'group' ? group.groupKey : `single-${groupIdx}`}>
                 {group.type === 'group' && (
                   <TableRow key={`header-${group.groupKey}`} className="bg-purple-50 dark:bg-purple-900/20 border-t-2 border-purple-300 dark:border-purple-600">
                     <TableCell colSpan={hasSelection ? 10 : 9} className="py-2">
@@ -356,7 +359,9 @@ export function ReservationTable({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getSourceIcon(res.source)}
-                        <span className="text-sm">{getSourceLabel(res.source)}</span>
+                        <span className={`text-sm ${res.source === 'partner' ? 'text-purple-600 dark:text-purple-400 font-medium' : ''}`}>
+                          {getSourceLabel(res.source, res.notes)}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
@@ -443,7 +448,7 @@ export function ReservationTable({
                     </TableCell>
                   </TableRow>
                 ))}
-              </>
+              </Fragment>
             ))
           )}
         </TableBody>
