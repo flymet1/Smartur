@@ -420,6 +420,7 @@ export default function Finance() {
 
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
+  const [financeTab, setFinanceTab] = useState<'dispatches' | 'payouts' | 'rates' | 'partner-customers' | 'agencies'>('dispatches');
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
   const [payoutSortOrder, setPayoutSortOrder] = useState<'createdNewest' | 'createdOldest' | 'amountHigh' | 'amountLow'>('createdNewest');
   const [rateSortOrder, setRateSortOrder] = useState<'createdNewest' | 'createdOldest' | 'priceHigh' | 'priceLow'>('createdNewest');
@@ -1151,48 +1152,59 @@ export default function Finance() {
           <p className="text-muted-foreground">Tedarikçi firmalara yapılan ödemeler ve takip</p>
         </div>
 
-        {/* Özet Kartları */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Acenta</CardTitle>
-              <Umbrella className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-supplier-count">{suppliers.length}</div>
-              <p className="text-xs text-muted-foreground">Aktif acenta firma</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-sm font-medium">Gönderilen Misafir</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-guest-count">{totalGuests}</div>
-              <p className="text-xs text-muted-foreground">Seçili dönemde</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-sm font-medium">Toplam Ödeme</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600" data-testid="text-total-paid">{formatMoney(totalPaid)}</div>
-              <p className="text-xs text-muted-foreground">Acentalara ödenen</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-              <CardTitle className="text-sm font-medium">Kalan Borç</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600" data-testid="text-remaining-debt">{formatMoney(totalOwed - totalPaid)}</div>
-              <p className="text-xs text-muted-foreground">Ödenmesi gereken</p>
-            </CardContent>
-          </Card>
+        {/* Navigation Menu - Settings style */}
+        <div className="border-b bg-background mb-6">
+          <div className="flex items-center gap-1 overflow-x-auto pb-2">
+            <Button
+              variant={financeTab === 'dispatches' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFinanceTab('dispatches')}
+              data-testid="tab-dispatches"
+            >
+              <UserCheck className="h-4 w-4 mr-2" />
+              Gönderilen Müşteri
+            </Button>
+            <Button
+              variant={financeTab === 'payouts' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFinanceTab('payouts')}
+              data-testid="tab-payouts"
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              Ödemeler
+            </Button>
+            <Button
+              variant={financeTab === 'rates' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFinanceTab('rates')}
+              data-testid="tab-rates"
+            >
+              <TableProperties className="h-4 w-4 mr-2" />
+              Fiyat Tablosu
+            </Button>
+            <Button
+              variant={financeTab === 'partner-customers' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFinanceTab('partner-customers')}
+              data-testid="tab-partner-customers"
+            >
+              {partnerLogoUrl ? (
+                <img src={partnerLogoUrl} alt="Partner" className="h-4 w-4 mr-2 object-contain" />
+              ) : (
+                <Handshake className="h-4 w-4 mr-2" />
+              )}
+              Partner Acentalar
+            </Button>
+            <Button
+              variant={financeTab === 'agencies' ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setFinanceTab('agencies')}
+              data-testid="tab-agencies"
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              Acentalar
+            </Button>
+          </div>
         </div>
 
         {/* Tarih Filtreleme - Tüm sekmeler için geçerli */}
@@ -1281,35 +1293,10 @@ export default function Finance() {
           </div>
         </div>
 
-        <Tabs defaultValue="dispatches" className="space-y-4">
-          <TabsList className="h-14 p-1.5 gap-1">
-            <TabsTrigger value="dispatches" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-dispatches">
-              <UserCheck className="h-5 w-5" />
-              Gönderilen Müşteri
-            </TabsTrigger>
-            <TabsTrigger value="payouts" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-payouts">
-              <CreditCard className="h-5 w-5" />
-              Ödemeler
-            </TabsTrigger>
-            <TabsTrigger value="rates" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-rates">
-              <TableProperties className="h-5 w-5" />
-              Fiyat Tablosu
-            </TabsTrigger>
-            <TabsTrigger value="partner-customers" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-partner-customers">
-              {partnerLogoUrl ? (
-                <img src={partnerLogoUrl} alt="Partner" className="h-5 w-5 object-contain" />
-              ) : (
-                <Handshake className="h-5 w-5" />
-              )}
-              Partner Acentalar
-            </TabsTrigger>
-            <TabsTrigger value="agencies" className="h-11 px-5 text-sm font-medium gap-2 rounded-md" data-testid="tab-agencies">
-              <Building2 className="h-5 w-5" />
-              Acentalar
-            </TabsTrigger>
-          </TabsList>
+        <div className="space-y-4">
 
-          <TabsContent value="dispatches" className="space-y-4">
+          {financeTab === 'dispatches' && (
+          <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-lg font-semibold">Günlük Gönderimler</h3>
               <Button onClick={() => {
@@ -1340,7 +1327,22 @@ export default function Finance() {
                     <CardTitle className="text-base">Gönderim Listesi</CardTitle>
                     <Badge variant="outline">{filteredDispatches.length} kayıt</Badge>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Select
+                      value={selectedAgencyId ? String(selectedAgencyId) : "all"}
+                      onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
+                    >
+                      <SelectTrigger className="w-[180px] h-8" data-testid="select-dispatch-agency-filter">
+                        <Building2 className="h-3 w-3 mr-1" />
+                        <SelectValue placeholder="Tüm Acentalar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tüm Acentalar</SelectItem>
+                        {suppliers.map(s => (
+                          <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Button
                       variant="outline"
                       size="sm"
@@ -1506,15 +1508,32 @@ export default function Finance() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="payouts" className="space-y-4">
+          {financeTab === 'payouts' && (
+          <div className="space-y-4">
             <div className="flex flex-wrap justify-between items-center gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-lg font-semibold">Ödeme Kayıtları</h3>
                 <Badge variant="outline">{filteredPayouts.length} kayıt</Badge>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Select
+                  value={selectedAgencyId ? String(selectedAgencyId) : "all"}
+                  onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
+                >
+                  <SelectTrigger className="w-[180px] h-8" data-testid="select-payout-agency-filter">
+                    <Building2 className="h-3 w-3 mr-1" />
+                    <SelectValue placeholder="Tüm Acentalar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Acentalar</SelectItem>
+                    {suppliers.map(s => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1629,9 +1648,11 @@ export default function Finance() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="rates" className="space-y-4">
+          {financeTab === 'rates' && (
+          <div className="space-y-4">
             <div className="flex flex-wrap justify-between items-center gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-lg font-semibold">Fiyat Tablosu</h3>
@@ -1760,9 +1781,11 @@ export default function Finance() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="partner-customers" className="space-y-4">
+          {financeTab === 'partner-customers' && (
+          <div className="space-y-4">
             {/* Partner Mutabakat Özeti */}
             <Card className="border-2 border-primary/20 bg-primary/5">
               <CardHeader className="pb-3">
@@ -2491,12 +2514,58 @@ export default function Finance() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+          )}
 
-          <TabsContent value="agencies" className="space-y-4">
+          {financeTab === 'agencies' && (
+          <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-lg font-semibold">Acentalar</h3>
               <Badge variant="outline">{dispatchSummary.length} acenta</Badge>
+            </div>
+
+            {/* Özet Kartları */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                  <CardTitle className="text-sm font-medium">Toplam Acenta</CardTitle>
+                  <Umbrella className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-supplier-count">{suppliers.length}</div>
+                  <p className="text-xs text-muted-foreground">Aktif acenta firma</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                  <CardTitle className="text-sm font-medium">Gönderilen Misafir</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-guest-count">{totalGuests}</div>
+                  <p className="text-xs text-muted-foreground">Seçili dönemde</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                  <CardTitle className="text-sm font-medium">Toplam Ödeme</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600" data-testid="text-total-paid">{formatMoney(totalPaid)}</div>
+                  <p className="text-xs text-muted-foreground">Acentalara ödenen</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                  <CardTitle className="text-sm font-medium">Kalan Borç</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600" data-testid="text-remaining-debt">{formatMoney(totalOwed - totalPaid)}</div>
+                  <p className="text-xs text-muted-foreground">Ödenmesi gereken</p>
+                </CardContent>
+              </Card>
             </div>
 
             <Card>
@@ -2601,8 +2670,9 @@ export default function Finance() {
                 </p>
               </div>
             )}
-          </TabsContent>
-        </Tabs>
+          </div>
+          )}
+        </div>
 
         {/* Ödeme Dialog */}
         <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
