@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote, Handshake, Send, CheckCircle, XCircle } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, History, StickyNote, Handshake, Send, CheckCircle, XCircle, Truck } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -35,6 +35,7 @@ interface ReservationTableProps {
   onSelectAll?: () => void;
   onCustomerClick?: (phone: string, name: string) => void;
   onWhatsAppNotify?: (reservation: Reservation) => void;
+  onAddDispatch?: (reservation: Reservation) => void;
 }
 
 export function ReservationTable({ 
@@ -44,7 +45,8 @@ export function ReservationTable({
   onToggleSelection, 
   onSelectAll,
   onCustomerClick,
-  onWhatsAppNotify
+  onWhatsAppNotify,
+  onAddDispatch
 }: ReservationTableProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -401,6 +403,15 @@ export function ReservationTable({
                             >
                               <Send className="h-4 w-4 mr-2 text-green-600" />
                               WhatsApp Bildir
+                            </DropdownMenuItem>
+                          )}
+                          {onAddDispatch && (
+                            <DropdownMenuItem 
+                              onClick={() => onAddDispatch(res)}
+                              data-testid={`action-dispatch-${res.id}`}
+                            >
+                              <Truck className="h-4 w-4 mr-2 text-blue-600" />
+                              Gönderim Ekle
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />

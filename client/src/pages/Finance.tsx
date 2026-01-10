@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearch, useLocation } from "wouter";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -448,6 +449,12 @@ export default function Finance() {
     }, 300);
     return () => clearTimeout(timer);
   }, [dispatchForm.customerName, searchCustomers]);
+  
+  // Handle query params for opening dispatch dialog from Reservations page
+  const searchParams = useSearch();
+  const [, setLocation] = useLocation();
+  const processedDispatchParams = useRef(false);
+  
   // Basit mod için geri uyumluluk
   const [simpleGuestCount, setSimpleGuestCount] = useState(1);
   const [simpleUnitPayout, setSimpleUnitPayout] = useState(0);
@@ -1197,6 +1204,37 @@ export default function Finance() {
       createRateMutation.mutate(rateForm);
     }
   };
+
+  // Effect to handle query params for opening dispatch dialog from Reservations page
+  useEffect(() => {
+    if (processedDispatchParams.current) return;
+    
+    const params = new URLSearchParams(searchParams);
+    if (params.get('openDispatch') === 'true') {
+      processedDispatchParams.current = true;
+      
+      const customerName = params.get('customerName') || '';
+      const customerPhone = params.get('customerPhone') || '';
+      const activityId = parseInt(params.get('activityId') || '0') || 0;
+      const dispatchDate = params.get('dispatchDate') || new Date().toISOString().split('T')[0];
+      const guestCount = parseInt(params.get('guestCount') || '1') || 1;
+      
+      setDispatchForm(f => ({
+        ...f,
+        customerName,
+        customerPhone,
+        activityId,
+        dispatchDate
+      }));
+      setSimpleGuestCount(guestCount);
+      setUseLineItems(false); // Use simple mode for dispatch from reservations
+      setFinanceTab('dispatches');
+      setDispatchDialogOpen(true);
+      
+      // Clear query params from URL
+      setLocation('/finance', { replace: true });
+    }
+  }, [searchParams, setLocation]);
 
   if (suppliersLoading || payoutsLoading) {
     return (

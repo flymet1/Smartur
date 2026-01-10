@@ -1615,6 +1615,19 @@ export default function Reservations() {
               setBulkWhatsAppMessage(msg);
               setBulkWhatsAppOpen(true);
             }}
+            onAddDispatch={(reservation) => {
+              const activity = activities?.find(a => a.id === reservation.activityId);
+              const params = new URLSearchParams({
+                openDispatch: 'true',
+                customerName: reservation.customerName || '',
+                customerPhone: reservation.customerPhone || '',
+                activityId: reservation.activityId?.toString() || '',
+                activityName: activity?.name || '',
+                dispatchDate: reservation.date || '',
+                guestCount: reservation.quantity?.toString() || ''
+              });
+              setLocation(`/finance?${params.toString()}`);
+            }}
           />
         ) : (
           <>
@@ -3338,7 +3351,7 @@ function ReservationCard({ reservation, activityName, activityColor, onStatusCha
       <div className="flex items-center gap-1">
         <span className="text-muted-foreground truncate">{activityName}</span>
         {packageTourName && <Package className="h-3 w-3 text-purple-500 flex-shrink-0" />}
-        {partnerName && <Handshake className="h-3 w-3 text-purple-500 flex-shrink-0" title={partnerName} />}
+        {partnerName && <span title={partnerName}><Handshake className="h-3 w-3 text-purple-500 flex-shrink-0" /></span>}
       </div>
       <div className="flex items-center justify-between mt-1">
         <span>{reservation.time} - {reservation.quantity}p</span>
