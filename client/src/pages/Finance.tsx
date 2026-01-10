@@ -68,6 +68,9 @@ import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRa
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Search, ChevronsUpDown } from "lucide-react";
 
 const formatMoney = (amount: number) => {
   return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
@@ -422,6 +425,7 @@ export default function Finance() {
 
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
+  const [agencySearchOpen, setAgencySearchOpen] = useState(false);
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
   const [payoutSortOrder, setPayoutSortOrder] = useState<'createdNewest' | 'createdOldest' | 'amountHigh' | 'amountLow'>('createdNewest');
   const [rateSortOrder, setRateSortOrder] = useState<'createdNewest' | 'createdOldest' | 'priceHigh' | 'priceLow'>('createdNewest');
@@ -1349,59 +1353,113 @@ export default function Finance() {
           </div>
         </div>
 
-        {/* Acenta Özet Kartları - Tüm sekmeler için geçerli */}
+        {/* Acenta Seçici - Arama özellikli açılır menü */}
         {dispatchSummary.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {dispatchSummary.map(summary => {
+          <div className="flex flex-wrap items-center gap-4">
+            <Popover open={agencySearchOpen} onOpenChange={setAgencySearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={agencySearchOpen}
+                  className="w-[280px] justify-between"
+                  data-testid="button-agency-select"
+                >
+                  {selectedAgencyId
+                    ? dispatchSummary.find(s => s.agencyId === selectedAgencyId)?.agencyName || "Acenta seçin..."
+                    : "Acenta seçin..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Acenta ara..." />
+                  <CommandList>
+                    <CommandEmpty>Acenta bulunamad\u0131.</CommandEmpty>
+                    <CommandGroup>
+                      {dispatchSummary.map(summary => {
+                        const isDebt = summary.remainingTl > 0;
+                        const isCredit = summary.remainingTl < 0;
+                        return (
+                          <CommandItem
+                            key={summary.agencyId}
+                            value={summary.agencyName}
+                            onSelect={() => {
+                              setSelectedAgencyId(selectedAgencyId === summary.agencyId ? null : summary.agencyId);
+                              setAgencySearchOpen(false);
+                            }}
+                            className="flex items-center justify-between gap-2"
+                            data-testid={`agency-option-${summary.agencyId}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Umbrella className="h-4 w-4" />
+                              <span>{summary.agencyName}</span>
+                            </div>
+                            <Badge 
+                              variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}
+                              className="text-xs"
+                            >
+                              {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
+                            </Badge>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            
+            {/* Seçili acenta özet kartı */}
+            {selectedAgencyId && (() => {
+              const summary = dispatchSummary.find(s => s.agencyId === selectedAgencyId);
+              if (!summary) return null;
               const isDebt = summary.remainingTl > 0;
               const isCredit = summary.remainingTl < 0;
-              const isSelected = selectedAgencyId === summary.agencyId;
               return (
-                <Card 
-                  key={summary.agencyId} 
-                  data-testid={`card-summary-${summary.agencyId}`}
-                  className={`cursor-pointer transition-all hover-elevate ${isSelected ? 'ring-2 ring-primary' : ''}`}
-                  onClick={() => setSelectedAgencyId(isSelected ? null : summary.agencyId)}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center justify-between gap-2">
+                <Card className="flex-1 min-w-[300px]" data-testid={`card-summary-${summary.agencyId}`}>
+                  <CardContent className="py-3 px-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex items-center gap-2">
                         <Umbrella className="h-4 w-4" />
-                        {summary.agencyName}
+                        <span className="font-medium">{summary.agencyName}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={() => setSelectedAgencyId(null)}
+                          data-testid="button-clear-agency"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </div>
-                      {isSelected && (
-                        <Badge variant="default" className="text-xs">Seçili</Badge>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between gap-2 text-sm">
-                      <span className="text-muted-foreground">Toplam Kişi:</span>
-                      <span className="font-medium">{summary.totalGuests} kişi</span>
-                    </div>
-                    <div className="flex justify-between gap-2 text-sm">
-                      <span className="text-muted-foreground">Toplam Borç:</span>
-                      <div className="text-right">
-                        {summary.totalOwedTl > 0 && <span className="font-medium">{summary.totalOwedTl.toLocaleString('tr-TR')} TL</span>}
-                        {summary.totalOwedTl > 0 && summary.totalOwedUsd > 0 && <span className="mx-1">+</span>}
-                        {summary.totalOwedUsd > 0 && <span className="font-medium">${summary.totalOwedUsd.toLocaleString('en-US')}</span>}
-                        {summary.totalOwedTl === 0 && summary.totalOwedUsd === 0 && <span className="font-medium">0 TL</span>}
+                      <div className="flex flex-wrap items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">Ki\u015fi:</span>
+                          <span className="font-medium">{summary.totalGuests}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">Bor\u00e7:</span>
+                          <span className="font-medium">
+                            {summary.totalOwedTl > 0 && `${summary.totalOwedTl.toLocaleString('tr-TR')} TL`}
+                            {summary.totalOwedTl > 0 && summary.totalOwedUsd > 0 && ' + '}
+                            {summary.totalOwedUsd > 0 && `$${summary.totalOwedUsd.toLocaleString('en-US')}`}
+                            {summary.totalOwedTl === 0 && summary.totalOwedUsd === 0 && '0 TL'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-muted-foreground">\u00d6denen:</span>
+                          <span className="font-medium text-green-600">{summary.totalPaidTl.toLocaleString('tr-TR')} TL</span>
+                        </div>
+                        <Badge variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}>
+                          Kalan: {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
+                        </Badge>
                       </div>
-                    </div>
-                    <div className="flex justify-between gap-2 text-sm">
-                      <span className="text-muted-foreground">Ödenen:</span>
-                      <span className="font-medium text-green-600">{summary.totalPaidTl.toLocaleString('tr-TR')} TL</span>
-                    </div>
-                    <div className="flex justify-between gap-2 text-sm border-t pt-2">
-                      <span className="text-muted-foreground">Kalan:</span>
-                      <Badge variant={isDebt ? "destructive" : isCredit ? "secondary" : "outline"}>
-                        {isCredit ? '+' : ''}{summary.remainingTl.toLocaleString('tr-TR')} TL
-                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
               );
-            })}
+            })()}
           </div>
         )}
 
