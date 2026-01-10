@@ -706,26 +706,28 @@ export default function Finance() {
 
   filteredPartnerTransactions.forEach(tx => {
     const isSender = tx.currentTenantId === tx.senderTenantId;
-    const amount = tx.totalPrice || (tx.unitPrice || 0) * tx.guestCount;
+    const amount = tx.totalAmount || (tx.unitPrice || 0) * tx.guestCount;
     const collected = tx.amountCollectedBySender || 0;
-    // Use amountDueToReceiver as the actual liability - if we're the sender, we owe this amount
-    // If we're the receiver, they owe us this amount
-    const amountDue = tx.amountDueToReceiver || amount;
+    // balanceOwed: gönderenin alıcıya aktarması gereken para (sender perspektifinden)
+    // - receiver_full: 0 (alıcı doğrudan tahsil edecek, gönderen borçlu değil)
+    // - sender_full: totalPrice (gönderen tamamını tahsil etti, alıcıya aktarmalı)
+    // - sender_partial: amountCollectedBySender (gönderen kısmen tahsil etti)
+    const balanceOwedAmount = tx.balanceOwed || 0;
     
     if (isSender) {
       partnerReconciliation.sentCount++;
       partnerReconciliation.sentGuests += tx.guestCount;
       partnerReconciliation.sentAmount += amount;
       partnerReconciliation.sentCollected += collected;
-      // As sender, we owe amountDue to the receiver
-      partnerReconciliation.sentBalanceOwed += amountDue;
+      // As sender, we owe balanceOwed to the receiver (the money we collected that belongs to them)
+      partnerReconciliation.sentBalanceOwed += balanceOwedAmount;
     } else {
       partnerReconciliation.receivedCount++;
       partnerReconciliation.receivedGuests += tx.guestCount;
       partnerReconciliation.receivedAmount += amount;
       partnerReconciliation.receivedCollected += collected;
-      // As receiver, they owe us amountDue
-      partnerReconciliation.receivedBalanceOwed += amountDue;
+      // As receiver, they owe us balanceOwed (the money they collected that belongs to us)
+      partnerReconciliation.receivedBalanceOwed += balanceOwedAmount;
     }
   });
   
