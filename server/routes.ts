@@ -6659,7 +6659,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
   app.post("/api/finance/dispatches", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
-      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, guestCount, unitPayoutTl, currency, notes } = req.body;
+      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, guestCount, unitPayoutTl, currency, notes, sourceReservationId } = req.body;
       
       if (!agencyId || !dispatchDate) {
         return res.status(400).json({ error: "agencyId ve dispatchDate zorunlu" });
@@ -6698,7 +6698,8 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         totalPayoutTl,
         currency: finalCurrency,
         rateId,
-        notes
+        notes,
+        sourceReservationId: sourceReservationId || null
       });
       res.json(dispatch);
     } catch (err) {
@@ -6804,7 +6805,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
   app.post("/api/finance/dispatches-with-items", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
-      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, notes, items } = req.body;
+      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, notes, items, sourceReservationId } = req.body;
       
       if (!agencyId || !dispatchDate) {
         return res.status(400).json({ error: "agencyId ve dispatchDate zorunlu" });
@@ -6845,7 +6846,8 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         unitPayoutTl: totalGuestCount > 0 ? Math.round(mainTotal / totalGuestCount) : 0,
         totalPayoutTl: mainTotal,
         currency: mainCurrency,
-        notes
+        notes,
+        sourceReservationId: sourceReservationId || null
       });
       
       // Kalemleri oluştur

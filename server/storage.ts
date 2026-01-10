@@ -820,18 +820,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteReservation(id: number): Promise<void> {
-    // Mark related customer requests as 'cancelled' instead of deleting them (preserve history)
-    await db.update(customerRequests)
-      .set({ status: 'cancelled' })
-      .where(eq(customerRequests.reservationId, id));
-    
-    // Update related reservation requests to 'deleted' status and clear reservationId
-    await db.update(reservationRequests)
-      .set({ status: 'deleted', reservationId: null })
-      .where(eq(reservationRequests.reservationId, id));
-    
-    // Now delete the reservation
-    await db.delete(reservations).where(eq(reservations.id, id));
+    await db.transaction(async (tx) => {
+      // Mark related customer requests as 'cancelled' instead of deleting them (preserve history)
+      await tx.update(customerRequests)
+        .set({ status: 'cancelled' })
+        .where(eq(customerRequests.reservationId, id));
+      
+      // Update related reservation requests to 'deleted' status and clear reservationId
+      await tx.update(reservationRequests)
+        .set({ status: 'deleted', reservationId: null })
+        .where(eq(reservationRequests.reservationId, id));
+      
+      // Delete related supplier dispatches and their associated records
+      const relatedDispatches = await tx.select({ id: supplierDispatches.id })
+        .from(supplierDispatches)
+        .where(eq(supplierDispatches.sourceReservationId, id));
+      
+      for (const dispatch of relatedDispatches) {
+        // Delete dispatch shares first (foreign key constraint)
+        await tx.delete(dispatchShares).where(eq(dispatchShares.dispatchId, dispatch.id));
+        // Delete dispatch items
+        await tx.delete(supplierDispatchItems).where(eq(supplierDispatchItems.dispatchId, dispatch.id));
+        // Delete the dispatch itself
+        await tx.delete(supplierDispatches).where(eq(supplierDispatches.id, dispatch.id));
+      }
+      
+      // Now delete the reservation
+      await tx.delete(reservations).where(eq(reservations.id, id));
+    });
   }
 
   async getReservationsStats(): Promise<any> {
