@@ -412,6 +412,11 @@ export default function Finance() {
   const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
   const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
 
+  // Partner payment rejection dialog state
+  const [rejectPaymentDialogOpen, setRejectPaymentDialogOpen] = useState(false);
+  const [rejectingPaymentId, setRejectingPaymentId] = useState<number | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+
   // Currency converter state
   const [converterAmount, setConverterAmount] = useState<string>("100");
   const [converterFrom, setConverterFrom] = useState<string>("USD");
@@ -618,6 +623,13 @@ export default function Finance() {
     direction?: 'outgoing' | 'incoming'; // outgoing = we paid, incoming = we received
     fromTenantId?: number;
     toTenantId?: number;
+    confirmationStatus?: 'pending' | 'confirmed' | 'rejected';
+    confirmedByTenantId?: number;
+    confirmedAt?: string;
+    rejectionReason?: string;
+    method?: string;
+    reference?: string;
+    description?: string;
   }
 
   // Partner Payments query - ödemeleri al
@@ -885,6 +897,29 @@ export default function Finance() {
     },
     onError: () => {
       toast({ title: "Hata", description: "Ödeme silinemedi", variant: "destructive" });
+    }
+  });
+
+  const confirmPartnerPaymentMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('POST', `/api/partner-payments/${id}/confirm`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-payments'] });
+      toast({ title: "Ödeme onaylandı", description: "Partner ödemesi başarıyla onaylandı" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Ödeme onaylanamadı", variant: "destructive" });
+    }
+  });
+
+  const rejectPartnerPaymentMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }) => 
+      apiRequest('POST', `/api/partner-payments/${id}/reject`, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-payments'] });
+      toast({ title: "Ödeme reddedildi", description: "Partner ödemesi reddedildi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Ödeme reddedilemedi", variant: "destructive" });
     }
   });
 
@@ -2320,6 +2355,156 @@ export default function Finance() {
               </CardContent>
             </Card>
 
+            {/* Pending Partner Payments - Onay Bekleyen Ödemeler */}
+            {incomingPartnerPayments.filter(p => p.confirmationStatus === 'pending' || !p.confirmationStatus).length > 0 && (
+              <Card className="border-amber-400 dark:border-amber-600">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-amber-500" />
+                    Onay Bekleyen Partner Ödemeleri
+                  </CardTitle>
+                  <CardDescription>
+                    Partner tarafından gönderildiği bildirilen ödemeler - onaylayın veya reddedin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {incomingPartnerPayments
+                      .filter(p => p.confirmationStatus === 'pending' || !p.confirmationStatus)
+                      .map(payment => (
+                        <div 
+                          key={payment.id} 
+                          className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800"
+                          data-testid={`pending-payment-${payment.id}`}
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                                Onay Bekliyor
+                              </Badge>
+                              <span className="font-medium">{payment.partnerName}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              <div>
+                                <span className="font-medium">{formatMoney(payment.totalAmountTl)}</span>
+                                {payment.description && ` - ${payment.description}`}
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {payment.periodStart && payment.periodEnd && (
+                                  <span>Dönem: {payment.periodStart} - {payment.periodEnd}</span>
+                                )}
+                                {payment.method && <span>Yöntem: {payment.method}</span>}
+                                {payment.reference && <span>Ref: {payment.reference}</span>}
+                              </div>
+                              {payment.createdAt && (
+                                <div className="text-xs">
+                                  Bildirim: {new Date(payment.createdAt).toLocaleDateString('tr-TR')}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-950"
+                              onClick={() => confirmPartnerPaymentMutation.mutate(payment.id)}
+                              disabled={confirmPartnerPaymentMutation.isPending}
+                              data-testid={`button-confirm-payment-${payment.id}`}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Onayla
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                              onClick={() => {
+                                setRejectingPaymentId(payment.id);
+                                setRejectionReason('');
+                                setRejectPaymentDialogOpen(true);
+                              }}
+                              disabled={rejectPartnerPaymentMutation.isPending}
+                              data-testid={`button-reject-payment-${payment.id}`}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Reddet
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Partner Payment History - All Partner Payments */}
+            {(outgoingPartnerPayments.length > 0 || incomingPartnerPayments.length > 0) && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-purple-500" />
+                    Partner Ödeme Geçmişi
+                  </CardTitle>
+                  <CardDescription>
+                    Gönderilen ve alınan partner ödemeleri
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {[...outgoingPartnerPayments, ...incomingPartnerPayments]
+                      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+                      .map(payment => {
+                        const isOutgoing = payment.direction === 'outgoing';
+                        const statusBadge = () => {
+                          if (payment.confirmationStatus === 'confirmed') {
+                            return <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Onaylandı</Badge>;
+                          } else if (payment.confirmationStatus === 'rejected') {
+                            return <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Reddedildi</Badge>;
+                          } else {
+                            return <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">Bekliyor</Badge>;
+                          }
+                        };
+                        return (
+                          <div
+                            key={`${payment.direction}-${payment.id}`}
+                            className={`flex flex-col md:flex-row md:items-center justify-between gap-2 p-2 rounded-lg border ${
+                              isOutgoing 
+                                ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800' 
+                                : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
+                            }`}
+                            data-testid={`payment-history-${payment.id}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              {isOutgoing ? (
+                                <ArrowUpRight className="h-4 w-4 text-orange-500" />
+                              ) : (
+                                <ArrowDownLeft className="h-4 w-4 text-emerald-500" />
+                              )}
+                              <span className="font-medium">{payment.partnerName}</span>
+                              {statusBadge()}
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              {payment.description && (
+                                <span className="text-muted-foreground">{payment.description}</span>
+                              )}
+                              <span className={`font-medium ${isOutgoing ? 'text-orange-600' : 'text-emerald-600'}`}>
+                                {isOutgoing ? '-' : '+'}{formatMoney(payment.totalAmountTl)}
+                              </span>
+                              {payment.createdAt && (
+                                <span className="text-muted-foreground text-xs">
+                                  {new Date(payment.createdAt).toLocaleDateString('tr-TR')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-lg font-semibold">Partner Acentalar</h3>
@@ -3389,6 +3574,48 @@ export default function Finance() {
                 data-testid="button-save-agency"
               >
                 {editingAgency ? 'Güncelle' : 'Ekle'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Partner Payment Rejection Dialog */}
+        <Dialog open={rejectPaymentDialogOpen} onOpenChange={setRejectPaymentDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Partner Ödemesini Reddet</DialogTitle>
+              <DialogDescription>
+                Bu ödemeyi reddetmek istediğinizden emin misiniz? Lütfen red sebebini belirtin.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="rejection-reason">Red Sebebi</Label>
+                <Textarea
+                  id="rejection-reason"
+                  value={rejectionReason}
+                  onChange={e => setRejectionReason(e.target.value)}
+                  placeholder="Ödeme belgesi alınmadı, miktar yanlış, vb."
+                  data-testid="input-rejection-reason"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRejectPaymentDialogOpen(false)}>İptal</Button>
+              <Button 
+                variant="destructive"
+                onClick={() => {
+                  if (rejectingPaymentId) {
+                    rejectPartnerPaymentMutation.mutate({ id: rejectingPaymentId, reason: rejectionReason });
+                    setRejectPaymentDialogOpen(false);
+                    setRejectingPaymentId(null);
+                    setRejectionReason('');
+                  }
+                }}
+                disabled={rejectPartnerPaymentMutation.isPending}
+                data-testid="button-confirm-reject"
+              >
+                Reddet
               </Button>
             </DialogFooter>
           </DialogContent>

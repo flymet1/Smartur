@@ -3936,6 +3936,77 @@ export async function registerRoutes(
     }
   });
 
+  // Confirm a partner payment (receiver confirms sender's payment claim)
+  app.post("/api/partner-payments/:id/confirm", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const payoutId = parseInt(req.params.id);
+      const payout = await storage.getAgencyPayoutById(payoutId);
+      
+      if (!payout) {
+        return res.status(404).json({ error: "Odeme bulunamadi" });
+      }
+      
+      // Verify this tenant is the receiver of this payment
+      const agency = await storage.getAgency(payout.agencyId);
+      if (!agency || agency.partnerTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu odemeyi onaylama yetkiniz yok" });
+      }
+      
+      const updated = await storage.updateAgencyPayout(payoutId, {
+        confirmationStatus: 'confirmed',
+        confirmedByTenantId: tenantId,
+        confirmedAt: new Date()
+      });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Confirm partner payment error:", error);
+      res.status(500).json({ error: "Odeme onaylanamadi" });
+    }
+  });
+
+  // Reject a partner payment (receiver rejects sender's payment claim)
+  app.post("/api/partner-payments/:id/reject", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+      
+      const payoutId = parseInt(req.params.id);
+      const { reason } = req.body;
+      
+      const payout = await storage.getAgencyPayoutById(payoutId);
+      
+      if (!payout) {
+        return res.status(404).json({ error: "Odeme bulunamadi" });
+      }
+      
+      // Verify this tenant is the receiver of this payment
+      const agency = await storage.getAgency(payout.agencyId);
+      if (!agency || agency.partnerTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu odemeyi reddetme yetkiniz yok" });
+      }
+      
+      const updated = await storage.updateAgencyPayout(payoutId, {
+        confirmationStatus: 'rejected',
+        confirmedByTenantId: tenantId,
+        confirmedAt: new Date(),
+        rejectionReason: reason || 'Sebep belirtilmedi'
+      });
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Reject partner payment error:", error);
+      res.status(500).json({ error: "Odeme reddedilemedi" });
+    }
+  });
+
   // === VIEWER ACTIVITY SHARES (İzleyici Aktivite Paylaşımları ve Fiyatlandırma) ===
   
   // Get viewer activity shares for a specific viewer

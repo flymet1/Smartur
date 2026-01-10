@@ -268,7 +268,9 @@ export interface IStorage {
 
   // Finance - Agency Payouts
   getAgencyPayouts(agencyId?: number): Promise<AgencyPayout[]>;
+  getAgencyPayoutById(id: number): Promise<AgencyPayout | undefined>;
   createAgencyPayout(payout: InsertAgencyPayout): Promise<AgencyPayout>;
+  updateAgencyPayout(id: number, data: Partial<AgencyPayout>): Promise<AgencyPayout>;
   deleteAgencyPayout(id: number): Promise<void>;
 
   // Finance - Supplier Dispatches
@@ -1487,9 +1489,19 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(agencyPayouts).orderBy(desc(agencyPayouts.createdAt));
   }
 
+  async getAgencyPayoutById(id: number): Promise<AgencyPayout | undefined> {
+    const [payout] = await db.select().from(agencyPayouts).where(eq(agencyPayouts.id, id));
+    return payout;
+  }
+
   async createAgencyPayout(payout: InsertAgencyPayout): Promise<AgencyPayout> {
     const [created] = await db.insert(agencyPayouts).values(payout).returning();
     return created;
+  }
+
+  async updateAgencyPayout(id: number, data: Partial<AgencyPayout>): Promise<AgencyPayout> {
+    const [updated] = await db.update(agencyPayouts).set(data).where(eq(agencyPayouts.id, id)).returning();
+    return updated;
   }
 
   async deleteAgencyPayout(id: number): Promise<void> {
