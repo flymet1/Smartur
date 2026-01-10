@@ -2064,7 +2064,7 @@ export default function Finance() {
               {suppliers.map(agency => {
                 const isPartnerAgency = agency.isSmartUser && agency.partnerTenantId;
                 return (
-                <Card key={agency.id} data-testid={`card-agency-${agency.id}`} className={isPartnerAgency ? 'border-purple-300 dark:border-purple-700' : ''}>
+                <Card key={agency.id} data-testid={`card-agency-${agency.id}`} className={isPartnerAgency ? 'border-2 border-purple-400 dark:border-purple-600 bg-purple-50 dark:bg-purple-950/30' : ''}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between gap-2">
                       <CardTitle className="text-lg flex items-center gap-2">
