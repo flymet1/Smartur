@@ -2771,6 +2771,16 @@ export async function registerRoutes(
           const activities = await storage.getActivities(tenantId);
           const activity = activities.find(a => a.id === existingRequest.activityId);
           
+          // Determine payment status based on paymentCollectionType
+          const collectionType = existingRequest.paymentCollectionType || 'receiver_full';
+          let paymentStatus: 'unpaid' | 'partial' | 'paid' = 'unpaid';
+          if (collectionType === 'sender_full') {
+            paymentStatus = 'paid';
+          } else if (collectionType === 'sender_partial') {
+            paymentStatus = 'partial';
+          }
+          // receiver_full stays as 'unpaid' - receiver will collect from customer
+          
           // Create the reservation with confirmed status since request is approved
           const reservation = await storage.createReservation({
             tenantId,
@@ -2783,7 +2793,7 @@ export async function registerRoutes(
             notes: existingRequest.notes || "",
             status: "confirmed",
             source: "partner",
-            paymentStatus: "unpaid"
+            paymentStatus
           });
           
           // Get partner price from activity partner share if exists
@@ -2808,8 +2818,7 @@ export async function registerRoutes(
           const guestCount = existingRequest.guests || 1;
           const totalPrice = unitPrice * guestCount;
           
-          // Calculate payment allocation
-          const collectionType = existingRequest.paymentCollectionType || 'receiver_full';
+          // Calculate payment allocation (collectionType already defined above)
           let amountCollectedBySender = 0;
           let amountDueToReceiver = 0;
           let balanceOwed = 0;
