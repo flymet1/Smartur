@@ -1311,21 +1311,39 @@ export default function Finance() {
               className="w-36"
               data-testid="input-end-date"
             />
-            <Select
-              value={selectedAgencyId ? String(selectedAgencyId) : "all"}
-              onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
-            >
-              <SelectTrigger className="w-[180px]" data-testid="select-agency-filter">
-                <Building2 className="h-4 w-4 mr-1" />
-                <SelectValue placeholder="Tüm Acentalar" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tüm Acentalar</SelectItem>
-                {suppliers.map(s => (
-                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {financeTab === 'partner-customers' ? (
+              <Select
+                value={selectedPartnerId ? String(selectedPartnerId) : "all"}
+                onValueChange={(v) => setSelectedPartnerId(v === "all" ? null : parseInt(v))}
+              >
+                <SelectTrigger className="w-[180px]" data-testid="select-partner-filter-top">
+                  <Handshake className="h-4 w-4 mr-1" />
+                  <SelectValue placeholder="Tüm Partnerlar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Partnerlar</SelectItem>
+                  {uniquePartners.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Select
+                value={selectedAgencyId ? String(selectedAgencyId) : "all"}
+                onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
+              >
+                <SelectTrigger className="w-[180px]" data-testid="select-agency-filter">
+                  <Building2 className="h-4 w-4 mr-1" />
+                  <SelectValue placeholder="Tüm Acentalar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Acentalar</SelectItem>
+                  {suppliers.map(s => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
 
@@ -1906,23 +1924,6 @@ export default function Finance() {
                       />
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm text-muted-foreground">Partner:</Label>
-                    <Select 
-                      value={selectedPartnerId?.toString() || 'all'} 
-                      onValueChange={v => setSelectedPartnerId(v === 'all' ? null : parseInt(v))}
-                    >
-                      <SelectTrigger className="w-[180px] h-8" data-testid="select-partner-filter">
-                        <SelectValue placeholder="Tüm Partnerlar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tüm Partnerlar</SelectItem>
-                        {uniquePartners.map(p => (
-                          <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2 border-t">
