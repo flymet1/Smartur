@@ -20,6 +20,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet, Trash2, AlertCircle, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
