@@ -141,7 +141,7 @@ const exportToExcel = (
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `gonderimler_${startDate}_${endDate}.csv`;
+  link.download = `gönderimler_${startDate}_${endDate}.csv`;
   link.click();
 };
 
@@ -231,7 +231,7 @@ const exportToPDF = (
 
 // Payouts Excel export
 const exportPayoutsToExcel = (payouts: AgencyPayout[], suppliers: Agency[]) => {
-  const headers = ['Donem Baslangic', 'Donem Bitis', 'Acenta', 'Aciklama', 'Misafir', 'Tutar', 'Durum', 'Yontem'];
+  const headers = ['Dönem Başlangıç', 'Dönem Bitiş', 'Acenta', 'Açıklama', 'Misafir', 'Tutar', 'Durum', 'Yöntem'];
   const rows = payouts.map(p => {
     const supplier = suppliers.find(s => s.id === p.agencyId);
     return [
@@ -241,7 +241,7 @@ const exportPayoutsToExcel = (payouts: AgencyPayout[], suppliers: Agency[]) => {
       p.description || '',
       p.guestCount || 0,
       `${(p.totalAmountTl || 0).toLocaleString('tr-TR')} TL`,
-      p.status === 'paid' ? 'Odendi' : 'Beklemede',
+      p.status === 'paid' ? 'Ödendi' : 'Beklemede',
       p.method === 'cash' ? 'Nakit' : p.method === 'bank' ? 'Banka' : p.method
     ];
   });
@@ -253,7 +253,7 @@ const exportPayoutsToExcel = (payouts: AgencyPayout[], suppliers: Agency[]) => {
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `odemeler_${new Date().toISOString().split('T')[0]}.csv`;
+  link.download = `ödemeler_${new Date().toISOString().split('T')[0]}.csv`;
   link.click();
 };
 
@@ -268,17 +268,17 @@ const exportPayoutsToPDF = (payouts: AgencyPayout[], suppliers: Agency[]) => {
       <td style="padding:8px;border:1px solid #ddd;">${p.description || '-'}</td>
       <td style="padding:8px;border:1px solid #ddd;text-align:center;">${p.guestCount || 0}</td>
       <td style="padding:8px;border:1px solid #ddd;text-align:right;">${(p.totalAmountTl || 0).toLocaleString('tr-TR')} TL</td>
-      <td style="padding:8px;border:1px solid #ddd;">${p.status === 'paid' ? 'Odendi' : 'Beklemede'}</td>
+      <td style="padding:8px;border:1px solid #ddd;">${p.status === 'paid' ? 'Ödendi' : 'Beklemede'}</td>
     </tr>`;
   }).join('');
-  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Odeme Raporu</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}.totals{margin-top:20px;padding:15px;background:#f9f9f9;border-radius:8px}@media print{.no-print{display:none}}</style></head><body><h1>Odeme Raporu</h1><div>Toplam: ${payouts.length} kayit</div><table><thead><tr><th>Donem</th><th>Acenta</th><th>Aciklama</th><th>Misafir</th><th>Tutar</th><th>Durum</th></tr></thead><tbody>${tableRows}</tbody></table><div class="totals"><strong>Toplam:</strong> ${total.toLocaleString('tr-TR')} TL</div><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdir / PDF</button></body></html>`;
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ödeme Raporu</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}.totals{margin-top:20px;padding:15px;background:#f9f9f9;border-radius:8px}@media print{.no-print{display:none}}</style></head><body><h1>Ödeme Raporu</h1><div>Toplam: ${payouts.length} kayıt</div><table><thead><tr><th>Dönem</th><th>Acenta</th><th>Açıklama</th><th>Misafir</th><th>Tutar</th><th>Durum</th></tr></thead><tbody>${tableRows}</tbody></table><div class="totals"><strong>Toplam:</strong> ${total.toLocaleString('tr-TR')} TL</div><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdır / PDF</button></body></html>`;
   const printWindow = window.open('', '_blank');
   if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); }
 };
 
 // Rates Excel export
 const exportRatesToExcel = (rates: AgencyActivityRate[], suppliers: Agency[], activities: Activity[]) => {
-  const headers = ['Acenta', 'Aktivite', 'Gecerlilik Baslangic', 'Gecerlilik Bitis', 'Birim Fiyat', 'Para Birimi', 'Notlar'];
+  const headers = ['Acenta', 'Aktivite', 'Geçerlilik Başlangıç', 'Geçerlilik Bitiş', 'Birim Fiyat', 'Para Birimi', 'Notlar'];
   const rows = rates.map(r => {
     const supplier = suppliers.find(s => s.id === r.agencyId);
     const activity = activities.find(a => a.id === r.activityId);
@@ -302,19 +302,19 @@ const exportRatesToPDF = (rates: AgencyActivityRate[], suppliers: Agency[], acti
     const price = r.currency === 'USD' ? `$${r.unitPayoutUsd || 0}` : `${r.unitPayoutTl || 0} TL`;
     return `<tr><td style="padding:8px;border:1px solid #ddd;">${supplier?.name || ''}</td><td style="padding:8px;border:1px solid #ddd;">${activity?.name || ''}</td><td style="padding:8px;border:1px solid #ddd;">${formatDateShortTR(r.validFrom)} - ${formatDateShortTR(r.validTo)}</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${price}</td></tr>`;
   }).join('');
-  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Fiyat Tablosu</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}@media print{.no-print{display:none}}</style></head><body><h1>Fiyat Tablosu</h1><div>Toplam: ${rates.length} kayit</div><table><thead><tr><th>Acenta</th><th>Aktivite</th><th>Gecerlilik</th><th>Birim Fiyat</th></tr></thead><tbody>${tableRows}</tbody></table><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdir / PDF</button></body></html>`;
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Fiyat Tablosu</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}@media print{.no-print{display:none}}</style></head><body><h1>Fiyat Tablosu</h1><div>Toplam: ${rates.length} kayıt</div><table><thead><tr><th>Acenta</th><th>Aktivite</th><th>Geçerlilik</th><th>Birim Fiyat</th></tr></thead><tbody>${tableRows}</tbody></table><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdır / PDF</button></body></html>`;
   const printWindow = window.open('', '_blank');
   if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); }
 };
 
 // Partner Transactions Excel export
 const exportPartnerTransactionsToExcel = (transactions: any[]) => {
-  const headers = ['Musteri', 'Partner', 'Yon', 'Tarih', 'Aktivite', 'Misafir', 'Birim Fiyat', 'Toplam', 'Para Birimi', 'Durum'];
+  const headers = ['Müşteri', 'Partner', 'Yön', 'Tarih', 'Aktivite', 'Misafir', 'Birim Fiyat', 'Toplam', 'Para Birimi', 'Durum'];
   const rows = transactions.map(tx => {
     const isSender = tx.currentTenantId === tx.senderTenantId;
     const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
-    const direction = isSender ? 'Gonderildi' : 'Alindi';
-    return [tx.customerName, partnerName || 'Partner', direction, formatDateShortTR(tx.transactionDate), tx.activityName || '', tx.guestCount, tx.unitPrice || 0, tx.totalAmount || 0, tx.currency, tx.status === 'pending' ? 'Beklemede' : tx.status === 'confirmed' ? 'Onaylandi' : 'Iptal'];
+    const direction = isSender ? 'Gönderildi' : 'Alındı';
+    return [tx.customerName, partnerName || 'Partner', direction, formatDateShortTR(tx.transactionDate), tx.activityName || '', tx.guestCount, tx.unitPrice || 0, tx.totalAmount || 0, tx.currency, tx.status === 'pending' ? 'Beklemede' : tx.status === 'confirmed' ? 'Onaylandı' : 'İptal'];
   });
   const csvContent = [headers.join(';'), ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))].join('\n');
   const BOM = '\uFEFF';
@@ -330,11 +330,11 @@ const exportPartnerTransactionsToPDF = (transactions: any[]) => {
   const tableRows = transactions.map(tx => {
     const isSender = tx.currentTenantId === tx.senderTenantId;
     const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
-    const direction = isSender ? 'Gonderildi' : 'Alindi';
-    const price = tx.totalAmount ? `${tx.totalAmount} ${tx.currency}` : `${tx.unitPrice || 0} ${tx.currency}/kisi`;
+    const direction = isSender ? 'Gönderildi' : 'Alındı';
+    const price = tx.totalAmount ? `${tx.totalAmount} ${tx.currency}` : `${tx.unitPrice || 0} ${tx.currency}/kişi`;
     return `<tr><td style="padding:8px;border:1px solid #ddd;">${tx.customerName}</td><td style="padding:8px;border:1px solid #ddd;">${partnerName || 'Partner'}</td><td style="padding:8px;border:1px solid #ddd;">${direction}</td><td style="padding:8px;border:1px solid #ddd;">${formatDateShortTR(tx.transactionDate)}</td><td style="padding:8px;border:1px solid #ddd;">${tx.activityName || '-'}</td><td style="padding:8px;border:1px solid #ddd;text-align:center;">${tx.guestCount}</td><td style="padding:8px;border:1px solid #ddd;text-align:right;">${price}</td></tr>`;
   }).join('');
-  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Partner Acentalar</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}@media print{.no-print{display:none}}</style></head><body><h1>Partner Acentalar</h1><div>Toplam: ${transactions.length} kayit</div><table><thead><tr><th>Musteri</th><th>Partner</th><th>Yon</th><th>Tarih</th><th>Aktivite</th><th>Misafir</th><th>Tutar</th></tr></thead><tbody>${tableRows}</tbody></table><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdir / PDF</button></body></html>`;
+  const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Partner Acentalar</title><style>body{font-family:Arial,sans-serif;padding:20px}h1{color:#333;font-size:24px}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#f5f5f5;padding:10px;border:1px solid #ddd;text-align:left}@media print{.no-print{display:none}}</style></head><body><h1>Partner Acentalar</h1><div>Toplam: ${transactions.length} kayıt</div><table><thead><tr><th>Müşteri</th><th>Partner</th><th>Yön</th><th>Tarih</th><th>Aktivite</th><th>Misafir</th><th>Tutar</th></tr></thead><tbody>${tableRows}</tbody></table><button class="no-print" onclick="window.print()" style="margin-top:20px;padding:10px 20px;cursor:pointer;">Yazdır / PDF</button></body></html>`;
   const printWindow = window.open('', '_blank');
   if (printWindow) { printWindow.document.write(htmlContent); printWindow.document.close(); }
 };
@@ -1760,7 +1760,7 @@ export default function Finance() {
                             <span className="ml-1 font-medium text-orange-600">{formatMoney(payout.totalAmountTl || 0)}</span>
                           </div>
                           <Badge variant={payout.status === 'paid' ? 'default' : 'secondary'}>
-                            {payout.status === 'paid' ? 'Odendi' : 'Beklemede'}
+                            {payout.status === 'paid' ? 'Ödendi' : 'Beklemede'}
                           </Badge>
                           <Badge variant="outline">{payout.method === 'cash' ? 'Nakit' : payout.method === 'bank' ? 'Banka' : payout.method}</Badge>
                           <Button
@@ -2408,7 +2408,7 @@ export default function Finance() {
                   data-testid="button-partner-sent"
                 >
                   <ArrowUpRight className="h-4 w-4 mr-1" />
-                  Gonderdiklerim
+                  Gönderdiklerim
                 </Button>
                 <Button
                   variant={partnerTransactionRole === 'receiver' ? 'default' : 'outline'}
@@ -2417,7 +2417,7 @@ export default function Finance() {
                   data-testid="button-partner-received"
                 >
                   <ArrowDownLeft className="h-4 w-4 mr-1" />
-                  Gelen Musteriler
+                  Gelen Müşteriler
                 </Button>
                 <Button
                   variant={partnerTransactionRole === 'all' ? 'default' : 'outline'}
@@ -2461,7 +2461,7 @@ export default function Finance() {
                     }).map(tx => {
                       const isSender = tx.currentTenantId === tx.senderTenantId;
                       const partnerName = isSender ? tx.receiverTenantName : tx.senderTenantName;
-                      const directionLabel = isSender ? 'Gonderildi' : 'Alindi';
+                      const directionLabel = isSender ? 'Gönderildi' : 'Alındı';
                       const hasTotal = tx.totalAmount && tx.totalAmount > 0;
                       const hasUnit = tx.unitPrice && tx.unitPrice > 0;
                       const currencySymbol = tx.currency === 'USD' ? '$' : tx.currency === 'EUR' ? '\u20AC' : '';
@@ -2503,10 +2503,10 @@ export default function Finance() {
                                     <Badge variant="outline">Beklemede</Badge>
                                   )}
                                   {tx.status === 'confirmed' && (
-                                    <Badge variant="default" className="bg-green-600">Onaylandi</Badge>
+                                    <Badge variant="default" className="bg-green-600">Onaylandı</Badge>
                                   )}
                                   {tx.status === 'cancelled' && (
-                                    <Badge variant="destructive">Iptal</Badge>
+                                    <Badge variant="destructive">İptal</Badge>
                                   )}
                                   {tx.deletionStatus === 'pending' && tx.deletionRequestedByTenantId === tx.currentTenantId && (
                                     <Badge variant="outline" className="border-orange-500 text-orange-600">
@@ -2534,7 +2534,7 @@ export default function Finance() {
                                   </span>
                                   <span className="flex items-center gap-1">
                                     <Users className="h-3 w-3" />
-                                    {tx.guestCount} kisi
+                                    {tx.guestCount} kişi
                                   </span>
                                   {tx.activityName && (
                                     <span>{tx.activityName}</span>
@@ -2544,9 +2544,9 @@ export default function Finance() {
                                   <div className="flex items-center gap-2 text-xs mt-1">
                                     <Badge variant="outline" className="text-xs">
                                       {tx.paymentCollectionType === 'sender_full' 
-                                        ? 'Gonderen Tam Tahsil Etti' 
+                                        ? 'Gönderen Tam Tahsil Etti' 
                                         : tx.paymentCollectionType === 'sender_partial'
-                                        ? `Gonderen ${(tx.amountCollectedBySender || 0).toLocaleString('tr-TR')} ${tx.currency} Tahsil Etti`
+                                        ? `Gönderen ${(tx.amountCollectedBySender || 0).toLocaleString('tr-TR')} ${tx.currency} Tahsil Etti`
                                         : ''}
                                     </Badge>
                                     {tx.amountDueToReceiver !== undefined && tx.amountDueToReceiver > 0 && (
@@ -2569,7 +2569,7 @@ export default function Finance() {
                                     {currencySymbol}
                                     {tx.unitPrice!.toLocaleString('tr-TR')}
                                     {currencySuffix}
-                                    <span className="opacity-75"> / kisi</span>
+                                    <span className="opacity-75"> / kişi</span>
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline">Fiyat belirlenmedi</Badge>
@@ -2854,7 +2854,7 @@ export default function Finance() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="paid">Odendi</SelectItem>
+                      <SelectItem value="paid">Ödendi</SelectItem>
                       <SelectItem value="pending">Beklemede</SelectItem>
                     </SelectContent>
                   </Select>

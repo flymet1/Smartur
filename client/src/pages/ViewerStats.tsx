@@ -131,7 +131,7 @@ export default function ViewerStats() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservation-requests'] });
-      toast({ title: "Basarili", description: "Talep durumu guncellendi." });
+      toast({ title: "Başarılı", description: "Talep durumu güncellendi." });
       setProcessDialogOpen(false);
       setSelectedRequest(null);
       setProcessNotes("");
@@ -147,11 +147,11 @@ export default function ViewerStats() {
       return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
     },
     onSuccess: () => {
-      toast({ title: "Basarili", description: "Izleyici bilgilendirildi." });
+      toast({ title: "Başarılı", description: "İzleyici bilgilendirildi." });
       setNotifyingSenderId(null);
     },
     onError: () => {
-      toast({ title: "Hata", description: "Mesaj gonderilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Mesaj gönderilemedi.", variant: "destructive" });
       setNotifyingSenderId(null);
     },
   });
@@ -173,17 +173,17 @@ export default function ViewerStats() {
 
   const notifyPartner = (request: ReservationRequest, statusText: string) => {
     if (!request.requestedBy) {
-      toast({ title: "Hata", description: "Izleyici bilgisi bulunamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "İzleyici bilgisi bulunamadı.", variant: "destructive" });
       return;
     }
     const partnerPhone = getRequesterPhone(request.requestedBy);
     if (!partnerPhone) {
-      toast({ title: "Hata", description: "Izleyicinin telefon numarasi bulunamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "İzleyicinin telefon numarası bulunamadı.", variant: "destructive" });
       return;
     }
     const activityName = getActivityName(request.activityId);
     const dateFormatted = format(new Date(request.date), "d MMMM yyyy", { locale: tr });
-    const message = `Merhaba ${getRequesterName(request.requestedBy)},\n\n${request.customerName} isimli musteri icin ${dateFormatted} tarihli ${activityName} aktivitesi rezervasyon talebi ${statusText}.\n\nMusteri: ${request.customerName}\nTelefon: ${request.customerPhone}\nTarih: ${dateFormatted}\nSaat: ${request.time}\nKisi: ${request.guests || 1}`;
+    const message = `Merhaba ${getRequesterName(request.requestedBy)},\n\n${request.customerName} isimli müşteri için ${dateFormatted} tarihli ${activityName} aktivitesi rezervasyon talebi ${statusText}.\n\nMüşteri: ${request.customerName}\nTelefon: ${request.customerPhone}\nTarih: ${dateFormatted}\nSaat: ${request.time}\nKişi: ${request.guests || 1}`;
     
     setNotifyingSenderId(request.id);
     notifyPartnerMutation.mutate({ phone: partnerPhone, message });
@@ -194,11 +194,11 @@ export default function ViewerStats() {
       case "pending":
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">Beklemede</Badge>;
       case "approved":
-        return <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Onaylandi</Badge>;
+        return <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Onaylandı</Badge>;
       case "rejected":
         return <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Reddedildi</Badge>;
       case "converted":
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Rezervasyona Donusturuldu</Badge>;
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">Rezervasyona Dönüştürüldü</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -228,11 +228,11 @@ export default function ViewerStats() {
 
   const sendBulkMessage = async () => {
     if (!bulkMessage.trim()) {
-      toast({ title: "Hata", description: "Mesaj icerigi giriniz.", variant: "destructive" });
+      toast({ title: "Hata", description: "Mesaj içeriği giriniz.", variant: "destructive" });
       return;
     }
     if (partnersWithPhone.length === 0) {
-      toast({ title: "Hata", description: "Telefon numarasi olan izleyici bulunamadi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Telefon numarası olan izleyici bulunamadı.", variant: "destructive" });
       return;
     }
 
@@ -257,11 +257,11 @@ export default function ViewerStats() {
     
     if (successCount > 0) {
       toast({ 
-        title: "Toplu mesaj gonderildi", 
-        description: `${successCount} izleyiciye mesaj gonderildi${failCount > 0 ? `, ${failCount} basarisiz` : ''}.` 
+        title: "Toplu mesaj gönderildi", 
+        description: `${successCount} izleyiciye mesaj gönderildi${failCount > 0 ? `, ${failCount} başarısız` : ''}.` 
       });
     } else {
-      toast({ title: "Hata", description: "Mesajlar gonderilemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "Mesajlar gönderilemedi.", variant: "destructive" });
     }
   };
 
@@ -356,7 +356,7 @@ export default function ViewerStats() {
   );
 
   const exportToCSV = () => {
-    const headers = ['Izleyici', 'Aktivite', 'Kisi Sayisi', 'Talep Sayisi'];
+    const headers = ['İzleyici', 'Aktivite', 'Kişi Sayısı', 'Talep Sayısı'];
     const rows: string[][] = [];
     
     filteredStats.forEach(partner => {
@@ -378,16 +378,16 @@ export default function ViewerStats() {
       <Sidebar />
       <main className="flex-1 md:ml-64 p-4 md:p-6 space-y-6">
         <div className="flex flex-col gap-4">
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Izleyiciler</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">İzleyiciler</h1>
           
           <div className="flex flex-wrap items-center gap-3">
             <Select value={selectedPartnerId} onValueChange={setSelectedPartnerId}>
               <SelectTrigger className="w-[200px]" data-testid="select-partner-filter">
                 <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Izleyici Sec" />
+                <SelectValue placeholder="İzleyici Seç" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tum Izleyiciler</SelectItem>
+                <SelectItem value="all">Tüm İzleyiciler</SelectItem>
                 {groupedStats.map((partner) => (
                   <SelectItem key={partner.viewerId} value={partner.viewerId.toString()}>
                     {partner.name}
@@ -478,12 +478,12 @@ export default function ViewerStats() {
             data-testid="card-active-partners"
           >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Aktif Izleyici</CardTitle>
+              <CardTitle className="text-sm font-medium">Aktif İzleyici</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="text-active-partners">{groupedStats.length}</div>
-              <p className="text-xs text-muted-foreground">Talep gonderen izleyici</p>
+              <p className="text-xs text-muted-foreground">Talep gönderen izleyici</p>
             </CardContent>
           </Card>
 
@@ -520,8 +520,8 @@ export default function ViewerStats() {
               <Card>
                 <CardContent className="py-12 text-center">
                   <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Henuz Talep Yok</h3>
-                  <p className="text-muted-foreground">Izleyicilerden gelen rezervasyon talebi bulunmuyor.</p>
+                  <h3 className="text-lg font-medium mb-2">Henüz Talep Yok</h3>
+                  <p className="text-muted-foreground">İzleyicilerden gelen rezervasyon talebi bulunmuyor.</p>
                 </CardContent>
               </Card>
             ) : (
@@ -545,7 +545,7 @@ export default function ViewerStats() {
                                 <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
                                 <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
                                 <span>{request.time}</span>
-                                <span>{request.guests} kisi</span>
+                                <span>{request.guests} kişi</span>
                               </div>
                               <p className="text-xs text-muted-foreground">Talep eden: {getRequesterName(request.requestedBy)}</p>
                             </div>
@@ -573,7 +573,7 @@ export default function ViewerStats() {
           <TabsContent value="stats" className="space-y-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Izleyici Performansi</CardTitle>
+                <CardTitle className="text-base">İzleyici Performansı</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 {isLoading ? (
@@ -582,14 +582,14 @@ export default function ViewerStats() {
                   </div>
                 ) : filteredStats.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    Bu tarih araliginda veri bulunamadi
+                    Bu tarih aralığında veri bulunamadı
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Izleyici</TableHead>
+                          <TableHead>İzleyici</TableHead>
                           <TableHead>Aktiviteler</TableHead>
                           <TableHead className="text-right">Kisi</TableHead>
                           <TableHead className="text-right">Talep</TableHead>
@@ -637,22 +637,22 @@ export default function ViewerStats() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="bulkMessage">Mesaj Icerigi</Label>
+                  <Label htmlFor="bulkMessage">Mesaj İçeriği</Label>
                   <Textarea
                     id="bulkMessage"
-                    placeholder="Merhaba {isim}, size onemli bir duyuru yapmak istiyoruz..."
+                    placeholder="Merhaba {isim}, size önemli bir duyuru yapmak istiyoruz..."
                     value={bulkMessage}
                     onChange={(e) => setBulkMessage(e.target.value)}
                     rows={4}
                     data-testid="input-bulk-message"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Kullanilabilir degiskenler: {"{isim}"} - Izleyicinin adi
+                    Kullanılabilir değişkenler: {"{isim}"} - İzleyicinin adı
                   </p>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm text-muted-foreground">
-                    {partnersWithPhone.length} izleyiciye mesaj gonderilecek
+                    {partnersWithPhone.length} izleyiciye mesaj gönderilecek
                   </p>
                   <Button 
                     onClick={sendBulkMessage} 
@@ -664,7 +664,7 @@ export default function ViewerStats() {
                     ) : (
                       <Send className="h-4 w-4 mr-2" />
                     )}
-                    {isSendingBulk ? "Gonderiliyor..." : "Toplu Gonder"}
+                    {isSendingBulk ? "Gönderiliyor..." : "Toplu Gönder"}
                   </Button>
                 </div>
               </CardContent>
@@ -688,7 +688,7 @@ export default function ViewerStats() {
                 <Textarea
                   value={processNotes}
                   onChange={(e) => setProcessNotes(e.target.value)}
-                  placeholder="Islem notu..."
+                  placeholder="İşlem notu..."
                   className="resize-none"
                   rows={3}
                   data-testid="input-process-notes"

@@ -4415,11 +4415,11 @@ function PartnerAgencySection() {
   const generateCodeMutation = useMutation({
     mutationFn: async () => apiRequest('POST', '/api/partner-invite-codes', {}),
     onSuccess: () => {
-      toast({ title: "Basarili", description: "Yeni davet kodu olusturuldu" });
+      toast({ title: "Başarılı", description: "Yeni davet kodu oluşturuldu" });
       refetchCodes();
     },
     onError: () => {
-      toast({ title: "Hata", description: "Davet kodu olusturulamadi", variant: "destructive" });
+      toast({ title: "Hata", description: "Davet kodu oluşturulamadı", variant: "destructive" });
     },
   });
 
@@ -4445,11 +4445,11 @@ function PartnerAgencySection() {
     setIsConnecting(true);
     try {
       await apiRequest('POST', '/api/tenant-partnerships/connect', { code: connectCode.trim().toUpperCase() });
-      toast({ title: "Basarili", description: "Baglanti talebi gonderildi. Partner onayladiginda aktif olacak." });
+      toast({ title: "Başarılı", description: "Bağlantı talebi gönderildi. Partner onayladığında aktif olacak." });
       setConnectCode("");
       refetchPartnerships();
     } catch (err: any) {
-      toast({ title: "Hata", description: err?.message || "Baglanti kurulamadi", variant: "destructive" });
+      toast({ title: "Hata", description: err?.message || "Bağlantı kurulamadı", variant: "destructive" });
     } finally {
       setIsConnecting(false);
     }
@@ -4460,11 +4460,11 @@ function PartnerAgencySection() {
     mutationFn: async ({ id, action }: { id: number; action: 'accept' | 'reject' }) => 
       apiRequest('PATCH', `/api/tenant-partnerships/${id}/respond`, { action }),
     onSuccess: (_, { action }) => {
-      toast({ title: "Basarili", description: action === 'accept' ? "Baglanti kabul edildi" : "Baglanti reddedildi" });
+      toast({ title: "Başarılı", description: action === 'accept' ? "Bağlantı kabul edildi" : "Bağlantı reddedildi" });
       refetchPartnerships();
     },
     onError: () => {
-      toast({ title: "Hata", description: "Islem yapilamadi", variant: "destructive" });
+      toast({ title: "Hata", description: "İşlem yapılamadı", variant: "destructive" });
     },
   });
 
@@ -4482,7 +4482,7 @@ function PartnerAgencySection() {
             Partner Davet Kodlarim
           </CardTitle>
           <CardDescription>
-            Diger acentalarin size baglanabilmesi icin davet kodu olusturun
+            Diğer acentaların size bağlanabilmesi için davet kodu oluşturun
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -4492,7 +4492,7 @@ function PartnerAgencySection() {
             data-testid="button-generate-partner-code"
           >
             <Plus className="w-4 h-4 mr-2" />
-            {generateCodeMutation.isPending ? "Olusturuluyor..." : "Yeni Kod Olustur"}
+            {generateCodeMutation.isPending ? "Oluşturuluyor..." : "Yeni Kod Oluştur"}
           </Button>
 
           {isLoadingCodes ? (
@@ -4511,7 +4511,7 @@ function PartnerAgencySection() {
                       {code.isActive ? "Aktif" : "Pasif"}
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      {code.usageCount} kez kullanildi
+                      {code.usageCount} kez kullanıldı
                     </span>
                   </div>
                   <Button
@@ -4527,7 +4527,7 @@ function PartnerAgencySection() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Henuz davet kodu olusturmadiniz</p>
+            <p className="text-sm text-muted-foreground">Henüz davet kodu oluşturmadınız</p>
           )}
         </CardContent>
       </Card>
@@ -4537,10 +4537,10 @@ function PartnerAgencySection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />
-            Partner Acentaya Baglan
+            Partner Acentaya Bağlan
           </CardTitle>
           <CardDescription>
-            Baska bir acentanin davet kodunu girerek baglanin
+            Başka bir acentanın davet kodunu girerek bağlanın
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -4558,7 +4558,7 @@ function PartnerAgencySection() {
               disabled={isConnecting || !connectCode.trim()}
               data-testid="button-connect-partner"
             >
-              {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Baglan"}
+              {isConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Bağlan"}
             </Button>
           </div>
         </CardContent>
@@ -4570,7 +4570,7 @@ function PartnerAgencySection() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-warning" />
-              Bekleyen Baglanti Talepleri
+              Bekleyen Bağlantı Talepleri
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -4583,7 +4583,7 @@ function PartnerAgencySection() {
                 <div>
                   <p className="font-medium">{req.requesterTenantName}</p>
                   <p className="text-sm text-muted-foreground">
-                    baglanmak istiyor
+                    bağlanmak istiyor
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -4639,7 +4639,7 @@ function PartnerAgencySection() {
                         {p.isRequester ? p.partnerTenantName : p.requesterTenantName}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {p.isRequester ? "Siz baglanti istediniz" : "Size baglandi"}
+                        {p.isRequester ? "Siz bağlantı istediniz" : "Size bağlandı"}
                       </p>
                     </div>
                   </div>
@@ -4648,13 +4648,13 @@ function PartnerAgencySection() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Henuz aktif partner acentaniz yok</p>
+            <p className="text-sm text-muted-foreground">Henüz aktif partner acentanız yok</p>
           )}
 
           {/* Sent Requests (Waiting for approval) */}
           {sentRequests.length > 0 && (
             <div className="mt-4 pt-4 border-t">
-              <p className="text-sm font-medium mb-2">Gonderilen Talepler (Onay Bekliyor)</p>
+              <p className="text-sm font-medium mb-2">Gönderilen Talepler (Onay Bekliyor)</p>
               {sentRequests.map((req) => (
                 <div
                   key={req.id}
