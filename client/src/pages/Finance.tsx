@@ -472,6 +472,21 @@ export default function Finance() {
   const [dispatchItemsMap, setDispatchItemsMap] = useState<Record<number, SupplierDispatchItem[]>>({});
   const [loadingItemsFor, setLoadingItemsFor] = useState<Set<number>>(new Set());
 
+  // Genişletilmiş partner transaction'lar için state
+  const [expandedPartnerTxIds, setExpandedPartnerTxIds] = useState<Set<number>>(new Set());
+
+  const togglePartnerTxExpand = (txId: number) => {
+    setExpandedPartnerTxIds(prev => {
+      const next = new Set(prev);
+      if (next.has(txId)) {
+        next.delete(txId);
+      } else {
+        next.add(txId);
+      }
+      return next;
+    });
+  };
+
   // Dispatch item'ları yükle (on-demand)
   const loadDispatchItems = async (dispatchId: number) => {
     if (dispatchItemsMap[dispatchId] || loadingItemsFor.has(dispatchId)) return;
@@ -2274,10 +2289,23 @@ export default function Finance() {
                       const currencySymbol = tx.currency === 'USD' ? '$' : tx.currency === 'EUR' ? '\u20AC' : '';
                       const currencySuffix = tx.currency === 'TRY' ? ' TL' : ` ${tx.currency}`;
                       
+                      const isPartnerTxExpanded = expandedPartnerTxIds.has(tx.id);
+                      
                       return (
                         <Card key={tx.id} className="overflow-hidden">
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 shrink-0"
+                                  onClick={() => togglePartnerTxExpand(tx.id)}
+                                  data-testid={`button-expand-partner-tx-${tx.id}`}
+                                >
+                                  {isPartnerTxExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                </Button>
+                              </div>
                               <div className="flex-1 space-y-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-medium">{tx.customerName}</span>
@@ -2373,6 +2401,58 @@ export default function Finance() {
                               </div>
                             </div>
                           </CardContent>
+                          {isPartnerTxExpanded && (
+                            <div className="border-t bg-muted/30 p-3">
+                              <div className="space-y-2">
+                                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                                  <Package className="h-3 w-3" />
+                                  Fiyat Kalemleri
+                                </div>
+                                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 text-sm">
+                                  <div className="font-medium text-muted-foreground text-xs">Açıklama</div>
+                                  <div className="font-medium text-muted-foreground text-xs text-right">Adet</div>
+                                  <div className="font-medium text-muted-foreground text-xs text-right">Birim</div>
+                                  <div className="font-medium text-muted-foreground text-xs text-right">Toplam</div>
+                                  <div className="contents">
+                                    <span>{tx.activityName || 'Aktivite'}</span>
+                                    <span className="text-right">{tx.guestCount}</span>
+                                    <span className="text-right">
+                                      {currencySymbol}{(tx.unitPrice || 0).toLocaleString('tr-TR')}{currencySuffix}
+                                    </span>
+                                    <span className="text-right font-medium">
+                                      {currencySymbol}{(tx.totalAmount || 0).toLocaleString('tr-TR')}{currencySuffix}
+                                    </span>
+                                  </div>
+                                </div>
+                                {tx.paymentCollectionType && (
+                                  <div className="pt-2 border-t mt-2 space-y-1">
+                                    <div className="text-xs text-muted-foreground">
+                                      <span className="font-medium">Ödeme Tipi:</span>{' '}
+                                      {tx.paymentCollectionType === 'receiver_full' 
+                                        ? 'Alıcı tam tahsil edecek' 
+                                        : tx.paymentCollectionType === 'sender_full'
+                                        ? 'Gönderen tam tahsil etti'
+                                        : tx.paymentCollectionType === 'sender_partial'
+                                        ? 'Gönderen kısmi tahsil etti'
+                                        : tx.paymentCollectionType}
+                                    </div>
+                                    {tx.amountCollectedBySender !== undefined && tx.amountCollectedBySender > 0 && (
+                                      <div className="text-xs text-muted-foreground">
+                                        <span className="font-medium">Gönderenin Tahsil Ettiği:</span>{' '}
+                                        {currencySymbol}{tx.amountCollectedBySender.toLocaleString('tr-TR')}{currencySuffix}
+                                      </div>
+                                    )}
+                                    {tx.balanceOwed !== undefined && tx.balanceOwed > 0 && (
+                                      <div className={`text-xs ${isSender ? 'text-red-600' : 'text-green-600'}`}>
+                                        <span className="font-medium">{isSender ? 'Borcunuz:' : 'Alacağınız:'}</span>{' '}
+                                        {currencySymbol}{tx.balanceOwed.toLocaleString('tr-TR')}{currencySuffix}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </Card>
                       );
                     })}
