@@ -3517,7 +3517,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       
-      const { activityId, date, time, customerName, customerPhone, guests, notes } = req.body;
+      const { activityId, date, time, customerName, customerPhone, guests, notes, paymentCollectionType, amountCollectedBySender, paymentCurrency, paymentNotes } = req.body;
       
       if (!activityId || !date || !time || !customerName || !customerPhone) {
         return res.status(400).json({ error: "Eksik parametreler" });
@@ -3578,7 +3578,11 @@ export async function registerRoutes(
         guests: guests || 1,
         notes: `[Partner: ${partnerName}] ${notes || ''}`.trim(),
         requestedBy: userId,
-        status: "pending"
+        status: "pending",
+        paymentCollectionType: paymentCollectionType || 'receiver_full',
+        amountCollectedBySender: amountCollectedBySender || 0,
+        paymentCurrency: paymentCurrency || 'TRY',
+        paymentNotes: paymentNotes || null
       });
       
       // Create notification for owner
