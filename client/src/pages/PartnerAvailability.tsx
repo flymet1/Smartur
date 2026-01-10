@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet, Trash2, AlertCircle } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet, Trash2, AlertCircle, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -181,6 +181,7 @@ export default function PartnerAvailability() {
   
   const pendingOutgoingRequests = outgoingRequests.filter(r => r.status === 'pending');
   const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved' || r.status === 'converted');
+  const cancelledOutgoingRequests = outgoingRequests.filter(r => r.status === 'cancelled' || r.status === 'rejected');
   
   // Partner işlemleri (financial transactions)
   const { data: partnerTransactions = [], isLoading: transactionsLoading } = useQuery<PartnerTransaction[]>({
@@ -188,9 +189,20 @@ export default function PartnerAvailability() {
     refetchInterval: 30000,
   });
   
+  // Active transactions (not cancelled or deleted)
+  const activePartnerTransactions = partnerTransactions.filter(tx => 
+    tx.status !== 'cancelled' && tx.deletionStatus !== 'approved'
+  );
+  
+  // Cancelled or deleted transactions
+  const cancelledOrDeletedTransactions = partnerTransactions.filter(tx => 
+    tx.status === 'cancelled' || tx.deletionStatus === 'approved'
+  );
+  
   const partnerRequests = allRequests.filter(r => r.notes?.startsWith('[Partner:'));
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
   const convertedPartnerRequests = partnerRequests.filter(r => r.status === 'converted');
+  const cancelledPartnerRequests = partnerRequests.filter(r => r.status === 'cancelled' || r.status === 'rejected');
   
   // Filter partner data based on selected partner
   const filteredPartnerData = (partnerData || []).filter(partner => 
@@ -1194,7 +1206,7 @@ export default function PartnerAvailability() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-purple-600" />
-              Partner Islemlerim ({partnerTransactions.length})
+              Partner Islemlerim ({activePartnerTransactions.length})
             </CardTitle>
             <CardDescription>Partner acentalarla yapilan finansal islemler - silme talebi gonderebilir veya onaylayabilirsiniz</CardDescription>
           </CardHeader>
@@ -1203,13 +1215,13 @@ export default function PartnerAvailability() {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-            ) : partnerTransactions.length === 0 ? (
+            ) : activePartnerTransactions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>Henuz partner islemi bulunmuyor</p>
               </div>
             ) : (
-              partnerTransactions.map(tx => {
+              activePartnerTransactions.map(tx => {
                 const isSender = tx.currentTenantId === tx.senderTenantId;
                 const isReceiver = tx.currentTenantId === tx.receiverTenantId;
                 const canRequestDeletion = !tx.deletionStatus || tx.deletionStatus === 'rejected';
@@ -1322,6 +1334,132 @@ export default function PartnerAvailability() {
             )}
           </CardContent>
         </Card>
+
+        {/* İptal Edilen & Silinen İşlemler */}
+        {(cancelledOrDeletedTransactions.length > 0 || cancelledOutgoingRequests.length > 0 || cancelledPartnerRequests.length > 0) && (
+          <Card className="mt-6 border-2 border-red-200 dark:border-red-800/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <Trash2 className="w-5 h-5" />
+                Iptal Edilen & Silinen Islemler ({cancelledOrDeletedTransactions.length + cancelledOutgoingRequests.length + cancelledPartnerRequests.length})
+              </CardTitle>
+              <CardDescription>Iptal edilen veya silinen talepler ve islemler</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Silinen Partner İşlemleri */}
+              {cancelledOrDeletedTransactions.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    Silinen Partner Islemleri ({cancelledOrDeletedTransactions.length})
+                  </h4>
+                  {cancelledOrDeletedTransactions.map(tx => {
+                    const isSender = tx.currentTenantId === tx.senderTenantId;
+                    return (
+                      <div key={tx.id} className="border rounded-lg p-4 bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800/50 opacity-75">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div className="space-y-1 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-medium line-through">{tx.customerName}</p>
+                              <Badge className={isSender 
+                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300" 
+                                : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300"
+                              }>
+                                {isSender ? `Giden: ${tx.receiverTenantName}` : `Gelen: ${tx.senderTenantName}`}
+                              </Badge>
+                              <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                                {tx.deletionStatus === 'approved' ? 'Silindi' : 'Iptal Edildi'}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                              <Badge variant="outline">{tx.activityName}</Badge>
+                              <span>{format(new Date(tx.reservationDate), "d MMM yyyy", { locale: tr })}</span>
+                              <span>{tx.reservationTime}</span>
+                              <span>{tx.guestCount} kisi</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm line-through text-muted-foreground">
+                                {tx.currency === 'USD' ? '$' : tx.currency === 'EUR' ? '€' : ''}
+                                {tx.totalPrice.toLocaleString('tr-TR')}
+                                {tx.currency === 'TRY' ? ' TL' : ` ${tx.currency}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* İptal Edilen Giden Talepler */}
+              {cancelledOutgoingRequests.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                    <ArrowUpRight className="w-4 h-4" />
+                    Iptal/Reddedilen Giden Talepler ({cancelledOutgoingRequests.length})
+                  </h4>
+                  {cancelledOutgoingRequests.map(request => (
+                    <div key={request.id} className="border rounded-lg p-4 bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800/50 opacity-75">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium line-through">{request.customerName}</p>
+                            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
+                              Giden: {request.ownerTenantName || 'Partner'}
+                            </Badge>
+                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                              {request.status === 'cancelled' ? 'Iptal Edildi' : 'Reddedildi'}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                            <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
+                            <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                            <span>{request.time}</span>
+                            <span>{request.guests} kisi</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* İptal Edilen Gelen Partner Talepleri */}
+              {cancelledPartnerRequests.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                    <ArrowDownLeft className="w-4 h-4" />
+                    Iptal/Reddedilen Gelen Talepler ({cancelledPartnerRequests.length})
+                  </h4>
+                  {cancelledPartnerRequests.map(request => (
+                    <div key={request.id} className="border rounded-lg p-4 bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-800/50 opacity-75">
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium line-through">{request.customerName}</p>
+                            <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 border-blue-300">
+                              Gelen: {getPartnerNameFromNotes(request.notes)}
+                            </Badge>
+                            <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                              {request.status === 'cancelled' ? 'Iptal Edildi' : 'Reddedildi'}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                            <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                            <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                            <span>{request.time}</span>
+                            <span>{request.guests || 1} kisi</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
         
         <Dialog open={requestDialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setRequestDialogOpen(open); }}>
           <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
