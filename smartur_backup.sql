@@ -3462,7 +3462,7 @@ COPY public.roles (id, name, display_name, description, color, is_system, is_act
 --
 
 COPY public.session (sid, sess, expire) FROM stdin;
-t0hSiLKyWXZt5WPcj0dI4pi-bseoBbC2	{"cookie":{"originalMaxAge":604800000,"expires":"2026-01-17T11:29:26.356Z","secure":false,"httpOnly":true,"path":"/","sameSite":"lax"},"userId":2,"tenantId":7,"username":"acenta","roles":[4],"permissions":["activities.view","activities.manage","agencies.view","agencies.manage","bot.view","bot.manage","calendar.view","calendar.manage","capacity.view","dashboard.view","finance.view","finance.manage","reports.view","reports.export","reservations.view","reservations.create","reservations.edit","reservations.delete","settings.view","settings.manage","settings.templates.manage","subscription.view","subscription.manage","users.view","users.manage","whatsapp.view","whatsapp.manage"],"platformAdminId":2,"isPlatformAdmin":true}	2026-01-18 09:08:01
+t0hSiLKyWXZt5WPcj0dI4pi-bseoBbC2	{"cookie":{"originalMaxAge":604800000,"expires":"2026-01-17T11:29:26.356Z","secure":false,"httpOnly":true,"path":"/","sameSite":"lax"},"userId":2,"tenantId":7,"username":"acenta","roles":[4],"permissions":["activities.view","activities.manage","agencies.view","agencies.manage","bot.view","bot.manage","calendar.view","calendar.manage","capacity.view","dashboard.view","finance.view","finance.manage","reports.view","reports.export","reservations.view","reservations.create","reservations.edit","reservations.delete","settings.view","settings.manage","settings.templates.manage","subscription.view","subscription.manage","users.view","users.manage","whatsapp.view","whatsapp.manage"],"platformAdminId":2,"isPlatformAdmin":true}	2026-01-18 10:32:01
 \.
 
 
@@ -5676,5 +5676,5 @@ ALTER TABLE ONLY public.viewer_activity_shares
 -- PostgreSQL database dump complete
 --
 
-\unrestrict UUAKOC1uEJKRWiKeBpWm4zUxsizEPsDU9yZWXPnkcTbcHBs59xKqoieaHbUyUJB
+\unrestrict cldoK2ZroAGZXVM3IZcUU9gJsIvcuvcfYMS720qdVjvy4Njb1J3zYGHbZYLBmpW
 
