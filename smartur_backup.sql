@@ -2937,834 +2937,849 @@ ALTER TABLE ONLY public.viewer_activity_shares ALTER COLUMN id SET DEFAULT nextv
 -- Data for Name: activities; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.activities (id, name, description, price, duration_minutes, active, daily_frequency, default_times, confirmation_message, default_capacity, agency_phone, admin_phone, send_notification_to_agency, send_notification_to_admin, notification_message_template, name_aliases, price_usd, reservation_link, reservation_link_en, has_free_hotel_transfer, transfer_zones, extras, faq, color, tenant_id, shared_with_partners) FROM stdin;
-8	ATV Safari		2000	60	t	3	["09:00","13:00","17:00"]	Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.	10	\N	\N	t	t	Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}	["atv safari","quad bike"]	30	\N	\N	f	[]	[]	[]	orange	7	t
-9	Balon Turu		5000	30	t	1	["09:00"]	Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.	10	\N	\N	t	t	Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}	["Ballon Tour"]	120	\N	\N	f	[]	[]	[]	blue	9	t
-6	at turu		1000	26	t	3	["09:00","13:00","17:00"]	Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.	6	\N	323423423	f	t	Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}	["horse"]	10	https://skyfethiye.com/aktiviteler/fethiye-yamac-parasutu/	https://skyfethiye.com/en/activities/paragliding-fethiye/	t	["hisarönü"]	[{"name":"Fotoğraflar","priceTl":1000,"priceUsd":20,"description":"Opsiyonel"}]	[{"question":"Kaç dakika","answer":"30 dakikalık tur"}]	pink	7	f
-7	Tekne Turu	günlük tur 	1000	420	t	1	["09:00"]	\N	10	23423423	234234234	t	t	Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}	["Boat Tour"]	20	https://skyfethiye.com/aktiviteler/fethiye-yamac-parasutu/	https://skyfethiye.com/en/activities/paragliding-fethiye/	f	[]	[{"name":"kantin","priceTl":0,"priceUsd":0,"description":""}]	[{"question":"Tekne kaç kişilik","answer":"teknemiz 100 kişiliktir"}]	green	7	f
-\.
+INSERT INTO public.activities VALUES (8, 'ATV Safari', '', 2000, 60, true, 3, '["09:00","13:00","17:00"]', 'Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.', 10, NULL, NULL, true, true, 'Yeni Rezervasyon:
+Müşteri: {isim}
+Telefon: {telefonunuz}
+Eposta: {emailiniz}
+Tarih: {tarih}
+Saat: {saat}
+Aktivite: {aktivite}
+Kişi Sayısı: {kişiSayısı}', '["atv safari","quad bike"]', 30, NULL, NULL, false, '[]', '[]', '[]', 'orange', 7, true);
+INSERT INTO public.activities VALUES (9, 'Balon Turu', '', 5000, 30, true, 1, '["09:00"]', 'Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.', 10, NULL, NULL, true, true, 'Yeni Rezervasyon:
+Müşteri: {isim}
+Telefon: {telefonunuz}
+Eposta: {emailiniz}
+Tarih: {tarih}
+Saat: {saat}
+Aktivite: {aktivite}
+Kişi Sayısı: {kişiSayısı}', '["Ballon Tour"]', 120, NULL, NULL, false, '[]', '[]', '[]', 'blue', 9, true);
+INSERT INTO public.activities VALUES (6, 'at turu', '', 1000, 26, true, 3, '["09:00","13:00","17:00"]', 'Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.', 6, NULL, '323423423', false, true, 'Yeni Rezervasyon:
+Müşteri: {isim}
+Telefon: {telefonunuz}
+Eposta: {emailiniz}
+Tarih: {tarih}
+Saat: {saat}
+Aktivite: {aktivite}
+Kişi Sayısı: {kişiSayısı}', '["horse"]', 10, 'https://skyfethiye.com/aktiviteler/fethiye-yamac-parasutu/', 'https://skyfethiye.com/en/activities/paragliding-fethiye/', true, '["hisarönü"]', '[{"name":"Fotoğraflar","priceTl":1000,"priceUsd":20,"description":"Opsiyonel"}]', '[{"question":"Kaç dakika","answer":"30 dakikalık tur"}]', 'pink', 7, false);
+INSERT INTO public.activities VALUES (7, 'Tekne Turu', 'günlük tur ', 1000, 420, true, 1, '["09:00"]', NULL, 10, '23423423', '234234234', true, true, 'Yeni Rezervasyon:
+Müşteri: {isim}
+Telefon: {telefonunuz}
+Eposta: {emailiniz}
+Tarih: {tarih}
+Saat: {saat}
+Aktivite: {aktivite}
+Kişi Sayısı: {kişiSayısı}', '["Boat Tour"]', 20, 'https://skyfethiye.com/aktiviteler/fethiye-yamac-parasutu/', 'https://skyfethiye.com/en/activities/paragliding-fethiye/', false, '[]', '[{"name":"kantin","priceTl":0,"priceUsd":0,"description":""}]', '[{"question":"Tekne kaç kişilik","answer":"teknemiz 100 kişiliktir"}]', 'green', 7, false);
 
 
 --
 -- Data for Name: activity_costs; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.activity_costs (id, activity_id, month, fixed_cost, variable_cost_per_guest, notes, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: activity_partner_shares; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.activity_partner_shares (id, activity_id, partnership_id, created_at, partner_unit_price, partner_currency) FROM stdin;
-2	8	1	2026-01-08 10:59:48.467765	1500	TRY
-3	9	1	2026-01-09 14:14:11.496287	5500	TRY
-\.
+INSERT INTO public.activity_partner_shares VALUES (2, 8, 1, '2026-01-08 10:59:48.467765', 1500, 'TRY');
+INSERT INTO public.activity_partner_shares VALUES (3, 9, 1, '2026-01-09 14:14:11.496287', 5500, 'TRY');
 
 
 --
 -- Data for Name: agencies; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.agencies (id, name, contact_info, default_payout_per_guest, notes, active, created_at, tenant_id, partner_tenant_id, partnership_id, is_smart_user) FROM stdin;
-6	Viking Tekne Turu	55555555555	1000	Test Test	t	2026-01-07 12:29:04.528778	\N	\N	\N	f
-7	Viking Tekne Turu	555555555555	10000	Test	t	2026-01-07 12:29:41.150786	\N	\N	\N	f
-8	Bubbles	5555555555	1000		t	2026-01-07 16:09:07.829746	7	\N	\N	f
-9	Viking Tekne Turu	5555555555	1000		t	2026-01-07 16:28:15.803072	7	\N	\N	f
-10	Red Cloud Atv	5555555555	1500		t	2026-01-08 04:46:59.313622	7	\N	\N	f
-12	Acenta 2	5555555555	0	Partner acenta - otomatik oluşturuldu	t	2026-01-10 04:34:57.475164	7	9	1	t
-11	Acenta 1 	5555555555	0		t	2026-01-09 16:00:36.161299	9	7	1	t
-\.
+INSERT INTO public.agencies VALUES (6, 'Viking Tekne Turu', '55555555555', 1000, 'Test Test', true, '2026-01-07 12:29:04.528778', NULL, NULL, NULL, false);
+INSERT INTO public.agencies VALUES (7, 'Viking Tekne Turu', '555555555555', 10000, 'Test', true, '2026-01-07 12:29:41.150786', NULL, NULL, NULL, false);
+INSERT INTO public.agencies VALUES (8, 'Bubbles', '5555555555', 1000, '', true, '2026-01-07 16:09:07.829746', 7, NULL, NULL, false);
+INSERT INTO public.agencies VALUES (9, 'Viking Tekne Turu', '5555555555', 1000, '', true, '2026-01-07 16:28:15.803072', 7, NULL, NULL, false);
+INSERT INTO public.agencies VALUES (10, 'Red Cloud Atv', '5555555555', 1500, '', true, '2026-01-08 04:46:59.313622', 7, NULL, NULL, false);
+INSERT INTO public.agencies VALUES (12, 'Acenta 2', '5555555555', 0, 'Partner acenta - otomatik oluşturuldu', true, '2026-01-10 04:34:57.475164', 7, 9, 1, true);
+INSERT INTO public.agencies VALUES (11, 'Acenta 1 ', '5555555555', 0, '', true, '2026-01-09 16:00:36.161299', 9, 7, 1, true);
 
 
 --
 -- Data for Name: agency_activity_rates; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.agency_activity_rates (id, agency_id, activity_id, valid_from, valid_to, unit_payout_tl, notes, is_active, created_at, unit_payout_usd, currency, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: agency_activity_terms; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.agency_activity_terms (id, agency_id, activity_id, payout_per_guest, effective_month, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: agency_notes; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.agency_notes (id, tenant_id, admin_id, content, note_type, is_important, created_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: agency_payouts; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.agency_payouts (id, agency_id, period_start, period_end, description, guest_count, base_amount_tl, vat_rate_pct, vat_amount_tl, total_amount_tl, method, reference, notes, status, created_at, tenant_id, confirmation_status, confirmed_by_tenant_id, confirmed_at, rejection_reason) FROM stdin;
-\.
 
 
 --
 -- Data for Name: announcements; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.announcements (id, title, content, type, target_audience, priority, is_active, starts_at, expires_at, created_at) FROM stdin;
-1	Yeni Ozellik	Artik rezervasyonlari surukle birak ile takvime ekleyebilirsiniz!	info	all	0	t	\N	\N	2026-01-06 07:54:50.712074
-2	Bakim Bildirimi	Yarin gece 02:00-04:00 arasi sistem bakimda olacaktir.	warning	all	0	t	\N	\N	2026-01-05 07:54:50.712074
-\.
+INSERT INTO public.announcements VALUES (1, 'Yeni Ozellik', 'Artik rezervasyonlari surukle birak ile takvime ekleyebilirsiniz!', 'info', 'all', 0, true, NULL, NULL, '2026-01-06 07:54:50.712074');
+INSERT INTO public.announcements VALUES (2, 'Bakim Bildirimi', 'Yarin gece 02:00-04:00 arasi sistem bakimda olacaktir.', 'warning', 'all', 0, true, NULL, NULL, '2026-01-05 07:54:50.712074');
 
 
 --
 -- Data for Name: api_status_logs; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.api_status_logs (id, service, status, response_time_ms, error_message, error_count, last_success_at, last_error_at, checked_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: app_users; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.app_users (id, username, email, password_hash, name, phone, company_name, membership_type, membership_start_date, membership_end_date, plan_id, is_active, is_suspended, suspend_reason, max_activities, max_reservations_per_month, last_login_at, login_count, created_by, notes, created_at, updated_at, tenant_id, is_system_protected) FROM stdin;
-2	Skyfethiye	skyfethiye@gmail.com	d6042215e5d01947b1beaaf04caabf55:26c829fad3fbd602bdb5e63983fb06038964df318b6ff509137d6ee0f6cd492009ff185b5e510d950fa6ef8e9b2092374c67e57848b8f8575573d54dbc8aa72b	Metin Işık	05384944505	Sky Fethiye	professional	2026-01-05 14:51:26.753	\N	\N	t	f	\N	50	1000	2026-01-06 06:55:51.08	9	\N	Sky Fethiye acentasi yonetici hesabi	2026-01-05 14:51:26.755282	2026-01-05 15:28:51.142	2	f
-8	superadmin	flymet.mail@gmail.com	d7a0e0552941f2d4ca39a3e09306b3c9:1ad401276717ecf21f20f559374208ebc8fc0c37ef1479c57019bce0c8d7c1e546fa47526fd818cc2ed40a0173ddc36b8500710ab1bcf30eba476a73d0906333	Süper Admin	\N	\N	trial	\N	\N	\N	t	f	\N	5	100	\N	0	\N	\N	2026-01-06 14:54:34.079292	2026-01-06 14:54:34.079292	8	t
-9	isortagi2	2232@gmail.com	820a683b12616dafd4485aa355e2350f:8f05c73e21a1d1878f38a2e8f17560be890bdca74fc36215390e6dee45e9d7943fa217ff8cceb744d7da73c794133faae4d1875d6746ff5707128a44e40d10b3	İzleyici 1	5305556557	acenta	professional	2026-01-07 07:14:47.23	\N	\N	t	f	\N	50	1000	2026-01-07 07:20:13.889	2	\N	acenta acentasi kullanıcısi	2026-01-07 07:14:47.237127	2026-01-09 05:23:40.994	7	f
-10	acenta2	acenta2@acenta.com	2ea928c8b4b1cd376177a1102cce24ab:04b4f7a4ae4668dbc28ba34c838a7a65cf80af03dcd102a5a32bb1a912a4a8426c7f8286ded3aedf2c6f27ed6de22e5da297a14f56409a2843d7dd589b2dd4fa	Acenta 2	5555555555	Acenta 2	trial	2026-01-08 10:06:57.734	\N	\N	t	f	\N	50	1000	2026-01-10 10:02:28.406	24	\N	Acenta 2 acentasi yönetiçi hesabı	2026-01-08 10:06:57.735175	2026-01-08 10:06:57.735175	9	f
-7	acenta	acenta@acenta.com	f7661270f1d4349e6698623c802cdfd9:d4fa5b56a0f69f52c3f6948f118d913f34da44f458cbbd9fb53f7fff480c303a0ad36c391a3e5d315639eb1484500199ba52e86b748a02fe5881fbcdd95f915c	Acenta 1	5555555555	acenta	professional	2026-01-06 07:11:00.946	2026-02-05 07:11:00.946	\N	t	f	\N	50	1000	2026-01-10 11:29:26.333	47	\N	acenta acentasi yönetiçi hesabı	2026-01-06 07:11:00.948427	2026-01-08 09:44:58.802	7	f
-\.
+INSERT INTO public.app_users VALUES (2, 'Skyfethiye', 'skyfethiye@gmail.com', 'd6042215e5d01947b1beaaf04caabf55:26c829fad3fbd602bdb5e63983fb06038964df318b6ff509137d6ee0f6cd492009ff185b5e510d950fa6ef8e9b2092374c67e57848b8f8575573d54dbc8aa72b', 'Metin Işık', '05384944505', 'Sky Fethiye', 'professional', '2026-01-05 14:51:26.753', NULL, NULL, true, false, NULL, 50, 1000, '2026-01-06 06:55:51.08', 9, NULL, 'Sky Fethiye acentasi yonetici hesabi', '2026-01-05 14:51:26.755282', '2026-01-05 15:28:51.142', 2, false);
+INSERT INTO public.app_users VALUES (8, 'superadmin', 'flymet.mail@gmail.com', 'd7a0e0552941f2d4ca39a3e09306b3c9:1ad401276717ecf21f20f559374208ebc8fc0c37ef1479c57019bce0c8d7c1e546fa47526fd818cc2ed40a0173ddc36b8500710ab1bcf30eba476a73d0906333', 'Süper Admin', NULL, NULL, 'trial', NULL, NULL, NULL, true, false, NULL, 5, 100, NULL, 0, NULL, NULL, '2026-01-06 14:54:34.079292', '2026-01-06 14:54:34.079292', 8, true);
+INSERT INTO public.app_users VALUES (9, 'isortagi2', '2232@gmail.com', '820a683b12616dafd4485aa355e2350f:8f05c73e21a1d1878f38a2e8f17560be890bdca74fc36215390e6dee45e9d7943fa217ff8cceb744d7da73c794133faae4d1875d6746ff5707128a44e40d10b3', 'İzleyici 1', '5305556557', 'acenta', 'professional', '2026-01-07 07:14:47.23', NULL, NULL, true, false, NULL, 50, 1000, '2026-01-07 07:20:13.889', 2, NULL, 'acenta acentasi kullanıcısi', '2026-01-07 07:14:47.237127', '2026-01-09 05:23:40.994', 7, false);
+INSERT INTO public.app_users VALUES (10, 'acenta2', 'acenta2@acenta.com', '2ea928c8b4b1cd376177a1102cce24ab:04b4f7a4ae4668dbc28ba34c838a7a65cf80af03dcd102a5a32bb1a912a4a8426c7f8286ded3aedf2c6f27ed6de22e5da297a14f56409a2843d7dd589b2dd4fa', 'Acenta 2', '5555555555', 'Acenta 2', 'trial', '2026-01-08 10:06:57.734', NULL, NULL, true, false, NULL, 50, 1000, '2026-01-10 10:02:28.406', 24, NULL, 'Acenta 2 acentasi yönetiçi hesabı', '2026-01-08 10:06:57.735175', '2026-01-08 10:06:57.735175', 9, false);
+INSERT INTO public.app_users VALUES (7, 'acenta', 'acenta@acenta.com', 'f7661270f1d4349e6698623c802cdfd9:d4fa5b56a0f69f52c3f6948f118d913f34da44f458cbbd9fb53f7fff480c303a0ad36c391a3e5d315639eb1484500199ba52e86b748a02fe5881fbcdd95f915c', 'Acenta 1', '5555555555', 'acenta', 'professional', '2026-01-06 07:11:00.946', '2026-02-05 07:11:00.946', NULL, true, false, NULL, 50, 1000, '2026-01-10 11:29:26.333', 47, NULL, 'acenta acentasi yönetiçi hesabı', '2026-01-06 07:11:00.948427', '2026-01-08 09:44:58.802', 7, false);
 
 
 --
 -- Data for Name: app_versions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.app_versions (id, version, file_name, file_size, checksum, status, notes, uploaded_by, backup_file_name, is_rollback_target, activated_at, created_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: auto_responses; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.auto_responses (id, name, keywords, response, priority, is_active, created_at, keywords_en, response_en, tenant_id) FROM stdin;
-11	Fiyat Bilgisi	["fiyat","ücret","ne kadar","kaç para","kaç tl","ucuz","pahalı"]	Fiyat bilgisi için lütfen aktivite sayfamızı ziyaret edin veya temsilcimizle görüşmek için bekleyin.	10	t	2026-01-06 07:11:00.96175	["price","cost","how much","fee","rate"]	For pricing information, please visit our activity page or wait to speak with our representative.	7
-12	Rezervasyon Durumu	["rezervasyon","booking","kayıt","yer ayırtma","randevu"]	Rezervasyon durumunuzu kontrol etmek için rezervasyon numaranızı paylaşabilir misiniz?	9	t	2026-01-06 07:11:00.965283	["reservation","booking","appointment","schedule"]	To check your reservation status, could you please share your reservation number?	7
-13	İptal/Değişiklik	["iptal","değişiklik","tarih değiştir","saat değiştir","erteleme"]	Rezervasyon iptali veya değişikliği için lütfen rezervasyon numaranızı ve talebinizi belirtin. Temsilcimiz en kısa sürede size dönüş yapacaktır.	8	t	2026-01-06 07:11:00.971845	["cancel","change","reschedule","modify","postpone"]	For cancellation or modification, please provide your reservation number and request. Our representative will get back to you shortly.	7
-14	Çalışma Saatleri	["saat","çalışma saati","açık mı","kapalı mı","ne zaman"]	Çalışma saatlerimiz hakkında bilgi almak için web sitemizi ziyaret edebilir veya mesai saatleri içinde bizi arayabilirsiniz.	5	t	2026-01-06 07:11:00.974623	["hours","open","closed","when","time"]	For our working hours, please visit our website or call us during business hours.	7
-15	Selamlama	["merhaba","selam","günaydın","iyi günler","iyi akşamlar"]	Merhaba! Size nasıl yardımcı olabiliriz?	1	t	2026-01-06 07:11:00.978811	["hello","hi","good morning","good evening","hey"]	Hello! How can we help you?	7
-16	Fiyat Bilgisi	["fiyat","ücret","ne kadar","kaç para","kaç tl","ucuz","pahalı"]	Fiyat bilgisi için lütfen aktivite sayfamızı ziyaret edin veya temsilcimizle görüşmek için bekleyin.	10	t	2026-01-08 10:06:57.749197	["price","cost","how much","fee","rate"]	For pricing information, please visit our activity page or wait to speak with our representative.	9
-17	Rezervasyon Durumu	["rezervasyon","booking","kayıt","yer ayırtma","randevu"]	Rezervasyon durumunuzu kontrol etmek için rezervasyon numaranızı paylaşabilir misiniz?	9	t	2026-01-08 10:06:57.752107	["reservation","booking","appointment","schedule"]	To check your reservation status, could you please share your reservation number?	9
-18	İptal/Değişiklik	["iptal","değişiklik","tarih değiştir","saat değiştir","erteleme"]	Rezervasyon iptali veya değişikliği için lütfen rezervasyon numaranızı ve talebinizi belirtin. Temsilcimiz en kısa sürede size dönüş yapacaktır.	8	t	2026-01-08 10:06:57.756373	["cancel","change","reschedule","modify","postpone"]	For cancellation or modification, please provide your reservation number and request. Our representative will get back to you shortly.	9
-19	Çalışma Saatleri	["saat","çalışma saati","açık mı","kapalı mı","ne zaman"]	Çalışma saatlerimiz hakkında bilgi almak için web sitemizi ziyaret edebilir veya mesai saatleri içinde bizi arayabilirsiniz.	5	t	2026-01-08 10:06:57.7594	["hours","open","closed","when","time"]	For our working hours, please visit our website or call us during business hours.	9
-20	Selamlama	["merhaba","selam","günaydın","iyi günler","iyi akşamlar"]	Merhaba! Size nasıl yardımcı olabiliriz?	1	t	2026-01-08 10:06:57.76233	["hello","hi","good morning","good evening","hey"]	Hello! How can we help you?	9
-\.
+INSERT INTO public.auto_responses VALUES (11, 'Fiyat Bilgisi', '["fiyat","ücret","ne kadar","kaç para","kaç tl","ucuz","pahalı"]', 'Fiyat bilgisi için lütfen aktivite sayfamızı ziyaret edin veya temsilcimizle görüşmek için bekleyin.', 10, true, '2026-01-06 07:11:00.96175', '["price","cost","how much","fee","rate"]', 'For pricing information, please visit our activity page or wait to speak with our representative.', 7);
+INSERT INTO public.auto_responses VALUES (12, 'Rezervasyon Durumu', '["rezervasyon","booking","kayıt","yer ayırtma","randevu"]', 'Rezervasyon durumunuzu kontrol etmek için rezervasyon numaranızı paylaşabilir misiniz?', 9, true, '2026-01-06 07:11:00.965283', '["reservation","booking","appointment","schedule"]', 'To check your reservation status, could you please share your reservation number?', 7);
+INSERT INTO public.auto_responses VALUES (13, 'İptal/Değişiklik', '["iptal","değişiklik","tarih değiştir","saat değiştir","erteleme"]', 'Rezervasyon iptali veya değişikliği için lütfen rezervasyon numaranızı ve talebinizi belirtin. Temsilcimiz en kısa sürede size dönüş yapacaktır.', 8, true, '2026-01-06 07:11:00.971845', '["cancel","change","reschedule","modify","postpone"]', 'For cancellation or modification, please provide your reservation number and request. Our representative will get back to you shortly.', 7);
+INSERT INTO public.auto_responses VALUES (14, 'Çalışma Saatleri', '["saat","çalışma saati","açık mı","kapalı mı","ne zaman"]', 'Çalışma saatlerimiz hakkında bilgi almak için web sitemizi ziyaret edebilir veya mesai saatleri içinde bizi arayabilirsiniz.', 5, true, '2026-01-06 07:11:00.974623', '["hours","open","closed","when","time"]', 'For our working hours, please visit our website or call us during business hours.', 7);
+INSERT INTO public.auto_responses VALUES (15, 'Selamlama', '["merhaba","selam","günaydın","iyi günler","iyi akşamlar"]', 'Merhaba! Size nasıl yardımcı olabiliriz?', 1, true, '2026-01-06 07:11:00.978811', '["hello","hi","good morning","good evening","hey"]', 'Hello! How can we help you?', 7);
+INSERT INTO public.auto_responses VALUES (16, 'Fiyat Bilgisi', '["fiyat","ücret","ne kadar","kaç para","kaç tl","ucuz","pahalı"]', 'Fiyat bilgisi için lütfen aktivite sayfamızı ziyaret edin veya temsilcimizle görüşmek için bekleyin.', 10, true, '2026-01-08 10:06:57.749197', '["price","cost","how much","fee","rate"]', 'For pricing information, please visit our activity page or wait to speak with our representative.', 9);
+INSERT INTO public.auto_responses VALUES (17, 'Rezervasyon Durumu', '["rezervasyon","booking","kayıt","yer ayırtma","randevu"]', 'Rezervasyon durumunuzu kontrol etmek için rezervasyon numaranızı paylaşabilir misiniz?', 9, true, '2026-01-08 10:06:57.752107', '["reservation","booking","appointment","schedule"]', 'To check your reservation status, could you please share your reservation number?', 9);
+INSERT INTO public.auto_responses VALUES (18, 'İptal/Değişiklik', '["iptal","değişiklik","tarih değiştir","saat değiştir","erteleme"]', 'Rezervasyon iptali veya değişikliği için lütfen rezervasyon numaranızı ve talebinizi belirtin. Temsilcimiz en kısa sürede size dönüş yapacaktır.', 8, true, '2026-01-08 10:06:57.756373', '["cancel","change","reschedule","modify","postpone"]', 'For cancellation or modification, please provide your reservation number and request. Our representative will get back to you shortly.', 9);
+INSERT INTO public.auto_responses VALUES (19, 'Çalışma Saatleri', '["saat","çalışma saati","açık mı","kapalı mı","ne zaman"]', 'Çalışma saatlerimiz hakkında bilgi almak için web sitemizi ziyaret edebilir veya mesai saatleri içinde bizi arayabilirsiniz.', 5, true, '2026-01-08 10:06:57.7594', '["hours","open","closed","when","time"]', 'For our working hours, please visit our website or call us during business hours.', 9);
+INSERT INTO public.auto_responses VALUES (20, 'Selamlama', '["merhaba","selam","günaydın","iyi günler","iyi akşamlar"]', 'Merhaba! Size nasıl yardımcı olabiliriz?', 1, true, '2026-01-08 10:06:57.76233', '["hello","hi","good morning","good evening","hey"]', 'Hello! How can we help you?', 9);
 
 
 --
 -- Data for Name: blacklist; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.blacklist (id, phone, reason, created_at, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: bot_quality_scores; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.bot_quality_scores (id, message_id, phone, question, response, response_time_ms, was_escalated, was_helpful, feedback_score, error_occurred, used_fallback, created_at, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: capacity; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.capacity (id, activity_id, date, "time", total_slots, booked_slots, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: customer_requests; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.customer_requests (id, reservation_id, request_type, request_details, preferred_time, customer_name, customer_phone, customer_email, status, admin_notes, email_sent, created_at, processed_at, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: daily_message_usage; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.daily_message_usage (id, tenant_id, date, message_count, last_message_at, created_at, updated_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: database_backups; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.database_backups (id, name, description, file_name, file_size, table_count, row_count, status, backup_type, created_by, restored_at, restored_by, created_at) FROM stdin;
-1	replityedek7ocak0710		backup_2026-01-07T04-10-25-264Z.json	32176	17	147	completed	manual	super_admin	\N	\N	2026-01-07 04:10:25.347317
-2	yedek2		backup_2026-01-07T06-33-29-515Z.json	32135	17	146	completed	manual	super_admin	\N	\N	2026-01-07 06:33:29.535388
-3	08 Ocak		backup_2026-01-08T11-52-28-133Z.json	52757	23	200	completed	manual	super_admin	\N	\N	2026-01-08 11:52:28.17256
-4	8ocak2		backup_2026-01-08T12-32-45-989Z.json	52757	23	200	completed	manual	super_admin	\N	\N	2026-01-08 12:32:46.027295
-5	8ocak2		backup_2026-01-08T12-39-31-112Z.json	52757	23	200	completed	manual	super_admin	\N	\N	2026-01-08 12:39:31.143965
-6	10ocak		backup_2026-01-10T12-47-52-766Z.json	58367	21	211	completed	manual	super_admin	\N	\N	2026-01-10 12:47:52.821708
-\.
+INSERT INTO public.database_backups VALUES (1, 'replityedek7ocak0710', '', 'backup_2026-01-07T04-10-25-264Z.json', 32176, 17, 147, 'completed', 'manual', 'super_admin', NULL, NULL, '2026-01-07 04:10:25.347317');
+INSERT INTO public.database_backups VALUES (2, 'yedek2', '', 'backup_2026-01-07T06-33-29-515Z.json', 32135, 17, 146, 'completed', 'manual', 'super_admin', NULL, NULL, '2026-01-07 06:33:29.535388');
+INSERT INTO public.database_backups VALUES (3, '08 Ocak', '', 'backup_2026-01-08T11-52-28-133Z.json', 52757, 23, 200, 'completed', 'manual', 'super_admin', NULL, NULL, '2026-01-08 11:52:28.17256');
+INSERT INTO public.database_backups VALUES (4, '8ocak2', '', 'backup_2026-01-08T12-32-45-989Z.json', 52757, 23, 200, 'completed', 'manual', 'super_admin', NULL, NULL, '2026-01-08 12:32:46.027295');
+INSERT INTO public.database_backups VALUES (5, '8ocak2', '', 'backup_2026-01-08T12-39-31-112Z.json', 52757, 23, 200, 'completed', 'manual', 'super_admin', NULL, NULL, '2026-01-08 12:39:31.143965');
+INSERT INTO public.database_backups VALUES (6, '10ocak', '', 'backup_2026-01-10T12-47-52-766Z.json', 58367, 21, 211, 'completed', 'manual', 'super_admin', NULL, NULL, '2026-01-10 12:47:52.821708');
 
 
 --
 -- Data for Name: dispatch_shares; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.dispatch_shares (id, dispatch_id, partnership_id, sender_tenant_id, receiver_tenant_id, status, shared_at, processed_at, processed_by, process_notes, linked_reservation_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: error_events; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.error_events (id, tenant_id, severity, category, source, message, suggestion, request_path, request_method, status_code, user_id, user_email, tenant_name, metadata, occurred_at, status, resolved_at, resolved_by, resolution_notes) FROM stdin;
-\.
 
 
 --
 -- Data for Name: holidays; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.holidays (id, name, start_date, end_date, type, keywords, notes, is_active, tenant_id) FROM stdin;
-10	Yılbaşı	2026-01-01	2026-01-01	official	["yılbaşı","yeni yıl","1 ocak"]		t	\N
-11	23 Nisan Ulusal Egemenlik ve Cocuk Bayrami	2026-04-23	2026-04-23	official	["23 nisan","cocuk bayrami"]		t	\N
-12	1 Mayıs Emek ve Dayanisma Gunu	2026-05-01	2026-05-01	official	["1 mayıs","isci bayrami"]		t	\N
-13	19 Mayıs Ataturku Anma Genclik ve Spor Bayrami	2026-05-19	2026-05-19	official	["19 mayıs","genclik bayrami"]		t	\N
-14	15 Temmuz Demokrasi ve Milli Birlik Gunu	2026-07-15	2026-07-15	official	["15 temmuz"]		t	\N
-15	30 Ağustos Zafer Bayrami	2026-08-30	2026-08-30	official	["30 ağustos","zafer bayrami"]		t	\N
-16	29 Ekim Cumhuriyet Bayrami	2026-10-29	2026-10-29	official	["29 ekim","cumhuriyet bayrami"]		t	\N
-17	Ramazan Bayrami 2026	2026-03-20	2026-03-22	religious	["ramazan bayrami","seker bayrami"]		t	\N
-18	Kurban Bayrami 2026	2026-05-27	2026-05-30	religious	["kurban bayrami","bayram"]		t	\N
-\.
+INSERT INTO public.holidays VALUES (10, 'Yılbaşı', '2026-01-01', '2026-01-01', 'official', '["yılbaşı","yeni yıl","1 ocak"]', '', true, NULL);
+INSERT INTO public.holidays VALUES (11, '23 Nisan Ulusal Egemenlik ve Cocuk Bayrami', '2026-04-23', '2026-04-23', 'official', '["23 nisan","cocuk bayrami"]', '', true, NULL);
+INSERT INTO public.holidays VALUES (12, '1 Mayıs Emek ve Dayanisma Gunu', '2026-05-01', '2026-05-01', 'official', '["1 mayıs","isci bayrami"]', '', true, NULL);
+INSERT INTO public.holidays VALUES (13, '19 Mayıs Ataturku Anma Genclik ve Spor Bayrami', '2026-05-19', '2026-05-19', 'official', '["19 mayıs","genclik bayrami"]', '', true, NULL);
+INSERT INTO public.holidays VALUES (14, '15 Temmuz Demokrasi ve Milli Birlik Gunu', '2026-07-15', '2026-07-15', 'official', '["15 temmuz"]', '', true, NULL);
+INSERT INTO public.holidays VALUES (15, '30 Ağustos Zafer Bayrami', '2026-08-30', '2026-08-30', 'official', '["30 ağustos","zafer bayrami"]', '', true, NULL);
+INSERT INTO public.holidays VALUES (16, '29 Ekim Cumhuriyet Bayrami', '2026-10-29', '2026-10-29', 'official', '["29 ekim","cumhuriyet bayrami"]', '', true, NULL);
+INSERT INTO public.holidays VALUES (17, 'Ramazan Bayrami 2026', '2026-03-20', '2026-03-22', 'religious', '["ramazan bayrami","seker bayrami"]', '', true, NULL);
+INSERT INTO public.holidays VALUES (18, 'Kurban Bayrami 2026', '2026-05-27', '2026-05-30', 'religious', '["kurban bayrami","bayram"]', '', true, NULL);
 
 
 --
 -- Data for Name: in_app_notifications; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.in_app_notifications (id, user_id, tenant_id, notification_type, title, message, link, is_read, created_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: invoices; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.invoices (id, tenant_id, subscription_id, invoice_number, agency_name, agency_email, period_start, period_end, subtotal_tl, vat_rate_pct, vat_amount_tl, total_tl, subtotal_usd, total_usd, currency, status, due_date, paid_at, payment_method, payment_reference, notes, created_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: license; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.license (id, license_key, agency_name, agency_email, agency_phone, plan_type, plan_name, max_activities, max_reservations_per_month, max_users, features, start_date, expiry_date, is_active, last_verified_at, created_at, updated_at) FROM stdin;
-1	345345	ssd	\N	\N	trial	Deneme	5	50	1	[]	2026-01-05 05:09:20.939	2026-02-04 16:16:08.848103	t	2026-01-06 08:17:57.071	2026-01-05 05:09:20.950685	2026-01-05 16:16:08.848103
-\.
+INSERT INTO public.license VALUES (1, '345345', 'ssd', NULL, NULL, 'trial', 'Deneme', 5, 50, 1, '[]', '2026-01-05 05:09:20.939', '2026-02-04 16:16:08.848103', true, '2026-01-06 08:17:57.071', '2026-01-05 05:09:20.950685', '2026-01-05 16:16:08.848103');
 
 
 --
 -- Data for Name: login_logs; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.login_logs (id, admin_id, email, ip_address, user_agent, status, failure_reason, created_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: messages; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.messages (id, phone, content, role, "timestamp", requires_human_intervention, tenant_id) FROM stdin;
-23	+905551112233	Merhaba, fiyat bilgisi alabilir miyim?	user	2026-01-06 07:44:27.502455	t	7
-24	+905551112233	Fiyat bilgisi için lütfen müşteri temsilcimiz size yardımcı olacak.	assistant	2026-01-06 07:45:27.502455	f	7
-25	+905554445566	Rezervasyon detaylarını öğrenmek istiyorum	user	2026-01-06 07:14:27.502455	t	7
-26	+905554445566	Müşteri temsilcimiz en kısa sürede size dönecektir.	assistant	2026-01-06 07:15:27.502455	f	7
-\.
+INSERT INTO public.messages VALUES (23, '+905551112233', 'Merhaba, fiyat bilgisi alabilir miyim?', 'user', '2026-01-06 07:44:27.502455', true, 7);
+INSERT INTO public.messages VALUES (24, '+905551112233', 'Fiyat bilgisi için lütfen müşteri temsilcimiz size yardımcı olacak.', 'assistant', '2026-01-06 07:45:27.502455', false, 7);
+INSERT INTO public.messages VALUES (25, '+905554445566', 'Rezervasyon detaylarını öğrenmek istiyorum', 'user', '2026-01-06 07:14:27.502455', true, 7);
+INSERT INTO public.messages VALUES (26, '+905554445566', 'Müşteri temsilcimiz en kısa sürede size dönecektir.', 'assistant', '2026-01-06 07:15:27.502455', false, 7);
 
 
 --
 -- Data for Name: package_tour_activities; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.package_tour_activities (id, package_tour_id, activity_id, day_offset, default_time, sort_order, tenant_id) FROM stdin;
-6	2	6	0	09:00	0	\N
-7	2	7	0	09:00	1	\N
-\.
+INSERT INTO public.package_tour_activities VALUES (6, 2, 6, 0, '09:00', 0, NULL);
+INSERT INTO public.package_tour_activities VALUES (7, 2, 7, 0, '09:00', 1, NULL);
 
 
 --
 -- Data for Name: package_tours; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.package_tours (id, name, name_aliases, description, price, price_usd, confirmation_message, reservation_link, reservation_link_en, active, created_at, faq, tenant_id) FROM stdin;
-2	Uçuş ve Dalış Paketi	[]		5000	100	Sayın {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.			t	2026-01-07 16:08:11.017187	[]	\N
-\.
+INSERT INTO public.package_tours VALUES (2, 'Uçuş ve Dalış Paketi', '[]', '', 5000, 100, 'Sayın {isim}, paket tur rezervasyonunuz onaylanmistir. Tarih: {tarih}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz.', '', '', true, '2026-01-07 16:08:11.017187', '[]', NULL);
 
 
 --
 -- Data for Name: partner_invite_codes; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.partner_invite_codes (id, tenant_id, code, is_active, usage_count, max_usage, expires_at, created_at) FROM stdin;
-3	9	L7SQP1	t	0	\N	\N	2026-01-09 14:08:57.84914
-\.
+INSERT INTO public.partner_invite_codes VALUES (3, 9, 'L7SQP1', true, 0, NULL, NULL, '2026-01-09 14:08:57.84914');
 
 
 --
 -- Data for Name: partner_transactions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.partner_transactions (id, reservation_id, sender_tenant_id, receiver_tenant_id, activity_id, guest_count, unit_price, total_price, currency, customer_name, customer_phone, reservation_date, reservation_time, status, notes, created_at, paid_at, payment_collection_type, amount_collected_by_sender, amount_due_to_receiver, balance_owed, deletion_requested_at, deletion_requested_by_tenant_id, deletion_status, deletion_rejection_reason) FROM stdin;
-\.
 
 
 --
 -- Data for Name: payments; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.payments (id, settlement_id, amount_tl, method, reference, notes, paid_at, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: permissions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.permissions (id, key, name, description, category, sort_order) FROM stdin;
-1	dashboard.view	Dashboard Goruntule	\N	dashboard	1
-2	reservations.view	Rezervasyonlari Goruntule	\N	reservations	1
-3	reservations.create	Rezervasyon Olustur	\N	reservations	2
-4	reservations.edit	Rezervasyon Duzenle	\N	reservations	3
-5	reservations.delete	Rezervasyon Sil	\N	reservations	4
-6	activities.view	Aktiviteleri Goruntule	\N	activities	1
-7	activities.manage	Aktiviteleri Yonet	\N	activities	2
-8	calendar.view	Takvimi Goruntule	\N	calendar	1
-9	calendar.manage	Takvimi Yonet	\N	calendar	2
-10	reports.view	Raporlari Goruntule	\N	reports	1
-11	reports.export	Rapor Indir	\N	reports	2
-12	finance.view	Finans Goruntule	\N	finance	1
-13	finance.manage	Finans Yonet	\N	finance	2
-14	settings.view	Ayarlari Goruntule	\N	settings	1
-15	settings.manage	Ayarlari Yonet	\N	settings	2
-16	users.view	Kullanicilari Goruntule	\N	users	1
-17	users.manage	Kullanicilari Yonet	\N	users	2
-18	whatsapp.view	WhatsApp Goruntule	\N	whatsapp	1
-19	whatsapp.manage	WhatsApp Yonet	\N	whatsapp	2
-20	bot.view	Bot Ayarlarini Goruntule	\N	bot	1
-21	bot.manage	Bot Ayarlarini Yonet	\N	bot	2
-22	agencies.view	Acentalari Goruntule	\N	agencies	1
-23	agencies.manage	Acentalari Yonet	\N	agencies	2
-24	subscription.view	Abonelik Goruntule	\N	subscription	1
-25	subscription.manage	Abonelik Yonet	\N	subscription	2
-26	capacity.view	Kapasite Goruntule	Musaitlik ve kapasite bilgilerini goruntuleme	capacity	1
-27	reservations.request	Rezervasyon Talebi Olustur	Onay gerektiren rezervasyon talebi olusturma	reservations	5
-28	settings.templates.manage	Mesaj Şablonlarini Yönet	\N	settings	3
-\.
+INSERT INTO public.permissions VALUES (1, 'dashboard.view', 'Dashboard Goruntule', NULL, 'dashboard', 1);
+INSERT INTO public.permissions VALUES (2, 'reservations.view', 'Rezervasyonlari Goruntule', NULL, 'reservations', 1);
+INSERT INTO public.permissions VALUES (3, 'reservations.create', 'Rezervasyon Olustur', NULL, 'reservations', 2);
+INSERT INTO public.permissions VALUES (4, 'reservations.edit', 'Rezervasyon Duzenle', NULL, 'reservations', 3);
+INSERT INTO public.permissions VALUES (5, 'reservations.delete', 'Rezervasyon Sil', NULL, 'reservations', 4);
+INSERT INTO public.permissions VALUES (6, 'activities.view', 'Aktiviteleri Goruntule', NULL, 'activities', 1);
+INSERT INTO public.permissions VALUES (7, 'activities.manage', 'Aktiviteleri Yonet', NULL, 'activities', 2);
+INSERT INTO public.permissions VALUES (8, 'calendar.view', 'Takvimi Goruntule', NULL, 'calendar', 1);
+INSERT INTO public.permissions VALUES (9, 'calendar.manage', 'Takvimi Yonet', NULL, 'calendar', 2);
+INSERT INTO public.permissions VALUES (10, 'reports.view', 'Raporlari Goruntule', NULL, 'reports', 1);
+INSERT INTO public.permissions VALUES (11, 'reports.export', 'Rapor Indir', NULL, 'reports', 2);
+INSERT INTO public.permissions VALUES (12, 'finance.view', 'Finans Goruntule', NULL, 'finance', 1);
+INSERT INTO public.permissions VALUES (13, 'finance.manage', 'Finans Yonet', NULL, 'finance', 2);
+INSERT INTO public.permissions VALUES (14, 'settings.view', 'Ayarlari Goruntule', NULL, 'settings', 1);
+INSERT INTO public.permissions VALUES (15, 'settings.manage', 'Ayarlari Yonet', NULL, 'settings', 2);
+INSERT INTO public.permissions VALUES (16, 'users.view', 'Kullanicilari Goruntule', NULL, 'users', 1);
+INSERT INTO public.permissions VALUES (17, 'users.manage', 'Kullanicilari Yonet', NULL, 'users', 2);
+INSERT INTO public.permissions VALUES (18, 'whatsapp.view', 'WhatsApp Goruntule', NULL, 'whatsapp', 1);
+INSERT INTO public.permissions VALUES (19, 'whatsapp.manage', 'WhatsApp Yonet', NULL, 'whatsapp', 2);
+INSERT INTO public.permissions VALUES (20, 'bot.view', 'Bot Ayarlarini Goruntule', NULL, 'bot', 1);
+INSERT INTO public.permissions VALUES (21, 'bot.manage', 'Bot Ayarlarini Yonet', NULL, 'bot', 2);
+INSERT INTO public.permissions VALUES (22, 'agencies.view', 'Acentalari Goruntule', NULL, 'agencies', 1);
+INSERT INTO public.permissions VALUES (23, 'agencies.manage', 'Acentalari Yonet', NULL, 'agencies', 2);
+INSERT INTO public.permissions VALUES (24, 'subscription.view', 'Abonelik Goruntule', NULL, 'subscription', 1);
+INSERT INTO public.permissions VALUES (25, 'subscription.manage', 'Abonelik Yonet', NULL, 'subscription', 2);
+INSERT INTO public.permissions VALUES (26, 'capacity.view', 'Kapasite Goruntule', 'Musaitlik ve kapasite bilgilerini goruntuleme', 'capacity', 1);
+INSERT INTO public.permissions VALUES (27, 'reservations.request', 'Rezervasyon Talebi Olustur', 'Onay gerektiren rezervasyon talebi olusturma', 'reservations', 5);
+INSERT INTO public.permissions VALUES (28, 'settings.templates.manage', 'Mesaj Şablonlarini Yönet', NULL, 'settings', 3);
 
 
 --
 -- Data for Name: plan_features; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.plan_features (id, key, label, description, icon, category, sort_order, is_active, created_at) FROM stdin;
-1	basic_calendar	Temel Takvim	Rezervasyon takvimi görüntüleme	Calendar	core	0	t	2026-01-05 06:49:07.883141
-2	manual_reservations	Manuel Rezervasyon	Manuel rezervasyon oluşturma	ClipboardList	core	1	t	2026-01-05 06:49:07.898385
-3	whatsapp_notifications	WhatsApp Bildirimleri	WhatsApp üzerinden bildirim gönderme	MessageCircle	communication	2	t	2026-01-05 06:49:07.902119
-4	basic_reports	Temel Raporlar	Basit istatistik raporları	BarChart3	analytics	3	t	2026-01-05 06:49:07.905623
-5	advanced_reports	Gelişmiş Raporlar	Detaylı analiz ve raporlama	TrendingUp	analytics	4	t	2026-01-05 06:49:07.909743
-6	ai_bot	AI Bot	Yapay zeka destekli müşteri yanıtları	Bot	automation	5	t	2026-01-05 06:49:07.913614
-7	woocommerce	WooCommerce Entegrasyonu	E-ticaret sitesi entegrasyonu	ShoppingCart	integration	6	t	2026-01-05 06:49:07.918828
-8	package_tours	Paket Turlar	Çoklu aktivite paket turları	Package	core	7	t	2026-01-05 06:49:07.923034
-9	api_access	API Erişimi	Dış sistemler için API erişimi	Code	integration	8	t	2026-01-05 06:49:07.927615
-10	priority_support	Öncelikli Destek	7/24 öncelikli teknik destek	HeadphonesIcon	support	9	t	2026-01-05 06:49:07.931982
-11	custom_branding	Özel Marka	Kendi logonuz ve renk temanız	Palette	customization	10	t	2026-01-05 06:49:07.939027
-\.
+INSERT INTO public.plan_features VALUES (1, 'basic_calendar', 'Temel Takvim', 'Rezervasyon takvimi görüntüleme', 'Calendar', 'core', 0, true, '2026-01-05 06:49:07.883141');
+INSERT INTO public.plan_features VALUES (2, 'manual_reservations', 'Manuel Rezervasyon', 'Manuel rezervasyon oluşturma', 'ClipboardList', 'core', 1, true, '2026-01-05 06:49:07.898385');
+INSERT INTO public.plan_features VALUES (3, 'whatsapp_notifications', 'WhatsApp Bildirimleri', 'WhatsApp üzerinden bildirim gönderme', 'MessageCircle', 'communication', 2, true, '2026-01-05 06:49:07.902119');
+INSERT INTO public.plan_features VALUES (4, 'basic_reports', 'Temel Raporlar', 'Basit istatistik raporları', 'BarChart3', 'analytics', 3, true, '2026-01-05 06:49:07.905623');
+INSERT INTO public.plan_features VALUES (5, 'advanced_reports', 'Gelişmiş Raporlar', 'Detaylı analiz ve raporlama', 'TrendingUp', 'analytics', 4, true, '2026-01-05 06:49:07.909743');
+INSERT INTO public.plan_features VALUES (6, 'ai_bot', 'AI Bot', 'Yapay zeka destekli müşteri yanıtları', 'Bot', 'automation', 5, true, '2026-01-05 06:49:07.913614');
+INSERT INTO public.plan_features VALUES (7, 'woocommerce', 'WooCommerce Entegrasyonu', 'E-ticaret sitesi entegrasyonu', 'ShoppingCart', 'integration', 6, true, '2026-01-05 06:49:07.918828');
+INSERT INTO public.plan_features VALUES (8, 'package_tours', 'Paket Turlar', 'Çoklu aktivite paket turları', 'Package', 'core', 7, true, '2026-01-05 06:49:07.923034');
+INSERT INTO public.plan_features VALUES (9, 'api_access', 'API Erişimi', 'Dış sistemler için API erişimi', 'Code', 'integration', 8, true, '2026-01-05 06:49:07.927615');
+INSERT INTO public.plan_features VALUES (10, 'priority_support', 'Öncelikli Destek', '7/24 öncelikli teknik destek', 'HeadphonesIcon', 'support', 9, true, '2026-01-05 06:49:07.931982');
+INSERT INTO public.plan_features VALUES (11, 'custom_branding', 'Özel Marka', 'Kendi logonuz ve renk temanız', 'Palette', 'customization', 10, true, '2026-01-05 06:49:07.939027');
 
 
 --
 -- Data for Name: platform_admins; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.platform_admins (id, email, password_hash, name, role, is_active, last_login_at, created_at, updated_at) FROM stdin;
-2	flymet.mail@gmail.com	c8c23521eafd676ab201c93c0bd055ff:f5954c5d8274c257d5b4041320ff764cd7f2b0e5776c38c6e849482fb4365bf4a2b6e6e5bd336a4cea69bd49f5187107e9123254b8ef7a6448de54c4dc067514	flymet	super_admin	t	\N	2026-01-05 14:20:55.297094	2026-01-05 14:20:55.297094
-\.
+INSERT INTO public.platform_admins VALUES (2, 'flymet.mail@gmail.com', 'c8c23521eafd676ab201c93c0bd055ff:f5954c5d8274c257d5b4041320ff764cd7f2b0e5776c38c6e849482fb4365bf4a2b6e6e5bd336a4cea69bd49f5187107e9123254b8ef7a6448de54c4dc067514', 'flymet', 'super_admin', true, NULL, '2026-01-05 14:20:55.297094', '2026-01-05 14:20:55.297094');
 
 
 --
 -- Data for Name: platform_support_tickets; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.platform_support_tickets (id, tenant_id, agency_name, agency_email, subject, description, priority, status, category, assigned_to, resolved_at, created_at, updated_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: request_message_templates; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.request_message_templates (id, name, template_type, message_content, is_default, is_active, created_at, tenant_id) FROM stdin;
-10	Talep Onaylandı	approved	Sayın {customerName}, {requestType} talebiniz onaylanmıştır. Teşekkür ederiz.	f	t	2026-01-06 07:11:00.982214	7
-11	Talep Değerlendiriliyor	pending	Sayın {customerName}, {requestType} talebiniz değerlendirilmektedir. En kısa sürede size dönüş yapacağız.	f	t	2026-01-06 07:11:00.985574	7
-12	Talep Reddedildi	rejected	Sayın {customerName}, üzgünüz ancak {requestType} talebinizi karşılayamıyoruz. Detaylar için bizimle iletişime geçebilirsiniz.	f	t	2026-01-06 07:11:00.989155	7
-13	Talep Onaylandı	approved	Sayın {customerName}, {requestType} talebiniz onaylanmıştır. Teşekkür ederiz.	f	t	2026-01-08 10:06:57.765779	9
-14	Talep Değerlendiriliyor	pending	Sayın {customerName}, {requestType} talebiniz değerlendirilmektedir. En kısa sürede size dönüş yapacağız.	f	t	2026-01-08 10:06:57.770514	9
-15	Talep Reddedildi	rejected	Sayın {customerName}, üzgünüz ancak {requestType} talebinizi karşılayamıyoruz. Detaylar için bizimle iletişime geçebilirsiniz.	f	t	2026-01-08 10:06:57.774154	9
-\.
+INSERT INTO public.request_message_templates VALUES (10, 'Talep Onaylandı', 'approved', 'Sayın {customerName}, {requestType} talebiniz onaylanmıştır. Teşekkür ederiz.', false, true, '2026-01-06 07:11:00.982214', 7);
+INSERT INTO public.request_message_templates VALUES (11, 'Talep Değerlendiriliyor', 'pending', 'Sayın {customerName}, {requestType} talebiniz değerlendirilmektedir. En kısa sürede size dönüş yapacağız.', false, true, '2026-01-06 07:11:00.985574', 7);
+INSERT INTO public.request_message_templates VALUES (12, 'Talep Reddedildi', 'rejected', 'Sayın {customerName}, üzgünüz ancak {requestType} talebinizi karşılayamıyoruz. Detaylar için bizimle iletişime geçebilirsiniz.', false, true, '2026-01-06 07:11:00.989155', 7);
+INSERT INTO public.request_message_templates VALUES (13, 'Talep Onaylandı', 'approved', 'Sayın {customerName}, {requestType} talebiniz onaylanmıştır. Teşekkür ederiz.', false, true, '2026-01-08 10:06:57.765779', 9);
+INSERT INTO public.request_message_templates VALUES (14, 'Talep Değerlendiriliyor', 'pending', 'Sayın {customerName}, {requestType} talebiniz değerlendirilmektedir. En kısa sürede size dönüş yapacağız.', false, true, '2026-01-08 10:06:57.770514', 9);
+INSERT INTO public.request_message_templates VALUES (15, 'Talep Reddedildi', 'rejected', 'Sayın {customerName}, üzgünüz ancak {requestType} talebinizi karşılayamıyoruz. Detaylar için bizimle iletişime geçebilirsiniz.', false, true, '2026-01-08 10:06:57.774154', 9);
 
 
 --
 -- Data for Name: reservation_change_requests; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.reservation_change_requests (id, reservation_id, tenant_id, initiated_by_type, initiated_by_id, initiated_by_phone, request_type, original_date, original_time, requested_date, requested_time, request_details, status, processed_by, processed_at, process_notes, created_at, updated_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: reservation_requests; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.reservation_requests (id, tenant_id, activity_id, date, "time", customer_name, customer_phone, guests, notes, status, requested_by, processed_by, processed_at, process_notes, reservation_id, created_at, payment_collection_type, amount_collected_by_sender, payment_currency, payment_notes) FROM stdin;
-11	7	8	2026-01-10	13:00	tasfdasdd	3242332	5	[Partner: Acenta 2]	deleted	10	10	2026-01-10 08:13:37.523	\N	\N	2026-01-10 07:45:24.866786	receiver_full	0	TRY	\N
-45	7	8	2026-01-10	09:00	gger	23423423	1	[Partner: Acenta 2]	deleted	10	10	2026-01-10 08:13:33.151	\N	\N	2026-01-10 08:07:06.042614	receiver_full	0	TRY	\N
-44	7	8	2026-01-10	17:00	test55	323432234	1	[Partner: Acenta 2]	deleted	10	10	2026-01-10 08:13:34.995	\N	\N	2026-01-10 08:06:36.166854	receiver_full	0	TRY	\N
-9	7	8	2026-01-08	17:00	asfdasd	32423	2	[Partner: Acenta 2]	rejected	10	7	2026-01-10 07:04:50.787	\N	\N	2026-01-10 04:23:50.668149	receiver_full	0	TRY	\N
-1	7	7	2026-01-28	09:00	deneme	51512627618	1	asfas	rejected	9	7	2026-01-10 07:10:20.126	\N	\N	2026-01-07 07:20:34.510325	receiver_full	0	TRY	\N
-47	9	9	2026-01-10	09:00	tttt	555555	1	[Partner: acenta]	deleted	7	7	2026-01-10 10:02:01.865	\N	59	2026-01-10 08:14:37.682313	receiver_full	0	TRY	\N
-48	9	9	2026-01-11	09:00	rrr	55555	1	[Partner: acenta]	deleted	7	7	2026-01-10 10:02:03.386	\N	58	2026-01-10 08:15:16.777533	sender_full	0	TRY	\N
-49	9	9	2026-01-09	09:00	eeeee	55555	1	[Partner: acenta]	deleted	7	7	2026-01-10 10:02:05.367	\N	57	2026-01-10 08:15:40.362713	sender_partial	500	TRY	\N
-4	7	8	2026-01-15	17:00	Hasan Hüseyin	51512627618	3	[Partner: Acenta 2]	deleted	10	7	2026-01-10 04:21:24.885	\N	\N	2026-01-08 11:00:34.366603	receiver_full	0	TRY	\N
-3	7	8	2026-01-09	13:00	Test Ahmet 2	51512627618	2	[Partner: Acenta 2] testt	deleted	10	7	2026-01-08 10:22:15.073	Ödemesi bizde	\N	2026-01-08 10:21:29.960484	receiver_full	0	TRY	\N
-2	7	7	2026-01-07	09:00	deneme	34324	2	fsdfsf	deleted	9	7	2026-01-07 08:03:55.228	\N	\N	2026-01-07 07:40:50.355087	receiver_full	0	TRY	\N
-6	9	9	2026-01-09	09:00	Hamza Mert	234234234234	5	[Partner: acenta] hsşkmfşea	deleted	7	10	2026-01-09 16:24:04.241	\N	\N	2026-01-09 14:37:32.238792	receiver_full	0	TRY	\N
-7	9	9	2026-01-08	09:00	gasdfasd	223423	2	[Partner: acenta] asdas	deleted	7	10	2026-01-10 06:16:59.161	\N	\N	2026-01-09 14:42:15.817456	receiver_full	0	TRY	\N
-8	9	9	2026-01-10	09:00	Hamza Mamza	23423423	5	[Partner: acenta] dgfdsds	deleted	7	7	2026-01-10 07:32:16.108	\N	\N	2026-01-09 15:54:07.257036	receiver_full	0	TRY	\N
-5	7	8	2026-01-08	13:00	Salih Demir	55555555555	3	[Partner: Acenta 2]	deleted	10	10	2026-01-10 07:32:45.449	\N	\N	2026-01-09 06:34:06.333097	receiver_full	0	TRY	\N
-10	7	8	2026-01-05	13:00	Test	2334242	2	[Partner: Acenta 2]	deleted	10	10	2026-01-10 07:44:39.139	\N	21	2026-01-10 07:33:13.718231	receiver_full	0	TRY	\N
-46	9	9	2026-01-08	09:00	tessst6	5555555	1	[Partner: acenta]	rejected	7	10	2026-01-10 08:13:26.519	\N	\N	2026-01-10 08:10:08.896286	receiver_full	0	TRY	\N
-\.
+INSERT INTO public.reservation_requests VALUES (11, 7, 8, '2026-01-10', '13:00', 'tasfdasdd', '3242332', 5, '[Partner: Acenta 2]', 'deleted', 10, 10, '2026-01-10 08:13:37.523', NULL, NULL, '2026-01-10 07:45:24.866786', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (45, 7, 8, '2026-01-10', '09:00', 'gger', '23423423', 1, '[Partner: Acenta 2]', 'deleted', 10, 10, '2026-01-10 08:13:33.151', NULL, NULL, '2026-01-10 08:07:06.042614', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (44, 7, 8, '2026-01-10', '17:00', 'test55', '323432234', 1, '[Partner: Acenta 2]', 'deleted', 10, 10, '2026-01-10 08:13:34.995', NULL, NULL, '2026-01-10 08:06:36.166854', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (9, 7, 8, '2026-01-08', '17:00', 'asfdasd', '32423', 2, '[Partner: Acenta 2]', 'rejected', 10, 7, '2026-01-10 07:04:50.787', NULL, NULL, '2026-01-10 04:23:50.668149', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (1, 7, 7, '2026-01-28', '09:00', 'deneme', '51512627618', 1, 'asfas', 'rejected', 9, 7, '2026-01-10 07:10:20.126', NULL, NULL, '2026-01-07 07:20:34.510325', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (47, 9, 9, '2026-01-10', '09:00', 'tttt', '555555', 1, '[Partner: acenta]', 'deleted', 7, 7, '2026-01-10 10:02:01.865', NULL, 59, '2026-01-10 08:14:37.682313', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (48, 9, 9, '2026-01-11', '09:00', 'rrr', '55555', 1, '[Partner: acenta]', 'deleted', 7, 7, '2026-01-10 10:02:03.386', NULL, 58, '2026-01-10 08:15:16.777533', 'sender_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (49, 9, 9, '2026-01-09', '09:00', 'eeeee', '55555', 1, '[Partner: acenta]', 'deleted', 7, 7, '2026-01-10 10:02:05.367', NULL, 57, '2026-01-10 08:15:40.362713', 'sender_partial', 500, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (4, 7, 8, '2026-01-15', '17:00', 'Hasan Hüseyin', '51512627618', 3, '[Partner: Acenta 2]', 'deleted', 10, 7, '2026-01-10 04:21:24.885', NULL, NULL, '2026-01-08 11:00:34.366603', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (3, 7, 8, '2026-01-09', '13:00', 'Test Ahmet 2', '51512627618', 2, '[Partner: Acenta 2] testt', 'deleted', 10, 7, '2026-01-08 10:22:15.073', 'Ödemesi bizde', NULL, '2026-01-08 10:21:29.960484', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (2, 7, 7, '2026-01-07', '09:00', 'deneme', '34324', 2, 'fsdfsf', 'deleted', 9, 7, '2026-01-07 08:03:55.228', NULL, NULL, '2026-01-07 07:40:50.355087', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (6, 9, 9, '2026-01-09', '09:00', 'Hamza Mert', '234234234234', 5, '[Partner: acenta] hsşkmfşea', 'deleted', 7, 10, '2026-01-09 16:24:04.241', NULL, NULL, '2026-01-09 14:37:32.238792', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (7, 9, 9, '2026-01-08', '09:00', 'gasdfasd', '223423', 2, '[Partner: acenta] asdas', 'deleted', 7, 10, '2026-01-10 06:16:59.161', NULL, NULL, '2026-01-09 14:42:15.817456', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (8, 9, 9, '2026-01-10', '09:00', 'Hamza Mamza', '23423423', 5, '[Partner: acenta] dgfdsds', 'deleted', 7, 7, '2026-01-10 07:32:16.108', NULL, NULL, '2026-01-09 15:54:07.257036', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (5, 7, 8, '2026-01-08', '13:00', 'Salih Demir', '55555555555', 3, '[Partner: Acenta 2]', 'deleted', 10, 10, '2026-01-10 07:32:45.449', NULL, NULL, '2026-01-09 06:34:06.333097', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (10, 7, 8, '2026-01-05', '13:00', 'Test', '2334242', 2, '[Partner: Acenta 2]', 'deleted', 10, 10, '2026-01-10 07:44:39.139', NULL, 21, '2026-01-10 07:33:13.718231', 'receiver_full', 0, 'TRY', NULL);
+INSERT INTO public.reservation_requests VALUES (46, 9, 9, '2026-01-08', '09:00', 'tessst6', '5555555', 1, '[Partner: acenta]', 'rejected', 7, 10, '2026-01-10 08:13:26.519', NULL, NULL, '2026-01-10 08:10:08.896286', 'receiver_full', 0, 'TRY', NULL);
 
 
 --
 -- Data for Name: reservations; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.reservations (id, activity_id, customer_name, customer_phone, customer_email, date, "time", quantity, status, source, external_id, created_at, price_tl, price_usd, currency, agency_id, order_subtotal, order_total, order_tax, settlement_id, package_tour_id, parent_reservation_id, order_number, tracking_token, tracking_token_expires_at, hotel_name, has_transfer, tenant_id, payment_status, notes) FROM stdin;
-57	9	eeeee	55555	\N	2026-01-09	09:00	1	pending	partner	\N	2026-01-10 08:15:55.157341	0	0	TRY	\N	0	0	0	\N	\N	\N	\N	\N	\N	\N	f	9	unpaid	[Partner: acenta]
-58	9	rrr	55555	\N	2026-01-11	09:00	1	pending	partner	\N	2026-01-10 08:15:57.421796	0	0	TRY	\N	0	0	0	\N	\N	\N	\N	\N	\N	\N	f	9	unpaid	[Partner: acenta]
-59	9	tttt	555555	\N	2026-01-10	09:00	1	pending	partner	\N	2026-01-10 08:15:59.099835	0	0	TRY	\N	0	0	0	\N	\N	\N	\N	\N	\N	\N	f	9	unpaid	[Partner: acenta]
-21	8	Test	2334242	\N	2026-01-05	13:00	2	pending	partner	\N	2026-01-10 07:34:51.149411	0	0	TRY	\N	0	0	0	\N	\N	\N	\N	\N	\N	\N	f	7	unpaid	\N
-\.
+INSERT INTO public.reservations VALUES (57, 9, 'eeeee', '55555', NULL, '2026-01-09', '09:00', 1, 'pending', 'partner', NULL, '2026-01-10 08:15:55.157341', 0, 0, 'TRY', NULL, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 9, 'unpaid', '[Partner: acenta]');
+INSERT INTO public.reservations VALUES (58, 9, 'rrr', '55555', NULL, '2026-01-11', '09:00', 1, 'pending', 'partner', NULL, '2026-01-10 08:15:57.421796', 0, 0, 'TRY', NULL, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 9, 'unpaid', '[Partner: acenta]');
+INSERT INTO public.reservations VALUES (59, 9, 'tttt', '555555', NULL, '2026-01-10', '09:00', 1, 'pending', 'partner', NULL, '2026-01-10 08:15:59.099835', 0, 0, 'TRY', NULL, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 9, 'unpaid', '[Partner: acenta]');
+INSERT INTO public.reservations VALUES (21, 8, 'Test', '2334242', NULL, '2026-01-05', '13:00', 2, 'pending', 'partner', NULL, '2026-01-10 07:34:51.149411', 0, 0, 'TRY', NULL, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 7, 'unpaid', NULL);
 
 
 --
 -- Data for Name: role_permissions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.role_permissions (id, role_id, permission_id) FROM stdin;
-1	4	1
-2	4	2
-3	4	3
-4	4	4
-5	4	5
-6	4	6
-7	4	7
-8	4	8
-9	4	9
-10	4	10
-11	4	11
-12	4	12
-13	4	13
-14	4	14
-15	4	15
-16	4	16
-17	4	17
-18	4	18
-19	4	19
-20	4	20
-21	4	21
-22	4	22
-23	4	23
-24	4	24
-25	4	25
-26	5	1
-27	5	2
-28	5	3
-29	5	4
-30	5	5
-31	5	6
-32	5	7
-33	5	8
-34	5	9
-35	5	10
-36	5	11
-37	5	12
-38	5	13
-39	5	14
-40	5	16
-41	5	17
-42	5	18
-43	5	19
-44	5	20
-45	5	21
-46	5	22
-47	5	23
-48	6	1
-49	6	2
-50	6	3
-51	6	4
-52	6	6
-53	6	8
-54	6	10
-55	6	18
-56	3	26
-58	4	26
-59	5	26
-60	6	26
-61	3	27
-62	4	28
-\.
+INSERT INTO public.role_permissions VALUES (1, 4, 1);
+INSERT INTO public.role_permissions VALUES (2, 4, 2);
+INSERT INTO public.role_permissions VALUES (3, 4, 3);
+INSERT INTO public.role_permissions VALUES (4, 4, 4);
+INSERT INTO public.role_permissions VALUES (5, 4, 5);
+INSERT INTO public.role_permissions VALUES (6, 4, 6);
+INSERT INTO public.role_permissions VALUES (7, 4, 7);
+INSERT INTO public.role_permissions VALUES (8, 4, 8);
+INSERT INTO public.role_permissions VALUES (9, 4, 9);
+INSERT INTO public.role_permissions VALUES (10, 4, 10);
+INSERT INTO public.role_permissions VALUES (11, 4, 11);
+INSERT INTO public.role_permissions VALUES (12, 4, 12);
+INSERT INTO public.role_permissions VALUES (13, 4, 13);
+INSERT INTO public.role_permissions VALUES (14, 4, 14);
+INSERT INTO public.role_permissions VALUES (15, 4, 15);
+INSERT INTO public.role_permissions VALUES (16, 4, 16);
+INSERT INTO public.role_permissions VALUES (17, 4, 17);
+INSERT INTO public.role_permissions VALUES (18, 4, 18);
+INSERT INTO public.role_permissions VALUES (19, 4, 19);
+INSERT INTO public.role_permissions VALUES (20, 4, 20);
+INSERT INTO public.role_permissions VALUES (21, 4, 21);
+INSERT INTO public.role_permissions VALUES (22, 4, 22);
+INSERT INTO public.role_permissions VALUES (23, 4, 23);
+INSERT INTO public.role_permissions VALUES (24, 4, 24);
+INSERT INTO public.role_permissions VALUES (25, 4, 25);
+INSERT INTO public.role_permissions VALUES (26, 5, 1);
+INSERT INTO public.role_permissions VALUES (27, 5, 2);
+INSERT INTO public.role_permissions VALUES (28, 5, 3);
+INSERT INTO public.role_permissions VALUES (29, 5, 4);
+INSERT INTO public.role_permissions VALUES (30, 5, 5);
+INSERT INTO public.role_permissions VALUES (31, 5, 6);
+INSERT INTO public.role_permissions VALUES (32, 5, 7);
+INSERT INTO public.role_permissions VALUES (33, 5, 8);
+INSERT INTO public.role_permissions VALUES (34, 5, 9);
+INSERT INTO public.role_permissions VALUES (35, 5, 10);
+INSERT INTO public.role_permissions VALUES (36, 5, 11);
+INSERT INTO public.role_permissions VALUES (37, 5, 12);
+INSERT INTO public.role_permissions VALUES (38, 5, 13);
+INSERT INTO public.role_permissions VALUES (39, 5, 14);
+INSERT INTO public.role_permissions VALUES (40, 5, 16);
+INSERT INTO public.role_permissions VALUES (41, 5, 17);
+INSERT INTO public.role_permissions VALUES (42, 5, 18);
+INSERT INTO public.role_permissions VALUES (43, 5, 19);
+INSERT INTO public.role_permissions VALUES (44, 5, 20);
+INSERT INTO public.role_permissions VALUES (45, 5, 21);
+INSERT INTO public.role_permissions VALUES (46, 5, 22);
+INSERT INTO public.role_permissions VALUES (47, 5, 23);
+INSERT INTO public.role_permissions VALUES (48, 6, 1);
+INSERT INTO public.role_permissions VALUES (49, 6, 2);
+INSERT INTO public.role_permissions VALUES (50, 6, 3);
+INSERT INTO public.role_permissions VALUES (51, 6, 4);
+INSERT INTO public.role_permissions VALUES (52, 6, 6);
+INSERT INTO public.role_permissions VALUES (53, 6, 8);
+INSERT INTO public.role_permissions VALUES (54, 6, 10);
+INSERT INTO public.role_permissions VALUES (55, 6, 18);
+INSERT INTO public.role_permissions VALUES (56, 3, 26);
+INSERT INTO public.role_permissions VALUES (58, 4, 26);
+INSERT INTO public.role_permissions VALUES (59, 5, 26);
+INSERT INTO public.role_permissions VALUES (60, 6, 26);
+INSERT INTO public.role_permissions VALUES (61, 3, 27);
+INSERT INTO public.role_permissions VALUES (62, 4, 28);
 
 
 --
 -- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.roles (id, name, display_name, description, color, is_system, is_active, created_at, updated_at) FROM stdin;
-1	admin	Yonetici	Tam yetkili yonetici	red	t	t	2026-01-05 10:44:10.305619	2026-01-05 10:44:10.305619
-2	operator	Operator	Rezervasyon ve aktivite islemleri	blue	t	t	2026-01-05 10:44:10.312402	2026-01-05 10:44:10.312402
-4	tenant_owner	Sahip	Acenta sahibi - tam yetki (ayarlar, faturalar, kullanici yonetimi)	purple	t	t	2026-01-05 12:57:49.159391	2026-01-05 12:57:49.159391
-5	tenant_manager	Yonetici	Operasyonel yonetici - aktiviteler, bot, finans, rezervasyonlar	blue	t	t	2026-01-05 12:57:49.343008	2026-01-05 12:57:49.343008
-6	tenant_operator	Operator	Gunluk islemler - rezervasyon ve mesajlar	green	t	t	2026-01-05 12:57:49.606	2026-01-05 12:57:49.606
-3	viewer	Is Ortagi	Partner acenta erisimi	gray	t	t	2026-01-05 10:44:10.316484	2026-01-05 10:44:10.316484
-\.
+INSERT INTO public.roles VALUES (1, 'admin', 'Yonetici', 'Tam yetkili yonetici', 'red', true, true, '2026-01-05 10:44:10.305619', '2026-01-05 10:44:10.305619');
+INSERT INTO public.roles VALUES (2, 'operator', 'Operator', 'Rezervasyon ve aktivite islemleri', 'blue', true, true, '2026-01-05 10:44:10.312402', '2026-01-05 10:44:10.312402');
+INSERT INTO public.roles VALUES (4, 'tenant_owner', 'Sahip', 'Acenta sahibi - tam yetki (ayarlar, faturalar, kullanici yonetimi)', 'purple', true, true, '2026-01-05 12:57:49.159391', '2026-01-05 12:57:49.159391');
+INSERT INTO public.roles VALUES (5, 'tenant_manager', 'Yonetici', 'Operasyonel yonetici - aktiviteler, bot, finans, rezervasyonlar', 'blue', true, true, '2026-01-05 12:57:49.343008', '2026-01-05 12:57:49.343008');
+INSERT INTO public.roles VALUES (6, 'tenant_operator', 'Operator', 'Gunluk islemler - rezervasyon ve mesajlar', 'green', true, true, '2026-01-05 12:57:49.606', '2026-01-05 12:57:49.606');
+INSERT INTO public.roles VALUES (3, 'viewer', 'Is Ortagi', 'Partner acenta erisimi', 'gray', true, true, '2026-01-05 10:44:10.316484', '2026-01-05 10:44:10.316484');
 
 
 --
 -- Data for Name: session; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.session (sid, sess, expire) FROM stdin;
-t0hSiLKyWXZt5WPcj0dI4pi-bseoBbC2	{"cookie":{"originalMaxAge":604800000,"expires":"2026-01-17T11:29:26.356Z","secure":false,"httpOnly":true,"path":"/","sameSite":"lax"},"userId":2,"tenantId":7,"username":"acenta","roles":[4],"permissions":["activities.view","activities.manage","agencies.view","agencies.manage","bot.view","bot.manage","calendar.view","calendar.manage","capacity.view","dashboard.view","finance.view","finance.manage","reports.view","reports.export","reservations.view","reservations.create","reservations.edit","reservations.delete","settings.view","settings.manage","settings.templates.manage","subscription.view","subscription.manage","users.view","users.manage","whatsapp.view","whatsapp.manage"],"platformAdminId":2,"isPlatformAdmin":true}	2026-01-18 10:32:01
-\.
+INSERT INTO public.session VALUES ('t0hSiLKyWXZt5WPcj0dI4pi-bseoBbC2', '{"cookie":{"originalMaxAge":604800000,"expires":"2026-01-17T11:29:26.356Z","secure":false,"httpOnly":true,"path":"/","sameSite":"lax"},"userId":2,"tenantId":7,"username":"acenta","roles":[4],"permissions":["activities.view","activities.manage","agencies.view","agencies.manage","bot.view","bot.manage","calendar.view","calendar.manage","capacity.view","dashboard.view","finance.view","finance.manage","reports.view","reports.export","reservations.view","reservations.create","reservations.edit","reservations.delete","settings.view","settings.manage","settings.templates.manage","subscription.view","subscription.manage","users.view","users.manage","whatsapp.view","whatsapp.manage"],"platformAdminId":2,"isPlatformAdmin":true}', '2026-01-18 10:33:02');
 
 
 --
 -- Data for Name: settings; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.settings (id, key, value, tenant_id) FROM stdin;
-24	reminderMessage	Merhaba {isim}! Rezervasyonunuz için hatırlatma:\n\n{aktiviteler}\nTarih: {tarih}\n\nSizi görmek için sabırsızlanıyoruz!	\N
-25	bot_rules		\N
-26	reminderHours	24	\N
-27	botAccess	{"enabled":true,"activities":true,"packageTours":true,"capacity":true,"faq":true,"confirmation":true,"transfer":true,"extras":true}	\N
-28	bulkMessageTemplates	{"confirmed":{"label":"Onaylandı","content":"Merhaba {isim},\\n\\nRezervasyon onaylandı!\\nAktivite: {aktivite}\\nTarih: {tarih}\\nSaat: {saat}\\n\\nİyi günler dileriz."},"pending":{"label":"Beklemede","content":"Merhaba {isim},\\n\\nRezervasyon talebiniz değerlendiriliyor.\\nAktivite: {aktivite}\\nTarih: {tarih}\\nSaat: {saat}\\n\\nEn kısa sürede bilgilendirme yapılacaktır."},"cancelled":{"label":"İptal","content":"Merhaba {isim},\\n\\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\\nAktivite: {aktivite}\\nTarih: {tarih}\\n\\nDetaylar için: {takip_linki}\\n\\nSorularınız için bizimle iletişime geçebilirsiniz."}}	\N
-19	botRules	=== BOT KURALLARI (13 MADDE) ===\n\n1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.\n\n2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.\n\n3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.\n\n4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.\n\n5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.\n\n6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.\n\n7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.\n\n8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.\n\n9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.\n\n10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.\n\n11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.\n\n12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.\n\n13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.	7
-20	botPrompt	Sen acenta bünyesinde görev yapan, profesyonel bir müşteri danışmanısın. Temel görevin; turizm aktiviteleri için rezervasyon almak, müsaitlik sorgulamak ve müşteri sorularını kurumsal bir dille yanıtlamaktır. Kendini asla bir yapay zeka olarak tanıtma; her zaman profesyonel bir çalışan rolünde kal.	7
-21	botAccess	{"enabled":true,"activities":true,"packageTours":true,"capacity":true,"faq":true,"confirmation":true,"transfer":true,"extras":true}	7
-29	botRules	=== BOT KURALLARI (13 MADDE) ===\n\n1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.\n\n2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.\n\n3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.\n\n4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.\n\n5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.\n\n6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.\n\n7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.\n\n8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.\n\n9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.\n\n10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.\n\n11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.\n\n12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.\n\n13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.	2
-22	botPrompt	Sen bir TURİZM RESERVASYONLARI DANIŞMANI'sın. Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. Kibar, samimi ve profesyonel ol. Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol.	\N
-23	customerSupportEmail		\N
-30	botRules	=== BOT KURALLARI (13 MADDE) ===\n\n1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.\n\n2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.\n\n3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.\n\n4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.\n\n5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.\n\n6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.\n\n7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.\n\n8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.\n\n9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.\n\n10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.\n\n11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.\n\n12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.\n\n13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.	8
-12	botRulesSessionToken	{"token":"7b07599276461b788ded8b6f06e711f6016d77abf18f17549a29a1d6c20e579d","expiresAt":1768135661261}	\N
-31	botRules	\n=== BOT KURALLARI (13 MADDE) ===\n\n1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.\n\n2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.\n\n3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.\n\n4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.\n\n5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.\n\n6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.\n\n7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.\n\n8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.\n\n9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.\n\n10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS'lerden biriyle eşleşiyorsa, oradaki cevabı kullan.\n\n11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.\n\n12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.\n\n13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.\n	9
-32	botPrompt	Sen Acenta 2 bünyesinde görev yapan, profesyonel bir müşteri danışmanısın. Temel görevin; turizm aktiviteleri için rezervasyon almak, müsaitlik sorgulamak ve müşteri sorularını kurumsal bir dille yanıtlamaktır. Kendini asla bir yapay zeka olarak tanıtma; her zaman profesyonel bir çalışan rolünde kal.	9
-33	botAccess	{"enabled":true,"activities":true,"packageTours":true,"capacity":true,"faq":true,"confirmation":true,"transfer":true,"extras":true}	9
-34	brandSettings	{"primaryColor":"#673DE7","accentColor":"#CCFF00","companyName":"Smartur","logoUrl":"https://logobudur.com/wp-content/uploads/2026/01/smarturfavicon.png"}	7
-35	popupAppearance	{"backgroundColor":"#e0e0e0","backgroundOpacity":32,"borderColor":"#ffffff","borderOpacity":35,"blurIntensity":"medium"}	7
-\.
+INSERT INTO public.settings VALUES (24, 'reminderMessage', 'Merhaba {isim}! Rezervasyonunuz için hatırlatma:
+
+{aktiviteler}
+Tarih: {tarih}
+
+Sizi görmek için sabırsızlanıyoruz!', NULL);
+INSERT INTO public.settings VALUES (25, 'bot_rules', '', NULL);
+INSERT INTO public.settings VALUES (26, 'reminderHours', '24', NULL);
+INSERT INTO public.settings VALUES (27, 'botAccess', '{"enabled":true,"activities":true,"packageTours":true,"capacity":true,"faq":true,"confirmation":true,"transfer":true,"extras":true}', NULL);
+INSERT INTO public.settings VALUES (28, 'bulkMessageTemplates', '{"confirmed":{"label":"Onaylandı","content":"Merhaba {isim},\n\nRezervasyon onaylandı!\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nİyi günler dileriz."},"pending":{"label":"Beklemede","content":"Merhaba {isim},\n\nRezervasyon talebiniz değerlendiriliyor.\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nEn kısa sürede bilgilendirme yapılacaktır."},"cancelled":{"label":"İptal","content":"Merhaba {isim},\n\nÜzgünüz, rezervasyonunuz iptal edilmiştir.\nAktivite: {aktivite}\nTarih: {tarih}\n\nDetaylar için: {takip_linki}\n\nSorularınız için bizimle iletişime geçebilirsiniz."}}', NULL);
+INSERT INTO public.settings VALUES (19, 'botRules', '=== BOT KURALLARI (13 MADDE) ===
+
+1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+
+2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ''ndeki yarın tarihini kullan.
+
+3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+
+4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
+
+5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+
+6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+
+7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+
+8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+
+9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS''lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+
+12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+
+13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.', 7);
+INSERT INTO public.settings VALUES (20, 'botPrompt', 'Sen acenta bünyesinde görev yapan, profesyonel bir müşteri danışmanısın. Temel görevin; turizm aktiviteleri için rezervasyon almak, müsaitlik sorgulamak ve müşteri sorularını kurumsal bir dille yanıtlamaktır. Kendini asla bir yapay zeka olarak tanıtma; her zaman profesyonel bir çalışan rolünde kal.', 7);
+INSERT INTO public.settings VALUES (21, 'botAccess', '{"enabled":true,"activities":true,"packageTours":true,"capacity":true,"faq":true,"confirmation":true,"transfer":true,"extras":true}', 7);
+INSERT INTO public.settings VALUES (29, 'botRules', '=== BOT KURALLARI (13 MADDE) ===
+
+1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+
+2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ''ndeki yarın tarihini kullan.
+
+3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+
+4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
+
+5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+
+6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+
+7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+
+8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+
+9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS''lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+
+12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+
+13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.', 2);
+INSERT INTO public.settings VALUES (22, 'botPrompt', 'Sen bir TURİZM RESERVASYONLARI DANIŞMANI''sın. Müşterilerle Türkçe konuşarak rezervasyon yardımcılığı yap. Kibar, samimi ve profesyonel ol. Müşterinin sorularına hızla cevap ver ve rezervasyon yapmalarına yardımcı ol.', NULL);
+INSERT INTO public.settings VALUES (23, 'customerSupportEmail', '', NULL);
+INSERT INTO public.settings VALUES (30, 'botRules', '=== BOT KURALLARI (13 MADDE) ===
+
+1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+
+2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ''ndeki yarın tarihini kullan.
+
+3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+
+4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
+
+5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+
+6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+
+7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+
+8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+
+9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS''lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+
+12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+
+13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.', 8);
+INSERT INTO public.settings VALUES (12, 'botRulesSessionToken', '{"token":"7b07599276461b788ded8b6f06e711f6016d77abf18f17549a29a1d6c20e579d","expiresAt":1768135661261}', NULL);
+INSERT INTO public.settings VALUES (31, 'botRules', '
+=== BOT KURALLARI (13 MADDE) ===
+
+1. Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+
+2. MÜSAİTLİK/KONTENJAN sorularında yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ''ndeki yarın tarihini kullan.
+
+3. Eğer müsaitlik bilgisi yoksa müşteriye "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+
+4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
+
+5. Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+
+6. Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+
+7. TRANSFER soruları: Yukarıdaki aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
+
+8. EKSTRA HİZMET soruları: "Ekstra uçuş ne kadar?", "Fotoğraf dahil mi?" gibi sorularda yukarıdaki "Ekstra Hizmetler" listesini kullan ve fiyatları ver.
+
+9. PAKET TUR soruları: Müşteri birden fazla aktivite içeren paket turlar hakkında soru sorarsa yukarıdaki PAKET TURLAR bölümünü kullan ve bilgi ver.
+
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı "Sık Sorulan Sorular" bölümünü kontrol et. Müşterinin sorusu bu SSS''lerden biriyle eşleşiyorsa, oradaki cevabı kullan.
+
+11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, yukarıdaki "Türkçe Sipariş Onay Mesajı" alanını kullan. Mesajı olduğu gibi, hiçbir değişiklik yapmadan ilet.
+
+12. DEĞİŞİKLİK TALEPLERİ: Saat/tarih değişikliği veya iptal isteyenlere, kendilerine gönderilen takip linkinden taleplerini oluşturabileceklerini söyle. Takip linki yoksa sipariş numarası ile yeni link gönderilebileceğini belirt.
+
+13. REZERVASYON LİNKİ SEÇİMİ: Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder (fallback). Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan.
+', 9);
+INSERT INTO public.settings VALUES (32, 'botPrompt', 'Sen Acenta 2 bünyesinde görev yapan, profesyonel bir müşteri danışmanısın. Temel görevin; turizm aktiviteleri için rezervasyon almak, müsaitlik sorgulamak ve müşteri sorularını kurumsal bir dille yanıtlamaktır. Kendini asla bir yapay zeka olarak tanıtma; her zaman profesyonel bir çalışan rolünde kal.', 9);
+INSERT INTO public.settings VALUES (33, 'botAccess', '{"enabled":true,"activities":true,"packageTours":true,"capacity":true,"faq":true,"confirmation":true,"transfer":true,"extras":true}', 9);
+INSERT INTO public.settings VALUES (34, 'brandSettings', '{"primaryColor":"#673DE7","accentColor":"#CCFF00","companyName":"Smartur","logoUrl":"https://logobudur.com/wp-content/uploads/2026/01/smarturfavicon.png"}', 7);
+INSERT INTO public.settings VALUES (35, 'popupAppearance', '{"backgroundColor":"#e0e0e0","backgroundOpacity":32,"borderColor":"#ffffff","borderOpacity":35,"blurIntensity":"medium"}', 7);
 
 
 --
 -- Data for Name: settlement_entries; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.settlement_entries (id, settlement_id, reservation_id, activity_id, guest_count, revenue_tl, cost_tl, payout_tl, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: settlements; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.settlements (id, agency_id, period_start, period_end, status, total_guests, gross_sales_tl, gross_sales_usd, total_cost_tl, payout_tl, payout_usd, vat_rate_pct, vat_amount_tl, profit_tl, paid_amount_tl, remaining_tl, created_at, extras_tl, tenant_id) FROM stdin;
-\.
 
 
 --
 -- Data for Name: subscription_payments; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.subscription_payments (id, subscription_id, amount_tl, amount_usd, currency, status, payment_method, provider_payment_id, provider_response, invoice_number, invoice_url, failure_reason, paid_at, created_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: subscription_plans; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.subscription_plans (id, code, name, description, price_tl, price_usd, yearly_price_tl, yearly_price_usd, yearly_discount_pct, trial_days, max_activities, max_reservations_per_month, max_users, max_whatsapp_numbers, features, sort_order, is_active, is_popular, created_at, updated_at, max_daily_messages, max_daily_reservations) FROM stdin;
-1	trial	Deneme	14 günlük ücretsiz deneme	0	0	0	0	20	14	3	50	1	1	["basic_calendar","manual_reservations"]	0	t	f	2026-01-05 05:23:25.862078	2026-01-05 05:23:25.862078	50	5
-2	basic	Basic	Küçük işletmeler için temel paket	99900	2900	959000	27900	20	0	5	200	2	1	["basic_calendar","manual_reservations","whatsapp_notifications","basic_reports"]	1	t	f	2026-01-05 05:23:25.882861	2026-01-05 05:23:25.882861	200	20
-3	professional	Professional	Büyüyen işletmeler için gelişmiş özellikler	249900	6900	2399000	66300	20	0	20	1000	5	3	["basic_calendar","manual_reservations","whatsapp_notifications","advanced_reports","ai_bot","woocommerce","package_tours"]	2	t	t	2026-01-05 05:23:25.887214	2026-01-05 05:23:25.887214	1000	100
-4	enterprise	Enterprise	Büyük ölçekli operasyonlar için sınırsız erişim	499900	14900	4799000	143000	20	0	9999	99999	99	10	["basic_calendar","manual_reservations","whatsapp_notifications","advanced_reports","ai_bot","woocommerce","package_tours","api_access","priority_support","custom_branding"]	3	t	f	2026-01-05 05:23:25.89116	2026-01-05 05:23:25.89116	10000	9999
-\.
+INSERT INTO public.subscription_plans VALUES (1, 'trial', 'Deneme', '14 günlük ücretsiz deneme', 0, 0, 0, 0, 20, 14, 3, 50, 1, 1, '["basic_calendar","manual_reservations"]', 0, true, false, '2026-01-05 05:23:25.862078', '2026-01-05 05:23:25.862078', 50, 5);
+INSERT INTO public.subscription_plans VALUES (2, 'basic', 'Basic', 'Küçük işletmeler için temel paket', 99900, 2900, 959000, 27900, 20, 0, 5, 200, 2, 1, '["basic_calendar","manual_reservations","whatsapp_notifications","basic_reports"]', 1, true, false, '2026-01-05 05:23:25.882861', '2026-01-05 05:23:25.882861', 200, 20);
+INSERT INTO public.subscription_plans VALUES (3, 'professional', 'Professional', 'Büyüyen işletmeler için gelişmiş özellikler', 249900, 6900, 2399000, 66300, 20, 0, 20, 1000, 5, 3, '["basic_calendar","manual_reservations","whatsapp_notifications","advanced_reports","ai_bot","woocommerce","package_tours"]', 2, true, true, '2026-01-05 05:23:25.887214', '2026-01-05 05:23:25.887214', 1000, 100);
+INSERT INTO public.subscription_plans VALUES (4, 'enterprise', 'Enterprise', 'Büyük ölçekli operasyonlar için sınırsız erişim', 499900, 14900, 4799000, 143000, 20, 0, 9999, 99999, 99, 10, '["basic_calendar","manual_reservations","whatsapp_notifications","advanced_reports","ai_bot","woocommerce","package_tours","api_access","priority_support","custom_branding"]', 3, true, false, '2026-01-05 05:23:25.89116', '2026-01-05 05:23:25.89116', 10000, 9999);
 
 
 --
 -- Data for Name: subscriptions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.subscriptions (id, tenant_id, plan_id, status, billing_cycle, current_period_start, current_period_end, trial_end, cancelled_at, cancel_reason, payment_provider, provider_customer_id, provider_subscription_id, last_payment_at, next_payment_at, failed_payment_count, created_at, updated_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: supplier_dispatch_items; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.supplier_dispatch_items (id, dispatch_id, item_type, label, quantity, unit_amount, total_amount, currency, notes) FROM stdin;
-\.
 
 
 --
 -- Data for Name: supplier_dispatches; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.supplier_dispatches (id, agency_id, activity_id, dispatch_date, dispatch_time, guest_count, unit_payout_tl, total_payout_tl, payout_id, notes, created_at, rate_id, tenant_id, currency, customer_name) FROM stdin;
-3	8	7	2026-01-07	10:00	2	1000	2000	\N		2026-01-07 16:09:35.224723	\N	\N	TRY	\N
-4	8	6	2026-01-16	10:00	3	1000	3000	\N		2026-01-07 16:09:50.857329	\N	\N	TRY	\N
-5	8	6	2026-01-22	12:00	3	1000	3000	\N		2026-01-07 16:10:48.079205	\N	\N	TRY	\N
-6	8	6	2026-01-25	10:00	6	1000	6000	\N		2026-01-07 16:11:17.594451	\N	\N	TRY	\N
-\.
+INSERT INTO public.supplier_dispatches VALUES (3, 8, 7, '2026-01-07', '10:00', 2, 1000, 2000, NULL, '', '2026-01-07 16:09:35.224723', NULL, NULL, 'TRY', NULL);
+INSERT INTO public.supplier_dispatches VALUES (4, 8, 6, '2026-01-16', '10:00', 3, 1000, 3000, NULL, '', '2026-01-07 16:09:50.857329', NULL, NULL, 'TRY', NULL);
+INSERT INTO public.supplier_dispatches VALUES (5, 8, 6, '2026-01-22', '12:00', 3, 1000, 3000, NULL, '', '2026-01-07 16:10:48.079205', NULL, NULL, 'TRY', NULL);
+INSERT INTO public.supplier_dispatches VALUES (6, 8, 6, '2026-01-25', '10:00', 6, 1000, 6000, NULL, '', '2026-01-07 16:11:17.594451', NULL, NULL, 'TRY', NULL);
 
 
 --
 -- Data for Name: support_request_logs; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.support_request_logs (id, support_request_id, log_id, message_snapshot, created_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: support_requests; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.support_requests (id, phone, status, reservation_id, created_at, resolved_at, description, tenant_id) FROM stdin;
-7	[Soru] Test  <test@gmail.com> - sa	open	\N	2026-01-06 05:54:17.935423	\N	\N	\N
-8	[Soru] Test  <test@gmail.com> - php sürümü	open	\N	2026-01-06 05:54:34.570343	\N	\N	\N
-9	+905551112233	open	\N	2026-01-06 07:24:46.802881	\N	Musteri fiyat sormak istiyor, bot cevap veremedi	7
-10	+905554445566	open	\N	2026-01-06 06:54:46.802881	\N	Rezervasyon detaylari hakkinda yardim isteniyor	7
-11	+905557778899	in_progress	\N	2026-01-06 05:54:46.802881	\N	Iptal talebi var, onay bekleniyor	7
-\.
+INSERT INTO public.support_requests VALUES (7, '[Soru] Test  <test@gmail.com> - sa', 'open', NULL, '2026-01-06 05:54:17.935423', NULL, NULL, NULL);
+INSERT INTO public.support_requests VALUES (8, '[Soru] Test  <test@gmail.com> - php sürümü', 'open', NULL, '2026-01-06 05:54:34.570343', NULL, NULL, NULL);
+INSERT INTO public.support_requests VALUES (9, '+905551112233', 'open', NULL, '2026-01-06 07:24:46.802881', NULL, 'Musteri fiyat sormak istiyor, bot cevap veremedi', 7);
+INSERT INTO public.support_requests VALUES (10, '+905554445566', 'open', NULL, '2026-01-06 06:54:46.802881', NULL, 'Rezervasyon detaylari hakkinda yardim isteniyor', 7);
+INSERT INTO public.support_requests VALUES (11, '+905557778899', 'in_progress', NULL, '2026-01-06 05:54:46.802881', NULL, 'Iptal talebi var, onay bekleniyor', 7);
 
 
 --
 -- Data for Name: system_logs; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.system_logs (id, level, source, message, details, phone, created_at, tenant_id) FROM stdin;
-7	error	whatsapp	WhatsApp özel mesaj hatası	{\n  "error": "Cannot convert argument to a ByteString because the character at index 2 has a value of 351 which is greater than 255."\n}	\N	2026-01-07 08:19:26.747559	\N
-\.
+INSERT INTO public.system_logs VALUES (7, 'error', 'whatsapp', 'WhatsApp özel mesaj hatası', '{
+  "error": "Cannot convert argument to a ByteString because the character at index 2 has a value of 351 which is greater than 255."
+}', NULL, '2026-01-07 08:19:26.747559', NULL);
 
 
 --
 -- Data for Name: tenant_integrations; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.tenant_integrations (id, tenant_id, twilio_account_sid, twilio_auth_token_encrypted, twilio_whatsapp_number, twilio_webhook_url, twilio_configured, woocommerce_store_url, woocommerce_consumer_key, woocommerce_consumer_secret_encrypted, woocommerce_webhook_secret, woocommerce_configured, gmail_user, gmail_app_password_encrypted, gmail_from_name, gmail_configured, created_at, updated_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: tenant_notification_settings; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.tenant_notification_settings (id, tenant_id, notification_type, channels, enabled, template_whatsapp, template_email, updated_at) FROM stdin;
-1	7	reservation_new	{whatsapp}	t	\N	\N	2026-01-08 08:45:42.926
-\.
+INSERT INTO public.tenant_notification_settings VALUES (1, 7, 'reservation_new', '{whatsapp}', true, NULL, NULL, '2026-01-08 08:45:42.926');
 
 
 --
 -- Data for Name: tenant_partnerships; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.tenant_partnerships (id, requester_tenant_id, partner_tenant_id, invite_code, status, requested_at, responded_at, notes) FROM stdin;
-1	9	7	5YECB1	active	2026-01-08 10:07:28.796148	2026-01-08 10:08:09.781	\N
-\.
+INSERT INTO public.tenant_partnerships VALUES (1, 9, 7, '5YECB1', 'active', '2026-01-08 10:07:28.796148', '2026-01-08 10:08:09.781', NULL);
 
 
 --
 -- Data for Name: tenants; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.tenants (id, name, slug, contact_email, contact_phone, address, logo_url, primary_color, accent_color, timezone, language, is_active, created_at, updated_at, plan_code) FROM stdin;
-2	Sky Fethiye	sky-fethiye	skyfethiye@gmail.com	05384944505	\N	\N	262 83% 58%	142 76% 36%	Europe/Istanbul	tr	t	2026-01-05 14:51:26.747834	2026-01-05 14:51:26.747834	trial
-8	Default Agency	default	admin@smartur.com	\N	\N	\N	262 83% 58%	142 76% 36%	Europe/Istanbul	tr	t	2026-01-06 14:41:58.125027	2026-01-06 14:41:58.125027	trial
-7	Acenta 1	acenta	acenta@acenta.com	5555555555			262 83% 58%	142 76% 36%	Europe/Istanbul	tr	t	2026-01-06 07:11:00.929471	2026-01-08 09:44:17.795	enterprise
-9	Acenta 2	acenta-2	acenta2@acenta.com	5555555555	\N	\N	262 83% 58%	142 76% 36%	Europe/Istanbul	tr	t	2026-01-08 10:06:57.725272	2026-01-08 10:06:57.725272	enterprise
-\.
+INSERT INTO public.tenants VALUES (2, 'Sky Fethiye', 'sky-fethiye', 'skyfethiye@gmail.com', '05384944505', NULL, NULL, '262 83% 58%', '142 76% 36%', 'Europe/Istanbul', 'tr', true, '2026-01-05 14:51:26.747834', '2026-01-05 14:51:26.747834', 'trial');
+INSERT INTO public.tenants VALUES (8, 'Default Agency', 'default', 'admin@smartur.com', NULL, NULL, NULL, '262 83% 58%', '142 76% 36%', 'Europe/Istanbul', 'tr', true, '2026-01-06 14:41:58.125027', '2026-01-06 14:41:58.125027', 'trial');
+INSERT INTO public.tenants VALUES (7, 'Acenta 1', 'acenta', 'acenta@acenta.com', '5555555555', '', '', '262 83% 58%', '142 76% 36%', 'Europe/Istanbul', 'tr', true, '2026-01-06 07:11:00.929471', '2026-01-08 09:44:17.795', 'enterprise');
+INSERT INTO public.tenants VALUES (9, 'Acenta 2', 'acenta-2', 'acenta2@acenta.com', '5555555555', NULL, NULL, '262 83% 58%', '142 76% 36%', 'Europe/Istanbul', 'tr', true, '2026-01-08 10:06:57.725272', '2026-01-08 10:06:57.725272', 'enterprise');
 
 
 --
 -- Data for Name: ticket_responses; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.ticket_responses (id, ticket_id, responder_id, responder_name, content, is_internal, created_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: user_login_logs; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.user_login_logs (id, user_id, username, ip_address, user_agent, status, failure_reason, created_at) FROM stdin;
-3	\N	flymet	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanici bulunamadi	2026-01-05 11:40:01.24759
-5	\N	skyfethiye	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanici bulunamadi	2026-01-05 14:52:05.944868
-6	\N	Sky Fethiye	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanici bulunamadi	2026-01-05 14:52:20.416619
-7	2	Skyfethiye	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-05 14:57:07.084535
-8	2	Skyfethiye	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-05 15:06:00.394705
-9	2	Skyfethiye	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-05 15:15:18.727128
-10	2	Skyfethiye	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-05 15:28:31.114656
-11	2	Skyfethiye	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-05 16:12:08.726778
-12	2	Skyfethiye	172.31.101.130	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-05 16:24:25.66564
-13	2	Skyfethiye	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-06 04:44:13.836414
-14	2	Skyfethiye	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-06 04:55:33.758677
-15	\N	test	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:57:44.155448
-16	\N	testacenta	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:57:51.961763
-17	\N	testacenta	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:57:53.44357
-18	\N	acenta	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:57:58.382462
-19	\N	test	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:58:19.718789
-20	\N	test	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:58:22.374421
-21	\N	test	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:58:28.791267
-22	\N	Test	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:58:33.362969
-23	\N	Test	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 04:58:35.047133
-25	\N	Acenta	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-06 05:02:49.379655
-29	2	Skyfethiye	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-06 06:55:51.062017
-30	7	Acenta	172.31.67.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-06 07:11:11.059432
-31	7	acenta	127.0.0.1	curl/8.14.1	failed	Yanlış şifre	2026-01-06 10:24:42.440174
-34	2	Skyfethiye	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Yanlış şifre	2026-01-07 07:41:56.429988
-35	2	skyfethiye@gmail.com	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Yanlış şifre	2026-01-07 07:42:05.492512
-36	7	Acenta	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-07 07:42:18.902628
-37	7	Acenta	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-07 12:16:49.811396
-38	7	Acenta	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-07 12:31:53.23931
-39	7	Acenta	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-07 12:37:13.213407
-40	7	Acenta	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-07 14:05:19.898512
-41	7	Acenta	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-07 14:07:32.584459
-42	7	Acenta	172.31.85.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-07 14:13:06.969761
-43	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 05:14:22.086321
-44	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 08:37:46.728935
-45	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 09:44:43.705474
-46	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 09:58:51.958536
-47	2	Skyfethiye	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Yanlış şifre	2026-01-08 10:00:12.007871
-48	2	skyfethiye	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Yanlış şifre	2026-01-08 10:00:17.562801
-49	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:00:44.294398
-50	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:05:40.62504
-51	\N	Acenta2	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-08 10:06:00.721654
-52	\N	Acenta 2	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	failed	Kullanıcı bulunamadı	2026-01-08 10:06:05.52131
-53	10	Acenta2	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:07:10.287903
-54	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:07:43.713458
-55	10	Acenta2	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:12:01.505019
-56	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:16:09.812507
-57	10	Acenta2	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:16:41.414864
-58	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:21:41.318206
-59	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 10:54:39.163608
-60	10	Acenta2	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 11:00:00.178055
-61	7	Acenta	172.31.81.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-08 11:44:26.009102
-62	7	Acenta	172.31.97.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 04:33:31.610618
-63	7	Acenta	172.31.97.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 06:06:46.570538
-64	7	Acenta	172.31.97.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 06:10:56.965842
-65	10	Acenta2	172.31.97.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 06:33:21.623438
-66	7	Acenta	172.31.97.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 06:34:17.229191
-67	7	Acenta	172.31.97.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 06:45:31.228842
-68	7	Acenta	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 13:57:34.735602
-69	10	Acenta2	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:08:53.172585
-70	7	Acenta	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:09:08.794879
-71	10	Acenta2	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:13:33.112714
-72	7	Acenta	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:14:32.290343
-73	10	Acenta2	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:21:13.545519
-74	7	Acenta	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:22:37.016968
-75	10	Acenta2	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:23:43.944194
-76	7	Acenta	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:24:44.634696
-77	7	Acenta	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:42:31.715133
-78	10	Acenta2	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:43:29.709024
-79	10	Acenta2	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:45:05.449376
-80	7	Acenta	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 14:58:52.30324
-81	10	Acenta2	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 15:54:34.2944
-82	10	Acenta2	172.31.83.2	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-09 15:57:38.399245
-83	7	Acenta	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 04:12:43.285769
-84	10	Acenta2	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 04:23:38.179078
-85	7	Acenta	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 04:24:01.741053
-86	7	Acenta	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 05:24:09.253122
-87	10	Acenta2	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 05:24:30.667866
-88	7	Acenta	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 05:30:22.41343
-89	10	Acenta2	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 06:07:35.213574
-90	7	Acenta	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 06:52:27.977301
-91	7	Acenta	172.31.119.194	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 07:05:56.938841
-92	10	Acenta2	172.31.69.226	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 07:21:38.697051
-93	7	Acenta	172.31.69.226	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 07:24:46.193427
-94	10	Acenta2	172.31.69.226	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 07:32:40.958046
-95	7	Acenta	172.31.69.226	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 07:34:43.529079
-96	10	Acenta2	172.31.69.226	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 07:44:30.209531
-97	7	Acenta	172.31.69.226	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 07:45:41.321732
-129	10	Acenta2	172.31.75.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 08:06:05.889999
-130	7	Acenta	172.31.75.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 08:07:17.185462
-131	10	Acenta2	172.31.75.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 08:13:11.352112
-132	7	Acenta	172.31.75.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 08:13:58.593431
-133	10	Acenta2	172.31.75.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 08:15:50.236666
-134	7	Acenta	172.31.75.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 08:25:48.36406
-135	10	Acenta2	172.31.75.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 08:48:23.512676
-136	7	Acenta	172.31.75.34	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 09:16:29.038796
-137	7	Acenta	172.31.84.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 10:01:51.334587
-138	10	Acenta2	172.31.84.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 10:02:28.371752
-139	7	Acenta	172.31.84.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 10:03:34.141141
-140	7	Acenta	172.31.84.98	Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36	success		2026-01-10 11:29:26.314968
-\.
+INSERT INTO public.user_login_logs VALUES (3, NULL, 'flymet', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanici bulunamadi', '2026-01-05 11:40:01.24759');
+INSERT INTO public.user_login_logs VALUES (5, NULL, 'skyfethiye', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanici bulunamadi', '2026-01-05 14:52:05.944868');
+INSERT INTO public.user_login_logs VALUES (6, NULL, 'Sky Fethiye', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanici bulunamadi', '2026-01-05 14:52:20.416619');
+INSERT INTO public.user_login_logs VALUES (7, 2, 'Skyfethiye', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-05 14:57:07.084535');
+INSERT INTO public.user_login_logs VALUES (8, 2, 'Skyfethiye', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-05 15:06:00.394705');
+INSERT INTO public.user_login_logs VALUES (9, 2, 'Skyfethiye', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-05 15:15:18.727128');
+INSERT INTO public.user_login_logs VALUES (10, 2, 'Skyfethiye', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-05 15:28:31.114656');
+INSERT INTO public.user_login_logs VALUES (11, 2, 'Skyfethiye', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-05 16:12:08.726778');
+INSERT INTO public.user_login_logs VALUES (12, 2, 'Skyfethiye', '172.31.101.130', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-05 16:24:25.66564');
+INSERT INTO public.user_login_logs VALUES (13, 2, 'Skyfethiye', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-06 04:44:13.836414');
+INSERT INTO public.user_login_logs VALUES (14, 2, 'Skyfethiye', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-06 04:55:33.758677');
+INSERT INTO public.user_login_logs VALUES (15, NULL, 'test', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:57:44.155448');
+INSERT INTO public.user_login_logs VALUES (16, NULL, 'testacenta', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:57:51.961763');
+INSERT INTO public.user_login_logs VALUES (17, NULL, 'testacenta', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:57:53.44357');
+INSERT INTO public.user_login_logs VALUES (18, NULL, 'acenta', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:57:58.382462');
+INSERT INTO public.user_login_logs VALUES (19, NULL, 'test', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:58:19.718789');
+INSERT INTO public.user_login_logs VALUES (20, NULL, 'test', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:58:22.374421');
+INSERT INTO public.user_login_logs VALUES (21, NULL, 'test', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:58:28.791267');
+INSERT INTO public.user_login_logs VALUES (22, NULL, 'Test', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:58:33.362969');
+INSERT INTO public.user_login_logs VALUES (23, NULL, 'Test', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 04:58:35.047133');
+INSERT INTO public.user_login_logs VALUES (25, NULL, 'Acenta', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-06 05:02:49.379655');
+INSERT INTO public.user_login_logs VALUES (29, 2, 'Skyfethiye', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-06 06:55:51.062017');
+INSERT INTO public.user_login_logs VALUES (30, 7, 'Acenta', '172.31.67.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-06 07:11:11.059432');
+INSERT INTO public.user_login_logs VALUES (31, 7, 'acenta', '127.0.0.1', 'curl/8.14.1', 'failed', 'Yanlış şifre', '2026-01-06 10:24:42.440174');
+INSERT INTO public.user_login_logs VALUES (34, 2, 'Skyfethiye', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Yanlış şifre', '2026-01-07 07:41:56.429988');
+INSERT INTO public.user_login_logs VALUES (35, 2, 'skyfethiye@gmail.com', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Yanlış şifre', '2026-01-07 07:42:05.492512');
+INSERT INTO public.user_login_logs VALUES (36, 7, 'Acenta', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-07 07:42:18.902628');
+INSERT INTO public.user_login_logs VALUES (37, 7, 'Acenta', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-07 12:16:49.811396');
+INSERT INTO public.user_login_logs VALUES (38, 7, 'Acenta', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-07 12:31:53.23931');
+INSERT INTO public.user_login_logs VALUES (39, 7, 'Acenta', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-07 12:37:13.213407');
+INSERT INTO public.user_login_logs VALUES (40, 7, 'Acenta', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-07 14:05:19.898512');
+INSERT INTO public.user_login_logs VALUES (41, 7, 'Acenta', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-07 14:07:32.584459');
+INSERT INTO public.user_login_logs VALUES (42, 7, 'Acenta', '172.31.85.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-07 14:13:06.969761');
+INSERT INTO public.user_login_logs VALUES (43, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 05:14:22.086321');
+INSERT INTO public.user_login_logs VALUES (44, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 08:37:46.728935');
+INSERT INTO public.user_login_logs VALUES (45, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 09:44:43.705474');
+INSERT INTO public.user_login_logs VALUES (46, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 09:58:51.958536');
+INSERT INTO public.user_login_logs VALUES (47, 2, 'Skyfethiye', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Yanlış şifre', '2026-01-08 10:00:12.007871');
+INSERT INTO public.user_login_logs VALUES (48, 2, 'skyfethiye', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Yanlış şifre', '2026-01-08 10:00:17.562801');
+INSERT INTO public.user_login_logs VALUES (49, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:00:44.294398');
+INSERT INTO public.user_login_logs VALUES (50, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:05:40.62504');
+INSERT INTO public.user_login_logs VALUES (51, NULL, 'Acenta2', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-08 10:06:00.721654');
+INSERT INTO public.user_login_logs VALUES (52, NULL, 'Acenta 2', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'failed', 'Kullanıcı bulunamadı', '2026-01-08 10:06:05.52131');
+INSERT INTO public.user_login_logs VALUES (53, 10, 'Acenta2', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:07:10.287903');
+INSERT INTO public.user_login_logs VALUES (54, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:07:43.713458');
+INSERT INTO public.user_login_logs VALUES (55, 10, 'Acenta2', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:12:01.505019');
+INSERT INTO public.user_login_logs VALUES (56, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:16:09.812507');
+INSERT INTO public.user_login_logs VALUES (57, 10, 'Acenta2', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:16:41.414864');
+INSERT INTO public.user_login_logs VALUES (58, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:21:41.318206');
+INSERT INTO public.user_login_logs VALUES (59, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 10:54:39.163608');
+INSERT INTO public.user_login_logs VALUES (60, 10, 'Acenta2', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 11:00:00.178055');
+INSERT INTO public.user_login_logs VALUES (61, 7, 'Acenta', '172.31.81.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-08 11:44:26.009102');
+INSERT INTO public.user_login_logs VALUES (62, 7, 'Acenta', '172.31.97.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 04:33:31.610618');
+INSERT INTO public.user_login_logs VALUES (63, 7, 'Acenta', '172.31.97.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 06:06:46.570538');
+INSERT INTO public.user_login_logs VALUES (64, 7, 'Acenta', '172.31.97.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 06:10:56.965842');
+INSERT INTO public.user_login_logs VALUES (65, 10, 'Acenta2', '172.31.97.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 06:33:21.623438');
+INSERT INTO public.user_login_logs VALUES (66, 7, 'Acenta', '172.31.97.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 06:34:17.229191');
+INSERT INTO public.user_login_logs VALUES (67, 7, 'Acenta', '172.31.97.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 06:45:31.228842');
+INSERT INTO public.user_login_logs VALUES (68, 7, 'Acenta', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 13:57:34.735602');
+INSERT INTO public.user_login_logs VALUES (69, 10, 'Acenta2', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:08:53.172585');
+INSERT INTO public.user_login_logs VALUES (70, 7, 'Acenta', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:09:08.794879');
+INSERT INTO public.user_login_logs VALUES (71, 10, 'Acenta2', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:13:33.112714');
+INSERT INTO public.user_login_logs VALUES (72, 7, 'Acenta', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:14:32.290343');
+INSERT INTO public.user_login_logs VALUES (73, 10, 'Acenta2', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:21:13.545519');
+INSERT INTO public.user_login_logs VALUES (74, 7, 'Acenta', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:22:37.016968');
+INSERT INTO public.user_login_logs VALUES (75, 10, 'Acenta2', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:23:43.944194');
+INSERT INTO public.user_login_logs VALUES (76, 7, 'Acenta', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:24:44.634696');
+INSERT INTO public.user_login_logs VALUES (77, 7, 'Acenta', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:42:31.715133');
+INSERT INTO public.user_login_logs VALUES (78, 10, 'Acenta2', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:43:29.709024');
+INSERT INTO public.user_login_logs VALUES (79, 10, 'Acenta2', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:45:05.449376');
+INSERT INTO public.user_login_logs VALUES (80, 7, 'Acenta', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 14:58:52.30324');
+INSERT INTO public.user_login_logs VALUES (81, 10, 'Acenta2', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 15:54:34.2944');
+INSERT INTO public.user_login_logs VALUES (82, 10, 'Acenta2', '172.31.83.2', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-09 15:57:38.399245');
+INSERT INTO public.user_login_logs VALUES (83, 7, 'Acenta', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 04:12:43.285769');
+INSERT INTO public.user_login_logs VALUES (84, 10, 'Acenta2', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 04:23:38.179078');
+INSERT INTO public.user_login_logs VALUES (85, 7, 'Acenta', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 04:24:01.741053');
+INSERT INTO public.user_login_logs VALUES (86, 7, 'Acenta', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 05:24:09.253122');
+INSERT INTO public.user_login_logs VALUES (87, 10, 'Acenta2', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 05:24:30.667866');
+INSERT INTO public.user_login_logs VALUES (88, 7, 'Acenta', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 05:30:22.41343');
+INSERT INTO public.user_login_logs VALUES (89, 10, 'Acenta2', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 06:07:35.213574');
+INSERT INTO public.user_login_logs VALUES (90, 7, 'Acenta', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 06:52:27.977301');
+INSERT INTO public.user_login_logs VALUES (91, 7, 'Acenta', '172.31.119.194', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 07:05:56.938841');
+INSERT INTO public.user_login_logs VALUES (92, 10, 'Acenta2', '172.31.69.226', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 07:21:38.697051');
+INSERT INTO public.user_login_logs VALUES (93, 7, 'Acenta', '172.31.69.226', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 07:24:46.193427');
+INSERT INTO public.user_login_logs VALUES (94, 10, 'Acenta2', '172.31.69.226', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 07:32:40.958046');
+INSERT INTO public.user_login_logs VALUES (95, 7, 'Acenta', '172.31.69.226', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 07:34:43.529079');
+INSERT INTO public.user_login_logs VALUES (96, 10, 'Acenta2', '172.31.69.226', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 07:44:30.209531');
+INSERT INTO public.user_login_logs VALUES (97, 7, 'Acenta', '172.31.69.226', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 07:45:41.321732');
+INSERT INTO public.user_login_logs VALUES (129, 10, 'Acenta2', '172.31.75.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 08:06:05.889999');
+INSERT INTO public.user_login_logs VALUES (130, 7, 'Acenta', '172.31.75.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 08:07:17.185462');
+INSERT INTO public.user_login_logs VALUES (131, 10, 'Acenta2', '172.31.75.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 08:13:11.352112');
+INSERT INTO public.user_login_logs VALUES (132, 7, 'Acenta', '172.31.75.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 08:13:58.593431');
+INSERT INTO public.user_login_logs VALUES (133, 10, 'Acenta2', '172.31.75.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 08:15:50.236666');
+INSERT INTO public.user_login_logs VALUES (134, 7, 'Acenta', '172.31.75.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 08:25:48.36406');
+INSERT INTO public.user_login_logs VALUES (135, 10, 'Acenta2', '172.31.75.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 08:48:23.512676');
+INSERT INTO public.user_login_logs VALUES (136, 7, 'Acenta', '172.31.75.34', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 09:16:29.038796');
+INSERT INTO public.user_login_logs VALUES (137, 7, 'Acenta', '172.31.84.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 10:01:51.334587');
+INSERT INTO public.user_login_logs VALUES (138, 10, 'Acenta2', '172.31.84.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 10:02:28.371752');
+INSERT INTO public.user_login_logs VALUES (139, 7, 'Acenta', '172.31.84.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 10:03:34.141141');
+INSERT INTO public.user_login_logs VALUES (140, 7, 'Acenta', '172.31.84.98', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'success', '', '2026-01-10 11:29:26.314968');
 
 
 --
 -- Data for Name: user_notification_preferences; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.user_notification_preferences (id, user_id, tenant_id, notification_type, channels, enabled, updated_at) FROM stdin;
-\.
 
 
 --
 -- Data for Name: user_roles; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.user_roles (id, user_id, role_id, assigned_by, assigned_at) FROM stdin;
-2	2	4	\N	2026-01-05 14:51:26.764741
-9	7	4	\N	2026-01-08 10:02:20.419631
-10	10	4	\N	2026-01-08 10:06:57.743089
-\.
+INSERT INTO public.user_roles VALUES (2, 2, 4, NULL, '2026-01-05 14:51:26.764741');
+INSERT INTO public.user_roles VALUES (9, 7, 4, NULL, '2026-01-08 10:02:20.419631');
+INSERT INTO public.user_roles VALUES (10, 10, 4, NULL, '2026-01-08 10:06:57.743089');
 
 
 --
 -- Data for Name: viewer_activity_shares; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.viewer_activity_shares (id, tenant_id, viewer_user_id, activity_id, viewer_unit_price_try, viewer_unit_price_usd, viewer_unit_price_eur, is_shared, created_at, updated_at) FROM stdin;
-\.
 
 
 --
@@ -5676,5 +5691,5 @@ ALTER TABLE ONLY public.viewer_activity_shares
 -- PostgreSQL database dump complete
 --
 
-\unrestrict cldoK2ZroAGZXVM3IZcUU9gJsIvcuvcfYMS720qdVjvy4Njb1J3zYGHbZYLBmpW
+\unrestrict KWr9x8wBayJ6psP36HCwnPMUgJ7975jZwrk6xf5OPah4xfBNQAx2JGnNlrhx4R0
 
