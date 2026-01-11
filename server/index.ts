@@ -6,6 +6,39 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
+import crypto from "crypto";
+
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+  return `${salt}:${hash}`;
+}
+
+async function bootstrapSuperAdmin(): Promise<void> {
+  try {
+    const admins = await storage.getPlatformAdmins();
+    if (admins.length === 0) {
+      const email = process.env.SUPER_ADMIN_EMAIL;
+      const password = process.env.SUPER_ADMIN_PASSWORD;
+      
+      if (email && password) {
+        const passwordHash = hashPassword(password);
+        await storage.createPlatformAdmin({
+          email,
+          passwordHash,
+          name: 'Super Admin',
+          role: 'super_admin',
+          isActive: true
+        });
+        console.log(`[bootstrap] Super admin created: ${email}`);
+      } else {
+        console.log('[bootstrap] No super admin exists. Set SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD env vars to create one.');
+      }
+    }
+  } catch (error) {
+    console.error('[bootstrap] Error checking/creating super admin:', error);
+  }
+}
 
 const app = express();
 const httpServer = createServer(app);
@@ -98,6 +131,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await bootstrapSuperAdmin();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
