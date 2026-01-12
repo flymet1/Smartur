@@ -4,11 +4,10 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Default database URL for aaPanel deployment
+const DEFAULT_DATABASE_URL = "postgresql://smartur:F2YRLr2n4yFnaC4Y@127.0.0.1:5432/smartur";
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const connectionString = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
+
+export const pool = new Pool({ connectionString });
 export const db = drizzle(pool, { schema });

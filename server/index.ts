@@ -8,6 +8,25 @@ import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 import crypto from "crypto";
 
+// CORS middleware for external access
+function corsMiddleware(req: Request, res: Response, next: NextFunction) {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  next();
+}
+
 function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
@@ -63,6 +82,9 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+// Enable CORS for external access (aaPanel, etc.)
+app.use(corsMiddleware);
 
 // Session middleware with PostgreSQL-backed storage for persistence across restarts
 const PgSession = connectPgSimple(session);
