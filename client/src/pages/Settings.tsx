@@ -3773,10 +3773,24 @@ function RequestMessageTemplatesSection() {
   const [editType, setEditType] = useState("");
   const [editContent, setEditContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const { data: templates, refetch } = useQuery<RequestMessageTemplate[]>({
     queryKey: ['/api/request-message-templates'],
   });
+
+  const handleDelete = async (id: number) => {
+    setDeletingId(id);
+    try {
+      await apiRequest('DELETE', `/api/request-message-templates/${id}`);
+      toast({ title: "Başarılı", description: "Şablon silindi." });
+      refetch();
+    } catch (err) {
+      toast({ title: "Hata", description: "Şablon silinemedi.", variant: "destructive" });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleEdit = (template: RequestMessageTemplate) => {
     setEditingId(template.id);
@@ -3903,9 +3917,36 @@ function RequestMessageTemplatesSection() {
                       {getTypeLabel(template.templateType)}
                     </Badge>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(template)}>
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(template)}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Şablonu Sil</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            "{template.name}" şablonunu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>İptal</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDelete(template.id)}
+                            disabled={deletingId === template.id}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {deletingId === template.id ? "Siliniyor..." : "Sil"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
                 <pre className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-lg">
                   {template.messageContent}
