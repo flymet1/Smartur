@@ -310,10 +310,11 @@ function TimelineView({ capacity, activities, onCreateReservation }: {
   );
 }
 
-function CapacityCardWithEdit({ slot, activityName, onQuickAdjust, onCreateReservation }: { 
+function CapacityCardWithEdit({ slot, activityName, onQuickAdjust, onVirtualAdjust, onCreateReservation }: { 
   slot: CapacitySlot; 
   activityName: string;
   onQuickAdjust: (id: number, adjustment: number) => void;
+  onVirtualAdjust: (slot: CapacitySlot, adjustment: number) => void;
   onCreateReservation: (slot: CapacitySlot) => void;
 }) {
   const [editOpen, setEditOpen] = useState(false);
@@ -395,35 +396,35 @@ function CapacityCardWithEdit({ slot, activityName, onQuickAdjust, onCreateReser
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7"
+                    onClick={() => isVirtual ? onVirtualAdjust(slot, -1) : onQuickAdjust(slot.id, -1)}
+                    disabled={slot.totalSlots <= 1}
+                  >
+                    <Minus className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Kapasite azalt</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7"
+                    onClick={() => isVirtual ? onVirtualAdjust(slot, 1) : onQuickAdjust(slot.id, 1)}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Kapasite artır</TooltipContent>
+              </Tooltip>
               {!isVirtual && (
                 <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7"
-                        onClick={() => onQuickAdjust(slot.id, -1)}
-                        disabled={slot.totalSlots <= 1}
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Kapasite azalt</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7"
-                        onClick={() => onQuickAdjust(slot.id, 1)}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Kapasite artır</TooltipContent>
-                  </Tooltip>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditOpen(true)} data-testid={`button-edit-capacity-${slotId}`}>
                     <Edit2 className="w-3 h-3" />
                   </Button>
@@ -1018,6 +1019,35 @@ export default function CalendarPage() {
     adjustMutation.mutate({ id, adjustment });
   };
 
+  const createAndAdjustMutation = useMutation({
+    mutationFn: async ({ slot, adjustment }: { slot: CapacitySlot; adjustment: number }) => {
+      const createRes = await fetch('/api/capacity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activityId: slot.activityId,
+          date: slot.date,
+          time: slot.time,
+          totalSlots: slot.totalSlots + adjustment
+        }),
+      });
+      if (!createRes.ok) throw new Error('Kapasite oluşturulamadı');
+      return createRes.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.capacity.list.path] });
+      toast({ title: "Başarılı", description: "Kapasite güncellendi." });
+    },
+    onError: (err) => {
+      const { title, description } = getErrorToastMessage(err);
+      toast({ title, description, variant: "destructive" });
+    },
+  });
+
+  const handleVirtualAdjust = (slot: CapacitySlot, adjustment: number) => {
+    createAndAdjustMutation.mutate({ slot, adjustment });
+  };
+
   const handleCreateReservation = (slot: CapacitySlot) => {
     setCreateReservationSlot(slot);
   };
@@ -1258,6 +1288,7 @@ export default function CalendarPage() {
                       slot={slot} 
                       activityName={getActivityName(slot.activityId)}
                       onQuickAdjust={handleQuickAdjust}
+                      onVirtualAdjust={handleVirtualAdjust}
                       onCreateReservation={handleCreateReservation}
                     />
                   ))}
