@@ -503,6 +503,7 @@ export interface IStorage {
   // App Users (Application Users - Login with username/password)
   getAppUsers(): Promise<AppUser[]>;
   getAppUser(id: number): Promise<AppUser | undefined>;
+  getUsersByIds(ids: number[]): Promise<AppUser[]>;
   getAppUserByUsername(username: string): Promise<AppUser | undefined>;
   getAppUserByEmail(email: string): Promise<AppUser | undefined>;
   createAppUser(user: InsertAppUser): Promise<AppUser>;
@@ -3342,6 +3343,11 @@ Sky Fethiye`,
   async getAppUser(id: number): Promise<AppUser | undefined> {
     const [user] = await db.select().from(appUsers).where(eq(appUsers.id, id));
     return user;
+  }
+
+  async getUsersByIds(ids: number[]): Promise<AppUser[]> {
+    if (ids.length === 0) return [];
+    return db.select().from(appUsers).where(inArray(appUsers.id, ids));
   }
 
   async getAppUserByUsername(username: string): Promise<AppUser | undefined> {

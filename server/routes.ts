@@ -1744,7 +1744,18 @@ export async function registerRoutes(
   app.get(api.reservations.list.path, async (req, res) => {
     const tenantId = req.session?.tenantId;
     const items = await storage.getReservations(tenantId);
-    res.json(items);
+    
+    // Enrich with creator user names
+    const creatorIds = [...new Set(items.filter(r => r.createdByUserId).map(r => r.createdByUserId!))];
+    const allUsers = creatorIds.length > 0 ? await storage.getUsersByIds(creatorIds) : [];
+    const userMap = new Map(allUsers.map(u => [u.id, u.name || u.username]));
+    
+    const enrichedItems = items.map(r => ({
+      ...r,
+      createdByUserName: r.createdByUserId ? userMap.get(r.createdByUserId) || null : null
+    }));
+    
+    res.json(enrichedItems);
   });
 
   app.post(api.reservations.create.path, async (req, res) => {
