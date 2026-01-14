@@ -1811,6 +1811,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
           <TabsContent value="integrations" className="space-y-6">
             <TwilioCard />
             <WooCommerceCard />
+            <EmailCard />
           </TabsContent>
 
           {/* HOLIDAYS TAB */}
@@ -2360,6 +2361,282 @@ function WooCommerceCard() {
               </TooltipTrigger>
               <TooltipContent>WooCommerce mağazasına bağlan</TooltipContent>
             </Tooltip>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Email Card Component (Multi-provider: Gmail, Outlook, Yandex, Custom SMTP)
+function EmailCard() {
+  const { toast } = useToast();
+  const [provider, setProvider] = useState<'gmail' | 'outlook' | 'yandex' | 'custom'>('gmail');
+  const [emailUser, setEmailUser] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
+  const [emailFromName, setEmailFromName] = useState("");
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("587");
+  const [smtpSecure, setSmtpSecure] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+
+  const { data: emailSettings, isLoading } = useQuery<{
+    emailProvider: string | null;
+    emailUser: string | null;
+    emailFromName: string | null;
+    emailConfigured: boolean;
+    emailSmtpHost: string | null;
+    emailSmtpPort: number | null;
+  }>({
+    queryKey: ['/api/tenant-integrations'],
+  });
+
+  const providerLabels: Record<string, string> = {
+    gmail: 'Gmail',
+    outlook: 'Outlook / Office 365',
+    yandex: 'Yandex',
+    custom: 'Özel SMTP'
+  };
+
+  const providerHints: Record<string, string> = {
+    gmail: 'Gmail için uygulama şifresi kullanın (2FA aktifse). Google Hesabı → Güvenlik → Uygulama şifreleri',
+    outlook: 'Microsoft hesap şifrenizi kullanın. 2FA aktifse uygulama şifresi gerekebilir.',
+    yandex: 'Yandex için uygulama şifresi kullanın. Yandex Pasaport → Uygulama şifreleri',
+    custom: 'Kendi SMTP sunucunuzun bilgilerini girin.'
+  };
+
+  const handleConnect = async () => {
+    if (!emailUser || !emailPassword) {
+      toast({ title: "Hata", description: "E-posta adresi ve şifre gerekli", variant: "destructive" });
+      return;
+    }
+    if (provider === 'custom' && (!smtpHost || !smtpPort)) {
+      toast({ title: "Hata", description: "Özel SMTP için sunucu adresi ve port gerekli", variant: "destructive" });
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const response = await apiRequest('POST', '/api/tenant-integrations/email', {
+        provider,
+        emailUser,
+        emailPassword,
+        emailFromName: emailFromName || emailUser,
+        smtpHost: provider === 'custom' ? smtpHost : undefined,
+        smtpPort: provider === 'custom' ? parseInt(smtpPort) : undefined,
+        smtpSecure: provider === 'custom' ? smtpSecure : undefined,
+      });
+
+      toast({ title: "Başarılı", description: `${providerLabels[provider]} ayarları kaydedildi` });
+      setEmailPassword("");
+      queryClient.invalidateQueries({ queryKey: ['/api/tenant-integrations'] });
+    } catch (error: any) {
+      toast({ title: "Hata", description: error?.message || "Ayarlar kaydedilemedi", variant: "destructive" });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setIsTesting(true);
+    try {
+      const response = await apiRequest('POST', '/api/tenant-integrations/email/test', {});
+      toast({ title: "Başarılı", description: "E-posta bağlantısı başarılı!" });
+    } catch (error: any) {
+      toast({ title: "Hata", description: error?.message || "Bağlantı testi başarısız", variant: "destructive" });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setIsDisconnecting(true);
+    try {
+      await apiRequest('DELETE', '/api/tenant-integrations/email', {});
+      toast({ title: "Başarılı", description: "E-posta bağlantısı kaldırıldı" });
+      queryClient.invalidateQueries({ queryKey: ['/api/tenant-integrations'] });
+    } catch (error: any) {
+      toast({ title: "Hata", description: error?.message || "Bağlantı kaldırılamadı", variant: "destructive" });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="w-5 h-5" />
+            E-posta Entegrasyonu
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Yükleniyor...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const isConfigured = emailSettings?.emailConfigured;
+  const currentProvider = emailSettings?.emailProvider;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Mail className="w-5 h-5" />
+            <span>E-posta Entegrasyonu</span>
+          </div>
+          {isConfigured ? (
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Bağlı
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              <XCircle className="w-3 h-3" />
+              Bağlı Değil
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription>
+          Müşterilerinize e-posta göndermek için e-posta hesabınızı bağlayın
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isConfigured ? (
+          <>
+            <div className="p-4 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                <CheckCircle className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">E-posta Bağlantısı Aktif</p>
+                  <p className="text-sm opacity-80">Sağlayıcı: {providerLabels[currentProvider || 'gmail'] || currentProvider}</p>
+                  <p className="text-sm opacity-60">E-posta: {emailSettings?.emailUser}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleTest} disabled={isTesting} data-testid="button-test-email">
+                {isTesting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Test Ediliyor...</> : "Bağlantıyı Test Et"}
+              </Button>
+              <Button variant="destructive" onClick={handleDisconnect} disabled={isDisconnecting} data-testid="button-disconnect-email">
+                {isDisconnecting ? "Kaldırılıyor..." : "Bağlantıyı Kaldır"}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>E-posta Sağlayıcısı</Label>
+                <Select value={provider} onValueChange={(v) => setProvider(v as any)}>
+                  <SelectTrigger data-testid="select-email-provider">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gmail">Gmail</SelectItem>
+                    <SelectItem value="outlook">Outlook / Office 365</SelectItem>
+                    <SelectItem value="yandex">Yandex</SelectItem>
+                    <SelectItem value="custom">Özel SMTP</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{providerHints[provider]}</p>
+              </div>
+
+              {provider === 'custom' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-host">SMTP Sunucu</Label>
+                    <Input
+                      id="smtp-host"
+                      value={smtpHost}
+                      onChange={(e) => setSmtpHost(e.target.value)}
+                      placeholder="smtp.sirket.com"
+                      data-testid="input-smtp-host"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-port">Port</Label>
+                    <Input
+                      id="smtp-port"
+                      value={smtpPort}
+                      onChange={(e) => setSmtpPort(e.target.value)}
+                      placeholder="587"
+                      data-testid="input-smtp-port"
+                    />
+                  </div>
+                  <div className="col-span-2 flex items-center space-x-2">
+                    <Switch
+                      id="smtp-secure"
+                      checked={smtpSecure}
+                      onCheckedChange={setSmtpSecure}
+                      data-testid="switch-smtp-secure"
+                    />
+                    <Label htmlFor="smtp-secure">SSL/TLS Kullan (Port 465 için aktif)</Label>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email-user">E-posta Adresi</Label>
+                <Input
+                  id="email-user"
+                  type="email"
+                  value={emailUser}
+                  onChange={(e) => setEmailUser(e.target.value)}
+                  placeholder="ornek@gmail.com"
+                  data-testid="input-email-user"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email-password">Şifre / Uygulama Şifresi</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="email-password"
+                    type={showPassword ? "text" : "password"}
+                    value={emailPassword}
+                    onChange={(e) => setEmailPassword(e.target.value)}
+                    placeholder="••••••••••••••••"
+                    data-testid="input-email-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowPassword(!showPassword)}
+                    data-testid="button-toggle-password"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email-from-name">Gönderici Adı (opsiyonel)</Label>
+                <Input
+                  id="email-from-name"
+                  value={emailFromName}
+                  onChange={(e) => setEmailFromName(e.target.value)}
+                  placeholder="Acenta Adı"
+                  data-testid="input-email-from-name"
+                />
+              </div>
+            </div>
+
+            <Button onClick={handleConnect} disabled={isConnecting} data-testid="button-connect-email">
+              {isConnecting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Kaydediliyor...</> : "E-posta Bağla"}
+            </Button>
           </>
         )}
       </CardContent>

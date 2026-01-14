@@ -5697,7 +5697,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         woocommerceConsumerKey: integration?.woocommerceConsumerKey || '',
         woocommerceConfigured: integration?.woocommerceConfigured || false,
         
-        // Gmail
+        // Email (Multi-provider)
+        emailProvider: integration?.emailProvider || null,
+        emailUser: integration?.emailUser || '',
+        emailFromName: integration?.emailFromName || '',
+        emailSmtpHost: integration?.emailSmtpHost || null,
+        emailSmtpPort: integration?.emailSmtpPort || null,
+        emailConfigured: integration?.emailConfigured || false,
+        
+        // Gmail (legacy)
         gmailUser: integration?.gmailUser || '',
         gmailFromName: integration?.gmailFromName || '',
         gmailConfigured: integration?.gmailConfigured || false,
@@ -5918,19 +5926,226 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       res.status(500).json({ error: "Gmail ayarları silinemedi" });
     }
   });
+
+  // === MULTI-PROVIDER EMAIL SETTINGS ===
   
-  // Helper function to get Gmail credentials for a tenant
-  async function getGmailCredentials(tenantId?: number): Promise<{ user: string; password: string; fromName?: string } | null> {
-    // If tenantId provided, get from tenant integrations
+  // Email provider SMTP configurations
+  const emailProviderConfigs: Record<string, { host: string; port: number; secure: boolean }> = {
+    gmail: { host: 'smtp.gmail.com', port: 587, secure: false },
+    outlook: { host: 'smtp.office365.com', port: 587, secure: false },
+    yandex: { host: 'smtp.yandex.com', port: 465, secure: true },
+  };
+
+  // Save email settings (multi-provider)
+  app.post("/api/tenant-integrations/email", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const { provider, emailUser, emailPassword, emailFromName, smtpHost, smtpPort, smtpSecure } = req.body;
+      
+      if (!provider || !emailUser || !emailPassword) {
+        return res.status(400).json({ error: "E-posta sağlayıcısı, adres ve şifre gerekli" });
+      }
+      
+      // Validate provider
+      const validProviders = ['gmail', 'outlook', 'yandex', 'custom'];
+      if (!validProviders.includes(provider)) {
+        return res.status(400).json({ error: "Geçersiz e-posta sağlayıcısı" });
+      }
+      
+      // For custom SMTP, require host and port
+      if (provider === 'custom' && (!smtpHost || !smtpPort)) {
+        return res.status(400).json({ error: "Özel SMTP için sunucu adresi ve port gerekli" });
+      }
+      
+      // Validate and parse smtpPort as integer for custom provider
+      let parsedSmtpPort: number | undefined = undefined;
+      if (provider === 'custom' && smtpPort !== undefined) {
+        parsedSmtpPort = typeof smtpPort === 'string' ? parseInt(smtpPort, 10) : smtpPort;
+        if (isNaN(parsedSmtpPort) || parsedSmtpPort < 1 || parsedSmtpPort > 65535) {
+          return res.status(400).json({ error: "Geçersiz port numarası (1-65535 arası olmalı)" });
+        }
+      }
+      
+      // Encrypt the password
+      const encryptedPassword = encrypt(emailPassword);
+      
+      // Get SMTP config based on provider
+      let finalHost = smtpHost;
+      let finalPort: number | undefined = parsedSmtpPort;
+      let finalSecure = smtpSecure ?? true;
+      
+      if (provider !== 'custom' && emailProviderConfigs[provider]) {
+        const config = emailProviderConfigs[provider];
+        finalHost = config.host;
+        finalPort = config.port;
+        finalSecure = config.secure;
+      }
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        emailProvider: provider,
+        emailUser: emailUser,
+        emailPasswordEncrypted: encryptedPassword,
+        emailFromName: emailFromName || emailUser,
+        emailSmtpHost: finalHost,
+        emailSmtpPort: finalPort,
+        emailSmtpSecure: finalSecure,
+        emailConfigured: true,
+      });
+      
+      const providerNames: Record<string, string> = {
+        gmail: 'Gmail',
+        outlook: 'Outlook',
+        yandex: 'Yandex',
+        custom: 'Özel SMTP'
+      };
+      
+      res.json({ success: true, message: `${providerNames[provider]} ayarları kaydedildi` });
+    } catch (err) {
+      console.error("Email settings save error:", err);
+      res.status(500).json({ error: "E-posta ayarları kaydedilemedi" });
+    }
+  });
+  
+  // Test email connection (multi-provider)
+  app.post("/api/tenant-integrations/email/test", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const integration = await storage.getTenantIntegration(tenantId);
+      
+      if (!integration?.emailUser || !integration?.emailPasswordEncrypted) {
+        return res.status(400).json({ success: false, error: "E-posta ayarları yapılandırılmamış" });
+      }
+      
+      let emailPassword: string;
+      try {
+        emailPassword = decrypt(integration.emailPasswordEncrypted);
+      } catch (decryptErr) {
+        return res.status(400).json({ success: false, error: "Şifre çözme hatası. Lütfen şifreyi yeniden girin." });
+      }
+      
+      // Create transporter based on provider
+      let transportConfig: any;
+      
+      if (integration.emailProvider === 'gmail') {
+        transportConfig = {
+          service: 'gmail',
+          auth: { user: integration.emailUser, pass: emailPassword },
+        };
+      } else if (integration.emailProvider === 'outlook') {
+        transportConfig = {
+          host: 'smtp.office365.com',
+          port: 587,
+          secure: false,
+          auth: { user: integration.emailUser, pass: emailPassword },
+        };
+      } else if (integration.emailProvider === 'yandex') {
+        transportConfig = {
+          host: 'smtp.yandex.com',
+          port: 465,
+          secure: true,
+          auth: { user: integration.emailUser, pass: emailPassword },
+        };
+      } else {
+        // Custom SMTP
+        transportConfig = {
+          host: integration.emailSmtpHost,
+          port: integration.emailSmtpPort || 587,
+          secure: integration.emailSmtpSecure ?? false,
+          auth: { user: integration.emailUser, pass: emailPassword },
+        };
+      }
+      
+      const transporter = nodemailer.createTransport(transportConfig);
+      await transporter.verify();
+      
+      res.json({ success: true, message: "E-posta bağlantısı başarılı!" });
+    } catch (err: any) {
+      console.error("Email test error:", err);
+      let errorMessage = "E-posta bağlantısı başarısız";
+      if (err.code === 'EAUTH') {
+        errorMessage = "Kimlik doğrulama hatası. Lütfen e-posta adresinizi ve şifrenizi kontrol edin.";
+      } else if (err.code === 'ESOCKET') {
+        errorMessage = "Sunucuya bağlanılamadı. SMTP ayarlarını kontrol edin.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      res.status(400).json({ success: false, error: errorMessage });
+    }
+  });
+  
+  // Delete email settings (multi-provider)
+  app.delete("/api/tenant-integrations/email", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        emailProvider: null,
+        emailUser: null,
+        emailPasswordEncrypted: null,
+        emailFromName: null,
+        emailSmtpHost: null,
+        emailSmtpPort: null,
+        emailSmtpSecure: null,
+        emailConfigured: false,
+      });
+      
+      res.json({ success: true, message: "E-posta bağlantısı kaldırıldı" });
+    } catch (err) {
+      res.status(500).json({ error: "E-posta ayarları silinemedi" });
+    }
+  });
+  
+  // Helper function to get email credentials for a tenant (multi-provider support)
+  async function getEmailCredentials(tenantId?: number): Promise<{ 
+    user: string; 
+    password: string; 
+    fromName?: string;
+    provider?: string;
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpSecure?: boolean;
+  } | null> {
     if (tenantId) {
       const integration = await storage.getTenantIntegration(tenantId);
+      
+      // First try new multi-provider email settings
+      if (integration?.emailUser && integration?.emailPasswordEncrypted && integration?.emailConfigured) {
+        try {
+          const emailPassword = decrypt(integration.emailPasswordEncrypted);
+          return { 
+            user: integration.emailUser, 
+            password: emailPassword,
+            fromName: integration.emailFromName || undefined,
+            provider: integration.emailProvider || undefined,
+            smtpHost: integration.emailSmtpHost || undefined,
+            smtpPort: integration.emailSmtpPort || undefined,
+            smtpSecure: integration.emailSmtpSecure ?? undefined,
+          };
+        } catch {
+          // Decryption failed, try legacy Gmail
+        }
+      }
+      
+      // Fallback to legacy Gmail settings
       if (integration?.gmailUser && integration?.gmailAppPasswordEncrypted) {
         try {
           const gmailPassword = decrypt(integration.gmailAppPasswordEncrypted);
           return { 
             user: integration.gmailUser, 
             password: gmailPassword,
-            fromName: integration.gmailFromName || undefined
+            fromName: integration.gmailFromName || undefined,
+            provider: 'gmail',
           };
         } catch {
           // Decryption failed, fall through to env vars
@@ -5943,10 +6158,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     const envPassword = process.env.GMAIL_APP_PASSWORD;
     
     if (envUser && envPassword) {
-      return { user: envUser, password: envPassword };
+      return { user: envUser, password: envPassword, provider: 'gmail' };
     }
     
     return null;
+  }
+  
+  // Legacy alias for backward compatibility
+  async function getGmailCredentials(tenantId?: number) {
+    return getEmailCredentials(tenantId);
   }
   
   // Helper function to get Twilio credentials for a tenant
