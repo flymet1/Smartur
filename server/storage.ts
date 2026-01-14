@@ -740,7 +740,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteActivity(id: number): Promise<void> {
-    // Delete related records in order (foreign key dependencies)
+    // Delete ALL related records in order (foreign key dependencies)
     // 1. Delete activity partner shares
     await db.delete(activityPartnerShares).where(eq(activityPartnerShares.activityId, id));
     // 2. Delete activity costs
@@ -755,7 +755,17 @@ export class DatabaseStorage implements IStorage {
     await db.delete(packageTourActivities).where(eq(packageTourActivities.activityId, id));
     // 7. Delete supplier dispatches for this activity
     await db.delete(supplierDispatches).where(eq(supplierDispatches.activityId, id));
-    // 8. Finally delete the activity
+    // 8. Delete agency activity terms
+    await db.delete(agencyActivityTerms).where(eq(agencyActivityTerms.activityId, id));
+    // 9. Set activityId to null for settlement entries (preserve financial history)
+    await db.update(settlementEntries).set({ activityId: null }).where(eq(settlementEntries.activityId, id));
+    // 10. Delete agency activity rates
+    await db.delete(agencyActivityRates).where(eq(agencyActivityRates.activityId, id));
+    // 11. Delete partner transactions for this activity
+    await db.delete(partnerTransactions).where(eq(partnerTransactions.activityId, id));
+    // 12. Delete viewer activity shares
+    await db.delete(viewerActivityShares).where(eq(viewerActivityShares.activityId, id));
+    // 13. Finally delete the activity
     await db.delete(activities).where(eq(activities.id, id));
   }
 
