@@ -776,10 +776,19 @@ export const tenantIntegrations = pgTable("tenant_integrations", {
   woocommerceWebhookSecret: text("woocommerce_webhook_secret"), // Webhook dogrulama
   woocommerceConfigured: boolean("woocommerce_configured").default(false),
   
-  // Gmail / Email Settings
-  gmailUser: text("gmail_user"), // Gmail adresi
-  gmailAppPasswordEncrypted: text("gmail_app_password_encrypted"), // Sifrelenmis uygulama sifresi
-  gmailFromName: text("gmail_from_name"), // Gonderici adi (örn: "Sky Fethiye Tur")
+  // Email Settings (Multi-provider: Gmail, Outlook, Yandex, Custom SMTP)
+  emailProvider: text("email_provider"), // gmail, outlook, yandex, custom
+  emailUser: text("email_user"), // E-posta adresi
+  emailPasswordEncrypted: text("email_password_encrypted"), // Sifrelenmis uygulama sifresi
+  emailFromName: text("email_from_name"), // Gonderici adi (örn: "Sky Fethiye Tur")
+  emailSmtpHost: text("email_smtp_host"), // Custom SMTP icin (örn: smtp.sirket.com)
+  emailSmtpPort: integer("email_smtp_port"), // Custom SMTP icin (25, 465, 587)
+  emailSmtpSecure: boolean("email_smtp_secure").default(true), // SSL/TLS
+  emailConfigured: boolean("email_configured").default(false),
+  // Legacy fields (for backward compatibility)
+  gmailUser: text("gmail_user"),
+  gmailAppPasswordEncrypted: text("gmail_app_password_encrypted"),
+  gmailFromName: text("gmail_from_name"),
   gmailConfigured: boolean("gmail_configured").default(false),
   
   // Meta
