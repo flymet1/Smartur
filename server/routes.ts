@@ -1783,7 +1783,8 @@ export async function registerRoutes(
       }
     }
     
-    const item = await storage.createReservation({ ...input, tenantId, status: defaultStatus });
+    const userId = req.session?.userId;
+    const item = await storage.createReservation({ ...input, tenantId, status: defaultStatus, createdByUserId: userId });
     
     // Create in-app notification for new reservation
     if (tenantId) {

@@ -3481,6 +3481,16 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
   
+  const { data: users = [] } = useQuery<{ id: number; name: string; username: string }[]>({
+    queryKey: ['/api/users'],
+    enabled: !!reservation?.createdByUserId,
+  });
+  
+  const createdByUser = useMemo(() => {
+    if (!reservation?.createdByUserId) return null;
+    return users.find(u => u.id === reservation.createdByUserId);
+  }, [reservation?.createdByUserId, users]);
+  
   useEffect(() => {
     if (reservation) {
       setEditDate(reservation.date);
@@ -3749,6 +3759,16 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
                   <Label className="text-muted-foreground text-xs">Transfer</Label>
                   <div className="font-medium">{reservation.hasTransfer ? "Var" : "Yok"}</div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {reservation.source === 'manual' && createdByUser && (
+            <div className="border-t pt-4">
+              <Label className="text-muted-foreground text-xs">Oluşturan Kullanıcı</Label>
+              <div className="font-medium flex items-center gap-2" data-testid="text-created-by-user">
+                <User className="h-4 w-4 text-muted-foreground" />
+                {createdByUser.name || createdByUser.username}
               </div>
             </div>
           )}

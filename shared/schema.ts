@@ -101,6 +101,7 @@ export const reservations = pgTable("reservations", {
   hasTransfer: boolean("has_transfer").default(false), // Otel transferi istendi mi
   paymentStatus: text("payment_status").default("unpaid"), // unpaid, partial, paid - Odeme durumu
   notes: text("notes"), // Notlar (partner rezervasyonlarında "[Partner: isim]" formatı)
+  createdByUserId: integer("created_by_user_id"), // Manuel ekleyen kullanıcı ID'si
   createdAt: timestamp("created_at").defaultNow(),
 });
 
