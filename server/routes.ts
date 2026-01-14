@@ -256,7 +256,7 @@ const DEFAULT_BOT_RULES = `
 
 9. PAKET TUR: Birden fazla aktivite içeren paket turlar hakkında soru sorarsa PAKET TURLAR bölümünü kullan ve bilgi ver.
 
-10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı SSS bölümünü kontrol et. Soruyla eşleşen varsa oradaki cevabı kullan.
+10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı SSS bölümünü kontrol et. Eğer orada cevap yoksa GENEL SSS bölümüne bak. Bu bölümde iptal politikası, ödeme yöntemleri gibi şirket geneli sorular yer alır.
 
 11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, "Türkçe Sipariş Onay Mesajı" alanını olduğu gibi ilet.
 
