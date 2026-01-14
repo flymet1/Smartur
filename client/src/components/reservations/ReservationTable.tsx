@@ -435,7 +435,7 @@ export function ReservationTable({
                               data-testid={`action-dispatch-${res.id}`}
                             >
                               <ArrowRightLeft className="h-4 w-4 mr-2 text-blue-600" />
-                              Gönderim Ekle
+                              Partner Acentaya Gönder
                             </DropdownMenuItem>
                           )}
                           {onNotifyAgency && (
