@@ -747,7 +747,11 @@ export class DatabaseStorage implements IStorage {
     await db.delete(activityCosts).where(eq(activityCosts.activityId, id));
     // 3. Delete capacity records
     await db.delete(capacity).where(eq(capacity.activityId, id));
-    // 4. Finally delete the activity
+    // 4. Delete reservation requests (pending requests for this activity)
+    await db.delete(reservationRequests).where(eq(reservationRequests.activityId, id));
+    // 5. Set activityId to null for existing reservations (preserve reservation history)
+    await db.update(reservations).set({ activityId: null }).where(eq(reservations.activityId, id));
+    // 6. Finally delete the activity
     await db.delete(activities).where(eq(activities.id, id));
   }
 
