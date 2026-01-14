@@ -19,6 +19,7 @@ Focus on high-level features only, avoiding granular implementation details.
 Consolidate redundant information, merging similar concepts and eliminating repetition.
 Prioritize architectural decisions over implementation specifics.
 External dependencies should focus on what's actually integrated.
+**CRITICAL: Always notify user immediately when making database schema changes** - User deploys to Coolify separately and needs SQL commands to update their production database.
 
 ## System Architecture
 
