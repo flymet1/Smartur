@@ -1,0 +1,91 @@
+2026-01-14 06:08:12.542 UTC [3080] STATEMENT:  ALTER TABLE ONLY public.tenant_partnerships
+ADD CONSTRAINT tenant_partnerships_pkey PRIMARY KEY (id);
+2026-01-14 06:08:12.542 UTC [3080] ERROR:  multiple primary keys for table "tenants" are not allowed
+2026-01-14 06:08:12.542 UTC [3080] STATEMENT:  ALTER TABLE ONLY public.tenants
+ADD CONSTRAINT tenants_pkey PRIMARY KEY (id);
+2026-01-14 06:08:12.562 UTC [3080] ERROR:  insert or update on table "activity_partner_shares" violates foreign key constraint "activity_partner_shares_partnership_id_fkey"
+2026-01-14 06:08:12.562 UTC [3080] DETAIL:  Key (partnership_id)=(1) is not present in table "tenant_partnerships".
+2026-01-14 06:08:12.562 UTC [3080] STATEMENT:  ALTER TABLE ONLY public.activity_partner_shares
+ADD CONSTRAINT activity_partner_shares_partnership_id_fkey FOREIGN KEY (partnership_id) REFERENCES public.tenant_partnerships(id);
+2026-01-14 06:11:55.723 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:12:45.881 UTC [52] LOG:  checkpoint complete: wrote 502 buffers (3.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=50.126 s, sync=0.023 s, total=50.159 s; sync files=368, longest=0.002 s, average=0.001 s; distance=4197 kB, estimate=4197 kB; lsn=0/1BD3940, redo lsn=0/1BD38B0
+2026-01-14 06:16:55.918 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:16:56.928 UTC [52] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.002 s, total=1.011 s; sync files=9, longest=0.001 s, average=0.001 s; distance=46 kB, estimate=3782 kB; lsn=0/1BDF408, redo lsn=0/1BDF3B0
+2026-01-14 06:21:56.027 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:21:56.736 UTC [52] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.703 s, sync=0.002 s, total=0.709 s; sync files=7, longest=0.001 s, average=0.001 s; distance=31 kB, estimate=3406 kB; lsn=0/1BE72B0, redo lsn=0/1BE7258
+2026-01-14 06:26:56.830 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:26:57.238 UTC [52] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.402 s, sync=0.002 s, total=0.408 s; sync files=5, longest=0.001 s, average=0.001 s; distance=17 kB, estimate=3068 kB; lsn=0/1BEB808, redo lsn=0/1BEB7B0
+2026-01-14 06:31:56.276 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:31:56.584 UTC [52] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.302 s, sync=0.003 s, total=0.308 s; sync files=4, longest=0.002 s, average=0.001 s; distance=5 kB, estimate=2761 kB; lsn=0/1BECCC8, redo lsn=0/1BECC70
+2026-01-14 06:46:56.833 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:46:57.142 UTC [52] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.302 s, sync=0.003 s, total=0.309 s; sync files=4, longest=0.002 s, average=0.001 s; distance=9 kB, estimate=2486 kB; lsn=0/1BEF118, redo lsn=0/1BEF0C0
+2026-01-14 07:46:57.272 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 07:46:58.080 UTC [52] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.804 s, sync=0.002 s, total=0.809 s; sync files=9, longest=0.001 s, average=0.001 s; distance=23 kB, estimate=2240 kB; lsn=0/1BF4FA0, redo lsn=0/1BF4F48
+2026-01-14 07:49:52.166 UTC [13040] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:49:52.166 UTC [13040] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:49:52.166 UTC [13040] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:49:54.066 UTC [13049] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:49:54.066 UTC [13049] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:49:54.066 UTC [13049] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:49:56.483 UTC [13059] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:49:56.483 UTC [13059] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:49:56.483 UTC [13059] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:51:57.178 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 07:51:58.916 UTC [52] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 1 WAL file(s) added, 0 removed, 0 recycled; write=1.706 s, sync=0.002 s, total=1.738 s; sync files=14, longest=0.001 s, average=0.001 s; distance=56 kB, estimate=2021 kB; lsn=0/1C03010, redo lsn=0/1C02FB8
+2026-01-14 07:55:10.372 UTC [13572] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:55:10.372 UTC [13572] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:55:10.372 UTC [13572] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:55:13.877 UTC [13586] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:55:13.877 UTC [13586] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:55:13.877 UTC [13586] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:55:27.621 UTC [13612] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:55:27.621 UTC [13612] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:55:27.621 UTC [13612] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:56:58.000 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 07:56:59.010 UTC [52] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.004 s, sync=0.002 s, total=1.010 s; sync files=11, longest=0.001 s, average=0.001 s; distance=31 kB, estimate=1822 kB; lsn=0/1C0AE58, redo lsn=0/1C0AE00
+2026-01-14 08:01:58.107 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 08:01:59.418 UTC [52] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.305 s, sync=0.004 s, total=1.312 s; sync files=12, longest=0.003 s, average=0.001 s; distance=58 kB, estimate=1646 kB; lsn=0/1C198A8, redo lsn=0/1C19850
+2026-01-14 08:02:47.228 UTC [14339] ERROR:  update or delete on table "activities" violates foreign key constraint "reservation_requests_activity_id_fkey" on table "reservation_requests"
+2026-01-14 08:02:47.228 UTC [14339] DETAIL:  Key (id)=(8) is still referenced from table "reservation_requests".
+2026-01-14 08:02:47.228 UTC [14339] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:02:51.019 UTC [14361] ERROR:  update or delete on table "activities" violates foreign key constraint "reservation_requests_activity_id_fkey" on table "reservation_requests"
+2026-01-14 08:02:51.019 UTC [14361] DETAIL:  Key (id)=(8) is still referenced from table "reservation_requests".
+2026-01-14 08:02:51.019 UTC [14361] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:04:12.291 UTC [14504] ERROR:  update or delete on table "activities" violates foreign key constraint "reservation_requests_activity_id_fkey" on table "reservation_requests"
+2026-01-14 08:04:12.291 UTC [14504] DETAIL:  Key (id)=(8) is still referenced from table "reservation_requests".
+2026-01-14 08:04:12.291 UTC [14504] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:06:58.518 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 08:06:59.528 UTC [52] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.004 s, sync=0.003 s, total=1.010 s; sync files=11, longest=0.001 s, average=0.001 s; distance=29 kB, estimate=1484 kB; lsn=0/1C21048, redo lsn=0/1C20FF0
+2026-01-14 08:07:52.892 UTC [14862] ERROR:  update or delete on table "activities" violates foreign key constraint "package_tour_activities_activity_id_activities_id_fk" on table "package_tour_activities"
+2026-01-14 08:07:52.892 UTC [14862] DETAIL:  Key (id)=(6) is still referenced from table "package_tour_activities".
+2026-01-14 08:07:52.892 UTC [14862] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:07:58.338 UTC [14879] ERROR:  update or delete on table "activities" violates foreign key constraint "package_tour_activities_activity_id_activities_id_fk" on table "package_tour_activities"
+2026-01-14 08:07:58.338 UTC [14879] DETAIL:  Key (id)=(7) is still referenced from table "package_tour_activities".
+2026-01-14 08:07:58.338 UTC [14879] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:08:08.112 UTC [14903] ERROR:  update or delete on table "activities" violates foreign key constraint "package_tour_activities_activity_id_activities_id_fk" on table "package_tour_activities"
+2026-01-14 08:08:08.112 UTC [14903] DETAIL:  Key (id)=(6) is still referenced from table "package_tour_activities".
+2026-01-14 08:08:08.112 UTC [14903] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:11:58.628 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 08:12:00.139 UTC [52] LOG:  checkpoint complete: wrote 16 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.505 s, sync=0.003 s, total=1.512 s; sync files=14, longest=0.002 s, average=0.001 s; distance=61 kB, estimate=1342 kB; lsn=0/1C32BC0, redo lsn=0/1C30550
+2026-01-14 08:12:01.526 UTC [15299] ERROR:  update or delete on table "activities" violates foreign key constraint "supplier_dispatches_activity_id_activities_id_fk" on table "supplier_dispatches"
+2026-01-14 08:12:01.526 UTC [15299] DETAIL:  Key (id)=(6) is still referenced from table "supplier_dispatches".
+2026-01-14 08:12:01.526 UTC [15299] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:12:17.284 UTC [15320] ERROR:  update or delete on table "activities" violates foreign key constraint "supplier_dispatches_activity_id_activities_id_fk" on table "supplier_dispatches"
+2026-01-14 08:12:17.284 UTC [15320] DETAIL:  Key (id)=(6) is still referenced from table "supplier_dispatches".
+2026-01-14 08:12:17.284 UTC [15320] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:12:58.159 UTC [15403] ERROR:  update or delete on table "activities" violates foreign key constraint "supplier_dispatches_activity_id_activities_id_fk" on table "supplier_dispatches"
+2026-01-14 08:12:58.159 UTC [15403] DETAIL:  Key (id)=(6) is still referenced from table "supplier_dispatches".
+2026-01-14 08:12:58.159 UTC [15403] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:12:59.754 UTC [15414] ERROR:  update or delete on table "activities" violates foreign key constraint "supplier_dispatches_activity_id_activities_id_fk" on table "supplier_dispatches"
+2026-01-14 08:12:59.754 UTC [15414] DETAIL:  Key (id)=(7) is still referenced from table "supplier_dispatches".
+2026-01-14 08:12:59.754 UTC [15414] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 08:16:58.228 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 08:16:59.841 UTC [52] LOG:  checkpoint complete: wrote 17 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.605 s, sync=0.002 s, total=1.614 s; sync files=15, longest=0.001 s, average=0.001 s; distance=58 kB, estimate=1213 kB; lsn=0/1C3EF10, redo lsn=0/1C3EEB8
+2026-01-14 08:18:55.287 UTC [16001] ERROR:  column "email_provider" does not exist at character 299
+2026-01-14 08:18:55.287 UTC [16001] STATEMENT:  select "id", "tenant_id", "twilio_account_sid", "twilio_auth_token_encrypted", "twilio_whatsapp_number", "twilio_webhook_url", "twilio_configured", "woocommerce_store_url", "woocommerce_consumer_key", "woocommerce_consumer_secret_encrypted", "woocommerce_webhook_secret", "woocommerce_configured", "email_provider", "email_user", "email_password_encrypted", "email_from_name", "email_smtp_host", "email_smtp_port", "email_smtp_secure", "email_configured", "gmail_user", "gmail_app_password_encrypted", "gmail_from_name", "gmail_configured", "created_at", "updated_at" from "tenant_integrations" where "tenant_integrations"."tenant_id" = $1
+2026-01-14 08:21:58.913 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 08:22:02.432 UTC [52] LOG:  checkpoint complete: wrote 36 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.512 s, sync=0.003 s, total=3.519 s; sync files=34, longest=0.001 s, average=0.001 s; distance=96 kB, estimate=1102 kB; lsn=0/1C57150, redo lsn=0/1C570F8
+2026-01-14 08:22:19.021 UTC [16342] ERROR:  column "email_provider" does not exist at character 299
+2026-01-14 08:22:19.021 UTC [16342] STATEMENT:  select "id", "tenant_id", "twilio_account_sid", "twilio_auth_token_encrypted", "twilio_whatsapp_number", "twilio_webhook_url", "twilio_configured", "woocommerce_store_url", "woocommerce_consumer_key", "woocommerce_consumer_secret_encrypted", "woocommerce_webhook_secret", "woocommerce_configured", "email_provider", "email_user", "email_password_encrypted", "email_from_name", "email_smtp_host", "email_smtp_port", "email_smtp_secure", "email_configured", "gmail_user", "gmail_app_password_encrypted", "gmail_from_name", "gmail_configured", "created_at", "updated_at" from "tenant_integrations" where "tenant_integrations"."tenant_id" = $1
+2026-01-14 08:22:23.474 UTC [16343] ERROR:  column "email_provider" does not exist at character 299
+2026-01-14 08:22:23.474 UTC [16343] STATEMENT:  select "id", "tenant_id", "twilio_account_sid", "twilio_auth_token_encrypted", "twilio_whatsapp_number", "twilio_webhook_url", "twilio_configured", "woocommerce_store_url", "woocommerce_consumer_key", "woocommerce_consumer_secret_encrypted", "woocommerce_webhook_secret", "woocommerce_configured", "email_provider", "email_user", "email_password_encrypted", "email_from_name", "email_smtp_host", "email_smtp_port", "email_smtp_secure", "email_configured", "gmail_user", "gmail_app_password_encrypted", "gmail_from_name", "gmail_configured", "created_at", "updated_at" from "tenant_integrations" where "tenant_integrations"."tenant_id" = $1
