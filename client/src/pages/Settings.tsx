@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday, Agency } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -88,6 +88,13 @@ export default function Settings() {
   const [botAccessTransfer, setBotAccessTransfer] = useState(true);
   const [botAccessExtras, setBotAccessExtras] = useState(true);
   const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
+  
+  // General FAQ - Company-wide frequently asked questions
+  const [generalFaq, setGeneralFaq] = useState<{ question: string; answer: string }[]>([]);
+  const [generalFaqLoaded, setGeneralFaqLoaded] = useState(false);
+  const [newFaqQuestion, setNewFaqQuestion] = useState("");
+  const [newFaqAnswer, setNewFaqAnswer] = useState("");
+  const [isSavingGeneralFaq, setIsSavingGeneralFaq] = useState(false);
   
   // Gmail Settings (legacy - kept for data migration)
   const [gmailUser, setGmailUser] = useState("");
@@ -185,6 +192,16 @@ export default function Settings() {
     queryKey: ['/api/settings', 'viewer_prompt'],
     queryFn: async () => {
       const res = await fetch('/api/settings/viewer_prompt');
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  // Load general FAQ
+  const { data: generalFaqSetting, isFetched: generalFaqIsFetched } = useQuery<{ key: string; value: string | null } | null>({
+    queryKey: ['/api/settings', 'generalFaq'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/generalFaq');
       if (!res.ok) return null;
       return res.json();
     },
@@ -380,6 +397,21 @@ DEĞİŞİKLİK TALEPLERİNDE:
       setViewerPromptLoaded(true);
     }
   }, [viewerPromptSetting, viewerPromptLoaded, viewerPromptIsFetched]);
+
+  // Apply loaded general FAQ when data arrives
+  useEffect(() => {
+    if (!generalFaqLoaded && generalFaqIsFetched) {
+      if (generalFaqSetting?.value) {
+        try {
+          const faqData = JSON.parse(generalFaqSetting.value);
+          if (Array.isArray(faqData)) {
+            setGeneralFaq(faqData);
+          }
+        } catch {}
+      }
+      setGeneralFaqLoaded(true);
+    }
+  }, [generalFaqSetting, generalFaqLoaded, generalFaqIsFetched]);
 
   // Apply loaded bulk message templates when data arrives (with backwards compatibility)
   useEffect(() => {
@@ -1640,6 +1672,111 @@ DEĞİŞİKLİK TALEPLERİNDE:
                         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                           <p className="text-xs text-amber-800 dark:text-amber-300">
                             Kara listedeki numaralardan gelen mesajlar kaydedilir ancak bot otomatik yanıt vermez.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Genel SSS - Şirket genelinde geçerli sık sorulan sorular */}
+                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <HelpCircle className="w-5 h-5" />
+                            <Label className="text-base font-medium">Genel SSS (Sık Sorulan Sorular)</Label>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Tüm aktiviteler için geçerli genel sorular. Bot, aktivite SSS'inde cevap bulamazsa bu listeye bakar.
+                          </p>
+                        </div>
+                        
+                        <div className="flex flex-col gap-3">
+                          <Input 
+                            placeholder="Soru (örn: İptal politikası nedir?)"
+                            value={newFaqQuestion}
+                            onChange={(e) => setNewFaqQuestion(e.target.value)}
+                            data-testid="input-general-faq-question"
+                          />
+                          <Textarea 
+                            placeholder="Cevap"
+                            value={newFaqAnswer}
+                            onChange={(e) => setNewFaqAnswer(e.target.value)}
+                            rows={3}
+                            data-testid="input-general-faq-answer"
+                          />
+                          <Button 
+                            onClick={async () => {
+                              if (newFaqQuestion.trim() && newFaqAnswer.trim()) {
+                                const updatedFaq = [...generalFaq, { question: newFaqQuestion.trim(), answer: newFaqAnswer.trim() }];
+                                setGeneralFaq(updatedFaq);
+                                setNewFaqQuestion("");
+                                setNewFaqAnswer("");
+                                setIsSavingGeneralFaq(true);
+                                try {
+                                  await fetch("/api/settings/generalFaq", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ value: JSON.stringify(updatedFaq) })
+                                  });
+                                } finally {
+                                  setIsSavingGeneralFaq(false);
+                                }
+                              }
+                            }}
+                            disabled={!newFaqQuestion.trim() || !newFaqAnswer.trim() || isSavingGeneralFaq}
+                            data-testid="button-add-general-faq"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            SSS Ekle
+                          </Button>
+                        </div>
+
+                        {generalFaq.length === 0 ? (
+                          <div className="text-sm text-muted-foreground text-center py-4 bg-background/50 rounded-lg">
+                            Henüz genel SSS eklenmemiş
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {generalFaq.map((faq, index) => (
+                              <div 
+                                key={index} 
+                                className="p-3 bg-background/50 rounded-lg"
+                                data-testid={`general-faq-entry-${index}`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm">{faq.question}</div>
+                                    <div className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{faq.answer}</div>
+                                  </div>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={async () => {
+                                      const updatedFaq = generalFaq.filter((_, i) => i !== index);
+                                      setGeneralFaq(updatedFaq);
+                                      setIsSavingGeneralFaq(true);
+                                      try {
+                                        await fetch("/api/settings/generalFaq", {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ value: JSON.stringify(updatedFaq) })
+                                        });
+                                      } finally {
+                                        setIsSavingGeneralFaq(false);
+                                      }
+                                    }}
+                                    disabled={isSavingGeneralFaq}
+                                    data-testid={`button-remove-general-faq-${index}`}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                          <p className="text-xs text-blue-800 dark:text-blue-300">
+                            Bu sorular tüm aktiviteler için geçerlidir. İptal politikası, ödeme yöntemleri, transfer bilgileri gibi genel konuları buraya ekleyebilirsiniz.
                           </p>
                         </div>
                       </div>

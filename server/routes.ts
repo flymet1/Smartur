@@ -746,6 +746,26 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
     })
     .join("\n") || "") : "";
   
+  // Build general FAQ context (company-wide FAQ - only if access enabled)
+  let generalFaqInfo = "";
+  if (botAccess.faq && context.generalFaq) {
+    try {
+      const generalFaqItems = typeof context.generalFaq === 'string' 
+        ? JSON.parse(context.generalFaq) 
+        : context.generalFaq;
+      if (Array.isArray(generalFaqItems) && generalFaqItems.length > 0) {
+        generalFaqInfo = "\n=== GENEL SIK SORULAN SORULAR ===\n";
+        generalFaqInfo += "(Bu sorular tüm aktiviteler için geçerlidir)\n";
+        for (const faq of generalFaqItems) {
+          if (faq.question && faq.answer) {
+            generalFaqInfo += `S: ${faq.question}\n`;
+            generalFaqInfo += `C: ${faq.answer}\n\n`;
+          }
+        }
+      }
+    } catch {}
+  }
+  
   // Build capacity/availability information (only if access enabled)
   let capacityInfo = "";
   if (botAccess.capacity && context.capacityData && context.capacityData.length > 0) {
@@ -974,7 +994,7 @@ ${dateContext}
 ${personaRulesSection}
 === MEVCUT AKTİVİTELER ===
 ${activityDescriptions}
-${packageToursSection}${capacityInfo}
+${packageToursSection}${capacityInfo}${generalFaqInfo}
 ${reservationContext}
 ${customerRequestContext}
 
@@ -4976,6 +4996,7 @@ export async function registerRoutes(
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
       const botRules = await storage.getSetting('botRules');
+      const generalFaq = await storage.getSetting('generalFaq');
       const partnerPrompt = await storage.getSetting('partner_prompt');
       const viewerPrompt = await storage.getSetting('viewer_prompt');
       
@@ -4999,6 +5020,7 @@ export async function registerRoutes(
         pendingRequests,
         botAccess,
         botRules,
+        generalFaq,
         isPartner,
         partnerName: partnerTenant?.name,
         partnerPrompt,
@@ -5160,6 +5182,9 @@ export async function registerRoutes(
       // Get custom bot rules from settings
       const botRules = await storage.getSetting('botRules');
       
+      // Get general FAQ from settings
+      const generalFaq = await storage.getSetting('generalFaq');
+      
       // If bot is disabled, just log the message and don't respond
       if (botAccess.enabled === false) {
         console.log(`Bot disabled for tenant ${tenantId || 'unknown'}, message logged but not responded`);
@@ -5179,7 +5204,8 @@ export async function registerRoutes(
         customerRequests: customerRequestsForPhone,
         pendingRequests: pendingRequests,
         botAccess,
-        botRules
+        botRules,
+        generalFaq
       }, botPrompt || undefined);
       
       // Check if response indicates human intervention needed
