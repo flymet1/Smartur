@@ -1,6 +1,9 @@
 import nodemailer from "nodemailer";
 import { storage } from "./storage";
 import { encrypt, decrypt } from "./encryption";
+import { db } from "./db";
+import { tenantIntegrations, tenants } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export interface SmtpConfig {
   host: string;
@@ -11,6 +14,12 @@ export interface SmtpConfig {
   fromEmail: string;
   fromName: string;
 }
+
+const PROVIDER_SMTP_CONFIG: Record<string, { host: string; port: number; secure: boolean }> = {
+  gmail: { host: 'smtp.gmail.com', port: 587, secure: false },
+  outlook: { host: 'smtp.office365.com', port: 587, secure: false },
+  yandex: { host: 'smtp.yandex.com', port: 465, secure: true },
+};
 
 export interface EmailOptions {
   to: string;
@@ -164,4 +173,102 @@ export async function sendEmail(options: EmailOptions): Promise<{ success: boole
 export function clearSmtpCache(): void {
   smtpConfigCache = null;
   cacheTimestamp = 0;
+}
+
+export async function getTenantSmtpConfig(tenantId: number): Promise<SmtpConfig | null> {
+  try {
+    const [integration] = await db.select({
+      emailProvider: tenantIntegrations.emailProvider,
+      emailUser: tenantIntegrations.emailUser,
+      emailPasswordEncrypted: tenantIntegrations.emailPasswordEncrypted,
+      emailFromName: tenantIntegrations.emailFromName,
+      emailSmtpHost: tenantIntegrations.emailSmtpHost,
+      emailSmtpPort: tenantIntegrations.emailSmtpPort,
+      emailSmtpSecure: tenantIntegrations.emailSmtpSecure,
+      emailConfigured: tenantIntegrations.emailConfigured,
+    }).from(tenantIntegrations).where(eq(tenantIntegrations.tenantId, tenantId));
+
+    if (!integration || !integration.emailConfigured || !integration.emailProvider || !integration.emailUser || !integration.emailPasswordEncrypted) {
+      return null;
+    }
+    
+    const [tenant] = await db.select({ name: tenants.name }).from(tenants).where(eq(tenants.id, tenantId));
+
+    const decryptedPassword = decrypt(integration.emailPasswordEncrypted);
+    
+    let smtpHost: string;
+    let smtpPort: number;
+    let smtpSecure: boolean;
+
+    if (integration.emailProvider === 'custom') {
+      if (!integration.emailSmtpHost || !integration.emailSmtpPort) {
+        return null;
+      }
+      smtpHost = integration.emailSmtpHost;
+      smtpPort = integration.emailSmtpPort;
+      smtpSecure = integration.emailSmtpSecure ?? true;
+    } else {
+      const providerConfig = PROVIDER_SMTP_CONFIG[integration.emailProvider];
+      if (!providerConfig) {
+        return null;
+      }
+      smtpHost = providerConfig.host;
+      smtpPort = providerConfig.port;
+      smtpSecure = providerConfig.secure;
+    }
+
+    return {
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      username: integration.emailUser,
+      password: decryptedPassword,
+      fromEmail: integration.emailUser,
+      fromName: integration.emailFromName || tenant?.name || 'Smartur',
+    };
+  } catch (error) {
+    console.error("Tenant SMTP config retrieval error:", error);
+    return null;
+  }
+}
+
+export async function sendTenantEmail(
+  tenantId: number,
+  options: EmailOptions
+): Promise<{ success: boolean; error?: string; usedTenantSmtp: boolean }> {
+  const tenantConfig = await getTenantSmtpConfig(tenantId);
+  
+  if (tenantConfig) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: tenantConfig.host,
+        port: tenantConfig.port,
+        secure: tenantConfig.secure,
+        auth: {
+          user: tenantConfig.username,
+          pass: tenantConfig.password,
+        },
+      });
+      
+      const fromName = options.fromName || tenantConfig.fromName;
+      const fromEmail = tenantConfig.fromEmail;
+      
+      await transporter.sendMail({
+        from: `"${fromName}" <${fromEmail}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+        replyTo: options.replyTo,
+      });
+      
+      console.log(`Tenant email sent successfully to ${options.to} from ${fromEmail}`);
+      return { success: true, usedTenantSmtp: true };
+    } catch (error: any) {
+      console.error("Tenant email sending failed, falling back to platform SMTP:", error.message);
+    }
+  }
+  
+  const platformResult = await sendEmail(options);
+  return { ...platformResult, usedTenantSmtp: false };
 }

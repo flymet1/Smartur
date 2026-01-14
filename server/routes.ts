@@ -2323,13 +2323,12 @@ export async function registerRoutes(
             </div>
           `;
           
-          // Send email using centralized SMTP service to tenant's notification email
-          const { sendEmail } = await import("./email");
-          const result = await sendEmail({
+          // Send email using tenant SMTP if configured, fallback to platform SMTP
+          const { sendTenantEmail } = await import("./email");
+          const result = await sendTenantEmail(reservation.tenantId!, {
             to: tenantNotificationEmail,
             subject: `[Müşteri Talebi] ${requestTypeText} - ${reservation.customerName}`,
             html: emailHtml,
-            fromName: 'Smartur Bildirim',
           });
           
           if (result.success) {
@@ -2513,8 +2512,8 @@ export async function registerRoutes(
           if (notificationEmailJson) {
             const notificationEmail = JSON.parse(notificationEmailJson);
             if (notificationEmail.email && notificationEmail.enabled !== false) {
-              const { sendEmail } = await import("./email");
-              await sendEmail({
+              const { sendTenantEmail } = await import("./email");
+              await sendTenantEmail(tenantId, {
                 to: notificationEmail.email,
                 subject: `Yeni Rezervasyon Talebi: ${customerName} - ${activityName}`,
                 html: `
@@ -3069,8 +3068,8 @@ export async function registerRoutes(
         try {
           const requesterUser = await storage.getAppUser(request.requestedBy);
           if (requesterUser?.email) {
-            const { sendEmail } = await import("./email");
-            await sendEmail({
+            const { sendTenantEmail } = await import("./email");
+            await sendTenantEmail(tenantId, {
               to: requesterUser.email,
               subject: `Rezervasyon Talebiniz Onaylandi - ${activityName}`,
               html: `
