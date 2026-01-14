@@ -32,6 +32,7 @@ import {
   Star,
   Settings2,
   Lock,
+  Key,
   Eye,
   EyeOff,
   Shield,
@@ -314,6 +315,21 @@ function TenantManagementSection() {
     }
   });
 
+  // Password reset state
+  const [resetPasswordForm, setResetPasswordForm] = useState({ newPassword: "", confirmPassword: "" });
+  
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ tenantId, newPassword }: { tenantId: number; newPassword: string }) => 
+      apiRequest('POST', `/api/tenants/${tenantId}/reset-admin-password`, { newPassword }),
+    onSuccess: () => {
+      setResetPasswordForm({ newPassword: "", confirmPassword: "" });
+      toast({ title: "Başarılı", description: "Yönetici şifresi değiştirildi" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Hata", description: error.message || "Şifre değiştirilemedi", variant: "destructive" });
+    }
+  });
+
   const resetForm = () => {
     setTenantForm({
       name: "",
@@ -571,6 +587,67 @@ function TenantManagementSection() {
               />
               <Label htmlFor="isActive">Aktif</Label>
             </div>
+
+            {/* Password Reset Section - Only for existing tenant */}
+            {!isNewTenant && editingTenant && editingTenant.id > 0 && (
+              <div className="border-t pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Key className="h-5 w-5 text-orange-500" />
+                  <div>
+                    <h4 className="font-medium">Şifre Sıfırlama</h4>
+                    <p className="text-sm text-muted-foreground">Acenta yöneticisinin şifresini değiştir</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">Yeni Şifre</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={resetPasswordForm.newPassword}
+                      onChange={(e) => setResetPasswordForm({ ...resetPasswordForm, newPassword: e.target.value })}
+                      placeholder="Yeni şifre girin"
+                      data-testid="input-new-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Şifre Tekrar</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={resetPasswordForm.confirmPassword}
+                      onChange={(e) => setResetPasswordForm({ ...resetPasswordForm, confirmPassword: e.target.value })}
+                      placeholder="Şifreyi tekrar girin"
+                      data-testid="input-confirm-password"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  onClick={() => {
+                    if (resetPasswordForm.newPassword !== resetPasswordForm.confirmPassword) {
+                      toast({ title: "Hata", description: "Şifreler eşleşmiyor", variant: "destructive" });
+                      return;
+                    }
+                    if (resetPasswordForm.newPassword.length < 6) {
+                      toast({ title: "Hata", description: "Şifre en az 6 karakter olmalı", variant: "destructive" });
+                      return;
+                    }
+                    resetPasswordMutation.mutate({ 
+                      tenantId: editingTenant.id, 
+                      newPassword: resetPasswordForm.newPassword 
+                    });
+                  }}
+                  disabled={!resetPasswordForm.newPassword || !resetPasswordForm.confirmPassword || resetPasswordMutation.isPending}
+                  data-testid="button-reset-password"
+                >
+                  {resetPasswordMutation.isPending ? "Değiştiriliyor..." : "Şifreyi Değiştir"}
+                </Button>
+              </div>
+            )}
 
             {/* Admin User Section - Only for new tenant */}
             {isNewTenant && (

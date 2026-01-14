@@ -8770,6 +8770,38 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     }
   });
 
+  // Reset tenant admin password (Super Admin only)
+  app.post("/api/tenants/:id/reset-admin-password", async (req, res) => {
+    try {
+      const tenantId = Number(req.params.id);
+      const { newPassword } = req.body;
+      
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: "Şifre en az 6 karakter olmalı" });
+      }
+      
+      // Find the admin user for this tenant (role = 'admin')
+      const tenantUsers = await storage.getAppUsersByTenant(tenantId);
+      const adminUser = tenantUsers.find(u => u.role === 'admin');
+      
+      if (!adminUser) {
+        return res.status(404).json({ error: "Bu acenta için yönetici kullanıcı bulunamadı" });
+      }
+      
+      // Hash the new password
+      const bcrypt = await import("bcrypt");
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Update the password
+      await storage.updateAppUser(adminUser.id, { password: hashedPassword });
+      
+      res.json({ success: true, message: "Yönetici şifresi değiştirildi" });
+    } catch (err) {
+      console.error("Şifre sıfırlama hatası:", err);
+      res.status(500).json({ error: "Şifre değiştirilemedi" });
+    }
+  });
+
   // Get tenant by slug
   app.get("/api/tenants/by-slug/:slug", async (req, res) => {
     try {
