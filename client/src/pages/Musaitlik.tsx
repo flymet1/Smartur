@@ -10,9 +10,7 @@ import {
   X,
   AlertCircle,
   Send,
-  Loader2,
-  Plus,
-  Minus
+  Loader2
 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,8 +59,6 @@ export default function Musaitlik() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canRequestReservation = hasPermission(PERMISSION_KEYS.RESERVATIONS_REQUEST);
-  const canManageCapacity = hasPermission(PERMISSION_KEYS.CAPACITY_VIEW);
-  const [adjustingSlotId, setAdjustingSlotId] = useState<number | null>(null);
 
   const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities']
@@ -187,49 +183,6 @@ export default function Musaitlik() {
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const adjustCapacity = async (slot: CapacitySlot, delta: number) => {
-    if (slot.isVirtual) {
-      toast({
-        title: "Uyarı",
-        description: "Bu saat için önce kapasite tanımlanmalı.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const newTotal = slot.totalSlots + delta;
-    if (newTotal < slot.bookedSlots) {
-      toast({
-        title: "Uyarı", 
-        description: `Kapasite mevcut rezervasyonlardan (${slot.bookedSlots}) az olamaz.`,
-        variant: "destructive"
-      });
-      return;
-    }
-    if (newTotal < 0) {
-      return;
-    }
-
-    setAdjustingSlotId(slot.id);
-    try {
-      await apiRequest("PATCH", `/api/capacity/${slot.id}`, { totalSlots: newTotal });
-      queryClient.invalidateQueries({ queryKey: ['/api/capacity'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/capacity/monthly'] });
-      toast({
-        title: "Güncellendi",
-        description: `Kapasite ${newTotal} olarak ayarlandı.`
-      });
-    } catch (err: any) {
-      toast({
-        title: "Hata",
-        description: err.message || "Kapasite güncellenemedi.",
-        variant: "destructive"
-      });
-    } finally {
-      setAdjustingSlotId(null);
     }
   };
 
@@ -403,54 +356,6 @@ export default function Musaitlik() {
                           <p className="text-sm text-muted-foreground">
                             {getActivityName(slot.activityId)}
                           </p>
-                          
-                          {canManageCapacity && !slot.isVirtual && (
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                              <span className="text-xs text-muted-foreground">
-                                Kapasite: {slot.bookedSlots}/{slot.totalSlots}
-                              </span>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-7 w-7"
-                                  disabled={adjustingSlotId === slot.id || slot.totalSlots <= slot.bookedSlots}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    adjustCapacity(slot, -1);
-                                  }}
-                                  data-testid={`btn-decrease-${slot.id}`}
-                                >
-                                  {adjustingSlotId === slot.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <Minus className="h-3 w-3" />
-                                  )}
-                                </Button>
-                                <span className="w-8 text-center text-sm font-medium">
-                                  {slot.totalSlots}
-                                </span>
-                                <Button
-                                  size="icon"
-                                  variant="outline"
-                                  className="h-7 w-7"
-                                  disabled={adjustingSlotId === slot.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    adjustCapacity(slot, 1);
-                                  }}
-                                  data-testid={`btn-increase-${slot.id}`}
-                                >
-                                  {adjustingSlotId === slot.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <Plus className="h-3 w-3" />
-                                  )}
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-
                           {canRequestReservation && !isFull && (
                             <Button 
                               size="sm" 
