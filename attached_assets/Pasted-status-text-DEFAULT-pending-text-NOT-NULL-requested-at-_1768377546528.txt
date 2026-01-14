@@ -1,0 +1,78 @@
+status text DEFAULT 'pending'::text NOT NULL,
+requested_at timestamp without time zone DEFAULT now(),
+responded_at timestamp without time zone,
+notes text
+);
+2026-01-14 06:08:12.298 UTC [3080] ERROR:  relation "tenants" already exists
+2026-01-14 06:08:12.298 UTC [3080] STATEMENT:  CREATE TABLE public.tenants (
+id integer NOT NULL,
+name text NOT NULL,
+slug text NOT NULL,
+contact_email text,
+contact_phone text,
+address text,
+logo_url text,
+primary_color text DEFAULT '262 83% 58%'::text,
+accent_color text DEFAULT '142 76% 36%'::text,
+timezone text DEFAULT 'Europe/Istanbul'::text,
+language text DEFAULT 'tr'::text,
+is_active boolean DEFAULT true,
+created_at timestamp without time zone DEFAULT now(),
+updated_at timestamp without time zone DEFAULT now(),
+plan_code text DEFAULT 'trial'::text
+);
+2026-01-14 06:08:12.402 UTC [3080] ERROR:  insert or update on table "tenant_partnerships" violates foreign key constraint "tenant_partnerships_requester_tenant_id_tenants_id_fk"
+2026-01-14 06:08:12.402 UTC [3080] DETAIL:  Key (requester_tenant_id)=(9) is not present in table "tenants".
+2026-01-14 06:08:12.402 UTC [3080] STATEMENT:  COPY public.tenant_partnerships (id, requester_tenant_id, partner_tenant_id, invite_code, status, requested_at, responded_at, notes) FROM stdin;
+2026-01-14 06:08:12.513 UTC [3080] ERROR:  multiple primary keys for table "reservations" are not allowed
+2026-01-14 06:08:12.513 UTC [3080] STATEMENT:  ALTER TABLE ONLY public.reservations
+ADD CONSTRAINT reservations_pkey PRIMARY KEY (id);
+2026-01-14 06:08:12.532 UTC [3080] ERROR:  multiple primary keys for table "supplier_dispatches" are not allowed
+2026-01-14 06:08:12.532 UTC [3080] STATEMENT:  ALTER TABLE ONLY public.supplier_dispatches
+ADD CONSTRAINT supplier_dispatches_pkey PRIMARY KEY (id);
+2026-01-14 06:08:12.542 UTC [3080] ERROR:  multiple primary keys for table "tenant_partnerships" are not allowed
+2026-01-14 06:08:12.542 UTC [3080] STATEMENT:  ALTER TABLE ONLY public.tenant_partnerships
+ADD CONSTRAINT tenant_partnerships_pkey PRIMARY KEY (id);
+2026-01-14 06:08:12.542 UTC [3080] ERROR:  multiple primary keys for table "tenants" are not allowed
+2026-01-14 06:08:12.542 UTC [3080] STATEMENT:  ALTER TABLE ONLY public.tenants
+ADD CONSTRAINT tenants_pkey PRIMARY KEY (id);
+2026-01-14 06:08:12.562 UTC [3080] ERROR:  insert or update on table "activity_partner_shares" violates foreign key constraint "activity_partner_shares_partnership_id_fkey"
+2026-01-14 06:08:12.562 UTC [3080] DETAIL:  Key (partnership_id)=(1) is not present in table "tenant_partnerships".
+2026-01-14 06:08:12.562 UTC [3080] STATEMENT:  ALTER TABLE ONLY public.activity_partner_shares
+ADD CONSTRAINT activity_partner_shares_partnership_id_fkey FOREIGN KEY (partnership_id) REFERENCES public.tenant_partnerships(id);
+2026-01-14 06:11:55.723 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:12:45.881 UTC [52] LOG:  checkpoint complete: wrote 502 buffers (3.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=50.126 s, sync=0.023 s, total=50.159 s; sync files=368, longest=0.002 s, average=0.001 s; distance=4197 kB, estimate=4197 kB; lsn=0/1BD3940, redo lsn=0/1BD38B0
+2026-01-14 06:16:55.918 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:16:56.928 UTC [52] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.002 s, total=1.011 s; sync files=9, longest=0.001 s, average=0.001 s; distance=46 kB, estimate=3782 kB; lsn=0/1BDF408, redo lsn=0/1BDF3B0
+2026-01-14 06:21:56.027 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:21:56.736 UTC [52] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.703 s, sync=0.002 s, total=0.709 s; sync files=7, longest=0.001 s, average=0.001 s; distance=31 kB, estimate=3406 kB; lsn=0/1BE72B0, redo lsn=0/1BE7258
+2026-01-14 06:26:56.830 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:26:57.238 UTC [52] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.402 s, sync=0.002 s, total=0.408 s; sync files=5, longest=0.001 s, average=0.001 s; distance=17 kB, estimate=3068 kB; lsn=0/1BEB808, redo lsn=0/1BEB7B0
+2026-01-14 06:31:56.276 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:31:56.584 UTC [52] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.302 s, sync=0.003 s, total=0.308 s; sync files=4, longest=0.002 s, average=0.001 s; distance=5 kB, estimate=2761 kB; lsn=0/1BECCC8, redo lsn=0/1BECC70
+2026-01-14 06:46:56.833 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 06:46:57.142 UTC [52] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.302 s, sync=0.003 s, total=0.309 s; sync files=4, longest=0.002 s, average=0.001 s; distance=9 kB, estimate=2486 kB; lsn=0/1BEF118, redo lsn=0/1BEF0C0
+2026-01-14 07:46:57.272 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 07:46:58.080 UTC [52] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.804 s, sync=0.002 s, total=0.809 s; sync files=9, longest=0.001 s, average=0.001 s; distance=23 kB, estimate=2240 kB; lsn=0/1BF4FA0, redo lsn=0/1BF4F48
+2026-01-14 07:49:52.166 UTC [13040] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:49:52.166 UTC [13040] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:49:52.166 UTC [13040] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:49:54.066 UTC [13049] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:49:54.066 UTC [13049] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:49:54.066 UTC [13049] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:49:56.483 UTC [13059] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:49:56.483 UTC [13059] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:49:56.483 UTC [13059] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:51:57.178 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 07:51:58.916 UTC [52] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 1 WAL file(s) added, 0 removed, 0 recycled; write=1.706 s, sync=0.002 s, total=1.738 s; sync files=14, longest=0.001 s, average=0.001 s; distance=56 kB, estimate=2021 kB; lsn=0/1C03010, redo lsn=0/1C02FB8
+2026-01-14 07:55:10.372 UTC [13572] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:55:10.372 UTC [13572] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:55:10.372 UTC [13572] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:55:13.877 UTC [13586] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:55:13.877 UTC [13586] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:55:13.877 UTC [13586] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:55:27.621 UTC [13612] ERROR:  update or delete on table "activities" violates foreign key constraint "activity_partner_shares_activity_id_fkey" on table "activity_partner_shares"
+2026-01-14 07:55:27.621 UTC [13612] DETAIL:  Key (id)=(8) is still referenced from table "activity_partner_shares".
+2026-01-14 07:55:27.621 UTC [13612] STATEMENT:  delete from "activities" where "activities"."id" = $1
+2026-01-14 07:56:58.000 UTC [52] LOG:  checkpoint starting: time
+2026-01-14 07:56:59.010 UTC [52] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.004 s, sync=0.002 s, total=1.010 s; sync files=11, longest=0.001 s, average=0.001 s; distance=31 kB, estimate=1822 kB; lsn=0/1C0AE58, redo lsn=0/1C0AE00
