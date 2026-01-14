@@ -1049,6 +1049,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="manualConfirmationTemplate">Onay Mesajı Şablonu</Label>
+                  <p className="text-xs text-muted-foreground mb-1">Aktivitede özel mesaj tanımlanmamışsa bu şablon kullanılır.</p>
                   <Textarea 
                     id="manualConfirmationTemplate"
                     value={manualConfirmationTemplate}
