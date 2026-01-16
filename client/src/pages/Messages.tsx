@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useMemo } from "react";
-import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search, ExternalLink, Users, TrendingUp, HeadphonesIcon, BarChart3, Bot, Percent } from "lucide-react";
+import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search, ExternalLink, Users, TrendingUp, HeadphonesIcon, BarChart3, Bot, Percent, Send, Loader2 } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -86,6 +87,7 @@ export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>('daily');
+  const [replyMessage, setReplyMessage] = useState("");
   const { toast } = useToast();
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery<MessageAnalytics>({
@@ -180,6 +182,37 @@ export default function Messages() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/conversations', filter] });
       toast({ title: "Oluşturuldu", description: "Destek talebi oluşturuldu. Bot bu numaraya cevap vermeyecek." });
+    }
+  });
+
+  const sendReplyMutation = useMutation({
+    mutationFn: async ({ phone, message }: { phone: string; message: string }) => {
+      return apiRequest('POST', '/api/send-whatsapp-custom-message', { phone, message });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations', filter] });
+      setReplyMessage("");
+      if (selectedConversation) {
+        const newMessage = {
+          id: Date.now(),
+          content: variables.message,
+          role: 'assistant',
+          timestamp: new Date().toISOString(),
+          requiresHumanIntervention: false
+        };
+        setSelectedConversation({
+          ...selectedConversation,
+          messages: [...selectedConversation.messages, newMessage]
+        });
+      }
+      toast({ title: "Gönderildi", description: "Mesaj müşteriye iletildi." });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Hata", 
+        description: error.message || "Mesaj gönderilemedi. WhatsApp yapılandırmanızı kontrol edin.",
+        variant: "destructive"
+      });
     }
   });
 
