@@ -22,13 +22,17 @@ import {
   Handshake,
   Eye,
   ClipboardList,
-  Home
+  Home,
+  ChevronLeft,
+  Users,
+  HeadphonesIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import type { SupportRequest, CustomerRequest, ReservationRequest } from "@shared/schema";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
@@ -345,17 +349,128 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile Top Header - Fixed at top, full width */}
-      <div className="xl:hidden fixed top-0 left-0 right-0 p-3 border-b flex items-center justify-center bg-card z-50">
-        {(brandLogoUrl || logoUrl) ? (
-          <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-7 w-auto" data-testid="img-sidebar-logo-mobile" />
-        ) : (
-          <div className="font-display font-bold text-lg text-primary flex items-center gap-1.5">
-            <span className="w-6 h-6 rounded bg-accent flex items-center justify-center text-accent-foreground">
-              <Activity className="h-4 w-4" />
-            </span>
-            {brandCompanyName}
-          </div>
-        )}
+      <div className="xl:hidden fixed top-0 left-0 right-0 h-14 px-3 border-b flex items-center justify-between bg-card z-50">
+        {/* Left: Back Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.history.back()}
+          data-testid="button-mobile-back"
+          className="shrink-0"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        {/* Center: Logo */}
+        <div className="flex-1 flex justify-center">
+          {(brandLogoUrl || logoUrl) ? (
+            <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-7 w-auto" data-testid="img-sidebar-logo-mobile" />
+          ) : (
+            <div className="font-display font-bold text-lg text-primary flex items-center gap-1.5">
+              <span className="w-6 h-6 rounded bg-accent flex items-center justify-center text-accent-foreground">
+                <Activity className="h-4 w-4" />
+              </span>
+              {brandCompanyName}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Notification Bell with Dropdown */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 relative"
+              data-testid="button-mobile-notifications"
+            >
+              <Bell className="h-5 w-5" />
+              {(openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount) > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs font-medium bg-destructive text-destructive-foreground rounded-full px-1">
+                  {openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-72 p-0" data-testid="popup-mobile-notifications">
+            <div className="p-3 border-b">
+              <h4 className="font-semibold text-sm">Bildirimler</h4>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {/* Customer Requests */}
+              {pendingCustomerRequestsCount > 0 && (
+                <Link href="/customer-requests">
+                  <div className="flex items-center gap-3 p-3 hover-elevate cursor-pointer border-b" data-testid="link-notif-customer-requests">
+                    <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                      <Users className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Müşteri Talepleri</p>
+                      <p className="text-xs text-muted-foreground">Bekleyen değişiklik/iptal talepleri</p>
+                    </div>
+                    <Badge variant="destructive" className="shrink-0">{pendingCustomerRequestsCount}</Badge>
+                  </div>
+                </Link>
+              )}
+
+              {/* Viewer Requests (İş Ortakları) */}
+              {pendingViewerRequestsCount > 0 && (
+                <Link href="/viewer-stats">
+                  <div className="flex items-center gap-3 p-3 hover-elevate cursor-pointer border-b" data-testid="link-notif-viewer-requests">
+                    <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <Eye className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">İzleyici Talepleri</p>
+                      <p className="text-xs text-muted-foreground">Bekleyen rezervasyon talepleri</p>
+                    </div>
+                    <Badge variant="destructive" className="shrink-0">{pendingViewerRequestsCount}</Badge>
+                  </div>
+                </Link>
+              )}
+
+              {/* Partner Requests */}
+              {pendingPartnerRequestsCount > 0 && (
+                <Link href="/partner-availability">
+                  <div className="flex items-center gap-3 p-3 hover-elevate cursor-pointer border-b" data-testid="link-notif-partner-requests">
+                    <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <Handshake className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Partner Talepleri</p>
+                      <p className="text-xs text-muted-foreground">Bekleyen partner rezervasyonları</p>
+                    </div>
+                    <Badge variant="destructive" className="shrink-0">{pendingPartnerRequestsCount}</Badge>
+                  </div>
+                </Link>
+              )}
+
+              {/* Support Requests */}
+              {openSupportCount > 0 && (
+                <Link href="/messages?filter=human_intervention">
+                  <div className="flex items-center gap-3 p-3 hover-elevate cursor-pointer border-b" data-testid="link-notif-support-requests">
+                    <div className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                      <HeadphonesIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Destek Talepleri</p>
+                      <p className="text-xs text-muted-foreground">Bot müdahale bekleyen mesajlar</p>
+                    </div>
+                    <Badge variant="destructive" className="shrink-0">{openSupportCount}</Badge>
+                  </div>
+                </Link>
+              )}
+
+              {/* No notifications */}
+              {(openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount) === 0 && (
+                <div className="p-6 text-center text-muted-foreground">
+                  <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Bekleyen bildirim yok</p>
+                </div>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Desktop Sidebar */}
