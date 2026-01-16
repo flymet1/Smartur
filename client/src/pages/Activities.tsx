@@ -476,11 +476,11 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <Tabs defaultValue="general" className="w-full flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
-              <TabsTrigger value="general">Genel</TabsTrigger>
-              <TabsTrigger value="extras">Transfer & Ekstra</TabsTrigger>
-              <TabsTrigger value="faq">SSS</TabsTrigger>
-              <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 flex-shrink-0">
+              <TabsTrigger value="general" className="text-xs sm:text-sm">Genel</TabsTrigger>
+              <TabsTrigger value="extras" className="text-xs sm:text-sm">Ekstra</TabsTrigger>
+              <TabsTrigger value="faq" className="text-xs sm:text-sm">SSS</TabsTrigger>
+              <TabsTrigger value="notifications" className="text-xs sm:text-sm">Bildirim</TabsTrigger>
             </TabsList>
             <div className="flex-1 overflow-y-auto py-4 px-1 min-h-0">
               <TabsContent value="general" className="space-y-4 mt-0">
@@ -506,9 +506,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   />
                   <p className="text-xs text-muted-foreground">WooCommerce eşleştirmesi için virgülle ayrılmış alternatif isimler (TR/EN)</p>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Fiyat (TL) <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="price" className="text-xs sm:text-sm">Fiyat (TL) <span className="text-destructive">*</span></Label>
                     <Input 
                       id="price" 
                       name="price" 
@@ -520,7 +520,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     {formErrors.price && <p className="text-xs text-destructive">{formErrors.price}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="priceUsd">Fiyat (USD)</Label>
+                    <Label htmlFor="priceUsd" className="text-xs sm:text-sm">Fiyat (USD)</Label>
                     <Input 
                       id="priceUsd" 
                       type="number" 
@@ -530,7 +530,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="durationMinutes">Süre (Dk) <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="durationMinutes" className="text-xs sm:text-sm">Süre (Dk) <span className="text-destructive">*</span></Label>
                     <Input 
                       id="durationMinutes" 
                       name="durationMinutes" 

@@ -618,8 +618,8 @@ export default function PartnerAvailability() {
                 }
               }}
             >
-              <SelectTrigger className="w-[150px]" data-testid="select-date-preset-top">
-                <SelectValue placeholder="Tarih Sec" />
+              <SelectTrigger className="w-[100px] sm:w-[150px] text-xs sm:text-sm" data-testid="select-date-preset-top">
+                <SelectValue placeholder="Tarih" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="today">Bugun</SelectItem>
@@ -642,7 +642,7 @@ export default function PartnerAvailability() {
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-sm text-muted-foreground min-w-[180px] text-center">
+              <span className="text-xs sm:text-sm text-muted-foreground min-w-[140px] sm:min-w-[180px] text-center">
                 {format(new Date(startDate), "d MMM", { locale: tr })} - {format(new Date(endDate), "d MMM yyyy", { locale: tr })}
               </span>
               <Button
@@ -853,8 +853,8 @@ export default function PartnerAvailability() {
                       }
                     }}
                   >
-                    <SelectTrigger className="w-[150px]" data-testid="select-date-preset">
-                      <SelectValue placeholder="Hizli Sec" />
+                    <SelectTrigger className="w-[100px] sm:w-[150px] text-xs sm:text-sm" data-testid="select-date-preset">
+                      <SelectValue placeholder="Hızlı Seç" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="today">Bugun</SelectItem>
@@ -869,12 +869,12 @@ export default function PartnerAvailability() {
                   </Select>
                   
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <Calendar className="w-4 h-4 text-muted-foreground hidden sm:block" />
                     <Input
                       type="date"
                       value={startDate}
                       onChange={(e) => { setStartDate(e.target.value); setDatePreset('custom'); }}
-                      className="w-36"
+                      className="w-28 sm:w-36 text-xs sm:text-sm"
                       data-testid="input-start-date"
                     />
                     <span className="text-muted-foreground">-</span>
@@ -882,7 +882,7 @@ export default function PartnerAvailability() {
                       type="date"
                       value={endDate}
                       onChange={(e) => { setEndDate(e.target.value); setDatePreset('custom'); }}
-                      className="w-36"
+                      className="w-28 sm:w-36 text-xs sm:text-sm"
                       data-testid="input-end-date"
                     />
                   </div>

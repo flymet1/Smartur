@@ -1223,7 +1223,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                       <p className="text-xs text-muted-foreground">
                         Desteklenen değişkenler:
                       </p>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
                         <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
                         <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
                         <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktiviteler{'}'}</code> - Aktivite adları</div>
@@ -1244,15 +1244,15 @@ DEĞİŞİKLİK TALEPLERİNDE:
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="connection" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="connection" data-testid="tab-whatsapp-connection">
-                    <Smartphone className="w-4 h-4 mr-2" />
-                    Baglanti
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 gap-1">
+                  <TabsTrigger value="connection" data-testid="tab-whatsapp-connection" className="text-xs sm:text-sm px-1 sm:px-3">
+                    <Smartphone className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Bağlantı</span>
                   </TabsTrigger>
-                  <TabsTrigger value="bot" data-testid="tab-whatsapp-bot">Bot Ayarları</TabsTrigger>
-                  <TabsTrigger value="templates" data-testid="tab-whatsapp-templates">Sablonlar</TabsTrigger>
-                  <TabsTrigger value="bot-test" data-testid="tab-whatsapp-bot-test">Bot Test</TabsTrigger>
-                  <TabsTrigger value="support" data-testid="tab-whatsapp-support">Destek</TabsTrigger>
+                  <TabsTrigger value="bot" data-testid="tab-whatsapp-bot" className="text-xs sm:text-sm px-1 sm:px-3">Bot</TabsTrigger>
+                  <TabsTrigger value="templates" data-testid="tab-whatsapp-templates" className="text-xs sm:text-sm px-1 sm:px-3">Şablon</TabsTrigger>
+                  <TabsTrigger value="bot-test" data-testid="tab-whatsapp-bot-test" className="text-xs sm:text-sm px-1 sm:px-3">Test</TabsTrigger>
+                  <TabsTrigger value="support" data-testid="tab-whatsapp-support" className="text-xs sm:text-sm px-1 sm:px-3">Destek</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="connection" className="space-y-6 mt-4">
@@ -3125,7 +3125,7 @@ function EmailCard() {
               </div>
 
               {provider === 'custom' && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="smtp-host">SMTP Sunucu</Label>
                     <Input
@@ -3146,7 +3146,7 @@ function EmailCard() {
                       data-testid="input-smtp-port"
                     />
                   </div>
-                  <div className="col-span-2 flex items-center space-x-2">
+                  <div className="sm:col-span-2 flex items-center space-x-2">
                     <Switch
                       id="smtp-secure"
                       checked={smtpSecure}
@@ -3576,7 +3576,7 @@ function AutoResponsesCard() {
                   </>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="auto-priority">Oncelik</Label>
                     <Input
@@ -4275,7 +4275,7 @@ function HolidaysSection() {
               <Label>Tatil Adı *</Label>
               <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ornegin: Kurban Bayrami" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Başlangıç Tarihi *</Label>
                 <Input type="date" value={formStartDate} onChange={(e) => setFormStartDate(e.target.value)} />
@@ -5190,7 +5190,7 @@ function UserManagementSection() {
                         </div>
 
                         {share.isShared && (
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div className="space-y-1">
                               <Label className="text-xs">Fiyat (TRY)</Label>
                               <Input

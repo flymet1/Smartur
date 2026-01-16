@@ -1392,7 +1392,7 @@ export default function Finance() {
                 }
               }}
             >
-              <SelectTrigger className="w-[140px]" data-testid="select-date-preset">
+              <SelectTrigger className="w-[100px] sm:w-[140px] text-xs sm:text-sm" data-testid="select-date-preset">
                 <SelectValue placeholder="Hızlı Seç" />
               </SelectTrigger>
               <SelectContent>
@@ -1407,7 +1407,7 @@ export default function Finance() {
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Calendar className="h-4 w-4 text-muted-foreground hidden sm:block" />
               <Input 
                 type="date" 
                 value={startDate} 
@@ -1415,7 +1415,7 @@ export default function Finance() {
                   setStartDate(e.target.value);
                   setDatePreset('custom');
                 }}
-                className="w-36"
+                className="w-28 sm:w-36 text-xs sm:text-sm"
                 data-testid="input-start-date"
               />
             </div>
@@ -1427,7 +1427,7 @@ export default function Finance() {
                 setEndDate(e.target.value);
                 setDatePreset('custom');
               }}
-              className="w-36"
+              className="w-28 sm:w-36 text-xs sm:text-sm"
               data-testid="input-end-date"
             />
             {financeTab === 'partner-customers' ? (
@@ -1435,9 +1435,9 @@ export default function Finance() {
                 value={selectedPartnerId ? String(selectedPartnerId) : "all"}
                 onValueChange={(v) => setSelectedPartnerId(v === "all" ? null : parseInt(v))}
               >
-                <SelectTrigger className="w-[180px]" data-testid="select-partner-filter-top">
-                  <Handshake className="h-4 w-4 mr-1" />
-                  <SelectValue placeholder="Tüm Partnerlar" />
+                <SelectTrigger className="w-[120px] sm:w-[180px] text-xs sm:text-sm" data-testid="select-partner-filter-top">
+                  <Handshake className="h-4 w-4 sm:mr-1" />
+                  <SelectValue placeholder="Partner" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Partnerlar</SelectItem>
@@ -1451,9 +1451,9 @@ export default function Finance() {
                 value={selectedAgencyId ? String(selectedAgencyId) : "all"}
                 onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
               >
-                <SelectTrigger className="w-[180px]" data-testid="select-agency-filter">
-                  <Building2 className="h-4 w-4 mr-1" />
-                  <SelectValue placeholder="Tüm Acentalar" />
+                <SelectTrigger className="w-[120px] sm:w-[180px] text-xs sm:text-sm" data-testid="select-agency-filter">
+                  <Building2 className="h-4 w-4 sm:mr-1" />
+                  <SelectValue placeholder="Acenta" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Acentalar</SelectItem>
@@ -1581,7 +1581,7 @@ export default function Finance() {
                       PDF
                     </Button>
                     <Select value={dispatchSortOrder} onValueChange={v => setDispatchSortOrder(v as typeof dispatchSortOrder)}>
-                      <SelectTrigger className="w-[180px] h-8" data-testid="select-dispatch-sort">
+                      <SelectTrigger className="w-[100px] sm:w-[180px] text-xs sm:text-sm" data-testid="select-dispatch-sort">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1757,7 +1757,7 @@ export default function Finance() {
                   PDF
                 </Button>
                 <Select value={payoutSortOrder} onValueChange={v => setPayoutSortOrder(v as typeof payoutSortOrder)}>
-                  <SelectTrigger className="w-[160px] h-8" data-testid="select-payout-sort">
+                  <SelectTrigger className="w-[100px] sm:w-[160px] text-xs sm:text-sm" data-testid="select-payout-sort">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1860,43 +1860,63 @@ export default function Finance() {
                 <h3 className="text-lg font-semibold">Fiyat Tablosu</h3>
                 <Badge variant="outline">{filteredRates.length} kayıt</Badge>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={() => exportRatesToExcel(filteredRates, suppliers, activities)}
                   disabled={filteredRates.length === 0}
                   data-testid="button-export-rates-excel"
+                  className="sm:hidden"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => exportRatesToExcel(filteredRates, suppliers, activities)}
+                  disabled={filteredRates.length === 0}
+                  data-testid="button-export-rates-excel-desktop"
+                  className="hidden sm:flex"
                 >
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                   Excel
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   onClick={() => exportRatesToPDF(filteredRates, suppliers, activities)}
                   disabled={filteredRates.length === 0}
                   data-testid="button-export-rates-pdf"
+                  className="sm:hidden"
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => exportRatesToPDF(filteredRates, suppliers, activities)}
+                  disabled={filteredRates.length === 0}
+                  data-testid="button-export-rates-pdf-desktop"
+                  className="hidden sm:flex"
                 >
                   <FileText className="h-4 w-4 mr-1" />
                   PDF
                 </Button>
                 <Select value={rateSortOrder} onValueChange={v => setRateSortOrder(v as typeof rateSortOrder)}>
-                  <SelectTrigger className="w-[160px] h-8" data-testid="select-rate-sort">
+                  <SelectTrigger className="w-[100px] sm:w-[160px] text-xs sm:text-sm" data-testid="select-rate-sort">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="createdNewest">
-                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Ekleme (Yeni)</span>
+                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> <span className="hidden sm:inline">Ekleme</span> (Yeni)</span>
                     </SelectItem>
                     <SelectItem value="createdOldest">
-                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Ekleme (Eski)</span>
+                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> <span className="hidden sm:inline">Ekleme</span> (Eski)</span>
                     </SelectItem>
                     <SelectItem value="priceHigh">
-                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Fiyat (Yuksek)</span>
+                      <span className="flex items-center gap-1"><ArrowDown className="h-3 w-3" /> Fiyat (Y)</span>
                     </SelectItem>
                     <SelectItem value="priceLow">
-                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Fiyat (Dusuk)</span>
+                      <span className="flex items-center gap-1"><ArrowUp className="h-3 w-3" /> Fiyat (D)</span>
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -1906,7 +1926,7 @@ export default function Finance() {
                   setRateDialogOpen(true);
                 }} data-testid="button-add-rate">
                   <Plus className="h-4 w-4 mr-2" />
-                  Fiyat Ekle
+                  <span className="hidden sm:inline">Fiyat</span> Ekle
                 </Button>
               </div>
             </div>
@@ -1927,25 +1947,25 @@ export default function Finance() {
                     const displayAmount = isTry ? (rate.unitPayoutTl || 0) : (rate.unitPayoutUsd || 0);
                     const currencySymbol = isTry ? 'TL' : 'USD';
                     return (
-                      <div key={rate.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`card-rate-${rate.id}`}>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Umbrella className="h-4 w-4" />
-                            <span className="font-semibold">{supplier?.name || 'Bilinmeyen'}</span>
-                            {activity && <Badge variant="outline">{activity.name}</Badge>}
-                            {!activity && <Badge variant="secondary">Genel</Badge>}
-                            <Badge variant={isTry ? "default" : "secondary"}>{currencySymbol}</Badge>
-                            {!rate.isActive && <Badge variant="destructive">Pasif</Badge>}
+                      <div key={rate.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg gap-3" data-testid={`card-rate-${rate.id}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <Umbrella className="h-4 w-4 flex-shrink-0" />
+                            <span className="font-semibold text-sm sm:text-base truncate">{supplier?.name || 'Bilinmeyen'}</span>
+                            {activity && <Badge variant="outline" className="text-xs">{activity.name}</Badge>}
+                            {!activity && <Badge variant="secondary" className="text-xs">Genel</Badge>}
+                            <Badge variant={isTry ? "default" : "secondary"} className="text-xs">{currencySymbol}</Badge>
+                            {!rate.isActive && <Badge variant="destructive" className="text-xs">Pasif</Badge>}
                           </div>
-                          <div className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-                            <Calendar className="h-4 w-4" />
+                          <div className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                             {formatDateShortTR(rate.validFrom)} - {rate.validTo ? formatDateShortTR(rate.validTo) : 'Süresiz'}
                           </div>
-                          {rate.notes && <p className="text-sm text-muted-foreground mt-1">{rate.notes}</p>}
+                          {rate.notes && <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">{rate.notes}</p>}
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-orange-600" data-testid={`text-rate-amount-${rate.id}`}>
+                        <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                          <div className="text-left sm:text-right">
+                            <div className="text-base sm:text-lg font-bold text-orange-600" data-testid={`text-rate-amount-${rate.id}`}>
                               {displayAmount.toLocaleString('tr-TR')} {currencySymbol}
                             </div>
                             <div className="text-xs text-muted-foreground">kişi başı</div>
@@ -2341,7 +2361,7 @@ export default function Finance() {
                   PDF
                 </Button>
                 <Select value={partnerSortOrder} onValueChange={v => setPartnerSortOrder(v as typeof partnerSortOrder)}>
-                  <SelectTrigger className="w-[160px] h-8" data-testid="select-partner-sort">
+                  <SelectTrigger className="w-[100px] sm:w-[160px] text-xs sm:text-sm" data-testid="select-partner-sort">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

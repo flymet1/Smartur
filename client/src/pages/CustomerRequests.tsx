@@ -453,8 +453,8 @@ export default function CustomerRequests() {
                       </div>
                       {messageTemplates && messageTemplates.length > 0 && (
                         <Select onValueChange={handleTemplateSelect}>
-                          <SelectTrigger className="w-[160px]" data-testid="select-template">
-                            <SelectValue placeholder="Şablon seç..." />
+                          <SelectTrigger className="w-[120px] sm:w-[160px] text-xs sm:text-sm" data-testid="select-template">
+                            <SelectValue placeholder="Şablon..." />
                           </SelectTrigger>
                           <SelectContent>
                             {messageTemplates.map((template) => (

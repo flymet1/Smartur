@@ -1141,9 +1141,9 @@ export default function CalendarPage() {
               </PopoverContent>
             </Popover>
             <Select value={activityFilter} onValueChange={setActivityFilter}>
-              <SelectTrigger className="w-[180px]" data-testid="select-activity-filter">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Aktivite Filtrele" />
+              <SelectTrigger className="w-[120px] sm:w-[180px] text-xs sm:text-sm" data-testid="select-activity-filter">
+                <Filter className="w-4 h-4 sm:mr-2" />
+                <SelectValue placeholder="Aktivite" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tüm Aktiviteler</SelectItem>
