@@ -110,7 +110,7 @@ export default function Agencies() {
     return (
       <div className="flex min-h-screen bg-muted/20">
         <Sidebar />
-        <main className="flex-1 xl:ml-64 p-4 xl:p-8 pb-24 xl:pb-8 space-y-6">
+        <main className="flex-1 xl:ml-64 p-4 pt-16 xl:p-8 pb-24 xl:pb-8 space-y-6">
           <Skeleton className="h-12 w-64" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-48" />)}
@@ -123,7 +123,7 @@ export default function Agencies() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 xl:ml-64 p-4 xl:p-8 pb-24 xl:pb-8 space-y-6">
+      <main className="flex-1 xl:ml-64 p-4 pt-16 xl:p-8 pb-24 xl:pb-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold" data-testid="text-page-title">Acentalar</h1>

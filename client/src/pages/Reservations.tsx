@@ -664,7 +664,7 @@ export default function Reservations() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 xl:ml-64 p-4 xl:p-6 pb-24 xl:pb-6 space-y-4 max-w-full">
+      <main className="flex-1 xl:ml-64 p-4 pt-16 xl:p-6 pb-24 xl:pb-6 space-y-4 max-w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold font-display">Rezervasyonlar</h1>

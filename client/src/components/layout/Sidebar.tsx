@@ -344,8 +344,8 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Top Header - Simplified with logo only */}
-      <div className="xl:hidden p-3 border-b flex items-center justify-center bg-card sticky top-0 z-40">
+      {/* Mobile Top Header - Fixed at top, full width */}
+      <div className="xl:hidden fixed top-0 left-0 right-0 p-3 border-b flex items-center justify-center bg-card z-50">
         {(brandLogoUrl || logoUrl) ? (
           <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-7 w-auto" data-testid="img-sidebar-logo-mobile" />
         ) : (

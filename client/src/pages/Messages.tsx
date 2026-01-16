@@ -266,7 +266,7 @@ export default function Messages() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 xl:ml-64 p-4 xl:p-8 pb-24 xl:pb-8 space-y-6">
+      <main className="flex-1 xl:ml-64 p-4 pt-16 xl:p-8 pb-24 xl:pb-8 space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold font-display">WhatsApp</h1>
