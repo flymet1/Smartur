@@ -52,7 +52,7 @@ export default function PackageTours() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 xl:ml-64 p-4 pt-16 xl:p-8 pb-24 xl:pb-8 space-y-8 max-w-6xl mx-auto">
+      <main className="flex-1 xl:ml-64 p-4 pt-16 xl:pt-20 xl:px-8 xl:pb-8 pb-24 space-y-8 max-w-6xl mx-auto">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold font-display" data-testid="text-page-title">Paket Turlar</h1>
