@@ -1,9 +1,23 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Hook to detect mobile viewport (matches xl: breakpoint at 1280px)
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1280);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  return isMobile;
+}
 
 interface InAppNotification {
   id: number;
@@ -50,6 +64,7 @@ export function GlobalNotifications() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const notificationsShownRef = useRef<Set<number>>(new Set());
+  const isMobile = useIsMobile(); // Disable auto-popups on mobile
   
   const previousPartnerCountRef = useRef<number | null>(null);
   const previousViewerCountRef = useRef<number | null>(null);
@@ -177,6 +192,12 @@ export function GlobalNotifications() {
     route: string,
     variant: "default" | "destructive" = "default"
   ) => {
+    // Skip toast notifications on mobile - users can use the notification bell instead
+    if (isMobile) {
+      previousRef.current = count;
+      return;
+    }
+    
     if (previousRef.current === null) {
       previousRef.current = count;
       if (count > 0) {
@@ -267,6 +288,9 @@ export function GlobalNotifications() {
   }, [pendingDeletionRequests]);
 
   useEffect(() => {
+    // Skip toast notifications on mobile - users can use the notification bell instead
+    if (isMobile) return;
+    
     const unreadNotifications = inAppNotifications.filter(n => !n.isRead);
     const timeoutIds: NodeJS.Timeout[] = [];
     
@@ -307,7 +331,7 @@ export function GlobalNotifications() {
     return () => {
       timeoutIds.forEach(id => clearTimeout(id));
     };
-  }, [inAppNotifications, navigate, toast]);
+  }, [inAppNotifications, navigate, toast, isMobile]);
 
   return null;
 }
