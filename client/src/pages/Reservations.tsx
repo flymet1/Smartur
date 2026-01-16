@@ -1298,11 +1298,12 @@ export default function Reservations() {
                   <SelectItem value="created-asc">Oluşturma (Eski-Yeni)</SelectItem>
                 </SelectContent>
               </Select>
-              {/* Activity Filter - Hidden on mobile, visible on desktop */}
+              {/* Activity Filter - Compact on mobile, full on desktop */}
               <Select value={activityFilter} onValueChange={setActivityFilter}>
-                <SelectTrigger className="hidden xl:flex min-w-[160px] w-auto max-w-[260px]" data-testid="select-list-activity">
-                  <TrendingUp className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <SelectValue placeholder="Doluluk Oranı" />
+                <SelectTrigger className="w-auto min-w-[100px] xl:min-w-[160px] max-w-[140px] xl:max-w-[260px]" data-testid="select-list-activity">
+                  <TrendingUp className="h-4 w-4 xl:mr-2 flex-shrink-0" />
+                  <span className="hidden xl:inline"><SelectValue placeholder="Aktivite" /></span>
+                  <span className="xl:hidden truncate text-xs"><SelectValue placeholder="Akt." /></span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tüm Aktiviteler</SelectItem>
