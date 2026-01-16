@@ -1253,20 +1253,22 @@ export default function Reservations() {
           </Card>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex flex-col gap-4">
           <Card className="p-3 flex-1">
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
+            <div className="flex flex-wrap items-center gap-2 xl:gap-3">
+              {/* Search - Always visible */}
+              <div className="relative flex-1 min-w-[150px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Telefon, İsim Soyisim veya Rezervasyon No ile ara..." 
+                  placeholder="Ara..." 
                   className="pl-9" 
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
+              {/* Status Filter - Icon on mobile, full on desktop */}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-auto min-w-[80px] xl:min-w-[120px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1276,10 +1278,11 @@ export default function Reservations() {
                   <SelectItem value="cancelled">İptal</SelectItem>
                 </SelectContent>
               </Select>
+              {/* Sort - Hidden on mobile, visible on desktop */}
               <Select value={sortBy} onValueChange={handleSortChange}>
-                <SelectTrigger className="w-auto min-w-[140px]" data-testid="select-sort-by">
-                  <ArrowUpDown className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <SelectValue placeholder="Sıralama" />
+                <SelectTrigger className="w-auto min-w-[50px] xl:min-w-[140px]" data-testid="select-sort-by">
+                  <ArrowUpDown className="h-4 w-4 xl:mr-2 flex-shrink-0" />
+                  <span className="hidden xl:inline"><SelectValue placeholder="Sıralama" /></span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="date-desc">Tarih (Yeni-Eski)</SelectItem>
@@ -1295,8 +1298,9 @@ export default function Reservations() {
                   <SelectItem value="created-asc">Oluşturma (Eski-Yeni)</SelectItem>
                 </SelectContent>
               </Select>
+              {/* Activity Filter - Hidden on mobile, visible on desktop */}
               <Select value={activityFilter} onValueChange={setActivityFilter}>
-                <SelectTrigger className="min-w-[160px] w-auto max-w-[260px]" data-testid="select-list-activity">
+                <SelectTrigger className="hidden xl:flex min-w-[160px] w-auto max-w-[260px]" data-testid="select-list-activity">
                   <TrendingUp className="h-4 w-4 mr-2 flex-shrink-0" />
                   <SelectValue placeholder="Doluluk Oranı" />
                 </SelectTrigger>
@@ -1351,8 +1355,8 @@ export default function Reservations() {
                     variant={showAdvancedFilters || sourceFilter !== 'all' || agencyFilter !== 'all' || priceMinFilter || priceMaxFilter ? "default" : "outline"} 
                     size="sm"
                   >
-                    <MoreVertical className="h-4 w-4 mr-1" />
-                    Filtreler
+                    <Filter className="h-4 w-4 xl:mr-1" />
+                    <span className="hidden xl:inline">Filtreler</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-72 p-3" align="end">
@@ -1483,15 +1487,17 @@ export default function Reservations() {
                           <Button 
                             variant={(dateRangeFilter.from || dateRangeFilter.to) ? "default" : "outline"} 
                             size="sm"
-                            className="gap-2"
+                            className="gap-1 xl:gap-2"
                             data-testid="button-list-date-picker"
                           >
-                            <Calendar className="h-4 w-4" />
-                            {dateRangeFilter.from && dateRangeFilter.to ? (
-                              `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} - ${format(dateRangeFilter.to, 'd MMM', { locale: tr })}`
-                            ) : dateRangeFilter.from ? (
-                              `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} -`
-                            ) : 'Tarih Aralığı'}
+                            <CalendarDays className="h-4 w-4" />
+                            <span className="hidden xl:inline">
+                              {dateRangeFilter.from && dateRangeFilter.to ? (
+                                `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} - ${format(dateRangeFilter.to, 'd MMM', { locale: tr })}`
+                              ) : dateRangeFilter.from ? (
+                                `${format(dateRangeFilter.from, 'd MMM', { locale: tr })} -`
+                              ) : 'Tarih Aralığı'}
+                            </span>
                           </Button>
                         </PopoverTrigger>
                       </TooltipTrigger>
