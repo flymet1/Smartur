@@ -603,6 +603,10 @@ export function Sidebar() {
             </Button>
           </Link>
           
+        </div>
+        
+        {/* Right side: WhatsApp + Notification Bell */}
+        <div className="flex items-center gap-2">
           {/* WhatsApp Button */}
           <Link href="/messages">
             <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-950" data-testid="button-header-whatsapp">
@@ -610,10 +614,9 @@ export function Sidebar() {
               WhatsApp
             </Button>
           </Link>
-        </div>
-        
-        {/* Right side: Notification Bell */}
-        <Popover>
+          
+          {/* Notification Bell */}
+          <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
@@ -756,6 +759,7 @@ export function Sidebar() {
             </div>
           </PopoverContent>
         </Popover>
+        </div>
       </div>
 
       {/* Desktop Sidebar */}
