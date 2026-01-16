@@ -25,7 +25,10 @@ import {
   Home,
   ChevronLeft,
   Users,
-  HeadphonesIcon
+  HeadphonesIcon,
+  CalendarPlus,
+  RefreshCw,
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -255,12 +258,57 @@ export function Sidebar() {
     enabled: !isViewerOnly, // Only fetch for operators/managers
   });
 
+  // Fetch in-app notifications (system notifications)
+  interface InAppNotification {
+    id: number;
+    title: string;
+    message: string;
+    notificationType: string;
+    isRead: boolean;
+    createdAt: string;
+  }
+  const { data: inAppNotifications } = useQuery<InAppNotification[]>({
+    queryKey: ['/api/in-app-notifications'],
+    refetchInterval: 30000,
+  });
+
+  // Fetch reservation change requests
+  interface ReservationChangeRequest {
+    id: number;
+    status: string;
+    changeType: string;
+    initiatedByType: string;
+  }
+  const { data: changeRequests } = useQuery<ReservationChangeRequest[]>({
+    queryKey: ['/api/reservation-change-requests'],
+    refetchInterval: 30000,
+    enabled: !isViewerOnly,
+  });
+
+  // Fetch today's reservations count
+  interface Reservation {
+    id: number;
+    date: string;
+    createdAt: string;
+  }
+  const today = new Date().toISOString().split('T')[0];
+  const { data: allReservations } = useQuery<Reservation[]>({
+    queryKey: ['/api/reservations'],
+    refetchInterval: 60000,
+    enabled: !isViewerOnly,
+  });
+
   const openSupportCount = supportSummary?.openCount || 0;
   const pendingCustomerRequestsCount = customerRequests?.filter(r => r.status === 'pending').length || 0;
   
   // Separate counts: İş Ortakları (viewer requests) vs Partner Acentalar (partner requests)
   const pendingViewerRequestsCount = reservationRequests?.filter(r => r.status === 'pending' && !r.notes?.startsWith('[Partner:')).length || 0;
   const pendingPartnerRequestsCount = reservationRequests?.filter(r => r.status === 'pending' && r.notes?.startsWith('[Partner:')).length || 0;
+  
+  // New notification counts
+  const unreadNotificationsCount = inAppNotifications?.filter(n => !n.isRead).length || 0;
+  const pendingChangeRequestsCount = changeRequests?.filter(r => r.status === 'pending').length || 0;
+  const todayReservationsCount = allReservations?.filter(r => r.date === today).length || 0;
   const logoUrl = logoSetting?.value;
   
   // Get company name from brand settings
@@ -385,9 +433,9 @@ export function Sidebar() {
               data-testid="button-mobile-notifications"
             >
               <Bell className="h-5 w-5" />
-              {(openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount) > 0 && (
+              {(openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount + unreadNotificationsCount + pendingChangeRequestsCount + todayReservationsCount) > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs font-medium bg-destructive text-destructive-foreground rounded-full px-1">
-                  {openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount}
+                  {openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount + unreadNotificationsCount + pendingChangeRequestsCount + todayReservationsCount}
                 </span>
               )}
             </Button>
@@ -461,8 +509,56 @@ export function Sidebar() {
                 </Link>
               )}
 
+              {/* Today's Reservations */}
+              {todayReservationsCount > 0 && (
+                <Link href={`/reservations?date=${today}&view=list`}>
+                  <div className="flex items-center gap-3 p-3 hover-elevate cursor-pointer border-b" data-testid="link-notif-today-reservations">
+                    <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <CalendarPlus className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Bugünün Rezervasyonları</p>
+                      <p className="text-xs text-muted-foreground">Bugün için planlanmış</p>
+                    </div>
+                    <Badge className="shrink-0 bg-green-600">{todayReservationsCount}</Badge>
+                  </div>
+                </Link>
+              )}
+
+              {/* Change Requests */}
+              {pendingChangeRequestsCount > 0 && (
+                <Link href="/reservations?filter=changes">
+                  <div className="flex items-center gap-3 p-3 hover-elevate cursor-pointer border-b" data-testid="link-notif-change-requests">
+                    <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                      <RefreshCw className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Değişiklik Talepleri</p>
+                      <p className="text-xs text-muted-foreground">Bekleyen tarih/saat değişiklikleri</p>
+                    </div>
+                    <Badge variant="destructive" className="shrink-0">{pendingChangeRequestsCount}</Badge>
+                  </div>
+                </Link>
+              )}
+
+              {/* System Notifications */}
+              {unreadNotificationsCount > 0 && (
+                <Link href="/dashboard">
+                  <div className="flex items-center gap-3 p-3 hover-elevate cursor-pointer border-b" data-testid="link-notif-system">
+                    <div className="w-9 h-9 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                      <Info className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Sistem Bildirimleri</p>
+                      <p className="text-xs text-muted-foreground">Okunmamış duyurular</p>
+                    </div>
+                    <Badge className="shrink-0 bg-cyan-600">{unreadNotificationsCount}</Badge>
+                  </div>
+                </Link>
+              )}
+
               {/* No notifications */}
-              {(openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount) === 0 && (
+              {(openSupportCount + pendingCustomerRequestsCount + pendingViewerRequestsCount + pendingPartnerRequestsCount + unreadNotificationsCount + pendingChangeRequestsCount + todayReservationsCount) === 0 && (
                 <div className="p-6 text-center text-muted-foreground">
                   <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">Bekleyen bildirim yok</p>
