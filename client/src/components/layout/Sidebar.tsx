@@ -344,164 +344,18 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu */}
-      <div className="md:hidden p-4 border-b flex items-center justify-between bg-white dark:bg-card">
+      {/* Mobile Top Header - Simplified with logo only */}
+      <div className="md:hidden p-3 border-b flex items-center justify-center bg-card sticky top-0 z-40">
         {(brandLogoUrl || logoUrl) ? (
-          <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-8 w-auto" data-testid="img-sidebar-logo-mobile" />
+          <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-7 w-auto" data-testid="img-sidebar-logo-mobile" />
         ) : (
-          <div className="font-display font-bold text-xl text-primary flex items-center gap-1.5">
+          <div className="font-display font-bold text-lg text-primary flex items-center gap-1.5">
             <span className="w-6 h-6 rounded bg-accent flex items-center justify-center text-accent-foreground">
               <Activity className="h-4 w-4" />
             </span>
             {brandCompanyName}
           </div>
         )}
-        <Sheet>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-            </TooltipTrigger>
-            <TooltipContent>Menüyü aç</TooltipContent>
-          </Tooltip>
-          <SheetContent side="left" className="w-[240px] sm:w-[300px]">
-            <nav className="flex flex-col gap-2 mt-8">
-              {/* Quick Access Buttons for Mobile - Hidden for viewer-only users */}
-              {!isViewerOnly && (
-                <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b">
-                  {quickAccessItems.map((item) => {
-                    const hasPendingCount = item.href === "/customer-requests" && pendingCustomerRequestsCount > 0;
-                    const pendingCount = item.href === "/customer-requests" ? pendingCustomerRequestsCount : 0;
-                    
-                    return (
-                      <Link key={item.href} href={item.href} className="flex-1">
-                        <div className={cn(
-                          "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
-                          hasPendingCount
-                            ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800"
-                            : location === item.href 
-                              ? "bg-primary text-primary-foreground border-primary" 
-                              : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
-                        )}>
-                          <item.icon className="h-3.5 w-3.5" />
-                          {item.label}
-                          {hasPendingCount && (
-                            <Badge 
-                              variant="destructive" 
-                              className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                            >
-                              {pendingCount}
-                            </Badge>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
-                  <Link href="/messages?filter=human_intervention" className="flex-1">
-                    <div className={cn(
-                      "flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer border relative",
-                      openSupportCount > 0 
-                        ? "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800" 
-                        : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
-                    )}>
-                      <Bell className="h-3.5 w-3.5" />
-                      Destek
-                      {openSupportCount > 0 && (
-                        <Badge 
-                          variant="destructive" 
-                          className="absolute -top-2 -right-2 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                        >
-                          {openSupportCount}
-                        </Badge>
-                      )}
-                    </div>
-                  </Link>
-                </div>
-              )}
-              {navItems.map((item) => {
-                const hasViewerBadge = item.href === "/viewer-stats" && pendingViewerRequestsCount > 0;
-                const hasPartnerBadge = item.href === "/partner-availability" && pendingPartnerRequestsCount > 0;
-                const badgeCount = item.href === "/viewer-stats" ? pendingViewerRequestsCount : 
-                                   item.href === "/partner-availability" ? pendingPartnerRequestsCount : 0;
-                const isPartnerPage = item.href === "/partner-availability";
-                return (
-                  <Link key={item.href} href={item.href}>
-                    <div className={cn(
-                      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors relative",
-                      location === item.href 
-                        ? "bg-primary text-primary-foreground" 
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}>
-                      {isPartnerPage && logoUrl ? (
-                        <img src={logoUrl} alt="" className="h-4 w-4 object-contain" />
-                      ) : (
-                        <item.icon className="h-4 w-4" />
-                      )}
-                      {item.label}
-                      {(hasViewerBadge || hasPartnerBadge) && (
-                        <Badge 
-                          variant="destructive" 
-                          className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center text-xs px-1"
-                        >
-                          {badgeCount}
-                        </Badge>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-              
-              {/* Viewer Profile Link - Only for İzleyici users */}
-              {isViewerOnly && (
-                <Link href="/partner-profile">
-                  <div className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    location === "/partner-profile" 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}>
-                    <User className="h-4 w-4" />
-                    Profilim
-                  </div>
-                </Link>
-              )}
-              
-              {/* Mobile Login/Logout */}
-              <div className="mt-4 pt-4 border-t">
-                {currentUser ? (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg">
-                    <User className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium flex-1">{currentUser.name || currentUser.username}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleLogout();
-                      }}
-                      data-testid="button-logout-mobile"
-                    >
-                      <LogOut className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <Link href="/login">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground">
-                      <LogIn className="h-4 w-4" />
-                      Giriş Yap
-                    </div>
-                  </Link>
-                )}
-              </div>
-            </nav>
-          </SheetContent>
-        </Sheet>
       </div>
 
       {/* Desktop Sidebar */}
@@ -732,6 +586,185 @@ export function Sidebar() {
               </div>
             </Link>
           )}
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-50 pb-safe">
+        <div className="flex items-center justify-around py-2">
+          {/* Main navigation items for mobile bottom bar */}
+          <Link href="/dashboard">
+            <div className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg transition-colors min-w-[60px]",
+              location === "/dashboard" ? "text-primary" : "text-muted-foreground"
+            )} data-testid="mobile-nav-dashboard">
+              <Home className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Ana Sayfa</span>
+            </div>
+          </Link>
+          
+          <Link href="/">
+            <div className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg transition-colors min-w-[60px]",
+              location === "/" ? "text-primary" : "text-muted-foreground"
+            )} data-testid="mobile-nav-reservations">
+              <Ticket className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Rez.</span>
+            </div>
+          </Link>
+          
+          <Link href="/calendar">
+            <div className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg transition-colors min-w-[60px]",
+              location === "/calendar" ? "text-primary" : "text-muted-foreground"
+            )} data-testid="mobile-nav-calendar">
+              <Calendar className="h-5 w-5" />
+              <span className="text-[10px] font-medium">Kapasite</span>
+            </div>
+          </Link>
+          
+          <Link href="/messages">
+            <div className={cn(
+              "flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg transition-colors min-w-[60px] relative",
+              location === "/messages" ? "text-primary" : "text-muted-foreground"
+            )} data-testid="mobile-nav-messages">
+              <MessageCircle className="h-5 w-5" />
+              <span className="text-[10px] font-medium">WhatsApp</span>
+              {openSupportCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 right-0 h-4 min-w-4 flex items-center justify-center text-[9px] px-1"
+                >
+                  {openSupportCount}
+                </Badge>
+              )}
+            </div>
+          </Link>
+          
+          {/* Menu Button for more options */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className={cn(
+                "flex flex-col items-center gap-1 px-3 py-1.5 rounded-lg transition-colors min-w-[60px]",
+                "text-muted-foreground"
+              )} data-testid="mobile-nav-menu">
+                <Menu className="h-5 w-5" />
+                <span className="text-[10px] font-medium">Menü</span>
+              </button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
+              <nav className="flex flex-col gap-2 mt-4 overflow-y-auto max-h-[calc(85vh-80px)]">
+                {/* All navigation items */}
+                {navItems.map((item) => {
+                  const hasViewerBadge = item.href === "/viewer-stats" && pendingViewerRequestsCount > 0;
+                  const hasPartnerBadge = item.href === "/partner-availability" && pendingPartnerRequestsCount > 0;
+                  const badgeCount = item.href === "/viewer-stats" ? pendingViewerRequestsCount : 
+                                     item.href === "/partner-availability" ? pendingPartnerRequestsCount : 0;
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <div 
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors relative hover-elevate",
+                          location === item.href 
+                            ? "bg-primary text-primary-foreground" 
+                            : "text-muted-foreground"
+                        )}
+                        data-testid={`mobile-sheet-nav-${item.href.replace('/', '') || 'home'}`}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        {item.label}
+                        {(hasViewerBadge || hasPartnerBadge) && (
+                          <Badge 
+                            variant="destructive" 
+                            className="ml-auto h-5 min-w-5 flex items-center justify-center text-xs px-1"
+                          >
+                            {badgeCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+                
+                {/* Quick Access Items */}
+                {!isViewerOnly && (
+                  <>
+                    <div className="border-t my-2" />
+                    <Link href="/customer-requests">
+                      <div 
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors relative hover-elevate",
+                          pendingCustomerRequestsCount > 0
+                            ? "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300"
+                            : location === "/customer-requests" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "text-muted-foreground"
+                        )}
+                        data-testid="mobile-sheet-nav-customer-requests"
+                      >
+                        <ClipboardList className="h-5 w-5" />
+                        Müşteri Talepleri
+                        {pendingCustomerRequestsCount > 0 && (
+                          <Badge variant="destructive" className="ml-auto">
+                            {pendingCustomerRequestsCount}
+                          </Badge>
+                        )}
+                      </div>
+                    </Link>
+                  </>
+                )}
+                
+                {/* Viewer Profile Link */}
+                {isViewerOnly && (
+                  <Link href="/partner-profile">
+                    <div 
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors hover-elevate",
+                        location === "/partner-profile" 
+                          ? "bg-primary text-primary-foreground" 
+                          : "text-muted-foreground"
+                      )}
+                      data-testid="mobile-sheet-nav-partner-profile"
+                    >
+                      <User className="h-5 w-5" />
+                      Profilim
+                    </div>
+                  </Link>
+                )}
+
+                {/* User section */}
+                <div className="border-t my-2 pt-2">
+                  {currentUser ? (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 rounded-lg" data-testid="mobile-sheet-user-info">
+                      <User className="h-5 w-5 text-primary" />
+                      <span className="text-sm font-medium flex-1">{currentUser.name || currentUser.username}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleLogout();
+                        }}
+                        data-testid="button-logout-bottom-sheet"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Çıkış
+                      </Button>
+                    </div>
+                  ) : (
+                    <Link href="/login">
+                      <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-primary text-primary-foreground" data-testid="mobile-sheet-nav-login">
+                        <LogIn className="h-5 w-5" />
+                        Giriş Yap
+                      </div>
+                    </Link>
+                  )}
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </>
