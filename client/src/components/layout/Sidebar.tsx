@@ -592,11 +592,14 @@ export function Sidebar() {
           {/* Separator */}
           <div className="h-6 w-px bg-border" />
           
-          {/* Quick Reservation Button */}
-          <Link href="/reservations?action=new">
-            <Button size="sm" data-testid="button-header-new-reservation">
+          {/* Today's Reservations Button */}
+          <Link href={`/reservations?date=${today}&view=list`}>
+            <Button size="sm" data-testid="button-header-today-reservations">
               <CalendarPlus className="h-4 w-4 mr-2" />
-              Yeni Rezervasyon
+              Bugünün Rezervasyonları
+              {todayReservationsCount > 0 && (
+                <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5">{todayReservationsCount}</Badge>
+              )}
             </Button>
           </Link>
           
