@@ -376,7 +376,7 @@ export default function ViewerStats() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 lg:ml-64 p-4 md:p-6 space-y-6">
+      <main className="flex-1 xl:ml-64 p-4 md:p-6 space-y-6">
         <div className="flex flex-col gap-4">
           <h1 className="text-2xl font-bold" data-testid="text-page-title">İzleyiciler</h1>
           

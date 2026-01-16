@@ -189,7 +189,7 @@ export default function Musaitlik() {
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar />
-      <div className="flex-1 lg:ml-64 p-4 lg:p-6 pb-24 lg:pb-6">
+      <div className="flex-1 xl:ml-64 p-4 xl:p-6 pb-24 xl:pb-6">
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div>

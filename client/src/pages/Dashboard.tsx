@@ -366,7 +366,7 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8 space-y-8 max-w-7xl mx-auto">
+      <main className="flex-1 xl:ml-64 p-4 xl:p-8 pb-24 xl:pb-8 space-y-8 max-w-7xl mx-auto">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
