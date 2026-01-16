@@ -294,7 +294,7 @@ export default function CustomerRequests() {
   return (
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
-      <main className="flex-1 md:ml-64 p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-4xl mx-auto">
+      <main className="flex-1 lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8 space-y-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="text-page-title">

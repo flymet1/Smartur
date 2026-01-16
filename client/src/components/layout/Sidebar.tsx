@@ -345,7 +345,7 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile Top Header - Simplified with logo only */}
-      <div className="md:hidden p-3 border-b flex items-center justify-center bg-card sticky top-0 z-40">
+      <div className="lg:hidden p-3 border-b flex items-center justify-center bg-card sticky top-0 z-40">
         {(brandLogoUrl || logoUrl) ? (
           <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-7 w-auto" data-testid="img-sidebar-logo-mobile" />
         ) : (
@@ -359,7 +359,7 @@ export function Sidebar() {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex flex-col w-64 border-r bg-card h-screen fixed left-0 top-0">
+      <div className="hidden lg:flex flex-col w-64 border-r bg-card h-screen fixed left-0 top-0">
         <div className="p-6">
           {(brandLogoUrl || logoUrl) ? (
             <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-10 w-auto" data-testid="img-sidebar-logo" />
@@ -590,7 +590,7 @@ export function Sidebar() {
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-50 pb-safe">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-50 pb-safe">
         <div className="flex items-center justify-around py-2">
           {/* Main navigation items for mobile bottom bar */}
           <Link href="/dashboard">
