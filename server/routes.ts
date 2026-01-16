@@ -5781,21 +5781,37 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       
       const integration = await storage.getTenantIntegration(tenantId);
       
+      // Determine active provider - default to the configured one if only one is configured
+      let activeProvider = integration?.activeWhatsappProvider || null;
+      const twilioConfigured = integration?.twilioConfigured || false;
+      const metaConfigured = integration?.metaConfigured || false;
+      
+      if (!activeProvider) {
+        if (twilioConfigured && !metaConfigured) {
+          activeProvider = 'twilio';
+        } else if (metaConfigured && !twilioConfigured) {
+          activeProvider = 'meta';
+        } else if (twilioConfigured && metaConfigured) {
+          activeProvider = 'twilio'; // Default to Twilio if both are configured
+        }
+      }
+      
       res.json({
         // Twilio
         twilioAccountSid: integration?.twilioAccountSid || '',
         twilioWhatsappNumber: integration?.twilioWhatsappNumber || '',
-        twilioConfigured: integration?.twilioConfigured || false,
+        twilioConfigured: twilioConfigured,
         twilioWebhookUrl: integration?.twilioWebhookUrl || '',
         
         // Meta Cloud API
         metaPhoneNumberId: integration?.metaPhoneNumberId || '',
         metaBusinessAccountId: integration?.metaBusinessAccountId || '',
-        metaConfigured: integration?.metaConfigured || false,
+        metaConfigured: metaConfigured,
         metaWebhookUrl: integration?.metaWebhookUrl || '',
+        metaVerifyToken: integration?.metaVerifyToken || '',
         
         // Active WhatsApp Provider
-        activeWhatsappProvider: integration?.activeWhatsappProvider || null,
+        activeWhatsappProvider: activeProvider,
         
         // WooCommerce
         woocommerceStoreUrl: integration?.woocommerceStoreUrl || '',
@@ -5842,12 +5858,17 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       const tenant = await storage.getTenant(tenantId);
       const webhookUrl = `/api/webhooks/whatsapp/${tenant?.slug || tenantId}`;
       
+      // Check if Meta is not configured - if so, set Twilio as active provider
+      const existingIntegration = await storage.getTenantIntegration(tenantId);
+      const shouldSetActive = !existingIntegration?.metaConfigured;
+      
       await storage.upsertTenantIntegration(tenantId, {
         twilioAccountSid: accountSid,
         twilioAuthTokenEncrypted: encryptedToken,
         twilioWhatsappNumber: whatsappNumber,
         twilioWebhookUrl: webhookUrl,
         twilioConfigured: true,
+        ...(shouldSetActive ? { activeWhatsappProvider: 'twilio' } : {}),
       });
       
       res.json({ success: true, message: "Twilio ayarları kaydedildi", webhookUrl });
@@ -5903,6 +5924,10 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       const tenant = await storage.getTenant(tenantId);
       const webhookUrl = `/api/webhooks/meta/${tenant?.slug || tenantId}`;
       
+      // Check if Twilio is not configured - if so, set Meta as active provider
+      const existingIntegration = await storage.getTenantIntegration(tenantId);
+      const shouldSetActive = !existingIntegration?.twilioConfigured;
+      
       await storage.upsertTenantIntegration(tenantId, {
         metaAccessTokenEncrypted: encryptedToken,
         metaPhoneNumberId: phoneNumberId,
@@ -5910,6 +5935,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         metaVerifyToken: verifyToken,
         metaWebhookUrl: webhookUrl,
         metaConfigured: true,
+        ...(shouldSetActive ? { activeWhatsappProvider: 'meta' } : {}),
       });
       
       res.json({ success: true, message: "Meta Cloud API ayarları kaydedildi", webhookUrl, verifyToken });

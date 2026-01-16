@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday, Agency } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -2388,11 +2388,12 @@ function MetaCloudCard() {
     metaBusinessAccountId: string;
     metaConfigured: boolean;
     metaWebhookUrl: string;
+    metaVerifyToken: string;
   }>({
     queryKey: ['/api/tenant-integrations'],
     queryFn: async () => {
       const res = await fetch('/api/tenant-integrations');
-      if (!res.ok) return { metaPhoneNumberId: '', metaBusinessAccountId: '', metaConfigured: false, metaWebhookUrl: '' };
+      if (!res.ok) return { metaPhoneNumberId: '', metaBusinessAccountId: '', metaConfigured: false, metaWebhookUrl: '', metaVerifyToken: '' };
       return res.json();
     },
   });
@@ -2551,6 +2552,24 @@ function MetaCloudCard() {
               </div>
               <p className="text-xs text-muted-foreground">
                 Bu URL'i Meta for Developers &gt; App Dashboard &gt; WhatsApp &gt; Configuration &gt; Webhook settings'e ekleyin.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Verify Token</Label>
+              <div className="flex gap-2">
+                <Input readOnly value={metaSettings?.metaVerifyToken || ''} className="bg-muted font-mono text-xs" data-testid="input-meta-verify-token" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={() => copyToClipboard(metaSettings?.metaVerifyToken || '', 'Verify Token')} data-testid="button-copy-meta-verify-token">
+                      Kopyala
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Verify Token'i panoya kopyala</TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Bu token'ı Meta Webhook yapılandırmasında "Verify Token" alanına yapıştırın.
               </p>
             </div>
 
