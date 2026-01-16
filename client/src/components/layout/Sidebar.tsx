@@ -570,8 +570,46 @@ export function Sidebar() {
       </div>
 
       {/* Desktop Top Header - Fixed at top, right of sidebar */}
-      <div className="hidden xl:flex fixed top-0 left-64 right-0 h-14 px-6 border-b bg-card z-40 items-center justify-end gap-4">
-        {/* Notification Bell with Dropdown */}
+      <div className="hidden xl:flex fixed top-0 left-64 right-0 h-14 px-6 border-b bg-card z-40 items-center justify-between gap-4">
+        {/* Left side: Company name, Date, Quick actions */}
+        <div className="flex items-center gap-4">
+          {/* Company Name */}
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-foreground" data-testid="text-header-company">
+              {currentUser?.companyName || brandCompanyName}
+            </span>
+          </div>
+          
+          {/* Separator */}
+          <div className="h-6 w-px bg-border" />
+          
+          {/* Today's Date */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="text-header-date">
+            <Calendar className="h-4 w-4" />
+            <span>{new Date().toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+          
+          {/* Separator */}
+          <div className="h-6 w-px bg-border" />
+          
+          {/* Quick Reservation Button */}
+          <Link href="/reservations?action=new">
+            <Button size="sm" data-testid="button-header-new-reservation">
+              <CalendarPlus className="h-4 w-4 mr-2" />
+              Yeni Rezervasyon
+            </Button>
+          </Link>
+          
+          {/* WhatsApp Button */}
+          <Link href="/messages">
+            <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-950" data-testid="button-header-whatsapp">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              WhatsApp
+            </Button>
+          </Link>
+        </div>
+        
+        {/* Right side: Notification Bell */}
         <Popover>
           <PopoverTrigger asChild>
             <Button
