@@ -71,6 +71,7 @@ import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Search, ChevronsUpDown } from "lucide-react";
 
@@ -1268,56 +1269,81 @@ export default function Finance() {
 
         {/* Navigation Menu - Settings style */}
         <div className="border-b bg-background mb-6">
-          <div className="flex items-center gap-1 overflow-x-auto pb-2">
-            <Button
-              variant={financeTab === 'dispatches' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFinanceTab('dispatches')}
-              data-testid="tab-dispatches"
-            >
-              <UserCheck className="h-4 w-4 mr-2" />
-              Gönderilen Müşteri
-            </Button>
-            <Button
-              variant={financeTab === 'payouts' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFinanceTab('payouts')}
-              data-testid="tab-payouts"
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Ödemeler
-            </Button>
-            <Button
-              variant={financeTab === 'rates' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFinanceTab('rates')}
-              data-testid="tab-rates"
-            >
-              <TableProperties className="h-4 w-4 mr-2" />
-              Fiyat Tablosu
-            </Button>
-            <Button
-              variant={financeTab === 'partner-customers' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFinanceTab('partner-customers')}
-              data-testid="tab-partner-customers"
-            >
-              {partnerLogoUrl ? (
-                <img src={partnerLogoUrl} alt="Partner" className="h-4 w-4 mr-2 object-contain" />
-              ) : (
-                <Handshake className="h-4 w-4 mr-2" />
-              )}
-              Partner Acentalar
-            </Button>
-            <Button
-              variant={financeTab === 'agencies' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFinanceTab('agencies')}
-              data-testid="tab-agencies"
-            >
-              <Building2 className="h-4 w-4 mr-2" />
-              Acentalar
-            </Button>
+          <div className="flex items-center gap-1 pb-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={financeTab === 'dispatches' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFinanceTab('dispatches')}
+                  data-testid="tab-dispatches"
+                >
+                  <UserCheck className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Gönderilen Müşteri</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Gönderilen Müşteri</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={financeTab === 'payouts' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFinanceTab('payouts')}
+                  data-testid="tab-payouts"
+                >
+                  <CreditCard className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Ödemeler</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Ödemeler</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={financeTab === 'rates' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFinanceTab('rates')}
+                  data-testid="tab-rates"
+                >
+                  <TableProperties className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Fiyat Tablosu</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Fiyat Tablosu</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={financeTab === 'partner-customers' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFinanceTab('partner-customers')}
+                  data-testid="tab-partner-customers"
+                >
+                  {partnerLogoUrl ? (
+                    <img src={partnerLogoUrl} alt="Partner" className="h-4 w-4 xl:mr-2 object-contain" />
+                  ) : (
+                    <Handshake className="h-4 w-4 xl:mr-2" />
+                  )}
+                  <span className="hidden xl:inline">Partner Acentalar</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Partner Acentalar</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={financeTab === 'agencies' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFinanceTab('agencies')}
+                  data-testid="tab-agencies"
+                >
+                  <Building2 className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Acentalar</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Acentalar</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 

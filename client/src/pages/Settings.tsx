@@ -817,70 +817,105 @@ DEĞİŞİKLİK TALEPLERİNDE:
 
         {/* Settings Navigation - Wide format like SuperAdmin */}
         <div className="border-b bg-background mb-6">
-          <div className="flex items-center gap-1 overflow-x-auto pb-2">
-            <Button
-              variant={settingsTab === 'security' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('security')}
-              data-testid="tab-security"
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              Guvenlik
-            </Button>
-            <Button
-              variant={settingsTab === 'notifications' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('notifications')}
-              data-testid="tab-notifications"
-            >
-              <Bell className="h-4 w-4 mr-2" />
-              Bildirimler
-            </Button>
-            <Button
-              variant={settingsTab === 'whatsapp' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('whatsapp')}
-              data-testid="tab-whatsapp"
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              WhatsApp
-            </Button>
-            <Button
-              variant={settingsTab === 'integrations' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('integrations')}
-              data-testid="tab-integrations"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Entegrasyonlar
-            </Button>
-            <Button
-              variant={settingsTab === 'partners' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('partners')}
-              data-testid="tab-partners"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Partnerler
-            </Button>
-            <Button
-              variant={settingsTab === 'holidays' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('holidays')}
-              data-testid="tab-holidays"
-            >
-              <CalendarHeart className="h-4 w-4 mr-2" />
-              Tatiller
-            </Button>
-            <Button
-              variant={settingsTab === 'data' ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSettingsTab('data')}
-              data-testid="tab-data"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Veri
-            </Button>
+          <div className="flex items-center gap-1 pb-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'security' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('security')}
+                  data-testid="tab-security"
+                >
+                  <Shield className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Güvenlik</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Güvenlik</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'notifications' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('notifications')}
+                  data-testid="tab-notifications"
+                >
+                  <Bell className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Bildirimler</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Bildirimler</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'whatsapp' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('whatsapp')}
+                  data-testid="tab-whatsapp"
+                >
+                  <MessageSquare className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">WhatsApp</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">WhatsApp</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'integrations' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('integrations')}
+                  data-testid="tab-integrations"
+                >
+                  <ExternalLink className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Entegrasyonlar</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Entegrasyonlar</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'partners' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('partners')}
+                  data-testid="tab-partners"
+                >
+                  <UserPlus className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Partnerler</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Partnerler</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'holidays' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('holidays')}
+                  data-testid="tab-holidays"
+                >
+                  <CalendarHeart className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Tatiller</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Tatiller</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'data' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('data')}
+                  data-testid="tab-data"
+                >
+                  <Download className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Veri</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Veri</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
