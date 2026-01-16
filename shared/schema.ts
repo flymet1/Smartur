@@ -770,6 +770,17 @@ export const tenantIntegrations = pgTable("tenant_integrations", {
   twilioWebhookUrl: text("twilio_webhook_url"), // Otomatik olusturulur
   twilioConfigured: boolean("twilio_configured").default(false),
   
+  // Meta Cloud API / WhatsApp Business Platform Settings
+  metaAccessTokenEncrypted: text("meta_access_token_encrypted"), // Sifrelenmis
+  metaPhoneNumberId: text("meta_phone_number_id"), // WhatsApp Phone Number ID
+  metaBusinessAccountId: text("meta_business_account_id"), // WhatsApp Business Account ID
+  metaVerifyToken: text("meta_verify_token"), // Webhook dogrulama tokeni
+  metaWebhookUrl: text("meta_webhook_url"), // Otomatik olusturulur
+  metaConfigured: boolean("meta_configured").default(false),
+  
+  // Aktif WhatsApp Provider (twilio veya meta)
+  activeWhatsappProvider: text("active_whatsapp_provider"), // 'twilio' veya 'meta'
+  
   // WooCommerce Settings
   woocommerceStoreUrl: text("woocommerce_store_url"),
   woocommerceConsumerKey: text("woocommerce_consumer_key"),

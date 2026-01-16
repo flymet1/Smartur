@@ -5348,27 +5348,87 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
   app.post("/api/send-whatsapp-custom-message", async (req, res) => {
     try {
       const { phone, message } = req.body;
+      const tenantId = req.session?.tenantId;
       
       if (!phone || !message) {
         return res.status(400).json({ error: "Eksik bilgi: telefon ve mesaj gerekli" });
       }
       
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-      const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
-      
-      if (!accountSid || !authToken || !twilioWhatsAppNumber) {
-        await logError('whatsapp', 'Twilio yapılandırmasi eksik', { phone });
-        return res.status(500).json({ error: "WhatsApp yapılandırmasi eksik" });
-      }
-      
       // Format phone number for WhatsApp (must start with country code)
-      let formattedPhone = phone.replace(/\s+/g, '').replace(/^\+/, '');
+      let formattedPhone = phone.replace(/\s+/g, '').replace(/^\+/, '').replace(/^whatsapp:/, '');
       if (formattedPhone.startsWith('0')) {
         formattedPhone = '90' + formattedPhone.substring(1); // Turkey country code
       }
       if (!formattedPhone.startsWith('90') && formattedPhone.length === 10) {
         formattedPhone = '90' + formattedPhone;
+      }
+      
+      // Get tenant integration settings to determine active provider
+      let integration = null;
+      if (tenantId) {
+        integration = await storage.getTenantIntegration(tenantId);
+      }
+      
+      const activeProvider = integration?.activeWhatsappProvider || 'twilio';
+      
+      // Send via Meta Cloud API
+      if (activeProvider === 'meta' && integration?.metaConfigured && integration?.metaAccessTokenEncrypted) {
+        const accessToken = decrypt(integration.metaAccessTokenEncrypted);
+        const phoneNumberId = integration.metaPhoneNumberId;
+        
+        if (!accessToken || !phoneNumberId) {
+          await logError('whatsapp', 'Meta Cloud API yapılandırması eksik', { phone });
+          return res.status(500).json({ error: "Meta Cloud API yapılandırması eksik" });
+        }
+        
+        const metaUrl = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+        const metaResponse = await fetch(metaUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: formattedPhone,
+            type: "text",
+            text: { body: message }
+          })
+        });
+        
+        if (!metaResponse.ok) {
+          const errorText = await metaResponse.text();
+          await logError('whatsapp', 'Meta Cloud API mesaj gönderme hatası', { phone, error: errorText });
+          return res.status(500).json({ error: "WhatsApp mesajı gönderilemedi (Meta)" });
+        }
+        
+        const result = await metaResponse.json();
+        await logInfo('whatsapp', `Meta Cloud API ile mesaj gönderildi: ${formattedPhone}`);
+        
+        await storage.addMessage({
+          phone: `whatsapp:+${formattedPhone}`,
+          content: message,
+          role: "assistant"
+        });
+        
+        return res.json({ success: true, messageId: result.messages?.[0]?.id, provider: 'meta' });
+      }
+      
+      // Send via Twilio (default)
+      // First try tenant-specific config, then fall back to env vars
+      let accountSid = process.env.TWILIO_ACCOUNT_SID;
+      let authToken = process.env.TWILIO_AUTH_TOKEN;
+      let twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+      
+      if (integration?.twilioConfigured && integration?.twilioAuthTokenEncrypted) {
+        accountSid = integration.twilioAccountSid || accountSid;
+        authToken = decrypt(integration.twilioAuthTokenEncrypted);
+        twilioWhatsAppNumber = integration.twilioWhatsappNumber || twilioWhatsAppNumber;
+      }
+      
+      if (!accountSid || !authToken || !twilioWhatsAppNumber) {
+        await logError('whatsapp', 'Twilio yapılandırması eksik', { phone });
+        return res.status(500).json({ error: "WhatsApp yapılandırması eksik" });
       }
       
       // Use Twilio API to send WhatsApp message
@@ -5381,7 +5441,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       const twilioResponse = await fetch(twilioUrl, {
         method: 'POST',
         headers: {
-          'Authorization': 'Başıc ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+          'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: formData.toString()
@@ -5390,20 +5450,19 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       if (!twilioResponse.ok) {
         const errorText = await twilioResponse.text();
         await logError('whatsapp', 'Twilio mesaj gönderme hatası', { phone, error: errorText });
-        return res.status(500).json({ error: "WhatsApp mesajı gönderilemedi" });
+        return res.status(500).json({ error: "WhatsApp mesajı gönderilemedi (Twilio)" });
       }
       
       const result = await twilioResponse.json();
-      await logInfo('whatsapp', `Özel WhatsApp mesajı gönderildi: ${formattedPhone}`);
+      await logInfo('whatsapp', `Twilio ile mesaj gönderildi: ${formattedPhone}`);
       
-      // Also save the message to conversation history
       await storage.addMessage({
         phone: `whatsapp:+${formattedPhone}`,
         content: message,
         role: "assistant"
       });
       
-      res.json({ success: true, messageSid: result.sid });
+      res.json({ success: true, messageSid: result.sid, provider: 'twilio' });
     } catch (error) {
       await logError('whatsapp', 'WhatsApp özel mesaj hatası', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "WhatsApp mesajı gönderilemedi" });
@@ -5729,6 +5788,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         twilioConfigured: integration?.twilioConfigured || false,
         twilioWebhookUrl: integration?.twilioWebhookUrl || '',
         
+        // Meta Cloud API
+        metaPhoneNumberId: integration?.metaPhoneNumberId || '',
+        metaBusinessAccountId: integration?.metaBusinessAccountId || '',
+        metaConfigured: integration?.metaConfigured || false,
+        metaWebhookUrl: integration?.metaWebhookUrl || '',
+        
+        // Active WhatsApp Provider
+        activeWhatsappProvider: integration?.activeWhatsappProvider || null,
+        
         // WooCommerce
         woocommerceStoreUrl: integration?.woocommerceStoreUrl || '',
         woocommerceConsumerKey: integration?.woocommerceConsumerKey || '',
@@ -5808,6 +5876,93 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       res.json({ success: true, message: "Twilio baglantisi kaldırıldı" });
     } catch (err) {
       res.status(500).json({ error: "Twilio ayarları silinemedi" });
+    }
+  });
+  
+  // Save Meta Cloud API settings
+  app.post("/api/tenant-integrations/meta", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const { accessToken, phoneNumberId, businessAccountId } = req.body;
+      
+      if (!accessToken || !phoneNumberId) {
+        return res.status(400).json({ error: "Access Token ve Phone Number ID gerekli" });
+      }
+      
+      // Encrypt the access token
+      const encryptedToken = encrypt(accessToken);
+      
+      // Generate verify token for webhook verification
+      const verifyToken = crypto.randomBytes(16).toString('hex');
+      
+      // Generate webhook URL for this tenant
+      const tenant = await storage.getTenant(tenantId);
+      const webhookUrl = `/api/webhooks/meta/${tenant?.slug || tenantId}`;
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        metaAccessTokenEncrypted: encryptedToken,
+        metaPhoneNumberId: phoneNumberId,
+        metaBusinessAccountId: businessAccountId || null,
+        metaVerifyToken: verifyToken,
+        metaWebhookUrl: webhookUrl,
+        metaConfigured: true,
+      });
+      
+      res.json({ success: true, message: "Meta Cloud API ayarları kaydedildi", webhookUrl, verifyToken });
+    } catch (err) {
+      console.error("Meta Cloud API settings save error:", err);
+      res.status(500).json({ error: "Meta Cloud API ayarları kaydedilemedi" });
+    }
+  });
+  
+  // Delete Meta Cloud API settings
+  app.delete("/api/tenant-integrations/meta", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        metaAccessTokenEncrypted: null,
+        metaPhoneNumberId: null,
+        metaBusinessAccountId: null,
+        metaVerifyToken: null,
+        metaWebhookUrl: null,
+        metaConfigured: false,
+      });
+      
+      res.json({ success: true, message: "Meta Cloud API bağlantısı kaldırıldı" });
+    } catch (err) {
+      res.status(500).json({ error: "Meta Cloud API ayarları silinemedi" });
+    }
+  });
+  
+  // Set active WhatsApp provider
+  app.post("/api/tenant-integrations/whatsapp-provider", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const { provider } = req.body;
+      
+      if (!provider || !['twilio', 'meta'].includes(provider)) {
+        return res.status(400).json({ error: "Geçersiz provider. 'twilio' veya 'meta' olmalı" });
+      }
+      
+      await storage.upsertTenantIntegration(tenantId, {
+        activeWhatsappProvider: provider,
+      });
+      
+      res.json({ success: true, message: `Aktif WhatsApp provider: ${provider}` });
+    } catch (err) {
+      res.status(500).json({ error: "Provider ayarı kaydedilemedi" });
     }
   });
   

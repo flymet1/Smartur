@@ -1958,7 +1958,9 @@ DEĞİŞİKLİK TALEPLERİNDE:
 
           {/* INTEGRATIONS TAB */}
           <TabsContent value="integrations" className="space-y-6">
+            <WhatsAppProviderSelector />
             <TwilioCard />
+            <MetaCloudCard />
             <WooCommerceCard />
             <EmailCard />
           </TabsContent>
@@ -2266,6 +2268,372 @@ function TwilioCard() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Twilio hesabına bağlan</TooltipContent>
+            </Tooltip>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// WhatsApp Provider Selector Component
+function WhatsAppProviderSelector() {
+  const { toast } = useToast();
+  const [isChanging, setIsChanging] = useState(false);
+  
+  const { data: integrationSettings, refetch } = useQuery<{
+    twilioConfigured: boolean;
+    metaConfigured: boolean;
+    activeWhatsappProvider: string | null;
+  }>({
+    queryKey: ['/api/tenant-integrations'],
+    queryFn: async () => {
+      const res = await fetch('/api/tenant-integrations');
+      if (!res.ok) return { twilioConfigured: false, metaConfigured: false, activeWhatsappProvider: null };
+      return res.json();
+    },
+  });
+
+  const handleProviderChange = async (provider: string) => {
+    setIsChanging(true);
+    try {
+      const response = await fetch('/api/tenant-integrations/whatsapp-provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Başarılı",
+          description: `Aktif provider: ${provider === 'twilio' ? 'Twilio' : 'Meta Cloud API'}`,
+        });
+        refetch();
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Provider değiştirilemedi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChanging(false);
+    }
+  };
+
+  const twilioConfigured = integrationSettings?.twilioConfigured || false;
+  const metaConfigured = integrationSettings?.metaConfigured || false;
+  const activeProvider = integrationSettings?.activeWhatsappProvider || 'twilio';
+
+  if (!twilioConfigured && !metaConfigured) {
+    return null;
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <MessageSquare className="w-5 h-5" />
+          <span>Aktif WhatsApp Provider</span>
+        </CardTitle>
+        <CardDescription>
+          Mesaj göndermek için hangi WhatsApp servisini kullanacağınızı seçin
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-4">
+          <Button
+            variant={activeProvider === 'twilio' ? 'default' : 'outline'}
+            onClick={() => handleProviderChange('twilio')}
+            disabled={!twilioConfigured || isChanging}
+            className="flex-1"
+            data-testid="button-select-twilio"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Twilio
+            {!twilioConfigured && <span className="ml-2 text-xs">(Yapılandırılmamış)</span>}
+          </Button>
+          <Button
+            variant={activeProvider === 'meta' ? 'default' : 'outline'}
+            onClick={() => handleProviderChange('meta')}
+            disabled={!metaConfigured || isChanging}
+            className="flex-1"
+            data-testid="button-select-meta"
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            Meta Cloud API
+            {!metaConfigured && <span className="ml-2 text-xs">(Yapılandırılmamış)</span>}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-3">
+          Şu anda aktif: <strong>{activeProvider === 'twilio' ? 'Twilio' : 'Meta Cloud API'}</strong>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Meta Cloud API Card Component
+function MetaCloudCard() {
+  const { toast } = useToast();
+  const [accessToken, setAccessToken] = useState("");
+  const [phoneNumberId, setPhoneNumberId] = useState("");
+  const [businessAccountId, setBusinessAccountId] = useState("");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [showAccessToken, setShowAccessToken] = useState(false);
+
+  const { data: metaSettings, isLoading, refetch } = useQuery<{
+    metaPhoneNumberId: string;
+    metaBusinessAccountId: string;
+    metaConfigured: boolean;
+    metaWebhookUrl: string;
+  }>({
+    queryKey: ['/api/tenant-integrations'],
+    queryFn: async () => {
+      const res = await fetch('/api/tenant-integrations');
+      if (!res.ok) return { metaPhoneNumberId: '', metaBusinessAccountId: '', metaConfigured: false, metaWebhookUrl: '' };
+      return res.json();
+    },
+  });
+
+  const webhookUrl = metaSettings?.metaWebhookUrl || (typeof window !== 'undefined' 
+    ? `${window.location.origin}/api/webhooks/meta`
+    : '/api/webhooks/meta');
+
+  const handleConnect = async () => {
+    if (!accessToken || !phoneNumberId) {
+      toast({
+        title: "Hata",
+        description: "Access Token ve Phone Number ID gerekli",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      const response = await fetch('/api/tenant-integrations/meta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken, phoneNumberId, businessAccountId }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Başarılı",
+          description: "Meta Cloud API bağlantısı kuruldu",
+        });
+        setAccessToken("");
+        setPhoneNumberId("");
+        setBusinessAccountId("");
+        refetch();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Hata",
+          description: error.error || "Bağlantı kurulamadı",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Bağlantı kurulamadı",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setIsDisconnecting(true);
+    try {
+      const response = await fetch('/api/tenant-integrations/meta', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Başarılı",
+          description: "Meta Cloud API bağlantısı kaldırıldı",
+        });
+        refetch();
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Bağlantı kaldırılamadı",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Kopyalandı",
+      description: `${label} panoya kopyalandı`,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Meta Cloud API (Facebook WhatsApp)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Yükleniyor...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Globe className="w-5 h-5" />
+            <span>Meta Cloud API (Facebook WhatsApp)</span>
+          </div>
+          {metaSettings?.metaConfigured ? (
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Bağlı
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="gap-1">
+              <XCircle className="w-3 h-3" />
+              Bağlı Değil
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription>
+          Facebook'un resmi WhatsApp Business API'sini kullanarak müşterilerinizle iletişim kurun
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {metaSettings?.metaConfigured ? (
+          <>
+            <div className="p-4 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                <CheckCircle className="w-5 h-5" />
+                <div>
+                  <p className="font-medium">Meta Cloud API Bağlantısı Aktif</p>
+                  <p className="text-sm opacity-80">Phone Number ID: {metaSettings.metaPhoneNumberId}</p>
+                  {metaSettings.metaBusinessAccountId && (
+                    <p className="text-sm opacity-60">Business Account ID: {metaSettings.metaBusinessAccountId}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Webhook URL</Label>
+              <div className="flex gap-2">
+                <Input readOnly value={typeof window !== 'undefined' ? `${window.location.origin}${webhookUrl}` : webhookUrl} className="bg-muted font-mono text-xs" data-testid="input-meta-webhook-url" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={() => copyToClipboard(typeof window !== 'undefined' ? `${window.location.origin}${webhookUrl}` : webhookUrl, 'Webhook URL')} data-testid="button-copy-meta-webhook">
+                      Kopyala
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Webhook URL'i panoya kopyala</TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Bu URL'i Meta for Developers &gt; App Dashboard &gt; WhatsApp &gt; Configuration &gt; Webhook settings'e ekleyin.
+              </p>
+            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDisconnect}
+                  disabled={isDisconnecting}
+                  data-testid="button-disconnect-meta"
+                >
+                  {isDisconnecting ? "Kaldırılıyor..." : "Bağlantıyı Kaldır"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Meta Cloud API bağlantısını kaldır</TooltipContent>
+            </Tooltip>
+          </>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="meta-access-token">Access Token (Permanent)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="meta-access-token"
+                    type={showAccessToken ? "text" : "password"}
+                    value={accessToken}
+                    onChange={(e) => setAccessToken(e.target.value)}
+                    placeholder="EAAxxxxxxxx..."
+                    data-testid="input-meta-access-token"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => setShowAccessToken(!showAccessToken)}
+                    data-testid="button-toggle-meta-token"
+                  >
+                    {showAccessToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="meta-phone-number-id">Phone Number ID</Label>
+                <Input
+                  id="meta-phone-number-id"
+                  value={phoneNumberId}
+                  onChange={(e) => setPhoneNumberId(e.target.value)}
+                  placeholder="1234567890123456"
+                  data-testid="input-meta-phone-number-id"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Meta for Developers &gt; App Dashboard &gt; WhatsApp &gt; API Setup'tan alabilirsiniz
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="meta-business-account-id">WhatsApp Business Account ID (Opsiyonel)</Label>
+                <Input
+                  id="meta-business-account-id"
+                  value={businessAccountId}
+                  onChange={(e) => setBusinessAccountId(e.target.value)}
+                  placeholder="9876543210123456"
+                  data-testid="input-meta-business-account-id"
+                />
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <p className="text-xs text-blue-900 dark:text-blue-200">
+                <strong>Meta Business hesabınız yok mu?</strong> <a href="https://developers.facebook.com/docs/whatsapp/cloud-api/get-started" target="_blank" rel="noopener noreferrer" className="underline">Meta for Developers</a>'a gidin ve WhatsApp Cloud API'yi aktifleştirin.
+              </p>
+            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                  data-testid="button-connect-meta"
+                >
+                  {isConnecting ? "Bağlanıyor..." : "Meta Cloud API'ye Bağlan"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Meta Cloud API hesabına bağlan</TooltipContent>
             </Tooltip>
           </>
         )}
