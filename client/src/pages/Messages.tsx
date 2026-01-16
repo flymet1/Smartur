@@ -589,9 +589,45 @@ export default function Messages() {
               ))}
           </div>
 
-          {selectedConversation?.supportRequest && selectedConversation.supportRequest.status === 'open' && (
-            <div className="flex-shrink-0 border-t pt-4">
+          <div className="flex-shrink-0 border-t pt-4 space-y-3">
+            <div className="flex gap-2">
+              <Textarea 
+                placeholder="Müşteriye yanıt yazın..."
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+                rows={2}
+                className="flex-1 resize-none"
+                data-testid="input-reply-message"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && replyMessage.trim() && selectedConversation) {
+                    e.preventDefault();
+                    sendReplyMutation.mutate({ phone: selectedConversation.phone, message: replyMessage.trim() });
+                  }
+                }}
+              />
               <Button 
+                onClick={() => {
+                  if (selectedConversation && replyMessage.trim()) {
+                    sendReplyMutation.mutate({ phone: selectedConversation.phone, message: replyMessage.trim() });
+                  }
+                }}
+                disabled={!replyMessage.trim() || sendReplyMutation.isPending}
+                data-testid="button-send-reply"
+              >
+                {sendReplyMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Enter ile gönder, Shift+Enter ile yeni satır ekle
+            </p>
+            
+            {selectedConversation?.supportRequest && selectedConversation.supportRequest.status === 'open' && (
+              <Button 
+                variant="outline"
                 className="w-full"
                 onClick={() => {
                   resolveMutation.mutate(selectedConversation.supportRequest!.id);
@@ -603,8 +639,8 @@ export default function Messages() {
                 <Check className="w-4 h-4 mr-2" />
                 Destek Talebini Kapat
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
