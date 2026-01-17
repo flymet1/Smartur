@@ -1,6 +1,7 @@
-import { Switch, Route, Router, useLocation } from "wouter";
+import { Switch, Route, Router } from "wouter";
 import { useBrowserLocation } from "wouter/use-browser-location";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
 import PublicActivities from "./pages/PublicActivities";
@@ -14,22 +15,24 @@ import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 
-function getBasePath() {
-  return isPreviewMode() ? '/website-preview' : '';
-}
+const BASE_PATH = isPreviewMode() ? '/website-preview' : '';
 
-function useBasePathLocation(): [string, (path: string, ...args: any[]) => any] {
-  const basePath = getBasePath();
+function useBasePathLocation(): [string, (path: string, options?: { replace?: boolean }) => void] {
   const [browserLocation, setBrowserLocation] = useBrowserLocation();
   
-  const location = browserLocation.startsWith(basePath) 
-    ? browserLocation.slice(basePath.length) || '/'
-    : browserLocation;
+  const location = useMemo(() => {
+    if (BASE_PATH && browserLocation.startsWith(BASE_PATH)) {
+      return browserLocation.slice(BASE_PATH.length) || '/';
+    }
+    return browserLocation;
+  }, [browserLocation]);
   
-  const navigate = (to: string, ...args: any[]) => {
-    const fullPath = basePath + (to.startsWith('/') ? to : '/' + to);
-    setBrowserLocation(fullPath, ...args);
-  };
+  const navigate = useMemo(() => {
+    return (to: string, options?: { replace?: boolean }) => {
+      const fullPath = BASE_PATH + (to.startsWith('/') ? to : '/' + to);
+      setBrowserLocation(fullPath, options);
+    };
+  }, [setBrowserLocation]);
   
   return [location, navigate];
 }
@@ -72,7 +75,6 @@ function PublicNotFound() {
 
 function PublicWebsiteContent() {
   const { t } = useLanguage();
-  const [location] = useLocation();
   
   const { data: websiteData, isLoading, error } = useQuery<PublicWebsiteData>({
     queryKey: [getApiUrl("/api/website/data")],
