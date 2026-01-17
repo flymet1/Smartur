@@ -34,6 +34,7 @@ import Musaitlik from "@/pages/Musaitlik";
 import ViewerStats from "@/pages/ViewerStats";
 import PartnerProfile from "@/pages/PartnerProfile";
 import PartnerAvailability from "@/pages/PartnerAvailability";
+import WebSite from "@/pages/WebSite";
 
 function Router() {
   return (
@@ -64,6 +65,7 @@ function Router() {
       <Route path="/viewer-stats" component={ViewerStats} />
       <Route path="/partner-profile" component={PartnerProfile} />
       <Route path="/partner-availability" component={PartnerAvailability} />
+      <Route path="/website" component={WebSite} />
       <Route component={NotFound} />
     </Switch>
   );
