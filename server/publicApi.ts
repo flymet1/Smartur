@@ -882,6 +882,11 @@ export function registerPublicApiRoutes(app: Express) {
         extras: JSON.parse(activity.extras || "[]"),
         faq: JSON.parse(activity.faq || "[]"),
         galleryImages: JSON.parse(activity.galleryImages || "[]"),
+        tourLanguages: JSON.parse(activity.tourLanguages || '["tr"]'),
+        includedItems: JSON.parse(activity.includedItems || "[]"),
+        excludedItems: JSON.parse(activity.excludedItems || "[]"),
+        categories: JSON.parse(activity.categories || "[]"),
+        highlights: JSON.parse(activity.highlights || "[]"),
       });
     } catch (err) {
       console.error("Website activity detail error:", err);
