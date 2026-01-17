@@ -122,7 +122,9 @@ export default function PublicActivityDetail() {
     "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80";
   
   const allImages = [mainImage, ...(activity.galleryImages || [])];
-  const difficulty = difficultyConfig[activity.difficulty || "easy"];
+  const difficulty = activity.difficulty && difficultyConfig[activity.difficulty] 
+    ? difficultyConfig[activity.difficulty] 
+    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -169,7 +171,7 @@ export default function PublicActivityDetail() {
                   {cat}
                 </Badge>
               ))}
-              {activity.difficulty && (
+              {difficulty && (
                 <Badge className={difficulty.color}>
                   <difficulty.icon className="h-3 w-3 mr-1" />
                   {language === "en" ? difficulty.labelEn : difficulty.label}
@@ -217,14 +219,16 @@ export default function PublicActivityDetail() {
               </div>
             )}
 
-            <div>
-              <h2 className="text-2xl font-bold mb-4">
-                {language === "en" ? "About This Experience" : "Bu Deneyim Hakkında"}
-              </h2>
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                {activity.description}
-              </p>
-            </div>
+            {activity.description && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4">
+                  {language === "en" ? "About This Experience" : "Bu Deneyim Hakkında"}
+                </h2>
+                <p className="text-muted-foreground leading-relaxed text-lg">
+                  {activity.description}
+                </p>
+              </div>
+            )}
 
             {allImages.length > 1 && (
               <div>
@@ -296,73 +300,75 @@ export default function PublicActivityDetail() {
               )}
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Info className="h-5 w-5" />
-                  {language === "en" ? "Important Information" : "Onemli Bilgiler"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {activity.meetingPoint && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                        <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            {(activity.meetingPoint || (activity.minAge != null && activity.minAge > 0) || (activity.tourLanguages && activity.tourLanguages.length > 0)) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="h-5 w-5" />
+                    {language === "en" ? "Important Information" : "Onemli Bilgiler"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {activity.meetingPoint && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                          <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{language === "en" ? "Meeting Point" : "Bulusma Noktası"}</p>
+                          <p className="text-sm text-muted-foreground">{activity.meetingPoint}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{language === "en" ? "Meeting Point" : "Bulusma Noktası"}</p>
-                        <p className="text-sm text-muted-foreground">{activity.meetingPoint}</p>
-                      </div>
-                    </div>
-                  )}
+                    )}
 
-                  {activity.minAge != null && activity.minAge > 0 && (
+                    {activity.minAge != null && activity.minAge > 0 && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                          <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{language === "en" ? "Minimum Age" : "Minimum Yas"}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {activity.minAge} {language === "en" ? "years old" : "yas ve uzeri"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {activity.tourLanguages && activity.tourLanguages.length > 0 && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                          <Globe className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{language === "en" ? "Languages" : "Diller"}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {activity.tourLanguages.map((lang, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {languageFlags[lang]?.flag || lang.toUpperCase()}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
-                        <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                      <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                        <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div>
-                        <p className="font-medium">{language === "en" ? "Minimum Age" : "Minimum Yas"}</p>
+                        <p className="font-medium">{language === "en" ? "Safety" : "Guvenlik"}</p>
                         <p className="text-sm text-muted-foreground">
-                          {activity.minAge} {language === "en" ? "years old" : "yas ve uzeri"}
+                          {language === "en" ? "Full insurance coverage" : "Tam sigorta kapsamı"}
                         </p>
                       </div>
                     </div>
-                  )}
-
-                  {activity.tourLanguages && activity.tourLanguages.length > 0 && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                        <Globe className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{language === "en" ? "Languages" : "Diller"}</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {activity.tourLanguages.map((lang, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {languageFlags[lang]?.flag || lang.toUpperCase()}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                      <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{language === "en" ? "Safety" : "Guvenlik"}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {language === "en" ? "Full insurance coverage" : "Tam sigorta kapsamı"}
-                      </p>
-                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             {activity.transferZones && activity.transferZones.length > 0 && (
               <Card>

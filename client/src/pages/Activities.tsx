@@ -267,6 +267,78 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   // FAQ state
   const [faq, setFaq] = useState<FaqItem[]>(() => parseFaq((activity as any)?.faq));
   
+  // Web sitesi için yeni alanlar
+  const [region, setRegion] = useState(activity ? (activity as any).region || "" : "");
+  const [meetingPoint, setMeetingPoint] = useState(activity ? (activity as any).meetingPoint || "" : "");
+  const [difficulty, setDifficulty] = useState(activity ? (activity as any).difficulty || "" : "");
+  const [minAge, setMinAge] = useState(activity ? String((activity as any).minAge || "") : "");
+  const [tourLanguages, setTourLanguages] = useState(() => {
+    if (activity && (activity as any).tourLanguages) {
+      try {
+        const parsed = JSON.parse((activity as any).tourLanguages);
+        return Array.isArray(parsed) ? parsed.join(', ') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [categories, setCategories] = useState(() => {
+    if (activity && (activity as any).categories) {
+      try {
+        const parsed = JSON.parse((activity as any).categories);
+        return Array.isArray(parsed) ? parsed.join(', ') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [highlights, setHighlights] = useState(() => {
+    if (activity && (activity as any).highlights) {
+      try {
+        const parsed = JSON.parse((activity as any).highlights);
+        return Array.isArray(parsed) ? parsed.join(', ') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [includedItems, setIncludedItems] = useState(() => {
+    if (activity && (activity as any).includedItems) {
+      try {
+        const parsed = JSON.parse((activity as any).includedItems);
+        return Array.isArray(parsed) ? parsed.join(', ') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [excludedItems, setExcludedItems] = useState(() => {
+    if (activity && (activity as any).excludedItems) {
+      try {
+        const parsed = JSON.parse((activity as any).excludedItems);
+        return Array.isArray(parsed) ? parsed.join(', ') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [galleryImages, setGalleryImages] = useState(() => {
+    if (activity && (activity as any).galleryImages) {
+      try {
+        const parsed = JSON.parse((activity as any).galleryImages);
+        return Array.isArray(parsed) ? parsed.join('\n') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  
   // Form validation errors
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
@@ -298,6 +370,16 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setExtras([]);
     setFaq([]);
     setFormErrors({});
+    setRegion("");
+    setMeetingPoint("");
+    setDifficulty("");
+    setMinAge("");
+    setTourLanguages("");
+    setCategories("");
+    setHighlights("");
+    setIncludedItems("");
+    setExcludedItems("");
+    setGalleryImages("");
   };
   
   const handleOpenChange = (newOpen: boolean) => {
@@ -380,6 +462,14 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       .map((z: string) => z.trim())
       .filter((z: string) => z.length > 0);
     
+    // Parse web sitesi alanları
+    const tourLanguagesArray = tourLanguages.split(',').map((l: string) => l.trim().toLowerCase()).filter((l: string) => l.length > 0);
+    const categoriesArray = categories.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+    const highlightsArray = highlights.split(',').map((h: string) => h.trim()).filter((h: string) => h.length > 0);
+    const includedItemsArray = includedItems.split(',').map((i: string) => i.trim()).filter((i: string) => i.length > 0);
+    const excludedItemsArray = excludedItems.split(',').map((e: string) => e.trim()).filter((e: string) => e.length > 0);
+    const galleryImagesArray = galleryImages.split('\n').map((u: string) => u.trim()).filter((u: string) => u.length > 0);
+    
     const data = {
       name: trimmedName,
       nameAliases: JSON.stringify(aliasesArray),
@@ -406,6 +496,16 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       extras: JSON.stringify(extras),
       faq: stringifyFaq(faq),
       sharedWithPartners: sharedWithPartners,
+      region: region || null,
+      meetingPoint: meetingPoint || null,
+      difficulty: difficulty || null,
+      minAge: minAge ? Number(minAge) : null,
+      tourLanguages: JSON.stringify(tourLanguagesArray),
+      categories: JSON.stringify(categoriesArray),
+      highlights: JSON.stringify(highlightsArray),
+      includedItems: JSON.stringify(includedItemsArray),
+      excludedItems: JSON.stringify(excludedItemsArray),
+      galleryImages: JSON.stringify(galleryImagesArray),
     };
 
     try {
@@ -482,8 +582,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <Tabs defaultValue="general" className="w-full flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 flex-shrink-0">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 flex-shrink-0">
               <TabsTrigger value="general" className="text-xs sm:text-sm">Genel</TabsTrigger>
+              <TabsTrigger value="website" className="text-xs sm:text-sm">Web Sitesi</TabsTrigger>
               <TabsTrigger value="extras" className="text-xs sm:text-sm">Ekstra</TabsTrigger>
               <TabsTrigger value="faq" className="text-xs sm:text-sm">SSS</TabsTrigger>
               <TabsTrigger value="notifications" className="text-xs sm:text-sm">Bildirim</TabsTrigger>
@@ -804,6 +905,139 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       {selectedPartnershipIds.length} partner acenta bu aktivitenin bos kapasitesini gorebilecek
                     </p>
                   )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="website" className="space-y-4 mt-0">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Bu alanlar web sitenizde aktivite detay sayfasında gösterilir. Boş bırakılan alanlar gösterilmez.
+                </p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="region">Bölge</Label>
+                    <Input 
+                      id="region"
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                      placeholder="Fethiye/Ölüdeniz"
+                      data-testid="input-region"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="meetingPoint">Buluşma Noktası</Label>
+                    <Input 
+                      id="meetingPoint"
+                      value={meetingPoint}
+                      onChange={(e) => setMeetingPoint(e.target.value)}
+                      placeholder="Ölüdeniz Beach"
+                      data-testid="input-meeting-point"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Zorluk Seviyesi</Label>
+                    <Select value={difficulty} onValueChange={setDifficulty}>
+                      <SelectTrigger data-testid="select-difficulty">
+                        <SelectValue placeholder="Seçiniz" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="easy">Kolay</SelectItem>
+                        <SelectItem value="moderate">Orta</SelectItem>
+                        <SelectItem value="challenging">Zor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="minAge">Minimum Yaş</Label>
+                    <Input 
+                      id="minAge"
+                      type="number"
+                      min="0"
+                      value={minAge}
+                      onChange={(e) => setMinAge(e.target.value)}
+                      placeholder="6"
+                      data-testid="input-min-age"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tourLanguages">Tur Dilleri</Label>
+                  <Input 
+                    id="tourLanguages"
+                    value={tourLanguages}
+                    onChange={(e) => setTourLanguages(e.target.value)}
+                    placeholder="tr, en, de, ru"
+                    data-testid="input-tour-languages"
+                  />
+                  <p className="text-xs text-muted-foreground">Virgülle ayırarak dil kodlarını girin (tr, en, de, ru, fr)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="categories">Kategoriler</Label>
+                  <Input 
+                    id="categories"
+                    value={categories}
+                    onChange={(e) => setCategories(e.target.value)}
+                    placeholder="Macera, Hava Sporları, Ekstrem"
+                    data-testid="input-categories"
+                  />
+                  <p className="text-xs text-muted-foreground">Virgülle ayırarak kategorileri girin</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="highlights">Öne Çıkan Özellikler</Label>
+                  <Textarea 
+                    id="highlights"
+                    value={highlights}
+                    onChange={(e) => setHighlights(e.target.value)}
+                    placeholder="1900m Yükseklikten Uçuş, Profesyonel Pilotlar, GoPro Çekim"
+                    className="min-h-[60px]"
+                    data-testid="input-highlights"
+                  />
+                  <p className="text-xs text-muted-foreground">Virgülle ayırarak öne çıkan özellikleri girin</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="includedItems">Dahil Olanlar</Label>
+                  <Textarea 
+                    id="includedItems"
+                    value={includedItems}
+                    onChange={(e) => setIncludedItems(e.target.value)}
+                    placeholder="Transfer, Sigorta, HD Video & Fotoğraf, Sertifika"
+                    className="min-h-[60px]"
+                    data-testid="input-included-items"
+                  />
+                  <p className="text-xs text-muted-foreground">Virgülle ayırarak dahil olan hizmetleri girin</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="excludedItems">Dahil Olmayanlar</Label>
+                  <Textarea 
+                    id="excludedItems"
+                    value={excludedItems}
+                    onChange={(e) => setExcludedItems(e.target.value)}
+                    placeholder="Yemek, İçecek"
+                    className="min-h-[60px]"
+                    data-testid="input-excluded-items"
+                  />
+                  <p className="text-xs text-muted-foreground">Virgülle ayırarak dahil olmayan hizmetleri girin</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="galleryImages">Galeri Görselleri</Label>
+                  <Textarea 
+                    id="galleryImages"
+                    value={galleryImages}
+                    onChange={(e) => setGalleryImages(e.target.value)}
+                    placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                    className="min-h-[100px]"
+                    data-testid="input-gallery-images"
+                  />
+                  <p className="text-xs text-muted-foreground">Her satıra bir görsel URL'si girin</p>
                 </div>
               </TabsContent>
 
