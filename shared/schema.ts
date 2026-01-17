@@ -131,6 +131,30 @@ export const capacity = pgTable("capacity", {
   bookedSlots: integer("booked_slots").default(0),
 });
 
+// === BLOG SİSTEMİ ===
+export const blogPosts = pgTable("blog_posts", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
+  title: text("title").notNull(),
+  slug: text("slug").notNull(), // URL-friendly slug
+  excerpt: text("excerpt"), // Kısa özet
+  content: text("content"), // HTML içerik (zengin metin)
+  featuredImageUrl: text("featured_image_url"), // Kapak görseli
+  author: text("author"), // Yazar adı
+  // SEO alanları
+  metaTitle: text("meta_title"), // SEO başlık
+  metaDescription: text("meta_description"), // SEO açıklama
+  metaKeywords: text("meta_keywords"), // SEO anahtar kelimeler
+  // Durum ve kategori
+  status: text("status").default("draft"), // draft, published
+  category: text("category"), // Blog kategorisi
+  tags: text("tags").default("[]"), // JSON array of tags
+  // Tarihler
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const reservations = pgTable("reservations", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").references(() => tenants.id),
@@ -534,6 +558,11 @@ export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 export type Blacklist = typeof blacklist.$inferSelect;
 export const insertBlacklistSchema = createInsertSchema(blacklist).omit({ id: true, createdAt: true });
 export type InsertBlacklist = z.infer<typeof insertBlacklistSchema>;
+
+// === BLOG SCHEMAS & TYPES ===
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({ id: true, createdAt: true, updatedAt: true });
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 
 // === FINANCE SCHEMAS & TYPES ===
 export const insertAgencySchema = createInsertSchema(agencies).omit({ id: true, createdAt: true });
