@@ -4,6 +4,7 @@ export const en = {
     activities: "Activities",
     contact: "Contact",
     reservationTracking: "Track Reservation",
+    track: "Track",
     about: "About Us",
     search: "Search",
     searchPlaceholder: "Search activities...",

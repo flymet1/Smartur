@@ -1,6 +1,7 @@
 import { PublicHeader } from "./PublicHeader";
 import { PublicFooter } from "./PublicFooter";
 import type { PublicWebsiteData } from "../../types";
+import type { Language } from "../../i18n";
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -8,12 +9,18 @@ interface PublicLayoutProps {
 }
 
 export function PublicLayout({ children, data }: PublicLayoutProps) {
+  const availableLanguages = (data?.websiteLanguages || ["tr"]) as Language[];
+  
   return (
     <div className="min-h-screen flex flex-col">
       <PublicHeader 
         agencyName={data?.name} 
         logo={data?.logoUrl || undefined} 
-        phone={data?.websiteContactPhone || undefined}
+        phone={data?.websiteContactPhone || data?.contactPhone || undefined}
+        email={data?.websiteContactEmail || data?.contactEmail || undefined}
+        whatsapp={data?.websiteWhatsappNumber || undefined}
+        socialLinks={data?.websiteSocialLinks}
+        availableLanguages={availableLanguages}
       />
       <main className="flex-1">{children}</main>
       <PublicFooter data={data} />

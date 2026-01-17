@@ -4,6 +4,7 @@ export const tr = {
     activities: "Aktiviteler",
     contact: "İletişim",
     reservationTracking: "Rezervasyon Takip",
+    track: "Takip",
     about: "Hakkımızda",
     search: "Ara",
     searchPlaceholder: "Aktivite ara...",
