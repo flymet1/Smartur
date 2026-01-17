@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { PublicActivity, AvailabilitySlot } from "../types";
+import { getApiUrl, isPreviewMode } from "../utils";
 
 export default function PublicReservation() {
   const { id } = useParams<{ id: string }>();
@@ -36,18 +37,18 @@ export default function PublicReservation() {
   const [trackingToken, setTrackingToken] = useState("");
 
   const { data: activity, isLoading: activityLoading } = useQuery<PublicActivity>({
-    queryKey: ["/api/website/activities", activityId],
+    queryKey: [getApiUrl(`/api/website/activities/${activityId}`)],
     enabled: activityId > 0,
   });
 
   const { data: availability } = useQuery<AvailabilitySlot[]>({
-    queryKey: ["/api/website/availability", { activityId, date: formData.date }],
+    queryKey: [getApiUrl(`/api/website/availability?activityId=${activityId}&date=${formData.date}`)],
     enabled: !!formData.date && activityId > 0,
   });
 
   const createReservationMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const response = await apiRequest("POST", "/api/website/reservations", {
+      const response = await apiRequest("POST", getApiUrl("/api/website/reservations"), {
         activityId,
         ...data,
         quantity: Number(data.quantity),

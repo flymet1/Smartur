@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { PublicActivity } from "../types";
+import { getApiUrl } from "../utils";
 
 export default function PublicActivityDetail() {
   const { id } = useParams<{ id: string }>();
   const activityId = parseInt(id || "0");
 
   const { data: activity, isLoading } = useQuery<PublicActivity>({
-    queryKey: ["/api/website/activities", activityId],
+    queryKey: [getApiUrl(`/api/website/activities/${activityId}`)],
     enabled: activityId > 0,
   });
 

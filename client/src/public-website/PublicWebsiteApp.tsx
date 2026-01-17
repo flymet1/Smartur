@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Router } from "wouter";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
@@ -8,6 +8,9 @@ import PublicReservation from "./pages/PublicReservation";
 import PublicContact from "./pages/PublicContact";
 import PublicTrackReservation from "./pages/PublicTrackReservation";
 import type { PublicWebsiteData } from "./types";
+import { isPreviewMode, getApiUrl } from "./utils";
+
+const basePath = isPreviewMode ? '/website-preview' : '';
 
 // Create a separate query client for public website with preview support
 const publicQueryClient = new QueryClient({
@@ -46,7 +49,7 @@ function PublicNotFound() {
 
 function PublicWebsiteContent() {
   const { data: websiteData, isLoading, error } = useQuery<PublicWebsiteData>({
-    queryKey: ["/api/website/data"],
+    queryKey: [getApiUrl("/api/website/data")],
   });
 
   if (isLoading) {
@@ -90,7 +93,9 @@ function PublicWebsiteContent() {
 export function PublicWebsiteApp() {
   return (
     <QueryClientProvider client={publicQueryClient}>
-      <PublicWebsiteContent />
+      <Router base={basePath}>
+        <PublicWebsiteContent />
+      </Router>
     </QueryClientProvider>
   );
 }

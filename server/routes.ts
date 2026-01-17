@@ -1157,6 +1157,7 @@ export async function registerRoutes(
     '/public/availability',
     '/public/reservations',
     '/public/customer-requests',
+    '/website',
   ];
   
   app.use('/api', (req, res, next) => {

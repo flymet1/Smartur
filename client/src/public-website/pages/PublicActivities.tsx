@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityCard } from "../components/ActivityCard";
 import type { PublicActivity } from "../types";
+import { getApiUrl } from "../utils";
 
 export default function PublicActivities() {
   const searchParams = useSearch();
@@ -18,7 +19,7 @@ export default function PublicActivities() {
   const [searchQuery, setSearchQuery] = useState(initialSearch);
 
   const { data: activities, isLoading } = useQuery<PublicActivity[]>({
-    queryKey: ["/api/website/activities"],
+    queryKey: [getApiUrl("/api/website/activities")],
   });
 
   const filteredActivities = useMemo(() => {

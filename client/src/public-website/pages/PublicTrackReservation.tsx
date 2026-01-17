@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { getApiUrl } from "../utils";
 
 interface ReservationTrackData {
   id: number;
@@ -35,7 +36,7 @@ export default function PublicTrackReservation() {
   const [searchToken, setSearchToken] = useState(initialToken);
 
   const { data: reservation, isLoading, error } = useQuery<ReservationTrackData>({
-    queryKey: ["/api/public/reservations", searchToken],
+    queryKey: [getApiUrl(`/api/website/track?token=${searchToken}`)],
     enabled: !!searchToken,
   });
 

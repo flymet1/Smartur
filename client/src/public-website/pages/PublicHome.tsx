@@ -9,6 +9,7 @@ import { ActivityCard } from "../components/ActivityCard";
 import type { PublicActivity, PublicWebsiteData } from "../types";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { getApiUrl } from "../utils";
 
 interface PublicHomeProps {
   websiteData?: PublicWebsiteData;
@@ -19,7 +20,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
   const [, setLocation] = useLocation();
 
   const { data: activities, isLoading: activitiesLoading } = useQuery<PublicActivity[]>({
-    queryKey: ["/api/website/activities"],
+    queryKey: [getApiUrl("/api/website/activities")],
   });
 
   const handleSearch = (e: React.FormEvent) => {

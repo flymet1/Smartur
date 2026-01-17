@@ -53,39 +53,54 @@ async function validateDomain(domain: string): Promise<TenantFromDomain | null> 
 }
 
 async function getPreviewTenant(req: Request): Promise<TenantFromDomain | null> {
-  // Check if this is a preview request from logged-in user
-  const referer = req.headers.referer || '';
-  const isPreviewMode = referer.includes('/website-preview') || req.query.preview === 'true';
-  
-  if (!isPreviewMode) return null;
+  // Check if this is a preview request - either via query param or session-based
+  const isPreviewMode = req.query.preview === 'true';
   
   // Get tenant from session if user is logged in
   const session = req.session as any;
   const userId = session?.userId;
   
-  if (!userId) return null;
-  
-  try {
-    const user = await storage.getAppUser(userId);
-    if (!user || !user.tenantId) return null;
-    
-    const [tenant] = await db
-      .select({
-        id: tenants.id,
-        name: tenants.name,
-        slug: tenants.slug,
-        websiteEnabled: tenants.websiteEnabled,
-        websiteDomain: tenants.websiteDomain,
-      })
-      .from(tenants)
-      .where(eq(tenants.id, user.tenantId))
-      .limit(1);
-    
-    return tenant || null;
-  } catch (err) {
-    console.error("Preview tenant lookup error:", err);
+  // For preview mode, require login
+  if (isPreviewMode && !userId) {
     return null;
   }
+  
+  // If not preview mode and no userId, skip
+  if (!isPreviewMode && !userId) {
+    return null;
+  }
+  
+  // If preview mode is set or user is logged in, try to get tenant from session
+  if (userId) {
+    try {
+      const user = await storage.getAppUser(userId);
+      if (!user || !user.tenantId) return null;
+      
+      const [tenant] = await db
+        .select({
+          id: tenants.id,
+          name: tenants.name,
+          slug: tenants.slug,
+          websiteEnabled: tenants.websiteEnabled,
+          websiteDomain: tenants.websiteDomain,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, user.tenantId))
+        .limit(1);
+      
+      // For preview mode, return tenant even if websiteEnabled is false
+      if (tenant && isPreviewMode) {
+        return tenant;
+      }
+      
+      return tenant || null;
+    } catch (err) {
+      console.error("Preview tenant lookup error:", err);
+      return null;
+    }
+  }
+  
+  return null;
 }
 
 async function domainMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -968,6 +983,61 @@ export function registerPublicApiRoutes(app: Express) {
         return res.status(400).json({ error: "Geçersiz veri", details: err.errors });
       }
       console.error("Website reservation error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Track reservation by token
+  app.get("/api/website/track", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const token = req.query.token as string;
+
+      if (!token) {
+        return res.status(400).json({ error: "Takip kodu gerekli" });
+      }
+
+      const [reservation] = await db
+        .select({
+          id: reservations.id,
+          customerName: reservations.customerName,
+          customerPhone: reservations.customerPhone,
+          customerEmail: reservations.customerEmail,
+          date: reservations.date,
+          time: reservations.time,
+          quantity: reservations.quantity,
+          status: reservations.status,
+          priceTl: reservations.priceTl,
+          priceUsd: reservations.priceUsd,
+          currency: reservations.currency,
+          paymentStatus: reservations.paymentStatus,
+          hotelName: reservations.hotelName,
+          hasTransfer: reservations.hasTransfer,
+          activityId: reservations.activityId,
+        })
+        .from(reservations)
+        .where(and(
+          eq(reservations.tenantId, tenantId),
+          eq(reservations.trackingToken, token)
+        ))
+        .limit(1);
+
+      if (!reservation) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadı" });
+      }
+
+      const [activity] = await db
+        .select({ name: activities.name })
+        .from(activities)
+        .where(eq(activities.id, reservation.activityId))
+        .limit(1);
+
+      res.json({
+        ...reservation,
+        activityName: activity?.name || "Bilinmeyen Aktivite",
+      });
+    } catch (err) {
+      console.error("Website track error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });
