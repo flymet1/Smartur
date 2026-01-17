@@ -13,8 +13,6 @@ import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 
-// Create a separate query client for public website
-// Note: Preview mode is handled by getApiUrl() in utils.ts which adds ?preview=true when needed
 const publicQueryClient = new QueryClient({
   defaultOptions: {
     queries: {

@@ -94,13 +94,18 @@ function KeyboardShortcuts() {
 }
 
 function App() {
-  // Check if we're on a public route that doesn't need AuthGuard
+  const isWebsitePreview = typeof window !== 'undefined' && 
+    window.location.pathname.startsWith('/website-preview');
+  
+  if (isWebsitePreview) {
+    return <WebsitePreview />;
+  }
+  
   const isPublicRoute = typeof window !== 'undefined' && (
     window.location.pathname === '/super-admin' ||
     window.location.pathname === '/login' ||
     window.location.pathname === '/sales-presentation' ||
     window.location.pathname === '/subscription' ||
-    window.location.pathname.startsWith('/website-preview') ||
     window.location.pathname.startsWith('/takip/')
   );
 
