@@ -12,6 +12,42 @@ export interface PublicActivity {
   faq: Array<{ question: string; answer: string }>;
   imageUrl: string | null;
   galleryImages: string[];
+  // Tur satış özellikleri
+  region: string | null;
+  tourLanguages: string[];
+  difficulty: string | null;
+  includedItems: string[];
+  excludedItems: string[];
+  meetingPoint: string | null;
+  categories: string[];
+  highlights: string[];
+  minAge: number | null;
+  maxParticipants: number | null;
+}
+
+export interface WebsiteTemplateSettings {
+  heroSlides?: Array<{
+    imageUrl: string;
+    title?: string;
+    subtitle?: string;
+  }>;
+  testimonials?: Array<{
+    name: string;
+    rating: number;
+    text: string;
+    avatar?: string;
+    date?: string;
+  }>;
+  trustBadges?: Array<{
+    icon?: string;
+    title: string;
+    description?: string;
+  }>;
+  featuredCategories?: string[];
+  showWhatsAppButton?: boolean;
+  showTrustBadges?: boolean;
+  showTestimonials?: boolean;
+  showGallery?: boolean;
 }
 
 export interface PublicWebsiteData {
@@ -55,6 +91,9 @@ export interface PublicWebsiteData {
   websiteTermsPageContent: string | null;
   websiteFaqPageTitle: string | null;
   faqItems: Array<{ question: string; answer: string }>;
+  // Şablon sistemi
+  websiteTemplateKey: string | null;
+  websiteTemplateSettings: WebsiteTemplateSettings;
 }
 
 export interface AvailabilitySlot {
@@ -65,3 +104,5 @@ export interface AvailabilitySlot {
   bookedSlots: number;
   available: number;
 }
+
+export type TemplateKey = "classic" | "modern" | "premium";

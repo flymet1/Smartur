@@ -762,6 +762,8 @@ export function registerPublicApiRoutes(app: Express) {
           websiteTermsPageContent: tenants.websiteTermsPageContent,
           websiteFaqPageTitle: tenants.websiteFaqPageTitle,
           websiteFaqPageContent: tenants.websiteFaqPageContent,
+          websiteTemplateKey: tenants.websiteTemplateKey,
+          websiteTemplateSettings: tenants.websiteTemplateSettings,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -774,14 +776,17 @@ export function registerPublicApiRoutes(app: Express) {
       let socialLinks = {};
       let languages = ["tr"];
       let faqItems = [];
+      let templateSettings = {};
       try { socialLinks = JSON.parse(tenant.websiteSocialLinks || "{}"); } catch {}
       try { languages = JSON.parse(tenant.websiteLanguages || '["tr"]'); } catch {}
       try { faqItems = JSON.parse(tenant.websiteFaqPageContent || "[]"); } catch {}
+      try { templateSettings = JSON.parse(tenant.websiteTemplateSettings || "{}"); } catch {}
 
       res.json({
         ...tenant,
         websiteSocialLinks: socialLinks,
         websiteLanguages: languages,
+        websiteTemplateSettings: templateSettings,
         faqItems,
       });
     } catch (err) {
@@ -810,6 +815,17 @@ export function registerPublicApiRoutes(app: Express) {
           faq: activities.faq,
           imageUrl: activities.imageUrl,
           galleryImages: activities.galleryImages,
+          // Yeni tur satış alanları
+          region: activities.region,
+          tourLanguages: activities.tourLanguages,
+          difficulty: activities.difficulty,
+          includedItems: activities.includedItems,
+          excludedItems: activities.excludedItems,
+          meetingPoint: activities.meetingPoint,
+          categories: activities.categories,
+          highlights: activities.highlights,
+          minAge: activities.minAge,
+          maxParticipants: activities.maxParticipants,
         })
         .from(activities)
         .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true)));
@@ -821,6 +837,11 @@ export function registerPublicApiRoutes(app: Express) {
         extras: JSON.parse(a.extras || "[]"),
         faq: JSON.parse(a.faq || "[]"),
         galleryImages: JSON.parse(a.galleryImages || "[]"),
+        tourLanguages: JSON.parse(a.tourLanguages || '["tr"]'),
+        includedItems: JSON.parse(a.includedItems || "[]"),
+        excludedItems: JSON.parse(a.excludedItems || "[]"),
+        categories: JSON.parse(a.categories || "[]"),
+        highlights: JSON.parse(a.highlights || "[]"),
       }));
 
       res.json(parsed);
@@ -1026,18 +1047,24 @@ export function registerPublicApiRoutes(app: Express) {
         return res.status(404).json({ error: "Rezervasyon bulunamadı" });
       }
 
-      const [activity] = await db
-        .select({ name: activities.name })
-        .from(activities)
-        .where(and(
-          eq(activities.id, reservation.activityId),
-          eq(activities.tenantId, tenantId)
-        ))
-        .limit(1);
+      let activityName = "Bilinmeyen Aktivite";
+      if (reservation.activityId) {
+        const [activity] = await db
+          .select({ name: activities.name })
+          .from(activities)
+          .where(and(
+            eq(activities.id, reservation.activityId),
+            eq(activities.tenantId, tenantId)
+          ))
+          .limit(1);
+        if (activity) {
+          activityName = activity.name;
+        }
+      }
 
       res.json({
         ...reservation,
-        activityName: activity?.name || "Bilinmeyen Aktivite",
+        activityName,
       });
     } catch (err) {
       console.error("Website track error:", err);
