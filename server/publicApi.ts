@@ -113,10 +113,23 @@ export function registerPublicApiRoutes(app: Express) {
         return res.status(404).json({ error: "Acenta bulunamadı" });
       }
 
+      let socialLinks = {};
+      let languages = ["tr"];
+      try {
+        socialLinks = JSON.parse(tenant.websiteSocialLinks || "{}");
+      } catch (e) {
+        socialLinks = {};
+      }
+      try {
+        languages = JSON.parse(tenant.websiteLanguages || '["tr"]');
+      } catch (e) {
+        languages = ["tr"];
+      }
+
       res.json({
         ...tenant,
-        websiteSocialLinks: JSON.parse(tenant.websiteSocialLinks || "{}"),
-        websiteLanguages: JSON.parse(tenant.websiteLanguages || '["tr"]'),
+        websiteSocialLinks: socialLinks,
+        websiteLanguages: languages,
       });
     } catch (err) {
       console.error("Public API info error:", err);
@@ -347,6 +360,10 @@ export function registerPublicApiRoutes(app: Express) {
     }
   });
 
+  // Token-based reservation tracking - intentionally NOT protected by API key
+  // This endpoint is for customers to track their reservations using a unique token
+  // The tracking token itself serves as authentication (similar to order tracking links)
+  // Token has expiration date for additional security
   app.get("/api/public/reservations/:token", async (req, res) => {
     try {
       const token = req.params.token;
@@ -398,6 +415,9 @@ export function registerPublicApiRoutes(app: Express) {
     }
   });
 
+  // Customer request submission - intentionally NOT protected by API key
+  // This endpoint requires a valid reservation token (which acts as authentication)
+  // Customers submit requests (time change, cancellation) using their tracking token
   app.post("/api/public/customer-requests", async (req, res) => {
     try {
       const input = customerRequestInputSchema.parse(req.body);
@@ -452,11 +472,13 @@ export function registerPublicApiRoutes(app: Express) {
     }
   });
 
-  app.post("/api/public/generate-api-key", async (req, res) => {
+  // API key management routes - these are authenticated via session, NOT public API
+  // They are placed here for organization but require session auth
+  app.post("/api/settings/generate-api-key", async (req, res) => {
     try {
-      const tenantId = req.session?.tenantId;
+      const tenantId = (req as any).session?.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Yetkisiz erişim" });
+        return res.status(401).json({ error: "Yetkisiz erişim", code: "UNAUTHORIZED" });
       }
 
       const apiKey = `sk_live_${crypto.randomBytes(24).toString("hex")}`;
@@ -466,15 +488,15 @@ export function registerPublicApiRoutes(app: Express) {
       res.json({ apiKey });
     } catch (err) {
       console.error("Generate API key error:", err);
-      res.status(500).json({ error: "Sunucu hatası" });
+      res.status(500).json({ error: "Sunucu hatası", code: "SERVER_ERROR" });
     }
   });
 
-  app.post("/api/public/disable-api", async (req, res) => {
+  app.post("/api/settings/disable-api", async (req, res) => {
     try {
-      const tenantId = req.session?.tenantId;
+      const tenantId = (req as any).session?.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Yetkisiz erişim" });
+        return res.status(401).json({ error: "Yetkisiz erişim", code: "UNAUTHORIZED" });
       }
 
       await db.update(tenants).set({ publicApiEnabled: false }).where(eq(tenants.id, tenantId));
@@ -482,15 +504,15 @@ export function registerPublicApiRoutes(app: Express) {
       res.json({ success: true });
     } catch (err) {
       console.error("Disable API error:", err);
-      res.status(500).json({ error: "Sunucu hatası" });
+      res.status(500).json({ error: "Sunucu hatası", code: "SERVER_ERROR" });
     }
   });
 
-  app.get("/api/public/api-status", async (req, res) => {
+  app.get("/api/settings/api-status", async (req, res) => {
     try {
-      const tenantId = req.session?.tenantId;
+      const tenantId = (req as any).session?.tenantId;
       if (!tenantId) {
-        return res.status(401).json({ error: "Yetkisiz erişim" });
+        return res.status(401).json({ error: "Yetkisiz erişim", code: "UNAUTHORIZED" });
       }
 
       const [tenant] = await db
@@ -509,7 +531,7 @@ export function registerPublicApiRoutes(app: Express) {
       });
     } catch (err) {
       console.error("API status error:", err);
-      res.status(500).json({ error: "Sunucu hatası" });
+      res.status(500).json({ error: "Sunucu hatası", code: "SERVER_ERROR" });
     }
   });
 }

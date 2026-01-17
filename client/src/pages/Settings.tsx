@@ -916,6 +916,20 @@ DEĞİŞİKLİK TALEPLERİNDE:
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Veri</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'api' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('api')}
+                  data-testid="tab-api"
+                >
+                  <Globe className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">API</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Public API</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
@@ -2013,6 +2027,11 @@ DEĞİŞİKLİK TALEPLERİNDE:
           {/* PARTNERS TAB */}
           <TabsContent value="partners" className="space-y-6">
             <PartnerAgencySection />
+          </TabsContent>
+
+          {/* PUBLIC API TAB */}
+          <TabsContent value="api" className="space-y-6">
+            <PublicApiSection />
           </TabsContent>
 
         </Tabs>
@@ -6202,6 +6221,270 @@ function AgencyManagementSection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+// Public API Section Component
+function PublicApiSection() {
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isDisabling, setIsDisabling] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [fullApiKey, setFullApiKey] = useState<string | null>(null);
+
+  const { data: apiStatus, isLoading, refetch } = useQuery<{
+    hasApiKey: boolean;
+    apiEnabled: boolean;
+    apiKeyPreview: string | null;
+  }>({
+    queryKey: ['/api/settings/api-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/api-status');
+      if (!res.ok) return { hasApiKey: false, apiEnabled: false, apiKeyPreview: null };
+      return res.json();
+    },
+  });
+
+  const handleGenerateApiKey = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/settings/generate-api-key', {
+        method: 'POST',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFullApiKey(data.apiKey);
+        setShowApiKey(true);
+        toast({
+          title: "API Anahtarı Oluşturuldu",
+          description: "Yeni API anahtarınız oluşturuldu. Lütfen güvenli bir yere kaydedin.",
+        });
+        refetch();
+      } else {
+        throw new Error("API anahtarı oluşturulamadı");
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "API anahtarı oluşturulamadı",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDisableApi = async () => {
+    setIsDisabling(true);
+    try {
+      const response = await fetch('/api/settings/disable-api', {
+        method: 'POST',
+      });
+      if (response.ok) {
+        toast({
+          title: "API Devre Dışı",
+          description: "Public API devre dışı bırakıldı",
+        });
+        setFullApiKey(null);
+        setShowApiKey(false);
+        refetch();
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "API devre dışı bırakılamadı",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDisabling(false);
+    }
+  };
+
+  const copyApiKey = () => {
+    if (fullApiKey) {
+      navigator.clipboard.writeText(fullApiKey);
+      toast({
+        title: "Kopyalandı",
+        description: "API anahtarı panoya kopyalandı",
+      });
+    }
+  };
+
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            Public API
+          </CardTitle>
+          <CardDescription>
+            Harici web sitenizin Smartur verilerine erişmesi için API anahtarı oluşturun
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-full ${apiStatus?.apiEnabled ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
+                    {apiStatus?.apiEnabled ? (
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium">API Durumu</p>
+                    <Badge variant={apiStatus?.apiEnabled ? "default" : "secondary"}>
+                      {apiStatus?.apiEnabled ? "Aktif" : "Devre Dışı"}
+                    </Badge>
+                  </div>
+                </div>
+                {apiStatus?.apiEnabled ? (
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDisableApi}
+                    disabled={isDisabling}
+                    data-testid="button-disable-api"
+                  >
+                    {isDisabling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Devre Dışı Bırak
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handleGenerateApiKey}
+                    disabled={isGenerating}
+                    data-testid="button-generate-api-key"
+                  >
+                    {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Key className="h-4 w-4 mr-2" />}
+                    API Anahtarı Oluştur
+                  </Button>
+                )}
+              </div>
+
+              {fullApiKey && showApiKey && (
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <div className="flex items-start gap-2 mb-3">
+                    <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-yellow-800 dark:text-yellow-200">Önemli!</p>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                        Bu API anahtarı sadece bir kez gösterilecektir. Güvenli bir yere kaydedin.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white dark:bg-black/20 p-3 rounded border font-mono text-sm break-all">
+                    <code className="flex-1">{fullApiKey}</code>
+                    <Button size="icon" variant="ghost" onClick={copyApiKey} data-testid="button-copy-api-key">
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {apiStatus?.hasApiKey && !fullApiKey && (
+                <div className="p-4 bg-muted/50 rounded-lg border">
+                  <p className="text-sm text-muted-foreground mb-2">Mevcut API Anahtarı:</p>
+                  <code className="font-mono text-sm">{apiStatus.apiKeyPreview}</code>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            API Dokümantasyonu
+          </CardTitle>
+          <CardDescription>
+            Harici web sitenizden kullanabileceğiniz API endpoint'leri
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">GET</Badge>
+                <code className="text-sm font-mono">/api/public/info</code>
+              </div>
+              <p className="text-sm text-muted-foreground">Acenta bilgileri, tema ve site ayarları</p>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">GET</Badge>
+                <code className="text-sm font-mono">/api/public/activities</code>
+              </div>
+              <p className="text-sm text-muted-foreground">Aktif aktivite listesi</p>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">GET</Badge>
+                <code className="text-sm font-mono">/api/public/activities/:id</code>
+              </div>
+              <p className="text-sm text-muted-foreground">Aktivite detayı</p>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">GET</Badge>
+                <code className="text-sm font-mono">/api/public/availability?startDate=...&endDate=...</code>
+              </div>
+              <p className="text-sm text-muted-foreground">Müsaitlik durumu (tarih aralığı ile)</p>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">POST</Badge>
+                <code className="text-sm font-mono">/api/public/reservations</code>
+              </div>
+              <p className="text-sm text-muted-foreground">Yeni rezervasyon oluştur</p>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">GET</Badge>
+                <code className="text-sm font-mono">/api/public/reservations/:token</code>
+              </div>
+              <p className="text-sm text-muted-foreground">Rezervasyon takibi (token ile)</p>
+            </div>
+
+            <div className="p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">POST</Badge>
+                <code className="text-sm font-mono">/api/public/customer-requests</code>
+              </div>
+              <p className="text-sm text-muted-foreground">Müşteri talebi gönder (saat değişikliği, iptal vb.)</p>
+            </div>
+          </div>
+
+          <div className="p-4 bg-muted/50 rounded-lg border mt-4">
+            <p className="text-sm font-medium mb-2">Kullanım:</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              Tüm isteklerde <code className="bg-muted px-1 rounded">X-API-Key</code> header'ı ile API anahtarınızı gönderin.
+            </p>
+            <pre className="bg-black/80 text-green-400 p-3 rounded text-xs overflow-x-auto">
+{`fetch('${baseUrl}/api/public/activities', {
+  headers: {
+    'X-API-Key': 'your-api-key-here'
+  }
+})`}
+            </pre>
+          </div>
+        </CardContent>
+      </Card>
     </>
   );
 }
