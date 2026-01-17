@@ -11725,6 +11725,124 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     }
   });
 
+  // === BLOG API ===
+  
+  // Get all blog posts
+  app.get("/api/blog-posts", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      const status = req.query.status as string | undefined;
+      const posts = await storage.getBlogPosts(tenantId, status);
+      res.json(posts);
+    } catch (err) {
+      console.error("Blog yazıları alınırken hata:", err);
+      res.status(500).json({ error: "Blog yazıları alınamadı" });
+    }
+  });
+
+  // Get single blog post
+  app.get("/api/blog-posts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const post = await storage.getBlogPost(id);
+      if (!post) {
+        return res.status(404).json({ error: "Blog yazısı bulunamadı" });
+      }
+      res.json(post);
+    } catch (err) {
+      console.error("Blog yazısı alınırken hata:", err);
+      res.status(500).json({ error: "Blog yazısı alınamadı" });
+    }
+  });
+
+  // Create blog post
+  app.post("/api/blog-posts", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      const { title, slug, excerpt, content, featuredImageUrl, author, metaTitle, metaDescription, metaKeywords, status, category, tags, publishedAt } = req.body;
+      
+      // Generate slug from title if not provided
+      const finalSlug = slug || title.toLowerCase()
+        .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
+        .replace(/Ğ/g, 'G').replace(/Ü/g, 'U').replace(/Ş/g, 'S').replace(/İ/g, 'I').replace(/Ö/g, 'O').replace(/Ç/g, 'C')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      
+      const post = await storage.createBlogPost({
+        tenantId,
+        title,
+        slug: finalSlug,
+        excerpt,
+        content,
+        featuredImageUrl,
+        author,
+        metaTitle,
+        metaDescription,
+        metaKeywords,
+        status: status || 'draft',
+        category,
+        tags: JSON.stringify(tags || []),
+        publishedAt: publishedAt ? new Date(publishedAt) : (status === 'published' ? new Date() : null)
+      });
+      res.status(201).json(post);
+    } catch (err) {
+      console.error("Blog yazısı oluşturulurken hata:", err);
+      res.status(500).json({ error: "Blog yazısı oluşturulamadı" });
+    }
+  });
+
+  // Update blog post
+  app.patch("/api/blog-posts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title, slug, excerpt, content, featuredImageUrl, author, metaTitle, metaDescription, metaKeywords, status, category, tags, publishedAt } = req.body;
+      
+      const updateData: any = {};
+      if (title !== undefined) updateData.title = title;
+      if (slug !== undefined) updateData.slug = slug;
+      if (excerpt !== undefined) updateData.excerpt = excerpt;
+      if (content !== undefined) updateData.content = content;
+      if (featuredImageUrl !== undefined) updateData.featuredImageUrl = featuredImageUrl;
+      if (author !== undefined) updateData.author = author;
+      if (metaTitle !== undefined) updateData.metaTitle = metaTitle;
+      if (metaDescription !== undefined) updateData.metaDescription = metaDescription;
+      if (metaKeywords !== undefined) updateData.metaKeywords = metaKeywords;
+      if (status !== undefined) {
+        updateData.status = status;
+        if (status === 'published' && !publishedAt) {
+          updateData.publishedAt = new Date();
+        }
+      }
+      if (category !== undefined) updateData.category = category;
+      if (tags !== undefined) updateData.tags = JSON.stringify(tags);
+      if (publishedAt !== undefined) updateData.publishedAt = publishedAt ? new Date(publishedAt) : null;
+      
+      const post = await storage.updateBlogPost(id, updateData);
+      res.json(post);
+    } catch (err) {
+      console.error("Blog yazısı güncellenirken hata:", err);
+      res.status(500).json({ error: "Blog yazısı güncellenemedi" });
+    }
+  });
+
+  // Delete blog post
+  app.delete("/api/blog-posts/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteBlogPost(id);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Blog yazısı silinirken hata:", err);
+      res.status(500).json({ error: "Blog yazısı silinemedi" });
+    }
+  });
+
   // Register public API routes for external website integration
   registerPublicApiRoutes(app);
 

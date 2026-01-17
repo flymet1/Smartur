@@ -175,6 +175,9 @@ import {
   reservationChangeRequests,
   type ReservationChangeRequest,
   type InsertReservationChangeRequest,
+  blogPosts,
+  type BlogPost,
+  type InsertBlogPost,
 } from "@shared/schema";
 import { eq, and, gte, lte, lt, desc, sql, isNull, or, like, inArray } from "drizzle-orm";
 
@@ -609,6 +612,14 @@ export interface IStorage {
   createReservationChangeRequest(request: InsertReservationChangeRequest): Promise<ReservationChangeRequest>;
   updateReservationChangeRequest(id: number, data: Partial<InsertReservationChangeRequest>): Promise<ReservationChangeRequest>;
   deleteReservationChangeRequest(id: number): Promise<void>;
+
+  // Blog Posts
+  getBlogPosts(tenantId: number, status?: string): Promise<BlogPost[]>;
+  getBlogPost(id: number): Promise<BlogPost | undefined>;
+  getBlogPostBySlug(tenantId: number, slug: string): Promise<BlogPost | undefined>;
+  createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
+  updateBlogPost(id: number, data: Partial<InsertBlogPost>): Promise<BlogPost>;
+  deleteBlogPost(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4251,6 +4262,46 @@ Sky Fethiye`,
 
   async deleteReservationChangeRequest(id: number): Promise<void> {
     await db.delete(reservationChangeRequests).where(eq(reservationChangeRequests.id, id));
+  }
+
+  // Blog Posts
+  async getBlogPosts(tenantId: number, status?: string): Promise<BlogPost[]> {
+    if (status) {
+      return db.select().from(blogPosts)
+        .where(and(eq(blogPosts.tenantId, tenantId), eq(blogPosts.status, status)))
+        .orderBy(desc(blogPosts.createdAt));
+    }
+    return db.select().from(blogPosts)
+      .where(eq(blogPosts.tenantId, tenantId))
+      .orderBy(desc(blogPosts.createdAt));
+  }
+
+  async getBlogPost(id: number): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return post;
+  }
+
+  async getBlogPostBySlug(tenantId: number, slug: string): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts)
+      .where(and(eq(blogPosts.tenantId, tenantId), eq(blogPosts.slug, slug)));
+    return post;
+  }
+
+  async createBlogPost(post: InsertBlogPost): Promise<BlogPost> {
+    const [created] = await db.insert(blogPosts).values(post).returning();
+    return created;
+  }
+
+  async updateBlogPost(id: number, data: Partial<InsertBlogPost>): Promise<BlogPost> {
+    const [updated] = await db.update(blogPosts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteBlogPost(id: number): Promise<void> {
+    await db.delete(blogPosts).where(eq(blogPosts.id, id));
   }
 }
 
