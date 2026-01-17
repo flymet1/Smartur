@@ -13,12 +13,61 @@ interface TenantFromApiKey {
   publicApiEnabled: boolean | null;
 }
 
+interface TenantFromDomain {
+  id: number;
+  name: string;
+  slug: string;
+  websiteEnabled: boolean | null;
+  websiteDomain: string | null;
+}
+
 declare global {
   namespace Express {
     interface Request {
       publicTenant?: TenantFromApiKey;
+      websiteTenant?: TenantFromDomain;
     }
   }
+}
+
+async function validateDomain(domain: string): Promise<TenantFromDomain | null> {
+  const cleanDomain = domain.toLowerCase().replace(/^www\./, '');
+  
+  const [tenant] = await db
+    .select({
+      id: tenants.id,
+      name: tenants.name,
+      slug: tenants.slug,
+      websiteEnabled: tenants.websiteEnabled,
+      websiteDomain: tenants.websiteDomain,
+    })
+    .from(tenants)
+    .where(eq(tenants.websiteDomain, cleanDomain))
+    .limit(1);
+
+  if (!tenant || !tenant.websiteEnabled) {
+    return null;
+  }
+
+  return tenant;
+}
+
+function domainMiddleware(req: Request, res: Response, next: NextFunction) {
+  const host = req.headers.host || '';
+  const domain = host.split(':')[0];
+
+  validateDomain(domain)
+    .then((tenant) => {
+      if (!tenant) {
+        return res.status(404).json({ error: "Web sitesi bulunamadı", code: "WEBSITE_NOT_FOUND" });
+      }
+      req.websiteTenant = tenant;
+      next();
+    })
+    .catch((err) => {
+      console.error("Domain validation error:", err);
+      res.status(500).json({ error: "Sunucu hatası", code: "SERVER_ERROR" });
+    });
 }
 
 async function validateApiKey(apiKey: string): Promise<TenantFromApiKey | null> {
@@ -608,6 +657,275 @@ export function registerPublicApiRoutes(app: Express) {
     } catch (err) {
       console.error("API status error:", err);
       res.status(500).json({ error: "Sunucu hatası", code: "SERVER_ERROR" });
+    }
+  });
+
+  // === PUBLIC WEBSITE ROUTES (Domain-based, no API key required) ===
+  
+  // Get website data by domain (for public website frontend)
+  app.get("/api/website/data", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+
+      const [tenant] = await db
+        .select({
+          id: tenants.id,
+          name: tenants.name,
+          slug: tenants.slug,
+          websiteEnabled: tenants.websiteEnabled,
+          websiteDomain: tenants.websiteDomain,
+          logoUrl: tenants.logoUrl,
+          primaryColor: tenants.primaryColor,
+          accentColor: tenants.accentColor,
+          contactEmail: tenants.contactEmail,
+          contactPhone: tenants.contactPhone,
+          address: tenants.address,
+          websiteTitle: tenants.websiteTitle,
+          websiteDescription: tenants.websiteDescription,
+          websiteFaviconUrl: tenants.websiteFaviconUrl,
+          websiteHeroImageUrl: tenants.websiteHeroImageUrl,
+          websiteAboutText: tenants.websiteAboutText,
+          websiteFooterText: tenants.websiteFooterText,
+          websiteSocialLinks: tenants.websiteSocialLinks,
+          websiteWhatsappNumber: tenants.websiteWhatsappNumber,
+          websiteLanguages: tenants.websiteLanguages,
+          websiteContactPageTitle: tenants.websiteContactPageTitle,
+          websiteContactPageContent: tenants.websiteContactPageContent,
+          websiteContactEmail: tenants.websiteContactEmail,
+          websiteContactPhone: tenants.websiteContactPhone,
+          websiteContactAddress: tenants.websiteContactAddress,
+          websiteAboutPageTitle: tenants.websiteAboutPageTitle,
+          websiteAboutPageContent: tenants.websiteAboutPageContent,
+          websiteCancellationPageTitle: tenants.websiteCancellationPageTitle,
+          websiteCancellationPageContent: tenants.websiteCancellationPageContent,
+          websitePrivacyPageTitle: tenants.websitePrivacyPageTitle,
+          websitePrivacyPageContent: tenants.websitePrivacyPageContent,
+          websiteTermsPageTitle: tenants.websiteTermsPageTitle,
+          websiteTermsPageContent: tenants.websiteTermsPageContent,
+          websiteFaqPageTitle: tenants.websiteFaqPageTitle,
+          websiteFaqPageContent: tenants.websiteFaqPageContent,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+
+      if (!tenant) {
+        return res.status(404).json({ error: "Acenta bulunamadı" });
+      }
+
+      let socialLinks = {};
+      let languages = ["tr"];
+      let faqItems = [];
+      try { socialLinks = JSON.parse(tenant.websiteSocialLinks || "{}"); } catch {}
+      try { languages = JSON.parse(tenant.websiteLanguages || '["tr"]'); } catch {}
+      try { faqItems = JSON.parse(tenant.websiteFaqPageContent || "[]"); } catch {}
+
+      res.json({
+        ...tenant,
+        websiteSocialLinks: socialLinks,
+        websiteLanguages: languages,
+        faqItems,
+      });
+    } catch (err) {
+      console.error("Website data error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Get activities for public website (by domain)
+  app.get("/api/website/activities", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+
+      const activityList = await db
+        .select({
+          id: activities.id,
+          name: activities.name,
+          description: activities.description,
+          price: activities.price,
+          priceUsd: activities.priceUsd,
+          durationMinutes: activities.durationMinutes,
+          defaultTimes: activities.defaultTimes,
+          hasFreeHotelTransfer: activities.hasFreeHotelTransfer,
+          transferZones: activities.transferZones,
+          extras: activities.extras,
+          faq: activities.faq,
+          imageUrl: activities.imageUrl,
+          galleryImages: activities.galleryImages,
+        })
+        .from(activities)
+        .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true)));
+
+      const parsed = activityList.map((a) => ({
+        ...a,
+        defaultTimes: JSON.parse(a.defaultTimes || "[]"),
+        transferZones: JSON.parse(a.transferZones || "[]"),
+        extras: JSON.parse(a.extras || "[]"),
+        faq: JSON.parse(a.faq || "[]"),
+        galleryImages: JSON.parse(a.galleryImages || "[]"),
+      }));
+
+      res.json(parsed);
+    } catch (err) {
+      console.error("Website activities error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Get activity detail for public website
+  app.get("/api/website/activities/:id", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const activityId = parseInt(req.params.id);
+
+      const [activity] = await db
+        .select()
+        .from(activities)
+        .where(and(eq(activities.id, activityId), eq(activities.tenantId, tenantId), eq(activities.active, true)))
+        .limit(1);
+
+      if (!activity) {
+        return res.status(404).json({ error: "Aktivite bulunamadı" });
+      }
+
+      res.json({
+        ...activity,
+        defaultTimes: JSON.parse(activity.defaultTimes || "[]"),
+        transferZones: JSON.parse(activity.transferZones || "[]"),
+        extras: JSON.parse(activity.extras || "[]"),
+        faq: JSON.parse(activity.faq || "[]"),
+        galleryImages: JSON.parse(activity.galleryImages || "[]"),
+      });
+    } catch (err) {
+      console.error("Website activity detail error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Get availability for public website
+  app.get("/api/website/availability", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const { activityId, date, startDate, endDate } = req.query;
+
+      const conditions = [eq(capacity.tenantId, tenantId)];
+      
+      if (activityId) {
+        conditions.push(eq(capacity.activityId, parseInt(activityId as string)));
+      }
+      
+      if (date) {
+        conditions.push(eq(capacity.date, date as string));
+      } else if (startDate && endDate) {
+        conditions.push(gte(capacity.date, startDate as string));
+        conditions.push(lte(capacity.date, endDate as string));
+      }
+
+      const slots = await db
+        .select({
+          activityId: capacity.activityId,
+          date: capacity.date,
+          time: capacity.time,
+          totalSlots: capacity.totalSlots,
+          bookedSlots: capacity.bookedSlots,
+        })
+        .from(capacity)
+        .where(and(...conditions));
+
+      const result = slots.map((s) => ({
+        ...s,
+        available: (s.totalSlots || 0) - (s.bookedSlots || 0),
+      }));
+
+      res.json(result);
+    } catch (err) {
+      console.error("Website availability error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Create reservation from public website
+  app.post("/api/website/reservations", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const input = reservationInputSchema.parse(req.body);
+
+      const [activity] = await db
+        .select({ id: activities.id, name: activities.name, price: activities.price, priceUsd: activities.priceUsd })
+        .from(activities)
+        .where(and(eq(activities.id, input.activityId), eq(activities.tenantId, tenantId), eq(activities.active, true)))
+        .limit(1);
+
+      if (!activity) {
+        return res.status(404).json({ error: "Aktivite bulunamadı" });
+      }
+
+      const [slot] = await db
+        .select()
+        .from(capacity)
+        .where(and(
+          eq(capacity.tenantId, tenantId),
+          eq(capacity.activityId, input.activityId),
+          eq(capacity.date, input.date),
+          eq(capacity.time, input.time)
+        ))
+        .limit(1);
+
+      if (slot) {
+        const available = (slot.totalSlots || 0) - (slot.bookedSlots || 0);
+        if (available < input.quantity) {
+          return res.status(400).json({ error: "Yeterli kapasite yok", available });
+        }
+      }
+
+      const trackingToken = crypto.randomBytes(16).toString("hex");
+      const tokenExpiresAt = new Date(input.date);
+      tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 1);
+
+      const reservation = await storage.createReservation({
+        tenantId: tenantId,
+        activityId: input.activityId,
+        customerName: input.customerName,
+        customerPhone: input.customerPhone,
+        customerEmail: input.customerEmail,
+        date: input.date,
+        time: input.time,
+        quantity: input.quantity,
+        priceTl: activity.price * input.quantity,
+        priceUsd: (activity.priceUsd || 0) * input.quantity,
+        currency: "TRY",
+        status: "pending",
+        source: "website",
+        hotelName: input.hotelName,
+        hasTransfer: input.hasTransfer || false,
+        notes: input.notes,
+        trackingToken,
+        trackingTokenExpiresAt: tokenExpiresAt,
+      });
+
+      if (slot) {
+        await db
+          .update(capacity)
+          .set({ bookedSlots: (slot.bookedSlots || 0) + input.quantity })
+          .where(eq(capacity.id, slot.id));
+      }
+
+      res.status(201).json({
+        id: reservation.id,
+        trackingToken,
+        status: reservation.status,
+        activity: activity.name,
+        date: input.date,
+        time: input.time,
+        quantity: input.quantity,
+        totalPrice: activity.price * input.quantity,
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ error: "Geçersiz veri", details: err.errors });
+      }
+      console.error("Website reservation error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
     }
   });
 }

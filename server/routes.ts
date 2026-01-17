@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql, eq, and } from "drizzle-orm";
-import { supplierDispatches, reservations, userRoles, roles } from "@shared/schema";
+import { supplierDispatches, reservations, userRoles, roles, tenants } from "@shared/schema";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
@@ -5652,6 +5652,151 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       res.json({ success: true, message: "Sayfa içerikleri kaydedildi" });
     } catch (err) {
       console.error("Save website pages error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // === COMPREHENSIVE WEBSITE SETTINGS ENDPOINT ===
+  // GET all website settings for the tenant
+  app.get("/api/website-settings", requirePermission(PERMISSIONS.SETTINGS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      const [tenant] = await db
+        .select({
+          websiteEnabled: tenants.websiteEnabled,
+          websiteDomain: tenants.websiteDomain,
+          websiteName: tenants.name,
+          websiteLogo: tenants.logoUrl,
+          websiteFavicon: tenants.websiteFaviconUrl,
+          websiteHeroImage: tenants.websiteHeroImageUrl,
+          websiteHeroTitle: tenants.websiteTitle,
+          websiteHeroSubtitle: tenants.websiteDescription,
+          websitePrimaryColor: tenants.primaryColor,
+          websiteAccentColor: tenants.accentColor,
+          websiteMetaDescription: tenants.websiteDescription,
+          websiteMetaKeywords: tenants.websiteAboutText,
+          websiteGoogleAnalyticsId: tenants.websiteGoogleAnalyticsId,
+          websiteWhatsappNumber: tenants.websiteWhatsappNumber,
+          websiteSocialLinks: tenants.websiteSocialLinks,
+          websiteLanguages: tenants.websiteLanguages,
+          websiteContactPageTitle: tenants.websiteContactPageTitle,
+          websiteContactPageContent: tenants.websiteContactPageContent,
+          websiteContactEmail: tenants.websiteContactEmail,
+          websiteContactPhone: tenants.websiteContactPhone,
+          websiteContactAddress: tenants.websiteContactAddress,
+          websiteAboutPageTitle: tenants.websiteAboutPageTitle,
+          websiteAboutPageContent: tenants.websiteAboutPageContent,
+          websiteCancellationPageTitle: tenants.websiteCancellationPageTitle,
+          websiteCancellationPageContent: tenants.websiteCancellationPageContent,
+          websitePrivacyPageTitle: tenants.websitePrivacyPageTitle,
+          websitePrivacyPageContent: tenants.websitePrivacyPageContent,
+          websiteTermsPageTitle: tenants.websiteTermsPageTitle,
+          websiteTermsPageContent: tenants.websiteTermsPageContent,
+          websiteFaqPageTitle: tenants.websiteFaqPageTitle,
+          websiteFaqPageContent: tenants.websiteFaqPageContent,
+          websiteFooterText: tenants.websiteFooterText,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+
+      res.json(tenant || {});
+    } catch (err) {
+      console.error("Get website settings error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // PUT update website settings
+  app.put("/api/website-settings", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      const {
+        websiteEnabled,
+        websiteDomain,
+        websiteName,
+        websiteLogo,
+        websiteFavicon,
+        websiteHeroImage,
+        websiteHeroTitle,
+        websiteHeroSubtitle,
+        websitePrimaryColor,
+        websiteAccentColor,
+        websiteMetaDescription,
+        websiteGoogleAnalyticsId,
+        websiteWhatsappNumber,
+        websiteSocialLinks,
+        websiteLanguages,
+        websiteContactPageTitle,
+        websiteContactPageContent,
+        websiteContactEmail,
+        websiteContactPhone,
+        websiteContactAddress,
+        websiteAboutPageTitle,
+        websiteAboutPageContent,
+        websiteCancellationPageTitle,
+        websiteCancellationPageContent,
+        websitePrivacyPageTitle,
+        websitePrivacyPageContent,
+        websiteTermsPageTitle,
+        websiteTermsPageContent,
+        websiteFaqPageTitle,
+        websiteFaqPageContent,
+        websiteFooterText,
+      } = req.body;
+
+      const updateData: Record<string, any> = {};
+
+      if (websiteEnabled !== undefined) updateData.websiteEnabled = websiteEnabled;
+      if (websiteDomain !== undefined) updateData.websiteDomain = websiteDomain;
+      if (websiteName !== undefined) updateData.name = websiteName;
+      if (websiteLogo !== undefined) updateData.logoUrl = websiteLogo;
+      if (websiteFavicon !== undefined) updateData.websiteFaviconUrl = websiteFavicon;
+      if (websiteHeroImage !== undefined) updateData.websiteHeroImageUrl = websiteHeroImage;
+      if (websiteHeroTitle !== undefined) updateData.websiteTitle = websiteHeroTitle;
+      if (websiteHeroSubtitle !== undefined) updateData.websiteDescription = websiteHeroSubtitle;
+      if (websitePrimaryColor !== undefined) updateData.primaryColor = websitePrimaryColor;
+      if (websiteAccentColor !== undefined) updateData.accentColor = websiteAccentColor;
+      if (websiteMetaDescription !== undefined) updateData.websiteDescription = websiteMetaDescription;
+      if (websiteGoogleAnalyticsId !== undefined) updateData.websiteGoogleAnalyticsId = websiteGoogleAnalyticsId;
+      if (websiteWhatsappNumber !== undefined) updateData.websiteWhatsappNumber = websiteWhatsappNumber;
+      if (websiteSocialLinks !== undefined) updateData.websiteSocialLinks = websiteSocialLinks;
+      if (websiteLanguages !== undefined) updateData.websiteLanguages = websiteLanguages;
+      if (websiteContactPageTitle !== undefined) updateData.websiteContactPageTitle = websiteContactPageTitle;
+      if (websiteContactPageContent !== undefined) updateData.websiteContactPageContent = websiteContactPageContent;
+      if (websiteContactEmail !== undefined) updateData.websiteContactEmail = websiteContactEmail;
+      if (websiteContactPhone !== undefined) updateData.websiteContactPhone = websiteContactPhone;
+      if (websiteContactAddress !== undefined) updateData.websiteContactAddress = websiteContactAddress;
+      if (websiteAboutPageTitle !== undefined) updateData.websiteAboutPageTitle = websiteAboutPageTitle;
+      if (websiteAboutPageContent !== undefined) updateData.websiteAboutPageContent = websiteAboutPageContent;
+      if (websiteCancellationPageTitle !== undefined) updateData.websiteCancellationPageTitle = websiteCancellationPageTitle;
+      if (websiteCancellationPageContent !== undefined) updateData.websiteCancellationPageContent = websiteCancellationPageContent;
+      if (websitePrivacyPageTitle !== undefined) updateData.websitePrivacyPageTitle = websitePrivacyPageTitle;
+      if (websitePrivacyPageContent !== undefined) updateData.websitePrivacyPageContent = websitePrivacyPageContent;
+      if (websiteTermsPageTitle !== undefined) updateData.websiteTermsPageTitle = websiteTermsPageTitle;
+      if (websiteTermsPageContent !== undefined) updateData.websiteTermsPageContent = websiteTermsPageContent;
+      if (websiteFaqPageTitle !== undefined) updateData.websiteFaqPageTitle = websiteFaqPageTitle;
+      if (websiteFaqPageContent !== undefined) updateData.websiteFaqPageContent = websiteFaqPageContent;
+      if (websiteFooterText !== undefined) updateData.websiteFooterText = websiteFooterText;
+
+      if (Object.keys(updateData).length > 0) {
+        await db
+          .update(tenants)
+          .set(updateData)
+          .where(eq(tenants.id, tenantId));
+      }
+
+      res.json({ success: true, message: "Web sitesi ayarları kaydedildi" });
+    } catch (err) {
+      console.error("Save website settings error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });
