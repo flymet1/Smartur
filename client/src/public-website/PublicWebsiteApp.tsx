@@ -1,4 +1,4 @@
-import { Switch, Route, Router } from "wouter";
+import { Switch, Route, Router, useLocation } from "wouter";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
@@ -55,6 +55,10 @@ function PublicNotFound() {
 
 function PublicWebsiteContent() {
   const { t } = useLanguage();
+  const [location] = useLocation();
+  
+  console.log('[Debug] PublicWebsiteContent - wouter location:', location);
+  
   const { data: websiteData, isLoading, error } = useQuery<PublicWebsiteData>({
     queryKey: [getApiUrl("/api/website/data")],
   });
@@ -108,6 +112,10 @@ function PublicWebsiteContent() {
 
 function PublicWebsiteRouter() {
   const basePath = getBasePath();
+  const currentPath = window.location.pathname;
+  
+  console.log('[Debug] PublicWebsiteRouter - basePath:', basePath);
+  console.log('[Debug] PublicWebsiteRouter - currentPath:', currentPath);
   
   return (
     <Router base={basePath}>
