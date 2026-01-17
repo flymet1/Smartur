@@ -33,8 +33,10 @@ import {
   Plus,
   Trash2,
   CreditCard,
-  LayoutPanelTop
+  LayoutPanelTop,
+  PenSquare
 } from "lucide-react";
+import { BlogContent } from "@/pages/Blog";
 
 interface WebsiteSettings {
   websiteDomain: string | null;
@@ -282,7 +284,7 @@ export default function WebSite() {
           </Card>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
               <TabsTrigger value="general" className="gap-1" data-testid="tab-general">
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Genel</span>
@@ -310,6 +312,10 @@ export default function WebSite() {
               <TabsTrigger value="footer" className="gap-1" data-testid="tab-footer">
                 <LayoutPanelTop className="h-4 w-4" />
                 <span className="hidden sm:inline">Footer</span>
+              </TabsTrigger>
+              <TabsTrigger value="blog" className="gap-1" data-testid="tab-blog">
+                <PenSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">Blog</span>
               </TabsTrigger>
             </TabsList>
 
@@ -971,6 +977,10 @@ export default function WebSite() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="blog" className="mt-6">
+              <BlogContent />
             </TabsContent>
           </Tabs>
         </div>

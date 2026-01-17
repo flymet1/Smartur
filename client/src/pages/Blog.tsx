@@ -304,7 +304,8 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (val: st
   );
 }
 
-export default function Blog() {
+// BlogContent component - can be embedded in other pages
+export function BlogContent() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -434,28 +435,25 @@ export default function Blog() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <FileText className="h-6 w-6" />
-                Blog Yönetimi
-              </h1>
-              <p className="text-muted-foreground">Web siteniz için blog yazıları oluşturun ve yönetin.</p>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) resetForm();
-            }}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-new-blog">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Yeni Yazı
-                </Button>
-              </DialogTrigger>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Blog Yönetimi
+          </h2>
+          <p className="text-sm text-muted-foreground">Web siteniz için blog yazıları oluşturun ve yönetin.</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button data-testid="button-new-blog">
+              <Plus className="h-4 w-4 mr-2" />
+              Yeni Yazı
+            </Button>
+          </DialogTrigger>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
@@ -804,6 +802,18 @@ export default function Blog() {
               ))}
             </div>
           )}
+    </div>
+  );
+}
+
+// Default export with Sidebar wrapper for standalone page
+export default function Blog() {
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <main className="flex-1 p-6 overflow-auto">
+        <div className="max-w-7xl mx-auto">
+          <BlogContent />
         </div>
       </main>
     </div>
