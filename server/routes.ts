@@ -9050,6 +9050,28 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         language: language || "tr",
         planCode: planCode || "trial",
         isActive: true,
+        // Default website settings
+        websiteEnabled: false,
+        websiteTitle: name,
+        websiteDescription: `${name} - Tur ve aktivite rezervasyonları`,
+        websiteAboutText: `${name} olarak size en iyi tur ve aktivite deneyimlerini sunuyoruz.`,
+        websiteContactEmail: contactEmail || null,
+        websiteContactPhone: contactPhone || null,
+        websiteContactAddress: address || null,
+        websiteContactPageTitle: "İletişim",
+        websiteContactPageContent: "Sorularınız için bizimle iletişime geçebilirsiniz.",
+        websiteAboutPageTitle: "Hakkımızda",
+        websiteAboutPageContent: `${name} olarak uzun yıllardır sektörde hizmet vermekteyiz. Müşteri memnuniyeti odaklı yaklaşımımızla unutulmaz deneyimler sunuyoruz.`,
+        websiteCancellationPageTitle: "İptal ve İade Politikası",
+        websiteCancellationPageContent: "Rezervasyonunuzu aktivite tarihinden en az 24 saat önce iptal etmeniz durumunda tam iade yapılmaktadır.",
+        websitePrivacyPageTitle: "Gizlilik Politikası",
+        websitePrivacyPageContent: "Kişisel verileriniz güvenle korunmaktadır. Bilgileriniz üçüncü şahıslarla paylaşılmaz.",
+        websiteTermsPageTitle: "Kullanım Şartları",
+        websiteTermsPageContent: "Web sitemizi kullanarak bu şartları kabul etmiş sayılırsınız.",
+        websiteFaqPageTitle: "Sıkça Sorulan Sorular",
+        websiteFaqPageContent: "[]",
+        websiteSocialLinks: "{}",
+        websiteLanguages: '["tr"]',
       });
 
       // Create admin user for this tenant if provided
