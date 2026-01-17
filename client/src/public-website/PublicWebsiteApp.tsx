@@ -10,10 +10,10 @@ import PublicTrackReservation from "./pages/PublicTrackReservation";
 import PublicBlog from "./pages/PublicBlog";
 import PublicBlogDetail from "./pages/PublicBlogDetail";
 import type { PublicWebsiteData } from "./types";
-import { isPreviewMode, getApiUrl } from "./utils";
+import { isPreviewModeStatic, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 
-const basePath = isPreviewMode ? '/website-preview' : '';
+const basePath = isPreviewModeStatic ? '/website-preview' : '';
 
 // Create a separate query client for public website
 // Note: Preview mode is handled by getApiUrl() in utils.ts which adds ?preview=true when needed
