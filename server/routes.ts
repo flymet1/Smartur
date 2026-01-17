@@ -12,6 +12,7 @@ import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { encrypt, decrypt } from "./encryption";
 import { logError, logWarn, logInfo, attachLogsToSupportRequest, getSupportRequestLogs, getRecentLogs, logErrorEvent, type ErrorCategory, type ErrorSeverity } from "./logger";
+import { registerPublicApiRoutes } from "./publicApi";
 
 // Module-level exchange rate cache (persists between requests)
 let exchangeRateCache: { rates: any; lastUpdated: Date | null } = { rates: null, lastUpdated: null };
@@ -1151,6 +1152,11 @@ export async function registerRoutes(
     '/settings/botAccess',
     '/announcements',
     '/license',
+    '/public/info',
+    '/public/activities',
+    '/public/availability',
+    '/public/reservations',
+    '/public/customer-requests',
   ];
   
   app.use('/api', (req, res, next) => {
@@ -11459,6 +11465,9 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       res.status(500).json({ error: "Bildirim silinemedi" });
     }
   });
+
+  // Register public API routes for external website integration
+  registerPublicApiRoutes(app);
 
   return httpServer;
 }

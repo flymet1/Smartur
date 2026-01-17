@@ -25,6 +25,25 @@ export const tenants = pgTable("tenants", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // === PUBLIC API & WEBSITE SETTINGS ===
+  publicApiKey: text("public_api_key"), // Public API erişimi için benzersiz anahtar
+  publicApiEnabled: boolean("public_api_enabled").default(false), // API aktif mi?
+  // Web sitesi ayarları
+  websiteEnabled: boolean("website_enabled").default(false), // Web sitesi aktif mi?
+  websiteDomain: text("website_domain"), // Özel domain (ör: rezervasyon.firmaadi.com)
+  websiteTitle: text("website_title"), // Site başlığı
+  websiteDescription: text("website_description"), // Meta açıklama
+  websiteFaviconUrl: text("website_favicon_url"), // Favicon URL
+  websiteHeroImageUrl: text("website_hero_image_url"), // Hero görsel URL
+  websiteAboutText: text("website_about_text"), // Hakkımızda metni
+  websiteFooterText: text("website_footer_text"), // Footer metni
+  websiteSocialLinks: text("website_social_links").default("{}"), // JSON: {facebook, instagram, twitter, youtube}
+  websiteGoogleAnalyticsId: text("website_google_analytics_id"), // GA tracking ID
+  websiteWhatsappNumber: text("website_whatsapp_number"), // WhatsApp butonu için numara
+  websitePaymentProvider: text("website_payment_provider"), // iyzico, paytr, stripe
+  websitePaymentApiKey: text("website_payment_api_key"), // Ödeme API key (şifreli)
+  websitePaymentSecretKey: text("website_payment_secret_key"), // Ödeme secret key (şifreli)
+  websiteLanguages: text("website_languages").default('["tr"]'), // Desteklenen diller JSON array
 });
 
 // === TABLE DEFINITIONS ===
