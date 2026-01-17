@@ -1,5 +1,6 @@
 import { Switch, Route, Router } from "wouter";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
 import PublicActivities from "./pages/PublicActivities";
@@ -10,10 +11,14 @@ import PublicTrackReservation from "./pages/PublicTrackReservation";
 import PublicBlog from "./pages/PublicBlog";
 import PublicBlogDetail from "./pages/PublicBlogDetail";
 import type { PublicWebsiteData } from "./types";
-import { isPreviewModeStatic, getApiUrl } from "./utils";
+import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 
-const basePath = isPreviewModeStatic ? '/website-preview' : '';
+function useBasePath() {
+  return useMemo(() => {
+    return isPreviewMode() ? '/website-preview' : '';
+  }, []);
+}
 
 // Create a separate query client for public website
 // Note: Preview mode is handled by getApiUrl() in utils.ts which adds ?preview=true when needed
@@ -104,13 +109,21 @@ function PublicWebsiteContent() {
   );
 }
 
+function PublicWebsiteRouter() {
+  const basePath = useBasePath();
+  
+  return (
+    <Router base={basePath}>
+      <PublicWebsiteContent />
+    </Router>
+  );
+}
+
 export function PublicWebsiteApp() {
   return (
     <QueryClientProvider client={publicQueryClient}>
       <LanguageProvider defaultLanguage="tr" availableLanguages={["tr", "en"]}>
-        <Router base={basePath}>
-          <PublicWebsiteContent />
-        </Router>
+        <PublicWebsiteRouter />
       </LanguageProvider>
     </QueryClientProvider>
   );
