@@ -9,9 +9,7 @@ import PublicContact from "./pages/PublicContact";
 import PublicTrackReservation from "./pages/PublicTrackReservation";
 import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
-import { LanguageProvider } from "./i18n/LanguageContext";
-import { useLanguage } from "./i18n/LanguageContext";
-import type { Language } from "./i18n";
+import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 
 const basePath = isPreviewMode ? '/website-preview' : '';
 
@@ -52,6 +50,7 @@ function PublicNotFound() {
 }
 
 function PublicWebsiteContent() {
+  const { t } = useLanguage();
   const { data: websiteData, isLoading, error } = useQuery<PublicWebsiteData>({
     queryKey: [getApiUrl("/api/website/data")],
   });
@@ -59,7 +58,10 @@ function PublicWebsiteContent() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{t.common.loading}</p>
+        </div>
       </div>
     );
   }
@@ -68,8 +70,8 @@ function PublicWebsiteContent() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Web Sitesi Bulunamadı</h1>
-          <p className="text-muted-foreground">Bu domain için yapılandırılmış bir web sitesi yok.</p>
+          <h1 className="text-2xl font-bold mb-4">{t.common.error}</h1>
+          <p className="text-muted-foreground">{t.common.notFound}</p>
         </div>
       </div>
     );
