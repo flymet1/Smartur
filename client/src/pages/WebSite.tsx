@@ -31,7 +31,9 @@ import {
   Shield,
   HelpCircle,
   Plus,
-  Trash2
+  Trash2,
+  CreditCard,
+  LayoutPanelTop
 } from "lucide-react";
 
 interface WebsiteSettings {
@@ -66,6 +68,14 @@ interface WebsiteSettings {
   websiteTermsPageContent: string | null;
   websiteFaqPageTitle: string | null;
   websiteFaqPageContent: string | null;
+  // Footer ve Header ayarları
+  websiteFooterCompanyDescription: string | null;
+  websiteFooterPaymentImageUrl: string | null;
+  websiteFooterCopyrightText: string | null;
+  websiteFooterBackgroundColor: string | null;
+  websiteFooterTextColor: string | null;
+  websiteHeaderBackgroundColor: string | null;
+  websiteHeaderTextColor: string | null;
 }
 
 interface FaqItem {
@@ -272,7 +282,7 @@ export default function WebSite() {
           </Card>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
               <TabsTrigger value="general" className="gap-1" data-testid="tab-general">
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Genel</span>
@@ -296,6 +306,10 @@ export default function WebSite() {
               <TabsTrigger value="faq" className="gap-1" data-testid="tab-faq">
                 <HelpCircle className="h-4 w-4" />
                 <span className="hidden sm:inline">SSS</span>
+              </TabsTrigger>
+              <TabsTrigger value="footer" className="gap-1" data-testid="tab-footer">
+                <LayoutPanelTop className="h-4 w-4" />
+                <span className="hidden sm:inline">Footer</span>
               </TabsTrigger>
             </TabsList>
 
@@ -792,6 +806,169 @@ export default function WebSite() {
                       ))}
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="footer" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <LayoutPanelTop className="h-5 w-5" />
+                    Footer & Header Ayarları
+                  </CardTitle>
+                  <CardDescription>Alt bilgi alanı ve renk ayarları</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="websiteFooterCompanyDescription">Footer Şirket Açıklaması</Label>
+                    <Textarea
+                      id="websiteFooterCompanyDescription"
+                      placeholder="Footer'da görünecek kısa şirket açıklaması..."
+                      value={getValue("websiteFooterCompanyDescription")}
+                      onChange={(e) => updateField("websiteFooterCompanyDescription", e.target.value)}
+                      rows={3}
+                      data-testid="input-footer-description"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="websiteFooterCopyrightText">Telif Hakkı Metni</Label>
+                    <Input
+                      id="websiteFooterCopyrightText"
+                      placeholder="© 2025 Şirket Adı. Tüm hakları saklıdır."
+                      value={getValue("websiteFooterCopyrightText")}
+                      onChange={(e) => updateField("websiteFooterCopyrightText", e.target.value)}
+                      data-testid="input-footer-copyright"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Boş bırakırsanız otomatik olarak yıl ve şirket adı kullanılır
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="websiteFooterPaymentImageUrl" className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Ödeme Yöntemleri Görseli (PNG)
+                    </Label>
+                    <Input
+                      id="websiteFooterPaymentImageUrl"
+                      placeholder="https://example.com/payment-methods.png"
+                      value={getValue("websiteFooterPaymentImageUrl")}
+                      onChange={(e) => updateField("websiteFooterPaymentImageUrl", e.target.value)}
+                      data-testid="input-footer-payment-image"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Visa, Mastercard, PayPal vb. ödeme yöntemlerini gösteren görsel URL'si
+                    </p>
+                    {getValue("websiteFooterPaymentImageUrl") && (
+                      <div className="mt-2 p-4 border rounded-lg bg-muted/50">
+                        <img
+                          src={getValue("websiteFooterPaymentImageUrl")}
+                          alt="Ödeme yöntemleri önizleme"
+                          className="h-8 w-auto"
+                          onError={(e) => (e.currentTarget.style.display = "none")}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t pt-6">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Footer Renkleri
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteFooterBackgroundColor">Footer Arka Plan Rengi</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="websiteFooterBackgroundColor"
+                            type="color"
+                            value={getValue("websiteFooterBackgroundColor") || "#1f2937"}
+                            onChange={(e) => updateField("websiteFooterBackgroundColor", e.target.value)}
+                            className="w-16 h-10 p-1"
+                            data-testid="input-footer-bg-color"
+                          />
+                          <Input
+                            value={getValue("websiteFooterBackgroundColor")}
+                            onChange={(e) => updateField("websiteFooterBackgroundColor", e.target.value)}
+                            placeholder="#1f2937"
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteFooterTextColor">Footer Metin Rengi</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="websiteFooterTextColor"
+                            type="color"
+                            value={getValue("websiteFooterTextColor") || "#ffffff"}
+                            onChange={(e) => updateField("websiteFooterTextColor", e.target.value)}
+                            className="w-16 h-10 p-1"
+                            data-testid="input-footer-text-color"
+                          />
+                          <Input
+                            value={getValue("websiteFooterTextColor")}
+                            onChange={(e) => updateField("websiteFooterTextColor", e.target.value)}
+                            placeholder="#ffffff"
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-6">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Header Renkleri
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteHeaderBackgroundColor">Header Üst Bar Arka Plan</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="websiteHeaderBackgroundColor"
+                            type="color"
+                            value={getValue("websiteHeaderBackgroundColor") || "#3b82f6"}
+                            onChange={(e) => updateField("websiteHeaderBackgroundColor", e.target.value)}
+                            className="w-16 h-10 p-1"
+                            data-testid="input-header-bg-color"
+                          />
+                          <Input
+                            value={getValue("websiteHeaderBackgroundColor")}
+                            onChange={(e) => updateField("websiteHeaderBackgroundColor", e.target.value)}
+                            placeholder="#3b82f6"
+                            className="flex-1"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Telefon, e-posta ve sosyal medya linklerinin bulunduğu üst bar
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteHeaderTextColor">Header Üst Bar Metin Rengi</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="websiteHeaderTextColor"
+                            type="color"
+                            value={getValue("websiteHeaderTextColor") || "#ffffff"}
+                            onChange={(e) => updateField("websiteHeaderTextColor", e.target.value)}
+                            className="w-16 h-10 p-1"
+                            data-testid="input-header-text-color"
+                          />
+                          <Input
+                            value={getValue("websiteHeaderTextColor")}
+                            onChange={(e) => updateField("websiteHeaderTextColor", e.target.value)}
+                            placeholder="#ffffff"
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

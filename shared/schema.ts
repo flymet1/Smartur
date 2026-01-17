@@ -60,6 +60,14 @@ export const tenants = pgTable("tenants", {
   websiteTermsPageContent: text("website_terms_page_content"), // Kullanım şartları içeriği (HTML/Markdown)
   websiteFaqPageTitle: text("website_faq_page_title"), // SSS sayfası başlığı
   websiteFaqPageContent: text("website_faq_page_content"), // SSS sayfası içeriği (JSON array of {question, answer})
+  // === WEB SİTESİ FOOTER AYARLARI ===
+  websiteFooterCompanyDescription: text("website_footer_company_description"), // Footer'daki şirket açıklaması
+  websiteFooterPaymentImageUrl: text("website_footer_payment_image_url"), // Ödeme yöntemleri görseli (PNG)
+  websiteFooterCopyrightText: text("website_footer_copyright_text"), // Telif hakkı metni
+  websiteFooterBackgroundColor: text("website_footer_background_color"), // Footer arka plan rengi
+  websiteFooterTextColor: text("website_footer_text_color"), // Footer metin rengi
+  websiteHeaderBackgroundColor: text("website_header_background_color"), // Header arka plan rengi
+  websiteHeaderTextColor: text("website_header_text_color"), // Header metin rengi
   // === WEB SİTESİ ŞABLON SİSTEMİ ===
   websiteTemplateKey: text("website_template_key").default("modern"), // classic, modern, premium
   websiteTemplateSettings: text("website_template_settings").default("{}"), // JSON: template-specific settings (heroSlides, testimonials, trustBadges, featuredCategories)

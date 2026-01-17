@@ -91,6 +91,14 @@ export interface PublicWebsiteData {
   websiteTermsPageContent: string | null;
   websiteFaqPageTitle: string | null;
   faqItems: Array<{ question: string; answer: string }>;
+  // Footer ayarları
+  websiteFooterCompanyDescription: string | null;
+  websiteFooterPaymentImageUrl: string | null;
+  websiteFooterCopyrightText: string | null;
+  websiteFooterBackgroundColor: string | null;
+  websiteFooterTextColor: string | null;
+  websiteHeaderBackgroundColor: string | null;
+  websiteHeaderTextColor: string | null;
   // Şablon sistemi
   websiteTemplateKey: string | null;
   websiteTemplateSettings: WebsiteTemplateSettings;

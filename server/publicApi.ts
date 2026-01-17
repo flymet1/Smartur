@@ -762,6 +762,13 @@ export function registerPublicApiRoutes(app: Express) {
           websiteTermsPageContent: tenants.websiteTermsPageContent,
           websiteFaqPageTitle: tenants.websiteFaqPageTitle,
           websiteFaqPageContent: tenants.websiteFaqPageContent,
+          websiteFooterCompanyDescription: tenants.websiteFooterCompanyDescription,
+          websiteFooterPaymentImageUrl: tenants.websiteFooterPaymentImageUrl,
+          websiteFooterCopyrightText: tenants.websiteFooterCopyrightText,
+          websiteFooterBackgroundColor: tenants.websiteFooterBackgroundColor,
+          websiteFooterTextColor: tenants.websiteFooterTextColor,
+          websiteHeaderBackgroundColor: tenants.websiteHeaderBackgroundColor,
+          websiteHeaderTextColor: tenants.websiteHeaderTextColor,
           websiteTemplateKey: tenants.websiteTemplateKey,
           websiteTemplateSettings: tenants.websiteTemplateSettings,
         })

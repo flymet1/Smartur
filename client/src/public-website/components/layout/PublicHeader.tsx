@@ -23,6 +23,8 @@ interface PublicHeaderProps {
   whatsapp?: string;
   socialLinks?: SocialLinks;
   availableLanguages?: Language[];
+  headerBackgroundColor?: string | null;
+  headerTextColor?: string | null;
 }
 
 export function PublicHeader({ 
@@ -32,7 +34,9 @@ export function PublicHeader({
   email,
   whatsapp,
   socialLinks,
-  availableLanguages = ["tr", "en"]
+  availableLanguages = ["tr", "en"],
+  headerBackgroundColor,
+  headerTextColor
 }: PublicHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -57,10 +61,18 @@ export function PublicHeader({
   const hasSocialLinks = socialLinks && (socialLinks.facebook || socialLinks.instagram || socialLinks.twitter || socialLinks.youtube);
   const hasContactInfo = phone || email || whatsapp;
 
+  const topBarStyle: React.CSSProperties = {
+    ...(headerBackgroundColor && { backgroundColor: headerBackgroundColor }),
+    ...(headerTextColor && { color: headerTextColor }),
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full">
       {(hasContactInfo || hasSocialLinks) && (
-        <div className="bg-primary text-primary-foreground text-sm py-2 hidden md:block">
+        <div 
+          className="bg-primary text-primary-foreground text-sm py-2 hidden md:block"
+          style={topBarStyle}
+        >
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">

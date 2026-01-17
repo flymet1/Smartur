@@ -21,6 +21,8 @@ export function PublicLayout({ children, data }: PublicLayoutProps) {
         whatsapp={data?.websiteWhatsappNumber || undefined}
         socialLinks={data?.websiteSocialLinks}
         availableLanguages={availableLanguages}
+        headerBackgroundColor={data?.websiteHeaderBackgroundColor}
+        headerTextColor={data?.websiteHeaderTextColor}
       />
       <main className="flex-1">{children}</main>
       <PublicFooter data={data} />
