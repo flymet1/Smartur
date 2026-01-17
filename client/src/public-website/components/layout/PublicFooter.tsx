@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { FaFacebook, FaInstagram, FaTwitter, FaYoutube, FaWhatsapp } from "react-icons/fa";
 import type { PublicWebsiteData } from "../../types";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 interface PublicFooterProps {
   data?: PublicWebsiteData;
@@ -9,6 +10,7 @@ interface PublicFooterProps {
 
 export function PublicFooter({ data }: PublicFooterProps) {
   const currentYear = new Date().getFullYear();
+  const { t } = useLanguage();
 
   return (
     <footer className="bg-card border-t mt-auto">
@@ -35,28 +37,28 @@ export function PublicFooter({ data }: PublicFooterProps) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Hızlı Bağlantılar</h3>
+            <h3 className="font-semibold mb-4">{t.footer.quickLinks}</h3>
             <ul className="space-y-2">
               <li>
                 <Link href="/aktiviteler" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Tüm Aktiviteler
+                  {t.common.activities}
                 </Link>
               </li>
               <li>
                 <Link href="/iletisim" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  İletişim
+                  {t.common.contact}
                 </Link>
               </li>
               <li>
                 <Link href="/takip" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Rezervasyon Takip
+                  {t.common.reservationTracking}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">İletişim</h3>
+            <h3 className="font-semibold mb-4">{t.common.contact}</h3>
             <ul className="space-y-3">
               {data?.websiteContactAddress && (
                 <li className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -144,14 +146,14 @@ export function PublicFooter({ data }: PublicFooterProps) {
 
         <div className="border-t mt-8 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} {data?.name || "Smartur Travel"}. Tüm hakları saklıdır.
+            © {currentYear} {data?.name || "Smartur Travel"}. {t.footer.allRightsReserved}
           </p>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <Link href="/gizlilik" className="hover:text-foreground transition-colors">
-              Gizlilik Politikası
+              {t.footer.privacy}
             </Link>
             <Link href="/sartlar" className="hover:text-foreground transition-colors">
-              Kullanım Şartları
+              {t.footer.terms}
             </Link>
           </div>
         </div>

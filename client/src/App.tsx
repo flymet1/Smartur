@@ -67,7 +67,7 @@ function Router() {
       <Route path="/partner-profile" component={PartnerProfile} />
       <Route path="/partner-availability" component={PartnerAvailability} />
       <Route path="/website" component={WebSite} />
-      <Route path="/website-preview" component={WebsitePreview} />
+      <Route path="/website-preview/:rest*" component={WebsitePreview} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -97,7 +97,7 @@ function App() {
     window.location.pathname === '/login' ||
     window.location.pathname === '/sales-presentation' ||
     window.location.pathname === '/subscription' ||
-    window.location.pathname === '/website-preview' ||
+    window.location.pathname.startsWith('/website-preview') ||
     window.location.pathname.startsWith('/takip/')
   );
 

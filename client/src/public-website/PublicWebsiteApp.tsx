@@ -9,6 +9,9 @@ import PublicContact from "./pages/PublicContact";
 import PublicTrackReservation from "./pages/PublicTrackReservation";
 import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
+import { LanguageProvider } from "./i18n/LanguageContext";
+import { useLanguage } from "./i18n/LanguageContext";
+import type { Language } from "./i18n";
 
 const basePath = isPreviewMode ? '/website-preview' : '';
 
@@ -34,13 +37,14 @@ const publicQueryClient = new QueryClient({
 });
 
 function PublicNotFound() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-muted-foreground mb-4">Sayfa bulunamadı</p>
+        <p className="text-muted-foreground mb-4">{t.common.notFound}</p>
         <a href="/" className="text-primary hover:underline">
-          Ana Sayfaya Dön
+          {t.common.backToHome}
         </a>
       </div>
     </div>
@@ -93,9 +97,11 @@ function PublicWebsiteContent() {
 export function PublicWebsiteApp() {
   return (
     <QueryClientProvider client={publicQueryClient}>
-      <Router base={basePath}>
-        <PublicWebsiteContent />
-      </Router>
+      <LanguageProvider defaultLanguage="tr" availableLanguages={["tr", "en"]}>
+        <Router base={basePath}>
+          <PublicWebsiteContent />
+        </Router>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

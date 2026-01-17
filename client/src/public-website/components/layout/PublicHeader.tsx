@@ -3,22 +3,32 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, Globe, MapPin, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { languageNames, type Language } from "../../i18n";
 
 interface PublicHeaderProps {
   agencyName?: string;
   logo?: string;
   phone?: string;
+  availableLanguages?: Language[];
 }
 
-export function PublicHeader({ agencyName = "Smartur Travel", logo, phone }: PublicHeaderProps) {
+export function PublicHeader({ 
+  agencyName = "Smartur Travel", 
+  logo, 
+  phone,
+  availableLanguages = ["tr", "en"]
+}: PublicHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
+  const { language, setLanguage, t } = useLanguage();
 
   const navItems = [
-    { href: "/", label: "Ana Sayfa" },
-    { href: "/aktiviteler", label: "Aktiviteler" },
-    { href: "/iletisim", label: "İletişim" },
-    { href: "/takip", label: "Rezervasyon Takip" },
+    { href: "/", label: t.common.home },
+    { href: "/aktiviteler", label: t.common.activities },
+    { href: "/iletisim", label: t.common.contact },
+    { href: "/takip", label: t.common.reservationTracking },
   ];
 
   return (
@@ -63,6 +73,30 @@ export function PublicHeader({ agencyName = "Smartur Travel", logo, phone }: Pub
                 <Phone className="h-4 w-4" />
                 {phone}
               </a>
+            )}
+
+            {availableLanguages.length > 1 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1" data-testid="button-language-selector">
+                    <Globe className="h-4 w-4" />
+                    <span className="hidden sm:inline">{languageNames[language]}</span>
+                    <span className="sm:hidden">{language.toUpperCase()}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {availableLanguages.map((lang) => (
+                    <DropdownMenuItem
+                      key={lang}
+                      onClick={() => setLanguage(lang)}
+                      className={cn(language === lang && "bg-muted")}
+                      data-testid={`menu-item-lang-${lang}`}
+                    >
+                      {languageNames[lang]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
             <Button
