@@ -2,7 +2,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -929,6 +929,20 @@ DEĞİŞİKLİK TALEPLERİNDE:
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Public API</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'website-pages' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('website-pages')}
+                  data-testid="tab-website-pages"
+                >
+                  <FileText className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Sayfalar</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Web Sitesi Sayfaları</TooltipContent>
             </Tooltip>
           </div>
         </div>
@@ -2032,6 +2046,10 @@ DEĞİŞİKLİK TALEPLERİNDE:
           {/* PUBLIC API TAB */}
           <TabsContent value="api" className="space-y-6">
             <PublicApiSection />
+          </TabsContent>
+
+          <TabsContent value="website-pages" className="space-y-6">
+            <WebsitePagesSection />
           </TabsContent>
 
         </Tabs>
@@ -6221,6 +6239,342 @@ function AgencyManagementSection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+// Website Pages Section Component
+function WebsitePagesSection() {
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  const [activePageTab, setActivePageTab] = useState('contact');
+
+  const { data: pageContent, isLoading, refetch } = useQuery<{
+    websiteContactPageTitle: string | null;
+    websiteContactPageContent: string | null;
+    websiteContactEmail: string | null;
+    websiteContactPhone: string | null;
+    websiteContactAddress: string | null;
+    websiteAboutPageTitle: string | null;
+    websiteAboutPageContent: string | null;
+    websiteCancellationPageTitle: string | null;
+    websiteCancellationPageContent: string | null;
+    websitePrivacyPageTitle: string | null;
+    websitePrivacyPageContent: string | null;
+    websiteTermsPageTitle: string | null;
+    websiteTermsPageContent: string | null;
+    websiteFaqPageTitle: string | null;
+    websiteFaqPageContent: string | null;
+  }>({
+    queryKey: ['/api/settings/website-pages'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/website-pages');
+      if (!res.ok) return {};
+      return res.json();
+    },
+  });
+
+  const [formData, setFormData] = useState({
+    websiteContactPageTitle: '',
+    websiteContactPageContent: '',
+    websiteContactEmail: '',
+    websiteContactPhone: '',
+    websiteContactAddress: '',
+    websiteAboutPageTitle: '',
+    websiteAboutPageContent: '',
+    websiteCancellationPageTitle: '',
+    websiteCancellationPageContent: '',
+    websitePrivacyPageTitle: '',
+    websitePrivacyPageContent: '',
+    websiteTermsPageTitle: '',
+    websiteTermsPageContent: '',
+    websiteFaqPageTitle: '',
+    websiteFaqPageContent: '',
+  });
+
+  useEffect(() => {
+    if (pageContent) {
+      setFormData({
+        websiteContactPageTitle: pageContent.websiteContactPageTitle || '',
+        websiteContactPageContent: pageContent.websiteContactPageContent || '',
+        websiteContactEmail: pageContent.websiteContactEmail || '',
+        websiteContactPhone: pageContent.websiteContactPhone || '',
+        websiteContactAddress: pageContent.websiteContactAddress || '',
+        websiteAboutPageTitle: pageContent.websiteAboutPageTitle || '',
+        websiteAboutPageContent: pageContent.websiteAboutPageContent || '',
+        websiteCancellationPageTitle: pageContent.websiteCancellationPageTitle || '',
+        websiteCancellationPageContent: pageContent.websiteCancellationPageContent || '',
+        websitePrivacyPageTitle: pageContent.websitePrivacyPageTitle || '',
+        websitePrivacyPageContent: pageContent.websitePrivacyPageContent || '',
+        websiteTermsPageTitle: pageContent.websiteTermsPageTitle || '',
+        websiteTermsPageContent: pageContent.websiteTermsPageContent || '',
+        websiteFaqPageTitle: pageContent.websiteFaqPageTitle || '',
+        websiteFaqPageContent: pageContent.websiteFaqPageContent || '',
+      });
+    }
+  }, [pageContent]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/settings/website-pages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (response.ok) {
+        toast({
+          title: "Kaydedildi",
+          description: "Web sitesi sayfa i\u00e7erikleri g\u00fcncellendi",
+        });
+        refetch();
+      } else {
+        throw new Error("Kaydetme hatas\u0131");
+      }
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Sayfa i\u00e7erikleri kaydedilemedi",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const updateField = (field: keyof typeof formData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Web Sitesi Sayfa \u0130\u00e7erikleri
+          </CardTitle>
+          <CardDescription>
+            Harici web sitenizde g\u00f6r\u00fcnecek sayfa i\u00e7eriklerini buradan d\u00fczenleyebilirsiniz
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activePageTab} onValueChange={setActivePageTab}>
+            <TabsList className="grid grid-cols-3 sm:grid-cols-6 mb-6">
+              <TabsTrigger value="contact" className="text-xs" data-testid="tab-page-contact">\u0130leti\u015fim</TabsTrigger>
+              <TabsTrigger value="about" className="text-xs" data-testid="tab-page-about">Hakk\u0131m\u0131zda</TabsTrigger>
+              <TabsTrigger value="cancellation" className="text-xs" data-testid="tab-page-cancellation">\u0130ptal/\u0130ade</TabsTrigger>
+              <TabsTrigger value="privacy" className="text-xs" data-testid="tab-page-privacy">Gizlilik</TabsTrigger>
+              <TabsTrigger value="terms" className="text-xs" data-testid="tab-page-terms">Kullan\u0131m</TabsTrigger>
+              <TabsTrigger value="faq" className="text-xs" data-testid="tab-page-faq">SSS</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="contact" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="contactTitle">Sayfa Ba\u015fl\u0131\u011f\u0131</Label>
+                <Input
+                  id="contactTitle"
+                  value={formData.websiteContactPageTitle}
+                  onChange={(e) => updateField('websiteContactPageTitle', e.target.value)}
+                  placeholder="\u0130leti\u015fim"
+                  data-testid="input-contact-title"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail">E-posta</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={formData.websiteContactEmail}
+                    onChange={(e) => updateField('websiteContactEmail', e.target.value)}
+                    placeholder="info@firma.com"
+                    data-testid="input-contact-email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactPhone">Telefon</Label>
+                  <Input
+                    id="contactPhone"
+                    value={formData.websiteContactPhone}
+                    onChange={(e) => updateField('websiteContactPhone', e.target.value)}
+                    placeholder="+90 532 123 4567"
+                    data-testid="input-contact-phone"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contactAddress">Adres</Label>
+                <Textarea
+                  id="contactAddress"
+                  value={formData.websiteContactAddress}
+                  onChange={(e) => updateField('websiteContactAddress', e.target.value)}
+                  placeholder="Firma adresi"
+                  rows={2}
+                  data-testid="input-contact-address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contactContent">Sayfa \u0130\u00e7eri\u011fi</Label>
+                <Textarea
+                  id="contactContent"
+                  value={formData.websiteContactPageContent}
+                  onChange={(e) => updateField('websiteContactPageContent', e.target.value)}
+                  placeholder="Bizimle ileti\u015fime ge\u00e7mek i\u00e7in a\u015fa\u011f\u0131daki bilgileri kullanabilirsiniz..."
+                  rows={6}
+                  data-testid="input-contact-content"
+                />
+                <p className="text-xs text-muted-foreground">HTML veya Markdown format\u0131nda yazabilirsiniz</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="about" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="aboutTitle">Sayfa Ba\u015fl\u0131\u011f\u0131</Label>
+                <Input
+                  id="aboutTitle"
+                  value={formData.websiteAboutPageTitle}
+                  onChange={(e) => updateField('websiteAboutPageTitle', e.target.value)}
+                  placeholder="Hakk\u0131m\u0131zda"
+                  data-testid="input-about-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="aboutContent">Sayfa \u0130\u00e7eri\u011fi</Label>
+                <Textarea
+                  id="aboutContent"
+                  value={formData.websiteAboutPageContent}
+                  onChange={(e) => updateField('websiteAboutPageContent', e.target.value)}
+                  placeholder="Firmam\u0131z hakk\u0131nda bilgi..."
+                  rows={12}
+                  data-testid="input-about-content"
+                />
+                <p className="text-xs text-muted-foreground">HTML veya Markdown format\u0131nda yazabilirsiniz</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="cancellation" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="cancellationTitle">Sayfa Ba\u015fl\u0131\u011f\u0131</Label>
+                <Input
+                  id="cancellationTitle"
+                  value={formData.websiteCancellationPageTitle}
+                  onChange={(e) => updateField('websiteCancellationPageTitle', e.target.value)}
+                  placeholder="\u0130ptal ve \u0130ade Politikas\u0131"
+                  data-testid="input-cancellation-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cancellationContent">Sayfa \u0130\u00e7eri\u011fi</Label>
+                <Textarea
+                  id="cancellationContent"
+                  value={formData.websiteCancellationPageContent}
+                  onChange={(e) => updateField('websiteCancellationPageContent', e.target.value)}
+                  placeholder="\u0130ptal ve iade ko\u015fullar\u0131..."
+                  rows={12}
+                  data-testid="input-cancellation-content"
+                />
+                <p className="text-xs text-muted-foreground">HTML veya Markdown format\u0131nda yazabilirsiniz</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="privacy" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="privacyTitle">Sayfa Ba\u015fl\u0131\u011f\u0131</Label>
+                <Input
+                  id="privacyTitle"
+                  value={formData.websitePrivacyPageTitle}
+                  onChange={(e) => updateField('websitePrivacyPageTitle', e.target.value)}
+                  placeholder="Gizlilik Politikas\u0131"
+                  data-testid="input-privacy-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="privacyContent">Sayfa \u0130\u00e7eri\u011fi</Label>
+                <Textarea
+                  id="privacyContent"
+                  value={formData.websitePrivacyPageContent}
+                  onChange={(e) => updateField('websitePrivacyPageContent', e.target.value)}
+                  placeholder="Ki\u015fisel verilerin korunmas\u0131 ve gizlilik politikam\u0131z..."
+                  rows={12}
+                  data-testid="input-privacy-content"
+                />
+                <p className="text-xs text-muted-foreground">HTML veya Markdown format\u0131nda yazabilirsiniz</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="terms" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="termsTitle">Sayfa Ba\u015fl\u0131\u011f\u0131</Label>
+                <Input
+                  id="termsTitle"
+                  value={formData.websiteTermsPageTitle}
+                  onChange={(e) => updateField('websiteTermsPageTitle', e.target.value)}
+                  placeholder="Kullan\u0131m Ko\u015fullar\u0131"
+                  data-testid="input-terms-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="termsContent">Sayfa \u0130\u00e7eri\u011fi</Label>
+                <Textarea
+                  id="termsContent"
+                  value={formData.websiteTermsPageContent}
+                  onChange={(e) => updateField('websiteTermsPageContent', e.target.value)}
+                  placeholder="Hizmet kullan\u0131m \u015fartlar\u0131..."
+                  rows={12}
+                  data-testid="input-terms-content"
+                />
+                <p className="text-xs text-muted-foreground">HTML veya Markdown format\u0131nda yazabilirsiniz</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="faq" className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="faqTitle">Sayfa Ba\u015fl\u0131\u011f\u0131</Label>
+                <Input
+                  id="faqTitle"
+                  value={formData.websiteFaqPageTitle}
+                  onChange={(e) => updateField('websiteFaqPageTitle', e.target.value)}
+                  placeholder="S\u0131k\u00e7a Sorulan Sorular"
+                  data-testid="input-faq-title"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="faqContent">SSS \u0130\u00e7eri\u011fi (JSON)</Label>
+                <Textarea
+                  id="faqContent"
+                  value={formData.websiteFaqPageContent}
+                  onChange={(e) => updateField('websiteFaqPageContent', e.target.value)}
+                  placeholder='[{"question": "Soru 1?", "answer": "Cevap 1"}, {"question": "Soru 2?", "answer": "Cevap 2"}]'
+                  rows={12}
+                  data-testid="input-faq-content"
+                />
+                <p className="text-xs text-muted-foreground">JSON format\u0131nda soru-cevap listesi: [&#123;"question": "...", "answer": "..."&#125;]</p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+        <CardFooter>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            data-testid="button-save-pages"
+          >
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            Sayfa \u0130\u00e7eriklerini Kaydet
+          </Button>
+        </CardFooter>
+      </Card>
     </>
   );
 }

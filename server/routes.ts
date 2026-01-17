@@ -5565,6 +5565,97 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     }
   });
   
+  // Website Pages Content - GET
+  app.get("/api/settings/website-pages", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      const [tenant] = await db
+        .select({
+          websiteContactPageTitle: tenants.websiteContactPageTitle,
+          websiteContactPageContent: tenants.websiteContactPageContent,
+          websiteContactEmail: tenants.websiteContactEmail,
+          websiteContactPhone: tenants.websiteContactPhone,
+          websiteContactAddress: tenants.websiteContactAddress,
+          websiteAboutPageTitle: tenants.websiteAboutPageTitle,
+          websiteAboutPageContent: tenants.websiteAboutPageContent,
+          websiteCancellationPageTitle: tenants.websiteCancellationPageTitle,
+          websiteCancellationPageContent: tenants.websiteCancellationPageContent,
+          websitePrivacyPageTitle: tenants.websitePrivacyPageTitle,
+          websitePrivacyPageContent: tenants.websitePrivacyPageContent,
+          websiteTermsPageTitle: tenants.websiteTermsPageTitle,
+          websiteTermsPageContent: tenants.websiteTermsPageContent,
+          websiteFaqPageTitle: tenants.websiteFaqPageTitle,
+          websiteFaqPageContent: tenants.websiteFaqPageContent,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+
+      res.json(tenant || {});
+    } catch (err) {
+      console.error("Get website pages error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Website Pages Content - PUT
+  app.put("/api/settings/website-pages", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      const {
+        websiteContactPageTitle,
+        websiteContactPageContent,
+        websiteContactEmail,
+        websiteContactPhone,
+        websiteContactAddress,
+        websiteAboutPageTitle,
+        websiteAboutPageContent,
+        websiteCancellationPageTitle,
+        websiteCancellationPageContent,
+        websitePrivacyPageTitle,
+        websitePrivacyPageContent,
+        websiteTermsPageTitle,
+        websiteTermsPageContent,
+        websiteFaqPageTitle,
+        websiteFaqPageContent,
+      } = req.body;
+
+      await db
+        .update(tenants)
+        .set({
+          websiteContactPageTitle,
+          websiteContactPageContent,
+          websiteContactEmail,
+          websiteContactPhone,
+          websiteContactAddress,
+          websiteAboutPageTitle,
+          websiteAboutPageContent,
+          websiteCancellationPageTitle,
+          websiteCancellationPageContent,
+          websitePrivacyPageTitle,
+          websitePrivacyPageContent,
+          websiteTermsPageTitle,
+          websiteTermsPageContent,
+          websiteFaqPageTitle,
+          websiteFaqPageContent,
+        })
+        .where(eq(tenants.id, tenantId));
+
+      res.json({ success: true, message: "Sayfa içerikleri kaydedildi" });
+    } catch (err) {
+      console.error("Save website pages error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
   // Protected settings endpoint (requires auth) - tenant-aware
   app.get("/api/settings/:key", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {

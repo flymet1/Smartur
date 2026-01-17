@@ -194,6 +194,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [reservationLinkEn, setReservationLinkEn] = useState(
     activity ? (activity as any).reservationLinkEn || "" : ""
   );
+  // Aktivite Görseli
+  const [imageUrl, setImageUrl] = useState(
+    activity ? (activity as any).imageUrl || "" : ""
+  );
   
   // Transfer ve Ekstralar
   const [hasFreeHotelTransfer, setHasFreeHotelTransfer] = useState(
@@ -285,6 +289,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setColor("blue");
     setReservationLink("");
     setReservationLinkEn("");
+    setImageUrl("");
     setHasFreeHotelTransfer(false);
     setSharedWithPartners(false);
     setSelectedPartnershipIds([]);
@@ -394,6 +399,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       notificationMessageTemplate: notificationMessage,
       reservationLink: reservationLink || null,
       reservationLinkEn: reservationLinkEn || null,
+      imageUrl: imageUrl || null,
       active: true,
       hasFreeHotelTransfer: hasFreeHotelTransfer,
       transferZones: JSON.stringify(zonesArray),
@@ -612,6 +618,31 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     data-testid="input-reservation-link-en"
                   />
                   <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği hariçi sayfa linkleri</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrl">Aktivite Görseli URL</Label>
+                  <Input 
+                    id="imageUrl"
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://example.com/images/aktivite.jpg"
+                    data-testid="input-activity-image-url"
+                  />
+                  <p className="text-xs text-muted-foreground">Web sitenizde aktivite için gösterilecek görsel URL'si</p>
+                  {imageUrl && (
+                    <div className="mt-2 rounded-md border overflow-hidden">
+                      <img 
+                        src={imageUrl} 
+                        alt="Aktivite görseli önizleme" 
+                        className="w-full h-32 object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

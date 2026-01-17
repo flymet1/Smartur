@@ -137,6 +137,80 @@ export function registerPublicApiRoutes(app: Express) {
     }
   });
 
+  // Get website page content (Contact, About, Cancellation, Privacy, Terms, FAQ)
+  app.get("/api/public/pages", apiKeyMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.publicTenant!.id;
+
+      const [tenant] = await db
+        .select({
+          websiteContactPageTitle: tenants.websiteContactPageTitle,
+          websiteContactPageContent: tenants.websiteContactPageContent,
+          websiteContactEmail: tenants.websiteContactEmail,
+          websiteContactPhone: tenants.websiteContactPhone,
+          websiteContactAddress: tenants.websiteContactAddress,
+          websiteAboutPageTitle: tenants.websiteAboutPageTitle,
+          websiteAboutPageContent: tenants.websiteAboutPageContent,
+          websiteCancellationPageTitle: tenants.websiteCancellationPageTitle,
+          websiteCancellationPageContent: tenants.websiteCancellationPageContent,
+          websitePrivacyPageTitle: tenants.websitePrivacyPageTitle,
+          websitePrivacyPageContent: tenants.websitePrivacyPageContent,
+          websiteTermsPageTitle: tenants.websiteTermsPageTitle,
+          websiteTermsPageContent: tenants.websiteTermsPageContent,
+          websiteFaqPageTitle: tenants.websiteFaqPageTitle,
+          websiteFaqPageContent: tenants.websiteFaqPageContent,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+
+      if (!tenant) {
+        return res.status(404).json({ error: "Acenta bulunamadı" });
+      }
+
+      // Parse FAQ content if it's JSON
+      let faqItems = [];
+      try {
+        faqItems = JSON.parse(tenant.websiteFaqPageContent || "[]");
+      } catch (e) {
+        faqItems = [];
+      }
+
+      res.json({
+        contact: {
+          title: tenant.websiteContactPageTitle || "İletişim",
+          content: tenant.websiteContactPageContent || "",
+          email: tenant.websiteContactEmail || "",
+          phone: tenant.websiteContactPhone || "",
+          address: tenant.websiteContactAddress || "",
+        },
+        about: {
+          title: tenant.websiteAboutPageTitle || "Hakkımızda",
+          content: tenant.websiteAboutPageContent || "",
+        },
+        cancellation: {
+          title: tenant.websiteCancellationPageTitle || "İptal ve İade Politikası",
+          content: tenant.websiteCancellationPageContent || "",
+        },
+        privacy: {
+          title: tenant.websitePrivacyPageTitle || "Gizlilik Politikası",
+          content: tenant.websitePrivacyPageContent || "",
+        },
+        terms: {
+          title: tenant.websiteTermsPageTitle || "Kullanım Koşulları",
+          content: tenant.websiteTermsPageContent || "",
+        },
+        faq: {
+          title: tenant.websiteFaqPageTitle || "Sıkça Sorulan Sorular",
+          items: faqItems,
+        },
+      });
+    } catch (err) {
+      console.error("Public API pages error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
   app.get("/api/public/activities", apiKeyMiddleware, async (req, res) => {
     try {
       const tenantId = req.publicTenant!.id;
@@ -155,6 +229,7 @@ export function registerPublicApiRoutes(app: Express) {
           faq: activities.faq,
           reservationLink: activities.reservationLink,
           reservationLinkEn: activities.reservationLinkEn,
+          imageUrl: activities.imageUrl,
         })
         .from(activities)
         .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true)));
@@ -195,6 +270,7 @@ export function registerPublicApiRoutes(app: Express) {
           confirmationMessage: activities.confirmationMessage,
           reservationLink: activities.reservationLink,
           reservationLinkEn: activities.reservationLinkEn,
+          imageUrl: activities.imageUrl,
         })
         .from(activities)
         .where(and(eq(activities.tenantId, tenantId), eq(activities.id, activityId), eq(activities.active, true)))
