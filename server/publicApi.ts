@@ -52,22 +52,65 @@ async function validateDomain(domain: string): Promise<TenantFromDomain | null> 
   return tenant;
 }
 
-function domainMiddleware(req: Request, res: Response, next: NextFunction) {
+async function getPreviewTenant(req: Request): Promise<TenantFromDomain | null> {
+  // Check if this is a preview request from logged-in user
+  const referer = req.headers.referer || '';
+  const isPreviewMode = referer.includes('/website-preview') || req.query.preview === 'true';
+  
+  if (!isPreviewMode) return null;
+  
+  // Get tenant from session if user is logged in
+  const session = req.session as any;
+  const userId = session?.userId;
+  
+  if (!userId) return null;
+  
+  try {
+    const user = await storage.getAppUser(userId);
+    if (!user || !user.tenantId) return null;
+    
+    const [tenant] = await db
+      .select({
+        id: tenants.id,
+        name: tenants.name,
+        slug: tenants.slug,
+        websiteEnabled: tenants.websiteEnabled,
+        websiteDomain: tenants.websiteDomain,
+      })
+      .from(tenants)
+      .where(eq(tenants.id, user.tenantId))
+      .limit(1);
+    
+    return tenant || null;
+  } catch (err) {
+    console.error("Preview tenant lookup error:", err);
+    return null;
+  }
+}
+
+async function domainMiddleware(req: Request, res: Response, next: NextFunction) {
   const host = req.headers.host || '';
   const domain = host.split(':')[0];
 
-  validateDomain(domain)
-    .then((tenant) => {
-      if (!tenant) {
-        return res.status(404).json({ error: "Web sitesi bulunamadı", code: "WEBSITE_NOT_FOUND" });
-      }
-      req.websiteTenant = tenant;
-      next();
-    })
-    .catch((err) => {
-      console.error("Domain validation error:", err);
-      res.status(500).json({ error: "Sunucu hatası", code: "SERVER_ERROR" });
-    });
+  try {
+    // First check if this is a preview request
+    const previewTenant = await getPreviewTenant(req);
+    if (previewTenant) {
+      req.websiteTenant = previewTenant;
+      return next();
+    }
+    
+    // Otherwise validate by domain
+    const tenant = await validateDomain(domain);
+    if (!tenant) {
+      return res.status(404).json({ error: "Web sitesi bulunamadı", code: "WEBSITE_NOT_FOUND" });
+    }
+    req.websiteTenant = tenant;
+    next();
+  } catch (err) {
+    console.error("Domain validation error:", err);
+    res.status(500).json({ error: "Sunucu hatası", code: "SERVER_ERROR" });
+  }
 }
 
 async function validateApiKey(apiKey: string): Promise<TenantFromApiKey | null> {

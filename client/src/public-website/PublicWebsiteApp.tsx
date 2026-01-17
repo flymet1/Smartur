@@ -1,5 +1,5 @@
 import { Switch, Route } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
 import PublicActivities from "./pages/PublicActivities";
@@ -8,6 +8,27 @@ import PublicReservation from "./pages/PublicReservation";
 import PublicContact from "./pages/PublicContact";
 import PublicTrackReservation from "./pages/PublicTrackReservation";
 import type { PublicWebsiteData } from "./types";
+
+// Create a separate query client for public website with preview support
+const publicQueryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      queryFn: async ({ queryKey }) => {
+        const url = queryKey[0] as string;
+        const separator = url.includes('?') ? '&' : '?';
+        const response = await fetch(`${url}${separator}preview=true`, {
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        return response.json();
+      },
+      staleTime: 1000 * 60 * 5,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function PublicNotFound() {
   return (
@@ -23,7 +44,7 @@ function PublicNotFound() {
   );
 }
 
-export function PublicWebsiteApp() {
+function PublicWebsiteContent() {
   const { data: websiteData, isLoading, error } = useQuery<PublicWebsiteData>({
     queryKey: ["/api/website/data"],
   });
@@ -63,5 +84,13 @@ export function PublicWebsiteApp() {
         <Route component={PublicNotFound} />
       </Switch>
     </PublicLayout>
+  );
+}
+
+export function PublicWebsiteApp() {
+  return (
+    <QueryClientProvider client={publicQueryClient}>
+      <PublicWebsiteContent />
+    </QueryClientProvider>
   );
 }
