@@ -36,6 +36,7 @@ import PartnerProfile from "@/pages/PartnerProfile";
 import PartnerAvailability from "@/pages/PartnerAvailability";
 import WebSite from "@/pages/WebSite";
 import WebsitePreview from "@/pages/WebsitePreview";
+import Blog from "@/pages/Blog";
 
 function Router() {
   return (
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/website" component={WebSite} />
       <Route path="/website-preview" component={WebsitePreview} />
       <Route path="/website-preview/:rest*" component={WebsitePreview} />
+      <Route path="/blog" component={Blog} />
       <Route component={NotFound} />
     </Switch>
   );

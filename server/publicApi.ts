@@ -2,7 +2,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { tenants, activities, capacity, reservations, customerRequests } from "@shared/schema";
+import { tenants, activities, capacity, reservations, customerRequests, blogPosts } from "@shared/schema";
+import { desc } from "drizzle-orm";
 import crypto from "crypto";
 import { z } from "zod";
 
@@ -1075,6 +1076,73 @@ export function registerPublicApiRoutes(app: Express) {
       });
     } catch (err) {
       console.error("Website track error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // === PUBLIC BLOG API ===
+  
+  // Get published blog posts for website
+  app.get("/api/website/blog", websiteMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      
+      const posts = await db
+        .select({
+          id: blogPosts.id,
+          title: blogPosts.title,
+          slug: blogPosts.slug,
+          excerpt: blogPosts.excerpt,
+          featuredImageUrl: blogPosts.featuredImageUrl,
+          author: blogPosts.author,
+          category: blogPosts.category,
+          tags: blogPosts.tags,
+          publishedAt: blogPosts.publishedAt,
+          createdAt: blogPosts.createdAt,
+        })
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.tenantId, tenantId),
+          eq(blogPosts.status, "published")
+        ))
+        .orderBy(desc(blogPosts.publishedAt));
+      
+      res.json(posts.map(post => ({
+        ...post,
+        tags: post.tags ? JSON.parse(post.tags) : []
+      })));
+    } catch (err) {
+      console.error("Website blog list error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Get single blog post by slug
+  app.get("/api/website/blog/:slug", websiteMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const { slug } = req.params;
+      
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.tenantId, tenantId),
+          eq(blogPosts.slug, slug),
+          eq(blogPosts.status, "published")
+        ))
+        .limit(1);
+      
+      if (!post) {
+        return res.status(404).json({ error: "Blog yazısı bulunamadı" });
+      }
+      
+      res.json({
+        ...post,
+        tags: post.tags ? JSON.parse(post.tags) : []
+      });
+    } catch (err) {
+      console.error("Website blog detail error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });
