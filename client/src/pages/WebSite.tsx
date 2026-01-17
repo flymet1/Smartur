@@ -211,11 +211,17 @@ export default function WebSite() {
                   Pasif
                 </Badge>
               )}
+              <Button variant="outline" size="sm" asChild>
+                <a href="/website-preview" target="_blank" rel="noopener noreferrer" data-testid="link-preview-local">
+                  <Eye className="h-4 w-4 mr-1" />
+                  Önizle
+                </a>
+              </Button>
               {settings?.websiteDomain && (
                 <Button variant="outline" size="sm" asChild>
                   <a href={`https://${settings.websiteDomain}`} target="_blank" rel="noopener noreferrer" data-testid="link-preview-website">
                     <ExternalLink className="h-4 w-4 mr-1" />
-                    Önizle
+                    Canlı
                   </a>
                 </Button>
               )}
