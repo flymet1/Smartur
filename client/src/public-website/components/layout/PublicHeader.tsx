@@ -54,6 +54,7 @@ export function PublicHeader({
   const navItems = [
     { href: "/", label: t.common.home },
     { href: "/aktiviteler", label: t.common.activities },
+    { href: "/blog", label: t.blog?.title || "Blog" },
     { href: "/hakkimizda", label: t.common.about },
     { href: "/iletisim", label: t.common.contact },
   ];

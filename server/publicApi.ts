@@ -1083,7 +1083,7 @@ export function registerPublicApiRoutes(app: Express) {
   // === PUBLIC BLOG API ===
   
   // Get published blog posts for website
-  app.get("/api/website/blog", websiteMiddleware, async (req, res) => {
+  app.get("/api/website/blog", domainMiddleware, async (req, res) => {
     try {
       const tenantId = req.websiteTenant!.id;
       
@@ -1118,7 +1118,7 @@ export function registerPublicApiRoutes(app: Express) {
   });
 
   // Get single blog post by slug
-  app.get("/api/website/blog/:slug", websiteMiddleware, async (req, res) => {
+  app.get("/api/website/blog/:slug", domainMiddleware, async (req, res) => {
     try {
       const tenantId = req.websiteTenant!.id;
       const { slug } = req.params;

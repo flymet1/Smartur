@@ -2,6 +2,7 @@ export const en = {
   common: {
     home: "Home",
     activities: "Activities",
+    blog: "Blog",
     contact: "Contact",
     reservationTracking: "Track Reservation",
     track: "Track",
@@ -107,6 +108,18 @@ export const en = {
     phone: "Phone",
     address: "Address",
     workingHours: "Working Hours",
+  },
+  blog: {
+    title: "Blog",
+    subtitle: "Latest news, tips and updates",
+    searchPlaceholder: "Search blog posts...",
+    noResults: "No blog posts found.",
+    readMore: "Read More",
+    notFound: "Blog post not found",
+    notFoundDesc: "The blog post you are looking for does not exist or has been removed.",
+    backToBlog: "Back to Blog",
+    tags: "Tags",
+    share: "Share",
   },
   footer: {
     quickLinks: "Quick Links",

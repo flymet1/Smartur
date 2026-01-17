@@ -7,6 +7,8 @@ import PublicActivityDetail from "./pages/PublicActivityDetail";
 import PublicReservation from "./pages/PublicReservation";
 import PublicContact from "./pages/PublicContact";
 import PublicTrackReservation from "./pages/PublicTrackReservation";
+import PublicBlog from "./pages/PublicBlog";
+import PublicBlogDetail from "./pages/PublicBlogDetail";
 import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
@@ -90,6 +92,12 @@ function PublicWebsiteContent() {
           <PublicContact websiteData={websiteData} />
         </Route>
         <Route path="/takip" component={PublicTrackReservation} />
+        <Route path="/blog">
+          <PublicBlog websiteData={websiteData} />
+        </Route>
+        <Route path="/blog/:slug">
+          <PublicBlogDetail websiteData={websiteData} />
+        </Route>
         <Route component={PublicNotFound} />
       </Switch>
     </PublicLayout>

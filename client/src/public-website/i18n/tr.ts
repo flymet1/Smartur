@@ -2,6 +2,7 @@ export const tr = {
   common: {
     home: "Ana Sayfa",
     activities: "Aktiviteler",
+    blog: "Blog",
     contact: "İletişim",
     reservationTracking: "Rezervasyon Takip",
     track: "Takip",
@@ -107,6 +108,18 @@ export const tr = {
     phone: "Telefon",
     address: "Adres",
     workingHours: "Çalışma Saatleri",
+  },
+  blog: {
+    title: "Blog",
+    subtitle: "En son haberler, ipuçları ve güncellemeler",
+    searchPlaceholder: "Blog yazısı ara...",
+    noResults: "Henüz blog yazısı bulunmuyor.",
+    readMore: "Devamını Oku",
+    notFound: "Blog yazısı bulunamadı",
+    notFoundDesc: "Aradığınız blog yazısı mevcut değil veya kaldırılmış olabilir.",
+    backToBlog: "Blog'a Dön",
+    tags: "Etiketler",
+    share: "Paylaş",
   },
   footer: {
     quickLinks: "Hızlı Linkler",
