@@ -32,7 +32,7 @@ export function PublicFooter({ data }: PublicFooterProps) {
               )}
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              {data?.websiteAboutText || "Unutulmaz deneyimler için doğru adres."}
+              {data?.websiteAboutText || t.footer.defaultAbout}
             </p>
           </div>
 
@@ -86,7 +86,7 @@ export function PublicFooter({ data }: PublicFooterProps) {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Sosyal Medya</h3>
+            <h3 className="font-semibold mb-4">{t.footer.socialMedia}</h3>
             <div className="flex items-center gap-3">
               {data?.websiteSocialLinks?.facebook && (
                 <a
@@ -138,7 +138,7 @@ export function PublicFooter({ data }: PublicFooterProps) {
                 className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
               >
                 <FaWhatsapp className="h-5 w-5" />
-                WhatsApp
+                {t.footer.whatsapp}
               </a>
             )}
           </div>

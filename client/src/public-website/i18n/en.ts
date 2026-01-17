@@ -114,5 +114,8 @@ export const en = {
     privacy: "Privacy Policy",
     terms: "Terms of Use",
     allRightsReserved: "All rights reserved.",
+    socialMedia: "Social Media",
+    whatsapp: "WhatsApp",
+    defaultAbout: "The right place for unforgettable experiences.",
   },
 };

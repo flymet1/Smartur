@@ -114,5 +114,8 @@ export const tr = {
     privacy: "Gizlilik Politikası",
     terms: "Kullanım Şartları",
     allRightsReserved: "Tüm hakları saklıdır.",
+    socialMedia: "Sosyal Medya",
+    whatsapp: "WhatsApp",
+    defaultAbout: "Unutulmaz deneyimler için doğru adres.",
   },
 };
