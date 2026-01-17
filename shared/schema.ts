@@ -44,6 +44,22 @@ export const tenants = pgTable("tenants", {
   websitePaymentApiKey: text("website_payment_api_key"), // Ödeme API key (şifreli)
   websitePaymentSecretKey: text("website_payment_secret_key"), // Ödeme secret key (şifreli)
   websiteLanguages: text("website_languages").default('["tr"]'), // Desteklenen diller JSON array
+  // === WEB SİTESİ SAYFA İÇERİKLERİ ===
+  websiteContactPageTitle: text("website_contact_page_title"), // İletişim sayfası başlığı
+  websiteContactPageContent: text("website_contact_page_content"), // İletişim sayfası içeriği (HTML/Markdown)
+  websiteContactEmail: text("website_contact_email"), // İletişim e-posta
+  websiteContactPhone: text("website_contact_phone"), // İletişim telefon
+  websiteContactAddress: text("website_contact_address"), // İletişim adres
+  websiteAboutPageTitle: text("website_about_page_title"), // Hakkımızda sayfa başlığı
+  websiteAboutPageContent: text("website_about_page_content"), // Hakkımızda sayfa içeriği (HTML/Markdown)
+  websiteCancellationPageTitle: text("website_cancellation_page_title"), // İptal/İade politikası başlığı
+  websiteCancellationPageContent: text("website_cancellation_page_content"), // İptal/İade politikası içeriği (HTML/Markdown)
+  websitePrivacyPageTitle: text("website_privacy_page_title"), // Gizlilik politikası başlığı
+  websitePrivacyPageContent: text("website_privacy_page_content"), // Gizlilik politikası içeriği (HTML/Markdown)
+  websiteTermsPageTitle: text("website_terms_page_title"), // Kullanım şartları başlığı
+  websiteTermsPageContent: text("website_terms_page_content"), // Kullanım şartları içeriği (HTML/Markdown)
+  websiteFaqPageTitle: text("website_faq_page_title"), // SSS sayfası başlığı
+  websiteFaqPageContent: text("website_faq_page_content"), // SSS sayfası içeriği (JSON array of {question, answer})
 });
 
 // === TABLE DEFINITIONS ===
@@ -78,6 +94,9 @@ export const activities = pgTable("activities", {
   faq: text("faq").default("[]"), // JSON array of {question, answer}
   // Partner Paylaşımı
   sharedWithPartners: boolean("shared_with_partners").default(false), // Bu aktivite partner acentalarla paylaşılsın mı?
+  // Web sitesi görselleri
+  imageUrl: text("image_url"), // Aktivite ana görseli URL'si
+  galleryImages: text("gallery_images").default("[]"), // JSON array of image URLs
 });
 
 export const capacity = pgTable("capacity", {
