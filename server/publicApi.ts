@@ -1029,7 +1029,10 @@ export function registerPublicApiRoutes(app: Express) {
       const [activity] = await db
         .select({ name: activities.name })
         .from(activities)
-        .where(eq(activities.id, reservation.activityId))
+        .where(and(
+          eq(activities.id, reservation.activityId),
+          eq(activities.tenantId, tenantId)
+        ))
         .limit(1);
 
       res.json({
