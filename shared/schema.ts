@@ -60,6 +60,9 @@ export const tenants = pgTable("tenants", {
   websiteTermsPageContent: text("website_terms_page_content"), // Kullanım şartları içeriği (HTML/Markdown)
   websiteFaqPageTitle: text("website_faq_page_title"), // SSS sayfası başlığı
   websiteFaqPageContent: text("website_faq_page_content"), // SSS sayfası içeriği (JSON array of {question, answer})
+  // === WEB SİTESİ ŞABLON SİSTEMİ ===
+  websiteTemplateKey: text("website_template_key").default("modern"), // classic, modern, premium
+  websiteTemplateSettings: text("website_template_settings").default("{}"), // JSON: template-specific settings (heroSlides, testimonials, trustBadges, featuredCategories)
 });
 
 // === TABLE DEFINITIONS ===
@@ -97,6 +100,17 @@ export const activities = pgTable("activities", {
   // Web sitesi görselleri
   imageUrl: text("image_url"), // Aktivite ana görseli URL'si
   galleryImages: text("gallery_images").default("[]"), // JSON array of image URLs
+  // === AKTİVİTE TUR SATIŞ ÖZELLİKLERİ ===
+  region: text("region"), // Bölge/Lokasyon (ör: Fethiye, Ölüdeniz)
+  tourLanguages: text("tour_languages").default('["tr"]'), // JSON array: Tur dil seçenekleri ["tr", "en", "de", "ru"]
+  difficulty: text("difficulty").default("easy"), // Zorluk seviyesi: easy, moderate, challenging
+  includedItems: text("included_items").default("[]"), // JSON array: Dahil olanlar ["Transfer", "Sigorta", "Ekipman"]
+  excludedItems: text("excluded_items").default("[]"), // JSON array: Dahil olmayanlar ["Yemek", "Fotoğraf"]
+  meetingPoint: text("meeting_point"), // Buluşma noktası
+  categories: text("categories").default("[]"), // JSON array: Kategoriler ["Su Sporları", "Macera", "Doğa"]
+  highlights: text("highlights").default("[]"), // JSON array: Öne çıkan özellikler ["Profesyonel Rehber", "Ücretsiz Transfer"]
+  minAge: integer("min_age"), // Minimum yaş
+  maxParticipants: integer("max_participants"), // Maksimum katılımcı sayısı
 });
 
 export const capacity = pgTable("capacity", {
