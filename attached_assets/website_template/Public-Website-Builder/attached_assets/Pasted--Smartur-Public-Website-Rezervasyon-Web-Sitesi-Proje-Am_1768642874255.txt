@@ -1,0 +1,70 @@
+# Smartur Public Website - Rezervasyon Web Sitesi
+## Proje Amacı
+Smartur rezervasyon sistemine entegre çalışan, çok kiracılı (multi-tenant) bir müşteri web sitesi geliştir. Her Smartur kullanıcısı kendi domaininde bu web sitesini kullanarak aktivitelerini yayınlayabilecek ve online rezervasyon alabilecek.
+## Teknik Gereksinimler
+### Temel Özellikler
+- **Multi-tenant Mimari**: Her Smartur kullanıcısı (acenta) kendi subdomain veya custom domain ile siteye erişir
+- **Smartur API Entegrasyonu**: Tüm veriler Smartur panelden API ile çekilir
+- **Çok Dilli Destek**: Türkçe, İngilizce, Almanca, Rusça (i18n)
+- **SEO Uyumlu**: Meta tags, structured data, sitemap, canonical URL'ler
+- **Mobil Uyumlu**: Responsive tasarım, mobile-first yaklaşım
+- **Online Ödeme**: iyzico, PayTR entegrasyonu hazır altyapı
+### API Entegrasyonu
+Smartur API base URL environment variable olarak tanımlanacak:
+- SMARTUR_API_URL: Smartur panel API adresi
+- Her istek için X-Agency-Key header ile acenta kimliği gönderilecek
+### Beklenen API Endpoint'leri (Smartur tarafından sağlanacak)
+GET /api/public/agency/:key/info → Acenta bilgileri, tema, logo
+GET /api/public/agency/:key/activities → Yayınlanan aktiviteler
+GET /api/public/agency/:key/activity/:id → Aktivite detayı
+GET /api/public/agency/:key/availability → Müsaitlik durumu (tarih aralığı ile)
+POST /api/public/agency/:key/reservation → Rezervasyon oluştur
+POST /api/public/agency/:key/payment → Ödeme başlat
+GET /api/public/agency/:key/settings → Site ayarları (renkler, diller, vb.)
+
+### Sayfa Yapısı
+1. **Ana Sayfa**: Hero bölümü, öne çıkan aktiviteler, hakkımızda, iletişim
+2. **Aktiviteler**: Filtrelenebilir aktivite listesi (kategori, fiyat, tarih)
+3. **Aktivite Detay**: Galeri, açıklama, fiyat, müsaitlik takvimi, rezervasyon formu
+4. **Rezervasyon**: Tarih/saat seçimi, kişi bilgileri, ödeme
+5. **Rezervasyon Takip**: Token ile rezervasyon durumu görüntüleme
+6. **İletişim**: İletişim formu, harita, WhatsApp butonu
+### Tema/Kişiselleştirme
+Tüm ayarlar Smartur panelden API ile gelecek:
+- Logo, favicon
+- Renk paleti (primary, secondary, accent)
+- Font ailesi
+- Hero görseli
+- Footer içeriği
+- Sosyal medya linkleri
+- WhatsApp numarası
+- Google Analytics ID
+- Meta açıklamaları
+### Domain Yönetimi
+- Subdomain: [acenta-slug].smartursite.com şeklinde
+- Custom domain: Kullanıcı kendi domainini A Record ile yönlendirir
+- SSL: Let's Encrypt ile otomatik
+### Teknoloji Stack
+- Frontend: React + Vite + TypeScript
+- Styling: Tailwind CSS + Shadcn/UI
+- State: TanStack Query (API cache)
+- Routing: React Router veya Wouter
+- i18n: react-i18next
+- SEO: React Helmet
+- Ödeme: iyzico SDK
+### Performans
+- Static site generation (SSG) veya ISR tercih edilebilir
+- Image optimization (lazy loading, WebP)
+- API response caching
+- Core Web Vitals optimizasyonu
+### Güvenlik
+- API key validasyonu
+- Rate limiting
+- CORS politikası
+- Input sanitization
+- XSS koruması
+## Önemli Notlar
+- Smartur API'ye bağlantı kurulana kadar mock data ile geliştirme yapılabilir
+- Her API isteğinde acenta key'i zorunlu
+- Ödeme entegrasyonu için acenta kendi iyzico bilgilerini Smartur panelden girer
+- Web sitesi stateless olmalı, tüm state Smartur panelde tutulur
