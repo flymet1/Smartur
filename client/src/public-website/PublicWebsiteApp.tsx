@@ -1,6 +1,5 @@
 import { Switch, Route, Router } from "wouter";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useMemo } from "react";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
 import PublicActivities from "./pages/PublicActivities";
@@ -14,10 +13,8 @@ import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
 
-function useBasePath() {
-  return useMemo(() => {
-    return isPreviewMode() ? '/website-preview' : '';
-  }, []);
+function getBasePath() {
+  return isPreviewMode() ? '/website-preview' : '';
 }
 
 // Create a separate query client for public website
@@ -110,7 +107,7 @@ function PublicWebsiteContent() {
 }
 
 function PublicWebsiteRouter() {
-  const basePath = useBasePath();
+  const basePath = getBasePath();
   
   return (
     <Router base={basePath}>
