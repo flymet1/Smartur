@@ -1253,13 +1253,13 @@ export async function registerRoutes(
   });
   
   // === Activities ===
-  app.get(api.activities.list.path, async (req, res) => {
+  app.get(api.activities.list.path, requirePermission(PERMISSIONS.ACTIVITIES_VIEW), async (req, res) => {
     const tenantId = req.session?.tenantId;
     const items = await storage.getActivities(tenantId);
     res.json(items);
   });
 
-  app.post(api.activities.create.path, async (req, res) => {
+  app.post(api.activities.create.path, requirePermission(PERMISSIONS.ACTIVITIES_MANAGE), async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
       // License check for write operations (tenant-aware)
@@ -1277,7 +1277,7 @@ export async function registerRoutes(
     }
   });
 
-  app.put(api.activities.update.path, async (req, res) => {
+  app.put(api.activities.update.path, requirePermission(PERMISSIONS.ACTIVITIES_MANAGE), async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
       // License check for write operations (tenant-aware)
@@ -1294,7 +1294,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete(api.activities.delete.path, async (req, res) => {
+  app.delete(api.activities.delete.path, requirePermission(PERMISSIONS.ACTIVITIES_MANAGE), async (req, res) => {
     const tenantId = req.session?.tenantId;
     // License check for write operations (tenant-aware)
     const licenseCheck = await checkPlanForWrite(tenantId);
@@ -1307,7 +1307,7 @@ export async function registerRoutes(
   });
 
   // === Package Tours ===
-  app.get("/api/package-tours", async (req, res) => {
+  app.get("/api/package-tours", requirePermission(PERMISSIONS.ACTIVITIES_VIEW), async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
       const tours = await storage.getPackageTours(tenantId);
@@ -1317,7 +1317,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/package-tours/:id", async (req, res) => {
+  app.get("/api/package-tours/:id", requirePermission(PERMISSIONS.ACTIVITIES_VIEW), async (req, res) => {
     try {
       const tour = await storage.getPackageTour(Number(req.params.id));
       if (!tour) {
@@ -1329,7 +1329,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/package-tours", async (req, res) => {
+  app.post("/api/package-tours", requirePermission(PERMISSIONS.ACTIVITIES_MANAGE), async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
       // License check for write operations (tenant-aware)
@@ -1578,7 +1578,7 @@ export async function registerRoutes(
   });
 
   // === Capacity ===
-  app.get(api.capacity.list.path, async (req, res) => {
+  app.get(api.capacity.list.path, requirePermission(PERMISSIONS.CAPACITY_VIEW), async (req, res) => {
     const { date, activityId } = req.query;
     const dateStr = date as string;
     const actId = activityId ? Number(activityId) : undefined;
@@ -1659,7 +1659,7 @@ export async function registerRoutes(
     res.json(allSlots);
   });
 
-  app.post(api.capacity.create.path, async (req, res) => {
+  app.post(api.capacity.create.path, requirePermission(PERMISSIONS.CALENDAR_MANAGE), async (req, res) => {
     const input = api.capacity.create.input.parse(req.body);
     const item = await storage.createCapacity(input);
     res.status(201).json(item);
@@ -1841,7 +1841,7 @@ export async function registerRoutes(
   });
 
   // === Reservations ===
-  app.get(api.reservations.list.path, async (req, res) => {
+  app.get(api.reservations.list.path, requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
     const tenantId = req.session?.tenantId;
     const items = await storage.getReservations(tenantId);
     
@@ -1858,7 +1858,7 @@ export async function registerRoutes(
     res.json(enrichedItems);
   });
 
-  app.post(api.reservations.create.path, async (req, res) => {
+  app.post(api.reservations.create.path, requirePermission(PERMISSIONS.RESERVATIONS_CREATE), async (req, res) => {
     const tenantId = req.session?.tenantId;
     // License check for write operations (tenant-aware)
     const licenseCheck = await checkPlanForWrite(tenantId);
@@ -1918,7 +1918,7 @@ export async function registerRoutes(
     res.status(201).json(item);
   });
 
-  app.get(api.reservations.stats.path, async (req, res) => {
+  app.get(api.reservations.stats.path, requirePermission(PERMISSIONS.REPORTS_VIEW), async (req, res) => {
     const stats = await storage.getReservationsStats();
     res.json(stats);
   });
