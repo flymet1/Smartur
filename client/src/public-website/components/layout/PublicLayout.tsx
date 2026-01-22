@@ -9,7 +9,11 @@ interface PublicLayoutProps {
 }
 
 export function PublicLayout({ children, data }: PublicLayoutProps) {
-  const availableLanguages = (data?.websiteLanguages || ["tr", "en"]) as Language[];
+  // Dil seçici görünmesi için en az 2 dil gerekli
+  const configuredLanguages = data?.websiteLanguages as Language[] | undefined;
+  const availableLanguages = (configuredLanguages && configuredLanguages.length >= 2) 
+    ? configuredLanguages 
+    : ["tr", "en"] as Language[];
   
   return (
     <div className="min-h-screen flex flex-col">

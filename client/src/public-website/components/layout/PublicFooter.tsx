@@ -16,7 +16,11 @@ export function PublicFooter({ data }: PublicFooterProps) {
   const currentYear = new Date().getFullYear();
   const { t, language, setLanguage } = useLanguage();
   
-  const availableLanguages: Language[] = (data?.websiteLanguages as Language[]) || ["tr", "en"];
+  // Dil seçici görünmesi için en az 2 dil gerekli
+  const configuredLanguages = data?.websiteLanguages as Language[] | undefined;
+  const availableLanguages: Language[] = (configuredLanguages && configuredLanguages.length >= 2) 
+    ? configuredLanguages 
+    : ["tr", "en"];
 
   const footerStyle: React.CSSProperties = {
     ...(data?.websiteFooterBackgroundColor && { backgroundColor: data.websiteFooterBackgroundColor }),
