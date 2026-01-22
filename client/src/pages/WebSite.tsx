@@ -288,7 +288,7 @@ export default function WebSite() {
           </Card>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="general" className="gap-1" data-testid="tab-general">
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Genel</span>
@@ -304,14 +304,6 @@ export default function WebSite() {
               <TabsTrigger value="footer" className="gap-1" data-testid="tab-footer">
                 <LayoutPanelTop className="h-4 w-4" />
                 <span className="hidden sm:inline">Footer</span>
-              </TabsTrigger>
-              <TabsTrigger value="blog" className="gap-1" data-testid="tab-blog">
-                <PenSquare className="h-4 w-4" />
-                <span className="hidden sm:inline">Blog</span>
-              </TabsTrigger>
-              <TabsTrigger value="sections" className="gap-1" data-testid="tab-sections">
-                <Layers className="h-4 w-4" />
-                <span className="hidden sm:inline">Anasayfa</span>
               </TabsTrigger>
             </TabsList>
 
@@ -535,7 +527,7 @@ export default function WebSite() {
 
             <TabsContent value="pages" className="mt-6">
               <Tabs value={activePagesTab} onValueChange={setActivePagesTab}>
-                <TabsList className="grid w-full grid-cols-4 mb-6">
+                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6">
                   <TabsTrigger value="about" className="gap-1" data-testid="tab-about">
                     <Info className="h-4 w-4" />
                     <span className="hidden sm:inline">Hakkımızda</span>
@@ -551,6 +543,14 @@ export default function WebSite() {
                   <TabsTrigger value="faq" className="gap-1" data-testid="tab-faq">
                     <HelpCircle className="h-4 w-4" />
                     <span className="hidden sm:inline">SSS</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="blog" className="gap-1" data-testid="tab-blog">
+                    <PenSquare className="h-4 w-4" />
+                    <span className="hidden sm:inline">Blog</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="sections" className="gap-1" data-testid="tab-sections">
+                    <Layers className="h-4 w-4" />
+                    <span className="hidden sm:inline">Anasayfa</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -832,6 +832,24 @@ export default function WebSite() {
                     </CardContent>
                   </Card>
                 </TabsContent>
+
+                <TabsContent value="blog">
+                  <BlogContent />
+                </TabsContent>
+
+                <TabsContent value="sections">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Anasayfa Bölümleri</CardTitle>
+                      <CardDescription>
+                        Anasayfada gösterilecek aktivite kategorilerini yönetin
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <HomepageSectionsManager />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
               </Tabs>
             </TabsContent>
 
@@ -1012,23 +1030,6 @@ export default function WebSite() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="blog" className="mt-6">
-              <BlogContent />
-            </TabsContent>
-
-            <TabsContent value="sections" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Anasayfa Bölümleri</CardTitle>
-                  <CardDescription>
-                    Anasayfada gösterilecek aktivite kategorilerini yönetin
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <HomepageSectionsManager />
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </div>
       </main>
