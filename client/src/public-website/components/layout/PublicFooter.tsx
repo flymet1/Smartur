@@ -1,8 +1,12 @@
 import { Link } from "wouter";
-import { MapPin, Phone, Mail, CreditCard, Shield, Award } from "lucide-react";
+import { MapPin, Phone, Mail, CreditCard, Shield, Award, Globe, ChevronDown } from "lucide-react";
 import { FaFacebook, FaInstagram, FaTwitter, FaYoutube, FaWhatsapp } from "react-icons/fa";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import type { PublicWebsiteData } from "../../types";
 import { useLanguage } from "../../i18n/LanguageContext";
+import { languageNames, type Language } from "../../i18n";
 
 interface PublicFooterProps {
   data?: PublicWebsiteData;
@@ -10,7 +14,9 @@ interface PublicFooterProps {
 
 export function PublicFooter({ data }: PublicFooterProps) {
   const currentYear = new Date().getFullYear();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
+  
+  const availableLanguages: Language[] = (data?.websiteLanguages as Language[]) || ["tr", "en"];
 
   const footerStyle: React.CSSProperties = {
     ...(data?.websiteFooterBackgroundColor && { backgroundColor: data.websiteFooterBackgroundColor }),
@@ -226,6 +232,29 @@ export function PublicFooter({ data }: PublicFooterProps) {
               `© ${currentYear} ${data?.name || "Smartur Travel"}. ${t.footer.allRightsReserved}`}
           </p>
           <div className="flex items-center gap-4">
+            {availableLanguages.length > 1 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1" data-testid="button-footer-language">
+                    <Globe className="h-4 w-4" />
+                    <span>{languageNames[language]}</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {availableLanguages.map((lang) => (
+                    <DropdownMenuItem
+                      key={lang}
+                      onClick={() => setLanguage(lang)}
+                      className={cn(language === lang && "bg-muted")}
+                      data-testid={`menu-item-footer-lang-${lang}`}
+                    >
+                      {languageNames[lang]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <div className="flex items-center gap-2">
               <Award className="h-4 w-4 text-primary" />
               <span className={`text-xs ${mutedClass}`}>{t.footer.licensed}</span>

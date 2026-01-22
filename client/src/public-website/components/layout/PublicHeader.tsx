@@ -225,8 +225,10 @@ export function PublicHeader({
               {availableLanguages.length > 1 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="lg:hidden" data-testid="button-language-selector-mobile">
-                      <Globe className="h-5 w-5" />
+                    <Button variant="ghost" size="sm" className="gap-1" data-testid="button-language-selector">
+                      <Globe className="h-4 w-4" />
+                      <span className="hidden sm:inline">{languageNames[language]}</span>
+                      <ChevronDown className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -235,6 +237,7 @@ export function PublicHeader({
                         key={lang}
                         onClick={() => setLanguage(lang)}
                         className={cn(language === lang && "bg-muted")}
+                        data-testid={`menu-item-lang-main-${lang}`}
                       >
                         {languageNames[lang]}
                       </DropdownMenuItem>
