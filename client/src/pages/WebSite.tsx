@@ -392,6 +392,9 @@ export default function WebSite() {
                       onChange={(e) => updateField("websiteHeroImage", e.target.value)}
                       data-testid="input-hero-image"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium text-primary">Önerilen boyut: 1920x1080px (16:9 oran)</span>
+                    </p>
                     {getValue("websiteHeroImage") && (
                       <div className="mt-2 rounded-lg border overflow-hidden">
                         <img
@@ -458,6 +461,9 @@ export default function WebSite() {
                         onChange={(e) => updateField("websiteLogo", e.target.value)}
                         data-testid="input-logo-url"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-primary">Önerilen boyut: 200x80px</span>
+                      </p>
                       {getValue("websiteLogo") && (
                         <div className="mt-2 p-4 border rounded-lg bg-muted/50">
                           <img
@@ -478,6 +484,9 @@ export default function WebSite() {
                         onChange={(e) => updateField("websiteFavicon", e.target.value)}
                         data-testid="input-favicon-url"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-primary">Önerilen boyut: 32x32px veya 64x64px</span>
+                      </p>
                     </div>
                   </div>
 

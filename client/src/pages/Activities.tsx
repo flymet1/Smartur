@@ -957,7 +957,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     placeholder="https://example.com/images/aktivite.jpg"
                     data-testid="input-activity-image-url"
                   />
-                  <p className="text-xs text-muted-foreground">Web sitenizde aktivite için gösterilecek görsel URL'si</p>
+                  <p className="text-xs text-muted-foreground">
+                    Web sitenizde aktivite için gösterilecek görsel URL'si. 
+                    <span className="font-medium text-primary ml-1">Önerilen boyut: 800x600px (4:3 oran)</span>
+                  </p>
                   {imageUrl && (
                     <div className="mt-2 rounded-md border overflow-hidden">
                       <img 
