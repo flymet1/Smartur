@@ -169,6 +169,19 @@ function apiKeyMiddleware(req: Request, res: Response, next: NextFunction) {
     });
 }
 
+const participantSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+const selectedExtraSchema = z.object({
+  name: z.string(),
+  priceTl: z.number(),
+  priceUsd: z.number().optional(),
+  quantity: z.number().min(1),
+});
+
 const reservationInputSchema = z.object({
   activityId: z.number(),
   customerName: z.string().min(2),
@@ -180,6 +193,8 @@ const reservationInputSchema = z.object({
   hotelName: z.string().optional(),
   hasTransfer: z.boolean().optional(),
   notes: z.string().optional(),
+  participants: z.array(participantSchema).optional(),
+  selectedExtras: z.array(selectedExtraSchema).optional(),
 });
 
 const customerRequestInputSchema = z.object({
@@ -943,13 +958,28 @@ export function registerPublicApiRoutes(app: Express) {
       const input = reservationInputSchema.parse(req.body);
 
       const [activity] = await db
-        .select({ id: activities.id, name: activities.name, price: activities.price, priceUsd: activities.priceUsd })
+        .select({ 
+          id: activities.id, 
+          name: activities.name, 
+          price: activities.price, 
+          priceUsd: activities.priceUsd,
+          extras: activities.extras 
+        })
         .from(activities)
         .where(and(eq(activities.id, input.activityId), eq(activities.tenantId, tenantId), eq(activities.active, true)))
         .limit(1);
 
       if (!activity) {
         return res.status(404).json({ error: "Aktivite bulunamadı" });
+      }
+
+      // Parse activity extras for server-side validation (with safe fallback)
+      let activityExtras: Array<{ name: string; priceTl: number; priceUsd: number }> = [];
+      try {
+        activityExtras = JSON.parse(activity.extras || "[]");
+      } catch (e) {
+        console.error("Failed to parse activity extras:", e);
+        activityExtras = [];
       }
 
       const [slot] = await db
@@ -974,6 +1004,58 @@ export function registerPublicApiRoutes(app: Express) {
       const tokenExpiresAt = new Date(input.date);
       tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 1);
 
+      // Calculate extras total with SERVER-SIDE price validation
+      let extrasTotal = 0;
+      let extrasInfo = "";
+      const validatedExtras: Array<{ name: string; priceTl: number; quantity: number }> = [];
+      
+      if (input.selectedExtras && input.selectedExtras.length > 0) {
+        for (const clientExtra of input.selectedExtras) {
+          // Find the extra in activity's defined extras (server-side validation)
+          const serverExtra = activityExtras.find(e => e.name === clientExtra.name);
+          if (!serverExtra) {
+            return res.status(400).json({ error: `Geçersiz ekstra: ${clientExtra.name}` });
+          }
+          
+          // Validate quantity
+          if (clientExtra.quantity < 1 || clientExtra.quantity > input.quantity) {
+            return res.status(400).json({ error: `Geçersiz ekstra miktarı: ${clientExtra.name}` });
+          }
+          
+          // Use SERVER-SIDE price, not client-supplied price
+          const extraPrice = serverExtra.priceTl * clientExtra.quantity;
+          extrasTotal += extraPrice;
+          validatedExtras.push({ 
+            name: clientExtra.name, 
+            priceTl: serverExtra.priceTl, 
+            quantity: clientExtra.quantity 
+          });
+        }
+        extrasInfo = validatedExtras.map(e => `${e.name} x${e.quantity}: ${e.priceTl * e.quantity} TL`).join(", ");
+      }
+
+      // Format participants info for notes
+      let participantsInfo = "";
+      if (input.participants && input.participants.length > 0) {
+        participantsInfo = "Katılımcılar: " + input.participants.map((p, i) => 
+          `${i + 1}. ${p.firstName} ${p.lastName} (${p.birthDate})`
+        ).join("; ");
+      }
+
+      // Build structured metadata JSON for future parsing
+      const reservationMetadata = {
+        participants: input.participants || [],
+        extras: validatedExtras,
+      };
+
+      // Combine notes with human-readable format + JSON metadata
+      const combinedNotes = [
+        input.notes,
+        extrasInfo ? `Ekstralar: ${extrasInfo}` : "",
+        participantsInfo,
+        `__METADATA__:${JSON.stringify(reservationMetadata)}`
+      ].filter(Boolean).join(" | ");
+
       const reservation = await storage.createReservation({
         tenantId: tenantId,
         activityId: input.activityId,
@@ -983,14 +1065,14 @@ export function registerPublicApiRoutes(app: Express) {
         date: input.date,
         time: input.time,
         quantity: input.quantity,
-        priceTl: activity.price * input.quantity,
+        priceTl: (activity.price * input.quantity) + extrasTotal,
         priceUsd: (activity.priceUsd || 0) * input.quantity,
         currency: "TRY",
         status: "pending",
         source: "website",
         hotelName: input.hotelName,
         hasTransfer: input.hasTransfer || false,
-        notes: input.notes,
+        notes: combinedNotes || undefined,
         trackingToken,
         trackingTokenExpiresAt: tokenExpiresAt,
       });

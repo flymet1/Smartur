@@ -1,21 +1,41 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link, useParams, useLocation } from "wouter";
 import { 
   Clock, MapPin, Users, Check, X, ChevronLeft, Calendar, Info, 
   Star, Globe, Shield, Camera, Share2, Heart, AlertCircle,
-  Mountain, Zap, Award, Phone, MessageCircle, ChevronRight
+  Mountain, Zap, Award, Phone, MessageCircle, ChevronRight,
+  Plus, Minus, Loader2, CheckCircle, Package, User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import type { PublicActivity } from "../types";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import type { PublicActivity, AvailabilitySlot } from "../types";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
+
+interface SelectedExtra {
+  name: string;
+  priceTl: number;
+  priceUsd: number;
+  quantity: number;
+}
+
+interface Participant {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+}
 
 const difficultyConfig: Record<string, { label: string; labelEn: string; color: string; icon: typeof Mountain }> = {
   easy: { label: "Kolay", labelEn: "Easy", color: "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300", icon: Zap },
@@ -35,8 +55,27 @@ export default function PublicActivityDetail() {
   const { id } = useParams<{ id: string }>();
   const activityId = parseInt(id || "0");
   const { t, language } = useLanguage();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  
+  // Reservation states
+  const [reservationStep, setReservationStep] = useState<"selection" | "participants" | "contact" | "success">("selection");
+  const [reservationData, setReservationData] = useState({
+    date: "",
+    time: "",
+    quantity: 1,
+    hotelName: "",
+    hasTransfer: false,
+    notes: "",
+    customerName: "",
+    customerPhone: "",
+    customerEmail: "",
+  });
+  const [selectedExtras, setSelectedExtras] = useState<SelectedExtra[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([{ firstName: "", lastName: "", birthDate: "" }]);
+  const [trackingToken, setTrackingToken] = useState("");
 
   const { data: activity, isLoading } = useQuery<PublicActivity>({
     queryKey: [getApiUrl(`/api/website/activities/${activityId}`)],
@@ -46,6 +85,115 @@ export default function PublicActivityDetail() {
   const { data: allActivities } = useQuery<PublicActivity[]>({
     queryKey: [getApiUrl("/api/website/activities")],
   });
+
+  const { data: availability } = useQuery<AvailabilitySlot[]>({
+    queryKey: [getApiUrl(`/api/website/availability?activityId=${activityId}&date=${reservationData.date}`)],
+    enabled: !!reservationData.date && activityId > 0,
+  });
+
+  // Reservation mutation
+  const createReservationMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", getApiUrl("/api/website/reservations"), data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setTrackingToken(data.trackingToken);
+      setReservationStep("success");
+      toast({
+        title: language === "en" ? "Reservation Created" : "Rezervasyon Oluşturuldu",
+        description: language === "en" ? "Your reservation has been received." : "Rezervasyonunuz başarıyla alındı.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === "en" ? "Error" : "Hata",
+        description: error.message || (language === "en" ? "Could not create reservation." : "Rezervasyon oluşturulamadı."),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Helper functions
+  const getMinDate = () => new Date().toISOString().split("T")[0];
+
+  const getAvailableTimes = () => {
+    if (!activity?.defaultTimes) return [];
+    if (availability && availability.length > 0) {
+      return availability.filter((slot) => slot.available > 0).map((slot) => slot.time);
+    }
+    return activity.defaultTimes;
+  };
+
+  const toggleExtra = (extra: { name: string; priceTl: number; priceUsd: number }) => {
+    setSelectedExtras((prev) => {
+      const existing = prev.find((e) => e.name === extra.name);
+      if (existing) {
+        return prev.filter((e) => e.name !== extra.name);
+      }
+      return [...prev, { ...extra, quantity: reservationData.quantity }];
+    });
+  };
+
+  const updateExtraQuantity = (extraName: string, delta: number) => {
+    setSelectedExtras((prev) =>
+      prev.map((e) =>
+        e.name === extraName
+          ? { ...e, quantity: Math.max(1, Math.min(e.quantity + delta, reservationData.quantity)) }
+          : e
+      )
+    );
+  };
+
+  const updateQuantity = (newQty: number) => {
+    const qty = Math.max(1, Math.min(newQty, activity?.maxParticipants || 20));
+    setReservationData((prev) => ({ ...prev, quantity: qty }));
+    setSelectedExtras((prev) => prev.map((e) => ({ ...e, quantity: Math.min(e.quantity, qty) })));
+    
+    // Update participants array
+    setParticipants((prev) => {
+      if (qty > prev.length) {
+        return [...prev, ...Array(qty - prev.length).fill({ firstName: "", lastName: "", birthDate: "" })];
+      }
+      return prev.slice(0, qty);
+    });
+  };
+
+  const calculateExtrasTotal = () => {
+    return selectedExtras.reduce((sum, extra) => sum + extra.priceTl * extra.quantity, 0);
+  };
+
+  const calculateTotalPrice = () => {
+    const basePrice = (activity?.price || 0) * reservationData.quantity;
+    const extrasTotal = calculateExtrasTotal();
+    return basePrice + extrasTotal;
+  };
+
+  const updateParticipant = (index: number, field: keyof Participant, value: string) => {
+    setParticipants((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const canProceedToParticipants = () => {
+    return reservationData.date && reservationData.time && reservationData.quantity > 0;
+  };
+
+  const canProceedToContact = () => {
+    return participants.every((p) => p.firstName.trim() && p.lastName.trim() && p.birthDate);
+  };
+
+  const handleSubmitReservation = () => {
+    createReservationMutation.mutate({
+      activityId,
+      ...reservationData,
+      quantity: reservationData.quantity,
+      selectedExtras,
+      participants,
+    });
+  };
 
   const relatedActivities = allActivities?.filter(a => 
     a.id !== activityId && 
@@ -454,76 +602,381 @@ export default function PublicActivityDetail() {
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-4">
               <Card className="border-2 border-primary/20 shadow-lg">
-                <CardHeader className="bg-primary/5 border-b">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      {language === "en" ? "From" : "Baslayan fiyat"}
-                    </span>
-                    {activity.priceUsd && (
-                      <Badge variant="secondary">${activity.priceUsd}</Badge>
-                    )}
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-primary">
-                      {activity.price.toLocaleString()}
-                    </span>
-                    <span className="text-xl">TL</span>
-                    <span className="text-muted-foreground">/ {language === "en" ? "person" : "kisi"}</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span>{language === "en" ? "Instant confirmation" : "Anında onay"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span>{language === "en" ? "Free cancellation" : "Ucretsiz iptal"}</span>
-                    </div>
-                    {activity.hasFreeHotelTransfer && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span>{language === "en" ? "Free hotel transfer" : "Ucretsiz otel transferi"}</span>
+                {reservationStep === "success" ? (
+                  <CardContent className="pt-8 pb-8">
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                        <CheckCircle className="h-8 w-8 text-green-600" />
                       </div>
-                    )}
-                    <div className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span>{language === "en" ? "Full insurance" : "Tam sigorta"}</span>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {activity.defaultTimes && activity.defaultTimes.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium mb-2">
-                        {language === "en" ? "Available Times" : "Musait Saatler"}
+                      <h3 className="text-xl font-bold">
+                        {language === "en" ? "Reservation Successful!" : "Rezervasyon Başarılı!"}
+                      </h3>
+                      <p className="text-muted-foreground">
+                        {language === "en" 
+                          ? "Your reservation has been received. We will contact you soon." 
+                          : "Rezervasyonunuz alındı. En kısa sürede sizinle iletişime geçeceğiz."}
                       </p>
-                      <div className="flex flex-wrap gap-2">
-                        {activity.defaultTimes.map((time, idx) => (
-                          <Badge key={idx} variant="outline" className="text-sm">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {time}
-                          </Badge>
-                        ))}
-                      </div>
+                      {trackingToken && (
+                        <Link href={`/takip/${trackingToken}`}>
+                          <Button variant="outline" className="mt-4">
+                            {language === "en" ? "Track Your Reservation" : "Rezervasyonunuzu Takip Edin"}
+                          </Button>
+                        </Link>
+                      )}
                     </div>
-                  )}
+                  </CardContent>
+                ) : (
+                  <>
+                    <CardHeader className="bg-primary/5 border-b">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          {reservationStep === "selection" 
+                            ? (language === "en" ? "Total Price" : "Toplam Fiyat")
+                            : (language === "en" ? "Step" : "Adım")}
+                        </span>
+                        {reservationStep !== "selection" && (
+                          <Badge variant="secondary">
+                            {reservationStep === "participants" ? "2/3" : "3/3"}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-primary">
+                          {calculateTotalPrice().toLocaleString()}
+                        </span>
+                        <span className="text-xl">TL</span>
+                      </div>
+                      {reservationData.quantity > 0 && reservationStep === "selection" && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {activity.price.toLocaleString()} TL x {reservationData.quantity} {language === "en" ? "person" : "kişi"}
+                          {calculateExtrasTotal() > 0 && ` + ${calculateExtrasTotal().toLocaleString()} TL ${language === "en" ? "extras" : "ekstralar"}`}
+                        </p>
+                      )}
+                    </CardHeader>
+                    
+                    <CardContent className="pt-6 space-y-4">
+                      {reservationStep === "selection" && (
+                        <>
+                          <div className="space-y-3">
+                            <Label>{language === "en" ? "Select Date" : "Tarih Seçin"}</Label>
+                            <Input
+                              type="date"
+                              min={getMinDate()}
+                              value={reservationData.date}
+                              onChange={(e) => setReservationData((prev) => ({ ...prev, date: e.target.value, time: "" }))}
+                              data-testid="input-date"
+                            />
+                          </div>
 
-                  <Link href={`/rezervasyon/${activity.id}`}>
-                    <Button size="lg" className="w-full gap-2 text-lg h-14" data-testid="button-book-now">
-                      <Calendar className="h-5 w-5" />
-                      {language === "en" ? "Book Now" : "Hemen Rezervasyon Yap"}
-                    </Button>
-                  </Link>
+                          {reservationData.date && (
+                            <div className="space-y-3">
+                              <Label>{language === "en" ? "Select Time" : "Saat Seçin"}</Label>
+                              <div className="flex flex-wrap gap-2">
+                                {getAvailableTimes().length > 0 ? (
+                                  getAvailableTimes().map((time, idx) => (
+                                    <Button
+                                      key={idx}
+                                      variant={reservationData.time === time ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => setReservationData((prev) => ({ ...prev, time }))}
+                                      data-testid={`button-time-${time}`}
+                                    >
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      {time}
+                                    </Button>
+                                  ))
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">
+                                    {language === "en" ? "No available times" : "Müsait saat yok"}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
-                  <p className="text-xs text-center text-muted-foreground">
-                    {language === "en" 
-                      ? "Reserve now, pay later - secure your spot today!" 
-                      : "Simdi rezerve et, sonra ode - yerinizi garantileyin!"}
-                  </p>
-                </CardContent>
+                          <div className="space-y-3">
+                            <Label>{language === "en" ? "Number of People" : "Kişi Sayısı"}</Label>
+                            <div className="flex items-center gap-3">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => updateQuantity(reservationData.quantity - 1)}
+                                disabled={reservationData.quantity <= 1}
+                                data-testid="button-decrease-quantity"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="w-12 text-center text-xl font-bold" data-testid="text-quantity">
+                                {reservationData.quantity}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => updateQuantity(reservationData.quantity + 1)}
+                                disabled={reservationData.quantity >= (activity?.maxParticipants || 20)}
+                                data-testid="button-increase-quantity"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {activity.extras && activity.extras.length > 0 && (
+                            <div className="space-y-3">
+                              <Label className="flex items-center gap-2">
+                                <Package className="h-4 w-4" />
+                                {language === "en" ? "Extras" : "Ekstralar"}
+                              </Label>
+                              <div className="space-y-2">
+                                {activity.extras.map((extra, idx) => {
+                                  const selected = selectedExtras.find((e) => e.name === extra.name);
+                                  return (
+                                    <div key={idx} className="p-3 border rounded-lg space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <Checkbox
+                                            checked={!!selected}
+                                            onCheckedChange={() => toggleExtra(extra)}
+                                            data-testid={`checkbox-extra-${idx}`}
+                                          />
+                                          <span className="text-sm font-medium">{extra.name}</span>
+                                        </div>
+                                        <span className="text-sm font-bold text-primary">+{extra.priceTl} TL</span>
+                                      </div>
+                                      {selected && (
+                                        <div className="flex items-center gap-2 pl-6">
+                                          <span className="text-xs text-muted-foreground">
+                                            {language === "en" ? "Qty:" : "Adet:"}
+                                          </span>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-6 w-6"
+                                            onClick={() => updateExtraQuantity(extra.name, -1)}
+                                            disabled={selected.quantity <= 1}
+                                          >
+                                            <Minus className="h-3 w-3" />
+                                          </Button>
+                                          <span className="w-6 text-center text-sm">{selected.quantity}</span>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-6 w-6"
+                                            onClick={() => updateExtraQuantity(extra.name, 1)}
+                                            disabled={selected.quantity >= reservationData.quantity}
+                                          >
+                                            <Plus className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          <Separator />
+
+                          <Button 
+                            size="lg" 
+                            className="w-full gap-2 text-lg h-14" 
+                            onClick={() => setReservationStep("participants")}
+                            disabled={!canProceedToParticipants()}
+                            data-testid="button-proceed-participants"
+                          >
+                            <Users className="h-5 w-5" />
+                            {language === "en" ? "Continue" : "Devam Et"}
+                          </Button>
+                        </>
+                      )}
+
+                      {reservationStep === "participants" && (
+                        <>
+                          <div className="flex items-center justify-between mb-2">
+                            <Button variant="ghost" size="sm" onClick={() => setReservationStep("selection")}>
+                              <ChevronLeft className="h-4 w-4 mr-1" />
+                              {language === "en" ? "Back" : "Geri"}
+                            </Button>
+                            <span className="text-sm font-medium">
+                              {language === "en" ? "Participant Info" : "Katılımcı Bilgileri"}
+                            </span>
+                          </div>
+
+                          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                            {participants.map((participant, idx) => (
+                              <Card key={idx} className="p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <User className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <span className="font-medium">
+                                    {language === "en" ? `Participant ${idx + 1}` : `${idx + 1}. Katılımcı`}
+                                  </span>
+                                </div>
+                                <div className="space-y-3">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <Label className="text-xs">{language === "en" ? "First Name" : "Ad"}</Label>
+                                      <Input
+                                        value={participant.firstName}
+                                        onChange={(e) => updateParticipant(idx, "firstName", e.target.value)}
+                                        placeholder={language === "en" ? "First name" : "Ad"}
+                                        data-testid={`input-firstname-${idx}`}
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs">{language === "en" ? "Last Name" : "Soyad"}</Label>
+                                      <Input
+                                        value={participant.lastName}
+                                        onChange={(e) => updateParticipant(idx, "lastName", e.target.value)}
+                                        placeholder={language === "en" ? "Last name" : "Soyad"}
+                                        data-testid={`input-lastname-${idx}`}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs">{language === "en" ? "Birth Date" : "Doğum Tarihi"}</Label>
+                                    <Input
+                                      type="date"
+                                      value={participant.birthDate}
+                                      onChange={(e) => updateParticipant(idx, "birthDate", e.target.value)}
+                                      data-testid={`input-birthdate-${idx}`}
+                                    />
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+
+                          <Button 
+                            size="lg" 
+                            className="w-full gap-2" 
+                            onClick={() => setReservationStep("contact")}
+                            disabled={!canProceedToContact()}
+                            data-testid="button-proceed-contact"
+                          >
+                            {language === "en" ? "Continue to Contact Info" : "İletişim Bilgilerine Devam Et"}
+                          </Button>
+                        </>
+                      )}
+
+                      {reservationStep === "contact" && (
+                        <>
+                          <div className="flex items-center justify-between mb-2">
+                            <Button variant="ghost" size="sm" onClick={() => setReservationStep("participants")}>
+                              <ChevronLeft className="h-4 w-4 mr-1" />
+                              {language === "en" ? "Back" : "Geri"}
+                            </Button>
+                            <span className="text-sm font-medium">
+                              {language === "en" ? "Contact Info" : "İletişim Bilgileri"}
+                            </span>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div>
+                              <Label>{language === "en" ? "Full Name" : "Ad Soyad"}</Label>
+                              <Input
+                                value={reservationData.customerName}
+                                onChange={(e) => setReservationData((prev) => ({ ...prev, customerName: e.target.value }))}
+                                placeholder={language === "en" ? "Your full name" : "Adınız Soyadınız"}
+                                data-testid="input-customer-name"
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === "en" ? "Phone" : "Telefon"}</Label>
+                              <Input
+                                value={reservationData.customerPhone}
+                                onChange={(e) => setReservationData((prev) => ({ ...prev, customerPhone: e.target.value }))}
+                                placeholder="+90 5XX XXX XX XX"
+                                data-testid="input-customer-phone"
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === "en" ? "Email" : "E-posta"}</Label>
+                              <Input
+                                type="email"
+                                value={reservationData.customerEmail}
+                                onChange={(e) => setReservationData((prev) => ({ ...prev, customerEmail: e.target.value }))}
+                                placeholder="email@example.com"
+                                data-testid="input-customer-email"
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === "en" ? "Hotel Name (Optional)" : "Otel Adı (Opsiyonel)"}</Label>
+                              <Input
+                                value={reservationData.hotelName}
+                                onChange={(e) => setReservationData((prev) => ({ ...prev, hotelName: e.target.value }))}
+                                placeholder={language === "en" ? "Your hotel" : "Konakladığınız otel"}
+                                data-testid="input-hotel-name"
+                              />
+                            </div>
+                            <div>
+                              <Label>{language === "en" ? "Notes (Optional)" : "Notlar (Opsiyonel)"}</Label>
+                              <Textarea
+                                value={reservationData.notes}
+                                onChange={(e) => setReservationData((prev) => ({ ...prev, notes: e.target.value }))}
+                                placeholder={language === "en" ? "Any special requests..." : "Özel istekleriniz..."}
+                                rows={2}
+                                data-testid="input-notes"
+                              />
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
+                            <div className="flex justify-between">
+                              <span>{language === "en" ? "Date:" : "Tarih:"}</span>
+                              <span className="font-medium">{reservationData.date}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>{language === "en" ? "Time:" : "Saat:"}</span>
+                              <span className="font-medium">{reservationData.time}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>{language === "en" ? "People:" : "Kişi:"}</span>
+                              <span className="font-medium">{reservationData.quantity}</span>
+                            </div>
+                            <Separator className="my-2" />
+                            <div className="flex justify-between font-bold">
+                              <span>{language === "en" ? "Total:" : "Toplam:"}</span>
+                              <span className="text-primary">{calculateTotalPrice().toLocaleString()} TL</span>
+                            </div>
+                          </div>
+
+                          <Button 
+                            size="lg" 
+                            className="w-full gap-2 text-lg h-14" 
+                            onClick={handleSubmitReservation}
+                            disabled={!reservationData.customerName || !reservationData.customerPhone || createReservationMutation.isPending}
+                            data-testid="button-submit-reservation"
+                          >
+                            {createReservationMutation.isPending ? (
+                              <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                {language === "en" ? "Processing..." : "İşleniyor..."}
+                              </>
+                            ) : (
+                              <>
+                                <Calendar className="h-5 w-5" />
+                                {language === "en" ? "Complete Reservation" : "Rezervasyonu Tamamla"}
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
+
+                      {reservationStep === "selection" && (
+                        <p className="text-xs text-center text-muted-foreground">
+                          {language === "en" 
+                            ? "Reserve now, pay later - secure your spot today!" 
+                            : "Şimdi rezerve et, sonra öde - yerinizi garantileyin!"}
+                        </p>
+                      )}
+                    </CardContent>
+                  </>
+                )}
               </Card>
 
               <Card>
