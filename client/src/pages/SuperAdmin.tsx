@@ -278,6 +278,51 @@ function TenantManagementSection() {
     queryKey: ['/api/tenants'],
   });
 
+  // Query app users to get membership info per tenant
+  const { data: appUsers = [] } = useQuery<AppUser[]>({
+    queryKey: ['/api/app-users'],
+  });
+
+  // Helper function to get tenant admin user info
+  const getTenantAdminInfo = (tenantId: number) => {
+    const tenantUsers = appUsers.filter(u => u.tenantId === tenantId);
+    if (tenantUsers.length === 0) return null;
+    // Return the first user (usually the admin)
+    return tenantUsers[0];
+  };
+
+  // Helper function to get remaining days
+  const getRemainingDays = (endDate: string | null) => {
+    if (!endDate) return null;
+    const end = new Date(endDate);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Helper function to get plan display name
+  const getPlanDisplayName = (planCode: string | null) => {
+    const planNames: Record<string, string> = {
+      'trial': 'Deneme',
+      'basic': 'Temel',
+      'professional': 'Profesyonel',
+      'enterprise': 'Kurumsal'
+    };
+    return planCode ? planNames[planCode] || planCode : 'Belirsiz';
+  };
+
+  // Helper function to get plan badge color
+  const getPlanBadgeVariant = (planCode: string | null): "default" | "secondary" | "outline" | "destructive" => {
+    switch (planCode) {
+      case 'enterprise': return 'default';
+      case 'professional': return 'default';
+      case 'basic': return 'secondary';
+      case 'trial': return 'outline';
+      default: return 'secondary';
+    }
+  };
+
   const createTenantMutation = useMutation({
     mutationFn: (data: typeof tenantForm) => apiRequest('POST', '/api/tenants', data),
     onSuccess: () => {
@@ -426,6 +471,8 @@ function TenantManagementSection() {
                 <TableHead>Acenta</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>İletişim</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Üyelik Süresi</TableHead>
                 <TableHead>Durum</TableHead>
                 <TableHead>Kayıt Tarihi</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
@@ -457,6 +504,31 @@ function TenantManagementSection() {
                       {tenant.contactEmail && <div>{tenant.contactEmail}</div>}
                       {tenant.contactPhone && <div className="text-muted-foreground">{tenant.contactPhone}</div>}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getPlanBadgeVariant(tenant.planCode)}>
+                      {getPlanDisplayName(tenant.planCode)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      const adminInfo = getTenantAdminInfo(tenant.id);
+                      if (!adminInfo?.membershipEndDate) {
+                        return <span className="text-muted-foreground">Sınırsız</span>;
+                      }
+                      const remainingDays = getRemainingDays(adminInfo.membershipEndDate);
+                      if (remainingDays === null) return <span className="text-muted-foreground">-</span>;
+                      if (remainingDays < 0) {
+                        return <Badge variant="destructive">{Math.abs(remainingDays)} gün geçti</Badge>;
+                      }
+                      if (remainingDays <= 7) {
+                        return <Badge variant="destructive">{remainingDays} gün kaldı</Badge>;
+                      }
+                      if (remainingDays <= 30) {
+                        return <Badge variant="secondary" className="bg-yellow-500 text-white">{remainingDays} gün kaldı</Badge>;
+                      }
+                      return <span className="text-muted-foreground">{remainingDays} gün kaldı</span>;
+                    })()}
                   </TableCell>
                   <TableCell>
                     {tenant.isActive ? (
