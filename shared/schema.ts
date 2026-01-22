@@ -119,6 +119,11 @@ export const activities = pgTable("activities", {
   highlights: text("highlights").default("[]"), // JSON array: Öne çıkan özellikler ["Profesyonel Rehber", "Ücretsiz Transfer"]
   minAge: integer("min_age"), // Minimum yaş
   maxParticipants: integer("max_participants"), // Maksimum katılımcı sayısı
+  // === ÖDEME SEÇENEKLERİ ===
+  requiresDeposit: boolean("requires_deposit").default(false), // Ön ödeme gerekli mi?
+  depositType: text("deposit_type").default("percentage"), // "percentage" veya "fixed"
+  depositAmount: integer("deposit_amount").default(0), // Yüzde (0-100) veya sabit TL tutarı
+  fullPaymentRequired: boolean("full_payment_required").default(false), // Tam ödeme zorunlu mu?
 });
 
 export const capacity = pgTable("capacity", {

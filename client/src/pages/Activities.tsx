@@ -339,6 +339,20 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     return '';
   });
   
+  // Ödeme Seçenekleri
+  const [requiresDeposit, setRequiresDeposit] = useState(
+    activity ? (activity as any).requiresDeposit === true : false
+  );
+  const [depositType, setDepositType] = useState<"percentage" | "fixed">(
+    activity ? ((activity as any).depositType || "percentage") : "percentage"
+  );
+  const [depositAmount, setDepositAmount] = useState(
+    activity ? String((activity as any).depositAmount || 0) : "0"
+  );
+  const [fullPaymentRequired, setFullPaymentRequired] = useState(
+    activity ? (activity as any).fullPaymentRequired === true : false
+  );
+  
   // Form validation errors
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
@@ -380,6 +394,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setIncludedItems("");
     setExcludedItems("");
     setGalleryImages("");
+    setRequiresDeposit(false);
+    setDepositType("percentage");
+    setDepositAmount("0");
+    setFullPaymentRequired(false);
   };
   
   const handleOpenChange = (newOpen: boolean) => {
@@ -506,6 +524,11 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       includedItems: JSON.stringify(includedItemsArray),
       excludedItems: JSON.stringify(excludedItemsArray),
       galleryImages: JSON.stringify(galleryImagesArray),
+      // Ödeme Seçenekleri
+      requiresDeposit: requiresDeposit,
+      depositType: depositType,
+      depositAmount: Number(depositAmount) || 0,
+      fullPaymentRequired: fullPaymentRequired,
     };
 
     try {
@@ -1157,6 +1180,108 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   {extras.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       Henüz ekstra eklenmedi. "Ekle" butonuna tıklayarak ekstra hizmet ekleyebilirsiniz.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <div className="space-y-1">
+                    <Label className="text-base">Ödeme Seçenekleri</Label>
+                    <p className="text-xs text-muted-foreground">Müşterilerden nasıl ödeme alınacağını ayarlayın</p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="space-y-1">
+                      <Label>Ön Ödeme (Kapora) Gerekli</Label>
+                      <p className="text-xs text-muted-foreground">Rezervasyon için ön ödeme talep edilsin mi?</p>
+                    </div>
+                    <Switch 
+                      checked={requiresDeposit}
+                      onCheckedChange={(checked) => {
+                        setRequiresDeposit(checked);
+                        if (!checked) {
+                          setDepositAmount("0");
+                        }
+                      }}
+                      data-testid="switch-requires-deposit"
+                    />
+                  </div>
+                  
+                  {requiresDeposit && (
+                    <div className="space-y-3 pt-2 border-t">
+                      <div className="space-y-2">
+                        <Label>Ön Ödeme Tipi</Label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setDepositType("percentage")}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
+                              depositType === "percentage"
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted border-border hover:bg-muted/80"
+                            }`}
+                          >
+                            Yüzde (%)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDepositType("fixed")}
+                            className={`px-3 py-1.5 rounded-md text-sm font-medium border transition ${
+                              depositType === "fixed"
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-muted border-border hover:bg-muted/80"
+                            }`}
+                          >
+                            Sabit Tutar (TL)
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="depositAmount">
+                          {depositType === "percentage" ? "Ön Ödeme Yüzdesi (%)" : "Ön Ödeme Tutarı (TL)"}
+                        </Label>
+                        <Input 
+                          id="depositAmount"
+                          type="number"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          placeholder={depositType === "percentage" ? "25" : "500"}
+                          min="0"
+                          max={depositType === "percentage" ? "100" : undefined}
+                          data-testid="input-deposit-amount"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {depositType === "percentage" 
+                            ? `Toplam tutarın %${depositAmount || 0}'ı ön ödeme olarak alınacak` 
+                            : `${depositAmount || 0} TL sabit ön ödeme alınacak`
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="space-y-1">
+                      <Label>Tam Ödeme Zorunlu</Label>
+                      <p className="text-xs text-muted-foreground">Rezervasyon için tüm tutarın ödenmesi zorunlu olsun mu?</p>
+                    </div>
+                    <Switch 
+                      checked={fullPaymentRequired}
+                      onCheckedChange={(checked) => {
+                        setFullPaymentRequired(checked);
+                        if (checked) {
+                          setRequiresDeposit(false);
+                          setDepositAmount("0");
+                        }
+                      }}
+                      data-testid="switch-full-payment-required"
+                    />
+                  </div>
+                  
+                  {!requiresDeposit && !fullPaymentRequired && (
+                    <p className="text-xs text-muted-foreground text-center py-2 bg-background/50 rounded">
+                      Ödeme ayarı yapılmadı. Müşteriler ödeme yapmadan rezervasyon yapabilir.
                     </p>
                   )}
                 </div>
