@@ -78,12 +78,12 @@ export default function PublicActivityDetail() {
   const [trackingToken, setTrackingToken] = useState("");
 
   const { data: activity, isLoading } = useQuery<PublicActivity>({
-    queryKey: [getApiUrl(`/api/website/activities/${activityId}`)],
+    queryKey: [getApiUrl(`/api/website/activities/${activityId}?lang=${language}`)],
     enabled: activityId > 0,
   });
 
   const { data: allActivities } = useQuery<PublicActivity[]>({
-    queryKey: [getApiUrl("/api/website/activities")],
+    queryKey: [getApiUrl(`/api/website/activities?lang=${language}`)],
   });
 
   const { data: availability } = useQuery<AvailabilitySlot[]>({

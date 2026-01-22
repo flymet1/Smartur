@@ -23,10 +23,10 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [, setLocation] = useLocation();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const { data: activities, isLoading: activitiesLoading } = useQuery<PublicActivity[]>({
-    queryKey: [getApiUrl("/api/website/activities")],
+    queryKey: [getApiUrl(`/api/website/activities?lang=${language}`)],
   });
 
   const categories = useMemo(() => {

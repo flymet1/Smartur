@@ -6,6 +6,7 @@ import { tenants, activities, capacity, reservations, customerRequests, blogPost
 import { desc } from "drizzle-orm";
 import crypto from "crypto";
 import { z } from "zod";
+import { translateText, translateObject, translateArray } from "./translationService";
 
 interface TenantFromApiKey {
   id: number;
@@ -805,13 +806,43 @@ export function registerPublicApiRoutes(app: Express) {
       try { faqItems = JSON.parse(tenant.websiteFaqPageContent || "[]"); } catch {}
       try { templateSettings = JSON.parse(tenant.websiteTemplateSettings || "{}"); } catch {}
 
-      res.json({
+      let responseData: any = {
         ...tenant,
         websiteSocialLinks: socialLinks,
         websiteLanguages: languages,
         websiteTemplateSettings: templateSettings,
         faqItems,
-      });
+      };
+
+      const lang = req.query.lang as string;
+      if (lang && lang !== "tr") {
+        const fieldsToTranslate = [
+          "websiteTitle",
+          "websiteDescription", 
+          "websiteAboutText",
+          "websiteFooterText",
+          "websiteContactPageTitle",
+          "websiteContactPageContent",
+          "websiteAboutPageTitle",
+          "websiteAboutPageContent",
+          "websiteCancellationPageTitle",
+          "websiteCancellationPageContent",
+          "websitePrivacyPageTitle",
+          "websitePrivacyPageContent",
+          "websiteTermsPageTitle",
+          "websiteTermsPageContent",
+          "websiteFaqPageTitle",
+          "websiteFooterCompanyDescription",
+          "websiteFooterCopyrightText",
+        ];
+        responseData = await translateObject(responseData, fieldsToTranslate, lang);
+        
+        if (responseData.faqItems && responseData.faqItems.length > 0) {
+          responseData.faqItems = await translateArray(responseData.faqItems, ["question", "answer"], lang);
+        }
+      }
+
+      res.json(responseData);
     } catch (err) {
       console.error("Website data error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
@@ -853,7 +884,7 @@ export function registerPublicApiRoutes(app: Express) {
         .from(activities)
         .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true)));
 
-      const parsed = activityList.map((a) => ({
+      let parsed = activityList.map((a) => ({
         ...a,
         defaultTimes: JSON.parse(a.defaultTimes || "[]"),
         transferZones: JSON.parse(a.transferZones || "[]"),
@@ -866,6 +897,33 @@ export function registerPublicApiRoutes(app: Express) {
         categories: JSON.parse(a.categories || "[]"),
         highlights: JSON.parse(a.highlights || "[]"),
       }));
+
+      const lang = req.query.lang as string;
+      if (lang && lang !== "tr") {
+        parsed = await translateArray(parsed, ["name", "description", "region", "meetingPoint"], lang);
+        for (let i = 0; i < parsed.length; i++) {
+          if (parsed[i].includedItems?.length) {
+            parsed[i].includedItems = await Promise.all(
+              parsed[i].includedItems.map((item: string) => translateText(item, lang))
+            );
+          }
+          if (parsed[i].excludedItems?.length) {
+            parsed[i].excludedItems = await Promise.all(
+              parsed[i].excludedItems.map((item: string) => translateText(item, lang))
+            );
+          }
+          if (parsed[i].highlights?.length) {
+            parsed[i].highlights = await Promise.all(
+              parsed[i].highlights.map((item: string) => translateText(item, lang))
+            );
+          }
+          if (parsed[i].categories?.length) {
+            parsed[i].categories = await Promise.all(
+              parsed[i].categories.map((item: string) => translateText(item, lang))
+            );
+          }
+        }
+      }
 
       res.json(parsed);
     } catch (err) {
@@ -890,7 +948,7 @@ export function registerPublicApiRoutes(app: Express) {
         return res.status(404).json({ error: "Aktivite bulunamadı" });
       }
 
-      res.json({
+      let parsed: any = {
         ...activity,
         defaultTimes: JSON.parse(activity.defaultTimes || "[]"),
         transferZones: JSON.parse(activity.transferZones || "[]"),
@@ -902,7 +960,37 @@ export function registerPublicApiRoutes(app: Express) {
         excludedItems: JSON.parse(activity.excludedItems || "[]"),
         categories: JSON.parse(activity.categories || "[]"),
         highlights: JSON.parse(activity.highlights || "[]"),
-      });
+      };
+
+      const lang = req.query.lang as string;
+      if (lang && lang !== "tr") {
+        parsed = await translateObject(parsed, ["name", "description", "region", "meetingPoint"], lang);
+        if (parsed.includedItems?.length) {
+          parsed.includedItems = await Promise.all(
+            parsed.includedItems.map((item: string) => translateText(item, lang))
+          );
+        }
+        if (parsed.excludedItems?.length) {
+          parsed.excludedItems = await Promise.all(
+            parsed.excludedItems.map((item: string) => translateText(item, lang))
+          );
+        }
+        if (parsed.highlights?.length) {
+          parsed.highlights = await Promise.all(
+            parsed.highlights.map((item: string) => translateText(item, lang))
+          );
+        }
+        if (parsed.categories?.length) {
+          parsed.categories = await Promise.all(
+            parsed.categories.map((item: string) => translateText(item, lang))
+          );
+        }
+        if (parsed.faq?.length) {
+          parsed.faq = await translateArray(parsed.faq, ["question", "answer"], lang);
+        }
+      }
+
+      res.json(parsed);
     } catch (err) {
       console.error("Website activity detail error:", err);
       res.status(500).json({ error: "Sunucu hatası" });

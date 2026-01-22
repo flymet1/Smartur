@@ -48,10 +48,10 @@ function PublicNotFound() {
 }
 
 function PublicWebsiteContent() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const { data: websiteData, isLoading, error } = useQuery<PublicWebsiteData>({
-    queryKey: [getApiUrl("/api/website/data")],
+    queryKey: [getApiUrl(`/api/website/data?lang=${language}`)],
   });
 
   if (isLoading) {

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityCard } from "../components/ActivityCard";
 import type { PublicActivity } from "../types";
 import { getApiUrl } from "../utils";
+import { useLanguage } from "../i18n/LanguageContext";
 
 export default function PublicActivities() {
   const searchParams = useSearch();
@@ -17,9 +18,10 @@ export default function PublicActivities() {
   const initialSearch = urlParams.get("search") || "";
 
   const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const { language } = useLanguage();
 
   const { data: activities, isLoading } = useQuery<PublicActivity[]>({
-    queryKey: [getApiUrl("/api/website/activities")],
+    queryKey: [getApiUrl(`/api/website/activities?lang=${language}`)],
   });
 
   const filteredActivities = useMemo(() => {
