@@ -9311,7 +9311,40 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
   // Update tenant
   app.patch("/api/tenants/:id", async (req, res) => {
     try {
-      const tenant = await storage.updateTenant(Number(req.params.id), req.body);
+      const tenantId = Number(req.params.id);
+      const { licenseDuration, ...tenantData } = req.body;
+      
+      // Update tenant basic info
+      const tenant = await storage.updateTenant(tenantId, tenantData);
+      
+      // If licenseDuration is provided, update the admin user's membershipEndDate
+      if (licenseDuration !== undefined && licenseDuration !== "0") {
+        const allUsers = await storage.getAppUsers();
+        const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
+        
+        if (tenantUsers.length > 0) {
+          const adminUser = tenantUsers[0];
+          const extensionDays = parseInt(licenseDuration);
+          
+          if (extensionDays === -1) {
+            // Set to unlimited (null)
+            await storage.updateAppUser(adminUser.id, { membershipEndDate: null });
+          } else if (extensionDays > 0) {
+            // Calculate new end date based on current end date or today
+            let baseDate = new Date();
+            if (adminUser.membershipEndDate) {
+              const currentEndDate = new Date(adminUser.membershipEndDate);
+              // If current end date is in the future, extend from there
+              if (currentEndDate > baseDate) {
+                baseDate = currentEndDate;
+              }
+            }
+            baseDate.setDate(baseDate.getDate() + extensionDays);
+            await storage.updateAppUser(adminUser.id, { membershipEndDate: baseDate });
+          }
+        }
+      }
+      
       res.json(tenant);
     } catch (err) {
       console.error("Tenant güncelleme hatası:", err);

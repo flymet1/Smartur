@@ -341,6 +341,7 @@ function TenantManagementSection() {
       apiRequest('PATCH', `/api/tenants/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/app-users'] });
       setEditingTenant(null);
       toast({ title: "Başarılı", description: "Acenta güncellendi" });
     },
@@ -420,7 +421,7 @@ function TenantManagementSection() {
       adminEmail: "",
       adminPassword: "",
       adminName: "",
-      licenseDuration: "30",
+      licenseDuration: "0",
       planCode: tenant.planCode || "trial",
     });
     setIsNewTenant(false);
@@ -659,6 +660,110 @@ function TenantManagementSection() {
               />
               <Label htmlFor="isActive">Aktif</Label>
             </div>
+
+            {/* Plan & Membership Section - Only for existing tenant */}
+            {!isNewTenant && editingTenant && editingTenant.id > 0 && (
+              <div className="border-t pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <div>
+                    <h4 className="font-medium">Abonelik Yönetimi</h4>
+                    <p className="text-sm text-muted-foreground">Plan ve üyelik süresini güncelleyin</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="editPlanCode">Abonelik Paketi</Label>
+                    <Select
+                      value={tenantForm.planCode}
+                      onValueChange={(value) => setTenantForm({ ...tenantForm, planCode: value })}
+                    >
+                      <SelectTrigger id="editPlanCode" data-testid="select-edit-plan-code">
+                        <SelectValue placeholder="Paket seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="trial">Deneme</SelectItem>
+                        <SelectItem value="basic">Temel</SelectItem>
+                        <SelectItem value="professional">Profesyonel</SelectItem>
+                        <SelectItem value="enterprise">Kurumsal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mevcut Üyelik Durumu</Label>
+                    <div className="text-sm p-2 bg-muted rounded">
+                      {(() => {
+                        const adminInfo = getTenantAdminInfo(editingTenant.id);
+                        if (!adminInfo?.membershipEndDate) {
+                          return <span className="text-muted-foreground">Sınırsız</span>;
+                        }
+                        const remainingDays = getRemainingDays(adminInfo.membershipEndDate);
+                        const endDateStr = new Date(adminInfo.membershipEndDate).toLocaleDateString("tr-TR");
+                        if (remainingDays === null) return <span>-</span>;
+                        if (remainingDays < 0) {
+                          return <span className="text-destructive">{Math.abs(remainingDays)} gün önce sona erdi ({endDateStr})</span>;
+                        }
+                        return <span>{remainingDays} gün kaldı ({endDateStr})</span>;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="extensionDays">Süre Ekle</Label>
+                    <Select
+                      value={tenantForm.licenseDuration}
+                      onValueChange={(value) => setTenantForm({ ...tenantForm, licenseDuration: value })}
+                    >
+                      <SelectTrigger id="extensionDays" data-testid="select-extension-days">
+                        <SelectValue placeholder="Eklenecek süre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Süre ekleme</SelectItem>
+                        <SelectItem value="7">+7 Gün</SelectItem>
+                        <SelectItem value="14">+14 Gün</SelectItem>
+                        <SelectItem value="30">+30 Gün (1 Ay)</SelectItem>
+                        <SelectItem value="90">+90 Gün (3 Ay)</SelectItem>
+                        <SelectItem value="180">+180 Gün (6 Ay)</SelectItem>
+                        <SelectItem value="365">+365 Gün (1 Yıl)</SelectItem>
+                        <SelectItem value="-1">Sınırsız Yap</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Mevcut sürenin üzerine eklenir
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Yeni Bitiş Tarihi</Label>
+                    <div className="text-sm p-2 bg-muted rounded">
+                      {(() => {
+                        const adminInfo = getTenantAdminInfo(editingTenant.id);
+                        const extensionDays = parseInt(tenantForm.licenseDuration) || 0;
+                        
+                        if (extensionDays === -1) {
+                          return <span className="text-green-600 font-medium">Sınırsız</span>;
+                        }
+                        if (extensionDays === 0) {
+                          return <span className="text-muted-foreground">Değişiklik yok</span>;
+                        }
+                        
+                        let baseDate = new Date();
+                        if (adminInfo?.membershipEndDate) {
+                          const endDate = new Date(adminInfo.membershipEndDate);
+                          if (endDate > baseDate) {
+                            baseDate = endDate;
+                          }
+                        }
+                        baseDate.setDate(baseDate.getDate() + extensionDays);
+                        return <span className="text-green-600 font-medium">{baseDate.toLocaleDateString("tr-TR")}</span>;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Password Reset Section - Only for existing tenant */}
             {!isNewTenant && editingTenant && editingTenant.id > 0 && (
