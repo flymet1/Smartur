@@ -203,7 +203,9 @@ function PublicWebsiteRouter() {
   
   return (
     <Router base={basePath}>
-      <PublicWebsiteContent />
+      <LanguageProvider defaultLanguage="tr" availableLanguages={["tr", "en"]}>
+        <PublicWebsiteContent />
+      </LanguageProvider>
     </Router>
   );
 }
@@ -211,9 +213,7 @@ function PublicWebsiteRouter() {
 export function PublicWebsiteApp() {
   return (
     <QueryClientProvider client={publicQueryClient}>
-      <LanguageProvider defaultLanguage="tr" availableLanguages={["tr", "en"]}>
-        <PublicWebsiteRouter />
-      </LanguageProvider>
+      <PublicWebsiteRouter />
     </QueryClientProvider>
   );
 }
