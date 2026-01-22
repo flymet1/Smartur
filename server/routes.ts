@@ -100,7 +100,55 @@ async function notifyTenantAdmins(
 // Permission middleware - checks if user has required permissions
 import type { Request, Response, NextFunction } from "express";
 
-function requireAuth(req: Request, res: Response, next: NextFunction) {
+// Cache for user tenantId validation - avoids DB query on every request
+// Key: userId, Value: { tenantId, timestamp }
+const userTenantCache = new Map<number, { tenantId: number | null; timestamp: number }>();
+const TENANT_CACHE_TTL = 60000; // 1 minute cache TTL
+
+async function validateAndSyncTenantId(req: Request, res: Response): Promise<{ valid: boolean; shouldForceLogout: boolean }> {
+  const userId = req.session?.userId;
+  const sessionTenantId = req.session?.tenantId;
+  
+  if (!userId) return { valid: false, shouldForceLogout: false };
+  
+  // Check cache first
+  const cached = userTenantCache.get(userId);
+  const now = Date.now();
+  
+  let actualTenantId: number | null = null;
+  
+  if (cached && (now - cached.timestamp) < TENANT_CACHE_TTL) {
+    actualTenantId = cached.tenantId;
+  } else {
+    // Fetch from database
+    const user = await storage.getAppUser(userId);
+    if (!user) {
+      // User no longer exists - invalidate cache and force logout
+      userTenantCache.delete(userId);
+      return { valid: false, shouldForceLogout: true };
+    }
+    actualTenantId = user.tenantId;
+    // Update cache
+    userTenantCache.set(userId, { tenantId: actualTenantId, timestamp: now });
+  }
+  
+  // Check if session tenantId matches actual tenantId
+  if (sessionTenantId !== actualTenantId) {
+    console.error(`[SECURITY ALERT] TenantId mismatch for user ${userId}: session=${sessionTenantId}, actual=${actualTenantId}. Forcing re-login.`);
+    // Critical: Force logout on tenantId mismatch - this is a security issue
+    userTenantCache.delete(userId);
+    return { valid: false, shouldForceLogout: true };
+  }
+  
+  return { valid: true, shouldForceLogout: false };
+}
+
+// Export function to invalidate cache when user is updated
+export function invalidateUserTenantCache(userId: number): void {
+  userTenantCache.delete(userId);
+}
+
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
   // Allow platform admins (Super Admin)
   if (req.session?.isPlatformAdmin && req.session?.platformAdminId) {
     return next();
@@ -109,6 +157,19 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.userId || !req.session?.tenantId) {
     return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
   }
+  
+  // Validate tenantId against database - critical security check
+  const validation = await validateAndSyncTenantId(req, res);
+  if (!validation.valid) {
+    if (validation.shouldForceLogout) {
+      // Destroy session on security violation
+      req.session.destroy((err) => {
+        if (err) console.error('Session destroy error:', err);
+      });
+    }
+    return res.status(401).json({ error: "Oturum güvenlik ihlali tespit edildi. Lütfen tekrar giriş yapın." });
+  }
+  
   next();
 }
 
@@ -121,7 +182,7 @@ function requirePlatformAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 function requirePermission(...requiredPermissions: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     // Platform admins have all permissions
     if (req.session?.isPlatformAdmin && req.session?.platformAdminId) {
       return next();
@@ -129,6 +190,18 @@ function requirePermission(...requiredPermissions: string[]) {
     
     if (!req.session?.userId || !req.session?.tenantId) {
       return res.status(401).json({ error: "Giriş yapmaniz gerekiyor" });
+    }
+    
+    // Validate tenantId against database - critical security check
+    const validation = await validateAndSyncTenantId(req, res);
+    if (!validation.valid) {
+      if (validation.shouldForceLogout) {
+        // Destroy session on security violation
+        req.session.destroy((err) => {
+          if (err) console.error('Session destroy error:', err);
+        });
+      }
+      return res.status(401).json({ error: "Oturum güvenlik ihlali tespit edildi. Lütfen tekrar giriş yapın." });
     }
     
     const userPermissions = req.session.permissions || [];
