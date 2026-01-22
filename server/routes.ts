@@ -183,8 +183,17 @@ function requirePlatformAdmin(req: Request, res: Response, next: NextFunction) {
 
 function requirePermission(...requiredPermissions: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    // Platform admins have all permissions
+    // Platform admins have all permissions BUT still need tenantId sync if they have userId
     if (req.session?.isPlatformAdmin && req.session?.platformAdminId) {
+      // If platform admin also has a userId (they logged in as a regular user first),
+      // ensure their session.tenantId matches their actual tenantId to prevent data leakage
+      if (req.session?.userId) {
+        const user = await storage.getAppUser(req.session.userId);
+        if (user && user.tenantId !== req.session.tenantId) {
+          console.log(`[PLATFORM_ADMIN] Syncing tenantId for user ${req.session.userId}: ${req.session.tenantId} -> ${user.tenantId}`);
+          req.session.tenantId = user.tenantId;
+        }
+      }
       return next();
     }
     
