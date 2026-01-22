@@ -792,6 +792,7 @@ export function registerPublicApiRoutes(app: Express) {
           websiteTermsPageContent: tenants.websiteTermsPageContent,
           websiteFaqPageTitle: tenants.websiteFaqPageTitle,
           websiteFaqPageContent: tenants.websiteFaqPageContent,
+          websiteDisplayName: tenants.websiteDisplayName,
           websiteFooterCompanyDescription: tenants.websiteFooterCompanyDescription,
           websiteFooterPaymentImageUrl: tenants.websiteFooterPaymentImageUrl,
           websiteFooterCopyrightText: tenants.websiteFooterCopyrightText,

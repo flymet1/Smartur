@@ -18,7 +18,7 @@ export function PublicLayout({ children, data }: PublicLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <PublicHeader 
-        agencyName={data?.name} 
+        agencyName={data?.websiteDisplayName || data?.name} 
         logo={data?.logoUrl || undefined} 
         phone={data?.websiteContactPhone || data?.contactPhone || undefined}
         email={data?.websiteContactEmail || data?.contactEmail || undefined}

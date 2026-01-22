@@ -215,10 +215,10 @@ export function PublicFooter({ data }: PublicFooterProps) {
           </div>
         )}
 
-        {(data?.name || data?.contactPhone || data?.websiteContactPhone) && (
+        {(data?.websiteDisplayName || data?.name || data?.contactPhone || data?.websiteContactPhone) && (
           <div className="border-t mt-8 pt-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-            {data?.name && (
-              <span className={`text-xs font-medium ${mutedClass}`}>{data.name}</span>
+            {(data?.websiteDisplayName || data?.name) && (
+              <span className={`text-xs font-medium ${mutedClass}`}>{data?.websiteDisplayName || data?.name}</span>
             )}
             {(data?.websiteContactPhone || data?.contactPhone) && (
               <a 

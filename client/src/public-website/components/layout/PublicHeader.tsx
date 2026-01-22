@@ -76,7 +76,7 @@ export function PublicHeader({
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
-                <span className="font-medium opacity-90">{agencyName}</span>
+                {agencyName && <span className="font-medium opacity-90">{agencyName}</span>}
                 {phone && (
                   <a href={`tel:${phone}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
                     <Phone className="h-3 w-3" />

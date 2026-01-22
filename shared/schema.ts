@@ -61,6 +61,7 @@ export const tenants = pgTable("tenants", {
   websiteFaqPageTitle: text("website_faq_page_title"), // SSS sayfası başlığı
   websiteFaqPageContent: text("website_faq_page_content"), // SSS sayfası içeriği (JSON array of {question, answer})
   // === WEB SİTESİ FOOTER AYARLARI ===
+  websiteDisplayName: text("website_display_name"), // Header ve footer'da gösterilecek özel acenta adı (boşsa name kullanılır)
   websiteFooterCompanyDescription: text("website_footer_company_description"), // Footer'daki şirket açıklaması
   websiteFooterPaymentImageUrl: text("website_footer_payment_image_url"), // Ödeme yöntemleri görseli (PNG)
   websiteFooterCopyrightText: text("website_footer_copyright_text"), // Telif hakkı metni

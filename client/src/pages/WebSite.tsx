@@ -71,6 +71,7 @@ interface WebsiteSettings {
   websiteFaqPageTitle: string | null;
   websiteFaqPageContent: string | null;
   // Footer ve Header ayarları
+  websiteDisplayName: string | null;
   websiteFooterCompanyDescription: string | null;
   websiteFooterPaymentImageUrl: string | null;
   websiteFooterCopyrightText: string | null;
@@ -826,6 +827,20 @@ export default function WebSite() {
                   <CardDescription>Alt bilgi alanı ve renk ayarları</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="websiteDisplayName">Görüntü Adı (Header & Footer)</Label>
+                    <Input
+                      id="websiteDisplayName"
+                      placeholder="Header ve footer'da görünecek acenta adı (boş bırakılırsa şirket adı kullanılır)"
+                      value={getValue("websiteDisplayName")}
+                      onChange={(e) => updateField("websiteDisplayName", e.target.value)}
+                      data-testid="input-display-name"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Header üst çubuğunda ve footer'da küçük puntolarla görünecek özel isim
+                    </p>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="websiteFooterCompanyDescription">Footer Şirket Açıklaması</Label>
                     <Textarea
