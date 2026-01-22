@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { PublicActivity, AvailabilitySlot } from "../types";
+import type { PublicActivity, AvailabilitySlot, PublicWebsiteData } from "../types";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
 
@@ -84,6 +84,10 @@ export default function PublicActivityDetail() {
 
   const { data: allActivities } = useQuery<PublicActivity[]>({
     queryKey: [getApiUrl(`/api/website/activities?lang=${language}`)],
+  });
+
+  const { data: websiteData } = useQuery<PublicWebsiteData>({
+    queryKey: [getApiUrl("/api/website/data")],
   });
 
   const { data: availability } = useQuery<AvailabilitySlot[]>({
@@ -1080,23 +1084,37 @@ export default function PublicActivityDetail() {
                 )}
               </Card>
 
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="font-medium mb-3">
-                    {language === "en" ? "Need Help?" : "Yardıma mı ihtiyacınız var?"}
-                  </p>
-                  <div className="space-y-3">
-                    <Button variant="outline" className="w-full justify-start gap-2">
-                      <Phone className="h-4 w-4" />
-                      {language === "en" ? "Call Us" : "Bizi Arayın"}
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start gap-2 text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
-                      <MessageCircle className="h-4 w-4" />
-                      WhatsApp
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              {(websiteData?.contactPhone || websiteData?.websiteContactPhone || websiteData?.websiteWhatsappNumber) && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="font-medium mb-3">
+                      {language === "en" ? "Need Help?" : "Yardıma mı ihtiyacınız var?"}
+                    </p>
+                    <div className="space-y-3">
+                      {(websiteData?.websiteContactPhone || websiteData?.contactPhone) && (
+                        <a href={`tel:${websiteData?.websiteContactPhone || websiteData?.contactPhone}`}>
+                          <Button variant="outline" className="w-full justify-start gap-2">
+                            <Phone className="h-4 w-4" />
+                            {websiteData?.websiteContactPhone || websiteData?.contactPhone}
+                          </Button>
+                        </a>
+                      )}
+                      {websiteData?.websiteWhatsappNumber && (
+                        <a 
+                          href={`https://wa.me/${websiteData.websiteWhatsappNumber.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button variant="outline" className="w-full justify-start gap-2 text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
+                            <MessageCircle className="h-4 w-4" />
+                            WhatsApp
+                          </Button>
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>
