@@ -68,23 +68,24 @@ export function PublicHeader({
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      {(hasContactInfo || hasSocialLinks) && (
+      {(hasContactInfo || hasSocialLinks || agencyName) && (
         <div 
-          className="bg-primary text-primary-foreground text-sm py-2 hidden md:block"
+          className="bg-primary text-primary-foreground text-xs py-1.5 hidden md:block"
           style={topBarStyle}
         >
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
+                <span className="font-medium opacity-90">{agencyName}</span>
                 {phone && (
                   <a href={`tel:${phone}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
-                    <Phone className="h-3.5 w-3.5" />
+                    <Phone className="h-3 w-3" />
                     <span>{phone}</span>
                   </a>
                 )}
                 {email && (
                   <a href={`mailto:${email}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
-                    <Mail className="h-3.5 w-3.5" />
+                    <Mail className="h-3 w-3" />
                     <span>{email}</span>
                   </a>
                 )}
@@ -95,7 +96,7 @@ export function PublicHeader({
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
                   >
-                    <FaWhatsapp className="h-3.5 w-3.5" />
+                    <FaWhatsapp className="h-3 w-3" />
                     <span>WhatsApp</span>
                   </a>
                 )}

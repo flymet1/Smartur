@@ -215,8 +215,25 @@ export function PublicFooter({ data }: PublicFooterProps) {
           </div>
         )}
 
-        <div className="border-t mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className={`text-sm ${mutedClass}`}>
+        {(data?.name || data?.contactPhone || data?.websiteContactPhone) && (
+          <div className="border-t mt-8 pt-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+            {data?.name && (
+              <span className={`text-xs font-medium ${mutedClass}`}>{data.name}</span>
+            )}
+            {(data?.websiteContactPhone || data?.contactPhone) && (
+              <a 
+                href={`tel:${data?.websiteContactPhone || data?.contactPhone}`}
+                className={`text-xs flex items-center gap-1 ${linkClass}`}
+              >
+                <Phone className="h-3 w-3" />
+                {data?.websiteContactPhone || data?.contactPhone}
+              </a>
+            )}
+          </div>
+        )}
+
+        <div className="border-t mt-4 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className={`text-xs ${mutedClass}`}>
             {data?.websiteFooterCopyrightText || 
               `© ${currentYear} ${data?.name || "Smartur Travel"}. ${t.footer.allRightsReserved}`}
           </p>
