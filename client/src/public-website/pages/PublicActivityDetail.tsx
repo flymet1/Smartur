@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +25,8 @@ import { apiRequest } from "@/lib/queryClient";
 import type { PublicActivity, AvailabilitySlot, PublicWebsiteData } from "../types";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
+import { format } from "date-fns";
+import { tr as trLocale, enUS } from "date-fns/locale";
 
 interface SelectedExtra {
   name: string;
@@ -764,13 +768,39 @@ export default function PublicActivityDetail() {
                         <>
                           <div className="space-y-3">
                             <Label>{language === "en" ? "Select Date" : "Tarih Seçin"}</Label>
-                            <Input
-                              type="date"
-                              min={getMinDate()}
-                              value={reservationData.date}
-                              onChange={(e) => setReservationData((prev) => ({ ...prev, date: e.target.value, time: "" }))}
-                              data-testid="input-date"
-                            />
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start text-left font-normal"
+                                  data-testid="input-date"
+                                >
+                                  <Calendar className="h-4 w-4 mr-2" />
+                                  {reservationData.date 
+                                    ? format(new Date(reservationData.date), "dd MMMM yyyy", { locale: language === "tr" ? trLocale : enUS })
+                                    : (language === "en" ? "Select Date" : "Tarih Seçin")
+                                  }
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={reservationData.date ? new Date(reservationData.date) : undefined}
+                                  onSelect={(date) => {
+                                    if (date) {
+                                      setReservationData((prev) => ({ 
+                                        ...prev, 
+                                        date: format(date, "yyyy-MM-dd"), 
+                                        time: "" 
+                                      }));
+                                    }
+                                  }}
+                                  locale={language === "tr" ? trLocale : enUS}
+                                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
 
                           {reservationData.date && (
