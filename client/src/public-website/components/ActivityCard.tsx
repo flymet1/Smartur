@@ -1,7 +1,6 @@
 import { Link } from "wouter";
-import { Clock, MapPin, Users, Star, Check, Globe } from "lucide-react";
+import { Clock, MapPin, Users, Check, Globe } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { PublicActivity } from "../types";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -48,8 +47,9 @@ export function ActivityCard({ activity, variant = "default" }: ActivityCardProp
     difficultyLabels["tr"][activity.difficulty || "easy"];
 
   return (
-    <Card className="group overflow-hidden hover-elevate active-elevate-2 transition-all duration-300 h-full flex flex-col border-0 shadow-md hover:shadow-xl" data-testid={`card-activity-${activity.id}`}>
-      <div className="relative aspect-[4/3] overflow-hidden">
+    <Link href={getLocalizedPath(`/aktivite/${activity.id}`)}>
+      <Card className="group overflow-hidden hover-elevate active-elevate-2 transition-all duration-300 h-full flex flex-col border-0 shadow-md hover:shadow-xl cursor-pointer" data-testid={`card-activity-${activity.id}`}>
+        <div className="relative aspect-[4/3] overflow-hidden">
         <img
           src={imageUrl}
           alt={activity.name}
@@ -154,20 +154,9 @@ export function ActivityCard({ activity, variant = "default" }: ActivityCardProp
             )}
           </div>
 
-          <div className="flex gap-2">
-            <Link href={getLocalizedPath(`/aktivite/${activity.id}`)} className="flex-1">
-              <Button variant="outline" className="w-full" size="sm" data-testid={`button-view-${activity.id}`}>
-                {t.activities.details}
-              </Button>
-            </Link>
-            <Link href={getLocalizedPath(`/rezervasyon/${activity.id}`)} className="flex-1">
-              <Button className="w-full" size="sm" data-testid={`button-book-${activity.id}`}>
-                {t.activities.bookNow}
-              </Button>
-            </Link>
-          </div>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </Link>
   );
 }
