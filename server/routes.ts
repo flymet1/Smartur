@@ -1304,13 +1304,7 @@ export async function registerRoutes(
   });
 
   app.delete(api.activities.delete.path, requirePermission(PERMISSIONS.ACTIVITIES_MANAGE), async (req, res) => {
-    const tenantId = req.session?.tenantId;
-    // License check for write operations (tenant-aware)
-    const licenseCheck = await checkPlanForWrite(tenantId);
-    if (!licenseCheck.allowed) {
-      return res.status(403).json({ error: licenseCheck.message, licenseStatus: licenseCheck.status });
-    }
-    
+    // No license check needed for delete - it reduces activity count
     await storage.deleteActivity(Number(req.params.id));
     res.status(204).send();
   });
