@@ -61,6 +61,12 @@ async function getPreviewTenant(req: Request): Promise<TenantFromDomain | null> 
   // Get tenant from session if user is logged in
   const session = req.session as any;
   const userId = session?.userId;
+  const sessionTenantId = session?.tenantId;
+  
+  // Debug log for tenant isolation investigation
+  if (isPreviewMode) {
+    console.log(`[PREVIEW DEBUG] isPreviewMode=${isPreviewMode}, userId=${userId}, sessionTenantId=${sessionTenantId}`);
+  }
   
   // For preview mode, require login
   if (isPreviewMode && !userId) {
@@ -77,6 +83,13 @@ async function getPreviewTenant(req: Request): Promise<TenantFromDomain | null> 
     try {
       const user = await storage.getAppUser(userId);
       if (!user || !user.tenantId) return null;
+      
+      // Security check: verify session tenantId matches user's actual tenantId
+      if (sessionTenantId && sessionTenantId !== user.tenantId) {
+        console.error(`[SECURITY ALERT] Preview: Session tenantId (${sessionTenantId}) does not match user tenantId (${user.tenantId}) for userId ${userId}`);
+      }
+      
+      console.log(`[PREVIEW DEBUG] User ${userId} has tenantId=${user.tenantId}, returning tenant data`);
       
       const [tenant] = await db
         .select({
