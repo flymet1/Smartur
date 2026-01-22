@@ -54,7 +54,7 @@ const languageFlags: Record<string, { name: string; flag: string }> = {
 export default function PublicActivityDetail() {
   const { id } = useParams<{ id: string }>();
   const activityId = parseInt(id || "0");
-  const { t, language } = useLanguage();
+  const { t, language, getLocalizedPath } = useLanguage();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -258,7 +258,7 @@ export default function PublicActivityDetail() {
           <h1 className="text-2xl font-bold mb-4">
             {language === "en" ? "Activity Not Found" : "Aktivite Bulunamadı"}
           </h1>
-          <Link href="/aktiviteler">
+          <Link href={getLocalizedPath("/aktiviteler")}>
             <Button>{language === "en" ? "Back to Activities" : "Aktivitelere Dön"}</Button>
           </Link>
         </div>
@@ -285,7 +285,7 @@ export default function PublicActivityDetail() {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
         
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-10">
-          <Link href="/aktiviteler">
+          <Link href={getLocalizedPath("/aktiviteler")}>
             <Button variant="outline" size="sm" className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20">
               <ChevronLeft className="h-4 w-4 mr-1" />
               {language === "en" ? "Back" : "Geri"}
@@ -1107,7 +1107,7 @@ export default function PublicActivityDetail() {
               <h2 className="text-2xl font-bold">
                 {language === "en" ? "You May Also Like" : "Bunları da Begenebilirsiniz"}
               </h2>
-              <Link href="/aktiviteler">
+              <Link href={getLocalizedPath("/aktiviteler")}>
                 <Button variant="ghost" className="gap-1">
                   {language === "en" ? "View All" : "Tumunu Gor"}
                   <ChevronRight className="h-4 w-4" />
@@ -1116,7 +1116,7 @@ export default function PublicActivityDetail() {
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               {relatedActivities.map((related) => (
-                <Link key={related.id} href={`/aktivite/${related.id}`}>
+                <Link key={related.id} href={getLocalizedPath(`/aktivite/${related.id}`)}>
                   <Card className="overflow-hidden hover-elevate cursor-pointer h-full">
                     <div className="aspect-video relative overflow-hidden">
                       <img

@@ -14,7 +14,7 @@ interface PublicFooterProps {
 
 export function PublicFooter({ data }: PublicFooterProps) {
   const currentYear = new Date().getFullYear();
-  const { t, language, setLanguage } = useLanguage();
+  const { t, language, setLanguage, getLocalizedPath } = useLanguage();
   
   // Dil seçici görünmesi için en az 2 dil gerekli
   const configuredLanguages = data?.websiteLanguages as Language[] | undefined;
@@ -113,27 +113,22 @@ export function PublicFooter({ data }: PublicFooterProps) {
             <h3 className="font-semibold mb-4 text-base">{t.footer.quickLinks}</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/" className={`text-sm ${linkClass} flex items-center gap-2`}>
+                <Link href={getLocalizedPath("/")} className={`text-sm ${linkClass} flex items-center gap-2`}>
                   {t.common.home}
                 </Link>
               </li>
               <li>
-                <Link href="/aktiviteler" className={`text-sm ${linkClass} flex items-center gap-2`}>
+                <Link href={getLocalizedPath("/aktiviteler")} className={`text-sm ${linkClass} flex items-center gap-2`}>
                   {t.common.activities}
                 </Link>
               </li>
               <li>
-                <Link href="/hakkimizda" className={`text-sm ${linkClass} flex items-center gap-2`}>
-                  {t.common.about}
-                </Link>
-              </li>
-              <li>
-                <Link href="/iletisim" className={`text-sm ${linkClass} flex items-center gap-2`}>
+                <Link href={getLocalizedPath("/iletisim")} className={`text-sm ${linkClass} flex items-center gap-2`}>
                   {t.common.contact}
                 </Link>
               </li>
               <li>
-                <Link href="/takip" className={`text-sm ${linkClass} flex items-center gap-2`}>
+                <Link href={getLocalizedPath("/takip")} className={`text-sm ${linkClass} flex items-center gap-2`}>
                   {t.common.reservationTracking}
                 </Link>
               </li>
@@ -185,23 +180,13 @@ export function PublicFooter({ data }: PublicFooterProps) {
             <h3 className="font-semibold mb-4 text-base">{t.footer.legalLinks}</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/gizlilik" className={`text-sm ${linkClass}`}>
-                  {t.footer.privacy}
+                <Link href={getLocalizedPath("/blog")} className={`text-sm ${linkClass}`}>
+                  {t.blog?.title || "Blog"}
                 </Link>
               </li>
               <li>
-                <Link href="/sartlar" className={`text-sm ${linkClass}`}>
-                  {t.footer.terms}
-                </Link>
-              </li>
-              <li>
-                <Link href="/iptal-iade" className={`text-sm ${linkClass}`}>
-                  {t.footer.cancellation}
-                </Link>
-              </li>
-              <li>
-                <Link href="/sss" className={`text-sm ${linkClass}`}>
-                  {t.footer.faq}
+                <Link href={getLocalizedPath("/iletisim")} className={`text-sm ${linkClass}`}>
+                  {t.common.contact}
                 </Link>
               </li>
             </ul>

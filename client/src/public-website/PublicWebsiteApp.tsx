@@ -1,4 +1,4 @@
-import { Switch, Route, Router } from "wouter";
+import { Switch, Route, Router, Redirect } from "wouter";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
@@ -12,6 +12,7 @@ import PublicBlogDetail from "./pages/PublicBlogDetail";
 import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
+import { useEffect } from "react";
 
 const publicQueryClient = new QueryClient({
   defaultOptions: {
@@ -33,18 +34,71 @@ const publicQueryClient = new QueryClient({
 });
 
 function PublicNotFound() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">404</h1>
         <p className="text-muted-foreground mb-4">{t.common.notFound}</p>
-        <a href="/" className="text-primary hover:underline">
+        <a href={`/${language}`} className="text-primary hover:underline">
           {t.common.backToHome}
         </a>
       </div>
     </div>
   );
+}
+
+function HreflangTags() {
+  const { language, getAlternateLanguagePath } = useLanguage();
+  
+  useEffect(() => {
+    if (typeof document !== "undefined" && typeof window !== "undefined") {
+      // Remove existing hreflang tags
+      document.querySelectorAll('link[rel="alternate"][hreflang]').forEach(el => el.remove());
+      
+      // Add hreflang tags for SEO
+      const languages = ["tr", "en"] as const;
+      const baseUrl = window.location.origin;
+      
+      languages.forEach(lang => {
+        const link = document.createElement("link");
+        link.rel = "alternate";
+        link.hreflang = lang;
+        link.href = baseUrl + getAlternateLanguagePath(lang);
+        document.head.appendChild(link);
+      });
+      
+      // Add x-default (points to Turkish as default)
+      const defaultLink = document.createElement("link");
+      defaultLink.rel = "alternate";
+      defaultLink.hreflang = "x-default";
+      defaultLink.href = baseUrl + getAlternateLanguagePath("tr");
+      document.head.appendChild(defaultLink);
+    }
+  }, [language, getAlternateLanguagePath]);
+  
+  return null;
+}
+
+// Route mappings for legacy redirects
+const legacyRouteRedirects: Record<string, Record<string, string>> = {
+  "/aktiviteler": { tr: "/tr/aktiviteler", en: "/en/activities" },
+  "/aktivite": { tr: "/tr/aktivite", en: "/en/activity" },
+  "/iletisim": { tr: "/tr/iletisim", en: "/en/contact" },
+  "/takip": { tr: "/tr/takip", en: "/en/track" },
+  "/blog": { tr: "/tr/blog", en: "/en/blog" },
+};
+
+// Component to preserve query/hash when redirecting legacy URLs
+function LegacyRedirect({ to }: { to: string }) {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const query = window.location.search;
+      const hash = window.location.hash;
+      window.location.replace(to + query + hash);
+    }
+  }, [to]);
+  return null;
 }
 
 function PublicWebsiteContent() {
@@ -78,23 +132,66 @@ function PublicWebsiteContent() {
 
   return (
     <PublicLayout data={websiteData}>
+      <HreflangTags />
       <Switch>
-        <Route path="/">
+        {/* Turkish routes */}
+        <Route path="/tr">
           <PublicHome websiteData={websiteData} />
         </Route>
-        <Route path="/aktiviteler" component={PublicActivities} />
-        <Route path="/aktivite/:id" component={PublicActivityDetail} />
-        <Route path="/rezervasyon/:id" component={PublicReservation} />
-        <Route path="/iletisim">
+        <Route path="/tr/aktiviteler" component={PublicActivities} />
+        <Route path="/tr/aktivite/:id" component={PublicActivityDetail} />
+        <Route path="/tr/rezervasyon/:id" component={PublicReservation} />
+        <Route path="/tr/iletisim">
           <PublicContact websiteData={websiteData} />
         </Route>
-        <Route path="/takip" component={PublicTrackReservation} />
-        <Route path="/blog">
+        <Route path="/tr/takip" component={PublicTrackReservation} />
+        <Route path="/tr/blog">
           <PublicBlog websiteData={websiteData} />
         </Route>
-        <Route path="/blog/:slug">
+        <Route path="/tr/blog/:slug">
           <PublicBlogDetail websiteData={websiteData} />
         </Route>
+
+        {/* English routes */}
+        <Route path="/en">
+          <PublicHome websiteData={websiteData} />
+        </Route>
+        <Route path="/en/activities" component={PublicActivities} />
+        <Route path="/en/activity/:id" component={PublicActivityDetail} />
+        <Route path="/en/reservation/:id" component={PublicReservation} />
+        <Route path="/en/contact">
+          <PublicContact websiteData={websiteData} />
+        </Route>
+        <Route path="/en/track" component={PublicTrackReservation} />
+        <Route path="/en/blog">
+          <PublicBlog websiteData={websiteData} />
+        </Route>
+        <Route path="/en/blog/:slug">
+          <PublicBlogDetail websiteData={websiteData} />
+        </Route>
+
+        {/* Redirect root to default language */}
+        <Route path="/">
+          <Redirect to={`/${language}`} />
+        </Route>
+
+        {/* Legacy routes redirect to new language-prefixed routes with query/hash preserved */}
+        <Route path="/aktiviteler">
+          <LegacyRedirect to={legacyRouteRedirects["/aktiviteler"][language]} />
+        </Route>
+        <Route path="/aktivite/:id">
+          {(params) => <LegacyRedirect to={`${legacyRouteRedirects["/aktivite"][language]}/${params.id}`} />}
+        </Route>
+        <Route path="/iletisim">
+          <LegacyRedirect to={legacyRouteRedirects["/iletisim"][language]} />
+        </Route>
+        <Route path="/takip">
+          <LegacyRedirect to={legacyRouteRedirects["/takip"][language]} />
+        </Route>
+        <Route path="/blog">
+          <LegacyRedirect to={legacyRouteRedirects["/blog"][language]} />
+        </Route>
+
         <Route component={PublicNotFound} />
       </Switch>
     </PublicLayout>

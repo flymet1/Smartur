@@ -31,7 +31,7 @@ const difficultyLabels: Record<string, Record<string, string>> = {
 };
 
 export function ActivityCard({ activity, variant = "default" }: ActivityCardProps) {
-  const { t, language } = useLanguage();
+  const { t, language, getLocalizedPath } = useLanguage();
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -155,12 +155,12 @@ export function ActivityCard({ activity, variant = "default" }: ActivityCardProp
           </div>
 
           <div className="flex gap-2">
-            <Link href={`/aktivite/${activity.id}`} className="flex-1">
+            <Link href={getLocalizedPath(`/aktivite/${activity.id}`)} className="flex-1">
               <Button variant="outline" className="w-full" size="sm" data-testid={`button-view-${activity.id}`}>
                 {t.activities.details}
               </Button>
             </Link>
-            <Link href={`/rezervasyon/${activity.id}`} className="flex-1">
+            <Link href={getLocalizedPath(`/rezervasyon/${activity.id}`)} className="flex-1">
               <Button className="w-full" size="sm" data-testid={`button-book-${activity.id}`}>
                 {t.activities.bookNow}
               </Button>

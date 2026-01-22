@@ -41,7 +41,7 @@ export function PublicHeader({
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [location] = useLocation();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, getLocalizedPath } = useLanguage();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,11 +52,10 @@ export function PublicHeader({
   }, []);
 
   const navItems = [
-    { href: "/", label: t.common.home },
-    { href: "/aktiviteler", label: t.common.activities },
-    { href: "/blog", label: t.blog?.title || "Blog" },
-    { href: "/hakkimizda", label: t.common.about },
-    { href: "/iletisim", label: t.common.contact },
+    { href: getLocalizedPath("/"), label: t.common.home },
+    { href: getLocalizedPath("/aktiviteler"), label: t.common.activities },
+    { href: getLocalizedPath("/blog"), label: t.blog?.title || "Blog" },
+    { href: getLocalizedPath("/iletisim"), label: t.common.contact },
   ];
 
   const hasSocialLinks = socialLinks && (socialLinks.facebook || socialLinks.instagram || socialLinks.twitter || socialLinks.youtube);
@@ -161,7 +160,7 @@ export function PublicHeader({
       )}>
         <div className="container mx-auto px-4">
           <div className="flex h-16 md:h-20 items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-3 group">
+            <Link href={getLocalizedPath("/")} className="flex items-center gap-3 group">
               {logo ? (
                 <img src={logo} alt={agencyName} className="h-10 md:h-12 w-auto" />
               ) : (
@@ -208,7 +207,7 @@ export function PublicHeader({
                 </a>
               )}
 
-              <Link href="/takip" className="hidden sm:block">
+              <Link href={getLocalizedPath("/takip")} className="hidden sm:block">
                 <Button variant="outline" size="sm" className="gap-2" data-testid="button-track-reservation">
                   <Calendar className="h-4 w-4" />
                   <span className="hidden md:inline">{t.common.reservationTracking}</span>
@@ -216,7 +215,7 @@ export function PublicHeader({
                 </Button>
               </Link>
 
-              <Link href="/aktiviteler">
+              <Link href={getLocalizedPath("/aktiviteler")}>
                 <Button size="sm" className="gap-2 shadow-lg shadow-primary/25" data-testid="button-book-now-header">
                   {t.activities.bookNow}
                 </Button>
@@ -275,7 +274,7 @@ export function PublicHeader({
                     </Button>
                   </Link>
                 ))}
-                <Link href="/takip" onClick={() => setIsOpen(false)}>
+                <Link href={getLocalizedPath("/takip")} onClick={() => setIsOpen(false)}>
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-muted-foreground h-12"

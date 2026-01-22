@@ -23,7 +23,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [, setLocation] = useLocation();
-  const { t, language } = useLanguage();
+  const { t, language, getLocalizedPath } = useLanguage();
 
   const { data: activities, isLoading: activitiesLoading } = useQuery<PublicActivity[]>({
     queryKey: [getApiUrl(`/api/website/activities?lang=${language}`)],
@@ -44,7 +44,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      setLocation(`/aktiviteler?search=${encodeURIComponent(searchQuery)}`);
+      setLocation(getLocalizedPath(`/aktiviteler?search=${encodeURIComponent(searchQuery)}`));
     }
   };
 
@@ -123,7 +123,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
               </h2>
               <p className="text-muted-foreground">{t.home.heroSubtitle}</p>
             </div>
-            <Link href="/aktiviteler">
+            <Link href={getLocalizedPath("/aktiviteler")}>
               <Button variant="ghost" className="gap-2" data-testid="link-view-all">
                 {t.common.viewAll}
                 <ArrowRight className="h-4 w-4" />
@@ -166,7 +166,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
 
           {filteredActivities && filteredActivities.length > 8 && (
             <div className="text-center mt-8">
-              <Link href="/aktiviteler">
+              <Link href={getLocalizedPath("/aktiviteler")}>
                 <Button size="lg" data-testid="button-show-all">
                   {t.common.viewAll} ({filteredActivities.length})
                   <ArrowRight className="h-4 w-4 ml-2" />

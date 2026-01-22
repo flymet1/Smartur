@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { PublicActivity, AvailabilitySlot } from "../types";
 import { getApiUrl, isPreviewMode } from "../utils";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface SelectedExtra {
   name: string;
@@ -28,6 +29,7 @@ export default function PublicReservation() {
   const activityId = parseInt(id || "0");
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { getLocalizedPath } = useLanguage();
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -155,7 +157,7 @@ export default function PublicReservation() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Aktivite Bulunamadı</h1>
-          <Link href="/aktiviteler">
+          <Link href={getLocalizedPath("/aktiviteler")}>
             <Button>Aktivitelere Dön</Button>
           </Link>
         </div>
@@ -182,10 +184,10 @@ export default function PublicReservation() {
             </div>
 
             <div className="space-y-2">
-              <Link href={`/takip?token=${trackingToken}`}>
+              <Link href={getLocalizedPath(`/takip?token=${trackingToken}`)}>
                 <Button className="w-full">Rezervasyonumu Takip Et</Button>
               </Link>
-              <Link href="/">
+              <Link href={getLocalizedPath("/")}>
                 <Button variant="outline" className="w-full">Ana Sayfaya Dön</Button>
               </Link>
             </div>
@@ -202,7 +204,7 @@ export default function PublicReservation() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <Link href={`/aktivite/${activity.id}`}>
+        <Link href={getLocalizedPath(`/aktivite/${activity.id}`)}>
           <Button variant="ghost" className="mb-6 gap-2">
             <ChevronLeft className="h-4 w-4" />
             Aktiviteye Dön
