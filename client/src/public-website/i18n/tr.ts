@@ -33,6 +33,11 @@ export const tr = {
     bestPriceDesc: "Kaliteli hizmet, uygun fiyat",
     support: "7/24 Destek",
     supportDesc: "Her zaman yanınızdayız",
+    selectActivity: "Aktivite Seçin",
+    allActivities: "Tüm Aktiviteler",
+    selectRegion: "Bölge Seçin",
+    allRegions: "Tüm Bölgeler",
+    selectDate: "Tarih Seçin",
   },
   activities: {
     title: "Aktiviteler",

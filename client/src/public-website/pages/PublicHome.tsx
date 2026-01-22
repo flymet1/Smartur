@@ -1,10 +1,12 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, MapPin, Calendar, Users, Star, ArrowRight, Shield, Award, Clock, ThumbsUp } from "lucide-react";
+import { Search, MapPin, Calendar, Users, Star, ArrowRight, Shield, Award, Clock, ThumbsUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ActivityCard } from "../components/ActivityCard";
 import { WhatsAppButton } from "../components/shared/WhatsAppButton";
 import { TrustBadges } from "../components/shared/TrustBadges";
@@ -14,13 +16,17 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
+import { format } from "date-fns";
+import { tr as trLocale, enUS } from "date-fns/locale";
 
 interface PublicHomeProps {
   websiteData?: PublicWebsiteData;
 }
 
 export default function PublicHome({ websiteData }: PublicHomeProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedActivity, setSelectedActivity] = useState<string>("");
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { t, language, getLocalizedPath } = useLanguage();
@@ -35,18 +41,29 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
     return Array.from(new Set(allCategories));
   }, [activities]);
 
+  const regions = useMemo(() => {
+    if (!activities) return [];
+    const allRegions = activities.map(a => a.region).filter(Boolean) as string[];
+    return Array.from(new Set(allRegions));
+  }, [activities]);
+
   const filteredActivities = useMemo(() => {
     if (!activities) return [];
     if (!selectedCategory) return activities;
     return activities.filter(a => a.categories?.includes(selectedCategory));
   }, [activities, selectedCategory]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      setLocation(getLocalizedPath(`/aktiviteler?search=${encodeURIComponent(searchQuery)}`));
-    }
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (selectedActivity) params.set("activity", selectedActivity);
+    if (selectedRegion) params.set("region", selectedRegion);
+    if (selectedDate) params.set("date", format(selectedDate, "yyyy-MM-dd"));
+    
+    const queryString = params.toString();
+    setLocation(getLocalizedPath(`/aktiviteler${queryString ? `?${queryString}` : ""}`));
   };
+
+  const dateLocale = language === "tr" ? trLocale : enUS;
 
   const heroImage = websiteData?.websiteHeroImageUrl || 
     "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1920&q=80";
@@ -69,24 +86,67 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
               {websiteData?.websiteDescription || t.home.heroSubtitle}
             </p>
 
-            <form onSubmit={handleSearch} className="max-w-xl mx-auto mb-8">
-              <div className="flex gap-2 bg-white/10 backdrop-blur-md p-2 rounded-lg border border-white/20">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/70" />
-                  <Input
-                    type="search"
-                    placeholder={t.common.searchPlaceholder}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-white/20 border-white/30 text-white placeholder:text-white/60 focus-visible:ring-white/50"
-                    data-testid="input-search"
-                  />
-                </div>
-                <Button type="submit" size="lg" data-testid="button-search">
+            <div className="max-w-4xl mx-auto mb-8">
+              <div className="flex flex-col md:flex-row gap-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+                <Select value={selectedActivity} onValueChange={setSelectedActivity}>
+                  <SelectTrigger className="flex-1 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-activity">
+                    <MapPin className="h-4 w-4 mr-2 text-white/70" />
+                    <SelectValue placeholder={t.home.selectActivity} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t.home.allActivities}</SelectItem>
+                    {activities?.map((activity) => (
+                      <SelectItem key={activity.id} value={String(activity.id)}>
+                        {activity.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                  <SelectTrigger className="flex-1 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-region">
+                    <MapPin className="h-4 w-4 mr-2 text-white/70" />
+                    <SelectValue placeholder={t.home.selectRegion} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t.home.allRegions}</SelectItem>
+                    {regions.map((region) => (
+                      <SelectItem key={region} value={region}>
+                        {region}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex-1 justify-start bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white"
+                      data-testid="button-date-picker"
+                    >
+                      <Calendar className="h-4 w-4 mr-2 text-white/70" />
+                      {selectedDate ? format(selectedDate, "dd MMM yyyy", { locale: dateLocale }) : t.home.selectDate}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      locale={dateLocale}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Button size="lg" onClick={handleSearch} className="md:w-auto w-full" data-testid="button-search">
+                  <Search className="h-4 w-4 mr-2" />
                   {t.common.search}
                 </Button>
               </div>
-            </form>
+            </div>
 
             <div className="flex flex-wrap justify-center gap-8 mt-12">
               <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">

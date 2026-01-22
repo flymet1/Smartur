@@ -33,6 +33,11 @@ export const en = {
     bestPriceDesc: "Quality service, affordable price",
     support: "24/7 Support",
     supportDesc: "We are always here for you",
+    selectActivity: "Select Activity",
+    allActivities: "All Activities",
+    selectRegion: "Select Region",
+    allRegions: "All Regions",
+    selectDate: "Select Date",
   },
   activities: {
     title: "Activities",
