@@ -9346,20 +9346,24 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         return res.status(400).json({ error: "Şifre en az 6 karakter olmalı" });
       }
       
-      // Find the admin user for this tenant (role = 'admin')
-      const tenantUsers = await storage.getAppUsersByTenant(tenantId);
-      const adminUser = tenantUsers.find(u => u.role === 'admin');
+      // Find the admin user for this tenant - get all users and filter by tenantId
+      const allUsers = await storage.getAppUsers();
+      const tenantUsers = allUsers.filter(u => u.tenantId === tenantId);
       
-      if (!adminUser) {
-        return res.status(404).json({ error: "Bu acenta için yönetici kullanıcı bulunamadı" });
+      if (tenantUsers.length === 0) {
+        return res.status(404).json({ error: "Bu acenta için kullanıcı bulunamadı" });
       }
       
-      // Hash the new password
-      const bcrypt = await import("bcrypt");
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      // Get the first user (admin) for this tenant
+      const adminUser = tenantUsers[0];
+      
+      // Hash the new password using our custom PBKDF2 format
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.pbkdf2Sync(newPassword, salt, 1000, 64, 'sha512').toString('hex');
+      const hashedPassword = `${salt}:${hash}`;
       
       // Update the password
-      await storage.updateAppUser(adminUser.id, { password: hashedPassword });
+      await storage.updateAppUser(adminUser.id, { passwordHash: hashedPassword });
       
       res.json({ success: true, message: "Yönetici şifresi değiştirildi" });
     } catch (err) {
