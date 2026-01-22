@@ -19,6 +19,14 @@ import { useLanguage } from "../i18n/LanguageContext";
 import { format } from "date-fns";
 import { tr as trLocale, enUS } from "date-fns/locale";
 
+interface HomepageSectionWithActivities {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  sectionType: string;
+  activities: PublicActivity[];
+}
+
 interface PublicHomeProps {
   websiteData?: PublicWebsiteData;
 }
@@ -33,6 +41,10 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
 
   const { data: activities, isLoading: activitiesLoading } = useQuery<PublicActivity[]>({
     queryKey: [getApiUrl(`/api/website/activities?lang=${language}`)],
+  });
+
+  const { data: homepageSections, isLoading: sectionsLoading } = useQuery<HomepageSectionWithActivities[]>({
+    queryKey: [getApiUrl(`/api/website/homepage-sections?lang=${language}`)],
   });
 
   const categories = useMemo(() => {
@@ -236,6 +248,43 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
           )}
         </div>
       </section>
+
+      {homepageSections && homepageSections.length > 0 && homepageSections.map((section, index) => (
+        <section 
+          key={section.id} 
+          className={`py-16 ${index % 2 === 0 ? 'bg-muted/30' : 'bg-background'}`}
+          data-testid={`section-${section.id}`}
+        >
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+              <div>
+                <h2 className="text-3xl font-bold mb-2">{section.title}</h2>
+                {section.subtitle && (
+                  <p className="text-muted-foreground">{section.subtitle}</p>
+                )}
+              </div>
+              <Link href={getLocalizedPath("/aktiviteler")}>
+                <Button variant="ghost" className="gap-2">
+                  {t.common.viewAll}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            {section.activities && section.activities.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {section.activities.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                {t.activities.noResults}
+              </div>
+            )}
+          </div>
+        </section>
+      ))}
 
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">

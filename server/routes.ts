@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql, eq, and } from "drizzle-orm";
-import { supplierDispatches, reservations, userRoles, roles, tenants } from "@shared/schema";
+import { supplierDispatches, reservations, userRoles, roles, tenants, homepageSections } from "@shared/schema";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
@@ -5874,6 +5874,148 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       res.json({ success: true, message: "Web sitesi ayarları kaydedildi" });
     } catch (err) {
       console.error("Save website settings error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // === HOMEPAGE SECTIONS API ===
+  // GET all homepage sections for tenant
+  app.get("/api/homepage-sections", requirePermission(PERMISSIONS.SETTINGS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      
+      const sections = await db
+        .select()
+        .from(homepageSections)
+        .where(eq(homepageSections.tenantId, tenantId))
+        .orderBy(homepageSections.displayOrder);
+      
+      res.json(sections);
+    } catch (err) {
+      console.error("Get homepage sections error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // POST create new homepage section
+  app.post("/api/homepage-sections", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      
+      const { title, titleEn, subtitle, subtitleEn, sectionType, displayOrder, isActive, activityIds, maxItems } = req.body;
+      
+      // Basic validation
+      if (!title || typeof title !== 'string' || title.trim().length === 0) {
+        return res.status(400).json({ error: "Başlık zorunludur" });
+      }
+      
+      const validSectionTypes = ['activities', 'package_tours', 'destinations'];
+      const safeSectionType = validSectionTypes.includes(sectionType) ? sectionType : 'activities';
+      const safeDisplayOrder = typeof displayOrder === 'number' && displayOrder >= 0 ? displayOrder : 0;
+      const safeMaxItems = typeof maxItems === 'number' && maxItems > 0 && maxItems <= 12 ? maxItems : 6;
+      const safeActivityIds = Array.isArray(activityIds) ? activityIds.filter(id => typeof id === 'number') : [];
+      
+      const [section] = await db
+        .insert(homepageSections)
+        .values({
+          tenantId,
+          title: title.trim(),
+          titleEn: titleEn?.trim() || null,
+          subtitle: subtitle?.trim() || null,
+          subtitleEn: subtitleEn?.trim() || null,
+          sectionType: safeSectionType,
+          displayOrder: safeDisplayOrder,
+          isActive: isActive !== false,
+          activityIds: JSON.stringify(safeActivityIds),
+          maxItems: safeMaxItems,
+        })
+        .returning();
+      
+      res.json(section);
+    } catch (err) {
+      console.error("Create homepage section error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // PUT update homepage section
+  app.put("/api/homepage-sections/:id", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      
+      const sectionId = parseInt(req.params.id);
+      if (isNaN(sectionId)) {
+        return res.status(400).json({ error: "Geçersiz bölüm ID" });
+      }
+      
+      const { title, titleEn, subtitle, subtitleEn, sectionType, displayOrder, isActive, activityIds, maxItems } = req.body;
+      
+      const validSectionTypes = ['activities', 'package_tours', 'destinations'];
+      
+      const updateData: Record<string, any> = { updatedAt: new Date() };
+      if (title !== undefined && typeof title === 'string' && title.trim().length > 0) {
+        updateData.title = title.trim();
+      }
+      if (titleEn !== undefined) updateData.titleEn = typeof titleEn === 'string' ? titleEn.trim() || null : null;
+      if (subtitle !== undefined) updateData.subtitle = typeof subtitle === 'string' ? subtitle.trim() || null : null;
+      if (subtitleEn !== undefined) updateData.subtitleEn = typeof subtitleEn === 'string' ? subtitleEn.trim() || null : null;
+      if (sectionType !== undefined && validSectionTypes.includes(sectionType)) {
+        updateData.sectionType = sectionType;
+      }
+      if (displayOrder !== undefined && typeof displayOrder === 'number' && displayOrder >= 0) {
+        updateData.displayOrder = displayOrder;
+      }
+      if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+      if (activityIds !== undefined && Array.isArray(activityIds)) {
+        updateData.activityIds = JSON.stringify(activityIds.filter(id => typeof id === 'number'));
+      }
+      if (maxItems !== undefined && typeof maxItems === 'number' && maxItems > 0 && maxItems <= 12) {
+        updateData.maxItems = maxItems;
+      }
+      
+      const [section] = await db
+        .update(homepageSections)
+        .set(updateData)
+        .where(and(eq(homepageSections.id, sectionId), eq(homepageSections.tenantId, tenantId)))
+        .returning();
+      
+      if (!section) {
+        return res.status(404).json({ error: "Bölüm bulunamadı" });
+      }
+      
+      res.json(section);
+    } catch (err) {
+      console.error("Update homepage section error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // DELETE homepage section
+  app.delete("/api/homepage-sections/:id", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      
+      const sectionId = parseInt(req.params.id);
+      
+      await db
+        .delete(homepageSections)
+        .where(and(eq(homepageSections.id, sectionId), eq(homepageSections.tenantId, tenantId)));
+      
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Delete homepage section error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });

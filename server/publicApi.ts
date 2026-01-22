@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { tenants, activities, capacity, reservations, customerRequests, blogPosts } from "@shared/schema";
+import { tenants, activities, capacity, reservations, customerRequests, blogPosts, homepageSections } from "@shared/schema";
 import { desc } from "drizzle-orm";
 import crypto from "crypto";
 import { z } from "zod";
@@ -1363,6 +1363,99 @@ export function registerPublicApiRoutes(app: Express) {
       });
     } catch (err) {
       console.error("Website blog detail error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Get homepage sections with activities
+  app.get("/api/website/homepage-sections", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const lang = (req.query.lang as string) || "tr";
+      
+      // Get active sections ordered by displayOrder
+      const sections = await db
+        .select()
+        .from(homepageSections)
+        .where(and(
+          eq(homepageSections.tenantId, tenantId),
+          eq(homepageSections.isActive, true)
+        ))
+        .orderBy(homepageSections.displayOrder);
+      
+      // Get all activities for this tenant
+      const allActivities = await db
+        .select()
+        .from(activities)
+        .where(and(
+          eq(activities.tenantId, tenantId),
+          eq(activities.active, true)
+        ));
+      
+      // Build sections with their activities
+      const sectionsWithActivities = await Promise.all(sections.map(async (section) => {
+        let activityIds: number[] = [];
+        try {
+          activityIds = section.activityIds ? JSON.parse(section.activityIds) : [];
+        } catch (e) {
+          console.error(`Invalid activityIds JSON for section ${section.id}:`, e);
+          activityIds = [];
+        }
+        
+        // Filter activities by IDs or use all if empty
+        let sectionActivities = activityIds.length > 0
+          ? allActivities.filter(a => activityIds.includes(a.id))
+          : allActivities.slice(0, section.maxItems || 6);
+        
+        // Limit to maxItems
+        sectionActivities = sectionActivities.slice(0, section.maxItems || 6);
+        
+        // Format activities for public display
+        const formattedActivities = sectionActivities.map(activity => {
+          let galleryImages: string[] = [];
+          let categories: string[] = [];
+          try {
+            galleryImages = activity.galleryImages ? JSON.parse(activity.galleryImages) : [];
+          } catch (e) { galleryImages = []; }
+          try {
+            categories = activity.categories ? JSON.parse(activity.categories) : [];
+          } catch (e) { categories = []; }
+          
+          return {
+            id: activity.id,
+            name: activity.name,
+            description: activity.description?.substring(0, 200),
+            price: activity.price,
+            priceUsd: activity.priceUsd,
+            durationMinutes: activity.durationMinutes,
+            imageUrl: activity.imageUrl,
+            galleryImages,
+            region: activity.region,
+            categories,
+          };
+        });
+        
+        // Translate if needed
+        let title = section.title;
+        let subtitle = section.subtitle;
+        
+        if (lang === "en") {
+          title = section.titleEn || section.title;
+          subtitle = section.subtitleEn || section.subtitle;
+        }
+        
+        return {
+          id: section.id,
+          title,
+          subtitle,
+          sectionType: section.sectionType,
+          activities: formattedActivities,
+        };
+      }));
+      
+      res.json(sectionsWithActivities);
+    } catch (err) {
+      console.error("Website homepage sections error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });

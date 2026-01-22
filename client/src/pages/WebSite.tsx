@@ -34,9 +34,11 @@ import {
   Trash2,
   CreditCard,
   LayoutPanelTop,
-  PenSquare
+  PenSquare,
+  Layers
 } from "lucide-react";
 import { BlogContent } from "@/pages/Blog";
+import { HomepageSectionsManager } from "@/components/HomepageSectionsManager";
 
 interface WebsiteSettings {
   websiteDomain: string | null;
@@ -317,6 +319,10 @@ export default function WebSite() {
               <TabsTrigger value="blog" className="gap-1" data-testid="tab-blog">
                 <PenSquare className="h-4 w-4" />
                 <span className="hidden sm:inline">Blog</span>
+              </TabsTrigger>
+              <TabsTrigger value="sections" className="gap-1" data-testid="tab-sections">
+                <Layers className="h-4 w-4" />
+                <span className="hidden sm:inline">Anasayfa</span>
               </TabsTrigger>
             </TabsList>
 
@@ -996,6 +1002,20 @@ export default function WebSite() {
 
             <TabsContent value="blog" className="mt-6">
               <BlogContent />
+            </TabsContent>
+
+            <TabsContent value="sections" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Anasayfa Bölümleri</CardTitle>
+                  <CardDescription>
+                    Anasayfada gösterilecek aktivite kategorilerini yönetin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <HomepageSectionsManager />
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
