@@ -1051,7 +1051,11 @@ export function registerPublicApiRoutes(app: Express) {
           name: activities.name, 
           price: activities.price, 
           priceUsd: activities.priceUsd,
-          extras: activities.extras 
+          extras: activities.extras,
+          requiresDeposit: activities.requiresDeposit,
+          depositType: activities.depositType,
+          depositAmount: activities.depositAmount,
+          fullPaymentRequired: activities.fullPaymentRequired
         })
         .from(activities)
         .where(and(eq(activities.id, input.activityId), eq(activities.tenantId, tenantId), eq(activities.active, true)))
@@ -1130,10 +1134,37 @@ export function registerPublicApiRoutes(app: Express) {
         ).join("; ");
       }
 
+      // Calculate total price
+      const basePrice = activity.price * input.quantity;
+      const totalPrice = basePrice + extrasTotal;
+      
+      // Calculate deposit and remaining payment
+      let depositRequired = 0;
+      let remainingPayment = totalPrice;
+      let paymentType = "none";
+      
+      if (activity.fullPaymentRequired) {
+        paymentType = "full";
+        depositRequired = totalPrice;
+        remainingPayment = 0;
+      } else if (activity.requiresDeposit && activity.depositAmount) {
+        paymentType = "deposit";
+        if (activity.depositType === "percentage") {
+          depositRequired = Math.round(totalPrice * (activity.depositAmount / 100));
+        } else {
+          depositRequired = activity.depositAmount;
+        }
+        remainingPayment = totalPrice - depositRequired;
+      }
+
       // Build structured metadata JSON for future parsing
       const reservationMetadata = {
         participants: input.participants || [],
         extras: validatedExtras,
+        totalPrice,
+        depositRequired,
+        remainingPayment,
+        paymentType,
       };
 
       // Combine notes with human-readable format + JSON metadata

@@ -23,6 +23,11 @@ export interface PublicActivity {
   highlights: string[];
   minAge: number | null;
   maxParticipants: number | null;
+  // Ödeme seçenekleri
+  requiresDeposit: boolean;
+  depositType: "percentage" | "fixed";
+  depositAmount: number;
+  fullPaymentRequired: boolean;
 }
 
 export interface WebsiteTemplateSettings {

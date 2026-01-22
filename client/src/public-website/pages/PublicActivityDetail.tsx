@@ -603,22 +603,123 @@ export default function PublicActivityDetail() {
             <div className="sticky top-24 space-y-4">
               <Card className="border-2 border-primary/20 shadow-lg">
                 {reservationStep === "success" ? (
-                  <CardContent className="pt-8 pb-8">
-                    <div className="text-center space-y-4">
-                      <div className="w-16 h-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                        <CheckCircle className="h-8 w-8 text-green-600" />
+                  <CardContent className="pt-6 pb-6">
+                    <div className="space-y-4">
+                      <div className="text-center space-y-2">
+                        <div className="w-14 h-14 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                          <CheckCircle className="h-7 w-7 text-green-600" />
+                        </div>
+                        <h3 className="text-lg font-bold">
+                          {language === "en" ? "Reservation Successful!" : "Rezervasyon Başarılı!"}
+                        </h3>
                       </div>
-                      <h3 className="text-xl font-bold">
-                        {language === "en" ? "Reservation Successful!" : "Rezervasyon Başarılı!"}
-                      </h3>
-                      <p className="text-muted-foreground">
+                      
+                      <Separator />
+                      
+                      {/* Rezervasyon Özeti */}
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{language === "en" ? "Activity" : "Aktivite"}</span>
+                          <span className="font-medium">{activity?.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{language === "en" ? "Date" : "Tarih"}</span>
+                          <span className="font-medium">{reservationData.date}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{language === "en" ? "Time" : "Saat"}</span>
+                          <span className="font-medium">{reservationData.time}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">{language === "en" ? "Participants" : "Katılımcı"}</span>
+                          <span className="font-medium">{reservationData.quantity} {language === "en" ? "person" : "kişi"}</span>
+                        </div>
+                        
+                        {/* Transfer Bilgisi */}
+                        {reservationData.hasTransfer && reservationData.hotelName && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">{language === "en" ? "Hotel/Pickup" : "Otel/Alınacak Yer"}</span>
+                            <span className="font-medium">{reservationData.hotelName}</span>
+                          </div>
+                        )}
+                        
+                        {/* Ekstralar */}
+                        {selectedExtras.length > 0 && (
+                          <div className="pt-2 border-t">
+                            <p className="text-muted-foreground mb-2">{language === "en" ? "Extras" : "Ekstralar"}</p>
+                            {selectedExtras.map((extra, idx) => (
+                              <div key={idx} className="flex justify-between text-xs">
+                                <span>{extra.name} x{extra.quantity}</span>
+                                <span>{(extra.priceTl * extra.quantity).toLocaleString()} TL</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Separator />
+                      
+                      {/* Ödeme Bilgileri */}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between font-medium">
+                          <span>{language === "en" ? "Total Amount" : "Toplam Tutar"}</span>
+                          <span className="text-primary">{calculateTotalPrice().toLocaleString()} TL</span>
+                        </div>
+                        
+                        {activity?.fullPaymentRequired && (
+                          <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded text-xs text-amber-800 dark:text-amber-200">
+                            {language === "en" 
+                              ? "Full payment is required for this activity." 
+                              : "Bu aktivite için tam ödeme gereklidir."}
+                          </div>
+                        )}
+                        
+                        {activity?.requiresDeposit && !activity?.fullPaymentRequired && (
+                          <>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">{language === "en" ? "Deposit Required" : "Gereken Ön Ödeme"}</span>
+                              <span className="font-medium text-amber-600 dark:text-amber-400">
+                                {activity.depositType === "percentage" 
+                                  ? `${(calculateTotalPrice() * (activity.depositAmount || 0) / 100).toLocaleString()} TL (%${activity.depositAmount})`
+                                  : `${(activity.depositAmount || 0).toLocaleString()} TL`
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">{language === "en" ? "Remaining Payment" : "Kalan Ödeme"}</span>
+                              <span className="font-medium">
+                                {activity.depositType === "percentage"
+                                  ? (calculateTotalPrice() - (calculateTotalPrice() * (activity.depositAmount || 0) / 100)).toLocaleString()
+                                  : (calculateTotalPrice() - (activity.depositAmount || 0)).toLocaleString()
+                                } TL
+                              </span>
+                            </div>
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded text-xs text-blue-800 dark:text-blue-200">
+                              {language === "en" 
+                                ? "Deposit payment is required. Remaining balance will be collected on the activity day." 
+                                : "Ön ödeme (kapora) gereklidir. Kalan tutar aktivite günü tahsil edilecektir."}
+                            </div>
+                          </>
+                        )}
+                        
+                        {!activity?.requiresDeposit && !activity?.fullPaymentRequired && (
+                          <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded text-xs text-green-800 dark:text-green-200">
+                            {language === "en" 
+                              ? "No advance payment required. Payment will be collected on the activity day." 
+                              : "Ön ödeme gerekmez. Ödeme aktivite günü alınacaktır."}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-muted-foreground text-center text-xs">
                         {language === "en" 
-                          ? "Your reservation has been received. We will contact you soon." 
-                          : "Rezervasyonunuz alındı. En kısa sürede sizinle iletişime geçeceğiz."}
+                          ? "We will contact you soon to confirm your reservation." 
+                          : "Rezervasyonunuzu onaylamak için en kısa sürede sizinle iletişime geçeceğiz."}
                       </p>
+                      
                       {trackingToken && (
                         <Link href={`/takip/${trackingToken}`}>
-                          <Button variant="outline" className="mt-4">
+                          <Button variant="outline" className="w-full mt-2">
                             {language === "en" ? "Track Your Reservation" : "Rezervasyonunuzu Takip Edin"}
                           </Button>
                         </Link>

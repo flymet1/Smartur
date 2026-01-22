@@ -3482,6 +3482,31 @@ interface ReservationDetailDialogProps {
   onMoveSuccess?: (reservation: Reservation, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => void;
 }
 
+interface ReservationMetadata {
+  participants?: Array<{ firstName: string; lastName: string; birthDate: string }>;
+  extras?: Array<{ name: string; quantity: number; priceTl: number }>;
+  totalPrice?: number;
+  depositRequired?: number;
+  remainingPayment?: number;
+  paymentType?: string;
+}
+
+function parseReservationMetadata(notes: string | null | undefined): ReservationMetadata | null {
+  if (!notes) return null;
+  const match = notes.match(/__METADATA__:(.*)/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+}
+
+function getNotesWithoutMetadata(notes: string | null | undefined): string {
+  if (!notes) return "";
+  return notes.replace(/__METADATA__:.*$/, "").trim();
+}
+
 function ReservationDetailDialog({ reservation, activities, onClose, onMoveSuccess }: ReservationDetailDialogProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -3495,6 +3520,9 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
       setIsEditing(false);
     }
   }, [reservation]);
+  
+  const metadata = reservation ? parseReservationMetadata(reservation.notes) : null;
+  const cleanNotes = reservation ? getNotesWithoutMetadata(reservation.notes) : "";
   
   const updateMutation = useMutation({
     mutationFn: async ({ id, date, time, oldDate, oldTime, res }: { id: number; date: string; time: string; oldDate: string; oldTime: string; res: Reservation }) => {
@@ -3757,6 +3785,76 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
                   <div className="font-medium">{reservation.hasTransfer ? "Var" : "Yok"}</div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Ekstralar */}
+          {metadata?.extras && metadata.extras.length > 0 && (
+            <div className="border-t pt-4">
+              <Label className="text-muted-foreground text-xs">Ekstralar</Label>
+              <div className="space-y-1 mt-1">
+                {metadata.extras.map((extra, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span>{extra.name} x{extra.quantity}</span>
+                    <span className="font-medium">{(extra.priceTl * extra.quantity).toLocaleString('tr-TR')} ₺</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Ödeme Bilgileri */}
+          {metadata && (metadata.totalPrice || metadata.depositRequired || metadata.remainingPayment) && (
+            <div className="border-t pt-4 space-y-2">
+              <Label className="text-muted-foreground text-xs">Ödeme Bilgileri</Label>
+              {metadata.totalPrice && (
+                <div className="flex justify-between text-sm">
+                  <span>Toplam Tutar</span>
+                  <span className="font-bold text-primary">{metadata.totalPrice.toLocaleString('tr-TR')} ₺</span>
+                </div>
+              )}
+              {metadata.depositRequired !== undefined && metadata.depositRequired > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Ön Ödeme (Kapora)</span>
+                  <span className="font-medium text-amber-600">{metadata.depositRequired.toLocaleString('tr-TR')} ₺</span>
+                </div>
+              )}
+              {metadata.remainingPayment !== undefined && metadata.remainingPayment > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Kalan Ödeme</span>
+                  <span className="font-medium">{metadata.remainingPayment.toLocaleString('tr-TR')} ₺</span>
+                </div>
+              )}
+              {metadata.paymentType && (
+                <div className="text-xs text-muted-foreground">
+                  {metadata.paymentType === 'full' ? 'Tam ödeme gerekli' : 
+                   metadata.paymentType === 'deposit' ? 'Ön ödeme gerekli, kalan aktivite günü alınacak' : 
+                   'Ödeme aktivite günü alınacak'}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Katılımcılar */}
+          {metadata?.participants && metadata.participants.length > 0 && (
+            <div className="border-t pt-4">
+              <Label className="text-muted-foreground text-xs">Katılımcılar ({metadata.participants.length} kişi)</Label>
+              <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
+                {metadata.participants.map((p, idx) => (
+                  <div key={idx} className="flex justify-between text-sm bg-muted/50 px-2 py-1 rounded">
+                    <span>{p.firstName} {p.lastName}</span>
+                    <span className="text-muted-foreground text-xs">{p.birthDate}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notlar (metadata olmadan) */}
+          {cleanNotes && (
+            <div className="border-t pt-4">
+              <Label className="text-muted-foreground text-xs">Notlar</Label>
+              <div className="font-medium text-sm whitespace-pre-wrap">{cleanNotes}</div>
             </div>
           )}
 
