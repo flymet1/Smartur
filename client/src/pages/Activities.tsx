@@ -215,6 +215,17 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     queryKey: ['/api/tenant-partnerships'],
   });
   
+  // Website ayarlarını getir (rezervasyon linki için)
+  const { data: websiteSettings } = useQuery<{
+    websiteEnabled: boolean;
+    websiteDomain: string | null;
+  }>({
+    queryKey: ['/api/website-settings'],
+  });
+  
+  // Smartur web sitesi aktif mi kontrol et
+  const isWebsiteActive = websiteSettings?.websiteEnabled && websiteSettings?.websiteDomain;
+  
   // Aktivite için mevcut paylaşımları getir
   const { data: activityShares } = useQuery<any[]>({
     queryKey: [`/api/activities/${activity?.id}/partner-shares`],
@@ -719,30 +730,55 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="reservationLink">(Türkçe) Rezervasyon Linki</Label>
-                  <Input 
-                    id="reservationLink"
-                    type="url"
-                    value={reservationLink}
-                    onChange={(e) => setReservationLink(e.target.value)}
-                    placeholder="https://example.com/rezervasyon"
-                    data-testid="input-reservation-link"
-                  />
-                </div>
+                {isWebsiteActive ? (
+                  <div className="space-y-2 p-4 bg-muted/50 rounded-lg border">
+                    <Label>Rezervasyon Linki</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Smartur web sitesi aktif olduğu için rezervasyon linki otomatik olarak oluşturulur:
+                    </p>
+                    <div className="space-y-2 mt-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">TR:</span>
+                        <code className="text-xs bg-background px-2 py-1 rounded border break-all">
+                          https://{websiteSettings?.websiteDomain}/tr/aktiviteler/{name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-ğüşıöçĞÜŞİÖÇ]/g, '')}-{activity?.id || 'yeni'}
+                        </code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">EN:</span>
+                        <code className="text-xs bg-background px-2 py-1 rounded border break-all">
+                          https://{websiteSettings?.websiteDomain}/en/activities/{name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-{activity?.id || 'yeni'}
+                        </code>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="reservationLink">(Türkçe) Rezervasyon Linki</Label>
+                      <Input 
+                        id="reservationLink"
+                        type="url"
+                        value={reservationLink}
+                        onChange={(e) => setReservationLink(e.target.value)}
+                        placeholder="https://example.com/rezervasyon"
+                        data-testid="input-reservation-link"
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="reservationLinkEn">(İngilizce) Rezervasyon Linki</Label>
-                  <Input 
-                    id="reservationLinkEn"
-                    type="url"
-                    value={reservationLinkEn}
-                    onChange={(e) => setReservationLinkEn(e.target.value)}
-                    placeholder="https://example.com/reservation"
-                    data-testid="input-reservation-link-en"
-                  />
-                  <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği hariçi sayfa linkleri</p>
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="reservationLinkEn">(İngilizce) Rezervasyon Linki</Label>
+                      <Input 
+                        id="reservationLinkEn"
+                        type="url"
+                        value={reservationLinkEn}
+                        onChange={(e) => setReservationLinkEn(e.target.value)}
+                        placeholder="https://example.com/reservation"
+                        data-testid="input-reservation-link-en"
+                      />
+                      <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği harici sayfa linkleri</p>
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="defaultCapacity">Varsayılan Müsaitlik (Her Saat Için)</Label>
