@@ -161,22 +161,44 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
             </div>
 
             <div className="flex flex-wrap justify-center gap-8 mt-12">
-              <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                <MapPin className="h-5 w-5 text-primary" />
-                <span className="font-medium">{activities?.length || 0}+ {t.common.activities}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                <Calendar className="h-5 w-5 text-primary" />
-                <span className="font-medium">7/24 {t.home.support}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                <Users className="h-5 w-5 text-primary" />
-                <span className="font-medium">10K+ {t.activities.person}</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                <span className="font-medium">4.9</span>
-              </div>
+              {(websiteData?.websiteHeroStats && Array.isArray(websiteData.websiteHeroStats) && websiteData.websiteHeroStats.length > 0) ? (
+                websiteData.websiteHeroStats.map((stat: any, index: number) => {
+                  const IconComponent = stat.icon === "star" ? Star : 
+                                        stat.icon === "clock" ? Clock : 
+                                        stat.icon === "users" ? Users : 
+                                        stat.icon === "calendar" ? Calendar : 
+                                        stat.icon === "shield" ? Shield :
+                                        stat.icon === "award" ? Award :
+                                        stat.icon === "thumbsup" ? ThumbsUp :
+                                        MapPin;
+                  const label = language === "en" && stat.labelEn ? stat.labelEn : stat.label;
+                  return (
+                    <div key={index} className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                      <IconComponent className="h-5 w-5 text-primary" />
+                      <span className="font-medium">{stat.value} {label}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    <span className="font-medium">{activities?.length || 0}+ {t.common.activities}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    <span className="font-medium">7/24 {t.home.support}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <Users className="h-5 w-5 text-primary" />
+                    <span className="font-medium">10K+ {t.activities.person}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                    <span className="font-medium">4.9</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

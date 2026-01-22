@@ -81,6 +81,12 @@ export interface PublicWebsiteData {
   };
   websiteWhatsappNumber: string | null;
   websiteLanguages: string[];
+  websiteHeroStats?: Array<{
+    icon: string;
+    value: string;
+    label: string;
+    labelEn: string;
+  }>;
   websiteContactPageTitle: string | null;
   websiteContactPageContent: string | null;
   websiteContactEmail: string | null;

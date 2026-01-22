@@ -5776,6 +5776,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
           websiteFaqPageTitle: tenants.websiteFaqPageTitle,
           websiteFaqPageContent: tenants.websiteFaqPageContent,
           websiteFooterText: tenants.websiteFooterText,
+          websiteDisplayName: tenants.websiteDisplayName,
+          websiteFooterCompanyDescription: tenants.websiteFooterCompanyDescription,
+          websiteFooterPaymentImageUrl: tenants.websiteFooterPaymentImageUrl,
+          websiteFooterCopyrightText: tenants.websiteFooterCopyrightText,
+          websiteFooterBackgroundColor: tenants.websiteFooterBackgroundColor,
+          websiteFooterTextColor: tenants.websiteFooterTextColor,
+          websiteHeaderBackgroundColor: tenants.websiteHeaderBackgroundColor,
+          websiteHeaderTextColor: tenants.websiteHeaderTextColor,
+          websiteHeroStats: tenants.websiteHeroStats,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -5828,6 +5837,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         websiteFaqPageTitle,
         websiteFaqPageContent,
         websiteFooterText,
+        websiteDisplayName,
+        websiteFooterCompanyDescription,
+        websiteFooterPaymentImageUrl,
+        websiteFooterCopyrightText,
+        websiteFooterBackgroundColor,
+        websiteFooterTextColor,
+        websiteHeaderBackgroundColor,
+        websiteHeaderTextColor,
+        websiteHeroStats,
       } = req.body;
 
       const updateData: Record<string, any> = {};
@@ -5863,6 +5881,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       if (websiteFaqPageTitle !== undefined) updateData.websiteFaqPageTitle = websiteFaqPageTitle;
       if (websiteFaqPageContent !== undefined) updateData.websiteFaqPageContent = websiteFaqPageContent;
       if (websiteFooterText !== undefined) updateData.websiteFooterText = websiteFooterText;
+      if (websiteDisplayName !== undefined) updateData.websiteDisplayName = websiteDisplayName;
+      if (websiteFooterCompanyDescription !== undefined) updateData.websiteFooterCompanyDescription = websiteFooterCompanyDescription;
+      if (websiteFooterPaymentImageUrl !== undefined) updateData.websiteFooterPaymentImageUrl = websiteFooterPaymentImageUrl;
+      if (websiteFooterCopyrightText !== undefined) updateData.websiteFooterCopyrightText = websiteFooterCopyrightText;
+      if (websiteFooterBackgroundColor !== undefined) updateData.websiteFooterBackgroundColor = websiteFooterBackgroundColor;
+      if (websiteFooterTextColor !== undefined) updateData.websiteFooterTextColor = websiteFooterTextColor;
+      if (websiteHeaderBackgroundColor !== undefined) updateData.websiteHeaderBackgroundColor = websiteHeaderBackgroundColor;
+      if (websiteHeaderTextColor !== undefined) updateData.websiteHeaderTextColor = websiteHeaderTextColor;
+      if (websiteHeroStats !== undefined) updateData.websiteHeroStats = websiteHeroStats;
 
       if (Object.keys(updateData).length > 0) {
         await db

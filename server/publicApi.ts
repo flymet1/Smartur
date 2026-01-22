@@ -241,6 +241,7 @@ export function registerPublicApiRoutes(app: Express) {
           websiteSocialLinks: tenants.websiteSocialLinks,
           websiteWhatsappNumber: tenants.websiteWhatsappNumber,
           websiteLanguages: tenants.websiteLanguages,
+          websiteHeroStats: tenants.websiteHeroStats,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -252,6 +253,7 @@ export function registerPublicApiRoutes(app: Express) {
 
       let socialLinks = {};
       let languages = ["tr"];
+      let heroStats: any[] = [];
       try {
         socialLinks = JSON.parse(tenant.websiteSocialLinks || "{}");
       } catch (e) {
@@ -262,11 +264,17 @@ export function registerPublicApiRoutes(app: Express) {
       } catch (e) {
         languages = ["tr"];
       }
+      try {
+        heroStats = JSON.parse(tenant.websiteHeroStats || "[]");
+      } catch (e) {
+        heroStats = [];
+      }
 
       res.json({
         ...tenant,
         websiteSocialLinks: socialLinks,
         websiteLanguages: languages,
+        websiteHeroStats: heroStats,
       });
     } catch (err) {
       console.error("Public API info error:", err);

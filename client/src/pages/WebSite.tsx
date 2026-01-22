@@ -81,6 +81,15 @@ interface WebsiteSettings {
   websiteFooterTextColor: string | null;
   websiteHeaderBackgroundColor: string | null;
   websiteHeaderTextColor: string | null;
+  // Hero istatistikleri
+  websiteHeroStats: string | null;
+}
+
+interface HeroStat {
+  icon: string;
+  value: string;
+  label: string;
+  labelEn: string;
 }
 
 interface FaqItem {
@@ -99,6 +108,7 @@ export default function WebSite() {
 
   const [formData, setFormData] = useState<Partial<WebsiteSettings>>({});
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
+  const [heroStats, setHeroStats] = useState<HeroStat[]>([]);
 
   const updateField = (field: keyof WebsiteSettings, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -183,6 +193,42 @@ export default function WebSite() {
   };
 
   const socialLinks = parseSocialLinks();
+
+  // Hero stats functions
+  const parseHeroStats = (): HeroStat[] => {
+    try {
+      const stats = JSON.parse(getValue("websiteHeroStats") || "[]");
+      return Array.isArray(stats) ? stats : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const addHeroStat = () => {
+    const currentStats = heroStats.length > 0 ? heroStats : parseHeroStats();
+    setHeroStats([...currentStats, { icon: "star", value: "", label: "", labelEn: "" }]);
+  };
+
+  const updateHeroStat = (index: number, field: keyof HeroStat, value: string) => {
+    const currentStats = heroStats.length > 0 ? heroStats : parseHeroStats();
+    const updated = [...currentStats];
+    updated[index] = { ...updated[index], [field]: value };
+    setHeroStats(updated);
+  };
+
+  const removeHeroStat = (index: number) => {
+    const currentStats = heroStats.length > 0 ? heroStats : parseHeroStats();
+    setHeroStats(currentStats.filter((_, i) => i !== index));
+  };
+
+  const saveHeroStats = () => {
+    const dataToSave = {
+      websiteHeroStats: JSON.stringify(heroStats.length > 0 ? heroStats : parseHeroStats())
+    };
+    saveMutation.mutate(dataToSave);
+  };
+
+  const displayedHeroStats = heroStats.length > 0 ? heroStats : parseHeroStats();
 
   if (isLoading) {
     return (
@@ -838,17 +884,116 @@ export default function WebSite() {
                 </TabsContent>
 
                 <TabsContent value="sections">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Anasayfa Bölümleri</CardTitle>
-                      <CardDescription>
-                        Anasayfada gösterilecek aktivite kategorilerini yönetin
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <HomepageSectionsManager />
-                    </CardContent>
-                  </Card>
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Settings2 className="h-5 w-5" />
+                          Hero İstatistikleri
+                        </CardTitle>
+                        <CardDescription>
+                          Slider bölümünde gösterilecek istatistikleri düzenleyin (ör: 3+ Aktiviteler, 7/24 Destek)
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {displayedHeroStats.length === 0 ? (
+                          <div className="text-center py-6 text-muted-foreground">
+                            Henüz istatistik eklenmemiş. Varsayılan istatistikler gösterilecektir.
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {displayedHeroStats.map((stat, index) => (
+                              <Card key={index} className="p-4">
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                  <div className="space-y-2">
+                                    <Label>İkon</Label>
+                                    <Input
+                                      placeholder="star, clock, users..."
+                                      value={stat.icon}
+                                      onChange={(e) => updateHeroStat(index, "icon", e.target.value)}
+                                      data-testid={`input-hero-stat-icon-${index}`}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Değer</Label>
+                                    <Input
+                                      placeholder="3+, 7/24, 10K+"
+                                      value={stat.value}
+                                      onChange={(e) => updateHeroStat(index, "value", e.target.value)}
+                                      data-testid={`input-hero-stat-value-${index}`}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Etiket (TR)</Label>
+                                    <Input
+                                      placeholder="Aktiviteler"
+                                      value={stat.label}
+                                      onChange={(e) => updateHeroStat(index, "label", e.target.value)}
+                                      data-testid={`input-hero-stat-label-${index}`}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Etiket (EN)</Label>
+                                    <Input
+                                      placeholder="Activities"
+                                      value={stat.labelEn}
+                                      onChange={(e) => updateHeroStat(index, "labelEn", e.target.value)}
+                                      data-testid={`input-hero-stat-label-en-${index}`}
+                                    />
+                                  </div>
+                                  <div className="flex items-end">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => removeHeroStat(index)}
+                                      className="text-destructive hover:text-destructive"
+                                      data-testid={`button-remove-hero-stat-${index}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={addHeroStat}
+                            className="gap-1"
+                            data-testid="button-add-hero-stat"
+                          >
+                            <Plus className="h-4 w-4" />
+                            İstatistik Ekle
+                          </Button>
+                          {displayedHeroStats.length > 0 && (
+                            <Button
+                              onClick={saveHeroStats}
+                              disabled={saveMutation.isPending}
+                              className="gap-1"
+                              data-testid="button-save-hero-stats"
+                            >
+                              <Save className="h-4 w-4" />
+                              Kaydet
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Anasayfa Bölümleri</CardTitle>
+                        <CardDescription>
+                          Anasayfada gösterilecek aktivite kategorilerini yönetin
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <HomepageSectionsManager />
+                      </CardContent>
+                    </Card>
+                  </div>
                 </TabsContent>
               </Tabs>
             </TabsContent>
