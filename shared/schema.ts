@@ -74,6 +74,32 @@ export const tenants = pgTable("tenants", {
   websiteTemplateSettings: text("website_template_settings").default("{}"), // JSON: template-specific settings (heroSlides, testimonials, trustBadges, featuredCategories)
 });
 
+// === HOMEPAGE SECTIONS (Anasayfa Kategori Bölümleri) ===
+export const homepageSections = pgTable("homepage_sections", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
+  title: text("title").notNull(), // Bölüm başlığı (Türkçe)
+  titleEn: text("title_en"), // Bölüm başlığı (İngilizce)
+  subtitle: text("subtitle"), // Alt başlık (Türkçe)
+  subtitleEn: text("subtitle_en"), // Alt başlık (İngilizce)
+  sectionType: text("section_type").default("activities"), // activities, package_tours, destinations
+  displayOrder: integer("display_order").default(0), // Sıralama
+  isActive: boolean("is_active").default(true), // Aktif mi?
+  activityIds: text("activity_ids").default("[]"), // JSON array of activity IDs to show
+  maxItems: integer("max_items").default(6), // Max gösterilecek öğe sayısı
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertHomepageSectionSchema = createInsertSchema(homepageSections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertHomepageSection = z.infer<typeof insertHomepageSectionSchema>;
+export type HomepageSection = typeof homepageSections.$inferSelect;
+
 // === TABLE DEFINITIONS ===
 
 export const activities = pgTable("activities", {
