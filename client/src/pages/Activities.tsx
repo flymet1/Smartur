@@ -745,31 +745,6 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Aktivite Görseli URL</Label>
-                  <Input 
-                    id="imageUrl"
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://example.com/images/aktivite.jpg"
-                    data-testid="input-activity-image-url"
-                  />
-                  <p className="text-xs text-muted-foreground">Web sitenizde aktivite için gösterilecek görsel URL'si</p>
-                  {imageUrl && (
-                    <div className="mt-2 rounded-md border overflow-hidden">
-                      <img 
-                        src={imageUrl} 
-                        alt="Aktivite görseli önizleme" 
-                        className="w-full h-32 object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="defaultCapacity">Varsayılan Müsaitlik (Her Saat Için)</Label>
                   <Input 
                     id="defaultCapacity" 
@@ -935,6 +910,31 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 <p className="text-sm text-muted-foreground mb-4">
                   Bu alanlar web sitenizde aktivite detay sayfasında gösterilir. Boş bırakılan alanlar gösterilmez.
                 </p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="imageUrl">Aktivite Görseli URL</Label>
+                  <Input 
+                    id="imageUrl"
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://example.com/images/aktivite.jpg"
+                    data-testid="input-activity-image-url"
+                  />
+                  <p className="text-xs text-muted-foreground">Web sitenizde aktivite için gösterilecek görsel URL'si</p>
+                  {imageUrl && (
+                    <div className="mt-2 rounded-md border overflow-hidden">
+                      <img 
+                        src={imageUrl} 
+                        alt="Aktivite görseli önizleme" 
+                        className="w-full h-32 object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
