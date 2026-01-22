@@ -42,6 +42,7 @@ External dependencies should focus on what's actually integrated.
 -   **Licensing & Subscription**: 4-tier licensing system (trial/basic/professional/enterprise) with activity, reservation, and daily message limits. Super Admin panel for dynamic plan management (pricing, features, limits). Subscription page for agencies to view and select plans. Database tables: `subscription_plans`, `subscriptions`, `subscription_payments`, `daily_message_usage` for tracking billing and usage. PayTR integration prepared (pending configuration). Daily message limits: Trial (50), Basic (200), Professional (1000), Enterprise (10000).
 -   **Security**: Password change confirmation, token-based reservation tracking.
 -   **Error Handling**: Retry mechanism with exponential backoff for AI calls, intelligent fallback responses, system logging, and debug snapshot generation.
+-   **Image Upload**: Local file system storage (`/uploads` directory) with size limits (100KB for small images like logo/favicon, 200KB for large images like hero/activity). Only PNG and WebP formats accepted. Multer-based upload system compatible with Coolify deployment (requires Docker volume mount: `./uploads:/app/uploads`).
 
 **Feature Specifications:**
 -   **AI Bot**:
