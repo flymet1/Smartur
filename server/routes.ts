@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import express from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql, eq, and } from "drizzle-orm";
@@ -10,9 +11,52 @@ import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, in
 import { GoogleGenAI } from "@google/genai";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { encrypt, decrypt } from "./encryption";
 import { logError, logWarn, logInfo, attachLogsToSupportRequest, getSupportRequestLogs, getRecentLogs, logErrorEvent, type ErrorCategory, type ErrorSeverity } from "./logger";
 import { registerPublicApiRoutes } from "./publicApi";
+
+// Multer configuration for image uploads
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const multerStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${uniqueSuffix}${ext}`);
+  }
+});
+
+const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedTypes = ['image/png', 'image/webp'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Sadece PNG ve WebP formatları kabul edilir'));
+  }
+};
+
+// Small images (logo, favicon): max 100KB
+const uploadSmall = multer({
+  storage: multerStorage,
+  fileFilter,
+  limits: { fileSize: 100 * 1024 } // 100KB
+});
+
+// Large images (hero, activity): max 200KB
+const uploadLarge = multer({
+  storage: multerStorage,
+  fileFilter,
+  limits: { fileSize: 200 * 1024 } // 200KB
+});
 
 // Module-level exchange rate cache (persists between requests)
 let exchangeRateCache: { rates: any; lastUpdated: Date | null } = { rates: null, lastUpdated: null };
@@ -1210,6 +1254,50 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(uploadDir));
+  
+  // Image upload endpoint - small images (logo, favicon) - max 100KB
+  app.post('/api/upload/small', (req, res, next) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+    }
+    next();
+  }, uploadSmall.single('image'), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "Görsel yüklenemedi" });
+    }
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: imageUrl, filename: req.file.filename });
+  });
+  
+  // Image upload endpoint - large images (hero, activity) - max 200KB
+  app.post('/api/upload/large', (req, res, next) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+    }
+    next();
+  }, uploadLarge.single('image'), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "Görsel yüklenemedi" });
+    }
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ url: imageUrl, filename: req.file.filename });
+  });
+  
+  // Multer error handler
+  app.use((err: any, req: any, res: any, next: any) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: "Dosya boyutu çok büyük. Küçük görseller max 100KB, büyük görseller max 200KB olmalı." });
+      }
+      return res.status(400).json({ error: `Yükleme hatası: ${err.message}` });
+    } else if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
   
   // Global authentication middleware for all /api/* routes
   // Exempts public endpoints that don't require authentication

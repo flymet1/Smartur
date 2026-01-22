@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FaqEditor, FaqItem, parseFaq, stringifyFaq } from "@/components/FaqEditor";
 import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimitDialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ImageUpload } from "@/components/ImageUpload";
 
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
@@ -947,33 +948,13 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   Bu alanlar web sitenizde aktivite detay sayfasında gösterilir. Boş bırakılan alanlar gösterilmez.
                 </p>
 
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Aktivite Görseli URL</Label>
-                  <Input 
-                    id="imageUrl"
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://example.com/images/aktivite.jpg"
-                    data-testid="input-activity-image-url"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Web sitenizde aktivite için gösterilecek görsel URL'si. 
-                    <span className="font-medium text-primary ml-1">Önerilen boyut: 800x600px (4:3 oran)</span>
-                  </p>
-                  {imageUrl && (
-                    <div className="mt-2 rounded-md border overflow-hidden">
-                      <img 
-                        src={imageUrl} 
-                        alt="Aktivite görseli önizleme" 
-                        className="w-full h-32 object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
+                <ImageUpload
+                  value={imageUrl}
+                  onChange={setImageUrl}
+                  label="Aktivite Görseli"
+                  size="large"
+                  recommendedSize="800x600px (4:3 oran)"
+                />
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">

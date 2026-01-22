@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { BlogContent } from "@/pages/Blog";
 import { HomepageSectionsManager } from "@/components/HomepageSectionsManager";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface WebsiteSettings {
   websiteDomain: string | null;
@@ -383,29 +384,13 @@ export default function WebSite() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteHeroImage">Hero Görsel URL</Label>
-                    <Input
-                      id="websiteHeroImage"
-                      placeholder="https://example.com/hero.jpg"
-                      value={getValue("websiteHeroImage")}
-                      onChange={(e) => updateField("websiteHeroImage", e.target.value)}
-                      data-testid="input-hero-image"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium text-primary">Önerilen boyut: 1920x1080px (16:9 oran)</span>
-                    </p>
-                    {getValue("websiteHeroImage") && (
-                      <div className="mt-2 rounded-lg border overflow-hidden">
-                        <img
-                          src={getValue("websiteHeroImage")}
-                          alt="Hero önizleme"
-                          className="w-full h-32 object-cover"
-                          onError={(e) => (e.currentTarget.style.display = "none")}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  <ImageUpload
+                    value={getValue("websiteHeroImage")}
+                    onChange={(url) => updateField("websiteHeroImage", url)}
+                    label="Hero Görseli"
+                    size="large"
+                    recommendedSize="1920x1080px (16:9 oran)"
+                  />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -452,42 +437,20 @@ export default function WebSite() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="websiteLogo">Logo URL</Label>
-                      <Input
-                        id="websiteLogo"
-                        placeholder="https://example.com/logo.png"
-                        value={getValue("websiteLogo")}
-                        onChange={(e) => updateField("websiteLogo", e.target.value)}
-                        data-testid="input-logo-url"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        <span className="font-medium text-primary">Önerilen boyut: 200x80px</span>
-                      </p>
-                      {getValue("websiteLogo") && (
-                        <div className="mt-2 p-4 border rounded-lg bg-muted/50">
-                          <img
-                            src={getValue("websiteLogo")}
-                            alt="Logo önizleme"
-                            className="h-12 w-auto"
-                            onError={(e) => (e.currentTarget.style.display = "none")}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="websiteFavicon">Favicon URL</Label>
-                      <Input
-                        id="websiteFavicon"
-                        placeholder="https://example.com/favicon.ico"
-                        value={getValue("websiteFavicon")}
-                        onChange={(e) => updateField("websiteFavicon", e.target.value)}
-                        data-testid="input-favicon-url"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        <span className="font-medium text-primary">Önerilen boyut: 32x32px veya 64x64px</span>
-                      </p>
-                    </div>
+                    <ImageUpload
+                      value={getValue("websiteLogo")}
+                      onChange={(url) => updateField("websiteLogo", url)}
+                      label="Logo"
+                      size="small"
+                      recommendedSize="200x80px"
+                    />
+                    <ImageUpload
+                      value={getValue("websiteFavicon")}
+                      onChange={(url) => updateField("websiteFavicon", url)}
+                      label="Favicon"
+                      size="small"
+                      recommendedSize="32x32px veya 64x64px"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
