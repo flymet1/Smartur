@@ -91,6 +91,7 @@ interface FaqItem {
 export default function WebSite() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("general");
+  const [activePagesTab, setActivePagesTab] = useState("about");
 
   const { data: settings, isLoading } = useQuery<WebsiteSettings>({
     queryKey: ["/api/website-settings"],
@@ -287,7 +288,7 @@ export default function WebSite() {
           </Card>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6">
               <TabsTrigger value="general" className="gap-1" data-testid="tab-general">
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Genel</span>
@@ -296,21 +297,9 @@ export default function WebSite() {
                 <Palette className="h-4 w-4" />
                 <span className="hidden sm:inline">Görünüm</span>
               </TabsTrigger>
-              <TabsTrigger value="about" className="gap-1" data-testid="tab-about">
-                <Info className="h-4 w-4" />
-                <span className="hidden sm:inline">Hakkımızda</span>
-              </TabsTrigger>
-              <TabsTrigger value="contact" className="gap-1" data-testid="tab-contact">
-                <MessageSquare className="h-4 w-4" />
-                <span className="hidden sm:inline">İletişim</span>
-              </TabsTrigger>
-              <TabsTrigger value="policies" className="gap-1" data-testid="tab-policies">
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Politikalar</span>
-              </TabsTrigger>
-              <TabsTrigger value="faq" className="gap-1" data-testid="tab-faq">
-                <HelpCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">SSS</span>
+              <TabsTrigger value="pages" className="gap-1" data-testid="tab-pages">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">Sayfalar</span>
               </TabsTrigger>
               <TabsTrigger value="footer" className="gap-1" data-testid="tab-footer">
                 <LayoutPanelTop className="h-4 w-4" />
@@ -544,283 +533,306 @@ export default function WebSite() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="about" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hakkımızda Sayfası</CardTitle>
-                  <CardDescription>Şirketiniz hakkında bilgi</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteAboutPageTitle">Sayfa Başlığı</Label>
-                    <Input
-                      id="websiteAboutPageTitle"
-                      placeholder="Hakkımızda"
-                      value={getValue("websiteAboutPageTitle")}
-                      onChange={(e) => updateField("websiteAboutPageTitle", e.target.value)}
-                      data-testid="input-about-title"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteAboutPageContent">İçerik (HTML destekler)</Label>
-                    <Textarea
-                      id="websiteAboutPageContent"
-                      placeholder="Şirketiniz hakkında detaylı bilgi..."
-                      value={getValue("websiteAboutPageContent")}
-                      onChange={(e) => updateField("websiteAboutPageContent", e.target.value)}
-                      rows={10}
-                      data-testid="input-about-content"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+            <TabsContent value="pages" className="mt-6">
+              <Tabs value={activePagesTab} onValueChange={setActivePagesTab}>
+                <TabsList className="grid w-full grid-cols-4 mb-6">
+                  <TabsTrigger value="about" className="gap-1" data-testid="tab-about">
+                    <Info className="h-4 w-4" />
+                    <span className="hidden sm:inline">Hakkımızda</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="contact" className="gap-1" data-testid="tab-contact">
+                    <MessageSquare className="h-4 w-4" />
+                    <span className="hidden sm:inline">İletişim</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="policies" className="gap-1" data-testid="tab-policies">
+                    <Shield className="h-4 w-4" />
+                    <span className="hidden sm:inline">Politikalar</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="faq" className="gap-1" data-testid="tab-faq">
+                    <HelpCircle className="h-4 w-4" />
+                    <span className="hidden sm:inline">SSS</span>
+                  </TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="contact" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>İletişim Sayfası</CardTitle>
-                  <CardDescription>İletişim bilgileri ve sayfa içeriği</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteContactPageTitle">Sayfa Başlığı</Label>
-                    <Input
-                      id="websiteContactPageTitle"
-                      placeholder="İletişim"
-                      value={getValue("websiteContactPageTitle")}
-                      onChange={(e) => updateField("websiteContactPageTitle", e.target.value)}
-                      data-testid="input-contact-title"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="websiteContactEmail" className="flex items-center gap-1">
-                        <Mail className="h-4 w-4" /> E-posta
-                      </Label>
-                      <Input
-                        id="websiteContactEmail"
-                        type="email"
-                        placeholder="info@example.com"
-                        value={getValue("websiteContactEmail")}
-                        onChange={(e) => updateField("websiteContactEmail", e.target.value)}
-                        data-testid="input-contact-email"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="websiteContactPhone" className="flex items-center gap-1">
-                        <Phone className="h-4 w-4" /> Telefon
-                      </Label>
-                      <Input
-                        id="websiteContactPhone"
-                        placeholder="+90 555 123 4567"
-                        value={getValue("websiteContactPhone")}
-                        onChange={(e) => updateField("websiteContactPhone", e.target.value)}
-                        data-testid="input-contact-phone"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="websiteWhatsappNumber" className="flex items-center gap-1">
-                        <MessageSquare className="h-4 w-4" /> WhatsApp
-                      </Label>
-                      <Input
-                        id="websiteWhatsappNumber"
-                        placeholder="+905551234567"
-                        value={getValue("websiteWhatsappNumber")}
-                        onChange={(e) => updateField("websiteWhatsappNumber", e.target.value)}
-                        data-testid="input-whatsapp-number"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteContactAddress" className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" /> Adres
-                    </Label>
-                    <Textarea
-                      id="websiteContactAddress"
-                      placeholder="Tam adres bilgisi..."
-                      value={getValue("websiteContactAddress")}
-                      onChange={(e) => updateField("websiteContactAddress", e.target.value)}
-                      rows={2}
-                      data-testid="input-contact-address"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteContactPageContent">Ek Açıklama</Label>
-                    <Textarea
-                      id="websiteContactPageContent"
-                      placeholder="İletişim sayfasında gösterilecek ek bilgi..."
-                      value={getValue("websiteContactPageContent")}
-                      onChange={(e) => updateField("websiteContactPageContent", e.target.value)}
-                      rows={4}
-                      data-testid="input-contact-content"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                <TabsContent value="about">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Hakkımızda Sayfası</CardTitle>
+                      <CardDescription>Şirketiniz hakkında bilgi</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteAboutPageTitle">Sayfa Başlığı</Label>
+                        <Input
+                          id="websiteAboutPageTitle"
+                          placeholder="Hakkımızda"
+                          value={getValue("websiteAboutPageTitle")}
+                          onChange={(e) => updateField("websiteAboutPageTitle", e.target.value)}
+                          data-testid="input-about-title"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteAboutPageContent">İçerik (HTML destekler)</Label>
+                        <Textarea
+                          id="websiteAboutPageContent"
+                          placeholder="Şirketiniz hakkında detaylı bilgi..."
+                          value={getValue("websiteAboutPageContent")}
+                          onChange={(e) => updateField("websiteAboutPageContent", e.target.value)}
+                          rows={10}
+                          data-testid="input-about-content"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-            <TabsContent value="policies" className="mt-6 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>İptal ve İade Politikası</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteCancellationPageTitle">Sayfa Başlığı</Label>
-                    <Input
-                      id="websiteCancellationPageTitle"
-                      placeholder="İptal ve İade Politikası"
-                      value={getValue("websiteCancellationPageTitle")}
-                      onChange={(e) => updateField("websiteCancellationPageTitle", e.target.value)}
-                      data-testid="input-cancellation-title"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteCancellationPageContent">İçerik</Label>
-                    <Textarea
-                      id="websiteCancellationPageContent"
-                      placeholder="İptal ve iade koşulları..."
-                      value={getValue("websiteCancellationPageContent")}
-                      onChange={(e) => updateField("websiteCancellationPageContent", e.target.value)}
-                      rows={8}
-                      data-testid="input-cancellation-content"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                <TabsContent value="contact">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>İletişim Sayfası</CardTitle>
+                      <CardDescription>İletişim bilgileri ve sayfa içeriği</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteContactPageTitle">Sayfa Başlığı</Label>
+                        <Input
+                          id="websiteContactPageTitle"
+                          placeholder="İletişim"
+                          value={getValue("websiteContactPageTitle")}
+                          onChange={(e) => updateField("websiteContactPageTitle", e.target.value)}
+                          data-testid="input-contact-title"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="websiteContactEmail" className="flex items-center gap-1">
+                            <Mail className="h-4 w-4" /> E-posta
+                          </Label>
+                          <Input
+                            id="websiteContactEmail"
+                            type="email"
+                            placeholder="info@example.com"
+                            value={getValue("websiteContactEmail")}
+                            onChange={(e) => updateField("websiteContactEmail", e.target.value)}
+                            data-testid="input-contact-email"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="websiteContactPhone" className="flex items-center gap-1">
+                            <Phone className="h-4 w-4" /> Telefon
+                          </Label>
+                          <Input
+                            id="websiteContactPhone"
+                            placeholder="+90 555 123 4567"
+                            value={getValue("websiteContactPhone")}
+                            onChange={(e) => updateField("websiteContactPhone", e.target.value)}
+                            data-testid="input-contact-phone"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="websiteWhatsappNumber" className="flex items-center gap-1">
+                            <MessageSquare className="h-4 w-4" /> WhatsApp
+                          </Label>
+                          <Input
+                            id="websiteWhatsappNumber"
+                            placeholder="+905551234567"
+                            value={getValue("websiteWhatsappNumber")}
+                            onChange={(e) => updateField("websiteWhatsappNumber", e.target.value)}
+                            data-testid="input-whatsapp-number"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteContactAddress" className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" /> Adres
+                        </Label>
+                        <Textarea
+                          id="websiteContactAddress"
+                          placeholder="Tam adres bilgisi..."
+                          value={getValue("websiteContactAddress")}
+                          onChange={(e) => updateField("websiteContactAddress", e.target.value)}
+                          rows={2}
+                          data-testid="input-contact-address"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteContactPageContent">Ek Açıklama</Label>
+                        <Textarea
+                          id="websiteContactPageContent"
+                          placeholder="İletişim sayfasında gösterilecek ek bilgi..."
+                          value={getValue("websiteContactPageContent")}
+                          onChange={(e) => updateField("websiteContactPageContent", e.target.value)}
+                          rows={4}
+                          data-testid="input-contact-content"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Gizlilik Politikası</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="websitePrivacyPageTitle">Sayfa Başlığı</Label>
-                    <Input
-                      id="websitePrivacyPageTitle"
-                      placeholder="Gizlilik Politikası"
-                      value={getValue("websitePrivacyPageTitle")}
-                      onChange={(e) => updateField("websitePrivacyPageTitle", e.target.value)}
-                      data-testid="input-privacy-title"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="websitePrivacyPageContent">İçerik</Label>
-                    <Textarea
-                      id="websitePrivacyPageContent"
-                      placeholder="Gizlilik politikası metni..."
-                      value={getValue("websitePrivacyPageContent")}
-                      onChange={(e) => updateField("websitePrivacyPageContent", e.target.value)}
-                      rows={8}
-                      data-testid="input-privacy-content"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                <TabsContent value="policies" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>İptal ve İade Politikası</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteCancellationPageTitle">Sayfa Başlığı</Label>
+                        <Input
+                          id="websiteCancellationPageTitle"
+                          placeholder="İptal ve İade Politikası"
+                          value={getValue("websiteCancellationPageTitle")}
+                          onChange={(e) => updateField("websiteCancellationPageTitle", e.target.value)}
+                          data-testid="input-cancellation-title"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteCancellationPageContent">İçerik</Label>
+                        <Textarea
+                          id="websiteCancellationPageContent"
+                          placeholder="İptal ve iade koşulları..."
+                          value={getValue("websiteCancellationPageContent")}
+                          onChange={(e) => updateField("websiteCancellationPageContent", e.target.value)}
+                          rows={8}
+                          data-testid="input-cancellation-content"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Kullanım Koşulları</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteTermsPageTitle">Sayfa Başlığı</Label>
-                    <Input
-                      id="websiteTermsPageTitle"
-                      placeholder="Kullanım Koşulları"
-                      value={getValue("websiteTermsPageTitle")}
-                      onChange={(e) => updateField("websiteTermsPageTitle", e.target.value)}
-                      data-testid="input-terms-title"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteTermsPageContent">İçerik</Label>
-                    <Textarea
-                      id="websiteTermsPageContent"
-                      placeholder="Kullanım koşulları metni..."
-                      value={getValue("websiteTermsPageContent")}
-                      onChange={(e) => updateField("websiteTermsPageContent", e.target.value)}
-                      rows={8}
-                      data-testid="input-terms-content"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Gizlilik Politikası</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="websitePrivacyPageTitle">Sayfa Başlığı</Label>
+                        <Input
+                          id="websitePrivacyPageTitle"
+                          placeholder="Gizlilik Politikası"
+                          value={getValue("websitePrivacyPageTitle")}
+                          onChange={(e) => updateField("websitePrivacyPageTitle", e.target.value)}
+                          data-testid="input-privacy-title"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websitePrivacyPageContent">İçerik</Label>
+                        <Textarea
+                          id="websitePrivacyPageContent"
+                          placeholder="Gizlilik politikası metni..."
+                          value={getValue("websitePrivacyPageContent")}
+                          onChange={(e) => updateField("websitePrivacyPageContent", e.target.value)}
+                          rows={8}
+                          data-testid="input-privacy-content"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
 
-            <TabsContent value="faq" className="mt-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Sıkça Sorulan Sorular</CardTitle>
-                    <CardDescription>Müşterilerinizin sık sorduğu sorular</CardDescription>
-                  </div>
-                  <Button onClick={addFaqItem} size="sm" data-testid="button-add-faq">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Soru Ekle
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="websiteFaqPageTitle">Sayfa Başlığı</Label>
-                    <Input
-                      id="websiteFaqPageTitle"
-                      placeholder="Sıkça Sorulan Sorular"
-                      value={getValue("websiteFaqPageTitle")}
-                      onChange={(e) => updateField("websiteFaqPageTitle", e.target.value)}
-                      data-testid="input-faq-title"
-                    />
-                  </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Kullanım Koşulları</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteTermsPageTitle">Sayfa Başlığı</Label>
+                        <Input
+                          id="websiteTermsPageTitle"
+                          placeholder="Kullanım Koşulları"
+                          value={getValue("websiteTermsPageTitle")}
+                          onChange={(e) => updateField("websiteTermsPageTitle", e.target.value)}
+                          data-testid="input-terms-title"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteTermsPageContent">İçerik</Label>
+                        <Textarea
+                          id="websiteTermsPageContent"
+                          placeholder="Kullanım koşulları metni..."
+                          value={getValue("websiteTermsPageContent")}
+                          onChange={(e) => updateField("websiteTermsPageContent", e.target.value)}
+                          rows={8}
+                          data-testid="input-terms-content"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-                  {parseFaqItems().length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <HelpCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>Henüz soru eklenmemiş</p>
-                      <p className="text-sm">Yukarıdaki "Soru Ekle" butonuna tıklayarak başlayın</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {parseFaqItems().map((item, index) => (
-                        <Card key={index} className="bg-muted/30">
-                          <CardContent className="pt-4 space-y-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 space-y-2">
-                                <Label>Soru {index + 1}</Label>
-                                <Input
-                                  placeholder="Soru metni..."
-                                  value={item.question}
-                                  onChange={(e) => updateFaqItem(index, "question", e.target.value)}
-                                  data-testid={`input-faq-question-${index}`}
-                                />
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeFaqItem(index)}
-                                className="text-destructive hover:text-destructive"
-                                data-testid={`button-remove-faq-${index}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Cevap</Label>
-                              <Textarea
-                                placeholder="Cevap metni..."
-                                value={item.answer}
-                                onChange={(e) => updateFaqItem(index, "answer", e.target.value)}
-                                rows={3}
-                                data-testid={`input-faq-answer-${index}`}
-                              />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                <TabsContent value="faq">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle>Sıkça Sorulan Sorular</CardTitle>
+                        <CardDescription>Müşterilerinizin sık sorduğu sorular</CardDescription>
+                      </div>
+                      <Button onClick={addFaqItem} size="sm" data-testid="button-add-faq">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Soru Ekle
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteFaqPageTitle">Sayfa Başlığı</Label>
+                        <Input
+                          id="websiteFaqPageTitle"
+                          placeholder="Sıkça Sorulan Sorular"
+                          value={getValue("websiteFaqPageTitle")}
+                          onChange={(e) => updateField("websiteFaqPageTitle", e.target.value)}
+                          data-testid="input-faq-title"
+                        />
+                      </div>
+
+                      {parseFaqItems().length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <HelpCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                          <p>Henüz soru eklenmemiş</p>
+                          <p className="text-sm">Yukarıdaki "Soru Ekle" butonuna tıklayarak başlayın</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {parseFaqItems().map((item, index) => (
+                            <Card key={index} className="bg-muted/30">
+                              <CardContent className="pt-4 space-y-3">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 space-y-2">
+                                    <Label>Soru {index + 1}</Label>
+                                    <Input
+                                      placeholder="Soru metni..."
+                                      value={item.question}
+                                      onChange={(e) => updateFaqItem(index, "question", e.target.value)}
+                                      data-testid={`input-faq-question-${index}`}
+                                    />
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeFaqItem(index)}
+                                    className="text-destructive hover:text-destructive"
+                                    data-testid={`button-remove-faq-${index}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Cevap</Label>
+                                  <Textarea
+                                    placeholder="Cevap metni..."
+                                    value={item.answer}
+                                    onChange={(e) => updateFaqItem(index, "answer", e.target.value)}
+                                    rows={3}
+                                    data-testid={`input-faq-answer-${index}`}
+                                  />
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             <TabsContent value="footer" className="mt-6">
