@@ -414,7 +414,7 @@ export default function PublicActivityDetail() {
 
             <div className="grid md:grid-cols-2 gap-6">
               {activity.includedItems && activity.includedItems.length > 0 && (
-                <Card>
+                <Card className="border-0 shadow-md">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2 text-green-600">
                       <Check className="h-5 w-5" />
@@ -435,7 +435,7 @@ export default function PublicActivityDetail() {
               )}
 
               {activity.excludedItems && activity.excludedItems.length > 0 && (
-                <Card>
+                <Card className="border-0 shadow-md">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2 text-red-600">
                       <X className="h-5 w-5" />
@@ -457,7 +457,7 @@ export default function PublicActivityDetail() {
             </div>
 
             {(activity.meetingPoint || (activity.minAge != null && activity.minAge > 0) || (activity.tourLanguages && activity.tourLanguages.length > 0)) && (
-              <Card>
+              <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Info className="h-5 w-5" />
@@ -527,7 +527,7 @@ export default function PublicActivityDetail() {
             )}
 
             {activity.transferZones && activity.transferZones.length > 0 && (
-              <Card>
+              <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
@@ -553,7 +553,7 @@ export default function PublicActivityDetail() {
             )}
 
             {activity.extras && activity.extras.length > 0 && (
-              <Card>
+              <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Award className="h-5 w-5" />
@@ -584,7 +584,7 @@ export default function PublicActivityDetail() {
             )}
 
             {activity.faq && activity.faq.length > 0 && (
-              <Card>
+              <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MessageCircle className="h-5 w-5" />
@@ -609,7 +609,7 @@ export default function PublicActivityDetail() {
 
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-4">
-              <Card className="border-2 border-primary/20 shadow-lg">
+              <Card className="border-0 shadow-lg">
                 {reservationStep === "success" ? (
                   <CardContent className="pt-6 pb-6">
                     <div className="space-y-4">
@@ -940,7 +940,7 @@ export default function PublicActivityDetail() {
 
                           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                             {participants.map((participant, idx) => (
-                              <Card key={idx} className="p-4">
+                              <Card key={idx} className="p-4 border-0 shadow-sm">
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                                     <User className="h-4 w-4 text-primary" />
@@ -1115,7 +1115,7 @@ export default function PublicActivityDetail() {
               </Card>
 
               {(websiteData?.contactPhone || websiteData?.websiteContactPhone || websiteData?.websiteWhatsappNumber) && (
-                <Card>
+                <Card className="border-0 shadow-md">
                   <CardContent className="pt-6">
                     <p className="font-medium mb-3">
                       {language === "en" ? "Need Help?" : "Yardıma mı ihtiyacınız var?"}
@@ -1165,7 +1165,7 @@ export default function PublicActivityDetail() {
             <div className="grid md:grid-cols-3 gap-6">
               {relatedActivities.map((related) => (
                 <Link key={related.id} href={getLocalizedPath(`/aktivite/${related.id}`)}>
-                  <Card className="overflow-hidden hover-elevate cursor-pointer h-full">
+                  <Card className="overflow-hidden hover-elevate cursor-pointer h-full border-0 shadow-md hover:shadow-xl">
                     <div className="aspect-video relative overflow-hidden">
                       <img
                         src={related.imageUrl || "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80"}
