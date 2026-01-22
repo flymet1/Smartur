@@ -32,7 +32,7 @@ export default function PublicContact({ websiteData }: PublicContactProps) {
 
             <div className="space-y-6">
               {websiteData?.websiteContactPhone && (
-                <Card>
+                <Card className="border-0 shadow-md">
                   <CardContent className="p-6 flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <Phone className="h-6 w-6 text-primary" />
@@ -51,7 +51,7 @@ export default function PublicContact({ websiteData }: PublicContactProps) {
               )}
 
               {websiteData?.websiteContactEmail && (
-                <Card>
+                <Card className="border-0 shadow-md">
                   <CardContent className="p-6 flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <Mail className="h-6 w-6 text-primary" />
@@ -70,7 +70,7 @@ export default function PublicContact({ websiteData }: PublicContactProps) {
               )}
 
               {websiteData?.websiteContactAddress && (
-                <Card>
+                <Card className="border-0 shadow-md">
                   <CardContent className="p-6 flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       <MapPin className="h-6 w-6 text-primary" />
@@ -84,7 +84,7 @@ export default function PublicContact({ websiteData }: PublicContactProps) {
               )}
 
               {websiteData?.websiteWhatsappNumber && (
-                <Card className="bg-green-50 border-green-200">
+                <Card className="bg-green-50 border-0 shadow-md">
                   <CardContent className="p-6 flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-green-500 flex items-center justify-center shrink-0">
                       <FaWhatsapp className="h-6 w-6 text-white" />
@@ -107,7 +107,7 @@ export default function PublicContact({ websiteData }: PublicContactProps) {
           </div>
 
           <div>
-            <Card>
+            <Card className="border-0 shadow-md">
               <CardHeader>
                 <CardTitle>Çalışma Saatleri</CardTitle>
               </CardHeader>
@@ -126,7 +126,7 @@ export default function PublicContact({ websiteData }: PublicContactProps) {
             </Card>
 
             <div className="mt-8">
-              <Card>
+              <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle>{websiteData?.websiteAboutPageTitle || "Hakkımızda"}</CardTitle>
                 </CardHeader>

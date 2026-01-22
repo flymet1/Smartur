@@ -48,7 +48,7 @@ export function ActivityCard({ activity, variant = "default" }: ActivityCardProp
     difficultyLabels["tr"][activity.difficulty || "easy"];
 
   return (
-    <Card className="group overflow-hidden hover-elevate active-elevate-2 transition-all duration-300 h-full flex flex-col" data-testid={`card-activity-${activity.id}`}>
+    <Card className="group overflow-hidden hover-elevate active-elevate-2 transition-all duration-300 h-full flex flex-col border-0 shadow-md hover:shadow-xl" data-testid={`card-activity-${activity.id}`}>
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
           src={imageUrl}

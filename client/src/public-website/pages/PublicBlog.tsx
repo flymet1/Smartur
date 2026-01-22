@@ -150,7 +150,7 @@ export default function PublicBlog({ websiteData }: PublicBlogProps) {
               {filteredPosts.map((post) => (
                 <Link key={post.id} href={`/blog/${post.slug}`}>
                   <Card 
-                    className="overflow-hidden hover-elevate transition-all duration-300 h-full cursor-pointer group"
+                    className="overflow-hidden hover-elevate transition-all duration-300 h-full cursor-pointer group border-0 shadow-md hover:shadow-xl"
                     data-testid={`card-blog-post-${post.id}`}
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
