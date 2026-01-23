@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { ImageUpload } from "@/components/ImageUpload";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2734,36 +2735,14 @@ function SmartutWebsitesSection() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="footerLogoUrl">Logo URL</Label>
-            <Input
-              id="footerLogoUrl"
-              value={footerLogoUrl}
-              onChange={(e) => setFooterLogoUrl(e.target.value)}
-              placeholder="/smartur-logo.png veya https://example.com/logo.png"
-              data-testid="input-footer-logo-url"
-            />
-            <p className="text-xs text-muted-foreground">
-              Smartur logosu için URL. Yerel dosya (/smartur-logo.png) veya harici URL kullanabilirsiniz.
-            </p>
-          </div>
-
-          {footerLogoUrl && (
-            <div className="p-4 border rounded-lg bg-muted/30">
-              <Label className="text-sm mb-2 block">Logo Önizleme</Label>
-              <div className="flex items-center gap-4">
-                <img 
-                  src={footerLogoUrl} 
-                  alt="Smartur Logo Preview" 
-                  className="h-8 w-auto object-contain"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='32' viewBox='0 0 100 32'%3E%3Crect fill='%23f0f0f0' width='100' height='32'/%3E%3Ctext x='50' y='20' text-anchor='middle' fill='%23999' font-size='10'%3ELogo%3C/text%3E%3C/svg%3E";
-                  }}
-                />
-                <span className="text-sm text-muted-foreground">Powered by Smartur</span>
-              </div>
-            </div>
-          )}
+          <ImageUpload
+            value={footerLogoUrl}
+            onChange={setFooterLogoUrl}
+            label="Smartur Footer Logosu"
+            size="small"
+            placeholder="/smartur-logo.png"
+            recommendedSize="Logo için önerilen boyut: 200x50 piksel, maksimum 100KB"
+          />
 
           <div className="space-y-2">
             <Label htmlFor="footerLinkUrl">Yönlendirme URL</Label>
