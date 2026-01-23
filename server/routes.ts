@@ -4,7 +4,7 @@ import express from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql, eq, and } from "drizzle-orm";
-import { supplierDispatches, reservations, userRoles, roles, tenants, homepageSections } from "@shared/schema";
+import { supplierDispatches, reservations, userRoles, roles, tenants, homepageSections, smarturSettings } from "@shared/schema";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
@@ -6343,6 +6343,74 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       res.clearCookie('connect.sid');
       return res.json({ success: true });
     });
+  });
+
+  // === SMARTUR SETTINGS API (Platform-wide settings managed by Super Admin) ===
+  
+  // Get all smartur settings
+  app.get("/api/smartur-settings", async (req, res) => {
+    try {
+      // Check platform admin auth
+      if (!req.session?.isPlatformAdmin) {
+        return res.status(401).json({ error: "Yetkisiz erişim" });
+      }
+
+      const settings = await db.select().from(smarturSettings);
+      
+      // Convert to key-value object
+      const settingsObj: Record<string, string | null> = {};
+      for (const setting of settings) {
+        settingsObj[setting.settingKey] = setting.settingValue;
+      }
+      
+      res.json(settingsObj);
+    } catch (error) {
+      console.error("Smartur settings fetch error:", error);
+      res.status(500).json({ error: "Ayarlar alınamadı" });
+    }
+  });
+
+  // Update smartur settings
+  app.put("/api/smartur-settings", async (req, res) => {
+    try {
+      // Check platform admin auth
+      if (!req.session?.isPlatformAdmin) {
+        return res.status(401).json({ error: "Yetkisiz erişim" });
+      }
+
+      const { footer_logo_url, footer_link_url, footer_enabled } = req.body;
+
+      // Upsert each setting
+      const settingsToUpdate = [
+        { key: "footer_logo_url", value: footer_logo_url, desc: "Tüm web sitelerin footer alanında gösterilecek Smartur logosu URL" },
+        { key: "footer_link_url", value: footer_link_url, desc: "Smartur logosuna tıklandığında yönlendirilecek web sitesi URL" },
+        { key: "footer_enabled", value: footer_enabled?.toString() || "true", desc: "Smartur footer logosu gösterilsin mi" },
+      ];
+
+      for (const setting of settingsToUpdate) {
+        if (setting.value !== undefined) {
+          await db
+            .insert(smarturSettings)
+            .values({
+              settingKey: setting.key,
+              settingValue: setting.value,
+              settingDescription: setting.desc,
+            })
+            .onConflictDoUpdate({
+              target: smarturSettings.settingKey,
+              set: {
+                settingValue: setting.value,
+                updatedAt: new Date(),
+              },
+            });
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Smartur settings update error:", error);
+      res.status(500).json({ error: "Ayarlar güncellenemedi" });
+    }
   });
 
   // === Tenant Integrations API (Multi-tenant: Twilio, WooCommerce, Gmail) ===

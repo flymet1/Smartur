@@ -77,7 +77,8 @@ import {
   HardDrive,
   UserPlus,
   KeyRound,
-  Palette
+  Palette,
+  Globe
 } from "lucide-react";
 import type { SubscriptionPlan, Subscription, SubscriptionPayment, PlanFeature } from "@shared/schema";
 
@@ -2641,6 +2642,201 @@ function PopupAppearanceSection() {
                 </>
               )}
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Smartur Websiteleri Ayarları Section
+function SmartutWebsitesSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [footerLogoUrl, setFooterLogoUrl] = useState("/smartur-logo.png");
+  const [footerLinkUrl, setFooterLinkUrl] = useState("https://www.mysmartur.com");
+  const [footerEnabled, setFooterEnabled] = useState(true);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  const { data: smarturSettings, isLoading } = useQuery<Record<string, string | null>>({
+    queryKey: ['/api/smartur-settings'],
+  });
+
+  useEffect(() => {
+    if (smarturSettings && !settingsLoaded) {
+      setFooterLogoUrl(smarturSettings.footer_logo_url || "/smartur-logo.png");
+      setFooterLinkUrl(smarturSettings.footer_link_url || "https://www.mysmartur.com");
+      setFooterEnabled(smarturSettings.footer_enabled !== "false");
+      setSettingsLoaded(true);
+    }
+  }, [smarturSettings, settingsLoaded]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PUT", "/api/smartur-settings", {
+        footer_logo_url: footerLogoUrl,
+        footer_link_url: footerLinkUrl,
+        footer_enabled: footerEnabled,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/smartur-settings'] });
+      toast({ title: "Başarılı", description: "Smartur website ayarları kaydedildi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <Globe className="h-6 w-6 text-primary" />
+          Smartur Websiteleri
+        </h2>
+        <p className="text-muted-foreground mt-1">
+          Tüm acenta web sitelerinin footer alanında gösterilecek Smartur logosu ve link ayarları
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings2 className="h-5 w-5" />
+            Footer Smartur Logosu Ayarları
+          </CardTitle>
+          <CardDescription>
+            Bu ayarlar tüm acenta web sitelerinin footer bölümünde gösterilecek Smartur logosunu ve yönlendirme linkini kontrol eder.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <Label className="text-base font-medium">Footer Logosu Aktif</Label>
+              <p className="text-sm text-muted-foreground">
+                Tüm acenta web sitelerinde Smartur logosu gösterilsin mi?
+              </p>
+            </div>
+            <Switch
+              checked={footerEnabled}
+              onCheckedChange={setFooterEnabled}
+              data-testid="switch-footer-enabled"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="footerLogoUrl">Logo URL</Label>
+            <Input
+              id="footerLogoUrl"
+              value={footerLogoUrl}
+              onChange={(e) => setFooterLogoUrl(e.target.value)}
+              placeholder="/smartur-logo.png veya https://example.com/logo.png"
+              data-testid="input-footer-logo-url"
+            />
+            <p className="text-xs text-muted-foreground">
+              Smartur logosu için URL. Yerel dosya (/smartur-logo.png) veya harici URL kullanabilirsiniz.
+            </p>
+          </div>
+
+          {footerLogoUrl && (
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <Label className="text-sm mb-2 block">Logo Önizleme</Label>
+              <div className="flex items-center gap-4">
+                <img 
+                  src={footerLogoUrl} 
+                  alt="Smartur Logo Preview" 
+                  className="h-8 w-auto object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='32' viewBox='0 0 100 32'%3E%3Crect fill='%23f0f0f0' width='100' height='32'/%3E%3Ctext x='50' y='20' text-anchor='middle' fill='%23999' font-size='10'%3ELogo%3C/text%3E%3C/svg%3E";
+                  }}
+                />
+                <span className="text-sm text-muted-foreground">Powered by Smartur</span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="footerLinkUrl">Yönlendirme URL</Label>
+            <Input
+              id="footerLinkUrl"
+              value={footerLinkUrl}
+              onChange={(e) => setFooterLinkUrl(e.target.value)}
+              placeholder="https://www.mysmartur.com"
+              data-testid="input-footer-link-url"
+            />
+            <p className="text-xs text-muted-foreground">
+              Logoya tıklandığında kullanıcının yönlendirileceği web sitesi adresi.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              data-testid="button-save-smartur-settings"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Kaydediliyor...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Kaydet
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            Footer Önizleme
+          </CardTitle>
+          <CardDescription>
+            Acenta web sitelerinde footer'ın nasıl görüneceğinin örneği
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg p-6 bg-card">
+            <div className="flex flex-col items-center justify-center gap-2 text-center">
+              <p className="text-xs text-muted-foreground">Powered by</p>
+              {footerEnabled ? (
+                <a 
+                  href={footerLinkUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
+                  <img 
+                    src={footerLogoUrl} 
+                    alt="Smartur" 
+                    className="h-6 w-auto object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='24' viewBox='0 0 100 24'%3E%3Crect fill='%23f0f0f0' width='100' height='24'/%3E%3Ctext x='50' y='16' text-anchor='middle' fill='%23999' font-size='10'%3ESmartur%3C/text%3E%3C/svg%3E";
+                    }}
+                  />
+                </a>
+              ) : (
+                <Badge variant="outline" className="text-muted-foreground">
+                  Logo Devre Dışı
+                </Badge>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -5688,6 +5884,7 @@ export default function SuperAdmin() {
     configuration: [
       { id: "branding", label: "Marka Ayarları", icon: Palette },
       { id: "popup-appearance", label: "Popup Görünümü", icon: Layers },
+      { id: "websites", label: "Smartur Websiteleri", icon: Globe },
     ],
   };
 
@@ -5995,6 +6192,7 @@ export default function SuperAdmin() {
 
             {activeSubTab === "branding" && <BrandingSection />}
             {activeSubTab === "popup-appearance" && <PopupAppearanceSection />}
+            {activeSubTab === "websites" && <SmartutWebsitesSection />}
           </div>
         </ScrollArea>
       </div>
