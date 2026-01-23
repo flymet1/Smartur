@@ -754,7 +754,7 @@ export function Sidebar() {
         <div className="p-6">
           {/* Smartur platform logo - managed by Super Admin only */}
           <a href={smarturLinkUrl} target="_blank" rel="noopener noreferrer">
-            <img src={smarturLogoUrl} alt="Smartur" className="h-10 w-auto" data-testid="img-sidebar-logo" />
+            <img src={smarturLogoUrl} alt="Smartur" className="h-7 w-auto" data-testid="img-sidebar-logo" />
           </a>
         </div>
 
