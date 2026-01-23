@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { MapPin, Phone, Mail, CreditCard, Shield, Award, Globe, ChevronDown } from "lucide-react";
 import { FaFacebook, FaInstagram, FaTwitter, FaYoutube, FaWhatsapp } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,13 @@ import { cn } from "@/lib/utils";
 import type { PublicWebsiteData } from "../../types";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { languageNames, type Language } from "../../i18n";
+import { getApiUrl } from "../../utils";
+
+interface SmartutSettings {
+  footer_logo_url: string;
+  footer_link_url: string;
+  footer_enabled: boolean;
+}
 
 interface PublicFooterProps {
   data?: PublicWebsiteData;
@@ -15,6 +23,11 @@ interface PublicFooterProps {
 export function PublicFooter({ data }: PublicFooterProps) {
   const currentYear = new Date().getFullYear();
   const { t, language, setLanguage, getLocalizedPath } = useLanguage();
+  
+  // Smartur platform settings for footer logo
+  const { data: smarturSettings } = useQuery<SmartutSettings>({
+    queryKey: [getApiUrl("/api/website/smartur-settings")],
+  });
   
   // Dil seçici görünmesi için en az 2 dil gerekli
   const configuredLanguages = data?.websiteLanguages as Language[] | undefined;
@@ -267,6 +280,28 @@ export function PublicFooter({ data }: PublicFooterProps) {
             </div>
           </div>
         </div>
+
+        {smarturSettings?.footer_enabled && (
+          <div className="border-t mt-4 pt-4 flex flex-col items-center justify-center gap-1">
+            <span className={`text-xs ${mutedClass}`}>Powered by</span>
+            <a
+              href={smarturSettings.footer_link_url || "https://www.mysmartur.com"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:opacity-80 transition-opacity"
+              data-testid="link-smartur-footer"
+            >
+              <img
+                src={smarturSettings.footer_logo_url || "/smartur-logo.png"}
+                alt="Smartur"
+                className="h-6 w-auto object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </a>
+          </div>
+        )}
       </div>
     </footer>
   );
