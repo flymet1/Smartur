@@ -1,5 +1,6 @@
 import { PublicHeader } from "./PublicHeader";
 import { PublicFooter } from "./PublicFooter";
+import { FloatingWhatsApp } from "../shared/FloatingWhatsApp";
 import type { PublicWebsiteData } from "../../types";
 import type { Language } from "../../i18n";
 
@@ -30,6 +31,7 @@ export function PublicLayout({ children, data }: PublicLayoutProps) {
       />
       <main className="flex-1">{children}</main>
       <PublicFooter data={data} />
+      <FloatingWhatsApp phoneNumber={data?.websiteWhatsappNumber} />
     </div>
   );
 }
