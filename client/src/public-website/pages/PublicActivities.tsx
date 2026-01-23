@@ -12,7 +12,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ActivityCard } from "../components/ActivityCard";
-import type { PublicActivity } from "../types";
+import { SEO } from "../components/shared/SEO";
+import type { PublicActivity, PublicWebsiteData } from "../types";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
 
@@ -121,8 +122,18 @@ export default function PublicActivities() {
     "duration-desc": language === "tr" ? "Süre (Uzun-Kısa)" : "Duration (Long-Short)",
   };
 
+  const { data: websiteData } = useQuery<PublicWebsiteData>({
+    queryKey: [getApiUrl(`/api/website/data?lang=${language}`)],
+  });
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO 
+        websiteData={websiteData}
+        title={t.activities.title}
+        description={t.activities.subtitle}
+        language={language}
+      />
       <div className="bg-primary/5 border-b">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-2" data-testid="text-activities-title">

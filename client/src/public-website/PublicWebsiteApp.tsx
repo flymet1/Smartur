@@ -1,5 +1,6 @@
 import { Switch, Route, Router, Redirect } from "wouter";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { HelmetProvider } from "react-helmet-async";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
 import PublicActivities from "./pages/PublicActivities";
@@ -212,8 +213,10 @@ function PublicWebsiteRouter() {
 
 export function PublicWebsiteApp() {
   return (
-    <QueryClientProvider client={publicQueryClient}>
-      <PublicWebsiteRouter />
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={publicQueryClient}>
+        <PublicWebsiteRouter />
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }

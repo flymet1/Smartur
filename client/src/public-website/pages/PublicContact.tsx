@@ -1,6 +1,8 @@
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FaWhatsapp } from "react-icons/fa";
+import { SEO } from "../components/shared/SEO";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { PublicWebsiteData } from "../types";
 
 interface PublicContactProps {
@@ -8,8 +10,17 @@ interface PublicContactProps {
 }
 
 export default function PublicContact({ websiteData }: PublicContactProps) {
+  const { language, t } = useLanguage();
+  const pageTitle = websiteData?.websiteContactPageTitle || t.contact?.title || "İletişim";
+  
   return (
     <div className="min-h-screen bg-background">
+      <SEO 
+        websiteData={websiteData}
+        title={pageTitle}
+        description={websiteData?.websiteContactPageContent?.substring(0, 160) || ""}
+        language={language}
+      />
       <div className="bg-primary/5 border-b">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-2">

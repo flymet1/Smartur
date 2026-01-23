@@ -1467,4 +1467,132 @@ export function registerPublicApiRoutes(app: Express) {
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });
+
+  // robots.txt endpoint
+  app.get("/robots.txt", domainMiddleware, async (req: Request, res: Response) => {
+    const tenant = req.websiteTenant;
+    if (!tenant) {
+      res.type("text/plain").send("User-agent: *\nDisallow: /");
+      return;
+    }
+
+    const domain = tenant.websiteDomain || req.get("host") || "";
+    const robotsTxt = `User-agent: *
+Allow: /
+
+Sitemap: https://${domain}/sitemap.xml
+`;
+    res.type("text/plain").send(robotsTxt);
+  });
+
+  // sitemap.xml endpoint
+  app.get("/sitemap.xml", domainMiddleware, async (req: Request, res: Response) => {
+    const tenant = req.websiteTenant;
+    if (!tenant) {
+      res.status(404).send("Not found");
+      return;
+    }
+
+    try {
+      const domain = tenant.websiteDomain || req.get("host") || "";
+      const baseUrl = `https://${domain}`;
+      const now = new Date().toISOString().split("T")[0];
+
+      // Get all activities for this tenant
+      const tenantActivities = await db
+        .select({
+          id: activities.id,
+        })
+        .from(activities)
+        .where(and(
+          eq(activities.tenantId, tenant.id),
+          eq(activities.active, true)
+        ));
+
+      // Get all published blog posts for this tenant
+      const tenantBlogPosts = await db
+        .select({
+          slug: blogPosts.slug,
+          updatedAt: blogPosts.updatedAt,
+        })
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.tenantId, tenant.id),
+          eq(blogPosts.status, "published")
+        ));
+
+      const languages = ["tr", "en"];
+      let urls = "";
+
+      // Static pages
+      const staticPages = [
+        { tr: "/tr", en: "/en", priority: "1.0", changefreq: "daily" },
+        { tr: "/tr/aktiviteler", en: "/en/activities", priority: "0.9", changefreq: "daily" },
+        { tr: "/tr/iletisim", en: "/en/contact", priority: "0.7", changefreq: "monthly" },
+        { tr: "/tr/blog", en: "/en/blog", priority: "0.8", changefreq: "weekly" },
+      ];
+
+      for (const page of staticPages) {
+        for (const lang of languages) {
+          const path = lang === "tr" ? page.tr : page.en;
+          urls += `
+  <url>
+    <loc>${baseUrl}${path}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="${baseUrl}${page.tr}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${baseUrl}${page.en}"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}${page.tr}"/>
+  </url>`;
+        }
+      }
+
+      // Activity pages
+      for (const activity of tenantActivities) {
+        const lastmod = now;
+        for (const lang of languages) {
+          const pathPrefix = lang === "tr" ? "/tr/aktivite" : "/en/activity";
+          urls += `
+  <url>
+    <loc>${baseUrl}${pathPrefix}/${activity.id}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="${baseUrl}/tr/aktivite/${activity.id}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${baseUrl}/en/activity/${activity.id}"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/tr/aktivite/${activity.id}"/>
+  </url>`;
+        }
+      }
+
+      // Blog posts
+      for (const post of tenantBlogPosts) {
+        const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString().split("T")[0] : now;
+        for (const lang of languages) {
+          urls += `
+  <url>
+    <loc>${baseUrl}/${lang}/blog/${post.slug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="tr" href="${baseUrl}/tr/blog/${post.slug}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${baseUrl}/en/blog/${post.slug}"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/tr/blog/${post.slug}"/>
+  </url>`;
+        }
+      }
+
+      const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${urls}
+</urlset>`;
+
+      res.type("application/xml").send(sitemap);
+    } catch (err) {
+      console.error("Sitemap generation error:", err);
+      res.status(500).send("Error generating sitemap");
+    }
+  });
 }

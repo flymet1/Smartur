@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SEO } from "../components/shared/SEO";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useState, useMemo } from "react";
@@ -28,7 +29,7 @@ interface PublicBlogProps {
 }
 
 export default function PublicBlog({ websiteData }: PublicBlogProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -73,6 +74,12 @@ export default function PublicBlog({ websiteData }: PublicBlogProps) {
 
   return (
     <div className="min-h-screen">
+      <SEO 
+        websiteData={websiteData}
+        title={t.blog?.title || "Blog"}
+        description={t.blog?.subtitle || "En son haberler, ipuçları ve güncellemeler"}
+        language={language}
+      />
       <section className="relative py-20 bg-gradient-to-br from-primary/10 via-background to-accent/10">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto">

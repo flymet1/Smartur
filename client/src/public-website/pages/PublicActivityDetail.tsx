@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { SEO, FAQSchema } from "../components/shared/SEO";
 import type { PublicActivity, AvailabilitySlot, PublicWebsiteData } from "../types";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -91,7 +92,7 @@ export default function PublicActivityDetail() {
   });
 
   const { data: websiteData } = useQuery<PublicWebsiteData>({
-    queryKey: [getApiUrl("/api/website/data")],
+    queryKey: [getApiUrl(`/api/website/data?lang=${language}`)],
   });
 
   const { data: availability } = useQuery<AvailabilitySlot[]>({
@@ -284,6 +285,18 @@ export default function PublicActivityDetail() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO 
+        websiteData={websiteData}
+        title={activity.name}
+        description={activity.description?.substring(0, 160) || ""}
+        image={activity.imageUrl || undefined}
+        type="product"
+        activity={activity}
+        language={language}
+      />
+      {activity.faq && activity.faq.length > 0 && (
+        <FAQSchema faqs={activity.faq} />
+      )}
       <div className="relative h-[50vh] md:h-[60vh] overflow-hidden">
         <img
           src={mainImage}

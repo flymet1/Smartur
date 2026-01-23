@@ -11,6 +11,7 @@ import { ActivityCard } from "../components/ActivityCard";
 import { WhatsAppButton } from "../components/shared/WhatsAppButton";
 import { TrustBadges } from "../components/shared/TrustBadges";
 import { CategoryFilter } from "../components/shared/CategoryFilter";
+import { SEO } from "../components/shared/SEO";
 import type { PublicActivity, PublicWebsiteData } from "../types";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
@@ -82,6 +83,10 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
 
   return (
     <div>
+      <SEO 
+        websiteData={websiteData} 
+        language={language}
+      />
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
