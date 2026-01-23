@@ -155,16 +155,17 @@ export function Sidebar() {
     window.location.href = '/login';
   };
 
-  const { data: logoSetting } = useQuery<{ key: string; value: string | null }>({
-    queryKey: ['/api/settings', 'sidebarLogo'],
-    queryFn: async () => {
-      const res = await fetch('/api/settings/sidebarLogo');
-      return res.json();
-    },
+  // Load Smartur platform settings (logo managed by Super Admin only)
+  const { data: smarturSettings } = useQuery<{ 
+    footer_logo_url: string; 
+    footer_link_url: string; 
+    footer_enabled: boolean; 
+  }>({
+    queryKey: ['/api/website/smartur-settings'],
     staleTime: 60000,
   });
 
-  // Load brand settings
+  // Load brand settings (for colors only, logo is from Smartur settings)
   const { data: brandSettings } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'brandSettings'],
     queryFn: async () => {
@@ -312,9 +313,12 @@ export function Sidebar() {
   const unreadNotificationsCount = inAppNotifications?.filter(n => !n.isRead).length || 0;
   const pendingChangeRequestsCount = changeRequests?.filter(r => r.status === 'pending').length || 0;
   const todayReservationsCount = allReservations?.filter(r => r.date === today).length || 0;
-  const logoUrl = logoSetting?.value;
   
-  // Get company name from brand settings
+  // Smartur platform logo from Super Admin settings
+  const smarturLogoUrl = smarturSettings?.footer_logo_url || "/smartur-logo.png";
+  const smarturLinkUrl = smarturSettings?.footer_link_url || "https://www.mysmartur.com";
+  
+  // Get company name from brand settings (for display purposes)
   const brandCompanyName = (() => {
     if (brandSettings?.value) {
       try {
@@ -325,19 +329,6 @@ export function Sidebar() {
       }
     }
     return "Smartur";
-  })();
-  
-  // Get brand logo URL if set
-  const brandLogoUrl = (() => {
-    if (brandSettings?.value) {
-      try {
-        const settings = JSON.parse(brandSettings.value);
-        return settings.logoUrl || null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
   })();
 
   // License status helper
@@ -412,18 +403,11 @@ export function Sidebar() {
           <ChevronLeft className="h-5 w-5" />
         </Button>
 
-        {/* Center: Logo */}
+        {/* Center: Logo - Smartur platform logo from Super Admin */}
         <div className="flex-1 flex justify-center">
-          {(brandLogoUrl || logoUrl) ? (
-            <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-7 w-auto" data-testid="img-sidebar-logo-mobile" />
-          ) : (
-            <div className="font-display font-bold text-lg text-primary flex items-center gap-1.5">
-              <span className="w-6 h-6 rounded bg-accent flex items-center justify-center text-accent-foreground">
-                <Activity className="h-4 w-4" />
-              </span>
-              {brandCompanyName}
-            </div>
-          )}
+          <a href={smarturLinkUrl} target="_blank" rel="noopener noreferrer">
+            <img src={smarturLogoUrl} alt="Smartur" className="h-7 w-auto" data-testid="img-sidebar-logo-mobile" />
+          </a>
         </div>
 
         {/* Right: Notification Bell with Dropdown */}
@@ -768,16 +752,10 @@ export function Sidebar() {
       {/* Desktop Sidebar */}
       <div className="hidden xl:flex flex-col w-64 border-r bg-card h-screen fixed left-0 top-0">
         <div className="p-6">
-          {(brandLogoUrl || logoUrl) ? (
-            <img src={brandLogoUrl || logoUrl} alt="Logo" className="h-10 w-auto" data-testid="img-sidebar-logo" />
-          ) : (
-            <div className="font-display font-bold text-2xl text-primary flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-accent-foreground">
-                <Activity className="h-5 w-5" />
-              </span>
-              {brandCompanyName}
-            </div>
-          )}
+          {/* Smartur platform logo - managed by Super Admin only */}
+          <a href={smarturLinkUrl} target="_blank" rel="noopener noreferrer">
+            <img src={smarturLogoUrl} alt="Smartur" className="h-10 w-auto" data-testid="img-sidebar-logo" />
+          </a>
         </div>
 
         {/* Quick Access Buttons - Hidden for viewer-only users */}
@@ -852,8 +830,8 @@ export function Sidebar() {
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}>
-                  {isPartnerPage && logoUrl ? (
-                    <img src={logoUrl} alt="" className="h-5 w-5 object-contain transition-transform group-hover:scale-110" />
+                  {isPartnerPage && smarturLogoUrl ? (
+                    <img src={smarturLogoUrl} alt="" className="h-5 w-5 object-contain transition-transform group-hover:scale-110" />
                   ) : (
                     <item.icon className={cn(
                       "h-5 w-5 transition-transform group-hover:scale-110",
