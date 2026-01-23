@@ -2060,10 +2060,15 @@ function BrandingSection() {
   const [primaryColor, setPrimaryColor] = useState("#673DE7");
   const [accentColor, setAccentColor] = useState("#CCFF00");
   const [companyName, setCompanyName] = useState("Smartur");
-  const [logoUrl, setLogoUrl] = useState("");
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   
-  // Load existing brand settings
+  // Smartur platform logo settings (for admin panel + website footer)
+  const [smarturLogoUrl, setSmartutLogoUrl] = useState("/smartur-logo.png");
+  const [smarturLinkUrl, setSmartutLinkUrl] = useState("https://www.mysmartur.com");
+  const [smarturLogoEnabled, setSmartutLogoEnabled] = useState(true);
+  const [smarturSettingsLoaded, setSmartutSettingsLoaded] = useState(false);
+  
+  // Load existing brand settings (colors only)
   const { data: brandSettings } = useQuery<{ key: string; value: string | null }>({
     queryKey: ['/api/settings', 'brandSettings'],
     queryFn: async () => {
@@ -2072,7 +2077,12 @@ function BrandingSection() {
     },
   });
   
-  // Apply loaded settings
+  // Load Smartur platform settings
+  const { data: smarturSettings } = useQuery<Record<string, string | null>>({
+    queryKey: ['/api/smartur-settings'],
+  });
+  
+  // Apply brand settings
   useEffect(() => {
     if (brandSettings?.value && !settingsLoaded) {
       try {
@@ -2080,33 +2090,63 @@ function BrandingSection() {
         setPrimaryColor(settings.primaryColor || "#673DE7");
         setAccentColor(settings.accentColor || "#CCFF00");
         setCompanyName(settings.companyName || "Smartur");
-        setLogoUrl(settings.logoUrl || "");
         setSettingsLoaded(true);
       } catch {}
     }
   }, [brandSettings, settingsLoaded]);
   
-  const saveMutation = useMutation({
+  // Apply Smartur settings
+  useEffect(() => {
+    if (smarturSettings && !smarturSettingsLoaded) {
+      setSmartutLogoUrl(smarturSettings.footer_logo_url || "/smartur-logo.png");
+      setSmartutLinkUrl(smarturSettings.footer_link_url || "https://www.mysmartur.com");
+      setSmartutLogoEnabled(smarturSettings.footer_enabled !== "false");
+      setSmartutSettingsLoaded(true);
+    }
+  }, [smarturSettings, smarturSettingsLoaded]);
+  
+  // Save brand settings (colors)
+  const saveBrandMutation = useMutation({
     mutationFn: async (settings: BrandSettings) => {
       return apiRequest("POST", "/api/settings/brandSettings", { value: JSON.stringify(settings) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/settings', 'brandSettings'] });
-      toast({ title: "Başarılı", description: "Marka ayarları kaydedildi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Marka ayarları kaydedilemedi.", variant: "destructive" });
     },
   });
   
-  const handleSave = () => {
-    saveMutation.mutate({
-      primaryColor,
-      accentColor,
-      companyName,
-      logoUrl,
-    });
+  // Save Smartur platform settings
+  const saveSmartutMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("PUT", "/api/smartur-settings", {
+        footer_logo_url: smarturLogoUrl,
+        footer_link_url: smarturLinkUrl,
+        footer_enabled: smarturLogoEnabled,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/smartur-settings'] });
+    },
+  });
+  
+  const handleSave = async () => {
+    try {
+      await Promise.all([
+        saveBrandMutation.mutateAsync({
+          primaryColor,
+          accentColor,
+          companyName,
+          logoUrl: smarturLogoUrl,
+        }),
+        saveSmartutMutation.mutateAsync(),
+      ]);
+      toast({ title: "Başarılı", description: "Marka ayarları kaydedildi." });
+    } catch {
+      toast({ title: "Hata", description: "Marka ayarları kaydedilemedi.", variant: "destructive" });
+    }
   };
+  
+  const isSaving = saveBrandMutation.isPending || saveSmartutMutation.isPending;
   
   // Convert hex to HSL for preview
   const hexToHsl = (hex: string) => {
@@ -2226,34 +2266,44 @@ function BrandingSection() {
             </div>
           </div>
           
-          {/* Logo URL */}
-          <div className="space-y-2">
-            <Label htmlFor="logoUrl">Logo URL</Label>
-            <Input
-              id="logoUrl"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://example.com/logo.png"
-              data-testid="input-logo-url"
-            />
-            <p className="text-xs text-muted-foreground">
-              Sidebar ve diger alanlarda gösterilecek logo URL'si
-            </p>
-            {logoUrl && (
-              <div className="mt-3 p-4 bg-muted/50 rounded-lg">
-                <Label className="text-xs text-muted-foreground">Logo Onizleme:</Label>
-                <div className="mt-2 flex items-center justify-center">
-                  <img 
-                    src={logoUrl} 
-                    alt="Logo preview" 
-                    className="max-h-16 max-w-48 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
+          {/* Smartur Platform Logo */}
+          <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-medium">Smartur Platform Logosu</Label>
+                <p className="text-sm text-muted-foreground">
+                  Bu logo hem admin panelinde hem de tüm acenta web sitelerinin footer'ında gösterilir
+                </p>
               </div>
-            )}
+              <Switch
+                checked={smarturLogoEnabled}
+                onCheckedChange={setSmartutLogoEnabled}
+                data-testid="switch-smartur-logo-enabled"
+              />
+            </div>
+            
+            <ImageUpload
+              value={smarturLogoUrl}
+              onChange={setSmartutLogoUrl}
+              label="Smartur Logosu"
+              size="small"
+              placeholder="/smartur-logo.png"
+              recommendedSize="Önerilen boyut: 200x50 piksel, maksimum 100KB"
+            />
+            
+            <div className="space-y-2">
+              <Label htmlFor="smarturLinkUrl">Logo Yönlendirme URL</Label>
+              <Input
+                id="smarturLinkUrl"
+                value={smarturLinkUrl}
+                onChange={(e) => setSmartutLinkUrl(e.target.value)}
+                placeholder="https://www.mysmartur.com"
+                data-testid="input-smartur-link-url"
+              />
+              <p className="text-xs text-muted-foreground">
+                Logoya tıklandığında yönlendirilecek adres
+              </p>
+            </div>
           </div>
           
           {/* Preview Section */}
@@ -2303,7 +2353,9 @@ function BrandingSection() {
                 setPrimaryColor("#673DE7");
                 setAccentColor("#CCFF00");
                 setCompanyName("Smartur");
-                setLogoUrl("");
+                setSmartutLogoUrl("/smartur-logo.png");
+                setSmartutLinkUrl("https://www.mysmartur.com");
+                setSmartutLogoEnabled(true);
               }}
               data-testid="button-reset-branding"
             >
@@ -2311,10 +2363,10 @@ function BrandingSection() {
             </Button>
             <Button 
               onClick={handleSave}
-              disabled={saveMutation.isPending}
+              disabled={isSaving}
               data-testid="button-save-branding"
             >
-              {saveMutation.isPending ? (
+              {isSaving ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                   Kaydediliyor...
@@ -2650,45 +2702,15 @@ function PopupAppearanceSection() {
   );
 }
 
-// Smartur Websiteleri Ayarları Section
+// Smartur Websiteleri Ayarları Section - Sadece Önizleme (Logo ayarları Marka Ayarları'nda)
 function SmartutWebsitesSection() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  
-  const [footerLogoUrl, setFooterLogoUrl] = useState("/smartur-logo.png");
-  const [footerLinkUrl, setFooterLinkUrl] = useState("https://www.mysmartur.com");
-  const [footerEnabled, setFooterEnabled] = useState(true);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
-
   const { data: smarturSettings, isLoading } = useQuery<Record<string, string | null>>({
     queryKey: ['/api/smartur-settings'],
   });
 
-  useEffect(() => {
-    if (smarturSettings && !settingsLoaded) {
-      setFooterLogoUrl(smarturSettings.footer_logo_url || "/smartur-logo.png");
-      setFooterLinkUrl(smarturSettings.footer_link_url || "https://www.mysmartur.com");
-      setFooterEnabled(smarturSettings.footer_enabled !== "false");
-      setSettingsLoaded(true);
-    }
-  }, [smarturSettings, settingsLoaded]);
-
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      return apiRequest("PUT", "/api/smartur-settings", {
-        footer_logo_url: footerLogoUrl,
-        footer_link_url: footerLinkUrl,
-        footer_enabled: footerEnabled,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/smartur-settings'] });
-      toast({ title: "Başarılı", description: "Smartur website ayarları kaydedildi." });
-    },
-    onError: () => {
-      toast({ title: "Hata", description: "Ayarlar kaydedilemedi.", variant: "destructive" });
-    },
-  });
+  const footerLogoUrl = smarturSettings?.footer_logo_url || "/smartur-logo.png";
+  const footerLinkUrl = smarturSettings?.footer_link_url || "https://www.mysmartur.com";
+  const footerEnabled = smarturSettings?.footer_enabled !== "false";
 
   if (isLoading) {
     return (
@@ -2706,76 +2728,39 @@ function SmartutWebsitesSection() {
           Smartur Websiteleri
         </h2>
         <p className="text-muted-foreground mt-1">
-          Tüm acenta web sitelerinin footer alanında gösterilecek Smartur logosu ve link ayarları
+          Tüm acenta web sitelerinin footer alanında gösterilecek Smartur logosu önizlemesi
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings2 className="h-5 w-5" />
-            Footer Smartur Logosu Ayarları
+            <Info className="h-5 w-5" />
+            Logo Ayarları
           </CardTitle>
           <CardDescription>
-            Bu ayarlar tüm acenta web sitelerinin footer bölümünde gösterilecek Smartur logosunu ve yönlendirme linkini kontrol eder.
+            Smartur platform logosu ayarları "Yapılandırma" {">"} "Marka Ayarları" bölümünden yapılır.
+            Bu logo hem admin panelinde hem de tüm acenta web sitelerinin footer'ında gösterilir.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div>
-              <Label className="text-base font-medium">Footer Logosu Aktif</Label>
-              <p className="text-sm text-muted-foreground">
-                Tüm acenta web sitelerinde Smartur logosu gösterilsin mi?
-              </p>
+        <CardContent>
+          <div className="p-4 border rounded-lg bg-muted/30 flex items-center gap-4">
+            <img 
+              src={footerLogoUrl} 
+              alt="Smartur" 
+              className="h-10 w-auto object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='32' viewBox='0 0 100 32'%3E%3Crect fill='%23f0f0f0' width='100' height='32'/%3E%3Ctext x='50' y='20' text-anchor='middle' fill='%23999' font-size='10'%3ESmartur%3C/text%3E%3C/svg%3E";
+              }}
+            />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Mevcut Logo</p>
+              <p className="text-xs text-muted-foreground truncate">{footerLogoUrl}</p>
+              <p className="text-xs text-muted-foreground">Yönlendirme: {footerLinkUrl}</p>
             </div>
-            <Switch
-              checked={footerEnabled}
-              onCheckedChange={setFooterEnabled}
-              data-testid="switch-footer-enabled"
-            />
-          </div>
-
-          <ImageUpload
-            value={footerLogoUrl}
-            onChange={setFooterLogoUrl}
-            label="Smartur Footer Logosu"
-            size="small"
-            placeholder="/smartur-logo.png"
-            recommendedSize="Logo için önerilen boyut: 200x50 piksel, maksimum 100KB"
-          />
-
-          <div className="space-y-2">
-            <Label htmlFor="footerLinkUrl">Yönlendirme URL</Label>
-            <Input
-              id="footerLinkUrl"
-              value={footerLinkUrl}
-              onChange={(e) => setFooterLinkUrl(e.target.value)}
-              placeholder="https://www.mysmartur.com"
-              data-testid="input-footer-link-url"
-            />
-            <p className="text-xs text-muted-foreground">
-              Logoya tıklandığında kullanıcının yönlendirileceği web sitesi adresi.
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
-              data-testid="button-save-smartur-settings"
-            >
-              {saveMutation.isPending ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Kaydediliyor...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Kaydet
-                </>
-              )}
-            </Button>
+            <Badge variant={footerEnabled ? "default" : "secondary"}>
+              {footerEnabled ? "Aktif" : "Pasif"}
+            </Badge>
           </div>
         </CardContent>
       </Card>
