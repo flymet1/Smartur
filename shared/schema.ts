@@ -1443,3 +1443,19 @@ export const reservationChangeRequests = pgTable("reservation_change_requests", 
 export const insertReservationChangeRequestSchema = createInsertSchema(reservationChangeRequests).omit({ id: true, createdAt: true, updatedAt: true, processedAt: true });
 export type ReservationChangeRequest = typeof reservationChangeRequests.$inferSelect;
 export type InsertReservationChangeRequest = z.infer<typeof insertReservationChangeRequestSchema>;
+
+// === SMARTUR PLATFORM AYARLARI ===
+
+// Smartur Settings - Platform seviyesinde global ayarlar (Super Admin tarafından yönetilir)
+export const smarturSettings = pgTable("smartur_settings", {
+  id: serial("id").primaryKey(),
+  settingKey: text("setting_key").notNull().unique(), // Ayar anahtarı (footer_logo_url, footer_link_url, etc.)
+  settingValue: text("setting_value"), // Ayar değeri
+  settingDescription: text("setting_description"), // Ayar açıklaması
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSmartutSettingSchema = createInsertSchema(smarturSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type SmartutSetting = typeof smarturSettings.$inferSelect;
+export type InsertSmartutSetting = z.infer<typeof insertSmartutSettingSchema>;
