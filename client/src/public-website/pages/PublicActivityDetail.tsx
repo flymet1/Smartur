@@ -1133,9 +1133,9 @@ export default function PublicActivityDetail() {
                     <p className="font-medium mb-3">
                       {language === "en" ? "Need Help?" : "Yardıma mı ihtiyacınız var?"}
                     </p>
-                    <div className="space-y-3">
+                    <div className="flex flex-col gap-3">
                       {(websiteData?.websiteContactPhone || websiteData?.contactPhone) && (
-                        <a href={`tel:${websiteData?.websiteContactPhone || websiteData?.contactPhone}`}>
+                        <a href={`tel:${websiteData?.websiteContactPhone || websiteData?.contactPhone}`} className="block">
                           <Button variant="outline" className="w-full justify-start gap-2">
                             <Phone className="h-4 w-4" />
                             {websiteData?.websiteContactPhone || websiteData?.contactPhone}
@@ -1147,6 +1147,7 @@ export default function PublicActivityDetail() {
                           href={`https://wa.me/${websiteData.websiteWhatsappNumber.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          className="block"
                         >
                           <Button variant="outline" className="w-full justify-start gap-2 text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
                             <MessageCircle className="h-4 w-4" />
