@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { tenants, activities, capacity, reservations, customerRequests, blogPosts, homepageSections } from "@shared/schema";
+import { tenants, activities, capacity, reservations, customerRequests, blogPosts, homepageSections, smarturSettings } from "@shared/schema";
 import { desc } from "drizzle-orm";
 import crypto from "crypto";
 import { z } from "zod";
@@ -1465,6 +1465,34 @@ export function registerPublicApiRoutes(app: Express) {
     } catch (err) {
       console.error("Website homepage sections error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Public Smartur Settings endpoint (for footer logo/link)
+  app.get("/api/website/smartur-settings", async (req: Request, res: Response) => {
+    try {
+      const settings = await db.select().from(smarturSettings);
+      
+      // Convert to key-value object
+      const settingsObj: Record<string, string | null> = {};
+      for (const setting of settings) {
+        settingsObj[setting.settingKey] = setting.settingValue;
+      }
+      
+      // Return settings with defaults
+      res.json({
+        footer_logo_url: settingsObj.footer_logo_url || "/smartur-logo.png",
+        footer_link_url: settingsObj.footer_link_url || "https://www.mysmartur.com",
+        footer_enabled: settingsObj.footer_enabled !== "false",
+      });
+    } catch (error) {
+      console.error("Smartur settings public fetch error:", error);
+      // Return defaults on error
+      res.json({
+        footer_logo_url: "/smartur-logo.png",
+        footer_link_url: "https://www.mysmartur.com",
+        footer_enabled: true,
+      });
     }
   });
 
