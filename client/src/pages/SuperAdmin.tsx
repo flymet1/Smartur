@@ -2735,39 +2735,6 @@ function SmartutWebsitesSection() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            Logo Ayarları
-          </CardTitle>
-          <CardDescription>
-            Smartur platform logosu ayarları "Yapılandırma" {">"} "Marka Ayarları" bölümünden yapılır.
-            Bu logo hem admin panelinde hem de tüm acenta web sitelerinin footer'ında gösterilir.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="p-4 border rounded-lg bg-muted/30 flex items-center gap-4">
-            <img 
-              src={footerLogoUrl} 
-              alt="Smartur" 
-              className="h-10 w-auto object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='32' viewBox='0 0 100 32'%3E%3Crect fill='%23f0f0f0' width='100' height='32'/%3E%3Ctext x='50' y='20' text-anchor='middle' fill='%23999' font-size='10'%3ESmartur%3C/text%3E%3C/svg%3E";
-              }}
-            />
-            <div className="flex-1">
-              <p className="text-sm font-medium">Mevcut Logo</p>
-              <p className="text-xs text-muted-foreground truncate">{footerLogoUrl}</p>
-              <p className="text-xs text-muted-foreground">Yönlendirme: {footerLinkUrl}</p>
-            </div>
-            <Badge variant={footerEnabled ? "default" : "secondary"}>
-              {footerEnabled ? "Aktif" : "Pasif"}
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5" />
             Footer Önizleme
           </CardTitle>
