@@ -1,0 +1,21 @@
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-01-24 10:13:17.881 UTC [1] LOG:  starting PostgreSQL 17.7 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-01-24 10:13:17.882 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-01-24 10:13:17.882 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-01-24 10:13:17.886 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-01-24 10:13:17.890 UTC [28] LOG:  database system was shut down at 2026-01-24 10:13:15 UTC
+2026-01-24 10:13:17.898 UTC [1] LOG:  database system is ready to accept connections
+2026-01-24 10:18:17.982 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 10:18:19.293 UTC [26] LOG:  checkpoint complete: wrote 16 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.306 s, sync=0.003 s, total=1.312 s; sync files=14, longest=0.001 s, average=0.001 s; distance=54 kB, estimate=54 kB; lsn=0/1FBFA60, redo lsn=0/1FBFA08
+2026-01-24 10:21:32.146 UTC [825] ERROR:  invalid input syntax for type json
+2026-01-24 10:21:32.146 UTC [825] DETAIL:  Token "/" is invalid.
+2026-01-24 10:21:32.146 UTC [825] CONTEXT:  JSON data, line 1: /...
+unnamed portal parameter $2 = '...'
+2026-01-24 10:21:32.146 UTC [825] STATEMENT:  insert into "smartur_settings" ("id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at") values (default, $1, $2, $3, default, default) on conflict ("setting_key") do update set "setting_value" = $4, "updated_at" = $5
+2026-01-24 10:23:17.393 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 10:23:18.304 UTC [26] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.905 s, sync=0.002 s, total=0.911 s; sync files=9, longest=0.002 s, average=0.001 s; distance=55 kB, estimate=55 kB; lsn=0/1FCFFD0, redo lsn=0/1FCD960
+2026-01-24 10:23:32.186 UTC [1047] ERROR:  invalid input syntax for type json
+2026-01-24 10:23:32.186 UTC [1047] DETAIL:  Token "/" is invalid.
+2026-01-24 10:23:32.186 UTC [1047] CONTEXT:  JSON data, line 1: /...
+unnamed portal parameter $2 = '...'
+2026-01-24 10:23:32.186 UTC [1047] STATEMENT:  insert into "smartur_settings" ("id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at") values (default, $1, $2, $3, default, default) on conflict ("setting_key") do update set "setting_value" = $4, "updated_at" = $5
