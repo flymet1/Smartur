@@ -77,6 +77,11 @@ export const tenants = pgTable("tenants", {
   websiteHeroStats: text("website_hero_stats").default('[]'), // JSON array: [{icon, value, label, labelEn}]
   // === ANA SAYFA BÖLÜM AYARLARI ===
   websiteShowFeaturedActivities: boolean("website_show_featured_activities").default(true), // Öne Çıkan Aktiviteler bölümü gösterilsin mi?
+  // === YORUM KARTLARI (Dış Platform Linkleri) ===
+  websiteReviewCards: text("website_review_cards").default("[]"), // JSON array: [{platform, rating, reviewCount, url}]
+  websiteReviewCardsEnabled: boolean("website_review_cards_enabled").default(false), // Ana sayfada gösterilsin mi?
+  websiteReviewCardsTitle: text("website_review_cards_title"), // Yorum kartları bölüm başlığı (TR)
+  websiteReviewCardsTitleEn: text("website_review_cards_title_en"), // Yorum kartları bölüm başlığı (EN)
 });
 
 // === HOMEPAGE SECTIONS (Anasayfa Kategori Bölümleri) ===
@@ -160,6 +165,9 @@ export const activities = pgTable("activities", {
   importantInfoItems: text("important_info_items").default("[]"), // JSON array: Manuel önemli bilgi öğeleri ["Kimlik kartı gerekli", "Yüzme bilmek şart"]
   importantInfo: text("important_info"), // Manuel önemli bilgiler metni
   transferInfo: text("transfer_info"), // Transfer bölgeleri altında etiket bulutu olarak gösterilecek metin
+  // === AKTİVİTE YORUM KARTLARI ===
+  reviewCards: text("review_cards").default("[]"), // JSON array: [{platform, rating, reviewCount, url}]
+  reviewCardsEnabled: boolean("review_cards_enabled").default(false), // Aktivite detayda gösterilsin mi?
 });
 
 export const capacity = pgTable("capacity", {
