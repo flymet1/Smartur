@@ -306,6 +306,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     return '';
   });
   const [importantInfo, setImportantInfo] = useState(activity ? (activity as any).importantInfo || "" : "");
+  const [transferInfo, setTransferInfo] = useState(activity ? (activity as any).transferInfo || "" : "");
   const [tourLanguages, setTourLanguages] = useState(() => {
     if (activity && (activity as any).tourLanguages) {
       try {
@@ -560,6 +561,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       galleryImages: JSON.stringify(galleryImagesArray),
       importantInfoItems: JSON.stringify(importantInfoItems.split('\n').map(s => s.trim()).filter(Boolean)),
       importantInfo: importantInfo || null,
+      transferInfo: transferInfo || null,
       // Ödeme Seçenekleri
       requiresDeposit: requiresDeposit,
       depositType: depositType,
@@ -1289,6 +1291,19 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       <p className="text-xs text-muted-foreground">Virgülle ayırarak bölgeleri girin. Bot bu verileri kullanabilir.</p>
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="transferInfo">Transfer Ek Bilgileri</Label>
+                    <Textarea 
+                      id="transferInfo"
+                      value={transferInfo}
+                      onChange={(e) => setTransferInfo(e.target.value)}
+                      placeholder="Her satıra bir bilgi yazın. Örnek:&#10;Transfer saati aktiviteden 1 saat önce&#10;Otel lobisinde bekleyiniz"
+                      rows={3}
+                      data-testid="input-transfer-info"
+                    />
+                    <p className="text-xs text-muted-foreground">Her satır, etiket bulutu olarak transfer bölgelerinin altında gösterilecektir.</p>
+                  </div>
                 </div>
 
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">

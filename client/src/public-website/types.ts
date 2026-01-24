@@ -25,6 +25,7 @@ export interface PublicActivity {
   maxParticipants: number | null;
   importantInfoItems: string[];
   importantInfo: string | null;
+  transferInfo: string | null;
   // Ödeme seçenekleri
   requiresDeposit: boolean;
   depositType: "percentage" | "fixed";

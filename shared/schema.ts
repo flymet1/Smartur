@@ -159,6 +159,7 @@ export const activities = pgTable("activities", {
   // === MANUEL ÖNEMLİ BİLGİLER ===
   importantInfoItems: text("important_info_items").default("[]"), // JSON array: Manuel önemli bilgi öğeleri ["Kimlik kartı gerekli", "Yüzme bilmek şart"]
   importantInfo: text("important_info"), // Manuel önemli bilgiler metni
+  transferInfo: text("transfer_info"), // Transfer bölgeleri altında etiket bulutu olarak gösterilecek metin
 });
 
 export const capacity = pgTable("capacity", {

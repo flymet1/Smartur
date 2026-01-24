@@ -567,7 +567,7 @@ export default function PublicActivityDetail() {
               </Card>
             )}
 
-            {activity.transferZones && activity.transferZones.length > 0 && (
+            {(activity.transferZones && activity.transferZones.length > 0) || activity.transferInfo ? (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -576,22 +576,39 @@ export default function PublicActivityDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {language === "en" 
-                      ? "Free hotel pickup available from these areas:" 
-                      : "Bu bolgelerden ucretsiz otel transferi mevcuttur:"}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {activity.transferZones.map((zone, idx) => (
-                      <Badge key={idx} variant="outline" className="gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {zone}
-                      </Badge>
-                    ))}
-                  </div>
+                  {activity.transferZones && activity.transferZones.length > 0 && (
+                    <>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {language === "en" 
+                          ? "Free hotel pickup available from these areas:" 
+                          : "Bu bolgelerden ucretsiz otel transferi mevcuttur:"}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {activity.transferZones.map((zone, idx) => (
+                          <Badge key={idx} variant="outline" className="gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {zone}
+                          </Badge>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {activity.transferInfo && (
+                    <div className={activity.transferZones?.length ? "mt-4 pt-4 border-t" : ""}>
+                      <div className="flex flex-wrap gap-2">
+                        {activity.transferInfo.split('\n').filter(Boolean).map((line, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-muted text-muted-foreground text-sm rounded-md">
+                            <Info className="h-3.5 w-3.5" />
+                            {line.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            )}
+            ) : null}
 
             {activity.extras && activity.extras.length > 0 && (
               <Card className="border-0 shadow-md">
