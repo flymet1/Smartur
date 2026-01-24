@@ -87,10 +87,20 @@ export default function Activities() {
 }
 
 function ActivityCard({ activity, onDelete }: { activity: Activity; onDelete: () => void }) {
+  const imageUrl = (activity as any).imageUrl;
+  
   return (
     <div className="dashboard-card group relative overflow-hidden flex flex-col h-full">
-      <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/5 p-6 flex items-center justify-center">
-        <Tag className="w-16 h-16 text-primary/20 group-hover:scale-110 transition-transform duration-300" />
+      <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden">
+        {imageUrl ? (
+          <img 
+            src={imageUrl} 
+            alt={activity.name} 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <Tag className="w-16 h-16 text-primary/20 group-hover:scale-110 transition-transform duration-300" />
+        )}
       </div>
       <div className="p-6 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-2">
