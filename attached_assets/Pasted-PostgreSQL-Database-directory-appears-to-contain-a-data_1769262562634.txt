@@ -1,0 +1,13 @@
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-01-24 13:38:08.621 UTC [1] LOG:  starting PostgreSQL 17.7 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-01-24 13:38:08.621 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-01-24 13:38:08.621 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-01-24 13:38:08.624 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-01-24 13:38:08.628 UTC [28] LOG:  database system was shut down at 2026-01-24 13:38:07 UTC
+2026-01-24 13:38:08.636 UTC [1] LOG:  database system is ready to accept connections
+2026-01-24 13:39:44.971 UTC [193] ERROR:  column "email_password_encrypted" does not exist at character 502
+2026-01-24 13:39:44.971 UTC [193] STATEMENT:  select "id", "tenant_id", "twilio_account_sid", "twilio_auth_token_encrypted", "twilio_whatsapp_number", "twilio_webhook_url", "twilio_configured", "meta_access_token_encrypted", "meta_phone_number_id", "meta_business_account_id", "meta_verify_token", "meta_webhook_url", "meta_configured", "active_whatsapp_provider", "woocommerce_store_url", "woocommerce_consumer_key", "woocommerce_consumer_secret_encrypted", "woocommerce_webhook_secret", "woocommerce_configured", "email_provider", "email_user", "email_password_encrypted", "email_from_name", "email_smtp_host", "email_smtp_port", "email_smtp_secure", "email_configured", "gmail_user", "gmail_app_password_encrypted", "gmail_from_name", "gmail_configured", "created_at", "updated_at" from "tenant_integrations" where "tenant_integrations"."tenant_id" = $1
+2026-01-24 13:43:08.705 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 13:43:10.320 UTC [26] LOG:  checkpoint complete: wrote 19 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.607 s, sync=0.003 s, total=1.615 s; sync files=15, longest=0.002 s, average=0.001 s; distance=72 kB, estimate=72 kB; lsn=0/2238AD8, redo lsn=0/2236A08
+2026-01-24 13:48:08.364 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 13:48:09.577 UTC [26] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.205 s, sync=0.003 s, total=1.213 s; sync files=12, longest=0.002 s, average=0.001 s; distance=63 kB, estimate=71 kB; lsn=0/22466E8, redo lsn=0/2246658
