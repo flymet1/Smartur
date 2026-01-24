@@ -665,7 +665,7 @@ export default function PublicActivityDetail() {
             )}
 
             {/* Yorum Kartları */}
-            {activity.reviewCardsEnabled && activity.reviewCards && activity.reviewCards.length > 0 && (
+            {activity.reviewCardsEnabled && Array.isArray(activity.reviewCards) && activity.reviewCards.length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
