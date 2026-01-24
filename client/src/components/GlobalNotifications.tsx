@@ -205,6 +205,7 @@ export function GlobalNotifications() {
           title: title.replace('{count}', count.toString()),
           description,
           variant,
+          persistent: true,
           action: (
             <ToastAction altText="Görüntüle" onClick={() => navigate(route)}>
               Görüntüle
@@ -218,6 +219,7 @@ export function GlobalNotifications() {
         title: newTitle.replace('{count}', newCount.toString()),
         description,
         variant,
+        persistent: true,
         action: (
           <ToastAction altText="Görüntüle" onClick={() => navigate(route)}>
             Görüntüle
