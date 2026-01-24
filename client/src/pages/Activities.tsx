@@ -1089,6 +1089,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                           }}
                           label={`Görsel ${index + 1}`}
                           size="large"
+                          recommendedSize="800x600px"
                         />
                       </div>
                     ))}
@@ -1102,6 +1103,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                         }}
                         label="Yeni Görsel Ekle"
                         size="large"
+                        recommendedSize="800x600px"
                       />
                     )}
                   </div>
