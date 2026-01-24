@@ -42,6 +42,7 @@ import {
   Undo,
   Redo
 } from "lucide-react";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface BlogPost {
   id: number;
@@ -524,13 +525,13 @@ export function BlogContent() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="featuredImage">Kapak Görseli URL</Label>
-                      <Input
-                        id="featuredImage"
+                      <Label>Kapak Görseli</Label>
+                      <ImageUpload
                         value={formData.featuredImageUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, featuredImageUrl: e.target.value }))}
-                        placeholder="https://example.com/image.jpg"
-                        data-testid="input-featured-image"
+                        onChange={(url) => setFormData(prev => ({ ...prev, featuredImageUrl: url }))}
+                        label="Kapak Görseli"
+                        size="large"
+                        recommendedSize="800x450px (16:9 oran)"
                       />
                     </div>
                   </div>
