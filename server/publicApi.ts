@@ -810,6 +810,7 @@ export function registerPublicApiRoutes(app: Express) {
           websiteHeaderTextColor: tenants.websiteHeaderTextColor,
           websiteTemplateKey: tenants.websiteTemplateKey,
           websiteTemplateSettings: tenants.websiteTemplateSettings,
+          websiteShowFeaturedActivities: tenants.websiteShowFeaturedActivities,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))

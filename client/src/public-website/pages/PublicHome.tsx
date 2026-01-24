@@ -213,68 +213,70 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
 
       <TrustBadges />
 
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-            <div>
-              <h2 className="text-3xl font-bold mb-2" data-testid="text-featured-title">
-                {t.home.featuredActivities}
-              </h2>
-              <p className="text-muted-foreground">{t.home.heroSubtitle}</p>
-            </div>
-            <Link href={getLocalizedPath("/aktiviteler")}>
-              <Button variant="ghost" className="gap-2" data-testid="link-view-all">
-                {t.common.viewAll}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-
-          {categories.length > 0 && (
-            <CategoryFilter
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-            />
-          )}
-
-          {activitiesLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
-                <Card key={i} className="overflow-hidden">
-                  <Skeleton className="aspect-[4/3]" />
-                  <CardContent className="p-4 space-y-3">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-8 w-full" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : filteredActivities && filteredActivities.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredActivities.slice(0, 8).map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">{t.activities.noResults}</p>
-            </div>
-          )}
-
-          {filteredActivities && filteredActivities.length > 8 && (
-            <div className="text-center mt-8">
+      {(websiteData?.websiteShowFeaturedActivities !== false) && (
+        <section className="py-16 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+              <div>
+                <h2 className="text-3xl font-bold mb-2" data-testid="text-featured-title">
+                  {t.home.featuredActivities}
+                </h2>
+                <p className="text-muted-foreground">{t.home.heroSubtitle}</p>
+              </div>
               <Link href={getLocalizedPath("/aktiviteler")}>
-                <Button size="lg" data-testid="button-show-all">
-                  {t.common.viewAll} ({filteredActivities.length})
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                <Button variant="ghost" className="gap-2" data-testid="link-view-all">
+                  {t.common.viewAll}
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
-          )}
-        </div>
-      </section>
+
+            {categories.length > 0 && (
+              <CategoryFilter
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+              />
+            )}
+
+            {activitiesLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {[...Array(8)].map((_, i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <Skeleton className="aspect-[4/3]" />
+                    <CardContent className="p-4 space-y-3">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-8 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : filteredActivities && filteredActivities.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredActivities.slice(0, 8).map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">{t.activities.noResults}</p>
+              </div>
+            )}
+
+            {filteredActivities && filteredActivities.length > 8 && (
+              <div className="text-center mt-8">
+                <Link href={getLocalizedPath("/aktiviteler")}>
+                  <Button size="lg" data-testid="button-show-all">
+                    {t.common.viewAll} ({filteredActivities.length})
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {homepageSections && homepageSections.length > 0 && homepageSections.map((section, index) => (
         <section 

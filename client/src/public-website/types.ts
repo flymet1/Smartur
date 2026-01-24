@@ -114,6 +114,8 @@ export interface PublicWebsiteData {
   // Şablon sistemi
   websiteTemplateKey: string | null;
   websiteTemplateSettings: WebsiteTemplateSettings;
+  // Ana sayfa bölüm ayarları
+  websiteShowFeaturedActivities: boolean;
 }
 
 export interface AvailabilitySlot {

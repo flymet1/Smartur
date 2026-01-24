@@ -74,6 +74,8 @@ export const tenants = pgTable("tenants", {
   websiteTemplateSettings: text("website_template_settings").default("{}"), // JSON: template-specific settings (heroSlides, testimonials, trustBadges, featuredCategories)
   // === HERO İSTATİSTİKLERİ ===
   websiteHeroStats: text("website_hero_stats").default('[]'), // JSON array: [{icon, value, label, labelEn}]
+  // === ANA SAYFA BÖLÜM AYARLARI ===
+  websiteShowFeaturedActivities: boolean("website_show_featured_activities").default(true), // Öne Çıkan Aktiviteler bölümü gösterilsin mi?
 });
 
 // === HOMEPAGE SECTIONS (Anasayfa Kategori Bölümleri) ===

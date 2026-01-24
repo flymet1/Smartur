@@ -41,6 +41,10 @@ interface Activity {
   imageUrl?: string;
 }
 
+interface TenantSettings {
+  websiteShowFeaturedActivities?: boolean;
+}
+
 export function HomepageSectionsManager() {
   const { toast } = useToast();
   const [editingSection, setEditingSection] = useState<HomepageSection | null>(null);
@@ -55,6 +59,27 @@ export function HomepageSectionsManager() {
     isActive: true,
     activityIds: [] as number[],
     maxItems: 6,
+  });
+
+  const { data: tenantSettings } = useQuery<TenantSettings>({
+    queryKey: ["/api/tenant-settings"],
+  });
+
+  const showFeaturedActivities = tenantSettings?.websiteShowFeaturedActivities ?? true;
+
+  const toggleFeaturedMutation = useMutation({
+    mutationFn: async (show: boolean) => {
+      return apiRequest("PATCH", "/api/tenant-settings", {
+        websiteShowFeaturedActivities: show,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tenant-settings"] });
+      toast({ title: "Ayar güncellendi" });
+    },
+    onError: () => {
+      toast({ title: "Hata oluştu", variant: "destructive" });
+    },
   });
 
   const { data: sections, isLoading: sectionsLoading } = useQuery<HomepageSection[]>({
@@ -184,11 +209,30 @@ export function HomepageSectionsManager() {
 
   return (
     <div className="space-y-6">
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium">Öne Çıkan Aktiviteler</h4>
+              <p className="text-sm text-muted-foreground">
+                Anasayfada tüm aktivitelerinizin otomatik listesi
+              </p>
+            </div>
+            <Switch
+              checked={showFeaturedActivities}
+              onCheckedChange={(checked) => toggleFeaturedMutation.mutate(checked)}
+              disabled={toggleFeaturedMutation.isPending}
+              data-testid="switch-featured-activities"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium">Anasayfa Bölümleri</h3>
+          <h3 className="text-lg font-medium">Özel Bölümler</h3>
           <p className="text-sm text-muted-foreground">
-            Anasayfada gösterilecek aktivite bölümlerini yönetin
+            Anasayfada gösterilecek özel aktivite bölümlerini yönetin
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {

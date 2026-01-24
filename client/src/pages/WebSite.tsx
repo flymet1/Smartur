@@ -84,6 +84,8 @@ interface WebsiteSettings {
   websiteHeaderTextColor: string | null;
   // Hero istatistikleri
   websiteHeroStats: string | null;
+  // Ana sayfa bölüm ayarları
+  websiteShowFeaturedActivities: boolean;
 }
 
 interface HeroStat {
