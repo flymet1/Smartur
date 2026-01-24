@@ -156,6 +156,8 @@ export const activities = pgTable("activities", {
   depositType: text("deposit_type").default("percentage"), // "percentage" veya "fixed"
   depositAmount: integer("deposit_amount").default(0), // Yüzde (0-100) veya sabit TL tutarı
   fullPaymentRequired: boolean("full_payment_required").default(false), // Tam ödeme zorunlu mu?
+  // === MANUEL ÖNEMLİ BİLGİLER ===
+  importantInfo: text("important_info"), // Manuel önemli bilgiler metni
 });
 
 export const capacity = pgTable("capacity", {

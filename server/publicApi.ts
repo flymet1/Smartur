@@ -905,6 +905,7 @@ export function registerPublicApiRoutes(app: Express) {
           highlights: activities.highlights,
           minAge: activities.minAge,
           maxParticipants: activities.maxParticipants,
+          importantInfo: activities.importantInfo,
         })
         .from(activities)
         .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true)));
@@ -925,7 +926,7 @@ export function registerPublicApiRoutes(app: Express) {
 
       const lang = req.query.lang as string;
       if (lang && lang !== "tr") {
-        parsed = await translateArray(parsed, ["name", "description", "region", "meetingPoint"], lang);
+        parsed = await translateArray(parsed, ["name", "description", "region", "meetingPoint", "importantInfo"], lang);
         for (let i = 0; i < parsed.length; i++) {
           if (parsed[i].includedItems?.length) {
             parsed[i].includedItems = await Promise.all(
@@ -989,7 +990,7 @@ export function registerPublicApiRoutes(app: Express) {
 
       const lang = req.query.lang as string;
       if (lang && lang !== "tr") {
-        parsed = await translateObject(parsed, ["name", "description", "region", "meetingPoint"], lang);
+        parsed = await translateObject(parsed, ["name", "description", "region", "meetingPoint", "importantInfo"], lang);
         if (parsed.includedItems?.length) {
           parsed.includedItems = await Promise.all(
             parsed.includedItems.map((item: string) => translateText(item, lang))

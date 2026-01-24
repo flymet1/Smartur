@@ -469,7 +469,7 @@ export default function PublicActivityDetail() {
               )}
             </div>
 
-            {(activity.meetingPoint || (activity.minAge != null && activity.minAge > 0) || (activity.tourLanguages && activity.tourLanguages.length > 0)) && (
+            {(activity.meetingPoint || (activity.minAge != null && activity.minAge > 0) || (activity.tourLanguages && activity.tourLanguages.length > 0) || activity.importantInfo) && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -535,6 +535,14 @@ export default function PublicActivityDetail() {
                       </div>
                     </div>
                   </div>
+
+                  {activity.importantInfo && (
+                    <div className="mt-6 pt-6 border-t">
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {activity.importantInfo}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
