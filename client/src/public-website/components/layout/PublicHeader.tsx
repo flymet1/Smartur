@@ -162,21 +162,23 @@ export function PublicHeader({
         <div className="container mx-auto px-4">
           <div className="flex h-16 md:h-20 items-center justify-between gap-4">
             <Link href={getLocalizedPath("/")} className="flex items-center gap-3 group">
-              {logo ? (
-                <img src={logo} alt={agencyName} className="h-10 md:h-12 w-auto" />
-              ) : (
-                <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
+                {logo ? (
+                  <img src={logo} alt={agencyName} className="h-10 md:h-12 w-auto" />
+                ) : (
                   <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:shadow-primary/25 transition-shadow">
                     <MapPin className="h-5 w-5 md:h-6 md:w-6 text-primary-foreground" />
                   </div>
+                )}
+                {agencyName && (
                   <div className="hidden sm:block">
                     <span className="font-bold text-lg md:text-xl block leading-tight" data-testid="text-agency-name">
                       {agencyName}
                     </span>
                     <span className="text-xs text-muted-foreground">Tours & Activities</span>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </Link>
 
             <nav className="hidden lg:flex items-center gap-1">
