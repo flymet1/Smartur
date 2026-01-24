@@ -339,16 +339,16 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     }
     return '';
   });
-  const [galleryImages, setGalleryImages] = useState(() => {
+  const [galleryImages, setGalleryImages] = useState<string[]>(() => {
     if (activity && (activity as any).galleryImages) {
       try {
         const parsed = JSON.parse((activity as any).galleryImages);
-        return Array.isArray(parsed) ? parsed.join('\n') : '';
+        return Array.isArray(parsed) ? parsed.filter((url: string) => url && url.trim()) : [];
       } catch {
-        return '';
+        return [];
       }
     }
-    return '';
+    return [];
   });
   
   // Ödeme Seçenekleri
@@ -405,7 +405,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setHighlights("");
     setIncludedItems("");
     setExcludedItems("");
-    setGalleryImages("");
+    setGalleryImages([]);
     setRequiresDeposit(false);
     setDepositType("percentage");
     setDepositAmount("0");
@@ -498,7 +498,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     const highlightsArray = highlights.split(',').map((h: string) => h.trim()).filter((h: string) => h.length > 0);
     const includedItemsArray = includedItems.split(',').map((i: string) => i.trim()).filter((i: string) => i.length > 0);
     const excludedItemsArray = excludedItems.split(',').map((e: string) => e.trim()).filter((e: string) => e.length > 0);
-    const galleryImagesArray = galleryImages.split('\n').map((u: string) => u.trim()).filter((u: string) => u.length > 0);
+    const galleryImagesArray = galleryImages.filter((u: string) => u && u.trim().length > 0);
     
     const data = {
       name: trimmedName,
@@ -1071,16 +1071,40 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="galleryImages">Galeri Görselleri</Label>
-                  <Textarea 
-                    id="galleryImages"
-                    value={galleryImages}
-                    onChange={(e) => setGalleryImages(e.target.value)}
-                    placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                    className="min-h-[100px]"
-                    data-testid="input-gallery-images"
-                  />
-                  <p className="text-xs text-muted-foreground">Her satıra bir görsel URL'si girin</p>
+                  <Label>Galeri Görselleri</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Aktivite detay sayfasında gösterilecek ek görseller (max 6 adet)</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {galleryImages.map((url, index) => (
+                      <div key={index} className="relative">
+                        <ImageUpload
+                          value={url}
+                          onChange={(newUrl) => {
+                            const updated = [...galleryImages];
+                            if (newUrl) {
+                              updated[index] = newUrl;
+                            } else {
+                              updated.splice(index, 1);
+                            }
+                            setGalleryImages(updated);
+                          }}
+                          label={`Görsel ${index + 1}`}
+                          size="large"
+                        />
+                      </div>
+                    ))}
+                    {galleryImages.length < 6 && (
+                      <ImageUpload
+                        value=""
+                        onChange={(newUrl) => {
+                          if (newUrl) {
+                            setGalleryImages([...galleryImages, newUrl]);
+                          }
+                        }}
+                        label="Yeni Görsel Ekle"
+                        size="large"
+                      />
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
