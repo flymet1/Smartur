@@ -553,9 +553,12 @@ export default function PublicActivityDetail() {
 
                   {activity.importantInfo && (
                     <div className={activity.importantInfoItems?.length ? "mt-4" : "mt-6 pt-6 border-t"}>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {activity.importantInfo}
-                      </p>
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {activity.importantInfo}
+                        </p>
+                      </div>
                     </div>
                   )}
                 </CardContent>
