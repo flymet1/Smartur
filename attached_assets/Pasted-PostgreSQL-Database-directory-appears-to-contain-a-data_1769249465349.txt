@@ -1,0 +1,38 @@
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-01-24 10:04:12.202 UTC [1] LOG:  starting PostgreSQL 17.7 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-01-24 10:04:12.202 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-01-24 10:04:12.202 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-01-24 10:04:12.206 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-01-24 10:04:12.214 UTC [28] LOG:  database system was shut down at 2026-01-24 10:04:07 UTC
+2026-01-24 10:04:12.227 UTC [1] LOG:  database system is ready to accept connections
+2026-01-24 10:07:15.171 UTC [324] ERROR:  column "setting_description" does not exist at character 46
+2026-01-24 10:07:15.171 UTC [324] STATEMENT:  select "id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at" from "smartur_settings"
+2026-01-24 10:07:25.228 UTC [298] ERROR:  column "setting_description" of relation "smartur_settings" does not exist at character 71
+2026-01-24 10:07:25.228 UTC [298] STATEMENT:  insert into "smartur_settings" ("id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at") values (default, $1, $2, $3, default, default) on conflict ("setting_key") do update set "setting_value" = $4, "updated_at" = $5
+2026-01-24 10:07:32.667 UTC [342] ERROR:  column "setting_description" does not exist at character 46
+2026-01-24 10:07:32.667 UTC [342] STATEMENT:  select "id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at" from "smartur_settings"
+2026-01-24 10:07:36.501 UTC [343] ERROR:  column "setting_description" does not exist at character 46
+2026-01-24 10:07:36.501 UTC [343] STATEMENT:  select "id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at" from "smartur_settings"
+2026-01-24 10:07:43.186 UTC [372] ERROR:  column "setting_description" does not exist at character 46
+2026-01-24 10:07:43.186 UTC [372] STATEMENT:  select "id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at" from "smartur_settings"
+2026-01-24 10:09:12.256 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 10:09:13.266 UTC [26] LOG:  checkpoint complete: wrote 13 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.002 s, total=1.011 s; sync files=12, longest=0.001 s, average=0.001 s; distance=22 kB, estimate=22 kB; lsn=0/1F73630, redo lsn=0/1F735D8
+2026-01-24 10:10:29.880 UTC [634] ERROR:  column "setting_description" does not exist at character 46
+2026-01-24 10:10:29.880 UTC [634] STATEMENT:  select "id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at" from "smartur_settings"
+2026-01-24 10:10:30.011 UTC [646] ERROR:  column "gallery_images" does not exist at character 474
+2026-01-24 10:10:30.011 UTC [646] STATEMENT:  select "tenant_id", "id", "name", "name_aliases", "description", "price", "price_usd", "duration_minutes", "daily_frequency", "default_times", "default_capacity", "color", "confirmation_message", "reservation_link", "reservation_link_en", "agency_phone", "admin_phone", "send_notification_to_agency", "send_notification_to_admin", "notification_message_template", "active", "has_free_hotel_transfer", "transfer_zones", "extras", "faq", "shared_with_partners", "image_url", "gallery_images", "region", "tour_languages", "difficulty", "included_items", "excluded_items", "meeting_point", "categories", "highlights", "min_age", "max_participants", "requires_deposit", "deposit_type", "deposit_amount", "full_payment_required" from "activities" where "activities"."tenant_id" = $1
+2026-01-24 10:10:30.028 UTC [651] LOG:  could not receive data from client: Connection reset by peer
+2026-01-24 10:10:30.034 UTC [645] LOG:  could not receive data from client: Connection reset by peer
+2026-01-24 10:10:30.035 UTC [648] LOG:  could not receive data from client: Connection reset by peer
+2026-01-24 10:10:31.329 UTC [660] ERROR:  column "gallery_images" does not exist at character 474
+2026-01-24 10:10:31.329 UTC [660] STATEMENT:  select "tenant_id", "id", "name", "name_aliases", "description", "price", "price_usd", "duration_minutes", "daily_frequency", "default_times", "default_capacity", "color", "confirmation_message", "reservation_link", "reservation_link_en", "agency_phone", "admin_phone", "send_notification_to_agency", "send_notification_to_admin", "notification_message_template", "active", "has_free_hotel_transfer", "transfer_zones", "extras", "faq", "shared_with_partners", "image_url", "gallery_images", "region", "tour_languages", "difficulty", "included_items", "excluded_items", "meeting_point", "categories", "highlights", "min_age", "max_participants", "requires_deposit", "deposit_type", "deposit_amount", "full_payment_required" from "activities"
+2026-01-24 10:10:34.260 UTC [663] ERROR:  column "setting_description" does not exist at character 46
+2026-01-24 10:10:34.260 UTC [663] STATEMENT:  select "id", "setting_key", "setting_value", "setting_description", "created_at", "updated_at" from "smartur_settings"
+2026-01-24 10:10:34.342 UTC [662] ERROR:  column "gallery_images" does not exist at character 474
+2026-01-24 10:10:34.342 UTC [662] STATEMENT:  select "tenant_id", "id", "name", "name_aliases", "description", "price", "price_usd", "duration_minutes", "daily_frequency", "default_times", "default_capacity", "color", "confirmation_message", "reservation_link", "reservation_link_en", "agency_phone", "admin_phone", "send_notification_to_agency", "send_notification_to_admin", "notification_message_template", "active", "has_free_hotel_transfer", "transfer_zones", "extras", "faq", "shared_with_partners", "image_url", "gallery_images", "region", "tour_languages", "difficulty", "included_items", "excluded_items", "meeting_point", "categories", "highlights", "min_age", "max_participants", "requires_deposit", "deposit_type", "deposit_amount", "full_payment_required" from "activities" where "activities"."tenant_id" = $1
+2026-01-24 10:10:34.363 UTC [669] LOG:  could not receive data from client: Connection reset by peer
+2026-01-24 10:10:34.365 UTC [666] LOG:  could not receive data from client: Connection reset by peer
+2026-01-24 10:10:34.368 UTC [665] LOG:  could not receive data from client: Connection reset by peer
+2026-01-24 10:10:34.373 UTC [664] LOG:  could not receive data from client: Connection reset by peer
+2026-01-24 10:10:35.356 UTC [672] ERROR:  column "gallery_images" does not exist at character 474
+2026-01-24 10:10:35.356 UTC [672] STATEMENT:  select "tenant_id", "id", "name", "name_aliases", "description", "price", "price_usd", "duration_minutes", "daily_frequency", "default_times", "default_capacity", "color", "confirmation_message", "reservation_link", "reservation_link_en", "agency_phone", "admin_phone", "send_notification_to_agency", "send_notification_to_admin", "notification_message_template", "active", "has_free_hotel_transfer", "transfer_zones", "extras", "faq", "shared_with_partners", "image_url", "gallery_images", "region", "tour_languages", "difficulty", "included_items", "excluded_items", "meeting_point", "categories", "highlights", "min_age", "max_participants", "requires_deposit", "deposit_type", "deposit_amount", "full_payment_required" from "activities"
