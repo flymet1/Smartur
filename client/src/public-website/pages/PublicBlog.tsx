@@ -155,7 +155,7 @@ export default function PublicBlog({ websiteData }: PublicBlogProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredPosts.map((post) => (
-                <Link key={post.id} href={`/blog/${post.slug}`}>
+                <Link key={post.id} href={`/${language}/blog/${post.slug}`}>
                   <Card 
                     className="overflow-hidden hover-elevate transition-all duration-300 h-full cursor-pointer group border-0 shadow-md hover:shadow-xl"
                     data-testid={`card-blog-post-${post.id}`}

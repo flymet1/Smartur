@@ -1,0 +1,20 @@
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-01-24 10:24:38.890 UTC [1] LOG:  starting PostgreSQL 17.7 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-01-24 10:24:38.891 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-01-24 10:24:38.891 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-01-24 10:24:38.893 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-01-24 10:24:38.897 UTC [28] LOG:  database system was shut down at 2026-01-24 10:24:35 UTC
+2026-01-24 10:24:38.904 UTC [1] LOG:  database system is ready to accept connections
+2026-01-24 10:26:23.757 UTC [214] ERROR:  column "email_user" does not exist at character 488
+2026-01-24 10:26:23.757 UTC [214] HINT:  Perhaps you meant to reference the column "tenant_integrations.gmail_user".
+2026-01-24 10:26:23.757 UTC [214] STATEMENT:  select "id", "tenant_id", "twilio_account_sid", "twilio_auth_token_encrypted", "twilio_whatsapp_number", "twilio_webhook_url", "twilio_configured", "meta_access_token_encrypted", "meta_phone_number_id", "meta_business_account_id", "meta_verify_token", "meta_webhook_url", "meta_configured", "active_whatsapp_provider", "woocommerce_store_url", "woocommerce_consumer_key", "woocommerce_consumer_secret_encrypted", "woocommerce_webhook_secret", "woocommerce_configured", "email_provider", "email_user", "email_password_encrypted", "email_from_name", "email_smtp_host", "email_smtp_port", "email_smtp_secure", "email_configured", "gmail_user", "gmail_app_password_encrypted", "gmail_from_name", "gmail_configured", "created_at", "updated_at" from "tenant_integrations" where "tenant_integrations"."tenant_id" = $1
+2026-01-24 10:29:38.989 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 10:29:41.605 UTC [26] LOG:  checkpoint complete: wrote 29 buffers (0.2%); 0 WAL file(s) added, 0 removed, 1 recycled; write=2.609 s, sync=0.003 s, total=2.616 s; sync files=24, longest=0.001 s, average=0.001 s; distance=73 kB, estimate=73 kB; lsn=0/2012368, redo lsn=0/200E550
+2026-01-24 10:34:38.703 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 10:34:39.111 UTC [26] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.402 s, sync=0.002 s, total=0.408 s; sync files=5, longest=0.001 s, average=0.001 s; distance=26 kB, estimate=69 kB; lsn=0/2014FD8, redo lsn=0/2014F80
+2026-01-24 10:39:38.210 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 10:39:38.617 UTC [26] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.402 s, sync=0.002 s, total=0.407 s; sync files=5, longest=0.001 s, average=0.001 s; distance=21 kB, estimate=64 kB; lsn=0/201A720, redo lsn=0/201A6C8
+2026-01-24 10:44:38.712 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 10:44:39.922 UTC [26] LOG:  checkpoint complete: wrote 13 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.204 s, sync=0.002 s, total=1.210 s; sync files=11, longest=0.001 s, average=0.001 s; distance=46 kB, estimate=62 kB; lsn=0/2026250, redo lsn=0/20261F8
+2026-01-24 10:49:39.022 UTC [26] LOG:  checkpoint starting: time
+2026-01-24 10:49:39.529 UTC [26] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.502 s, sync=0.002 s, total=0.508 s; sync files=6, longest=0.001 s, average=0.001 s; distance=35 kB, estimate=59 kB; lsn=0/202F108, redo lsn=0/202F0B0
