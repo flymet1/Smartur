@@ -469,7 +469,7 @@ export default function PublicActivityDetail() {
               )}
             </div>
 
-            {(activity.meetingPoint || (activity.minAge != null && activity.minAge > 0) || (activity.tourLanguages && activity.tourLanguages.length > 0) || activity.importantInfo) && (
+            {(activity.meetingPoint || (activity.minAge != null && activity.minAge > 0) || (activity.tourLanguages && activity.tourLanguages.length > 0) || activity.importantInfo || (activity.importantInfoItems && activity.importantInfoItems.length > 0)) && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -536,8 +536,21 @@ export default function PublicActivityDetail() {
                     </div>
                   </div>
 
+                  {activity.importantInfoItems && activity.importantInfoItems.length > 0 && (
+                    <div className="mt-6 pt-6 border-t space-y-3">
+                      {activity.importantInfoItems.map((item, idx) => (
+                        <div key={idx} className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                            <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <p className="text-sm text-foreground pt-1">{item}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {activity.importantInfo && (
-                    <div className="mt-6 pt-6 border-t">
+                    <div className={activity.importantInfoItems?.length ? "mt-4" : "mt-6 pt-6 border-t"}>
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                         {activity.importantInfo}
                       </p>

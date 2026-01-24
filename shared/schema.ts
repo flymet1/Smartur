@@ -157,6 +157,7 @@ export const activities = pgTable("activities", {
   depositAmount: integer("deposit_amount").default(0), // Yüzde (0-100) veya sabit TL tutarı
   fullPaymentRequired: boolean("full_payment_required").default(false), // Tam ödeme zorunlu mu?
   // === MANUEL ÖNEMLİ BİLGİLER ===
+  importantInfoItems: text("important_info_items").default("[]"), // JSON array: Manuel önemli bilgi öğeleri ["Kimlik kartı gerekli", "Yüzme bilmek şart"]
   importantInfo: text("important_info"), // Manuel önemli bilgiler metni
 });
 

@@ -294,6 +294,17 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [meetingPoint, setMeetingPoint] = useState(activity ? (activity as any).meetingPoint || "" : "");
   const [difficulty, setDifficulty] = useState(activity ? (activity as any).difficulty || "" : "");
   const [minAge, setMinAge] = useState(activity ? String((activity as any).minAge || "") : "");
+  const [importantInfoItems, setImportantInfoItems] = useState(() => {
+    if (activity && (activity as any).importantInfoItems) {
+      try {
+        const parsed = JSON.parse((activity as any).importantInfoItems);
+        return Array.isArray(parsed) ? parsed.join('\n') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
   const [importantInfo, setImportantInfo] = useState(activity ? (activity as any).importantInfo || "" : "");
   const [tourLanguages, setTourLanguages] = useState(() => {
     if (activity && (activity as any).tourLanguages) {
@@ -547,6 +558,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       includedItems: JSON.stringify(includedItemsArray),
       excludedItems: JSON.stringify(excludedItemsArray),
       galleryImages: JSON.stringify(galleryImagesArray),
+      importantInfoItems: JSON.stringify(importantInfoItems.split('\n').map(s => s.trim()).filter(Boolean)),
       importantInfo: importantInfo || null,
       // Ödeme Seçenekleri
       requiresDeposit: requiresDeposit,
@@ -992,16 +1004,29 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="importantInfo">Önemli Bilgiler (Manuel)</Label>
+                  <Label htmlFor="importantInfoItems">Önemli Bilgiler (Liste)</Label>
+                  <Textarea 
+                    id="importantInfoItems"
+                    value={importantInfoItems}
+                    onChange={(e) => setImportantInfoItems(e.target.value)}
+                    placeholder="Her satıra bir önemli bilgi yazın. Örnek:&#10;Kimlik kartı yanınızda olmalı&#10;Yüzme bilmek gereklidir&#10;18 yaş altı katılamaz"
+                    rows={4}
+                    data-testid="input-important-info-items"
+                  />
+                  <p className="text-xs text-muted-foreground">Her satır, info ikonu ile birlikte ayrı bir öğe olarak gösterilecektir.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="importantInfo">Önemli Bilgiler (Açıklama Metni)</Label>
                   <Textarea 
                     id="importantInfo"
                     value={importantInfo}
                     onChange={(e) => setImportantInfo(e.target.value)}
-                    placeholder="Aktivite hakkında müşterilerin bilmesi gereken önemli bilgileri buraya yazın..."
-                    rows={4}
+                    placeholder="Ek açıklama metni (isteğe bağlı)..."
+                    rows={3}
                     data-testid="input-important-info"
                   />
-                  <p className="text-xs text-muted-foreground">Bu metin aktivite detay sayfasında "Önemli Bilgiler" bölümünde gösterilecektir.</p>
+                  <p className="text-xs text-muted-foreground">Liste öğelerinin altında ek açıklama olarak gösterilecektir.</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

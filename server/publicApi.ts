@@ -905,6 +905,7 @@ export function registerPublicApiRoutes(app: Express) {
           highlights: activities.highlights,
           minAge: activities.minAge,
           maxParticipants: activities.maxParticipants,
+          importantInfoItems: activities.importantInfoItems,
           importantInfo: activities.importantInfo,
         })
         .from(activities)
@@ -922,11 +923,19 @@ export function registerPublicApiRoutes(app: Express) {
         excludedItems: JSON.parse(a.excludedItems || "[]"),
         categories: JSON.parse(a.categories || "[]"),
         highlights: JSON.parse(a.highlights || "[]"),
+        importantInfoItems: JSON.parse(a.importantInfoItems || "[]"),
       }));
 
       const lang = req.query.lang as string;
       if (lang && lang !== "tr") {
         parsed = await translateArray(parsed, ["name", "description", "region", "meetingPoint", "importantInfo"], lang);
+        for (let i = 0; i < parsed.length; i++) {
+          if (parsed[i].importantInfoItems?.length) {
+            parsed[i].importantInfoItems = await Promise.all(
+              parsed[i].importantInfoItems.map((item: string) => translateText(item, lang))
+            );
+          }
+        }
         for (let i = 0; i < parsed.length; i++) {
           if (parsed[i].includedItems?.length) {
             parsed[i].includedItems = await Promise.all(
@@ -986,11 +995,17 @@ export function registerPublicApiRoutes(app: Express) {
         excludedItems: JSON.parse(activity.excludedItems || "[]"),
         categories: JSON.parse(activity.categories || "[]"),
         highlights: JSON.parse(activity.highlights || "[]"),
+        importantInfoItems: JSON.parse(activity.importantInfoItems || "[]"),
       };
 
       const lang = req.query.lang as string;
       if (lang && lang !== "tr") {
         parsed = await translateObject(parsed, ["name", "description", "region", "meetingPoint", "importantInfo"], lang);
+        if (parsed.importantInfoItems?.length) {
+          parsed.importantInfoItems = await Promise.all(
+            parsed.importantInfoItems.map((item: string) => translateText(item, lang))
+          );
+        }
         if (parsed.includedItems?.length) {
           parsed.includedItems = await Promise.all(
             parsed.includedItems.map((item: string) => translateText(item, lang))

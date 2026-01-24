@@ -23,6 +23,7 @@ export interface PublicActivity {
   highlights: string[];
   minAge: number | null;
   maxParticipants: number | null;
+  importantInfoItems: string[];
   importantInfo: string | null;
   // Ödeme seçenekleri
   requiresDeposit: boolean;
