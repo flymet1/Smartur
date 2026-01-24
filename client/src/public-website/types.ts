@@ -70,6 +70,7 @@ export interface PublicWebsiteData {
   websiteTitle: string | null;
   websiteDescription: string | null;
   websiteFaviconUrl: string | null;
+  websiteHeaderLogoUrl: string | null;
   websiteHeroImageUrl: string | null;
   websiteAboutText: string | null;
   websiteFooterText: string | null;

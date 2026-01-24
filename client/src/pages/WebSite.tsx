@@ -75,6 +75,7 @@ interface WebsiteSettings {
   websiteFaqPageContent: string | null;
   // Footer ve Header ayarları
   websiteDisplayName: string | null;
+  websiteHeaderLogoUrl: string | null;
   websiteFooterCompanyDescription: string | null;
   websiteFooterPaymentImageUrl: string | null;
   websiteFooterCopyrightText: string | null;
@@ -983,16 +984,30 @@ export default function WebSite() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="websiteDisplayName">Görüntü Adı (Header & Footer)</Label>
+                    <Label htmlFor="websiteDisplayName">Görüntü Adı (Top Bar)</Label>
                     <Input
                       id="websiteDisplayName"
-                      placeholder="Header ve footer'da görünecek acenta adı (boş bırakılırsa şirket adı kullanılır)"
+                      placeholder="Top bar'da görünecek acenta adı (boş bırakılırsa şirket adı kullanılır)"
                       value={getValue("websiteDisplayName")}
                       onChange={(e) => updateField("websiteDisplayName", e.target.value)}
                       data-testid="input-display-name"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Header üst çubuğunda ve footer'da küçük puntolarla görünecek özel isim
+                      Sadece header üst çubuğunda (top bar) görünecek özel isim
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Header Logo (Menü)</Label>
+                    <ImageUpload
+                      value={getValue("websiteHeaderLogoUrl")}
+                      onChange={(value) => updateField("websiteHeaderLogoUrl", value)}
+                      label="Header Logo"
+                      size="large"
+                      recommendedSize="200x60px"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Menü alanında görünecek logo. Yüklenmezse varsayılan ikon kullanılır.
                     </p>
                   </div>
 

@@ -20,7 +20,7 @@ export function PublicLayout({ children, data }: PublicLayoutProps) {
     <div className="min-h-screen flex flex-col">
       <PublicHeader 
         agencyName={data?.websiteDisplayName || data?.name} 
-        logo={data?.logoUrl || undefined} 
+        logo={data?.websiteHeaderLogoUrl || data?.logoUrl || undefined} 
         phone={data?.websiteContactPhone || data?.contactPhone || undefined}
         email={data?.websiteContactEmail || data?.contactEmail || undefined}
         whatsapp={data?.websiteWhatsappNumber || undefined}

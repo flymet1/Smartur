@@ -34,6 +34,7 @@ export const tenants = pgTable("tenants", {
   websiteTitle: text("website_title"), // Site başlığı
   websiteDescription: text("website_description"), // Meta açıklama
   websiteFaviconUrl: text("website_favicon_url"), // Favicon URL
+  websiteHeaderLogoUrl: text("website_header_logo_url"), // Header menü logosu (ayrı)
   websiteHeroImageUrl: text("website_hero_image_url"), // Hero görsel URL
   websiteAboutText: text("website_about_text"), // Hakkımızda metni
   websiteFooterText: text("website_footer_text"), // Footer metni
