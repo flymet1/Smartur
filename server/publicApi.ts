@@ -813,6 +813,10 @@ export function registerPublicApiRoutes(app: Express) {
           websiteTemplateKey: tenants.websiteTemplateKey,
           websiteTemplateSettings: tenants.websiteTemplateSettings,
           websiteShowFeaturedActivities: tenants.websiteShowFeaturedActivities,
+          websiteReviewCards: tenants.websiteReviewCards,
+          websiteReviewCardsEnabled: tenants.websiteReviewCardsEnabled,
+          websiteReviewCardsTitle: tenants.websiteReviewCardsTitle,
+          websiteReviewCardsTitleEn: tenants.websiteReviewCardsTitleEn,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -826,16 +830,19 @@ export function registerPublicApiRoutes(app: Express) {
       let languages = ["tr"];
       let faqItems = [];
       let templateSettings = {};
+      let reviewCards: any[] = [];
       try { socialLinks = JSON.parse(tenant.websiteSocialLinks || "{}"); } catch {}
       try { languages = JSON.parse(tenant.websiteLanguages || '["tr"]'); } catch {}
       try { faqItems = JSON.parse(tenant.websiteFaqPageContent || "[]"); } catch {}
       try { templateSettings = JSON.parse(tenant.websiteTemplateSettings || "{}"); } catch {}
+      try { reviewCards = JSON.parse(tenant.websiteReviewCards || "[]"); } catch {}
 
       let responseData: any = {
         ...tenant,
         websiteSocialLinks: socialLinks,
         websiteLanguages: languages,
         websiteTemplateSettings: templateSettings,
+        websiteReviewCards: reviewCards,
         faqItems,
       };
 
@@ -908,6 +915,8 @@ export function registerPublicApiRoutes(app: Express) {
           importantInfoItems: activities.importantInfoItems,
           importantInfo: activities.importantInfo,
           transferInfo: activities.transferInfo,
+          reviewCards: activities.reviewCards,
+          reviewCardsEnabled: activities.reviewCardsEnabled,
         })
         .from(activities)
         .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true)));
@@ -925,6 +934,7 @@ export function registerPublicApiRoutes(app: Express) {
         categories: JSON.parse(a.categories || "[]"),
         highlights: JSON.parse(a.highlights || "[]"),
         importantInfoItems: JSON.parse(a.importantInfoItems || "[]"),
+        reviewCards: JSON.parse(a.reviewCards || "[]"),
       }));
 
       const lang = req.query.lang as string;

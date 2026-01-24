@@ -307,6 +307,18 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   });
   const [importantInfo, setImportantInfo] = useState(activity ? (activity as any).importantInfo || "" : "");
   const [transferInfo, setTransferInfo] = useState(activity ? (activity as any).transferInfo || "" : "");
+  // Yorum kartları
+  const [reviewCards, setReviewCards] = useState<Array<{platform: string; rating: string; reviewCount: string; url: string}>>(() => {
+    if (activity && (activity as any).reviewCards) {
+      try {
+        return JSON.parse((activity as any).reviewCards);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  const [reviewCardsEnabled, setReviewCardsEnabled] = useState(activity ? (activity as any).reviewCardsEnabled === true : false);
   const [tourLanguages, setTourLanguages] = useState(() => {
     if (activity && (activity as any).tourLanguages) {
       try {
@@ -562,6 +574,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       importantInfoItems: JSON.stringify(importantInfoItems.split('\n').map(s => s.trim()).filter(Boolean)),
       importantInfo: importantInfo || null,
       transferInfo: transferInfo || null,
+      reviewCards: JSON.stringify(reviewCards),
+      reviewCardsEnabled: reviewCardsEnabled,
       // Ödeme Seçenekleri
       requiresDeposit: requiresDeposit,
       depositType: depositType,
@@ -1303,6 +1317,117 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     />
                     <p className="text-xs text-muted-foreground">Her satır, etiket bulutu olarak transfer bölgelerinin altında gösterilecektir.</p>
                   </div>
+                </div>
+
+                {/* Yorum Kartları */}
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-base">Yorum Kartları (Dış Platformlar)</Label>
+                      <p className="text-xs text-muted-foreground">Google, TripAdvisor gibi dış platformlardaki yorumlarınıza link verin</p>
+                    </div>
+                    <Switch 
+                      checked={reviewCardsEnabled}
+                      onCheckedChange={setReviewCardsEnabled}
+                      data-testid="switch-review-cards-enabled"
+                    />
+                  </div>
+                  
+                  {reviewCardsEnabled && (
+                    <div className="space-y-3 pt-2 border-t">
+                      {reviewCards.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-3 bg-background/50 rounded">
+                          Henüz yorum kartı eklenmemiş
+                        </p>
+                      ) : (
+                        reviewCards.map((card, idx) => (
+                          <div key={idx} className="flex gap-2 items-start p-3 bg-background/50 rounded-lg">
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Platform</Label>
+                                <Select
+                                  value={card.platform}
+                                  onValueChange={(value) => {
+                                    const newCards = [...reviewCards];
+                                    newCards[idx].platform = value;
+                                    setReviewCards(newCards);
+                                  }}
+                                >
+                                  <SelectTrigger data-testid={`select-review-platform-${idx}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="google">Google</SelectItem>
+                                    <SelectItem value="tripadvisor">TripAdvisor</SelectItem>
+                                    <SelectItem value="trustpilot">Trustpilot</SelectItem>
+                                    <SelectItem value="facebook">Facebook</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Puan</Label>
+                                <Input
+                                  placeholder="4.9"
+                                  value={card.rating}
+                                  onChange={(e) => {
+                                    const newCards = [...reviewCards];
+                                    newCards[idx].rating = e.target.value;
+                                    setReviewCards(newCards);
+                                  }}
+                                  data-testid={`input-review-rating-${idx}`}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Yorum Sayısı</Label>
+                                <Input
+                                  placeholder="1200+"
+                                  value={card.reviewCount}
+                                  onChange={(e) => {
+                                    const newCards = [...reviewCards];
+                                    newCards[idx].reviewCount = e.target.value;
+                                    setReviewCards(newCards);
+                                  }}
+                                  data-testid={`input-review-count-${idx}`}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">URL</Label>
+                                <Input
+                                  placeholder="https://g.page/..."
+                                  value={card.url}
+                                  onChange={(e) => {
+                                    const newCards = [...reviewCards];
+                                    newCards[idx].url = e.target.value;
+                                    setReviewCards(newCards);
+                                  }}
+                                  data-testid={`input-review-url-${idx}`}
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setReviewCards(reviewCards.filter((_, i) => i !== idx))}
+                              className="shrink-0 text-destructive hover:text-destructive"
+                              data-testid={`button-remove-review-${idx}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setReviewCards([...reviewCards, { platform: "google", rating: "5.0", reviewCount: "100+", url: "" }])}
+                        data-testid="button-add-review-card"
+                      >
+                        <Plus className="w-4 h-4 mr-1" /> Yorum Kartı Ekle
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 

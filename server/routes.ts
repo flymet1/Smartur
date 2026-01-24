@@ -5918,6 +5918,10 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
           websiteHeaderBackgroundColor: tenants.websiteHeaderBackgroundColor,
           websiteHeaderTextColor: tenants.websiteHeaderTextColor,
           websiteHeroStats: tenants.websiteHeroStats,
+          websiteReviewCards: tenants.websiteReviewCards,
+          websiteReviewCardsEnabled: tenants.websiteReviewCardsEnabled,
+          websiteReviewCardsTitle: tenants.websiteReviewCardsTitle,
+          websiteReviewCardsTitleEn: tenants.websiteReviewCardsTitleEn,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -5979,6 +5983,10 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         websiteHeaderBackgroundColor,
         websiteHeaderTextColor,
         websiteHeroStats,
+        websiteReviewCards,
+        websiteReviewCardsEnabled,
+        websiteReviewCardsTitle,
+        websiteReviewCardsTitleEn,
       } = req.body;
 
       const updateData: Record<string, any> = {};
@@ -6023,6 +6031,10 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       if (websiteHeaderBackgroundColor !== undefined) updateData.websiteHeaderBackgroundColor = websiteHeaderBackgroundColor;
       if (websiteHeaderTextColor !== undefined) updateData.websiteHeaderTextColor = websiteHeaderTextColor;
       if (websiteHeroStats !== undefined) updateData.websiteHeroStats = websiteHeroStats;
+      if (websiteReviewCards !== undefined) updateData.websiteReviewCards = websiteReviewCards;
+      if (websiteReviewCardsEnabled !== undefined) updateData.websiteReviewCardsEnabled = websiteReviewCardsEnabled;
+      if (websiteReviewCardsTitle !== undefined) updateData.websiteReviewCardsTitle = websiteReviewCardsTitle;
+      if (websiteReviewCardsTitleEn !== undefined) updateData.websiteReviewCardsTitleEn = websiteReviewCardsTitleEn;
 
       if (Object.keys(updateData).length > 0) {
         await db

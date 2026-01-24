@@ -404,6 +404,60 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
         </section>
       )}
 
+      {/* Review Cards Section */}
+      {websiteData?.websiteReviewCardsEnabled && websiteData.websiteReviewCards && websiteData.websiteReviewCards.length > 0 && (
+        <section className="py-12 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <h2 className="text-2xl font-bold text-center mb-8">
+              {language === "en" 
+                ? (websiteData.websiteReviewCardsTitleEn || "Our Customers Recommend Us")
+                : (websiteData.websiteReviewCardsTitle || "Müşterilerimiz Bizi Öneriyor")
+              }
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {websiteData.websiteReviewCards.map((card, idx) => (
+                <a
+                  key={idx}
+                  href={card.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-6 bg-card rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+                  data-testid={`review-card-${card.platform}`}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    {card.platform === "google" && (
+                      <div className="w-6 h-6 bg-[#4285F4] rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>
+                    )}
+                    {card.platform === "tripadvisor" && (
+                      <div className="w-6 h-6 bg-[#00AF87] rounded-full flex items-center justify-center text-white text-xs font-bold">T</div>
+                    )}
+                    {card.platform === "trustpilot" && (
+                      <div className="w-6 h-6 bg-[#00B67A] rounded-full flex items-center justify-center text-white text-xs font-bold">★</div>
+                    )}
+                    {card.platform === "facebook" && (
+                      <div className="w-6 h-6 bg-[#1877F2] rounded-full flex items-center justify-center text-white text-xs font-bold">f</div>
+                    )}
+                    <span className="font-semibold capitalize">{card.platform === "tripadvisor" ? "TripAdvisor" : card.platform.charAt(0).toUpperCase() + card.platform.slice(1)}</span>
+                  </div>
+                  <div className="flex items-center gap-1 mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${i < Math.floor(parseFloat(card.rating)) ? "fill-yellow-400 text-yellow-400" : "text-muted"}`}
+                      />
+                    ))}
+                    <span className="ml-1 font-semibold">{card.rating}/5</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {language === "en" ? `Based on ${card.reviewCount} Reviews` : `${card.reviewCount} Yorum Üzerinden`}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <WhatsAppButton phoneNumber={websiteData?.websiteWhatsappNumber} />
     </div>
   );

@@ -26,6 +26,9 @@ export interface PublicActivity {
   importantInfoItems: string[];
   importantInfo: string | null;
   transferInfo: string | null;
+  // Yorum kartları
+  reviewCards: Array<{ platform: string; rating: string; reviewCount: string; url: string }>;
+  reviewCardsEnabled: boolean;
   // Ödeme seçenekleri
   requiresDeposit: boolean;
   depositType: "percentage" | "fixed";
@@ -120,6 +123,11 @@ export interface PublicWebsiteData {
   websiteTemplateSettings: WebsiteTemplateSettings;
   // Ana sayfa bölüm ayarları
   websiteShowFeaturedActivities: boolean;
+  // Yorum kartları
+  websiteReviewCards: Array<{ platform: string; rating: string; reviewCount: string; url: string }>;
+  websiteReviewCardsEnabled: boolean;
+  websiteReviewCardsTitle: string | null;
+  websiteReviewCardsTitleEn: string | null;
 }
 
 export interface AvailabilitySlot {

@@ -663,6 +663,60 @@ export default function PublicActivityDetail() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Yorum Kartları */}
+            {activity.reviewCardsEnabled && activity.reviewCards && activity.reviewCards.length > 0 && (
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    {language === "en" ? "Customer Reviews" : "Müşteri Yorumları"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {activity.reviewCards.map((card, idx) => (
+                      <a
+                        key={idx}
+                        href={card.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block p-4 bg-muted/50 rounded-lg border hover:shadow-md transition-shadow"
+                        data-testid={`activity-review-card-${card.platform}`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          {card.platform === "google" && (
+                            <div className="w-5 h-5 bg-[#4285F4] rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>
+                          )}
+                          {card.platform === "tripadvisor" && (
+                            <div className="w-5 h-5 bg-[#00AF87] rounded-full flex items-center justify-center text-white text-xs font-bold">T</div>
+                          )}
+                          {card.platform === "trustpilot" && (
+                            <div className="w-5 h-5 bg-[#00B67A] rounded-full flex items-center justify-center text-white text-xs font-bold">★</div>
+                          )}
+                          {card.platform === "facebook" && (
+                            <div className="w-5 h-5 bg-[#1877F2] rounded-full flex items-center justify-center text-white text-xs font-bold">f</div>
+                          )}
+                          <span className="font-medium text-sm">{card.platform === "tripadvisor" ? "TripAdvisor" : card.platform.charAt(0).toUpperCase() + card.platform.slice(1)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mb-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-3.5 w-3.5 ${i < Math.floor(parseFloat(card.rating)) ? "fill-yellow-400 text-yellow-400" : "text-muted"}`}
+                            />
+                          ))}
+                          <span className="ml-1 text-sm font-medium">{card.rating}/5</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {language === "en" ? `${card.reviewCount} Reviews` : `${card.reviewCount} Yorum`}
+                        </p>
+                      </a>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           <div className="lg:col-span-1">

@@ -35,8 +35,11 @@ import {
   CreditCard,
   LayoutPanelTop,
   PenSquare,
-  Layers
+  Layers,
+  Star
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { BlogContent } from "@/pages/Blog";
 import { HomepageSectionsManager } from "@/components/HomepageSectionsManager";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -87,6 +90,11 @@ interface WebsiteSettings {
   websiteHeroStats: string | null;
   // Ana sayfa bölüm ayarları
   websiteShowFeaturedActivities: boolean;
+  // Yorum kartları
+  websiteReviewCards: string | null;
+  websiteReviewCardsEnabled: boolean;
+  websiteReviewCardsTitle: string | null;
+  websiteReviewCardsTitleEn: string | null;
 }
 
 interface HeroStat {
@@ -94,6 +102,13 @@ interface HeroStat {
   value: string;
   label: string;
   labelEn: string;
+}
+
+interface ReviewCard {
+  platform: string; // google, tripadvisor, trustpilot, facebook
+  rating: string;
+  reviewCount: string;
+  url: string;
 }
 
 interface FaqItem {
@@ -113,6 +128,7 @@ export default function WebSite() {
   const [formData, setFormData] = useState<Partial<WebsiteSettings>>({});
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [heroStats, setHeroStats] = useState<HeroStat[]>([]);
+  const [reviewCards, setReviewCards] = useState<ReviewCard[]>([]);
 
   const updateField = (field: keyof WebsiteSettings, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -233,6 +249,58 @@ export default function WebSite() {
   };
 
   const displayedHeroStats = heroStats.length > 0 ? heroStats : parseHeroStats();
+
+  // Review cards functions
+  const parseReviewCards = (): ReviewCard[] => {
+    try {
+      const cards = JSON.parse(getValue("websiteReviewCards") || "[]");
+      return Array.isArray(cards) ? cards : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const addReviewCard = () => {
+    const currentCards = reviewCards.length > 0 ? reviewCards : parseReviewCards();
+    setReviewCards([...currentCards, { platform: "google", rating: "5.0", reviewCount: "100+", url: "" }]);
+  };
+
+  const updateReviewCard = (index: number, field: keyof ReviewCard, value: string) => {
+    const currentCards = reviewCards.length > 0 ? reviewCards : parseReviewCards();
+    const updated = [...currentCards];
+    updated[index] = { ...updated[index], [field]: value };
+    setReviewCards(updated);
+  };
+
+  const removeReviewCard = (index: number) => {
+    const currentCards = reviewCards.length > 0 ? reviewCards : parseReviewCards();
+    setReviewCards(currentCards.filter((_, i) => i !== index));
+  };
+
+  const saveReviewCards = () => {
+    const dataToSave = {
+      websiteReviewCards: JSON.stringify(reviewCards.length > 0 ? reviewCards : parseReviewCards()),
+      websiteReviewCardsEnabled: formData.websiteReviewCardsEnabled !== undefined 
+        ? formData.websiteReviewCardsEnabled 
+        : settings?.websiteReviewCardsEnabled ?? false,
+      websiteReviewCardsTitle: formData.websiteReviewCardsTitle !== undefined
+        ? formData.websiteReviewCardsTitle
+        : settings?.websiteReviewCardsTitle ?? null,
+      websiteReviewCardsTitleEn: formData.websiteReviewCardsTitleEn !== undefined
+        ? formData.websiteReviewCardsTitleEn
+        : settings?.websiteReviewCardsTitleEn ?? null,
+    };
+    saveMutation.mutate(dataToSave);
+  };
+
+  const displayedReviewCards = reviewCards.length > 0 ? reviewCards : parseReviewCards();
+
+  const platformLabels: Record<string, string> = {
+    google: "Google",
+    tripadvisor: "TripAdvisor",
+    trustpilot: "Trustpilot",
+    facebook: "Facebook",
+  };
 
   if (isLoading) {
     return (
@@ -948,6 +1016,146 @@ export default function WebSite() {
                               disabled={saveMutation.isPending}
                               className="gap-1"
                               data-testid="button-save-hero-stats"
+                            >
+                              <Save className="h-4 w-4" />
+                              Kaydet
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Yorum Kartları */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Star className="h-5 w-5" />
+                          Yorum Kartları (Dış Platformlar)
+                        </CardTitle>
+                        <CardDescription>
+                          Google, TripAdvisor, Trustpilot gibi dış platformlardaki yorumlarınıza link verin
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label>Yorum Kartları Göster</Label>
+                            <p className="text-xs text-muted-foreground">Ana sayfada yorum kartları bölümünü göster</p>
+                          </div>
+                          <Switch
+                            checked={formData.websiteReviewCardsEnabled !== undefined 
+                              ? formData.websiteReviewCardsEnabled 
+                              : settings?.websiteReviewCardsEnabled ?? false}
+                            onCheckedChange={(checked) => updateField("websiteReviewCardsEnabled", checked)}
+                            data-testid="switch-review-cards-enabled"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label>Bölüm Başlığı (TR)</Label>
+                            <Input
+                              placeholder="Müşterilerimiz Bizi Öneriyor"
+                              value={getValue("websiteReviewCardsTitle")}
+                              onChange={(e) => updateField("websiteReviewCardsTitle", e.target.value)}
+                              data-testid="input-review-cards-title"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Bölüm Başlığı (EN)</Label>
+                            <Input
+                              placeholder="Our Customers Recommend Us"
+                              value={getValue("websiteReviewCardsTitleEn")}
+                              onChange={(e) => updateField("websiteReviewCardsTitleEn", e.target.value)}
+                              data-testid="input-review-cards-title-en"
+                            />
+                          </div>
+                        </div>
+
+                        {displayedReviewCards.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-4 bg-muted/50 rounded-lg">
+                            Henüz yorum kartı eklenmemiş
+                          </p>
+                        ) : (
+                          <div className="space-y-3">
+                            {displayedReviewCards.map((card, index) => (
+                              <div key={index} className="flex gap-2 items-start p-3 bg-muted/50 rounded-lg">
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Platform</Label>
+                                    <Select
+                                      value={card.platform}
+                                      onValueChange={(value) => updateReviewCard(index, "platform", value)}
+                                    >
+                                      <SelectTrigger data-testid={`select-review-platform-${index}`}>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="google">Google</SelectItem>
+                                        <SelectItem value="tripadvisor">TripAdvisor</SelectItem>
+                                        <SelectItem value="trustpilot">Trustpilot</SelectItem>
+                                        <SelectItem value="facebook">Facebook</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Puan</Label>
+                                    <Input
+                                      placeholder="4.9"
+                                      value={card.rating}
+                                      onChange={(e) => updateReviewCard(index, "rating", e.target.value)}
+                                      data-testid={`input-review-rating-${index}`}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Yorum Sayısı</Label>
+                                    <Input
+                                      placeholder="1200+"
+                                      value={card.reviewCount}
+                                      onChange={(e) => updateReviewCard(index, "reviewCount", e.target.value)}
+                                      data-testid={`input-review-count-${index}`}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">URL</Label>
+                                    <Input
+                                      placeholder="https://g.page/..."
+                                      value={card.url}
+                                      onChange={(e) => updateReviewCard(index, "url", e.target.value)}
+                                      data-testid={`input-review-url-${index}`}
+                                    />
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeReviewCard(index)}
+                                  className="shrink-0 text-destructive hover:text-destructive"
+                                  data-testid={`button-remove-review-${index}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={addReviewCard}
+                            className="gap-1"
+                            data-testid="button-add-review-card"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Yorum Kartı Ekle
+                          </Button>
+                          {(displayedReviewCards.length > 0 || formData.websiteReviewCardsEnabled !== undefined || formData.websiteReviewCardsTitle !== undefined) && (
+                            <Button
+                              onClick={saveReviewCards}
+                              disabled={saveMutation.isPending}
+                              className="gap-1"
+                              data-testid="button-save-review-cards"
                             >
                               <Save className="h-4 w-4" />
                               Kaydet
