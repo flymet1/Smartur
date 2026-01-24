@@ -5730,6 +5730,51 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     }
   });
   
+  // Tenant Settings - GET (for current user's tenant)
+  app.get("/api/tenant-settings", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      const [tenant] = await db
+        .select({
+          websiteShowFeaturedActivities: tenants.websiteShowFeaturedActivities,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+
+      res.json(tenant || { websiteShowFeaturedActivities: true });
+    } catch (err) {
+      console.error("Get tenant settings error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Tenant Settings - PATCH (for current user's tenant)
+  app.patch("/api/tenant-settings", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      const { websiteShowFeaturedActivities } = req.body;
+
+      await db
+        .update(tenants)
+        .set({ websiteShowFeaturedActivities })
+        .where(eq(tenants.id, tenantId));
+
+      res.json({ success: true, websiteShowFeaturedActivities });
+    } catch (err) {
+      console.error("Update tenant settings error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
   // Website Pages Content - GET
   app.get("/api/settings/website-pages", async (req, res) => {
     try {
