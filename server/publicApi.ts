@@ -1007,6 +1007,7 @@ export function registerPublicApiRoutes(app: Express) {
         categories: JSON.parse(activity.categories || "[]"),
         highlights: JSON.parse(activity.highlights || "[]"),
         importantInfoItems: JSON.parse(activity.importantInfoItems || "[]"),
+        reviewCards: JSON.parse(activity.reviewCards || "[]"),
       };
 
       const lang = req.query.lang as string;
