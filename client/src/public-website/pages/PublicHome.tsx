@@ -128,7 +128,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                       {slide.buttonUrl && slide.buttonText && (
                         <div>
                           <Link href={slide.buttonUrl}>
-                            <Button variant="outline" size="sm" className="bg-white text-foreground hover:bg-white/90 border-white">
+                            <Button variant="secondary" size="sm" className="bg-white text-foreground hover:bg-white/90 border-0">
                               {language === "en" ? (slide.buttonTextEn || slide.buttonText) : (slide.buttonText || slide.buttonTextEn)}
                               <ArrowRight className="w-4 h-4 ml-1" />
                             </Button>
