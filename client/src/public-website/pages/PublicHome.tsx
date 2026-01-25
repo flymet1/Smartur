@@ -375,23 +375,25 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       {/* Hero Slider Section - Rendered based on position: after_hero */}
       {sliderPosition === "after_hero" && renderSliderSection()}
 
-      {/* Slogan Banner - Purple gradient, above Promo Banner */}
+      {/* Slogan Banner - Purple/Blue gradient like example */}
       {websiteData?.websiteSloganBannerEnabled && (
-        <section className="py-16 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500">
+        <section className="py-12 md:py-16 bg-gradient-to-r from-violet-700 via-purple-600 to-fuchsia-600">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center text-white">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6 leading-tight" data-testid="text-slogan-title">
-                {language === "en" && websiteData?.websiteSloganBannerTitleEn
-                  ? websiteData.websiteSloganBannerTitleEn
-                  : websiteData?.websiteSloganBannerTitle || ""}
-              </h2>
-              {(websiteData?.websiteSloganBannerDescription || websiteData?.websiteSloganBannerDescriptionEn) && (
-                <p className="text-lg md:text-xl text-white/90 leading-relaxed" data-testid="text-slogan-description">
-                  {language === "en" && websiteData?.websiteSloganBannerDescriptionEn
-                    ? websiteData.websiteSloganBannerDescriptionEn
-                    : websiteData?.websiteSloganBannerDescription || ""}
-                </p>
-              )}
+            <div className="max-w-5xl mx-auto">
+              <div className="text-white text-left">
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-4 leading-snug" data-testid="text-slogan-title">
+                  {language === "en" && websiteData?.websiteSloganBannerTitleEn
+                    ? websiteData.websiteSloganBannerTitleEn
+                    : websiteData?.websiteSloganBannerTitle || ""}
+                </h2>
+                {(websiteData?.websiteSloganBannerDescription || websiteData?.websiteSloganBannerDescriptionEn) && (
+                  <p className="text-base md:text-lg text-white/85 leading-relaxed max-w-3xl" data-testid="text-slogan-description">
+                    {language === "en" && websiteData?.websiteSloganBannerDescriptionEn
+                      ? websiteData.websiteSloganBannerDescriptionEn
+                      : websiteData?.websiteSloganBannerDescription || ""}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </section>
