@@ -5923,6 +5923,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
           websiteReviewCardsTitle: tenants.websiteReviewCardsTitle,
           websiteReviewCardsTitleEn: tenants.websiteReviewCardsTitleEn,
           websiteHeroSliderEnabled: tenants.websiteHeroSliderEnabled,
+          websiteHeroSliderPosition: tenants.websiteHeroSliderPosition,
           websiteHeroSliderTitle: tenants.websiteHeroSliderTitle,
           websiteHeroSliderTitleEn: tenants.websiteHeroSliderTitleEn,
           websiteHeroSlides: tenants.websiteHeroSlides,
@@ -5993,6 +5994,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         websiteReviewCardsTitle,
         websiteReviewCardsTitleEn,
         websiteHeroSliderEnabled,
+        websiteHeroSliderPosition,
         websiteHeroSliderTitle,
         websiteHeroSliderTitleEn,
         websiteHeroSlides,
@@ -6046,6 +6048,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       if (websiteReviewCardsTitle !== undefined) updateData.websiteReviewCardsTitle = websiteReviewCardsTitle;
       if (websiteReviewCardsTitleEn !== undefined) updateData.websiteReviewCardsTitleEn = websiteReviewCardsTitleEn;
       if (websiteHeroSliderEnabled !== undefined) updateData.websiteHeroSliderEnabled = websiteHeroSliderEnabled;
+      if (websiteHeroSliderPosition !== undefined) updateData.websiteHeroSliderPosition = websiteHeroSliderPosition;
       if (websiteHeroSliderTitle !== undefined) updateData.websiteHeroSliderTitle = websiteHeroSliderTitle;
       if (websiteHeroSliderTitleEn !== undefined) updateData.websiteHeroSliderTitleEn = websiteHeroSliderTitleEn;
       if (websiteHeroSlides !== undefined) updateData.websiteHeroSlides = websiteHeroSlides;
