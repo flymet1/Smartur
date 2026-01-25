@@ -37,7 +37,8 @@ import {
   PenSquare,
   Layers,
   Star,
-  ChevronDown
+  ChevronDown,
+  Type
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -105,6 +106,24 @@ interface WebsiteSettings {
   websiteHeroSliderTitleEn: string | null;
   websiteHeroSlides: string | null;
   websitePromoBoxes: string | null;
+  // Slogan Banner
+  websiteSloganBannerEnabled: boolean;
+  websiteSloganBannerTitle: string | null;
+  websiteSloganBannerTitleEn: string | null;
+  websiteSloganBannerDescription: string | null;
+  websiteSloganBannerDescriptionEn: string | null;
+  // Promo Banner
+  websitePromoBannerEnabled: boolean;
+  websitePromoBannerTitle: string | null;
+  websitePromoBannerTitleEn: string | null;
+  websitePromoBannerDescription: string | null;
+  websitePromoBannerDescriptionEn: string | null;
+  websitePromoBannerButtonText: string | null;
+  websitePromoBannerButtonTextEn: string | null;
+  websitePromoBannerButtonUrl: string | null;
+  websitePromoBannerImage: string | null;
+  websitePromoBannerPriceText: string | null;
+  websitePromoBannerPriceTextEn: string | null;
 }
 
 interface HeroStat {
@@ -1723,6 +1742,252 @@ export default function WebSite() {
                           >
                             <Save className="h-4 w-4" />
                             Hero Slider Kaydet
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Slogan Banner Ayarları */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Type className="h-5 w-5" />
+                          Slogan Banner
+                        </CardTitle>
+                        <CardDescription>
+                          Anasayfada mor/pembe gradient arka planlı slogan alanı
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                          <div className="space-y-0.5">
+                            <Label>Slogan Banner Göster</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Mor/pembe gradient arka planlı slogan alanını göster
+                            </p>
+                          </div>
+                          <Switch
+                            checked={formData.websiteSloganBannerEnabled !== undefined 
+                              ? formData.websiteSloganBannerEnabled 
+                              : settings?.websiteSloganBannerEnabled ?? false}
+                            onCheckedChange={(checked) => updateField("websiteSloganBannerEnabled", checked)}
+                            data-testid="switch-slogan-banner"
+                          />
+                        </div>
+
+                        <div className="grid gap-4">
+                          <div className="space-y-2">
+                            <Label>Slogan Başlığı (TR)</Label>
+                            <Textarea
+                              placeholder="Fethiye'nin en iyi firması ile gökyüzüne dokunmaya hazır mısınız?"
+                              value={getValue("websiteSloganBannerTitle")}
+                              onChange={(e) => updateField("websiteSloganBannerTitle", e.target.value)}
+                              rows={2}
+                              data-testid="input-slogan-title"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Slogan Başlığı (EN)</Label>
+                            <Textarea
+                              placeholder="Are you ready to touch the sky with Fethiye's best company?"
+                              value={getValue("websiteSloganBannerTitleEn")}
+                              onChange={(e) => updateField("websiteSloganBannerTitleEn", e.target.value)}
+                              rows={2}
+                              data-testid="input-slogan-title-en"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Slogan Açıklaması (TR)</Label>
+                            <Textarea
+                              placeholder="Dünya'nın farklı yerlerinden gelen konuklara..."
+                              value={getValue("websiteSloganBannerDescription")}
+                              onChange={(e) => updateField("websiteSloganBannerDescription", e.target.value)}
+                              rows={3}
+                              data-testid="input-slogan-description"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Slogan Açıklaması (EN)</Label>
+                            <Textarea
+                              placeholder="We are proud to offer first-class safe flight service..."
+                              value={getValue("websiteSloganBannerDescriptionEn")}
+                              onChange={(e) => updateField("websiteSloganBannerDescriptionEn", e.target.value)}
+                              rows={3}
+                              data-testid="input-slogan-description-en"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={() => saveMutation.mutate({
+                              websiteSloganBannerEnabled: formData.websiteSloganBannerEnabled ?? settings?.websiteSloganBannerEnabled ?? false,
+                              websiteSloganBannerTitle: formData.websiteSloganBannerTitle ?? settings?.websiteSloganBannerTitle ?? null,
+                              websiteSloganBannerTitleEn: formData.websiteSloganBannerTitleEn ?? settings?.websiteSloganBannerTitleEn ?? null,
+                              websiteSloganBannerDescription: formData.websiteSloganBannerDescription ?? settings?.websiteSloganBannerDescription ?? null,
+                              websiteSloganBannerDescriptionEn: formData.websiteSloganBannerDescriptionEn ?? settings?.websiteSloganBannerDescriptionEn ?? null,
+                            })}
+                            disabled={saveMutation.isPending}
+                            className="gap-1"
+                            data-testid="button-save-slogan-banner"
+                          >
+                            <Save className="h-4 w-4" />
+                            Slogan Kaydet
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Promo CTA Banner Ayarları */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Image className="h-5 w-5" />
+                          Promosyon Banner
+                        </CardTitle>
+                        <CardDescription>
+                          Anasayfada mavi gradient arka planlı görsel + metin banner alanı
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                          <div className="space-y-0.5">
+                            <Label>Promosyon Banner Göster</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Mavi gradient arka planlı CTA banner'ı göster
+                            </p>
+                          </div>
+                          <Switch
+                            checked={formData.websitePromoBannerEnabled !== undefined 
+                              ? formData.websitePromoBannerEnabled 
+                              : settings?.websitePromoBannerEnabled ?? false}
+                            onCheckedChange={(checked) => updateField("websitePromoBannerEnabled", checked)}
+                            data-testid="switch-promo-banner"
+                          />
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>Başlık (TR)</Label>
+                            <Input
+                              placeholder="Türkiye'nin Her Noktasını Keşfedin"
+                              value={getValue("websitePromoBannerTitle")}
+                              onChange={(e) => updateField("websitePromoBannerTitle", e.target.value)}
+                              data-testid="input-promo-banner-title"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Başlık (EN)</Label>
+                            <Input
+                              placeholder="Discover Every Corner of Turkey"
+                              value={getValue("websitePromoBannerTitleEn")}
+                              onChange={(e) => updateField("websitePromoBannerTitleEn", e.target.value)}
+                              data-testid="input-promo-banner-title-en"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Açıklama (TR)</Label>
+                            <Textarea
+                              placeholder="Eşsiz deneyimler ve unutulmaz anılar için..."
+                              value={getValue("websitePromoBannerDescription")}
+                              onChange={(e) => updateField("websitePromoBannerDescription", e.target.value)}
+                              rows={2}
+                              data-testid="input-promo-banner-description"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Açıklama (EN)</Label>
+                            <Textarea
+                              placeholder="For unique experiences and unforgettable memories..."
+                              value={getValue("websitePromoBannerDescriptionEn")}
+                              onChange={(e) => updateField("websitePromoBannerDescriptionEn", e.target.value)}
+                              rows={2}
+                              data-testid="input-promo-banner-description-en"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Buton Metni (TR)</Label>
+                            <Input
+                              placeholder="Hemen İncele"
+                              value={getValue("websitePromoBannerButtonText")}
+                              onChange={(e) => updateField("websitePromoBannerButtonText", e.target.value)}
+                              data-testid="input-promo-banner-button"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Buton Metni (EN)</Label>
+                            <Input
+                              placeholder="Explore Now"
+                              value={getValue("websitePromoBannerButtonTextEn")}
+                              onChange={(e) => updateField("websitePromoBannerButtonTextEn", e.target.value)}
+                              data-testid="input-promo-banner-button-en"
+                            />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Buton URL</Label>
+                            <Input
+                              placeholder="/aktiviteler"
+                              value={getValue("websitePromoBannerButtonUrl")}
+                              onChange={(e) => updateField("websitePromoBannerButtonUrl", e.target.value)}
+                              data-testid="input-promo-banner-url"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Fiyat Etiketi (TR)</Label>
+                            <Input
+                              placeholder="699,99 TL"
+                              value={getValue("websitePromoBannerPriceText")}
+                              onChange={(e) => updateField("websitePromoBannerPriceText", e.target.value)}
+                              data-testid="input-promo-banner-price"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Sağ üst köşede görünecek fiyat etiketi (isteğe bağlı)
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Fiyat Etiketi (EN)</Label>
+                            <Input
+                              placeholder="$69.99"
+                              value={getValue("websitePromoBannerPriceTextEn")}
+                              onChange={(e) => updateField("websitePromoBannerPriceTextEn", e.target.value)}
+                              data-testid="input-promo-banner-price-en"
+                            />
+                          </div>
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Banner Görseli URL</Label>
+                            <Input
+                              placeholder="https://example.com/banner-image.jpg"
+                              value={getValue("websitePromoBannerImage")}
+                              onChange={(e) => updateField("websitePromoBannerImage", e.target.value)}
+                              data-testid="input-promo-banner-image"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Sağ tarafta görünecek görsel (isteğe bağlı)
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={() => saveMutation.mutate({
+                              websitePromoBannerEnabled: formData.websitePromoBannerEnabled ?? settings?.websitePromoBannerEnabled ?? false,
+                              websitePromoBannerTitle: formData.websitePromoBannerTitle ?? settings?.websitePromoBannerTitle ?? null,
+                              websitePromoBannerTitleEn: formData.websitePromoBannerTitleEn ?? settings?.websitePromoBannerTitleEn ?? null,
+                              websitePromoBannerDescription: formData.websitePromoBannerDescription ?? settings?.websitePromoBannerDescription ?? null,
+                              websitePromoBannerDescriptionEn: formData.websitePromoBannerDescriptionEn ?? settings?.websitePromoBannerDescriptionEn ?? null,
+                              websitePromoBannerButtonText: formData.websitePromoBannerButtonText ?? settings?.websitePromoBannerButtonText ?? null,
+                              websitePromoBannerButtonTextEn: formData.websitePromoBannerButtonTextEn ?? settings?.websitePromoBannerButtonTextEn ?? null,
+                              websitePromoBannerButtonUrl: formData.websitePromoBannerButtonUrl ?? settings?.websitePromoBannerButtonUrl ?? null,
+                              websitePromoBannerImage: formData.websitePromoBannerImage ?? settings?.websitePromoBannerImage ?? null,
+                              websitePromoBannerPriceText: formData.websitePromoBannerPriceText ?? settings?.websitePromoBannerPriceText ?? null,
+                              websitePromoBannerPriceTextEn: formData.websitePromoBannerPriceTextEn ?? settings?.websitePromoBannerPriceTextEn ?? null,
+                            })}
+                            disabled={saveMutation.isPending}
+                            className="gap-1"
+                            data-testid="button-save-promo-banner"
+                          >
+                            <Save className="h-4 w-4" />
+                            Promo Banner Kaydet
                           </Button>
                         </div>
                       </CardContent>
