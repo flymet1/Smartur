@@ -91,10 +91,6 @@ interface WebsiteSettings {
   websiteFooterTextColor: string | null;
   websiteHeaderBackgroundColor: string | null;
   websiteHeaderTextColor: string | null;
-  // Hero stili
-  websiteHeroStyle: string | null;
-  websiteHeroPriceText: string | null;
-  websiteHeroPriceTextEn: string | null;
   // Hero istatistikleri
   websiteHeroStats: string | null;
   // Ana sayfa bölüm ayarları
@@ -627,40 +623,6 @@ export default function WebSite() {
                         onChange={(e) => updateField("websiteHeroSubtitle", e.target.value)}
                         data-testid="input-hero-subtitle"
                       />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Hero Stili</Label>
-                      <Select
-                        value={getValue("websiteHeroStyle") || "fullscreen"}
-                        onValueChange={(value) => updateField("websiteHeroStyle", value)}
-                      >
-                        <SelectTrigger data-testid="select-hero-style">
-                          <SelectValue placeholder="Hero stili seçin" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fullscreen">Tam Ekran (Klasik)</SelectItem>
-                          <SelectItem value="compact">Kompakt (Köşeli)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Tam Ekran: Sayfa genişliğinde hero alanı. Kompakt: Container içinde köşeleri yuvarlatılmış banner.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="websiteHeroPriceText">Fiyat Etiketi (Kompakt)</Label>
-                      <Input
-                        id="websiteHeroPriceText"
-                        placeholder="5000 TL"
-                        value={getValue("websiteHeroPriceText")}
-                        onChange={(e) => updateField("websiteHeroPriceText", e.target.value)}
-                        data-testid="input-hero-price"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Kompakt modda sağ üst köşede görünecek fiyat etiketi
-                      </p>
                     </div>
                   </div>
 

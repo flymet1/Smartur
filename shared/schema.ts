@@ -73,10 +73,6 @@ export const tenants = pgTable("tenants", {
   // === WEB SİTESİ ŞABLON SİSTEMİ ===
   websiteTemplateKey: text("website_template_key").default("modern"), // classic, modern, premium
   websiteTemplateSettings: text("website_template_settings").default("{}"), // JSON: template-specific settings (heroSlides, testimonials, trustBadges, featuredCategories)
-  // === HERO STİLİ ===
-  websiteHeroStyle: text("website_hero_style").default("fullscreen"), // fullscreen, compact
-  websiteHeroPriceText: text("website_hero_price_text"), // Kompakt hero için fiyat etiketi (örn: "5000 TL")
-  websiteHeroPriceTextEn: text("website_hero_price_text_en"), // Fiyat etiketi (İngilizce)
   // === HERO İSTATİSTİKLERİ ===
   websiteHeroStats: text("website_hero_stats").default('[]'), // JSON array: [{icon, value, label, labelEn}]
   // === ANA SAYFA BÖLÜM AYARLARI ===
