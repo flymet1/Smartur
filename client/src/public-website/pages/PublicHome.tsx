@@ -63,34 +63,59 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
           )}
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <div className="relative overflow-hidden rounded-xl" style={{ minHeight: '320px' }}>
+              <div className="relative overflow-hidden rounded-xl" style={{ minHeight: '380px' }}>
                 {heroSlides.map((slide, idx) => (
                   <div
                     key={slide.id || idx}
-                    className={`absolute inset-0 transition-opacity duration-500 ${
+                    className={`absolute inset-0 transition-opacity duration-500 flex ${
                       idx === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
                     }`}
-                    style={{ backgroundColor: slide.backgroundColor || '#3b82f6' }}
                   >
-                    {slide.imageUrl && (
-                      <img
-                        src={slide.imageUrl}
-                        alt={language === "en" ? slide.titleEn || slide.title : slide.title || slide.titleEn}
-                        className="absolute inset-0 w-full h-full object-cover"
+                    {/* Sol taraf - Görsel */}
+                    <div className="w-1/2 relative overflow-hidden rounded-l-xl">
+                      {slide.imageUrl ? (
+                        <img
+                          src={slide.imageUrl}
+                          alt={language === "en" ? slide.titleEn || slide.title : slide.title || slide.titleEn}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400" />
+                      )}
+                      {/* Alt kısımda küçük açıklama */}
+                      {slide.imageCaption && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-3">
+                          <p className="text-white text-xs">{slide.imageCaption}</p>
+                        </div>
+                      )}
+                    </div>
+                    {/* Sağ taraf - Yazılar ve renkli arka plan */}
+                    <div 
+                      className="w-1/2 flex flex-col justify-center p-6 md:p-8 rounded-r-xl"
+                      style={{ backgroundColor: slide.backgroundColor || '#3b82f6' }}
+                    >
+                      {/* Üst badge/etiket */}
+                      {slide.badge && (
+                        <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-3 w-fit">
+                          {language === "en" ? (slide.badgeEn || slide.badge) : (slide.badge || slide.badgeEn)}
+                        </span>
+                      )}
+                      <h3 
+                        className="text-xl md:text-2xl lg:text-3xl mb-3 text-white leading-tight"
+                        dangerouslySetInnerHTML={{
+                          __html: (language === "en" ? (slide.titleEn || slide.title) : (slide.title || slide.titleEn)) || ''
+                        }}
                       />
-                    )}
-                    <div className="absolute inset-0 bg-black/40" />
-                    <div className="relative z-10 h-full flex flex-col justify-center p-8 text-white">
-                      <h3 className="text-2xl md:text-3xl font-bold mb-3">
-                        {language === "en" ? (slide.titleEn || slide.title) : (slide.title || slide.titleEn)}
-                      </h3>
-                      <p className="text-sm md:text-base opacity-90 mb-4 max-w-md">
-                        {language === "en" ? (slide.contentEn || slide.content) : (slide.content || slide.contentEn)}
-                      </p>
+                      <div 
+                        className="text-sm md:text-base text-white/90 mb-4 leading-relaxed slider-content"
+                        dangerouslySetInnerHTML={{
+                          __html: (language === "en" ? (slide.contentEn || slide.content) : (slide.content || slide.contentEn)) || ''
+                        }}
+                      />
                       {slide.buttonUrl && slide.buttonText && (
                         <div>
                           <Link href={slide.buttonUrl}>
-                            <Button variant="secondary" size="sm">
+                            <Button variant="outline" size="sm" className="bg-white text-foreground hover:bg-white/90 border-white">
                               {language === "en" ? (slide.buttonTextEn || slide.buttonText) : (slide.buttonText || slide.buttonTextEn)}
                               <ArrowRight className="w-4 h-4 ml-1" />
                             </Button>
@@ -104,17 +129,17 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                   <>
                     <button
                       onClick={() => setCurrentSlide(prev => prev === 0 ? heroSlides.length - 1 : prev - 1)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 rounded-full p-2 transition-colors"
                     >
                       <ChevronLeft className="w-5 h-5 text-white" />
                     </button>
                     <button
                       onClick={() => setCurrentSlide(prev => prev === heroSlides.length - 1 ? 0 : prev + 1)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-white/30 hover:bg-white/50 rounded-full p-2 transition-colors"
                     >
                       <ChevronRight className="w-5 h-5 text-white" />
                     </button>
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                    <div className="absolute bottom-4 left-1/4 -translate-x-1/2 z-20 flex gap-2">
                       {heroSlides.map((_, idx) => (
                         <button
                           key={idx}

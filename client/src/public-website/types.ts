@@ -148,6 +148,9 @@ export interface PublicWebsiteData {
     buttonText: string;
     buttonTextEn: string;
     buttonUrl: string;
+    badge?: string;
+    badgeEn?: string;
+    imageCaption?: string;
   }>;
   websitePromoBoxes: Array<{
     id: string;

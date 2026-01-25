@@ -135,6 +135,9 @@ interface HeroSlide {
   buttonText: string;
   buttonTextEn: string;
   buttonUrl: string;
+  badge?: string;
+  badgeEn?: string;
+  imageCaption?: string;
 }
 
 interface PromoBox {
@@ -1338,8 +1341,8 @@ export default function WebSite() {
                           <Label>Slider Konumu</Label>
                           <Select
                             value={formData.websiteHeroSliderPosition !== undefined 
-                              ? formData.websiteHeroSliderPosition 
-                              : settings?.websiteHeroSliderPosition ?? "after_hero"}
+                              ? (formData.websiteHeroSliderPosition || "after_hero")
+                              : (settings?.websiteHeroSliderPosition || "after_hero")}
                             onValueChange={(value) => updateField("websiteHeroSliderPosition", value)}
                           >
                             <SelectTrigger data-testid="select-hero-slider-position">
@@ -1502,6 +1505,36 @@ export default function WebSite() {
                                         onChange={(e) => updateHeroSlide(index, "buttonUrl", e.target.value)}
                                         data-testid={`input-slide-url-${index}`}
                                       />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Etiket/Badge (TR) - Opsiyonel</Label>
+                                      <Input
+                                        placeholder="Son Gün 31 Ocak"
+                                        value={slide.badge || ""}
+                                        onChange={(e) => updateHeroSlide(index, "badge", e.target.value)}
+                                        data-testid={`input-slide-badge-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Etiket/Badge (EN) - Opsiyonel</Label>
+                                      <Input
+                                        placeholder="Last Day Jan 31"
+                                        value={slide.badgeEn || ""}
+                                        onChange={(e) => updateHeroSlide(index, "badgeEn", e.target.value)}
+                                        data-testid={`input-slide-badge-en-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label className="text-xs">Görsel Alt Yazısı - Opsiyonel</Label>
+                                      <Input
+                                        placeholder="Görsel üzerinde alt kısımda gösterilecek açıklama..."
+                                        value={slide.imageCaption || ""}
+                                        onChange={(e) => updateHeroSlide(index, "imageCaption", e.target.value)}
+                                        data-testid={`input-slide-caption-${index}`}
+                                      />
+                                    </div>
+                                    <div className="md:col-span-2 text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+                                      <strong>İpucu:</strong> Başlık ve içerik alanlarında kalın yazı için <code>&lt;strong&gt;metin&lt;/strong&gt;</code> veya <code>&lt;b&gt;metin&lt;/b&gt;</code> kullanabilirsiniz.
                                     </div>
                                   </div>
                                 </Card>
