@@ -450,7 +450,7 @@ export default function PublicActivityDetail() {
               {activity.excludedItems && activity.excludedItems.length > 0 && (
                 <Card className="border-0 shadow-md">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                    <CardTitle className="text-lg flex items-center gap-2 text-blue-600 dark:text-blue-400">
                       <X className="h-5 w-5" />
                       {language === "en" ? "Not Included" : "Dahil Olmayanlar"}
                     </CardTitle>
@@ -459,7 +459,7 @@ export default function PublicActivityDetail() {
                     <ul className="space-y-2">
                       {activity.excludedItems.map((item, idx) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <X className="h-4 w-4 text-slate-500 mt-0.5 shrink-0" />
+                          <X className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                           <span className="text-sm">{item}</span>
                         </li>
                       ))}
@@ -493,8 +493,8 @@ export default function PublicActivityDetail() {
 
                     {activity.minAge != null && activity.minAge > 0 && (
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
-                          <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center shrink-0">
+                          <Users className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                         </div>
                         <div>
                           <p className="font-medium">{language === "en" ? "Minimum Age" : "Minimum Yas"}</p>
@@ -507,8 +507,8 @@ export default function PublicActivityDetail() {
 
                     {activity.tourLanguages && activity.tourLanguages.length > 0 && (
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                          <Globe className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+                          <Globe className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                         </div>
                         <div>
                           <p className="font-medium">{language === "en" ? "Languages" : "Diller"}</p>
@@ -524,8 +524,8 @@ export default function PublicActivityDetail() {
                     )}
 
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                        <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                        <Shield className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
                         <p className="font-medium">{language === "en" ? "Safety" : "Guvenlik"}</p>
@@ -541,8 +541,8 @@ export default function PublicActivityDetail() {
                       <div className="grid md:grid-cols-2 gap-3">
                         {activity.importantInfoItems.map((item, idx) => (
                           <div key={idx} className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                             </div>
                             <p className="text-sm text-foreground pt-1">{item}</p>
                           </div>
