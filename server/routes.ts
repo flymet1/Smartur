@@ -5928,6 +5928,24 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
           websiteHeroSliderTitleEn: tenants.websiteHeroSliderTitleEn,
           websiteHeroSlides: tenants.websiteHeroSlides,
           websitePromoBoxes: tenants.websitePromoBoxes,
+          // Slogan Banner
+          websiteSloganBannerEnabled: tenants.websiteSloganBannerEnabled,
+          websiteSloganBannerTitle: tenants.websiteSloganBannerTitle,
+          websiteSloganBannerTitleEn: tenants.websiteSloganBannerTitleEn,
+          websiteSloganBannerDescription: tenants.websiteSloganBannerDescription,
+          websiteSloganBannerDescriptionEn: tenants.websiteSloganBannerDescriptionEn,
+          // Promo Banner
+          websitePromoBannerEnabled: tenants.websitePromoBannerEnabled,
+          websitePromoBannerTitle: tenants.websitePromoBannerTitle,
+          websitePromoBannerTitleEn: tenants.websitePromoBannerTitleEn,
+          websitePromoBannerDescription: tenants.websitePromoBannerDescription,
+          websitePromoBannerDescriptionEn: tenants.websitePromoBannerDescriptionEn,
+          websitePromoBannerButtonText: tenants.websitePromoBannerButtonText,
+          websitePromoBannerButtonTextEn: tenants.websitePromoBannerButtonTextEn,
+          websitePromoBannerButtonUrl: tenants.websitePromoBannerButtonUrl,
+          websitePromoBannerImage: tenants.websitePromoBannerImage,
+          websitePromoBannerPriceText: tenants.websitePromoBannerPriceText,
+          websitePromoBannerPriceTextEn: tenants.websitePromoBannerPriceTextEn,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -5999,6 +6017,24 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         websiteHeroSliderTitleEn,
         websiteHeroSlides,
         websitePromoBoxes,
+        // Slogan Banner
+        websiteSloganBannerEnabled,
+        websiteSloganBannerTitle,
+        websiteSloganBannerTitleEn,
+        websiteSloganBannerDescription,
+        websiteSloganBannerDescriptionEn,
+        // Promo Banner
+        websitePromoBannerEnabled,
+        websitePromoBannerTitle,
+        websitePromoBannerTitleEn,
+        websitePromoBannerDescription,
+        websitePromoBannerDescriptionEn,
+        websitePromoBannerButtonText,
+        websitePromoBannerButtonTextEn,
+        websitePromoBannerButtonUrl,
+        websitePromoBannerImage,
+        websitePromoBannerPriceText,
+        websitePromoBannerPriceTextEn,
       } = req.body;
 
       const updateData: Record<string, any> = {};
@@ -6053,6 +6089,24 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       if (websiteHeroSliderTitleEn !== undefined) updateData.websiteHeroSliderTitleEn = websiteHeroSliderTitleEn;
       if (websiteHeroSlides !== undefined) updateData.websiteHeroSlides = websiteHeroSlides;
       if (websitePromoBoxes !== undefined) updateData.websitePromoBoxes = websitePromoBoxes;
+      // Slogan Banner
+      if (websiteSloganBannerEnabled !== undefined) updateData.websiteSloganBannerEnabled = websiteSloganBannerEnabled;
+      if (websiteSloganBannerTitle !== undefined) updateData.websiteSloganBannerTitle = websiteSloganBannerTitle;
+      if (websiteSloganBannerTitleEn !== undefined) updateData.websiteSloganBannerTitleEn = websiteSloganBannerTitleEn;
+      if (websiteSloganBannerDescription !== undefined) updateData.websiteSloganBannerDescription = websiteSloganBannerDescription;
+      if (websiteSloganBannerDescriptionEn !== undefined) updateData.websiteSloganBannerDescriptionEn = websiteSloganBannerDescriptionEn;
+      // Promo Banner
+      if (websitePromoBannerEnabled !== undefined) updateData.websitePromoBannerEnabled = websitePromoBannerEnabled;
+      if (websitePromoBannerTitle !== undefined) updateData.websitePromoBannerTitle = websitePromoBannerTitle;
+      if (websitePromoBannerTitleEn !== undefined) updateData.websitePromoBannerTitleEn = websitePromoBannerTitleEn;
+      if (websitePromoBannerDescription !== undefined) updateData.websitePromoBannerDescription = websitePromoBannerDescription;
+      if (websitePromoBannerDescriptionEn !== undefined) updateData.websitePromoBannerDescriptionEn = websitePromoBannerDescriptionEn;
+      if (websitePromoBannerButtonText !== undefined) updateData.websitePromoBannerButtonText = websitePromoBannerButtonText;
+      if (websitePromoBannerButtonTextEn !== undefined) updateData.websitePromoBannerButtonTextEn = websitePromoBannerButtonTextEn;
+      if (websitePromoBannerButtonUrl !== undefined) updateData.websitePromoBannerButtonUrl = websitePromoBannerButtonUrl;
+      if (websitePromoBannerImage !== undefined) updateData.websitePromoBannerImage = websitePromoBannerImage;
+      if (websitePromoBannerPriceText !== undefined) updateData.websitePromoBannerPriceText = websitePromoBannerPriceText;
+      if (websitePromoBannerPriceTextEn !== undefined) updateData.websitePromoBannerPriceTextEn = websitePromoBannerPriceTextEn;
 
       if (Object.keys(updateData).length > 0) {
         await db
