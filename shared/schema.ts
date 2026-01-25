@@ -171,6 +171,11 @@ export const activities = pgTable("activities", {
   importantInfoItems: text("important_info_items").default("[]"), // JSON array: Manuel önemli bilgi öğeleri ["Kimlik kartı gerekli", "Yüzme bilmek şart"]
   importantInfo: text("important_info"), // Manuel önemli bilgiler metni
   transferInfo: text("transfer_info"), // Transfer bölgeleri altında etiket bulutu olarak gösterilecek metin
+  // === GETİRMENİZ GEREKENLER & İZİN VERİLMEYENLER ===
+  whatToBring: text("what_to_bring").default("[]"), // JSON array: Getirmeniz gerekenler ["Güneş kremi", "Şapka", "Rahat ayakkabı"]
+  whatToBringEn: text("what_to_bring_en").default("[]"), // JSON array: What to bring (English)
+  notAllowed: text("not_allowed").default("[]"), // JSON array: İzin verilmeyenler ["Drone", "Evcil hayvan"]
+  notAllowedEn: text("not_allowed_en").default("[]"), // JSON array: Not allowed (English)
   // === AKTİVİTE YORUM KARTLARI ===
   reviewCards: text("review_cards").default("[]"), // JSON array: [{platform, rating, reviewCount, url}]
   reviewCardsEnabled: boolean("review_cards_enabled").default(false), // Aktivite detayda gösterilsin mi?

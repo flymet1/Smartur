@@ -18,6 +18,10 @@ export interface PublicActivity {
   difficulty: string | null;
   includedItems: string[];
   excludedItems: string[];
+  whatToBring: string[];
+  whatToBringEn: string[];
+  notAllowed: string[];
+  notAllowedEn: string[];
   meetingPoint: string | null;
   categories: string[];
   highlights: string[];
