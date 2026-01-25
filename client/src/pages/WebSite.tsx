@@ -1400,7 +1400,7 @@ export default function WebSite() {
                               Henüz slayt eklenmemiş
                             </p>
                           ) : (
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                               {displayedHeroSlides.map((slide, index) => (
                                 <Collapsible key={slide.id || index} className="border rounded-lg">
                                   <div className="flex items-center justify-between p-3 bg-muted/30">
