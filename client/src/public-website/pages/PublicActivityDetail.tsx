@@ -5,7 +5,7 @@ import {
   Clock, MapPin, Users, Check, X, ChevronLeft, Calendar, Info, 
   Star, Globe, Shield, Camera, Share2, Heart, AlertCircle,
   Mountain, Zap, Award, Phone, MessageCircle, ChevronRight,
-  Plus, Minus, Loader2, CheckCircle, Package, User
+  Plus, Minus, Loader2, CheckCircle, Package, User, Backpack, Ban
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -610,33 +610,46 @@ export default function PublicActivityDetail() {
               </Card>
             ) : null}
 
-            {activity.extras && activity.extras.length > 0 && (
+            {/* Getirmeniz Gerekenler */}
+            {((language === "en" ? activity.whatToBringEn : activity.whatToBring) || []).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5" />
-                    {language === "en" ? "Optional Extras" : "Ekstra Hizmetler"}
+                    <Backpack className="h-5 w-5 text-green-600" />
+                    {language === "en" ? "What to Bring" : "Getirmeniz Gerekenler"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {activity.extras.map((extra, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-                        <div>
-                          <p className="font-medium">{extra.name}</p>
-                          {extra.description && (
-                            <p className="text-sm text-muted-foreground">{extra.description}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-primary">+{extra.priceTl} TL</p>
-                          {extra.priceUsd > 0 && (
-                            <p className="text-xs text-muted-foreground">${extra.priceUsd}</p>
-                          )}
-                        </div>
-                      </div>
+                  <ul className="space-y-2">
+                    {(language === "en" ? activity.whatToBringEn : activity.whatToBring).map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">{item}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* İzin Verilmeyenler */}
+            {((language === "en" ? activity.notAllowedEn : activity.notAllowed) || []).length > 0 && (
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ban className="h-5 w-5 text-red-600" />
+                    {language === "en" ? "Not Allowed" : "İzin Verilmeyenler"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {(language === "en" ? activity.notAllowedEn : activity.notAllowed).map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                        <X className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             )}
