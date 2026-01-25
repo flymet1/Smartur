@@ -528,8 +528,8 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                   </div>
                 </div>
                 {websiteData?.websitePromoBannerPriceText && (
-                  <div className="absolute top-6 right-6 bg-white rounded-full px-5 py-3 shadow-lg text-center">
-                    <p className="text-lg md:text-xl font-bold text-purple-600">
+                  <div className="absolute bottom-4 right-4 md:top-6 md:bottom-auto md:right-6 bg-white rounded-full px-3 py-2 md:px-5 md:py-3 shadow-lg text-center">
+                    <p className="text-sm md:text-xl font-bold text-purple-600">
                       {language === "en" && websiteData?.websitePromoBannerPriceTextEn
                         ? websiteData.websitePromoBannerPriceTextEn
                         : websiteData.websitePromoBannerPriceText}
