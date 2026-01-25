@@ -1388,12 +1388,12 @@ export default function WebSite() {
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                      <Label className="text-xs">Görsel URL</Label>
-                                      <Input
-                                        placeholder="https://example.com/image.jpg"
+                                      <ImageUpload
+                                        label="Slide Görseli"
                                         value={slide.imageUrl}
-                                        onChange={(e) => updateHeroSlide(index, "imageUrl", e.target.value)}
-                                        data-testid={`input-slide-image-${index}`}
+                                        onChange={(url) => updateHeroSlide(index, "imageUrl", url)}
+                                        size="large"
+                                        recommendedSize="1920x600px"
                                       />
                                     </div>
                                     <div className="space-y-2">
@@ -1529,12 +1529,12 @@ export default function WebSite() {
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                      <Label className="text-xs">Görsel URL</Label>
-                                      <Input
-                                        placeholder="https://example.com/image.jpg"
+                                      <ImageUpload
+                                        label="Promo Görseli"
                                         value={box.imageUrl}
-                                        onChange={(e) => updatePromoBox(index, "imageUrl", e.target.value)}
-                                        data-testid={`input-promo-image-${index}`}
+                                        onChange={(url) => updatePromoBox(index, "imageUrl", url)}
+                                        size="large"
+                                        recommendedSize="400x300px"
                                       />
                                     </div>
                                     <div className="space-y-2">
