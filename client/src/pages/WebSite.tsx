@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { BlogContent } from "@/pages/Blog";
 import { HomepageSectionsManager } from "@/components/HomepageSectionsManager";
 import { ImageUpload } from "@/components/ImageUpload";
@@ -95,6 +96,12 @@ interface WebsiteSettings {
   websiteReviewCardsEnabled: boolean;
   websiteReviewCardsTitle: string | null;
   websiteReviewCardsTitleEn: string | null;
+  // Hero Slider
+  websiteHeroSliderEnabled: boolean;
+  websiteHeroSliderTitle: string | null;
+  websiteHeroSliderTitleEn: string | null;
+  websiteHeroSlides: string | null;
+  websitePromoBoxes: string | null;
 }
 
 interface HeroStat {
@@ -116,6 +123,32 @@ interface FaqItem {
   answer: string;
 }
 
+interface HeroSlide {
+  id: string;
+  imageUrl: string;
+  backgroundColor: string;
+  title: string;
+  titleEn: string;
+  content: string;
+  contentEn: string;
+  buttonText: string;
+  buttonTextEn: string;
+  buttonUrl: string;
+}
+
+interface PromoBox {
+  id: string;
+  imageUrl: string;
+  backgroundColor: string;
+  title: string;
+  titleEn: string;
+  content: string;
+  contentEn: string;
+  buttonText: string;
+  buttonTextEn: string;
+  buttonUrl: string;
+}
+
 export default function WebSite() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("general");
@@ -129,6 +162,8 @@ export default function WebSite() {
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
   const [heroStats, setHeroStats] = useState<HeroStat[]>([]);
   const [reviewCards, setReviewCards] = useState<ReviewCard[]>([]);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+  const [promoBoxes, setPromoBoxes] = useState<PromoBox[]>([]);
 
   const updateField = (field: keyof WebsiteSettings, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -300,6 +335,110 @@ export default function WebSite() {
     tripadvisor: "TripAdvisor",
     trustpilot: "Trustpilot",
     facebook: "Facebook",
+  };
+
+  // Hero Slides functions
+  const parseHeroSlides = (): HeroSlide[] => {
+    try {
+      const slides = JSON.parse(getValue("websiteHeroSlides") || "[]");
+      return Array.isArray(slides) ? slides : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const addHeroSlide = () => {
+    const currentSlides = heroSlides.length > 0 ? heroSlides : parseHeroSlides();
+    const newSlide: HeroSlide = {
+      id: crypto.randomUUID(),
+      imageUrl: "",
+      backgroundColor: "#3b82f6",
+      title: "",
+      titleEn: "",
+      content: "",
+      contentEn: "",
+      buttonText: "",
+      buttonTextEn: "",
+      buttonUrl: "",
+    };
+    setHeroSlides([...currentSlides, newSlide]);
+  };
+
+  const updateHeroSlide = (index: number, field: keyof HeroSlide, value: string) => {
+    const currentSlides = heroSlides.length > 0 ? heroSlides : parseHeroSlides();
+    const updated = [...currentSlides];
+    updated[index] = { ...updated[index], [field]: value };
+    setHeroSlides(updated);
+  };
+
+  const removeHeroSlide = (index: number) => {
+    const currentSlides = heroSlides.length > 0 ? heroSlides : parseHeroSlides();
+    setHeroSlides(currentSlides.filter((_, i) => i !== index));
+  };
+
+  const displayedHeroSlides = heroSlides.length > 0 ? heroSlides : parseHeroSlides();
+
+  // Promo Boxes functions
+  const parsePromoBoxes = (): PromoBox[] => {
+    try {
+      const boxes = JSON.parse(getValue("websitePromoBoxes") || "[]");
+      return Array.isArray(boxes) ? boxes : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const addPromoBox = () => {
+    const currentBoxes = promoBoxes.length > 0 ? promoBoxes : parsePromoBoxes();
+    if (currentBoxes.length >= 2) {
+      toast({ title: "Maksimum 2 promosyon kutusu ekleyebilirsiniz", variant: "destructive" });
+      return;
+    }
+    const newBox: PromoBox = {
+      id: crypto.randomUUID(),
+      imageUrl: "",
+      backgroundColor: "#f97316",
+      title: "",
+      titleEn: "",
+      content: "",
+      contentEn: "",
+      buttonText: "",
+      buttonTextEn: "",
+      buttonUrl: "",
+    };
+    setPromoBoxes([...currentBoxes, newBox]);
+  };
+
+  const updatePromoBox = (index: number, field: keyof PromoBox, value: string) => {
+    const currentBoxes = promoBoxes.length > 0 ? promoBoxes : parsePromoBoxes();
+    const updated = [...currentBoxes];
+    updated[index] = { ...updated[index], [field]: value };
+    setPromoBoxes(updated);
+  };
+
+  const removePromoBox = (index: number) => {
+    const currentBoxes = promoBoxes.length > 0 ? promoBoxes : parsePromoBoxes();
+    setPromoBoxes(currentBoxes.filter((_, i) => i !== index));
+  };
+
+  const displayedPromoBoxes = promoBoxes.length > 0 ? promoBoxes : parsePromoBoxes();
+
+  // Save Hero Slider settings
+  const saveHeroSlider = () => {
+    const dataToSave = {
+      websiteHeroSlides: JSON.stringify(heroSlides.length > 0 ? heroSlides : parseHeroSlides()),
+      websitePromoBoxes: JSON.stringify(promoBoxes.length > 0 ? promoBoxes : parsePromoBoxes()),
+      websiteHeroSliderEnabled: formData.websiteHeroSliderEnabled !== undefined 
+        ? formData.websiteHeroSliderEnabled 
+        : settings?.websiteHeroSliderEnabled ?? false,
+      websiteHeroSliderTitle: formData.websiteHeroSliderTitle !== undefined
+        ? formData.websiteHeroSliderTitle
+        : settings?.websiteHeroSliderTitle ?? null,
+      websiteHeroSliderTitleEn: formData.websiteHeroSliderTitleEn !== undefined
+        ? formData.websiteHeroSliderTitleEn
+        : settings?.websiteHeroSliderTitleEn ?? null,
+    };
+    saveMutation.mutate(dataToSave);
   };
 
   if (isLoading) {
@@ -1161,6 +1300,343 @@ export default function WebSite() {
                               Kaydet
                             </Button>
                           )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Hero Slider ve Promosyon Kutuları */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Image className="h-5 w-5" />
+                          Hero Slider & Promosyon Kutuları
+                        </CardTitle>
+                        <CardDescription>
+                          Anasayfada hero bölümünün altında gösterilecek slider ve promosyon kutuları
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label>Hero Slider Göster</Label>
+                            <p className="text-xs text-muted-foreground">Ana sayfada hero altında slider bölümünü göster</p>
+                          </div>
+                          <Switch
+                            checked={formData.websiteHeroSliderEnabled !== undefined 
+                              ? formData.websiteHeroSliderEnabled 
+                              : settings?.websiteHeroSliderEnabled ?? false}
+                            onCheckedChange={(checked) => updateField("websiteHeroSliderEnabled", checked)}
+                            data-testid="switch-hero-slider-enabled"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label>Bölüm Başlığı (TR)</Label>
+                            <Input
+                              placeholder="Öne Çıkan Teklifler"
+                              value={getValue("websiteHeroSliderTitle")}
+                              onChange={(e) => updateField("websiteHeroSliderTitle", e.target.value)}
+                              data-testid="input-hero-slider-title"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Bölüm Başlığı (EN)</Label>
+                            <Input
+                              placeholder="Featured Offers"
+                              value={getValue("websiteHeroSliderTitleEn")}
+                              onChange={(e) => updateField("websiteHeroSliderTitleEn", e.target.value)}
+                              data-testid="input-hero-slider-title-en"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">Slider Slaytları</h4>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={addHeroSlide}
+                              className="gap-1"
+                              data-testid="button-add-hero-slide"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Slayt Ekle
+                            </Button>
+                          </div>
+
+                          {displayedHeroSlides.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4 bg-muted/50 rounded-lg">
+                              Henüz slayt eklenmemiş
+                            </p>
+                          ) : (
+                            <div className="space-y-4">
+                              {displayedHeroSlides.map((slide, index) => (
+                                <Card key={slide.id || index} className="p-4">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <span className="text-sm font-medium text-muted-foreground">Slayt {index + 1}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => removeHeroSlide(index)}
+                                      className="text-destructive hover:text-destructive h-8 w-8"
+                                      data-testid={`button-remove-slide-${index}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Görsel URL</Label>
+                                      <Input
+                                        placeholder="https://example.com/image.jpg"
+                                        value={slide.imageUrl}
+                                        onChange={(e) => updateHeroSlide(index, "imageUrl", e.target.value)}
+                                        data-testid={`input-slide-image-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Arka Plan Rengi</Label>
+                                      <div className="flex gap-2">
+                                        <Input
+                                          type="color"
+                                          value={slide.backgroundColor || "#3b82f6"}
+                                          onChange={(e) => updateHeroSlide(index, "backgroundColor", e.target.value)}
+                                          className="w-12 h-9 p-1 cursor-pointer"
+                                          data-testid={`input-slide-color-${index}`}
+                                        />
+                                        <Input
+                                          placeholder="#3b82f6"
+                                          value={slide.backgroundColor}
+                                          onChange={(e) => updateHeroSlide(index, "backgroundColor", e.target.value)}
+                                          className="flex-1"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Başlık (TR)</Label>
+                                      <Input
+                                        placeholder="Özel Teklif"
+                                        value={slide.title}
+                                        onChange={(e) => updateHeroSlide(index, "title", e.target.value)}
+                                        data-testid={`input-slide-title-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Başlık (EN)</Label>
+                                      <Input
+                                        placeholder="Special Offer"
+                                        value={slide.titleEn}
+                                        onChange={(e) => updateHeroSlide(index, "titleEn", e.target.value)}
+                                        data-testid={`input-slide-title-en-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label className="text-xs">İçerik (TR)</Label>
+                                      <Textarea
+                                        placeholder="Açıklama metni..."
+                                        value={slide.content}
+                                        onChange={(e) => updateHeroSlide(index, "content", e.target.value)}
+                                        rows={2}
+                                        data-testid={`input-slide-content-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label className="text-xs">İçerik (EN)</Label>
+                                      <Textarea
+                                        placeholder="Description text..."
+                                        value={slide.contentEn}
+                                        onChange={(e) => updateHeroSlide(index, "contentEn", e.target.value)}
+                                        rows={2}
+                                        data-testid={`input-slide-content-en-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Buton Metni (TR)</Label>
+                                      <Input
+                                        placeholder="Şimdi Rezerve Et"
+                                        value={slide.buttonText}
+                                        onChange={(e) => updateHeroSlide(index, "buttonText", e.target.value)}
+                                        data-testid={`input-slide-button-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Buton Metni (EN)</Label>
+                                      <Input
+                                        placeholder="Book Now"
+                                        value={slide.buttonTextEn}
+                                        onChange={(e) => updateHeroSlide(index, "buttonTextEn", e.target.value)}
+                                        data-testid={`input-slide-button-en-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label className="text-xs">Buton URL</Label>
+                                      <Input
+                                        placeholder="/aktiviteler veya https://..."
+                                        value={slide.buttonUrl}
+                                        onChange={(e) => updateHeroSlide(index, "buttonUrl", e.target.value)}
+                                        data-testid={`input-slide-url-${index}`}
+                                      />
+                                    </div>
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium">Promosyon Kutuları</h4>
+                              <p className="text-xs text-muted-foreground">Slider'ın sağında sabit duran 2 kutu (maksimum)</p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={addPromoBox}
+                              disabled={displayedPromoBoxes.length >= 2}
+                              className="gap-1"
+                              data-testid="button-add-promo-box"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Kutu Ekle
+                            </Button>
+                          </div>
+
+                          {displayedPromoBoxes.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-4 bg-muted/50 rounded-lg">
+                              Henüz promosyon kutusu eklenmemiş
+                            </p>
+                          ) : (
+                            <div className="space-y-4">
+                              {displayedPromoBoxes.map((box, index) => (
+                                <Card key={box.id || index} className="p-4">
+                                  <div className="flex justify-between items-start mb-3">
+                                    <span className="text-sm font-medium text-muted-foreground">Kutu {index + 1}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => removePromoBox(index)}
+                                      className="text-destructive hover:text-destructive h-8 w-8"
+                                      data-testid={`button-remove-promo-${index}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Görsel URL</Label>
+                                      <Input
+                                        placeholder="https://example.com/image.jpg"
+                                        value={box.imageUrl}
+                                        onChange={(e) => updatePromoBox(index, "imageUrl", e.target.value)}
+                                        data-testid={`input-promo-image-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Arka Plan Rengi</Label>
+                                      <div className="flex gap-2">
+                                        <Input
+                                          type="color"
+                                          value={box.backgroundColor || "#f97316"}
+                                          onChange={(e) => updatePromoBox(index, "backgroundColor", e.target.value)}
+                                          className="w-12 h-9 p-1 cursor-pointer"
+                                          data-testid={`input-promo-color-${index}`}
+                                        />
+                                        <Input
+                                          placeholder="#f97316"
+                                          value={box.backgroundColor}
+                                          onChange={(e) => updatePromoBox(index, "backgroundColor", e.target.value)}
+                                          className="flex-1"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Başlık (TR)</Label>
+                                      <Input
+                                        placeholder="Özel Fırsat"
+                                        value={box.title}
+                                        onChange={(e) => updatePromoBox(index, "title", e.target.value)}
+                                        data-testid={`input-promo-title-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Başlık (EN)</Label>
+                                      <Input
+                                        placeholder="Special Deal"
+                                        value={box.titleEn}
+                                        onChange={(e) => updatePromoBox(index, "titleEn", e.target.value)}
+                                        data-testid={`input-promo-title-en-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label className="text-xs">İçerik (TR)</Label>
+                                      <Textarea
+                                        placeholder="Açıklama..."
+                                        value={box.content}
+                                        onChange={(e) => updatePromoBox(index, "content", e.target.value)}
+                                        rows={2}
+                                        data-testid={`input-promo-content-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label className="text-xs">İçerik (EN)</Label>
+                                      <Textarea
+                                        placeholder="Description..."
+                                        value={box.contentEn}
+                                        onChange={(e) => updatePromoBox(index, "contentEn", e.target.value)}
+                                        rows={2}
+                                        data-testid={`input-promo-content-en-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Buton Metni (TR)</Label>
+                                      <Input
+                                        placeholder="İncele"
+                                        value={box.buttonText}
+                                        onChange={(e) => updatePromoBox(index, "buttonText", e.target.value)}
+                                        data-testid={`input-promo-button-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Buton Metni (EN)</Label>
+                                      <Input
+                                        placeholder="View"
+                                        value={box.buttonTextEn}
+                                        onChange={(e) => updatePromoBox(index, "buttonTextEn", e.target.value)}
+                                        data-testid={`input-promo-button-en-${index}`}
+                                      />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                      <Label className="text-xs">Buton URL</Label>
+                                      <Input
+                                        placeholder="/aktiviteler veya https://..."
+                                        value={box.buttonUrl}
+                                        onChange={(e) => updatePromoBox(index, "buttonUrl", e.target.value)}
+                                        data-testid={`input-promo-url-${index}`}
+                                      />
+                                    </div>
+                                  </div>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={saveHeroSlider}
+                            disabled={saveMutation.isPending}
+                            className="gap-1"
+                            data-testid="button-save-hero-slider"
+                          >
+                            <Save className="h-4 w-4" />
+                            Hero Slider Kaydet
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

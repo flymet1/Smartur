@@ -817,6 +817,11 @@ export function registerPublicApiRoutes(app: Express) {
           websiteReviewCardsEnabled: tenants.websiteReviewCardsEnabled,
           websiteReviewCardsTitle: tenants.websiteReviewCardsTitle,
           websiteReviewCardsTitleEn: tenants.websiteReviewCardsTitleEn,
+          websiteHeroSliderEnabled: tenants.websiteHeroSliderEnabled,
+          websiteHeroSliderTitle: tenants.websiteHeroSliderTitle,
+          websiteHeroSliderTitleEn: tenants.websiteHeroSliderTitleEn,
+          websiteHeroSlides: tenants.websiteHeroSlides,
+          websitePromoBoxes: tenants.websitePromoBoxes,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -836,6 +841,10 @@ export function registerPublicApiRoutes(app: Express) {
       try { faqItems = JSON.parse(tenant.websiteFaqPageContent || "[]"); } catch {}
       try { templateSettings = JSON.parse(tenant.websiteTemplateSettings || "{}"); } catch {}
       try { reviewCards = JSON.parse(tenant.websiteReviewCards || "[]"); } catch {}
+      let heroSlides: any[] = [];
+      let promoBoxes: any[] = [];
+      try { heroSlides = JSON.parse(tenant.websiteHeroSlides || "[]"); } catch {}
+      try { promoBoxes = JSON.parse(tenant.websitePromoBoxes || "[]"); } catch {}
 
       let responseData: any = {
         ...tenant,
@@ -843,6 +852,8 @@ export function registerPublicApiRoutes(app: Express) {
         websiteLanguages: languages,
         websiteTemplateSettings: templateSettings,
         websiteReviewCards: reviewCards,
+        websiteHeroSlides: heroSlides,
+        websitePromoBoxes: promoBoxes,
         faqItems,
       };
 
