@@ -425,46 +425,6 @@ export default function PublicActivityDetail() {
               </div>
             )}
 
-            {/* Tur Programı */}
-            {activity.itinerary && activity.itinerary.length > 0 && (
-              <Card className="border-0 shadow-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-primary" />
-                    {language === "en" ? "Tour Program" : "Tur Programı"}
-                  </CardTitle>
-                  <CardDescription>
-                    {language === "en" ? "Step-by-step itinerary of your tour" : "Turunuzun adım adım programı"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-primary/20" />
-                    <div className="space-y-6">
-                      {activity.itinerary.map((step, idx) => (
-                        <div key={idx} className="relative flex gap-4 pl-2">
-                          <div className="absolute left-[11px] w-3 h-3 rounded-full bg-primary border-2 border-background z-10" />
-                          <div className="flex-1 ml-6 pb-2">
-                            <div className="flex items-center gap-2 mb-1">
-                              {step.time && (
-                                <Badge variant="outline" className="text-xs font-mono">
-                                  {step.time}
-                                </Badge>
-                              )}
-                              <h4 className="font-semibold text-foreground">{step.title}</h4>
-                            </div>
-                            {step.description && (
-                              <p className="text-sm text-muted-foreground">{step.description}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             <div className="grid md:grid-cols-2 gap-6">
               {activity.includedItems && activity.includedItems.length > 0 && (
                 <Card className="border-0 shadow-md">
@@ -690,6 +650,46 @@ export default function PublicActivityDetail() {
                       </li>
                     ))}
                   </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Tur Programı */}
+            {activity.itinerary && activity.itinerary.length > 0 && (
+              <Card className="border-0 shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-primary" />
+                    {language === "en" ? "Tour Program" : "Tur Programı"}
+                  </CardTitle>
+                  <CardDescription>
+                    {language === "en" ? "Step-by-step itinerary of your tour" : "Turunuzun adım adım programı"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="relative">
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-primary/20" />
+                    <div className="space-y-6">
+                      {activity.itinerary.map((step, idx) => (
+                        <div key={idx} className="relative flex gap-4 pl-2">
+                          <div className="absolute left-[11px] w-3 h-3 rounded-full bg-primary border-2 border-background z-10" />
+                          <div className="flex-1 ml-6 pb-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              {step.time && (
+                                <Badge variant="outline" className="text-xs font-mono">
+                                  {step.time}
+                                </Badge>
+                              )}
+                              <h4 className="font-semibold text-foreground">{step.title}</h4>
+                            </div>
+                            {step.description && (
+                              <p className="text-sm text-muted-foreground">{step.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
