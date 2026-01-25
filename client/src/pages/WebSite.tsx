@@ -107,9 +107,10 @@ interface WebsiteSettings {
   websiteHeroSliderTitleEn: string | null;
   websiteHeroSlides: string | null;
   websitePromoBoxes: string | null;
+  // Banner Order
+  websiteBannerOrder: string | null;
   // Slogan Banner
   websiteSloganBannerEnabled: boolean;
-  websiteSloganBannerPosition: string | null;
   websiteSloganBannerTitle: string | null;
   websiteSloganBannerTitleEn: string | null;
   websiteSloganBannerDescription: string | null;
@@ -117,7 +118,6 @@ interface WebsiteSettings {
   websiteSloganBannerColor: string | null;
   // Promo Banner
   websitePromoBannerEnabled: boolean;
-  websitePromoBannerPosition: string | null;
   websitePromoBannerTitle: string | null;
   websitePromoBannerTitleEn: string | null;
   websitePromoBannerDescription: string | null;
@@ -1751,70 +1751,44 @@ export default function WebSite() {
                       </CardContent>
                     </Card>
 
-                    {/* Banner Konumları */}
+                    {/* Banner Sıralaması */}
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Settings className="h-5 w-5" />
-                          Banner Konumları
+                          Banner Sıralaması
                         </CardTitle>
                         <CardDescription>
-                          Her banner'ın anasayfada nerede görüneceğini ayrı ayrı belirleyin
+                          Slogan ve Promosyon banner'larının görüntülenme sırasını ayarlayın
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Slogan Banner Konumu</Label>
-                            <Select
-                              value={getValue("websiteSloganBannerPosition") || "after_featured"}
-                              onValueChange={(value) => updateField("websiteSloganBannerPosition", value)}
-                            >
-                              <SelectTrigger data-testid="select-slogan-banner-position">
-                                <SelectValue placeholder="Konum seçin" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="disabled">Gizli (Gösterme)</SelectItem>
-                                <SelectItem value="after_hero">Hero'dan Sonra</SelectItem>
-                                <SelectItem value="after_featured">Öne Çıkan Aktivitelerden Sonra</SelectItem>
-                                <SelectItem value="after_popular">Popüler Aktivitelerden Sonra</SelectItem>
-                                <SelectItem value="after_package_tours">Paket Turlardan Sonra</SelectItem>
-                                <SelectItem value="after_destinations">Destinasyonlardan Sonra</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Promosyon Banner Konumu</Label>
-                            <Select
-                              value={getValue("websitePromoBannerPosition") || "after_popular"}
-                              onValueChange={(value) => updateField("websitePromoBannerPosition", value)}
-                            >
-                              <SelectTrigger data-testid="select-promo-banner-position">
-                                <SelectValue placeholder="Konum seçin" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="disabled">Gizli (Gösterme)</SelectItem>
-                                <SelectItem value="after_hero">Hero'dan Sonra</SelectItem>
-                                <SelectItem value="after_featured">Öne Çıkan Aktivitelerden Sonra</SelectItem>
-                                <SelectItem value="after_popular">Popüler Aktivitelerden Sonra</SelectItem>
-                                <SelectItem value="after_package_tours">Paket Turlardan Sonra</SelectItem>
-                                <SelectItem value="after_destinations">Destinasyonlardan Sonra</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div className="space-y-2">
+                          <Label>Banner Sırası</Label>
+                          <Select
+                            value={getValue("websiteBannerOrder") || "slogan_first"}
+                            onValueChange={(value) => updateField("websiteBannerOrder", value)}
+                          >
+                            <SelectTrigger data-testid="select-banner-order">
+                              <SelectValue placeholder="Banner sırası seçin" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="slogan_first">Önce Slogan Banner, Sonra Promosyon Banner</SelectItem>
+                              <SelectItem value="promo_first">Önce Promosyon Banner, Sonra Slogan Banner</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="flex justify-end">
                           <Button
                             onClick={() => saveMutation.mutate({
-                              websiteSloganBannerPosition: formData.websiteSloganBannerPosition ?? settings?.websiteSloganBannerPosition ?? "after_featured",
-                              websitePromoBannerPosition: formData.websitePromoBannerPosition ?? settings?.websitePromoBannerPosition ?? "after_popular",
+                              websiteBannerOrder: formData.websiteBannerOrder ?? settings?.websiteBannerOrder ?? "slogan_first",
                             })}
                             disabled={saveMutation.isPending}
                             className="gap-1"
-                            data-testid="button-save-banner-positions"
+                            data-testid="button-save-banner-order"
                           >
                             <Save className="h-4 w-4" />
-                            Konumları Kaydet
+                            Sıralama Kaydet
                           </Button>
                         </div>
                       </CardContent>

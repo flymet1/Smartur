@@ -194,107 +194,6 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       </section>
     );
   };
-
-  // Helper function to get gradient class for slogan banner
-  const getGradientClass = () => {
-    const color = websiteData?.websiteSloganBannerColor || "cyan_blue";
-    switch (color) {
-      case "purple_pink":
-        return "bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500";
-      case "green_teal":
-        return "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500";
-      case "orange_red":
-        return "bg-gradient-to-r from-orange-500 via-red-500 to-rose-500";
-      case "cyan_blue":
-      default:
-        return "bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500";
-    }
-  };
-
-  // Render banners based on their position
-  const renderBannersForPosition = (position: string) => {
-    const sloganPosition = websiteData?.websiteSloganBannerPosition || "after_featured";
-    const promoPosition = websiteData?.websitePromoBannerPosition || "after_popular";
-    
-    const SloganBanner = websiteData?.websiteSloganBannerEnabled && sloganPosition === position ? (
-      <section className="py-8 bg-background" key="slogan">
-        <div className="container mx-auto px-4">
-          <div className={`${getGradientClass()} rounded-2xl py-10 md:py-14 px-6 md:px-10`}>
-            <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white leading-snug" data-testid="text-slogan-title">
-              {language === "en" && websiteData?.websiteSloganBannerTitleEn
-                ? websiteData.websiteSloganBannerTitleEn
-                : websiteData?.websiteSloganBannerTitle || ""}
-              {(websiteData?.websiteSloganBannerDescription || websiteData?.websiteSloganBannerDescriptionEn) && (
-                <span className="block mt-2 text-base md:text-lg font-normal text-white/85" data-testid="text-slogan-description">
-                  {language === "en" && websiteData?.websiteSloganBannerDescriptionEn
-                    ? websiteData.websiteSloganBannerDescriptionEn
-                    : websiteData?.websiteSloganBannerDescription || ""}
-                </span>
-              )}
-            </h2>
-          </div>
-        </div>
-      </section>
-    ) : null;
-    
-    const PromoBanner = websiteData?.websitePromoBannerEnabled && promoPosition === position ? (
-      <section className="py-8 bg-background" key="promo">
-        <div className="container mx-auto px-4">
-          <div className="relative overflow-hidden rounded-2xl min-h-[320px] md:min-h-[380px]">
-            {websiteData?.websitePromoBannerImage ? (
-              <img 
-                src={websiteData.websitePromoBannerImage} 
-                alt="Promo" 
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-500" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-            <div className="relative z-10 flex flex-col justify-center h-full min-h-[320px] md:min-h-[380px] p-8 md:p-12">
-              <div className="max-w-lg">
-                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 leading-tight" data-testid="text-promo-title">
-                  {language === "en" && websiteData?.websitePromoBannerTitleEn
-                    ? websiteData.websitePromoBannerTitleEn
-                    : websiteData?.websitePromoBannerTitle || "Türkiye'nin Her Noktasını Keşfedin"}
-                </h2>
-                <p className="text-white/90 mb-6 text-sm md:text-base leading-relaxed" data-testid="text-promo-description">
-                  {language === "en" && websiteData?.websitePromoBannerDescriptionEn
-                    ? websiteData.websitePromoBannerDescriptionEn
-                    : websiteData?.websitePromoBannerDescription || "Eşsiz deneyimler ve unutulmaz anılar için hemen rezervasyon yapın!"}
-                </p>
-                <Link href={websiteData?.websitePromoBannerButtonUrl || getLocalizedPath("/aktiviteler")}>
-                  <Button 
-                    variant="secondary" 
-                    className="bg-white text-gray-900 hover:bg-white/90 font-medium"
-                    data-testid="button-promo-cta"
-                  >
-                    {language === "en" && websiteData?.websitePromoBannerButtonTextEn
-                      ? websiteData.websitePromoBannerButtonTextEn
-                      : websiteData?.websitePromoBannerButtonText || "Hemen İncele"}
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            {websiteData?.websitePromoBannerPriceText && (
-              <div className="absolute top-6 right-6 bg-white rounded-full px-5 py-3 shadow-lg text-center">
-                <p className="text-lg md:text-xl font-bold text-purple-600">
-                  {language === "en" && websiteData?.websitePromoBannerPriceTextEn
-                    ? websiteData.websitePromoBannerPriceTextEn
-                    : websiteData.websitePromoBannerPriceText}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {language === "en" ? "starting prices" : "başlayan fiyatlar"}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-    ) : null;
-    
-    return <>{SloganBanner}{PromoBanner}</>;
-  };
   
   // Reset currentSlide if out of bounds
   if (heroSlides.length > 0 && currentSlide >= heroSlides.length) {
@@ -476,9 +375,6 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       {/* Hero Slider Section - Rendered based on position: after_hero */}
       {sliderPosition === "after_hero" && renderSliderSection()}
 
-      {/* Banners at after_hero position */}
-      {renderBannersForPosition("after_hero")}
-
       <TrustBadges />
 
       {/* Hero Slider Section - Rendered based on position: before_featured */}
@@ -552,8 +448,106 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       {/* Hero Slider Section - Rendered based on position: after_featured */}
       {sliderPosition === "after_featured" && renderSliderSection()}
 
-      {/* Banners at after_featured position */}
-      {renderBannersForPosition("after_featured")}
+      {/* Banners - Order controlled by websiteBannerOrder */}
+      {(() => {
+        const bannerOrder = websiteData?.websiteBannerOrder || "slogan_first";
+        
+        const getGradientClass = () => {
+          const color = websiteData?.websiteSloganBannerColor || "cyan_blue";
+          switch (color) {
+            case "purple_pink":
+              return "bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500";
+            case "green_teal":
+              return "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500";
+            case "orange_red":
+              return "bg-gradient-to-r from-orange-500 via-red-500 to-rose-500";
+            case "cyan_blue":
+            default:
+              return "bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500";
+          }
+        };
+        
+        const SloganBanner = websiteData?.websiteSloganBannerEnabled ? (
+          <section className="py-8 bg-background" key="slogan">
+            <div className="container mx-auto px-4">
+              <div className={`${getGradientClass()} rounded-2xl py-10 md:py-14 px-6 md:px-10`}>
+                <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white leading-snug" data-testid="text-slogan-title">
+                  {language === "en" && websiteData?.websiteSloganBannerTitleEn
+                    ? websiteData.websiteSloganBannerTitleEn
+                    : websiteData?.websiteSloganBannerTitle || ""}
+                  {(websiteData?.websiteSloganBannerDescription || websiteData?.websiteSloganBannerDescriptionEn) && (
+                    <span className="block mt-2 text-base md:text-lg font-normal text-white/85" data-testid="text-slogan-description">
+                      {language === "en" && websiteData?.websiteSloganBannerDescriptionEn
+                        ? websiteData.websiteSloganBannerDescriptionEn
+                        : websiteData?.websiteSloganBannerDescription || ""}
+                    </span>
+                  )}
+                </h2>
+              </div>
+            </div>
+          </section>
+        ) : null;
+        
+        const PromoBanner = websiteData?.websitePromoBannerEnabled ? (
+          <section className="py-8 bg-background" key="promo">
+            <div className="container mx-auto px-4">
+              <div className="relative overflow-hidden rounded-2xl min-h-[320px] md:min-h-[380px]">
+                {websiteData?.websitePromoBannerImage ? (
+                  <img 
+                    src={websiteData.websitePromoBannerImage} 
+                    alt="Promo" 
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-500" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+                <div className="relative z-10 flex flex-col justify-center h-full min-h-[320px] md:min-h-[380px] p-8 md:p-12">
+                  <div className="max-w-lg">
+                    <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 leading-tight" data-testid="text-promo-title">
+                      {language === "en" && websiteData?.websitePromoBannerTitleEn
+                        ? websiteData.websitePromoBannerTitleEn
+                        : websiteData?.websitePromoBannerTitle || "Türkiye'nin Her Noktasını Keşfedin"}
+                    </h2>
+                    <p className="text-white/90 mb-6 text-sm md:text-base leading-relaxed" data-testid="text-promo-description">
+                      {language === "en" && websiteData?.websitePromoBannerDescriptionEn
+                        ? websiteData.websitePromoBannerDescriptionEn
+                        : websiteData?.websitePromoBannerDescription || "Eşsiz deneyimler ve unutulmaz anılar için hemen rezervasyon yapın!"}
+                    </p>
+                    <Link href={websiteData?.websitePromoBannerButtonUrl || getLocalizedPath("/aktiviteler")}>
+                      <Button 
+                        variant="secondary" 
+                        className="bg-white text-gray-900 hover:bg-white/90 font-medium"
+                        data-testid="button-promo-cta"
+                      >
+                        {language === "en" && websiteData?.websitePromoBannerButtonTextEn
+                          ? websiteData.websitePromoBannerButtonTextEn
+                          : websiteData?.websitePromoBannerButtonText || "Hemen İncele"}
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+                {websiteData?.websitePromoBannerPriceText && (
+                  <div className="absolute top-6 right-6 bg-white rounded-full px-5 py-3 shadow-lg text-center">
+                    <p className="text-lg md:text-xl font-bold text-purple-600">
+                      {language === "en" && websiteData?.websitePromoBannerPriceTextEn
+                        ? websiteData.websitePromoBannerPriceTextEn
+                        : websiteData.websitePromoBannerPriceText}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === "en" ? "starting prices" : "başlayan fiyatlar"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        ) : null;
+        
+        return bannerOrder === "promo_first" 
+          ? <>{PromoBanner}{SloganBanner}</> 
+          : <>{SloganBanner}{PromoBanner}</>;
+      })()}
 
       {homepageSections && homepageSections.length > 0 && homepageSections.map((section, index) => (
         <section 
@@ -592,12 +586,6 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
         </section>
       ))}
 
-      {/* Banners at after_popular position */}
-      {renderBannersForPosition("after_popular")}
-
-      {/* Banners at after_package_tours position */}
-      {renderBannersForPosition("after_package_tours")}
-
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -635,9 +623,6 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
           </div>
         </div>
       </section>
-
-      {/* Banners at after_destinations position */}
-      {renderBannersForPosition("after_destinations")}
 
       {websiteData?.websiteAboutText && (
         <section className="py-16 bg-background">

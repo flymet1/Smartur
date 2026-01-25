@@ -166,17 +166,17 @@ export interface PublicWebsiteData {
     buttonTextEn: string;
     buttonUrl: string;
   }>;
-  // Slogan Banner (gradient)
+  // Banner Order
+  websiteBannerOrder: string | null;
+  // Slogan Banner (gradient, after activities)
   websiteSloganBannerEnabled: boolean;
-  websiteSloganBannerPosition: string | null;
   websiteSloganBannerTitle: string | null;
   websiteSloganBannerTitleEn: string | null;
   websiteSloganBannerDescription: string | null;
   websiteSloganBannerDescriptionEn: string | null;
   websiteSloganBannerColor: string | null;
-  // Promo Banner (with image)
+  // Promo Banner (with image, after activities)
   websitePromoBannerEnabled: boolean;
-  websitePromoBannerPosition: string | null;
   websitePromoBannerTitle: string | null;
   websitePromoBannerTitleEn: string | null;
   websitePromoBannerDescription: string | null;
