@@ -38,6 +38,8 @@ export interface PublicActivity {
   depositType: "percentage" | "fixed";
   depositAmount: number;
   fullPaymentRequired: boolean;
+  // Tur programı
+  itinerary: Array<{ time: string; title: string; description: string }>;
 }
 
 export interface WebsiteTemplateSettings {

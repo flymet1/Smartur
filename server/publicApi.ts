@@ -929,6 +929,7 @@ export function registerPublicApiRoutes(app: Express) {
           transferInfo: activities.transferInfo,
           reviewCards: activities.reviewCards,
           reviewCardsEnabled: activities.reviewCardsEnabled,
+          itinerary: activities.itinerary,
         })
         .from(activities)
         .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true)));
@@ -951,6 +952,7 @@ export function registerPublicApiRoutes(app: Express) {
         highlights: JSON.parse(a.highlights || "[]"),
         importantInfoItems: JSON.parse(a.importantInfoItems || "[]"),
         reviewCards: JSON.parse(a.reviewCards || "[]"),
+        itinerary: JSON.parse((a as any).itinerary || "[]"),
       }));
 
       const lang = req.query.lang as string;
@@ -1028,6 +1030,7 @@ export function registerPublicApiRoutes(app: Express) {
         highlights: JSON.parse(activity.highlights || "[]"),
         importantInfoItems: JSON.parse(activity.importantInfoItems || "[]"),
         reviewCards: JSON.parse(activity.reviewCards || "[]"),
+        itinerary: JSON.parse((activity as any).itinerary || "[]"),
       };
 
       const lang = req.query.lang as string;
