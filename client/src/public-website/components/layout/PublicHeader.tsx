@@ -218,12 +218,6 @@ export function PublicHeader({
                 </Button>
               </Link>
 
-              <Link href={getLocalizedPath("/aktiviteler")}>
-                <Button size="sm" className="gap-2 shadow-lg shadow-primary/25" data-testid="button-book-now-header">
-                  {t.activities.bookNow}
-                </Button>
-              </Link>
-
               {availableLanguages.length > 1 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
