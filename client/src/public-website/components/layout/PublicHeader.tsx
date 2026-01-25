@@ -126,30 +126,7 @@ export function PublicHeader({
                     )}
                   </div>
                 )}
-                {availableLanguages.length > 1 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="flex items-center gap-1 hover:opacity-80 transition-opacity" data-testid="button-language-selector-top">
-                        <Globe className="h-3.5 w-3.5" />
-                        <span>{languageNames[language]}</span>
-                        <ChevronDown className="h-3 w-3" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {availableLanguages.map((lang) => (
-                        <DropdownMenuItem
-                          key={lang}
-                          onClick={() => setLanguage(lang)}
-                          className={cn(language === lang && "bg-muted")}
-                          data-testid={`menu-item-lang-${lang}`}
-                        >
-                          {languageNames[lang]}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
+                              </div>
             </div>
           </div>
         </div>
