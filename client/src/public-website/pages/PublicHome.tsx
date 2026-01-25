@@ -374,8 +374,6 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
 
       <TrustBadges />
 
-      {/* Hero Slider Section - Rendered based on position: before_featured */}
-      {sliderPosition === "before_featured" && renderSliderSection()}
 
       {(websiteData?.websiteShowFeaturedActivities !== false) && (
         <section className="py-16 bg-background">
