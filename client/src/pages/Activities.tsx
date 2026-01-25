@@ -307,6 +307,51 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   });
   const [importantInfo, setImportantInfo] = useState(activity ? (activity as any).importantInfo || "" : "");
   const [transferInfo, setTransferInfo] = useState(activity ? (activity as any).transferInfo || "" : "");
+  // Getirmeniz Gerekenler & İzin Verilmeyenler
+  const [whatToBring, setWhatToBring] = useState(() => {
+    if (activity && (activity as any).whatToBring) {
+      try {
+        const parsed = JSON.parse((activity as any).whatToBring);
+        return Array.isArray(parsed) ? parsed.join('\n') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [whatToBringEn, setWhatToBringEn] = useState(() => {
+    if (activity && (activity as any).whatToBringEn) {
+      try {
+        const parsed = JSON.parse((activity as any).whatToBringEn);
+        return Array.isArray(parsed) ? parsed.join('\n') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [notAllowed, setNotAllowed] = useState(() => {
+    if (activity && (activity as any).notAllowed) {
+      try {
+        const parsed = JSON.parse((activity as any).notAllowed);
+        return Array.isArray(parsed) ? parsed.join('\n') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
+  const [notAllowedEn, setNotAllowedEn] = useState(() => {
+    if (activity && (activity as any).notAllowedEn) {
+      try {
+        const parsed = JSON.parse((activity as any).notAllowedEn);
+        return Array.isArray(parsed) ? parsed.join('\n') : '';
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  });
   // Yorum kartları
   const [reviewCards, setReviewCards] = useState<Array<{platform: string; rating: string; reviewCount: string; url: string}>>(() => {
     if (activity && (activity as any).reviewCards) {
@@ -574,6 +619,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       importantInfoItems: JSON.stringify(importantInfoItems.split('\n').map(s => s.trim()).filter(Boolean)),
       importantInfo: importantInfo || null,
       transferInfo: transferInfo || null,
+      whatToBring: JSON.stringify(whatToBring.split('\n').map(s => s.trim()).filter(Boolean)),
+      whatToBringEn: JSON.stringify(whatToBringEn.split('\n').map(s => s.trim()).filter(Boolean)),
+      notAllowed: JSON.stringify(notAllowed.split('\n').map(s => s.trim()).filter(Boolean)),
+      notAllowedEn: JSON.stringify(notAllowedEn.split('\n').map(s => s.trim()).filter(Boolean)),
       reviewCards: JSON.stringify(reviewCards),
       reviewCardsEnabled: reviewCardsEnabled,
       // Ödeme Seçenekleri
@@ -1043,6 +1092,60 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     data-testid="input-important-info"
                   />
                   <p className="text-xs text-muted-foreground">Liste öğelerinin altında ek açıklama olarak gösterilecektir.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="whatToBring">Getirmeniz Gerekenler (TR)</Label>
+                    <Textarea 
+                      id="whatToBring"
+                      value={whatToBring}
+                      onChange={(e) => setWhatToBring(e.target.value)}
+                      placeholder="Her satıra bir madde yazın. Örnek:&#10;Güneş kremi&#10;Şapka&#10;Rahat ayakkabı&#10;Havlu"
+                      rows={4}
+                      data-testid="input-what-to-bring"
+                    />
+                    <p className="text-xs text-muted-foreground">Aktivite detayında liste olarak gösterilir.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="whatToBringEn">What to Bring (EN)</Label>
+                    <Textarea 
+                      id="whatToBringEn"
+                      value={whatToBringEn}
+                      onChange={(e) => setWhatToBringEn(e.target.value)}
+                      placeholder="One item per line. Example:&#10;Sunscreen&#10;Hat&#10;Comfortable shoes&#10;Towel"
+                      rows={4}
+                      data-testid="input-what-to-bring-en"
+                    />
+                    <p className="text-xs text-muted-foreground">Displayed as list on English activity page.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="notAllowed">İzin Verilmeyenler (TR)</Label>
+                    <Textarea 
+                      id="notAllowed"
+                      value={notAllowed}
+                      onChange={(e) => setNotAllowed(e.target.value)}
+                      placeholder="Her satıra bir madde yazın. Örnek:&#10;Drone&#10;Evcil hayvan&#10;Alkol&#10;Sigara"
+                      rows={4}
+                      data-testid="input-not-allowed"
+                    />
+                    <p className="text-xs text-muted-foreground">Aktivite detayında liste olarak gösterilir.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notAllowedEn">Not Allowed (EN)</Label>
+                    <Textarea 
+                      id="notAllowedEn"
+                      value={notAllowedEn}
+                      onChange={(e) => setNotAllowedEn(e.target.value)}
+                      placeholder="One item per line. Example:&#10;Drone&#10;Pets&#10;Alcohol&#10;Smoking"
+                      rows={4}
+                      data-testid="input-not-allowed-en"
+                    />
+                    <p className="text-xs text-muted-foreground">Displayed as list on English activity page.</p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
