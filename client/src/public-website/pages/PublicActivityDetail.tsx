@@ -45,7 +45,7 @@ interface Participant {
 const difficultyConfig: Record<string, { label: string; labelEn: string; color: string; icon: typeof Mountain }> = {
   easy: { label: "Kolay", labelEn: "Easy", color: "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300", icon: Zap },
   moderate: { label: "Orta", labelEn: "Moderate", color: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300", icon: Mountain },
-  challenging: { label: "Zor", labelEn: "Challenging", color: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300", icon: AlertCircle },
+  challenging: { label: "Zor", labelEn: "Challenging", color: "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300", icon: AlertCircle },
 };
 
 const languageFlags: Record<string, { name: string; flag: string }> = {
@@ -490,7 +490,7 @@ export default function PublicActivityDetail() {
               {activity.excludedItems && activity.excludedItems.length > 0 && (
                 <Card className="border-0 shadow-md">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2 text-red-600">
+                    <CardTitle className="text-lg flex items-center gap-2 text-slate-600 dark:text-slate-400">
                       <X className="h-5 w-5" />
                       {language === "en" ? "Not Included" : "Dahil Olmayanlar"}
                     </CardTitle>
@@ -499,7 +499,7 @@ export default function PublicActivityDetail() {
                     <ul className="space-y-2">
                       {activity.excludedItems.map((item, idx) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <X className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                          <X className="h-4 w-4 text-slate-500 mt-0.5 shrink-0" />
                           <span className="text-sm">{item}</span>
                         </li>
                       ))}
@@ -677,15 +677,15 @@ export default function PublicActivityDetail() {
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Ban className="h-5 w-5 text-red-600" />
+                    <Ban className="h-5 w-5 text-slate-600 dark:text-slate-400" />
                     {language === "en" ? "Not Allowed" : "İzin Verilmeyenler"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     {activity.notAllowed.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                        <X className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                      <li key={idx} className="flex items-start gap-3 p-2 bg-slate-50 dark:bg-slate-900/20 rounded-lg">
+                        <X className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 flex-shrink-0" />
                         <span className="text-sm">{item}</span>
                       </li>
                     ))}
