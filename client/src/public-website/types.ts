@@ -128,6 +128,34 @@ export interface PublicWebsiteData {
   websiteReviewCardsEnabled: boolean;
   websiteReviewCardsTitle: string | null;
   websiteReviewCardsTitleEn: string | null;
+  // Hero Slider
+  websiteHeroSliderEnabled: boolean;
+  websiteHeroSliderTitle: string | null;
+  websiteHeroSliderTitleEn: string | null;
+  websiteHeroSlides: Array<{
+    id: string;
+    imageUrl: string;
+    backgroundColor: string;
+    title: string;
+    titleEn: string;
+    content: string;
+    contentEn: string;
+    buttonText: string;
+    buttonTextEn: string;
+    buttonUrl: string;
+  }>;
+  websitePromoBoxes: Array<{
+    id: string;
+    imageUrl: string;
+    backgroundColor: string;
+    title: string;
+    titleEn: string;
+    content: string;
+    contentEn: string;
+    buttonText: string;
+    buttonTextEn: string;
+    buttonUrl: string;
+  }>;
 }
 
 export interface AvailabilitySlot {
