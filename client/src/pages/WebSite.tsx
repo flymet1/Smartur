@@ -38,7 +38,8 @@ import {
   Layers,
   Star,
   ChevronDown,
-  Type
+  Type,
+  Settings
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
