@@ -89,17 +89,17 @@ export const tenants = pgTable("tenants", {
   websiteHeroSliderTitleEn: text("website_hero_slider_title_en"), // Slider bölüm başlığı (EN)
   websiteHeroSlides: text("website_hero_slides").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}]
   websitePromoBoxes: text("website_promo_boxes").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}] - max 2
-  // Banner Order (slogan_first or promo_first)
-  websiteBannerOrder: text("website_banner_order").default("slogan_first"),
-  // Slogan Banner (gradient, after activities)
+  // Slogan Banner (gradient banner)
   websiteSloganBannerEnabled: boolean("website_slogan_banner_enabled").default(false),
+  websiteSloganBannerPosition: text("website_slogan_banner_position").default("after_featured"), // disabled, after_hero, after_featured, after_popular, after_package_tours, after_destinations
   websiteSloganBannerTitle: text("website_slogan_banner_title"),
   websiteSloganBannerTitleEn: text("website_slogan_banner_title_en"),
   websiteSloganBannerDescription: text("website_slogan_banner_description"),
   websiteSloganBannerDescriptionEn: text("website_slogan_banner_description_en"),
   websiteSloganBannerColor: text("website_slogan_banner_color").default("cyan_blue"), // cyan_blue, purple_pink, green_teal, orange_red
-  // Promo CTA Banner (with image, after activities)
+  // Promo CTA Banner (with image)
   websitePromoBannerEnabled: boolean("website_promo_banner_enabled").default(false),
+  websitePromoBannerPosition: text("website_promo_banner_position").default("after_popular"), // disabled, after_hero, after_featured, after_popular, after_package_tours, after_destinations
   websitePromoBannerTitle: text("website_promo_banner_title"),
   websitePromoBannerTitleEn: text("website_promo_banner_title_en"),
   websitePromoBannerDescription: text("website_promo_banner_description"),
