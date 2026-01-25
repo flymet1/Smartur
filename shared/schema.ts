@@ -82,6 +82,12 @@ export const tenants = pgTable("tenants", {
   websiteReviewCardsEnabled: boolean("website_review_cards_enabled").default(false), // Ana sayfada gösterilsin mi?
   websiteReviewCardsTitle: text("website_review_cards_title"), // Yorum kartları bölüm başlığı (TR)
   websiteReviewCardsTitleEn: text("website_review_cards_title_en"), // Yorum kartları bölüm başlığı (EN)
+  // === HERO SLIDER (Promosyon Slider) ===
+  websiteHeroSliderEnabled: boolean("website_hero_slider_enabled").default(false), // Hero altında slider göster
+  websiteHeroSliderTitle: text("website_hero_slider_title"), // Slider bölüm başlığı (TR)
+  websiteHeroSliderTitleEn: text("website_hero_slider_title_en"), // Slider bölüm başlığı (EN)
+  websiteHeroSlides: text("website_hero_slides").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}]
+  websitePromoBoxes: text("website_promo_boxes").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}] - max 2
 });
 
 // === HOMEPAGE SECTIONS (Anasayfa Kategori Bölümleri) ===

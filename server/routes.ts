@@ -5922,6 +5922,11 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
           websiteReviewCardsEnabled: tenants.websiteReviewCardsEnabled,
           websiteReviewCardsTitle: tenants.websiteReviewCardsTitle,
           websiteReviewCardsTitleEn: tenants.websiteReviewCardsTitleEn,
+          websiteHeroSliderEnabled: tenants.websiteHeroSliderEnabled,
+          websiteHeroSliderTitle: tenants.websiteHeroSliderTitle,
+          websiteHeroSliderTitleEn: tenants.websiteHeroSliderTitleEn,
+          websiteHeroSlides: tenants.websiteHeroSlides,
+          websitePromoBoxes: tenants.websitePromoBoxes,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
@@ -5987,6 +5992,11 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         websiteReviewCardsEnabled,
         websiteReviewCardsTitle,
         websiteReviewCardsTitleEn,
+        websiteHeroSliderEnabled,
+        websiteHeroSliderTitle,
+        websiteHeroSliderTitleEn,
+        websiteHeroSlides,
+        websitePromoBoxes,
       } = req.body;
 
       const updateData: Record<string, any> = {};
@@ -6035,6 +6045,11 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       if (websiteReviewCardsEnabled !== undefined) updateData.websiteReviewCardsEnabled = websiteReviewCardsEnabled;
       if (websiteReviewCardsTitle !== undefined) updateData.websiteReviewCardsTitle = websiteReviewCardsTitle;
       if (websiteReviewCardsTitleEn !== undefined) updateData.websiteReviewCardsTitleEn = websiteReviewCardsTitleEn;
+      if (websiteHeroSliderEnabled !== undefined) updateData.websiteHeroSliderEnabled = websiteHeroSliderEnabled;
+      if (websiteHeroSliderTitle !== undefined) updateData.websiteHeroSliderTitle = websiteHeroSliderTitle;
+      if (websiteHeroSliderTitleEn !== undefined) updateData.websiteHeroSliderTitleEn = websiteHeroSliderTitleEn;
+      if (websiteHeroSlides !== undefined) updateData.websiteHeroSlides = websiteHeroSlides;
+      if (websitePromoBoxes !== undefined) updateData.websitePromoBoxes = websitePromoBoxes;
 
       if (Object.keys(updateData).length > 0) {
         await db
