@@ -89,6 +89,12 @@ export const tenants = pgTable("tenants", {
   websiteHeroSliderTitleEn: text("website_hero_slider_title_en"), // Slider bölüm başlığı (EN)
   websiteHeroSlides: text("website_hero_slides").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}]
   websitePromoBoxes: text("website_promo_boxes").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}] - max 2
+  // Slogan Banner (purple gradient, above Promo Banner)
+  websiteSloganBannerEnabled: boolean("website_slogan_banner_enabled").default(false),
+  websiteSloganBannerTitle: text("website_slogan_banner_title"),
+  websiteSloganBannerTitleEn: text("website_slogan_banner_title_en"),
+  websiteSloganBannerDescription: text("website_slogan_banner_description"),
+  websiteSloganBannerDescriptionEn: text("website_slogan_banner_description_en"),
   // Promo CTA Banner (above Trust Badges)
   websitePromoBannerEnabled: boolean("website_promo_banner_enabled").default(false),
   websitePromoBannerTitle: text("website_promo_banner_title"),

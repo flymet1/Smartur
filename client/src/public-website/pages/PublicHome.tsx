@@ -375,6 +375,28 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       {/* Hero Slider Section - Rendered based on position: after_hero */}
       {sliderPosition === "after_hero" && renderSliderSection()}
 
+      {/* Slogan Banner - Purple gradient, above Promo Banner */}
+      {websiteData?.websiteSloganBannerEnabled && (
+        <section className="py-16 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center text-white">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6 leading-tight" data-testid="text-slogan-title">
+                {language === "en" && websiteData?.websiteSloganBannerTitleEn
+                  ? websiteData.websiteSloganBannerTitleEn
+                  : websiteData?.websiteSloganBannerTitle || ""}
+              </h2>
+              {(websiteData?.websiteSloganBannerDescription || websiteData?.websiteSloganBannerDescriptionEn) && (
+                <p className="text-lg md:text-xl text-white/90 leading-relaxed" data-testid="text-slogan-description">
+                  {language === "en" && websiteData?.websiteSloganBannerDescriptionEn
+                    ? websiteData.websiteSloganBannerDescriptionEn
+                    : websiteData?.websiteSloganBannerDescription || ""}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Promotional CTA Banner - Above Trust Badges */}
       {websiteData?.websitePromoBannerEnabled && (
         <section className="py-12 bg-background">
