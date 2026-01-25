@@ -375,89 +375,6 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       {/* Hero Slider Section - Rendered based on position: after_hero */}
       {sliderPosition === "after_hero" && renderSliderSection()}
 
-      {/* Slogan Banner - Purple/Blue gradient like example */}
-      {websiteData?.websiteSloganBannerEnabled && (
-        <section className="py-12 md:py-16 bg-gradient-to-r from-violet-700 via-purple-600 to-fuchsia-600">
-          <div className="container mx-auto px-4">
-            <div className="max-w-5xl mx-auto">
-              <div className="text-white text-left">
-                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-4 leading-snug" data-testid="text-slogan-title">
-                  {language === "en" && websiteData?.websiteSloganBannerTitleEn
-                    ? websiteData.websiteSloganBannerTitleEn
-                    : websiteData?.websiteSloganBannerTitle || ""}
-                </h2>
-                {(websiteData?.websiteSloganBannerDescription || websiteData?.websiteSloganBannerDescriptionEn) && (
-                  <p className="text-base md:text-lg text-white/85 leading-relaxed max-w-3xl" data-testid="text-slogan-description">
-                    {language === "en" && websiteData?.websiteSloganBannerDescriptionEn
-                      ? websiteData.websiteSloganBannerDescriptionEn
-                      : websiteData?.websiteSloganBannerDescription || ""}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Promotional CTA Banner - Above Trust Badges */}
-      {websiteData?.websitePromoBannerEnabled && (
-        <section className="py-12 bg-background">
-          <div className="container mx-auto px-4">
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500">
-              <div className="flex flex-col md:flex-row items-center">
-                <div className="flex-1 p-8 md:p-12 text-white">
-                  <h2 className="text-2xl md:text-3xl font-bold mb-4" data-testid="text-promo-title">
-                    {language === "en" && websiteData?.websitePromoBannerTitleEn
-                      ? websiteData.websitePromoBannerTitleEn
-                      : websiteData?.websitePromoBannerTitle || "Türkiye'nin Her Noktasını Keşfedin"}
-                  </h2>
-                  <p className="text-white/90 mb-6 max-w-md" data-testid="text-promo-description">
-                    {language === "en" && websiteData?.websitePromoBannerDescriptionEn
-                      ? websiteData.websitePromoBannerDescriptionEn
-                      : websiteData?.websitePromoBannerDescription || "Eşsiz deneyimler ve unutulmaz anılar için hemen rezervasyon yapın!"}
-                  </p>
-                  <Link href={websiteData?.websitePromoBannerButtonUrl || getLocalizedPath("/aktiviteler")}>
-                    <Button 
-                      variant="secondary" 
-                      className="bg-white text-indigo-600 hover:bg-white/90"
-                      data-testid="button-promo-cta"
-                    >
-                      {language === "en" && websiteData?.websitePromoBannerButtonTextEn
-                        ? websiteData.websitePromoBannerButtonTextEn
-                        : websiteData?.websitePromoBannerButtonText || "Hemen İncele"}
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                </div>
-                <div className="relative flex-1 min-h-[200px] md:min-h-[280px]">
-                  {websiteData?.websitePromoBannerImage ? (
-                    <img 
-                      src={websiteData.websitePromoBannerImage} 
-                      alt="Promo" 
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-cyan-400/20" />
-                  )}
-                  {websiteData?.websitePromoBannerPriceText && (
-                    <div className="absolute top-4 right-4 bg-white rounded-lg px-4 py-2 shadow-lg">
-                      <p className="text-xs text-muted-foreground">
-                        {language === "en" ? "Starting from" : "başlayan fiyatlarla"}
-                      </p>
-                      <p className="text-lg font-bold text-indigo-600">
-                        {language === "en" && websiteData?.websitePromoBannerPriceTextEn
-                          ? websiteData.websitePromoBannerPriceTextEn
-                          : websiteData.websitePromoBannerPriceText}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
       <TrustBadges />
 
       {/* Hero Slider Section - Rendered based on position: before_featured */}
@@ -530,6 +447,83 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
 
       {/* Hero Slider Section - Rendered based on position: after_featured */}
       {sliderPosition === "after_featured" && renderSliderSection()}
+
+      {/* Slogan Banner - Purple gradient, after activities */}
+      {websiteData?.websiteSloganBannerEnabled && (
+        <section className="py-10 md:py-14 bg-gradient-to-r from-violet-700 via-purple-600 to-fuchsia-500">
+          <div className="container mx-auto px-4">
+            <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white leading-snug" data-testid="text-slogan-title">
+              {language === "en" && websiteData?.websiteSloganBannerTitleEn
+                ? websiteData.websiteSloganBannerTitleEn
+                : websiteData?.websiteSloganBannerTitle || ""}
+              {(websiteData?.websiteSloganBannerDescription || websiteData?.websiteSloganBannerDescriptionEn) && (
+                <span className="block mt-2 text-base md:text-lg font-normal text-white/85" data-testid="text-slogan-description">
+                  {language === "en" && websiteData?.websiteSloganBannerDescriptionEn
+                    ? websiteData.websiteSloganBannerDescriptionEn
+                    : websiteData?.websiteSloganBannerDescription || ""}
+                </span>
+              )}
+            </h2>
+          </div>
+        </section>
+      )}
+
+      {/* Promotional CTA Banner - Full width image with overlay, after activities */}
+      {websiteData?.websitePromoBannerEnabled && (
+        <section className="py-8 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="relative overflow-hidden rounded-2xl min-h-[320px] md:min-h-[380px]">
+              {websiteData?.websitePromoBannerImage ? (
+                <img 
+                  src={websiteData.websitePromoBannerImage} 
+                  alt="Promo" 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-500" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+              <div className="relative z-10 flex flex-col justify-center h-full min-h-[320px] md:min-h-[380px] p-8 md:p-12">
+                <div className="max-w-lg">
+                  <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 leading-tight" data-testid="text-promo-title">
+                    {language === "en" && websiteData?.websitePromoBannerTitleEn
+                      ? websiteData.websitePromoBannerTitleEn
+                      : websiteData?.websitePromoBannerTitle || "Türkiye'nin Her Noktasını Keşfedin"}
+                  </h2>
+                  <p className="text-white/90 mb-6 text-sm md:text-base leading-relaxed" data-testid="text-promo-description">
+                    {language === "en" && websiteData?.websitePromoBannerDescriptionEn
+                      ? websiteData.websitePromoBannerDescriptionEn
+                      : websiteData?.websitePromoBannerDescription || "Eşsiz deneyimler ve unutulmaz anılar için hemen rezervasyon yapın!"}
+                  </p>
+                  <Link href={websiteData?.websitePromoBannerButtonUrl || getLocalizedPath("/aktiviteler")}>
+                    <Button 
+                      variant="secondary" 
+                      className="bg-white text-gray-900 hover:bg-white/90 font-medium"
+                      data-testid="button-promo-cta"
+                    >
+                      {language === "en" && websiteData?.websitePromoBannerButtonTextEn
+                        ? websiteData.websitePromoBannerButtonTextEn
+                        : websiteData?.websitePromoBannerButtonText || "Hemen İncele"}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+              {websiteData?.websitePromoBannerPriceText && (
+                <div className="absolute top-6 right-6 bg-white rounded-full px-5 py-3 shadow-lg text-center">
+                  <p className="text-lg md:text-xl font-bold text-purple-600">
+                    {language === "en" && websiteData?.websitePromoBannerPriceTextEn
+                      ? websiteData.websitePromoBannerPriceTextEn
+                      : websiteData.websitePromoBannerPriceText}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {language === "en" ? "starting prices" : "başlayan fiyatlar"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {homepageSections && homepageSections.length > 0 && homepageSections.map((section, index) => (
         <section 
