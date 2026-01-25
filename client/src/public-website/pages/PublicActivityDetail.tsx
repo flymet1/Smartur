@@ -773,7 +773,7 @@ export default function PublicActivityDetail() {
           </div>
 
           <div className="lg:col-span-1">
-            <div className="sticky top-24 space-y-4">
+            <div className="sticky top-24 space-y-4 max-h-[calc(100vh-7rem)] overflow-y-auto">
               <Card className="border-0 shadow-lg">
                 {reservationStep === "success" ? (
                   <CardContent className="pt-6 pb-6">
