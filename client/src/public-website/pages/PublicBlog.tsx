@@ -203,16 +203,6 @@ export default function PublicBlog({ websiteData }: PublicBlogProps) {
                           {post.excerpt}
                         </p>
                       )}
-                      {post.tags && post.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-4">
-                          {post.tags.slice(0, 3).map((tag) => (
-                            <Badge key={tag} variant="outline" className="text-xs">
-                              <Tag className="h-3 w-3 mr-1" />
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
                       <div className="flex items-center text-primary font-medium group-hover:gap-2 transition-all">
                         <span>{t.blog?.readMore || "Devamını Oku"}</span>
                         <ArrowRight className="h-4 w-4 ml-1" />
