@@ -13,7 +13,7 @@ import { TrustBadges } from "../components/shared/TrustBadges";
 import { CategoryFilter } from "../components/shared/CategoryFilter";
 import { SEO } from "../components/shared/SEO";
 import type { PublicActivity, PublicWebsiteData } from "../types";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -47,6 +47,17 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
   const rawSliderPosition = websiteData?.websiteHeroSliderPosition || "after_hero";
   // Fallback: if old "top" value exists, treat it as "after_hero"
   const sliderPosition = rawSliderPosition === "top" ? "after_hero" : rawSliderPosition;
+
+  // Autoplay for hero slider - loop continuously
+  useEffect(() => {
+    if (heroSlides.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % heroSlides.length);
+    }, 5000); // 5 saniyede bir değiş
+    
+    return () => clearInterval(interval);
+  }, [heroSlides.length]);
 
   // Slider section render function
   const renderSliderSection = () => {
@@ -141,14 +152,16 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                     >
                       <ChevronRight className="w-5 h-5 text-white" />
                     </button>
-                    <div className="absolute bottom-4 left-1/4 -translate-x-1/2 z-20 flex gap-2">
-                      {heroSlides.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCurrentSlide(idx)}
-                          className={`w-2 h-2 rounded-full transition-colors ${idx === currentSlide ? 'bg-white' : 'bg-white/50'}`}
-                        />
-                      ))}
+                    <div className="absolute bottom-4 left-1/4 -translate-x-1/2 z-20">
+                      <div className="bg-black/40 backdrop-blur-sm rounded-full px-4 py-2 flex gap-2">
+                        {heroSlides.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setCurrentSlide(idx)}
+                            className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentSlide ? 'bg-white scale-110' : 'bg-white/50 hover:bg-white/70'}`}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </>
                 )}
