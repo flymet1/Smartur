@@ -89,6 +89,18 @@ export const tenants = pgTable("tenants", {
   websiteHeroSliderTitleEn: text("website_hero_slider_title_en"), // Slider bölüm başlığı (EN)
   websiteHeroSlides: text("website_hero_slides").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}]
   websitePromoBoxes: text("website_promo_boxes").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}] - max 2
+  // Promo CTA Banner (above Trust Badges)
+  websitePromoBannerEnabled: boolean("website_promo_banner_enabled").default(false),
+  websitePromoBannerTitle: text("website_promo_banner_title"),
+  websitePromoBannerTitleEn: text("website_promo_banner_title_en"),
+  websitePromoBannerDescription: text("website_promo_banner_description"),
+  websitePromoBannerDescriptionEn: text("website_promo_banner_description_en"),
+  websitePromoBannerButtonText: text("website_promo_banner_button_text"),
+  websitePromoBannerButtonTextEn: text("website_promo_banner_button_text_en"),
+  websitePromoBannerButtonUrl: text("website_promo_banner_button_url"),
+  websitePromoBannerImage: text("website_promo_banner_image"),
+  websitePromoBannerPriceText: text("website_promo_banner_price_text"),
+  websitePromoBannerPriceTextEn: text("website_promo_banner_price_text_en"),
 });
 
 // === HOMEPAGE SECTIONS (Anasayfa Kategori Bölümleri) ===

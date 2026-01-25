@@ -268,7 +268,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
             <div className="max-w-4xl mx-auto mb-8">
               <div className="flex flex-col md:flex-row gap-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
                 <Select value={selectedActivity} onValueChange={setSelectedActivity}>
-                  <SelectTrigger className="flex-1 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-activity">
+                  <SelectTrigger className="flex-1 h-10 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-activity">
                     <MapPin className="h-4 w-4 mr-2 text-white/70" />
                     <SelectValue placeholder={t.home.selectActivity} />
                   </SelectTrigger>
@@ -283,7 +283,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                 </Select>
 
                 <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                  <SelectTrigger className="flex-1 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-region">
+                  <SelectTrigger className="flex-1 h-10 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-region">
                     <MapPin className="h-4 w-4 mr-2 text-white/70" />
                     <SelectValue placeholder={t.home.selectRegion} />
                   </SelectTrigger>
@@ -301,7 +301,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="flex-1 justify-start bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white"
+                      className="flex-1 h-10 justify-start bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white"
                       data-testid="button-date-picker"
                     >
                       <Calendar className="h-4 w-4 mr-2 text-white/70" />
@@ -320,7 +320,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                   </PopoverContent>
                 </Popover>
 
-                <Button size="lg" onClick={handleSearch} className="md:w-auto w-full" data-testid="button-search">
+                <Button onClick={handleSearch} className="h-10 md:w-auto w-full" data-testid="button-search">
                   <Search className="h-4 w-4 mr-2" />
                   {t.common.search}
                 </Button>
@@ -374,6 +374,65 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
 
       {/* Hero Slider Section - Rendered based on position: after_hero */}
       {sliderPosition === "after_hero" && renderSliderSection()}
+
+      {/* Promotional CTA Banner - Above Trust Badges */}
+      {websiteData?.websitePromoBannerEnabled && (
+        <section className="py-12 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500">
+              <div className="flex flex-col md:flex-row items-center">
+                <div className="flex-1 p-8 md:p-12 text-white">
+                  <h2 className="text-2xl md:text-3xl font-bold mb-4" data-testid="text-promo-title">
+                    {language === "en" && websiteData?.websitePromoBannerTitleEn
+                      ? websiteData.websitePromoBannerTitleEn
+                      : websiteData?.websitePromoBannerTitle || "Türkiye'nin Her Noktasını Keşfedin"}
+                  </h2>
+                  <p className="text-white/90 mb-6 max-w-md" data-testid="text-promo-description">
+                    {language === "en" && websiteData?.websitePromoBannerDescriptionEn
+                      ? websiteData.websitePromoBannerDescriptionEn
+                      : websiteData?.websitePromoBannerDescription || "Eşsiz deneyimler ve unutulmaz anılar için hemen rezervasyon yapın!"}
+                  </p>
+                  <Link href={websiteData?.websitePromoBannerButtonUrl || getLocalizedPath("/aktiviteler")}>
+                    <Button 
+                      variant="secondary" 
+                      className="bg-white text-indigo-600 hover:bg-white/90"
+                      data-testid="button-promo-cta"
+                    >
+                      {language === "en" && websiteData?.websitePromoBannerButtonTextEn
+                        ? websiteData.websitePromoBannerButtonTextEn
+                        : websiteData?.websitePromoBannerButtonText || "Hemen İncele"}
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
+                <div className="relative flex-1 min-h-[200px] md:min-h-[280px]">
+                  {websiteData?.websitePromoBannerImage ? (
+                    <img 
+                      src={websiteData.websitePromoBannerImage} 
+                      alt="Promo" 
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-cyan-400/20" />
+                  )}
+                  {websiteData?.websitePromoBannerPriceText && (
+                    <div className="absolute top-4 right-4 bg-white rounded-lg px-4 py-2 shadow-lg">
+                      <p className="text-xs text-muted-foreground">
+                        {language === "en" ? "Starting from" : "başlayan fiyatlarla"}
+                      </p>
+                      <p className="text-lg font-bold text-indigo-600">
+                        {language === "en" && websiteData?.websitePromoBannerPriceTextEn
+                          ? websiteData.websitePromoBannerPriceTextEn
+                          : websiteData.websitePromoBannerPriceText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <TrustBadges />
 

@@ -166,6 +166,18 @@ export interface PublicWebsiteData {
     buttonTextEn: string;
     buttonUrl: string;
   }>;
+  // Promo Banner (CTA Banner above Trust Badges)
+  websitePromoBannerEnabled: boolean;
+  websitePromoBannerTitle: string | null;
+  websitePromoBannerTitleEn: string | null;
+  websitePromoBannerDescription: string | null;
+  websitePromoBannerDescriptionEn: string | null;
+  websitePromoBannerButtonText: string | null;
+  websitePromoBannerButtonTextEn: string | null;
+  websitePromoBannerButtonUrl: string | null;
+  websitePromoBannerImage: string | null;
+  websitePromoBannerPriceText: string | null;
+  websitePromoBannerPriceTextEn: string | null;
 }
 
 export interface AvailabilitySlot {

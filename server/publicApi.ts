@@ -823,6 +823,17 @@ export function registerPublicApiRoutes(app: Express) {
           websiteHeroSliderTitleEn: tenants.websiteHeroSliderTitleEn,
           websiteHeroSlides: tenants.websiteHeroSlides,
           websitePromoBoxes: tenants.websitePromoBoxes,
+          websitePromoBannerEnabled: tenants.websitePromoBannerEnabled,
+          websitePromoBannerTitle: tenants.websitePromoBannerTitle,
+          websitePromoBannerTitleEn: tenants.websitePromoBannerTitleEn,
+          websitePromoBannerDescription: tenants.websitePromoBannerDescription,
+          websitePromoBannerDescriptionEn: tenants.websitePromoBannerDescriptionEn,
+          websitePromoBannerButtonText: tenants.websitePromoBannerButtonText,
+          websitePromoBannerButtonTextEn: tenants.websitePromoBannerButtonTextEn,
+          websitePromoBannerButtonUrl: tenants.websitePromoBannerButtonUrl,
+          websitePromoBannerImage: tenants.websitePromoBannerImage,
+          websitePromoBannerPriceText: tenants.websitePromoBannerPriceText,
+          websitePromoBannerPriceTextEn: tenants.websitePromoBannerPriceTextEn,
         })
         .from(tenants)
         .where(eq(tenants.id, tenantId))
