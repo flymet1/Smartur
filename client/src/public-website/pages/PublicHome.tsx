@@ -485,12 +485,12 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
               <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
               
               {/* Fiyat Etiketi */}
-              {websiteData?.websitePromoBannerPriceText && (
+              {websiteData?.websiteHeroPriceText && (
                 <div className="absolute top-6 right-6 bg-white rounded-xl px-5 py-3 shadow-lg text-center z-20">
                   <p className="text-lg md:text-xl font-bold text-purple-600">
-                    {language === "en" && websiteData?.websitePromoBannerPriceTextEn
-                      ? websiteData.websitePromoBannerPriceTextEn
-                      : websiteData.websitePromoBannerPriceText}
+                    {language === "en" && websiteData?.websiteHeroPriceTextEn
+                      ? websiteData.websiteHeroPriceTextEn
+                      : websiteData.websiteHeroPriceText}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {language === "en" ? "starting prices" : "başlayan fiyatlar"}

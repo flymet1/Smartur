@@ -93,6 +93,8 @@ interface WebsiteSettings {
   websiteHeaderTextColor: string | null;
   // Hero stili
   websiteHeroStyle: string | null;
+  websiteHeroPriceText: string | null;
+  websiteHeroPriceTextEn: string | null;
   // Hero istatistikleri
   websiteHeroStats: string | null;
   // Ana sayfa bölüm ayarları
@@ -647,7 +649,19 @@ export default function WebSite() {
                         Tam Ekran: Sayfa genişliğinde hero alanı. Kompakt: Container içinde köşeleri yuvarlatılmış banner.
                       </p>
                     </div>
-                    <div />
+                    <div className="space-y-2">
+                      <Label htmlFor="websiteHeroPriceText">Fiyat Etiketi (Kompakt)</Label>
+                      <Input
+                        id="websiteHeroPriceText"
+                        placeholder="5000 TL"
+                        value={getValue("websiteHeroPriceText")}
+                        onChange={(e) => updateField("websiteHeroPriceText", e.target.value)}
+                        data-testid="input-hero-price"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Kompakt modda sağ üst köşede görünecek fiyat etiketi
+                      </p>
+                    </div>
                   </div>
 
                   <ImageUpload
