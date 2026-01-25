@@ -44,7 +44,9 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
   // Reset slide when data changes
   const heroSlides = Array.isArray(websiteData?.websiteHeroSlides) ? websiteData.websiteHeroSlides : [];
   const promoBoxes = Array.isArray(websiteData?.websitePromoBoxes) ? websiteData.websitePromoBoxes : [];
-  const sliderPosition = websiteData?.websiteHeroSliderPosition || "after_hero";
+  const rawSliderPosition = websiteData?.websiteHeroSliderPosition || "after_hero";
+  // Fallback: if old "top" value exists, treat it as "after_hero"
+  const sliderPosition = rawSliderPosition === "top" ? "after_hero" : rawSliderPosition;
 
   // Slider section render function
   const renderSliderSection = () => {
@@ -246,8 +248,6 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
         language={language}
       />
       
-      {/* Hero Slider Section - Rendered based on position: top */}
-      {sliderPosition === "top" && renderSliderSection()}
 
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         <div
@@ -374,6 +374,9 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       </section>
 
       <TrustBadges />
+
+      {/* Hero Slider Section - Rendered based on position: before_featured */}
+      {sliderPosition === "before_featured" && renderSliderSection()}
 
       {(websiteData?.websiteShowFeaturedActivities !== false) && (
         <section className="py-16 bg-background">

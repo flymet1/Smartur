@@ -1351,9 +1351,9 @@ export default function WebSite() {
                               <SelectValue placeholder="Konum seçin" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="top">Sayfanın en üstü (Hero üstünde)</SelectItem>
                               <SelectItem value="after_hero">Hero altında</SelectItem>
-                              <SelectItem value="after_featured">Öne çıkan aktiviteler altında</SelectItem>
+                              <SelectItem value="before_featured">Popüler aktiviteler/turlar üstünde</SelectItem>
+                              <SelectItem value="after_featured">Popüler aktiviteler/turlar altında</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">Slider bölümünün ana sayfadaki yerini belirleyin</p>
