@@ -36,8 +36,10 @@ import {
   LayoutPanelTop,
   PenSquare,
   Layers,
-  Star
+  Star,
+  ChevronDown
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -1398,11 +1400,16 @@ export default function WebSite() {
                               Henüz slayt eklenmemiş
                             </p>
                           ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-2">
                               {displayedHeroSlides.map((slide, index) => (
-                                <Card key={slide.id || index} className="p-4">
-                                  <div className="flex justify-between items-start mb-3">
-                                    <span className="text-sm font-medium text-muted-foreground">Slayt {index + 1}</span>
+                                <Collapsible key={slide.id || index} className="border rounded-lg">
+                                  <div className="flex items-center justify-between p-3 bg-muted/30">
+                                    <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left hover:underline">
+                                      <ChevronDown className="h-4 w-4 transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                                      <span className="text-sm font-medium">
+                                        Slayt {index + 1}{slide.title ? `: ${slide.title.substring(0, 30)}${slide.title.length > 30 ? '...' : ''}` : ''}
+                                      </span>
+                                    </CollapsibleTrigger>
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -1413,6 +1420,7 @@ export default function WebSite() {
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </div>
+                                  <CollapsibleContent className="p-4">
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                       <ImageUpload
@@ -1537,7 +1545,8 @@ export default function WebSite() {
                                       <strong>İpucu:</strong> Başlık ve içerik alanlarında kalın yazı için <code>&lt;strong&gt;metin&lt;/strong&gt;</code> veya <code>&lt;b&gt;metin&lt;/b&gt;</code> kullanabilirsiniz.
                                     </div>
                                   </div>
-                                </Card>
+                                  </CollapsibleContent>
+                                </Collapsible>
                               ))}
                             </div>
                           )}
