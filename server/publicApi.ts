@@ -818,6 +818,7 @@ export function registerPublicApiRoutes(app: Express) {
           websiteReviewCardsTitle: tenants.websiteReviewCardsTitle,
           websiteReviewCardsTitleEn: tenants.websiteReviewCardsTitleEn,
           websiteHeroSliderEnabled: tenants.websiteHeroSliderEnabled,
+          websiteHeroSliderPosition: tenants.websiteHeroSliderPosition,
           websiteHeroSliderTitle: tenants.websiteHeroSliderTitle,
           websiteHeroSliderTitleEn: tenants.websiteHeroSliderTitleEn,
           websiteHeroSlides: tenants.websiteHeroSlides,

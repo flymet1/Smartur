@@ -134,6 +134,7 @@ export interface PublicWebsiteData {
   websiteReviewCardsTitleEn: string | null;
   // Hero Slider
   websiteHeroSliderEnabled: boolean;
+  websiteHeroSliderPosition: "top" | "after_hero" | "after_featured" | null;
   websiteHeroSliderTitle: string | null;
   websiteHeroSliderTitleEn: string | null;
   websiteHeroSlides: Array<{

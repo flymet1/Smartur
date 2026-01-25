@@ -98,6 +98,7 @@ interface WebsiteSettings {
   websiteReviewCardsTitleEn: string | null;
   // Hero Slider
   websiteHeroSliderEnabled: boolean;
+  websiteHeroSliderPosition: string | null;
   websiteHeroSliderTitle: string | null;
   websiteHeroSliderTitleEn: string | null;
   websiteHeroSlides: string | null;
@@ -431,6 +432,9 @@ export default function WebSite() {
       websiteHeroSliderEnabled: formData.websiteHeroSliderEnabled !== undefined 
         ? formData.websiteHeroSliderEnabled 
         : settings?.websiteHeroSliderEnabled ?? false,
+      websiteHeroSliderPosition: formData.websiteHeroSliderPosition !== undefined
+        ? formData.websiteHeroSliderPosition
+        : settings?.websiteHeroSliderPosition ?? "after_hero",
       websiteHeroSliderTitle: formData.websiteHeroSliderTitle !== undefined
         ? formData.websiteHeroSliderTitle
         : settings?.websiteHeroSliderTitle ?? null,
@@ -1328,6 +1332,26 @@ export default function WebSite() {
                             onCheckedChange={(checked) => updateField("websiteHeroSliderEnabled", checked)}
                             data-testid="switch-hero-slider-enabled"
                           />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Slider Konumu</Label>
+                          <Select
+                            value={formData.websiteHeroSliderPosition !== undefined 
+                              ? formData.websiteHeroSliderPosition 
+                              : settings?.websiteHeroSliderPosition ?? "after_hero"}
+                            onValueChange={(value) => updateField("websiteHeroSliderPosition", value)}
+                          >
+                            <SelectTrigger data-testid="select-hero-slider-position">
+                              <SelectValue placeholder="Konum seçin" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="top">Sayfanın en üstü (Hero üstünde)</SelectItem>
+                              <SelectItem value="after_hero">Hero altında</SelectItem>
+                              <SelectItem value="after_featured">Öne çıkan aktiviteler altında</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">Slider bölümünün ana sayfadaki yerini belirleyin</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

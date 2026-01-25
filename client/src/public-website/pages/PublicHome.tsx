@@ -44,6 +44,129 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
   // Reset slide when data changes
   const heroSlides = Array.isArray(websiteData?.websiteHeroSlides) ? websiteData.websiteHeroSlides : [];
   const promoBoxes = Array.isArray(websiteData?.websitePromoBoxes) ? websiteData.websitePromoBoxes : [];
+  const sliderPosition = websiteData?.websiteHeroSliderPosition || "after_hero";
+
+  // Slider section render function
+  const renderSliderSection = () => {
+    if (!websiteData?.websiteHeroSliderEnabled || heroSlides.length === 0) return null;
+    
+    return (
+      <section className="py-12 bg-background">
+        <div className="container mx-auto px-4">
+          {(websiteData.websiteHeroSliderTitle || websiteData.websiteHeroSliderTitleEn) && (
+            <h2 className="text-2xl font-bold text-center mb-8">
+              {language === "en" 
+                ? (websiteData.websiteHeroSliderTitleEn || websiteData.websiteHeroSliderTitle)
+                : (websiteData.websiteHeroSliderTitle || websiteData.websiteHeroSliderTitleEn)
+              }
+            </h2>
+          )}
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <div className="relative overflow-hidden rounded-xl" style={{ minHeight: '320px' }}>
+                {heroSlides.map((slide, idx) => (
+                  <div
+                    key={slide.id || idx}
+                    className={`absolute inset-0 transition-opacity duration-500 ${
+                      idx === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                    }`}
+                    style={{ backgroundColor: slide.backgroundColor || '#3b82f6' }}
+                  >
+                    {slide.imageUrl && (
+                      <img
+                        src={slide.imageUrl}
+                        alt={language === "en" ? slide.titleEn || slide.title : slide.title || slide.titleEn}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-black/40" />
+                    <div className="relative z-10 h-full flex flex-col justify-center p-8 text-white">
+                      <h3 className="text-2xl md:text-3xl font-bold mb-3">
+                        {language === "en" ? (slide.titleEn || slide.title) : (slide.title || slide.titleEn)}
+                      </h3>
+                      <p className="text-sm md:text-base opacity-90 mb-4 max-w-md">
+                        {language === "en" ? (slide.contentEn || slide.content) : (slide.content || slide.contentEn)}
+                      </p>
+                      {slide.buttonUrl && slide.buttonText && (
+                        <div>
+                          <Link href={slide.buttonUrl}>
+                            <Button variant="secondary" size="sm">
+                              {language === "en" ? (slide.buttonTextEn || slide.buttonText) : (slide.buttonText || slide.buttonTextEn)}
+                              <ArrowRight className="w-4 h-4 ml-1" />
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {heroSlides.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentSlide(prev => prev === 0 ? heroSlides.length - 1 : prev - 1)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5 text-white" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentSlide(prev => prev === heroSlides.length - 1 ? 0 : prev + 1)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5 text-white" />
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                      {heroSlides.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentSlide(idx)}
+                          className={`w-2 h-2 rounded-full transition-colors ${idx === currentSlide ? 'bg-white' : 'bg-white/50'}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            {promoBoxes.length > 0 && (
+              <div className="hidden lg:flex flex-col gap-4 w-80">
+                {promoBoxes.slice(0, 2).map((box, idx) => (
+                  <div
+                    key={box.id || idx}
+                    className="relative overflow-hidden rounded-xl flex-1"
+                    style={{ backgroundColor: box.backgroundColor || '#f97316', minHeight: '150px' }}
+                  >
+                    {box.imageUrl && (
+                      <img
+                        src={box.imageUrl}
+                        alt={language === "en" ? box.titleEn || box.title : box.title || box.titleEn}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-black/40" />
+                    <div className="relative z-10 h-full flex flex-col justify-center p-5 text-white">
+                      <h4 className="text-lg font-bold mb-1">
+                        {language === "en" ? (box.titleEn || box.title) : (box.title || box.titleEn)}
+                      </h4>
+                      <p className="text-xs opacity-90 mb-2 line-clamp-2">
+                        {language === "en" ? (box.contentEn || box.content) : (box.content || box.contentEn)}
+                      </p>
+                      {box.buttonUrl && box.buttonText && (
+                        <Link href={box.buttonUrl}>
+                          <Button variant="secondary" size="sm" className="text-xs">
+                            {language === "en" ? (box.buttonTextEn || box.buttonText) : (box.buttonText || box.buttonTextEn)}
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  };
   
   // Reset currentSlide if out of bounds
   if (heroSlides.length > 0 && currentSlide >= heroSlides.length) {
@@ -97,6 +220,10 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
         websiteData={websiteData} 
         language={language}
       />
+      
+      {/* Hero Slider Section - Rendered based on position: top */}
+      {sliderPosition === "top" && renderSliderSection()}
+
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -288,6 +415,9 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
         </section>
       )}
 
+      {/* Hero Slider Section - Rendered based on position: after_featured */}
+      {sliderPosition === "after_featured" && renderSliderSection()}
+
       {homepageSections && homepageSections.length > 0 && homepageSections.map((section, index) => (
         <section 
           key={section.id} 
@@ -414,138 +544,8 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
         </section>
       )}
 
-      {/* Hero Slider Section */}
-      {websiteData?.websiteHeroSliderEnabled && heroSlides.length > 0 && (
-        <section className="py-12 bg-background">
-          <div className="container mx-auto px-4">
-            {(websiteData.websiteHeroSliderTitle || websiteData.websiteHeroSliderTitleEn) && (
-              <h2 className="text-2xl font-bold text-center mb-8">
-                {language === "en" 
-                  ? (websiteData.websiteHeroSliderTitleEn || websiteData.websiteHeroSliderTitle)
-                  : (websiteData.websiteHeroSliderTitle || websiteData.websiteHeroSliderTitleEn)
-                }
-              </h2>
-            )}
-            <div className="flex gap-4">
-              {/* Slider - Sol taraf */}
-              <div className="flex-1 relative">
-                <div className="relative overflow-hidden rounded-xl" style={{ minHeight: '320px' }}>
-                  {heroSlides.map((slide, idx) => (
-                    <div
-                      key={slide.id || idx}
-                      className={`absolute inset-0 transition-opacity duration-500 ${
-                        idx === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                      }`}
-                      style={{
-                        backgroundColor: slide.backgroundColor || '#3b82f6',
-                      }}
-                    >
-                      {slide.imageUrl ? (
-                        <img
-                          src={slide.imageUrl}
-                          alt={language === "en" ? slide.titleEn || slide.title : slide.title || slide.titleEn}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 bg-black/40" />
-                      <div className="relative z-10 h-full flex flex-col justify-center p-8 text-white">
-                        <h3 className="text-2xl md:text-3xl font-bold mb-3">
-                          {language === "en" ? (slide.titleEn || slide.title) : (slide.title || slide.titleEn)}
-                        </h3>
-                        <p className="text-sm md:text-base opacity-90 mb-4 max-w-md">
-                          {language === "en" ? (slide.contentEn || slide.content) : (slide.content || slide.contentEn)}
-                        </p>
-                        {slide.buttonUrl && slide.buttonText && (
-                          <div>
-                            <Link href={slide.buttonUrl}>
-                              <Button variant="secondary" size="sm">
-                                {language === "en" ? (slide.buttonTextEn || slide.buttonText) : (slide.buttonText || slide.buttonTextEn)}
-                                <ArrowRight className="w-4 h-4 ml-1" />
-                              </Button>
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Slider controls */}
-                  {heroSlides.length > 1 && (
-                    <>
-                      <button
-                        onClick={() => setCurrentSlide(prev => prev === 0 ? heroSlides.length - 1 : prev - 1)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors"
-                        data-testid="slider-prev"
-                      >
-                        <ChevronLeft className="w-5 h-5 text-white" />
-                      </button>
-                      <button
-                        onClick={() => setCurrentSlide(prev => prev === heroSlides.length - 1 ? 0 : prev + 1)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/40 rounded-full p-2 transition-colors"
-                        data-testid="slider-next"
-                      >
-                        <ChevronRight className="w-5 h-5 text-white" />
-                      </button>
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-                        {heroSlides.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setCurrentSlide(idx)}
-                            className={`w-2 h-2 rounded-full transition-colors ${
-                              idx === currentSlide ? 'bg-white' : 'bg-white/50'
-                            }`}
-                            data-testid={`slider-dot-${idx}`}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-              
-              {/* Promo Boxes - Sağ taraf */}
-              {promoBoxes.length > 0 && (
-                <div className="hidden lg:flex flex-col gap-4 w-80">
-                  {promoBoxes.slice(0, 2).map((box, idx) => (
-                    <div
-                      key={box.id || idx}
-                      className="relative overflow-hidden rounded-xl flex-1"
-                      style={{
-                        backgroundColor: box.backgroundColor || '#f97316',
-                        minHeight: '150px',
-                      }}
-                    >
-                      {box.imageUrl ? (
-                        <img
-                          src={box.imageUrl}
-                          alt={language === "en" ? box.titleEn || box.title : box.title || box.titleEn}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 bg-black/40" />
-                      <div className="relative z-10 h-full flex flex-col justify-center p-5 text-white">
-                        <h4 className="text-lg font-bold mb-1">
-                          {language === "en" ? (box.titleEn || box.title) : (box.title || box.titleEn)}
-                        </h4>
-                        <p className="text-xs opacity-90 mb-2 line-clamp-2">
-                          {language === "en" ? (box.contentEn || box.content) : (box.content || box.contentEn)}
-                        </p>
-                        {box.buttonUrl && box.buttonText && (
-                          <Link href={box.buttonUrl}>
-                            <Button variant="secondary" size="sm" className="text-xs">
-                              {language === "en" ? (box.buttonTextEn || box.buttonText) : (box.buttonText || box.buttonTextEn)}
-                            </Button>
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Hero Slider Section - Rendered based on position: after_hero */}
+      {sliderPosition === "after_hero" && renderSliderSection()}
 
       {/* Review Cards Section */}
       {websiteData?.websiteReviewCardsEnabled && websiteData.websiteReviewCards && websiteData.websiteReviewCards.length > 0 && (

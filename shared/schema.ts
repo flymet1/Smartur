@@ -84,6 +84,7 @@ export const tenants = pgTable("tenants", {
   websiteReviewCardsTitleEn: text("website_review_cards_title_en"), // Yorum kartları bölüm başlığı (EN)
   // === HERO SLIDER (Promosyon Slider) ===
   websiteHeroSliderEnabled: boolean("website_hero_slider_enabled").default(false), // Hero altında slider göster
+  websiteHeroSliderPosition: text("website_hero_slider_position").default("after_hero"), // Slider konumu: "top" | "after_hero" | "after_featured"
   websiteHeroSliderTitle: text("website_hero_slider_title"), // Slider bölüm başlığı (TR)
   websiteHeroSliderTitleEn: text("website_hero_slider_title_en"), // Slider bölüm başlığı (EN)
   websiteHeroSlides: text("website_hero_slides").default("[]"), // JSON array: [{imageUrl, backgroundColor, title, content, buttonText, buttonUrl}]
