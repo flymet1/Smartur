@@ -134,14 +134,12 @@ export default function PublicActivities() {
         description={t.activities.subtitle}
         language={language}
       />
-      <div className="py-8 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="bg-primary/5 rounded-2xl p-8">
-            <h1 className="text-3xl font-bold mb-2" data-testid="text-activities-title">
-              {t.activities.title}
-            </h1>
-            <p className="text-muted-foreground">{t.activities.subtitle}</p>
-          </div>
+      <div className="bg-primary/5 border-b">
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-activities-title">
+            {t.activities.title}
+          </h1>
+          <p className="text-muted-foreground">{t.activities.subtitle}</p>
         </div>
       </div>
 
