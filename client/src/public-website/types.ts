@@ -166,13 +166,16 @@ export interface PublicWebsiteData {
     buttonTextEn: string;
     buttonUrl: string;
   }>;
-  // Slogan Banner (purple gradient, above Promo Banner)
+  // Banner Order
+  websiteBannerOrder: string | null;
+  // Slogan Banner (gradient, after activities)
   websiteSloganBannerEnabled: boolean;
   websiteSloganBannerTitle: string | null;
   websiteSloganBannerTitleEn: string | null;
   websiteSloganBannerDescription: string | null;
   websiteSloganBannerDescriptionEn: string | null;
-  // Promo Banner (CTA Banner above Trust Badges)
+  websiteSloganBannerColor: string | null;
+  // Promo Banner (with image, after activities)
   websitePromoBannerEnabled: boolean;
   websitePromoBannerTitle: string | null;
   websitePromoBannerTitleEn: string | null;

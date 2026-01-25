@@ -5928,12 +5928,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
           websiteHeroSliderTitleEn: tenants.websiteHeroSliderTitleEn,
           websiteHeroSlides: tenants.websiteHeroSlides,
           websitePromoBoxes: tenants.websitePromoBoxes,
+          // Banner Order
+          websiteBannerOrder: tenants.websiteBannerOrder,
           // Slogan Banner
           websiteSloganBannerEnabled: tenants.websiteSloganBannerEnabled,
           websiteSloganBannerTitle: tenants.websiteSloganBannerTitle,
           websiteSloganBannerTitleEn: tenants.websiteSloganBannerTitleEn,
           websiteSloganBannerDescription: tenants.websiteSloganBannerDescription,
           websiteSloganBannerDescriptionEn: tenants.websiteSloganBannerDescriptionEn,
+          websiteSloganBannerColor: tenants.websiteSloganBannerColor,
           // Promo Banner
           websitePromoBannerEnabled: tenants.websitePromoBannerEnabled,
           websitePromoBannerTitle: tenants.websitePromoBannerTitle,
@@ -6017,12 +6020,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         websiteHeroSliderTitleEn,
         websiteHeroSlides,
         websitePromoBoxes,
+        // Banner Order
+        websiteBannerOrder,
         // Slogan Banner
         websiteSloganBannerEnabled,
         websiteSloganBannerTitle,
         websiteSloganBannerTitleEn,
         websiteSloganBannerDescription,
         websiteSloganBannerDescriptionEn,
+        websiteSloganBannerColor,
         // Promo Banner
         websitePromoBannerEnabled,
         websitePromoBannerTitle,
@@ -6089,12 +6095,15 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       if (websiteHeroSliderTitleEn !== undefined) updateData.websiteHeroSliderTitleEn = websiteHeroSliderTitleEn;
       if (websiteHeroSlides !== undefined) updateData.websiteHeroSlides = websiteHeroSlides;
       if (websitePromoBoxes !== undefined) updateData.websitePromoBoxes = websitePromoBoxes;
+      // Banner Order
+      if (websiteBannerOrder !== undefined) updateData.websiteBannerOrder = websiteBannerOrder;
       // Slogan Banner
       if (websiteSloganBannerEnabled !== undefined) updateData.websiteSloganBannerEnabled = websiteSloganBannerEnabled;
       if (websiteSloganBannerTitle !== undefined) updateData.websiteSloganBannerTitle = websiteSloganBannerTitle;
       if (websiteSloganBannerTitleEn !== undefined) updateData.websiteSloganBannerTitleEn = websiteSloganBannerTitleEn;
       if (websiteSloganBannerDescription !== undefined) updateData.websiteSloganBannerDescription = websiteSloganBannerDescription;
       if (websiteSloganBannerDescriptionEn !== undefined) updateData.websiteSloganBannerDescriptionEn = websiteSloganBannerDescriptionEn;
+      if (websiteSloganBannerColor !== undefined) updateData.websiteSloganBannerColor = websiteSloganBannerColor;
       // Promo Banner
       if (websitePromoBannerEnabled !== undefined) updateData.websitePromoBannerEnabled = websitePromoBannerEnabled;
       if (websitePromoBannerTitle !== undefined) updateData.websitePromoBannerTitle = websitePromoBannerTitle;

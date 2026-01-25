@@ -106,12 +106,15 @@ interface WebsiteSettings {
   websiteHeroSliderTitleEn: string | null;
   websiteHeroSlides: string | null;
   websitePromoBoxes: string | null;
+  // Banner Order
+  websiteBannerOrder: string | null;
   // Slogan Banner
   websiteSloganBannerEnabled: boolean;
   websiteSloganBannerTitle: string | null;
   websiteSloganBannerTitleEn: string | null;
   websiteSloganBannerDescription: string | null;
   websiteSloganBannerDescriptionEn: string | null;
+  websiteSloganBannerColor: string | null;
   // Promo Banner
   websitePromoBannerEnabled: boolean;
   websitePromoBannerTitle: string | null;
@@ -1747,6 +1750,49 @@ export default function WebSite() {
                       </CardContent>
                     </Card>
 
+                    {/* Banner Sıralaması */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Settings className="h-5 w-5" />
+                          Banner Sıralaması
+                        </CardTitle>
+                        <CardDescription>
+                          Slogan ve Promosyon banner'larının görüntülenme sırasını ayarlayın
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Banner Sırası</Label>
+                          <Select
+                            value={getValue("websiteBannerOrder") || "slogan_first"}
+                            onValueChange={(value) => updateField("websiteBannerOrder", value)}
+                          >
+                            <SelectTrigger data-testid="select-banner-order">
+                              <SelectValue placeholder="Banner sırası seçin" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="slogan_first">Önce Slogan Banner, Sonra Promosyon Banner</SelectItem>
+                              <SelectItem value="promo_first">Önce Promosyon Banner, Sonra Slogan Banner</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={() => saveMutation.mutate({
+                              websiteBannerOrder: formData.websiteBannerOrder ?? settings?.websiteBannerOrder ?? "slogan_first",
+                            })}
+                            disabled={saveMutation.isPending}
+                            className="gap-1"
+                            data-testid="button-save-banner-order"
+                          >
+                            <Save className="h-4 w-4" />
+                            Sıralama Kaydet
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     {/* Slogan Banner Ayarları */}
                     <Card>
                       <CardHeader>
@@ -1755,7 +1801,7 @@ export default function WebSite() {
                           Slogan Banner
                         </CardTitle>
                         <CardDescription>
-                          Anasayfada mor/pembe gradient arka planlı slogan alanı
+                          Anasayfada gradient arka planlı slogan alanı
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
@@ -1763,7 +1809,7 @@ export default function WebSite() {
                           <div className="space-y-0.5">
                             <Label>Slogan Banner Göster</Label>
                             <p className="text-sm text-muted-foreground">
-                              Mor/pembe gradient arka planlı slogan alanını göster
+                              Gradient arka planlı slogan alanını göster
                             </p>
                           </div>
                           <Switch
@@ -1773,6 +1819,44 @@ export default function WebSite() {
                             onCheckedChange={(checked) => updateField("websiteSloganBannerEnabled", checked)}
                             data-testid="switch-slogan-banner"
                           />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Banner Rengi</Label>
+                          <Select
+                            value={getValue("websiteSloganBannerColor") || "cyan_blue"}
+                            onValueChange={(value) => updateField("websiteSloganBannerColor", value)}
+                          >
+                            <SelectTrigger data-testid="select-slogan-color">
+                              <SelectValue placeholder="Renk seçin" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cyan_blue">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-4 rounded bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
+                                  Mavi / Cyan
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="purple_pink">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-4 rounded bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500" />
+                                  Mor / Pembe
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="green_teal">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-4 rounded bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500" />
+                                  Yeşil / Teal
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="orange_red">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-4 rounded bg-gradient-to-r from-orange-500 via-red-500 to-rose-500" />
+                                  Turuncu / Kırmızı
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         <div className="grid gap-4">
@@ -1826,6 +1910,7 @@ export default function WebSite() {
                               websiteSloganBannerTitleEn: formData.websiteSloganBannerTitleEn ?? settings?.websiteSloganBannerTitleEn ?? null,
                               websiteSloganBannerDescription: formData.websiteSloganBannerDescription ?? settings?.websiteSloganBannerDescription ?? null,
                               websiteSloganBannerDescriptionEn: formData.websiteSloganBannerDescriptionEn ?? settings?.websiteSloganBannerDescriptionEn ?? null,
+                              websiteSloganBannerColor: formData.websiteSloganBannerColor ?? settings?.websiteSloganBannerColor ?? "cyan_blue",
                             })}
                             disabled={saveMutation.isPending}
                             className="gap-1"
@@ -1954,15 +2039,17 @@ export default function WebSite() {
                             />
                           </div>
                           <div className="space-y-2 md:col-span-2">
-                            <Label>Banner Görseli URL</Label>
-                            <Input
-                              placeholder="https://example.com/banner-image.jpg"
-                              value={getValue("websitePromoBannerImage")}
-                              onChange={(e) => updateField("websitePromoBannerImage", e.target.value)}
-                              data-testid="input-promo-banner-image"
+                            <Label>Banner Görseli</Label>
+                            <ImageUpload
+                              value={getValue("websitePromoBannerImage") || ""}
+                              onChange={(url) => updateField("websitePromoBannerImage", url)}
+                              label="Banner Görseli"
+                              size="large"
+                              placeholder="Banner görseli yükleyin"
+                              recommendedSize="1200x400px (maks. 200KB, PNG/WebP)"
                             />
                             <p className="text-xs text-muted-foreground">
-                              Sağ tarafta görünecek görsel (isteğe bağlı)
+                              Arka plan görseli olarak görünecek (isteğe bağlı)
                             </p>
                           </div>
                         </div>
