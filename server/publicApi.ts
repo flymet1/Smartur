@@ -942,10 +942,10 @@ export function registerPublicApiRoutes(app: Express) {
         tourLanguages: JSON.parse(a.tourLanguages || '["tr"]'),
         includedItems: JSON.parse(a.includedItems || "[]"),
         excludedItems: JSON.parse(a.excludedItems || "[]"),
-        whatToBring: JSON.parse(a.whatToBring || "[]"),
-        whatToBringEn: JSON.parse(a.whatToBringEn || "[]"),
-        notAllowed: JSON.parse(a.notAllowed || "[]"),
-        notAllowedEn: JSON.parse(a.notAllowedEn || "[]"),
+        whatToBring: JSON.parse((a as any).whatToBring || "[]"),
+        whatToBringEn: JSON.parse((a as any).whatToBringEn || "[]"),
+        notAllowed: JSON.parse((a as any).notAllowed || "[]"),
+        notAllowedEn: JSON.parse((a as any).notAllowedEn || "[]"),
         categories: JSON.parse(a.categories || "[]"),
         highlights: JSON.parse(a.highlights || "[]"),
         importantInfoItems: JSON.parse(a.importantInfoItems || "[]"),
@@ -1019,10 +1019,10 @@ export function registerPublicApiRoutes(app: Express) {
         tourLanguages: JSON.parse(activity.tourLanguages || '["tr"]'),
         includedItems: JSON.parse(activity.includedItems || "[]"),
         excludedItems: JSON.parse(activity.excludedItems || "[]"),
-        whatToBring: JSON.parse(activity.whatToBring || "[]"),
-        whatToBringEn: JSON.parse(activity.whatToBringEn || "[]"),
-        notAllowed: JSON.parse(activity.notAllowed || "[]"),
-        notAllowedEn: JSON.parse(activity.notAllowedEn || "[]"),
+        whatToBring: JSON.parse((activity as any).whatToBring || "[]"),
+        whatToBringEn: JSON.parse((activity as any).whatToBringEn || "[]"),
+        notAllowed: JSON.parse((activity as any).notAllowed || "[]"),
+        notAllowedEn: JSON.parse((activity as any).notAllowedEn || "[]"),
         categories: JSON.parse(activity.categories || "[]"),
         highlights: JSON.parse(activity.highlights || "[]"),
         importantInfoItems: JSON.parse(activity.importantInfoItems || "[]"),
@@ -1468,16 +1468,24 @@ export function registerPublicApiRoutes(app: Express) {
         // Limit to maxItems
         sectionActivities = sectionActivities.slice(0, section.maxItems || 6);
         
-        // Format activities for public display
+        // Format activities for public display (same fields as main activities list)
         const formattedActivities = sectionActivities.map(activity => {
           let galleryImages: string[] = [];
           let categories: string[] = [];
+          let highlights: string[] = [];
+          let tourLanguages: string[] = [];
           try {
             galleryImages = activity.galleryImages ? JSON.parse(activity.galleryImages) : [];
           } catch (e) { galleryImages = []; }
           try {
             categories = activity.categories ? JSON.parse(activity.categories) : [];
           } catch (e) { categories = []; }
+          try {
+            highlights = activity.highlights ? JSON.parse(activity.highlights) : [];
+          } catch (e) { highlights = []; }
+          try {
+            tourLanguages = activity.tourLanguages ? JSON.parse(activity.tourLanguages) : ["tr"];
+          } catch (e) { tourLanguages = ["tr"]; }
           
           return {
             id: activity.id,
@@ -1490,6 +1498,11 @@ export function registerPublicApiRoutes(app: Express) {
             galleryImages,
             region: activity.region,
             categories,
+            highlights,
+            tourLanguages,
+            difficulty: activity.difficulty,
+            maxParticipants: activity.maxParticipants,
+            hasFreeHotelTransfer: activity.hasFreeHotelTransfer,
           };
         });
         
