@@ -1139,9 +1139,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 <div className="space-y-2">
                   <Label>Galeri Görselleri</Label>
                   <p className="text-xs text-muted-foreground mb-2">Aktivite detay sayfasında gösterilecek ek görseller (max 6 adet)</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="space-y-4">
                     {galleryImages.map((url, index) => (
-                      <div key={index} className="relative">
+                      <div key={index} className="p-3 border rounded-lg bg-muted/30">
                         <ImageUpload
                           value={url}
                           onChange={(newUrl) => {
@@ -1160,17 +1160,19 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       </div>
                     ))}
                     {galleryImages.length < 6 && (
-                      <ImageUpload
-                        value=""
-                        onChange={(newUrl) => {
-                          if (newUrl) {
-                            setGalleryImages([...galleryImages, newUrl]);
-                          }
-                        }}
-                        label="Yeni Görsel Ekle"
-                        size="large"
-                        recommendedSize="800x600px"
-                      />
+                      <div className="p-3 border rounded-lg border-dashed bg-muted/20">
+                        <ImageUpload
+                          value=""
+                          onChange={(newUrl) => {
+                            if (newUrl) {
+                              setGalleryImages([...galleryImages, newUrl]);
+                            }
+                          }}
+                          label="Yeni Görsel Ekle"
+                          size="large"
+                          recommendedSize="800x600px"
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
