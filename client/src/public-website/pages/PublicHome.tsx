@@ -350,128 +350,213 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       />
       
 
-      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70" />
+      {/* Hero Section - Fullscreen or Compact based on websiteHeroStyle */}
+      {(websiteData?.websiteHeroStyle || "fullscreen") === "fullscreen" ? (
+        <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${heroImage})` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70" />
 
-        <div className="relative z-10 container mx-auto px-4 text-center text-white">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-lg leading-tight" data-testid="text-hero-title">
-              {websiteData?.websiteTitle || t.home.heroTitle}
-            </h1>
-            <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-white/90 drop-shadow" data-testid="text-hero-subtitle">
-              {websiteData?.websiteDescription || t.home.heroSubtitle}
-            </p>
+          <div className="relative z-10 container mx-auto px-4 text-center text-white">
+            <div className="max-w-4xl mx-auto">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-lg leading-tight" data-testid="text-hero-title">
+                {websiteData?.websiteTitle || t.home.heroTitle}
+              </h1>
+              <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 text-white/90 drop-shadow" data-testid="text-hero-subtitle">
+                {websiteData?.websiteDescription || t.home.heroSubtitle}
+              </p>
 
-            <div className="max-w-4xl mx-auto mb-8">
-              <div className="flex flex-col md:flex-row gap-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
-                <Select value={selectedActivity} onValueChange={setSelectedActivity}>
-                  <SelectTrigger className="flex-1 h-10 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-activity">
-                    <MapPin className="h-4 w-4 mr-2 text-white/70" />
-                    <SelectValue placeholder={t.home.selectActivity} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t.home.allActivities}</SelectItem>
-                    {activities?.map((activity) => (
-                      <SelectItem key={activity.id} value={String(activity.id)}>
-                        {activity.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="max-w-4xl mx-auto mb-8">
+                <div className="flex flex-col md:flex-row gap-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+                  <Select value={selectedActivity} onValueChange={setSelectedActivity}>
+                    <SelectTrigger className="flex-1 h-10 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-activity">
+                      <MapPin className="h-4 w-4 mr-2 text-white/70" />
+                      <SelectValue placeholder={t.home.selectActivity} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.home.allActivities}</SelectItem>
+                      {activities?.map((activity) => (
+                        <SelectItem key={activity.id} value={String(activity.id)}>
+                          {activity.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                  <SelectTrigger className="flex-1 h-10 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-region">
-                    <MapPin className="h-4 w-4 mr-2 text-white/70" />
-                    <SelectValue placeholder={t.home.selectRegion} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t.home.allRegions}</SelectItem>
-                    {regions.map((region) => (
-                      <SelectItem key={region} value={region}>
-                        {region}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                    <SelectTrigger className="flex-1 h-10 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-region">
+                      <MapPin className="h-4 w-4 mr-2 text-white/70" />
+                      <SelectValue placeholder={t.home.selectRegion} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t.home.allRegions}</SelectItem>
+                      {regions.map((region) => (
+                        <SelectItem key={region} value={region}>
+                          {region}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="flex-1 h-10 justify-start bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white"
-                      data-testid="button-date-picker"
-                    >
-                      <Calendar className="h-4 w-4 mr-2 text-white/70" />
-                      {selectedDate ? format(selectedDate, "dd MMM yyyy", { locale: dateLocale }) : t.home.selectDate}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      locale={dateLocale}
-                      disabled={(date) => date < new Date()}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-10 justify-start bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white"
+                        data-testid="button-date-picker"
+                      >
+                        <Calendar className="h-4 w-4 mr-2 text-white/70" />
+                        {selectedDate ? format(selectedDate, "dd MMM yyyy", { locale: dateLocale }) : t.home.selectDate}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        locale={dateLocale}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
 
-                <Button onClick={handleSearch} className="h-10 md:w-auto w-full" data-testid="button-search">
-                  <Search className="h-4 w-4 mr-2" />
-                  {t.common.search}
-                </Button>
+                  <Button onClick={handleSearch} className="h-10 md:w-auto w-full" data-testid="button-search">
+                    <Search className="h-4 w-4 mr-2" />
+                    {t.common.search}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-8 mt-12">
+                {(websiteData?.websiteHeroStats && Array.isArray(websiteData.websiteHeroStats) && websiteData.websiteHeroStats.length > 0) ? (
+                  websiteData.websiteHeroStats.map((stat: any, index: number) => {
+                    const IconComponent = stat.icon === "star" ? Star : 
+                                          stat.icon === "clock" ? Clock : 
+                                          stat.icon === "users" ? Users : 
+                                          stat.icon === "calendar" ? Calendar : 
+                                          stat.icon === "shield" ? Shield :
+                                          stat.icon === "award" ? Award :
+                                          stat.icon === "thumbsup" ? ThumbsUp :
+                                          MapPin;
+                    const label = language === "en" && stat.labelEn ? stat.labelEn : stat.label;
+                    return (
+                      <div key={index} className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                        <IconComponent className="h-5 w-5 text-primary" />
+                        <span className="font-medium">{stat.value} {label}</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      <span className="font-medium">{activities?.length || 0}+ {t.common.activities}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      <span className="font-medium">7/24 {t.home.support}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                      <Users className="h-5 w-5 text-primary" />
+                      <span className="font-medium">10K+ {t.activities.person}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+                      <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                      <span className="font-medium">4.9</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
+          </div>
 
-            <div className="flex flex-wrap justify-center gap-8 mt-12">
-              {(websiteData?.websiteHeroStats && Array.isArray(websiteData.websiteHeroStats) && websiteData.websiteHeroStats.length > 0) ? (
-                websiteData.websiteHeroStats.map((stat: any, index: number) => {
-                  const IconComponent = stat.icon === "star" ? Star : 
-                                        stat.icon === "clock" ? Clock : 
-                                        stat.icon === "users" ? Users : 
-                                        stat.icon === "calendar" ? Calendar : 
-                                        stat.icon === "shield" ? Shield :
-                                        stat.icon === "award" ? Award :
-                                        stat.icon === "thumbsup" ? ThumbsUp :
-                                        MapPin;
-                  const label = language === "en" && stat.labelEn ? stat.labelEn : stat.label;
-                  return (
-                    <div key={index} className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                      <IconComponent className="h-5 w-5 text-primary" />
-                      <span className="font-medium">{stat.value} {label}</span>
-                    </div>
-                  );
-                })
-              ) : (
-                <>
-                  <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    <span className="font-medium">{activities?.length || 0}+ {t.common.activities}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    <span className="font-medium">7/24 {t.home.support}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                    <Users className="h-5 w-5 text-primary" />
-                    <span className="font-medium">10K+ {t.activities.person}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-white/90 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
-                    <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                    <span className="font-medium">4.9</span>
-                  </div>
-                </>
+        </section>
+      ) : (
+        <section className="py-8 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="relative overflow-hidden rounded-2xl min-h-[400px] md:min-h-[480px]">
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${heroImage})` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+              
+              {/* Fiyat Etiketi */}
+              {websiteData?.websitePromoBannerPriceText && (
+                <div className="absolute top-6 right-6 bg-white rounded-xl px-5 py-3 shadow-lg text-center z-20">
+                  <p className="text-lg md:text-xl font-bold text-purple-600">
+                    {language === "en" && websiteData?.websitePromoBannerPriceTextEn
+                      ? websiteData.websitePromoBannerPriceTextEn
+                      : websiteData.websitePromoBannerPriceText}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {language === "en" ? "starting prices" : "başlayan fiyatlar"}
+                  </p>
+                </div>
               )}
+
+              <div className="relative z-10 flex flex-col justify-center h-full min-h-[400px] md:min-h-[480px] p-8 md:p-12">
+                <div className="max-w-xl">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight" data-testid="text-hero-title">
+                    {websiteData?.websiteTitle || t.home.heroTitle}
+                  </h1>
+                  <p className="text-white/90 mb-6 text-sm md:text-base leading-relaxed" data-testid="text-hero-subtitle">
+                    {websiteData?.websiteDescription || t.home.heroSubtitle}
+                  </p>
+                  
+                  {/* Arama Alanları */}
+                  <div className="flex flex-col md:flex-row gap-3 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 mb-4">
+                    <Select value={selectedActivity} onValueChange={setSelectedActivity}>
+                      <SelectTrigger className="flex-1 h-10 bg-white/20 border-white/30 text-white [&>span]:text-white/90 [&_svg]:text-white/70" data-testid="select-activity-compact">
+                        <MapPin className="h-4 w-4 mr-2 text-white/70" />
+                        <SelectValue placeholder={t.home.selectActivity} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t.home.allActivities}</SelectItem>
+                        {activities?.map((activity) => (
+                          <SelectItem key={activity.id} value={String(activity.id)}>
+                            {activity.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="flex-1 h-10 justify-start bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white"
+                          data-testid="button-date-picker-compact"
+                        >
+                          <Calendar className="h-4 w-4 mr-2 text-white/70" />
+                          {selectedDate ? format(selectedDate, "dd MMM yyyy", { locale: dateLocale }) : t.home.selectDate}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          locale={dateLocale}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <Button onClick={handleSearch} className="w-full md:w-auto" data-testid="button-search-compact">
+                    {t.common.search}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-
-      </section>
+        </section>
+      )}
 
       {/* Hero Slider Section - Rendered based on position: after_hero */}
       {sliderPosition === "after_hero" && renderSliderSection()}

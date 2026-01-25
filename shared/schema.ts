@@ -73,6 +73,8 @@ export const tenants = pgTable("tenants", {
   // === WEB SİTESİ ŞABLON SİSTEMİ ===
   websiteTemplateKey: text("website_template_key").default("modern"), // classic, modern, premium
   websiteTemplateSettings: text("website_template_settings").default("{}"), // JSON: template-specific settings (heroSlides, testimonials, trustBadges, featuredCategories)
+  // === HERO STİLİ ===
+  websiteHeroStyle: text("website_hero_style").default("fullscreen"), // fullscreen, compact
   // === HERO İSTATİSTİKLERİ ===
   websiteHeroStats: text("website_hero_stats").default('[]'), // JSON array: [{icon, value, label, labelEn}]
   // === ANA SAYFA BÖLÜM AYARLARI ===
