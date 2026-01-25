@@ -611,7 +611,7 @@ export default function PublicActivityDetail() {
             ) : null}
 
             {/* Getirmeniz Gerekenler */}
-            {((language === "en" ? activity.whatToBringEn : activity.whatToBring) || []).length > 0 && (
+            {(activity.whatToBring || []).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -621,7 +621,7 @@ export default function PublicActivityDetail() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {(language === "en" ? activity.whatToBringEn : activity.whatToBring).map((item, idx) => (
+                    {activity.whatToBring.map((item, idx) => (
                       <li key={idx} className="flex items-start gap-3 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
                         <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                         <span className="text-sm">{item}</span>
@@ -633,7 +633,7 @@ export default function PublicActivityDetail() {
             )}
 
             {/* İzin Verilmeyenler */}
-            {((language === "en" ? activity.notAllowedEn : activity.notAllowed) || []).length > 0 && (
+            {(activity.notAllowed || []).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -643,7 +643,7 @@ export default function PublicActivityDetail() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {(language === "en" ? activity.notAllowedEn : activity.notAllowed).map((item, idx) => (
+                    {activity.notAllowed.map((item, idx) => (
                       <li key={idx} className="flex items-start gap-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
                         <X className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                         <span className="text-sm">{item}</span>

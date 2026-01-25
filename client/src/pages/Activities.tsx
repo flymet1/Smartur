@@ -1096,7 +1096,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="whatToBring">Getirmeniz Gerekenler (TR)</Label>
+                    <Label htmlFor="whatToBring">Getirmeniz Gerekenler</Label>
                     <Textarea 
                       id="whatToBring"
                       value={whatToBring}
@@ -1105,25 +1105,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       rows={4}
                       data-testid="input-what-to-bring"
                     />
-                    <p className="text-xs text-muted-foreground">Aktivite detayında liste olarak gösterilir.</p>
+                    <p className="text-xs text-muted-foreground">İngilizce site için otomatik çevrilir.</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="whatToBringEn">What to Bring (EN)</Label>
-                    <Textarea 
-                      id="whatToBringEn"
-                      value={whatToBringEn}
-                      onChange={(e) => setWhatToBringEn(e.target.value)}
-                      placeholder="One item per line. Example:&#10;Sunscreen&#10;Hat&#10;Comfortable shoes&#10;Towel"
-                      rows={4}
-                      data-testid="input-what-to-bring-en"
-                    />
-                    <p className="text-xs text-muted-foreground">Displayed as list on English activity page.</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="notAllowed">İzin Verilmeyenler (TR)</Label>
+                    <Label htmlFor="notAllowed">İzin Verilmeyenler</Label>
                     <Textarea 
                       id="notAllowed"
                       value={notAllowed}
@@ -1132,19 +1117,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       rows={4}
                       data-testid="input-not-allowed"
                     />
-                    <p className="text-xs text-muted-foreground">Aktivite detayında liste olarak gösterilir.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="notAllowedEn">Not Allowed (EN)</Label>
-                    <Textarea 
-                      id="notAllowedEn"
-                      value={notAllowedEn}
-                      onChange={(e) => setNotAllowedEn(e.target.value)}
-                      placeholder="One item per line. Example:&#10;Drone&#10;Pets&#10;Alcohol&#10;Smoking"
-                      rows={4}
-                      data-testid="input-not-allowed-en"
-                    />
-                    <p className="text-xs text-muted-foreground">Displayed as list on English activity page.</p>
+                    <p className="text-xs text-muted-foreground">İngilizce site için otomatik çevrilir.</p>
                   </div>
                 </div>
 
