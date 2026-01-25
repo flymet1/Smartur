@@ -262,14 +262,16 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       />
       
 
-      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70" />
+      <section className="py-8 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="relative min-h-[60vh] flex items-center justify-center overflow-hidden rounded-2xl">
+            <div
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: `url(${heroImage})` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70" />
 
-        <div className="relative z-10 container mx-auto px-4 text-center text-white">
+            <div className="relative z-10 px-4 text-center text-white">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 drop-shadow-lg leading-tight" data-testid="text-hero-title">
               {websiteData?.websiteTitle || t.home.heroTitle}
@@ -379,6 +381,8 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                   </div>
                 </>
               )}
+            </div>
+          </div>
             </div>
           </div>
         </div>
