@@ -27,6 +27,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { Activity } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FaqEditor, FaqItem, parseFaq, stringifyFaq } from "@/components/FaqEditor";
 import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimitDialog";
