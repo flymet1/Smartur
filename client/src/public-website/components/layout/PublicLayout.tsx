@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 import { PublicHeader } from "./PublicHeader";
 import { PublicFooter } from "./PublicFooter";
 import { FloatingWhatsApp } from "../shared/FloatingWhatsApp";
@@ -10,6 +12,12 @@ interface PublicLayoutProps {
 }
 
 export function PublicLayout({ children, data }: PublicLayoutProps) {
+  const [location] = useLocation();
+  
+  // Sayfa değiştiğinde en üste scroll
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
   // Dil seçici görünmesi için en az 2 dil gerekli
   const configuredLanguages = data?.websiteLanguages as Language[] | undefined;
   const availableLanguages = (configuredLanguages && configuredLanguages.length >= 2) 
