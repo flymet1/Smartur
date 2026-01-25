@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Phone, Mail, CreditCard, Shield, Award, Globe, ChevronDown } from "lucide-react";
-import { FaFacebook, FaInstagram, FaTwitter, FaYoutube, FaWhatsapp } from "react-icons/fa";
+import { FaFacebook, FaInstagram, FaTwitter, FaYoutube } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -175,18 +175,6 @@ export function PublicFooter({ data }: PublicFooterProps) {
               )}
             </ul>
             
-            {data?.websiteWhatsappNumber && (
-              <a
-                href={`https://wa.me/${data.websiteWhatsappNumber.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-4 px-4 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-md"
-                data-testid="link-footer-whatsapp"
-              >
-                <FaWhatsapp className="h-5 w-5" />
-                <span className="font-medium">{t.footer.whatsapp}</span>
-              </a>
-            )}
           </div>
 
           <div>
