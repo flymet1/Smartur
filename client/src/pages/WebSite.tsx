@@ -1578,116 +1578,137 @@ export default function WebSite() {
                               Henüz promosyon kutusu eklenmemiş
                             </p>
                           ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-2">
                               {displayedPromoBoxes.map((box, index) => (
-                                <Card key={box.id || index} className="p-4">
-                                  <div className="flex justify-between items-start mb-3">
-                                    <span className="text-sm font-medium text-muted-foreground">Kutu {index + 1}</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => removePromoBox(index)}
-                                      className="text-destructive hover:text-destructive h-8 w-8"
-                                      data-testid={`button-remove-promo-${index}`}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <ImageUpload
-                                        label="Promo Görseli"
-                                        value={box.imageUrl}
-                                        onChange={(url) => updatePromoBox(index, "imageUrl", url)}
-                                        size="large"
-                                        recommendedSize="400x300px"
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Arka Plan Rengi</Label>
-                                      <div className="flex gap-2">
-                                        <Input
-                                          type="color"
-                                          value={box.backgroundColor || "#f97316"}
-                                          onChange={(e) => updatePromoBox(index, "backgroundColor", e.target.value)}
-                                          className="w-12 h-9 p-1 cursor-pointer"
-                                          data-testid={`input-promo-color-${index}`}
-                                        />
-                                        <Input
-                                          placeholder="#f97316"
-                                          value={box.backgroundColor}
-                                          onChange={(e) => updatePromoBox(index, "backgroundColor", e.target.value)}
-                                          className="flex-1"
-                                        />
+                                <Collapsible key={box.id || index} defaultOpen={false}>
+                                  <Card className="overflow-hidden">
+                                    <CollapsibleTrigger asChild>
+                                      <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+                                          <div className="flex items-center gap-2">
+                                            {box.imageUrl && (
+                                              <img src={box.imageUrl} alt="" className="w-8 h-8 rounded object-cover" />
+                                            )}
+                                            <div>
+                                              <span className="text-sm font-medium">Kutu {index + 1}</span>
+                                              {box.title && (
+                                                <span className="text-xs text-muted-foreground ml-2">- {box.title}</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={(e) => { e.stopPropagation(); removePromoBox(index); }}
+                                          className="text-destructive hover:text-destructive h-8 w-8"
+                                          data-testid={`button-remove-promo-${index}`}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
                                       </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Başlık (TR)</Label>
-                                      <Input
-                                        placeholder="Özel Fırsat"
-                                        value={box.title}
-                                        onChange={(e) => updatePromoBox(index, "title", e.target.value)}
-                                        data-testid={`input-promo-title-${index}`}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Başlık (EN)</Label>
-                                      <Input
-                                        placeholder="Special Deal"
-                                        value={box.titleEn}
-                                        onChange={(e) => updatePromoBox(index, "titleEn", e.target.value)}
-                                        data-testid={`input-promo-title-en-${index}`}
-                                      />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                      <Label className="text-xs">İçerik (TR)</Label>
-                                      <Textarea
-                                        placeholder="Açıklama..."
-                                        value={box.content}
-                                        onChange={(e) => updatePromoBox(index, "content", e.target.value)}
-                                        rows={2}
-                                        data-testid={`input-promo-content-${index}`}
-                                      />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                      <Label className="text-xs">İçerik (EN)</Label>
-                                      <Textarea
-                                        placeholder="Description..."
-                                        value={box.contentEn}
-                                        onChange={(e) => updatePromoBox(index, "contentEn", e.target.value)}
-                                        rows={2}
-                                        data-testid={`input-promo-content-en-${index}`}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Buton Metni (TR)</Label>
-                                      <Input
-                                        placeholder="İncele"
-                                        value={box.buttonText}
-                                        onChange={(e) => updatePromoBox(index, "buttonText", e.target.value)}
-                                        data-testid={`input-promo-button-${index}`}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Buton Metni (EN)</Label>
-                                      <Input
-                                        placeholder="View"
-                                        value={box.buttonTextEn}
-                                        onChange={(e) => updatePromoBox(index, "buttonTextEn", e.target.value)}
-                                        data-testid={`input-promo-button-en-${index}`}
-                                      />
-                                    </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                      <Label className="text-xs">Buton URL</Label>
-                                      <Input
-                                        placeholder="/aktiviteler veya https://..."
-                                        value={box.buttonUrl}
-                                        onChange={(e) => updatePromoBox(index, "buttonUrl", e.target.value)}
-                                        data-testid={`input-promo-url-${index}`}
-                                      />
-                                    </div>
-                                  </div>
-                                </Card>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                      <div className="p-4 pt-0 border-t">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                                          <div className="space-y-2">
+                                            <ImageUpload
+                                              label="Promo Görseli"
+                                              value={box.imageUrl}
+                                              onChange={(url) => updatePromoBox(index, "imageUrl", url)}
+                                              size="large"
+                                              recommendedSize="400x300px"
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label className="text-xs">Arka Plan Rengi</Label>
+                                            <div className="flex gap-2">
+                                              <Input
+                                                type="color"
+                                                value={box.backgroundColor || "#f97316"}
+                                                onChange={(e) => updatePromoBox(index, "backgroundColor", e.target.value)}
+                                                className="w-12 h-9 p-1 cursor-pointer"
+                                                data-testid={`input-promo-color-${index}`}
+                                              />
+                                              <Input
+                                                placeholder="#f97316"
+                                                value={box.backgroundColor}
+                                                onChange={(e) => updatePromoBox(index, "backgroundColor", e.target.value)}
+                                                className="flex-1"
+                                              />
+                                            </div>
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label className="text-xs">Başlık (TR)</Label>
+                                            <Input
+                                              placeholder="Özel Fırsat"
+                                              value={box.title}
+                                              onChange={(e) => updatePromoBox(index, "title", e.target.value)}
+                                              data-testid={`input-promo-title-${index}`}
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label className="text-xs">Başlık (EN)</Label>
+                                            <Input
+                                              placeholder="Special Deal"
+                                              value={box.titleEn}
+                                              onChange={(e) => updatePromoBox(index, "titleEn", e.target.value)}
+                                              data-testid={`input-promo-title-en-${index}`}
+                                            />
+                                          </div>
+                                          <div className="space-y-2 md:col-span-2">
+                                            <Label className="text-xs">İçerik (TR)</Label>
+                                            <Textarea
+                                              placeholder="Açıklama..."
+                                              value={box.content}
+                                              onChange={(e) => updatePromoBox(index, "content", e.target.value)}
+                                              rows={2}
+                                              data-testid={`input-promo-content-${index}`}
+                                            />
+                                          </div>
+                                          <div className="space-y-2 md:col-span-2">
+                                            <Label className="text-xs">İçerik (EN)</Label>
+                                            <Textarea
+                                              placeholder="Description..."
+                                              value={box.contentEn}
+                                              onChange={(e) => updatePromoBox(index, "contentEn", e.target.value)}
+                                              rows={2}
+                                              data-testid={`input-promo-content-en-${index}`}
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label className="text-xs">Buton Metni (TR)</Label>
+                                            <Input
+                                              placeholder="İncele"
+                                              value={box.buttonText}
+                                              onChange={(e) => updatePromoBox(index, "buttonText", e.target.value)}
+                                              data-testid={`input-promo-button-${index}`}
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label className="text-xs">Buton Metni (EN)</Label>
+                                            <Input
+                                              placeholder="View"
+                                              value={box.buttonTextEn}
+                                              onChange={(e) => updatePromoBox(index, "buttonTextEn", e.target.value)}
+                                              data-testid={`input-promo-button-en-${index}`}
+                                            />
+                                          </div>
+                                          <div className="space-y-2 md:col-span-2">
+                                            <Label className="text-xs">Buton URL</Label>
+                                            <Input
+                                              placeholder="/aktiviteler veya https://..."
+                                              value={box.buttonUrl}
+                                              onChange={(e) => updatePromoBox(index, "buttonUrl", e.target.value)}
+                                              data-testid={`input-promo-url-${index}`}
+                                            />
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </CollapsibleContent>
+                                  </Card>
+                                </Collapsible>
                               ))}
                             </div>
                           )}
