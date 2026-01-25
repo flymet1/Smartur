@@ -180,6 +180,9 @@ export const activities = pgTable("activities", {
   // === AKTİVİTE YORUM KARTLARI ===
   reviewCards: text("review_cards").default("[]"), // JSON array: [{platform, rating, reviewCount, url}]
   reviewCardsEnabled: boolean("review_cards_enabled").default(false), // Aktivite detayda gösterilsin mi?
+  // === TUR PROGRAMI ===
+  itinerary: text("itinerary").default("[]"), // JSON array: [{time, title, description}] - Tur programı adımları
+  itineraryEn: text("itinerary_en").default("[]"), // JSON array: Tur programı (İngilizce)
 });
 
 export const capacity = pgTable("capacity", {

@@ -364,6 +364,19 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     return [];
   });
   const [reviewCardsEnabled, setReviewCardsEnabled] = useState(activity ? (activity as any).reviewCardsEnabled === true : false);
+  
+  // Tur programı
+  const [itinerary, setItinerary] = useState<Array<{time: string; title: string; description: string}>>(() => {
+    if (activity && (activity as any).itinerary) {
+      try {
+        return JSON.parse((activity as any).itinerary);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  
   const [tourLanguages, setTourLanguages] = useState(() => {
     if (activity && (activity as any).tourLanguages) {
       try {
@@ -625,6 +638,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       notAllowedEn: JSON.stringify(notAllowedEn.split('\n').map(s => s.trim()).filter(Boolean)),
       reviewCards: JSON.stringify(reviewCards),
       reviewCardsEnabled: reviewCardsEnabled,
+      // Tur Programı
+      itinerary: JSON.stringify(itinerary),
       // Ödeme Seçenekleri
       requiresDeposit: requiresDeposit,
       depositType: depositType,
@@ -1504,6 +1519,88 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       >
                         <Plus className="w-4 h-4 mr-1" /> Yorum Kartı Ekle
                       </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Tur Programı Bölümü */}
+                <Separator className="my-4" />
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-base">Tur Programı</Label>
+                      <p className="text-xs text-muted-foreground">Adım adım tur programını tanımlayın (saat ve açıklama)</p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setItinerary([...itinerary, { time: '', title: '', description: '' }])}
+                      data-testid="button-add-itinerary"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Adım Ekle
+                    </Button>
+                  </div>
+                  {itinerary.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Henüz tur programı eklenmemiş
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {itinerary.map((step, index) => (
+                        <div key={index} className="flex gap-3 items-start p-3 bg-background rounded-lg border">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="09:00"
+                                value={step.time}
+                                onChange={(e) => {
+                                  const newItinerary = [...itinerary];
+                                  newItinerary[index].time = e.target.value;
+                                  setItinerary(newItinerary);
+                                }}
+                                className="w-24"
+                                data-testid={`input-itinerary-time-${index}`}
+                              />
+                              <Input
+                                placeholder="Başlık (ör: Otel Transferi)"
+                                value={step.title}
+                                onChange={(e) => {
+                                  const newItinerary = [...itinerary];
+                                  newItinerary[index].title = e.target.value;
+                                  setItinerary(newItinerary);
+                                }}
+                                className="flex-1"
+                                data-testid={`input-itinerary-title-${index}`}
+                              />
+                            </div>
+                            <Textarea
+                              placeholder="Açıklama (opsiyonel)"
+                              value={step.description}
+                              onChange={(e) => {
+                                const newItinerary = [...itinerary];
+                                newItinerary[index].description = e.target.value;
+                                setItinerary(newItinerary);
+                              }}
+                              rows={2}
+                              data-testid={`input-itinerary-desc-${index}`}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setItinerary(itinerary.filter((_, i) => i !== index))}
+                            className="text-destructive hover:text-destructive h-8 w-8 flex-shrink-0"
+                            data-testid={`button-remove-itinerary-${index}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
