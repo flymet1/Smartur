@@ -372,6 +372,9 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
 
       </section>
 
+      {/* Hero Slider Section - Rendered based on position: after_hero */}
+      {sliderPosition === "after_hero" && renderSliderSection()}
+
       <TrustBadges />
 
 
@@ -568,9 +571,6 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
           </div>
         </section>
       )}
-
-      {/* Hero Slider Section - Rendered based on position: after_hero */}
-      {sliderPosition === "after_hero" && renderSliderSection()}
 
       {/* Review Cards Section */}
       {websiteData?.websiteReviewCardsEnabled && websiteData.websiteReviewCards && websiteData.websiteReviewCards.length > 0 && (
