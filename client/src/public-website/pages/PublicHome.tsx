@@ -448,11 +448,12 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       {/* Hero Slider Section - Rendered based on position: after_featured */}
       {sliderPosition === "after_featured" && renderSliderSection()}
 
-      {/* Slogan Banner - Purple gradient, after activities */}
+      {/* Slogan Banner - Soft blue/cyan gradient, after activities */}
       {websiteData?.websiteSloganBannerEnabled && (
-        <section className="py-10 md:py-14 bg-gradient-to-r from-violet-700 via-purple-600 to-fuchsia-500">
+        <section className="py-8 bg-background">
           <div className="container mx-auto px-4">
-            <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white leading-snug" data-testid="text-slogan-title">
+            <div className="bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 rounded-2xl py-10 md:py-14 px-6 md:px-10">
+              <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white leading-snug" data-testid="text-slogan-title">
               {language === "en" && websiteData?.websiteSloganBannerTitleEn
                 ? websiteData.websiteSloganBannerTitleEn
                 : websiteData?.websiteSloganBannerTitle || ""}
@@ -464,6 +465,7 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                 </span>
               )}
             </h2>
+            </div>
           </div>
         </section>
       )}
