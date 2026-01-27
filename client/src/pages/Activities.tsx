@@ -930,7 +930,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmationMessage">Rezervasyon Onay Mesajı</Label>
+                  <Label htmlFor="confirmationMessage">WhatsApp Bot Onay Mesajı</Label>
+                  <p className="text-xs text-muted-foreground mb-1">WhatsApp bot, bu aktivite hakkında müşteriye bilgi verirken bu mesajı kullanır.</p>
                   <Textarea 
                     id="confirmationMessage" 
                     name="confirmationMessage" 

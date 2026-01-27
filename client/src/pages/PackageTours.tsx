@@ -441,7 +441,8 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
           
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <Label>Onay Mesajı</Label>
+              <Label>WhatsApp Bot Onay Mesajı</Label>
+              <p className="text-xs text-muted-foreground mb-1">WhatsApp bot, bu paket tur hakkında müşteriye bilgi verirken bu mesajı kullanır.</p>
               <Textarea 
                 value={form.confirmationMessage}
                 onChange={e => setForm({ ...form, confirmationMessage: e.target.value })}
@@ -449,7 +450,7 @@ function PackageTourDialog({ tour, trigger }: { tour?: PackageTour; trigger?: Re
                 data-testid="input-confirmation-message"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Kullanilabilir degiskenler: {'{isim}'}, {'{tarih}'}, {'{saat}'}, {'{telefon}'}, {'{takip_linki}'}
+                Kullanılabilir değişkenler: {'{isim}'}, {'{tarih}'}, {'{saat}'}, {'{telefon}'}, {'{takip_linki}'}
               </p>
             </div>
             
