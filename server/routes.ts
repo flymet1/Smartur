@@ -359,10 +359,10 @@ async function checkPlanForWrite(tenantId?: number): Promise<{ allowed: boolean;
   return { allowed: true, message: "OK", status: verification.status };
 }
 
-// Default bot rules (used when no custom rules are defined in database) - 14 Madde
+// Default bot rules (used when no custom rules are defined in database) - 13 Madde
 // These rules are ONLY for normal customers. Partner/Viewer rules are in persona-specific prompts.
 const DEFAULT_BOT_RULES = `
-=== BOT KURALLARI (14 MADDE) ===
+=== BOT KURALLARI (13 MADDE) ===
 ⚠️ ÖNEMLİ: Bu kurallar SADECE normal müşteriler için geçerlidir. Partner veya İzleyici ise yukarıdaki PERSONA KURALLARINI uygula!
 
 1. ETKİNLİK BİLGİSİ: Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
@@ -375,7 +375,7 @@ const DEFAULT_BOT_RULES = `
 
 5. ÖZEL TALEPLER: Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
 
-6. REZERVASYON SORGUSU: Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.
+6. REZERVASYON SORGUSU: Mevcut rezervasyonu olan müşteri bilgi isterse, kendilerine gönderilen takip linkini kullanmalarını söyle. Takip linki yoksa veya erişemedilerse yetkili yönlendirmesi yap.
 
 7. TRANSFER: Aktivite bilgilerinde "Ücretsiz Otel Transferi" ve "Bölgeler" kısımlarını kontrol et. Hangi bölgelerden ücretsiz transfer olduğunu söyle.
 
@@ -385,13 +385,11 @@ const DEFAULT_BOT_RULES = `
 
 10. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı SSS bölümünü kontrol et. Eğer orada cevap yoksa GENEL SSS bölümüne bak. Bu bölümde iptal politikası, ödeme yöntemleri gibi şirket geneli sorular yer alır.
 
-11. SİPARİŞ ONAYI: Müşteri sipariş numarasını paylaşırsa ve onay mesajı isterse, "Türkçe Sipariş Onay Mesajı" alanını olduğu gibi ilet.
+11. MÜŞTERİ MÜSAİTLİK SORGULARI (SADECE MÜŞTERİLER İÇİN): Müşteri müsaitlik sorduğunda, istenen tarih ve saat için müsaitlik bilgisini paylaş. Sonra rezervasyon yapmak isterse ilgili aktivitenin web sitesi linkini paylaş. (⚠️ Partner/İzleyicilere link VERME!)
 
-12. MÜŞTERİ MÜSAİTLİK SORGULARI (SADECE MÜŞTERİLER İÇİN): Müşteri müsaitlik sorduğunda, istenen tarih ve saat için müsaitlik bilgisini paylaş. Sonra rezervasyon yapmak isterse ilgili aktivitenin web sitesi linkini paylaş. (⚠️ Partner/İzleyicilere link VERME!)
+12. MÜŞTERİ DEĞİŞİKLİK TALEPLERİ (SADECE MÜŞTERİLER İÇİN): Müşteri saat/tarih değişikliği veya iptal istediğinde, önce istenen yeni tarih/saat için müsaitlik bilgisini paylaş. Ardından kendilerine gönderilen takip linkinden değişiklik talebini oluşturabileceklerini söyle. (⚠️ Partner/İzleyicilere takip linki VERME - panele yönlendir!)
 
-13. MÜŞTERİ DEĞİŞİKLİK TALEPLERİ (SADECE MÜŞTERİLER İÇİN): Müşteri saat/tarih değişikliği veya iptal istediğinde, önce istenen yeni tarih/saat için müsaitlik bilgisini paylaş. Ardından kendilerine gönderilen takip linkinden değişiklik talebini oluşturabileceklerini söyle. (⚠️ Partner/İzleyicilere takip linki VERME - panele yönlendir!)
-
-14. REZERVASYON LİNKİ SEÇİMİ (SADECE MÜŞTERİLER İÇİN): Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder. Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan. (⚠️ Partner/İzleyicilere link VERME!)
+13. REZERVASYON LİNKİ SEÇİMİ (SADECE MÜŞTERİLER İÇİN): Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder. Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan. (⚠️ Partner/İzleyicilere link VERME!)
 `;
 
 // Gemini AI Integration - supports both Replit integration and standalone API key
