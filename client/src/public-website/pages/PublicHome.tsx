@@ -262,9 +262,9 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
       />
       
 
-      <section className="py-8 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="relative min-h-[60vh] flex items-center justify-center overflow-hidden rounded-2xl">
+      <section className="py-0 md:py-8 bg-background">
+        <div className="container mx-auto px-0 md:px-4">
+          <div className="relative min-h-[60vh] flex items-center justify-center overflow-hidden rounded-none md:rounded-2xl">
             <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
               style={{ backgroundImage: `url(${heroImage})` }}
