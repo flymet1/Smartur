@@ -1045,6 +1045,23 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     </p>
                   )}
                 </div>
+                
+                {/* Bot için Özel Talimatlar */}
+                <div className="space-y-2 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <Label htmlFor="botPrompt" className="text-base flex items-center gap-2">
+                    Bot için Özel Talimatlar
+                    <span className="text-xs font-normal text-muted-foreground">(Sadece WhatsApp botu görür)</span>
+                  </Label>
+                  <Textarea 
+                    id="botPrompt"
+                    value={botPrompt}
+                    onChange={(e) => setBotPrompt(e.target.value)}
+                    placeholder="Bu aktiviteye özel kurallar ve talimatlar yazın. Örnek:&#10;• Bu aktivite için 5 yaş altı çocuk kabul edilmez&#10;• Kış aylarında bu tur yapılmıyor, alternatif olarak X turu öner&#10;• Ödeme şarttır, taksit yapılmaz&#10;• 2 kişiye 1 kişi bedava kampanyası var"
+                    rows={4}
+                    data-testid="input-bot-prompt"
+                  />
+                  <p className="text-xs text-muted-foreground">Bu talimatlar sadece WhatsApp botuna görünür ve web sitesinde gösterilmez. Bot bu kurallara göre müşterilere cevap verir.</p>
+                </div>
               </TabsContent>
 
               <TabsContent value="website" className="space-y-4 mt-0">
@@ -1467,23 +1484,6 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   </div>
                 </div>
                 
-                {/* Bot için Özel Talimatlar */}
-                <div className="space-y-2 bg-muted/50 p-4 rounded-lg border border-muted">
-                  <Label htmlFor="botPrompt" className="text-base flex items-center gap-2">
-                    Bot için Özel Talimatlar
-                    <span className="text-xs font-normal text-muted-foreground">(Sadece WhatsApp botu görür)</span>
-                  </Label>
-                  <Textarea 
-                    id="botPrompt"
-                    value={botPrompt}
-                    onChange={(e) => setBotPrompt(e.target.value)}
-                    placeholder="Bu aktiviteye özel kurallar ve talimatlar yazın. Örnek:&#10;• Bu aktivite için 5 yaş altı çocuk kabul edilmez&#10;• Kış aylarında bu tur yapılmıyor, alternatif olarak X turu öner&#10;• Ödeme şarttır, taksit yapılmaz&#10;• 2 kişiye 1 kişi bedava kampanyası var"
-                    rows={4}
-                    data-testid="input-bot-prompt"
-                  />
-                  <p className="text-xs text-muted-foreground">Bu talimatlar sadece WhatsApp botuna görünür ve web sitesinde gösterilmez. Bot bu kurallara göre müşterilere cevap verir.</p>
-                </div>
-
                 {/* Yorum Kartları */}
                 <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                   <div className="flex items-center justify-between">
