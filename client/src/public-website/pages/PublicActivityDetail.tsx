@@ -1333,8 +1333,13 @@ export default function PublicActivityDetail() {
 
         {(websiteData?.contactPhone || websiteData?.websiteContactPhone || websiteData?.websiteWhatsappNumber) && (
           <div className="mt-16">
-            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 md:p-12">
-              <div className="text-center max-w-2xl mx-auto">
+            <div className="relative bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 md:p-12 overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/8 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+              <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-primary/5 rounded-full blur-xl" />
+              <div className="absolute top-1/4 right-1/4 w-24 h-24 border border-primary/10 rounded-full" />
+              <div className="absolute bottom-1/4 right-1/3 w-16 h-16 border border-primary/10 rounded-full" />
+              <div className="relative z-10 text-center max-w-2xl mx-auto">
                 <h3 className="text-2xl md:text-3xl font-bold mb-3">
                   {language === "en" ? "Need Help?" : "Yardıma mı İhtiyacınız Var?"}
                 </h3>
