@@ -144,6 +144,42 @@ export function SEO({
       {websiteData?.websiteFaviconUrl && (
         <link rel="icon" href={websiteData.websiteFaviconUrl} />
       )}
+
+      {/* Google Site Verification */}
+      {websiteData?.websiteGoogleSiteVerification && (
+        <meta name="google-site-verification" content={websiteData.websiteGoogleSiteVerification} />
+      )}
+
+      {/* Google Analytics */}
+      {websiteData?.websiteGoogleAnalyticsId && (
+        <>
+          <script async src={`https://www.googletagmanager.com/gtag/js?id=${websiteData.websiteGoogleAnalyticsId}`} />
+          <script>
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${websiteData.websiteGoogleAnalyticsId}');
+              ${websiteData.websiteGoogleAdsId ? `gtag('config', '${websiteData.websiteGoogleAdsId}');` : ''}
+            `}
+          </script>
+        </>
+      )}
+
+      {/* Google Ads (standalone if no Analytics) */}
+      {websiteData?.websiteGoogleAdsId && !websiteData?.websiteGoogleAnalyticsId && (
+        <>
+          <script async src={`https://www.googletagmanager.com/gtag/js?id=${websiteData.websiteGoogleAdsId}`} />
+          <script>
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${websiteData.websiteGoogleAdsId}');
+            `}
+          </script>
+        </>
+      )}
     </Helmet>
   );
 }

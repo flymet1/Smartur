@@ -40,6 +40,8 @@ export const tenants = pgTable("tenants", {
   websiteFooterText: text("website_footer_text"), // Footer metni
   websiteSocialLinks: text("website_social_links").default("{}"), // JSON: {facebook, instagram, twitter, youtube}
   websiteGoogleAnalyticsId: text("website_google_analytics_id"), // GA tracking ID
+  websiteGoogleAdsId: text("website_google_ads_id"), // Google Ads ID (AW-XXXXXXXXX)
+  websiteGoogleSiteVerification: text("website_google_site_verification"), // Google site doğrulama kodu
   websiteWhatsappNumber: text("website_whatsapp_number"), // WhatsApp butonu için numara
   websitePaymentProvider: text("website_payment_provider"), // iyzico, paytr, stripe
   websitePaymentApiKey: text("website_payment_api_key"), // Ödeme API key (şifreli)

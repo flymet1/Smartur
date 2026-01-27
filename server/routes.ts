@@ -6052,6 +6052,8 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
           websiteMetaDescription: tenants.websiteDescription,
           websiteMetaKeywords: tenants.websiteAboutText,
           websiteGoogleAnalyticsId: tenants.websiteGoogleAnalyticsId,
+          websiteGoogleAdsId: tenants.websiteGoogleAdsId,
+          websiteGoogleSiteVerification: tenants.websiteGoogleSiteVerification,
           websiteWhatsappNumber: tenants.websiteWhatsappNumber,
           websiteSocialLinks: tenants.websiteSocialLinks,
           websiteLanguages: tenants.websiteLanguages,
@@ -6724,6 +6726,7 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       }
       
       const integration = await storage.getTenantIntegration(tenantId);
+      const tenant = await storage.getTenant(tenantId);
       
       // Determine active provider - default to the configured one if only one is configured
       let activeProvider = integration?.activeWhatsappProvider || null;
@@ -6774,6 +6777,11 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
         gmailUser: integration?.gmailUser || '',
         gmailFromName: integration?.gmailFromName || '',
         gmailConfigured: integration?.gmailConfigured || false,
+        
+        // Google Tracking (from tenant table)
+        websiteGoogleAnalyticsId: tenant?.websiteGoogleAnalyticsId || null,
+        websiteGoogleAdsId: tenant?.websiteGoogleAdsId || null,
+        websiteGoogleSiteVerification: tenant?.websiteGoogleSiteVerification || null,
       });
     } catch (err) {
       console.error("Get tenant integrations error:", err);
@@ -7265,6 +7273,30 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       res.json({ success: true, message: "E-posta bağlantısı kaldırıldı" });
     } catch (err) {
       res.status(500).json({ error: "E-posta ayarları silinemedi" });
+    }
+  });
+  
+  // Save Google Tracking settings
+  app.post("/api/tenant-integrations/google-tracking", async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const { googleAnalyticsId, googleAdsId, googleSiteVerification } = req.body;
+      
+      // Update tenant settings directly (these are stored in tenants table)
+      await storage.updateTenant(tenantId, {
+        websiteGoogleAnalyticsId: googleAnalyticsId || null,
+        websiteGoogleAdsId: googleAdsId || null,
+        websiteGoogleSiteVerification: googleSiteVerification || null,
+      });
+      
+      res.json({ success: true, message: "Google takip ayarları kaydedildi" });
+    } catch (err) {
+      console.error("Google tracking save error:", err);
+      res.status(500).json({ error: "Google takip ayarları kaydedilemedi" });
     }
   });
   

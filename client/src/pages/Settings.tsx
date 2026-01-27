@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe, BarChart3 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday, Agency } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -2012,6 +2012,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
             <MetaCloudCard />
             <WooCommerceCard />
             <EmailCard />
+            <GoogleTrackingCard />
           </TabsContent>
 
           {/* HOLIDAYS TAB */}
@@ -3230,6 +3231,128 @@ function EmailCard() {
             </Button>
           </>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Google Tracking Card Component
+function GoogleTrackingCard() {
+  const { toast } = useToast();
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
+  const [googleAdsId, setGoogleAdsId] = useState("");
+  const [googleSiteVerification, setGoogleSiteVerification] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { data: trackingSettings, isLoading } = useQuery<{
+    websiteGoogleAnalyticsId: string | null;
+    websiteGoogleAdsId: string | null;
+    websiteGoogleSiteVerification: string | null;
+  }>({
+    queryKey: ['/api/tenant-integrations'],
+  });
+
+  useEffect(() => {
+    if (trackingSettings) {
+      setGoogleAnalyticsId(trackingSettings.websiteGoogleAnalyticsId || "");
+      setGoogleAdsId(trackingSettings.websiteGoogleAdsId || "");
+      setGoogleSiteVerification(trackingSettings.websiteGoogleSiteVerification || "");
+    }
+  }, [trackingSettings]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await apiRequest('POST', '/api/tenant-integrations/google-tracking', {
+        googleAnalyticsId: googleAnalyticsId || null,
+        googleAdsId: googleAdsId || null,
+        googleSiteVerification: googleSiteVerification || null,
+      });
+      toast({ title: "Başarılı", description: "Google ayarları kaydedildi" });
+      queryClient.invalidateQueries({ queryKey: ['/api/tenant-integrations'] });
+    } catch (error: any) {
+      toast({ title: "Hata", description: error?.message || "Ayarlar kaydedilemedi", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            Google Takip Kodları
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Yükleniyor...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="w-5 h-5" />
+          Google Takip Kodları
+        </CardTitle>
+        <CardDescription>
+          Web siteniz için Google Analytics, Google Ads ve site doğrulama kodlarını ekleyin
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="googleAnalyticsId">Google Analytics ID</Label>
+          <Input
+            id="googleAnalyticsId"
+            value={googleAnalyticsId}
+            onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+            placeholder="G-XXXXXXXXXX veya UA-XXXXXXXXX-X"
+            data-testid="input-google-analytics-id"
+          />
+          <p className="text-xs text-muted-foreground">
+            Google Analytics 4 için G- ile başlayan ID veya Universal Analytics için UA- ile başlayan ID
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="googleAdsId">Google Ads ID</Label>
+          <Input
+            id="googleAdsId"
+            value={googleAdsId}
+            onChange={(e) => setGoogleAdsId(e.target.value)}
+            placeholder="AW-XXXXXXXXXX"
+            data-testid="input-google-ads-id"
+          />
+          <p className="text-xs text-muted-foreground">
+            Google Ads dönüşüm takibi için AW- ile başlayan ID
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="googleSiteVerification">Google Site Doğrulama Kodu</Label>
+          <Input
+            id="googleSiteVerification"
+            value={googleSiteVerification}
+            onChange={(e) => setGoogleSiteVerification(e.target.value)}
+            placeholder="google-site-verification meta etiketi içeriği"
+            data-testid="input-google-site-verification"
+          />
+          <p className="text-xs text-muted-foreground">
+            Google Search Console veya Google Ads için site doğrulama meta etiketi içeriği
+          </p>
+        </div>
+
+        <Button onClick={handleSave} disabled={isSaving} data-testid="button-save-google-tracking">
+          {isSaving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Kaydediliyor...</> : "Kaydet"}
+        </Button>
       </CardContent>
     </Card>
   );

@@ -94,6 +94,9 @@ export interface PublicWebsiteData {
   };
   websiteWhatsappNumber: string | null;
   websiteLanguages: string[];
+  websiteGoogleAnalyticsId: string | null;
+  websiteGoogleAdsId: string | null;
+  websiteGoogleSiteVerification: string | null;
   websiteHeroStats?: Array<{
     icon: string;
     value: string;
