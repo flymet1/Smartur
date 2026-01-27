@@ -1297,6 +1297,79 @@ export function registerPublicApiRoutes(app: Express) {
           .where(eq(capacity.id, slot.id));
       }
 
+      // Send WhatsApp notification using the same template as WooCommerce
+      try {
+        const wooNotificationSetting = await storage.getSetting('wooNotification', tenantId);
+        let wooNotificationEnabled = true;
+        let wooNotificationTemplate = "Merhaba {isim},\n\nRezervasyon talebiniz alınmıştır!\n\nAktivite: {aktivite}\nTarih: {tarih}\nSaat: {saat}\n\nRezervasyon detayları ve değişiklik talepleriniz için:\n{takip_linki}\n\nSorularınız için bu numaradan bize ulaşabilirsiniz.\n\nİyi günler dileriz!";
+        
+        if (wooNotificationSetting) {
+          try {
+            const settings = JSON.parse(wooNotificationSetting);
+            if (settings.enabled !== undefined) wooNotificationEnabled = settings.enabled;
+            if (settings.template) wooNotificationTemplate = settings.template;
+          } catch {}
+        }
+        
+        if (wooNotificationEnabled && input.customerPhone) {
+          // Build tracking link
+          const tenant = req.websiteTenant!;
+          const baseUrl = tenant.websiteDomain 
+            ? `https://${tenant.websiteDomain}` 
+            : (process.env.PUBLIC_APP_URL || `${req.protocol}://${req.get('host')}`);
+          const trackingLink = `${baseUrl}/takip/${trackingToken}`;
+          
+          // Build message from template
+          const message = wooNotificationTemplate
+            .replace(/\{isim\}/gi, input.customerName)
+            .replace(/\{siparis_no\}/gi, String(reservation.id))
+            .replace(/\{aktivite\}/gi, activity.name)
+            .replace(/\{tarih\}/gi, input.date)
+            .replace(/\{saat\}/gi, input.time)
+            .replace(/\{takip_linki\}/gi, trackingLink);
+          
+          // Send via Twilio
+          const accountSid = process.env.TWILIO_ACCOUNT_SID;
+          const authToken = process.env.TWILIO_AUTH_TOKEN;
+          const twilioWhatsAppNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+          
+          if (accountSid && authToken && twilioWhatsAppNumber) {
+            // Format phone number
+            let formattedPhone = input.customerPhone.replace(/\s+/g, '').replace(/^\+/, '');
+            if (formattedPhone.startsWith('0')) {
+              formattedPhone = '90' + formattedPhone.substring(1);
+            }
+            if (!formattedPhone.startsWith('90') && formattedPhone.length === 10) {
+              formattedPhone = '90' + formattedPhone;
+            }
+            
+            const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+            const formData = new URLSearchParams();
+            formData.append('From', `whatsapp:${twilioWhatsAppNumber}`);
+            formData.append('To', `whatsapp:+${formattedPhone}`);
+            formData.append('Body', message);
+            
+            const twilioResponse = await fetch(twilioUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: formData.toString()
+            });
+            
+            if (twilioResponse.ok) {
+              console.log(`WhatsApp notification sent for website reservation: ${reservation.id}`);
+            } else {
+              const errorText = await twilioResponse.text();
+              console.error(`WhatsApp notification failed for website reservation ${reservation.id}:`, errorText);
+            }
+          }
+        }
+      } catch (notifyErr) {
+        console.error(`WhatsApp notification error for website reservation:`, notifyErr);
+      }
+
       res.status(201).json({
         id: reservation.id,
         trackingToken,

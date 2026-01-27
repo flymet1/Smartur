@@ -1856,9 +1856,9 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   {/* WooCommerce Auto-Notification */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>WooCommerce Sipariş Bildirimi Şablonu</CardTitle>
+                      <CardTitle>Sipariş Bildirimi Şablonu</CardTitle>
                       <CardDescription>
-                        WooCommerce siparişi geldiğinde müşteriye gönderilecek mesaj şablonu.
+                        WooCommerce ve Web Sitesi üzerinden gelen rezervasyonlarda müşteriye gönderilecek mesaj şablonu.
                         <span className="text-primary"> Bildirimi açmak/kapatmak için Bildirimler sekmesini kullanın.</span>
                       </CardDescription>
                     </CardHeader>
