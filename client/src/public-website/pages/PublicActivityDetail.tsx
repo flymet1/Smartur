@@ -1281,39 +1281,7 @@ export default function PublicActivityDetail() {
                 )}
               </Card>
 
-              {(websiteData?.contactPhone || websiteData?.websiteContactPhone || websiteData?.websiteWhatsappNumber) && (
-                <Card className="border-0 shadow-md">
-                  <CardContent className="pt-6">
-                    <p className="font-medium mb-3">
-                      {language === "en" ? "Need Help?" : "Yardıma mı ihtiyacınız var?"}
-                    </p>
-                    <div className="flex flex-col gap-3">
-                      {(websiteData?.websiteContactPhone || websiteData?.contactPhone) && (
-                        <a href={`tel:${websiteData?.websiteContactPhone || websiteData?.contactPhone}`} className="block">
-                          <Button variant="outline" className="w-full justify-start gap-2">
-                            <Phone className="h-4 w-4" />
-                            {websiteData?.websiteContactPhone || websiteData?.contactPhone}
-                          </Button>
-                        </a>
-                      )}
-                      {websiteData?.websiteWhatsappNumber && (
-                        <a 
-                          href={`https://wa.me/${websiteData.websiteWhatsappNumber.replace(/[^0-9]/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block"
-                        >
-                          <Button variant="outline" className="w-full justify-start gap-2 text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
-                            <MessageCircle className="h-4 w-4" />
-                            WhatsApp
-                          </Button>
-                        </a>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                          </div>
           </div>
         </div>
 
@@ -1321,11 +1289,11 @@ export default function PublicActivityDetail() {
           <div className="mt-16">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">
-                {language === "en" ? "You May Also Like" : "Bunları da Begenebilirsiniz"}
+                {language === "en" ? "You May Also Like" : "Bunları da Beğenebilirsiniz"}
               </h2>
               <Link href={getLocalizedPath("/aktiviteler")}>
                 <Button variant="ghost" className="gap-1">
-                  {language === "en" ? "View All" : "Tumunu Gor"}
+                  {language === "en" ? "View All" : "Tümünü Gör"}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -1359,6 +1327,45 @@ export default function PublicActivityDetail() {
                   </Card>
                 </Link>
               ))}
+            </div>
+          </div>
+        )}
+
+        {(websiteData?.contactPhone || websiteData?.websiteContactPhone || websiteData?.websiteWhatsappNumber) && (
+          <div className="mt-16">
+            <div className="bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 md:p-12">
+              <div className="text-center max-w-2xl mx-auto">
+                <h3 className="text-2xl md:text-3xl font-bold mb-3">
+                  {language === "en" ? "Need Help?" : "Yardıma mı İhtiyacınız Var?"}
+                </h3>
+                <p className="text-muted-foreground mb-8">
+                  {language === "en" 
+                    ? "Our team is here to help you with your reservation. Contact us anytime!"
+                    : "Ekibimiz rezervasyonunuzla ilgili size yardımcı olmak için burada. Bize her zaman ulaşabilirsiniz!"}
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  {(websiteData?.websiteContactPhone || websiteData?.contactPhone) && (
+                    <a href={`tel:${websiteData?.websiteContactPhone || websiteData?.contactPhone}`}>
+                      <Button size="lg" className="gap-3 rounded-full px-8 shadow-lg shadow-primary/25">
+                        <Phone className="h-5 w-5" />
+                        {websiteData?.websiteContactPhone || websiteData?.contactPhone}
+                      </Button>
+                    </a>
+                  )}
+                  {websiteData?.websiteWhatsappNumber && (
+                    <a 
+                      href={`https://wa.me/${websiteData.websiteWhatsappNumber.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="lg" variant="outline" className="gap-3 rounded-full px-8 border-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
+                        <MessageCircle className="h-5 w-5" />
+                        WhatsApp
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
