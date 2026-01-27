@@ -475,7 +475,7 @@ export default function PublicActivityDetail() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Info className="h-5 w-5" />
-                    {language === "en" ? "Important Information" : "Onemli Bilgiler"}
+                    {language === "en" ? "Important Information" : "Önemli Bilgiler"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -486,7 +486,7 @@ export default function PublicActivityDetail() {
                           <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                          <p className="font-medium">{language === "en" ? "Meeting Point" : "Bulusma Noktası"}</p>
+                          <p className="font-medium">{language === "en" ? "Meeting Point" : "Buluşma Noktası"}</p>
                           <p className="text-sm text-muted-foreground">{activity.meetingPoint}</p>
                         </div>
                       </div>
@@ -498,9 +498,9 @@ export default function PublicActivityDetail() {
                           <Users className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                         </div>
                         <div>
-                          <p className="font-medium">{language === "en" ? "Minimum Age" : "Minimum Yas"}</p>
+                          <p className="font-medium">{language === "en" ? "Minimum Age" : "Minimum Yaş"}</p>
                           <p className="text-sm text-muted-foreground">
-                            {activity.minAge} {language === "en" ? "years old" : "yas ve uzeri"}
+                            {activity.minAge} {language === "en" ? "years old" : "yaş ve üzeri"}
                           </p>
                         </div>
                       </div>
@@ -529,7 +529,7 @@ export default function PublicActivityDetail() {
                         <Shield className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div>
-                        <p className="font-medium">{language === "en" ? "Safety" : "Guvenlik"}</p>
+                        <p className="font-medium">{language === "en" ? "Safety" : "Güvenlik"}</p>
                         <p className="text-sm text-muted-foreground">
                           {language === "en" ? "Full insurance coverage" : "Tam sigorta kapsamı"}
                         </p>
@@ -573,7 +573,7 @@ export default function PublicActivityDetail() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    {language === "en" ? "Transfer Zones" : "Transfer Bolgeleri"}
+                    {language === "en" ? "Transfer Zones" : "Transfer Bölgeleri"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
