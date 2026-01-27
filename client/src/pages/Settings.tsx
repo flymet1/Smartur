@@ -37,6 +37,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  NOTIFICATION_SOUNDS, 
+  getNotificationSoundSetting, 
+  setNotificationSoundSetting,
+  isNotificationSoundEnabled,
+  setNotificationSoundEnabled,
+  playNotificationSound,
+  type NotificationSoundType
+} from '@/lib/notificationSounds';
 
 export default function Settings() {
   const { toast } = useToast();
@@ -6347,34 +6356,15 @@ function NotificationPreferencesTab({ onNavigateToTemplate }: { onNavigateToTemp
 
 // Notification Sound Settings Component
 function NotificationSoundSettings() {
-  const [soundEnabled, setSoundEnabled] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const saved = localStorage.getItem('smartur_notification_sound_enabled');
-    return saved !== 'false';
-  });
-
-  const [selectedSound, setSelectedSound] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'notification';
-    const saved = localStorage.getItem('smartur_notification_sound');
-    return saved || 'notification';
-  });
-
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => isNotificationSoundEnabled());
+  const [selectedSound, setSelectedSound] = useState<string>(() => getNotificationSoundSetting());
   const [playingSound, setPlayingSound] = useState<string | null>(null);
 
-  const sounds = [
-    { id: 'chime', name: 'Chime', description: 'Yumuşak zil sesi' },
-    { id: 'bell', name: 'Bell', description: 'Klasik çan sesi' },
-    { id: 'ding', name: 'Ding', description: 'Kısa ding sesi' },
-    { id: 'pop', name: 'Pop', description: 'Pop sesi' },
-    { id: 'notification', name: 'Notification', description: 'Standart bildirim' },
-    { id: 'alert', name: 'Alert', description: 'Dikkat çekici uyarı' },
-  ];
-
   const handlePreviewSound = async (soundId: string) => {
+    if (soundId === 'none') return;
     setPlayingSound(soundId);
     try {
-      const { playNotificationSound } = await import('@/lib/notificationSounds');
-      await playNotificationSound(soundId as any);
+      await playNotificationSound(soundId as NotificationSoundType);
     } catch (error) {
       console.error('Failed to play sound:', error);
     }
@@ -6383,13 +6373,12 @@ function NotificationSoundSettings() {
 
   const handleSelectSound = (soundId: string) => {
     setSelectedSound(soundId);
-    localStorage.setItem('smartur_notification_sound', soundId);
-    handlePreviewSound(soundId);
+    setNotificationSoundSetting(soundId as NotificationSoundType);
   };
 
   const handleToggleEnabled = (enabled: boolean) => {
     setSoundEnabled(enabled);
-    localStorage.setItem('smartur_notification_sound_enabled', enabled ? 'true' : 'false');
+    setNotificationSoundEnabled(enabled);
   };
 
   return (
@@ -6400,7 +6389,7 @@ function NotificationSoundSettings() {
           Bildirim Sesi Ayarları
         </CardTitle>
         <CardDescription>
-          Önemli bildirimlerde ses çalınmasını ayarlayın. Ses seçmeden önce dinleyebilirsiniz.
+          Önemli bildirimlerde (yeni rezervasyon talepleri, destek talepleri vb.) ses çalınmasını ayarlayın.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -6426,38 +6415,55 @@ function NotificationSoundSettings() {
         </div>
 
         {soundEnabled && (
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Ses Seçin (Dinlemek için tıklayın)</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {sounds.map((sound) => (
-                <Button
-                  key={sound.id}
-                  variant={selectedSound === sound.id ? 'default' : 'outline'}
-                  className={cn(
-                    'h-auto py-3 px-4 flex flex-col items-start gap-1 text-left',
-                    selectedSound === sound.id && 'ring-2 ring-primary'
-                  )}
-                  onClick={() => handleSelectSound(sound.id)}
-                  data-testid={`btn-sound-${sound.id}`}
+          <div className="space-y-4">
+            <Label className="text-sm font-medium">Ses Seçin</Label>
+            <Select value={selectedSound} onValueChange={handleSelectSound}>
+              <SelectTrigger className="w-full" data-testid="select-notification-sound">
+                <SelectValue placeholder="Ses seçin" />
+              </SelectTrigger>
+              <SelectContent>
+                {NOTIFICATION_SOUNDS.map((sound: { id: string; name: string; description: string }) => (
+                  <SelectItem key={sound.id} value={sound.id}>
+                    <div className="flex items-center gap-2">
+                      {sound.id === 'none' ? (
+                        <VolumeX className="h-4 w-4" />
+                      ) : (
+                        <Volume2 className="h-4 w-4" />
+                      )}
+                      <span>{sound.name}</span>
+                      <span className="text-xs text-muted-foreground">- {sound.description}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedSound !== 'none' && (
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handlePreviewSound(selectedSound)}
+                  disabled={playingSound !== null}
+                  data-testid="button-preview-sound"
                 >
-                  <div className="flex items-center gap-2 w-full">
-                    {playingSound === sound.id ? (
-                      <Volume2 className="h-4 w-4 animate-pulse" />
-                    ) : (
-                      <VolumeX className="h-4 w-4 opacity-50" />
-                    )}
-                    <span className="font-medium">{sound.name}</span>
-                    {selectedSound === sound.id && (
-                      <CheckCircle className="h-4 w-4 ml-auto text-primary-foreground" />
-                    )}
-                  </div>
-                  <span className="text-xs opacity-70">{sound.description}</span>
+                  {playingSound === selectedSound ? (
+                    <>
+                      <Volume2 className="h-4 w-4 mr-2 animate-pulse" />
+                      Çalınıyor...
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="h-4 w-4 mr-2" />
+                      Sesi Dinle
+                    </>
+                  )}
                 </Button>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Seçilen ses: <span className="font-medium">{sounds.find(s => s.id === selectedSound)?.name}</span>
-            </p>
+                <p className="text-sm text-muted-foreground">
+                  Seçilen: <span className="font-medium">{NOTIFICATION_SOUNDS.find((s: { id: string }) => s.id === selectedSound)?.name}</span>
+                </p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

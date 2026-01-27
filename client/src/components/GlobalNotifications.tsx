@@ -191,7 +191,8 @@ export function GlobalNotifications() {
     newTitle: string,
     description: string,
     route: string,
-    variant: "default" | "destructive" = "default"
+    variant: "default" | "destructive" = "default",
+    isImportant: boolean = false
   ) => {
     // Skip toast notifications on mobile - users can use the notification bell instead
     if (isMobile) {
@@ -200,24 +201,14 @@ export function GlobalNotifications() {
     }
     
     if (previousRef.current === null) {
+      // First load - just set the count, don't show toast or play sound
       previousRef.current = count;
-      if (count > 0) {
-        playCurrentNotificationSound();
-        toast({
-          title: title.replace('{count}', count.toString()),
-          description,
-          variant,
-          persistent: true,
-          action: (
-            <ToastAction altText="Görüntüle" onClick={() => navigate(route)}>
-              Görüntüle
-            </ToastAction>
-          ),
-        });
-      }
     } else if (count > previousRef.current) {
+      // New notifications arrived - show toast and play sound for important ones
       const newCount = count - previousRef.current;
-      playCurrentNotificationSound();
+      if (isImportant) {
+        playCurrentNotificationSound();
+      }
       toast({
         title: newTitle.replace('{count}', newCount.toString()),
         description,
@@ -242,7 +233,9 @@ export function GlobalNotifications() {
       '{count} bekleyen partner talebi var',
       '{count} yeni partner talebi geldi',
       'Partner Müsaitlik sayfasından inceleyin.',
-      '/partner-availability'
+      '/partner-availability',
+      'default',
+      true
     );
   }, [totalPartnerRequests]);
 
@@ -253,7 +246,9 @@ export function GlobalNotifications() {
       '{count} bekleyen izleyici talebi var',
       '{count} yeni izleyici talebi geldi',
       'İzleyici İstatistikleri sayfasından inceleyin.',
-      '/viewer-stats'
+      '/viewer-stats',
+      'default',
+      false
     );
   }, [totalViewerRequests]);
 
@@ -264,7 +259,9 @@ export function GlobalNotifications() {
       '{count} bekleyen müşteri talebi var',
       '{count} yeni müşteri talebi geldi',
       'Müşteri Talepleri sayfasından inceleyin.',
-      '/customer-requests'
+      '/customer-requests',
+      'default',
+      true
     );
   }, [totalCustomerRequests]);
 
@@ -276,7 +273,8 @@ export function GlobalNotifications() {
       '{count} yeni destek talebi geldi',
       'Mesajlar sayfasından inceleyin.',
       '/messages?filter=human_intervention',
-      'destructive'
+      'destructive',
+      true
     );
   }, [openSupportRequests]);
 
@@ -288,7 +286,8 @@ export function GlobalNotifications() {
       '{count} yeni partner silme talebi geldi',
       'Finans > Partner Müşteriler sayfasından inceleyin.',
       '/finance',
-      'destructive'
+      'destructive',
+      true
     );
   }, [pendingDeletionRequests]);
 
@@ -315,12 +314,16 @@ export function GlobalNotifications() {
         };
 
         const route = getNotificationRoute(notification.notificationType);
+        const variant = getNotificationVariant(notification.notificationType);
 
-        playCurrentNotificationSound();
+        // Play sound only for important notifications (destructive ones)
+        if (variant === 'destructive') {
+          playCurrentNotificationSound();
+        }
         toast({
           title: notification.title,
           description: notification.message,
-          variant: getNotificationVariant(notification.notificationType),
+          variant,
           action: (
             <ToastAction altText="Görüntüle" onClick={() => navigate(route)}>
               Görüntüle
