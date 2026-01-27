@@ -970,9 +970,41 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
   }
   // If botAccess.capacity is false, capacityInfo remains empty
   
-  // Build reservation context
+  // Build reservation context with detailed info
   let reservationContext = "";
-  if (context.hasReservation && context.reservation) {
+  if (context.allReservations && context.allReservations.length > 0) {
+    const reservations = context.allReservations;
+    const customerName = reservations[0]?.customerName || 'Müşteri';
+    
+    reservationContext = `
+=== MÜŞTERİ REZERVASYON BİLGİLERİ ===
+Müşteri Adı: ${customerName}
+Toplam Rezervasyon Sayısı: ${reservations.length}
+
+`;
+    
+    for (const res of reservations) {
+      const statusText = res.status === 'confirmed' ? 'Onaylı' : res.status === 'cancelled' ? 'İptal' : 'Beklemede';
+      const paymentStatusText = res.paymentStatus === 'paid' ? 'Ödendi' : res.paymentStatus === 'partial' ? 'Kısmi Ödeme' : 'Ödenmedi';
+      const paidAmount = res.paidAmount || 0;
+      const totalPrice = res.priceTl || 0;
+      const remainingAmount = totalPrice - paidAmount;
+      
+      reservationContext += `📅 ${res.date} - ${res.time}
+   Aktivite: ${res.activityName || 'Paket Tur'}
+   Kişi Sayısı: ${res.quantity} kişi
+   Toplam Tutar: ${totalPrice.toLocaleString()} TL
+   Ödeme Durumu: ${paymentStatusText}
+   Ödenen: ${paidAmount.toLocaleString()} TL
+   Kalan Ödeme: ${remainingAmount > 0 ? remainingAmount.toLocaleString() + ' TL' : 'Yok'}
+   Rezervasyon Durumu: ${statusText}
+   ${res.externalId ? `Sipariş No: ${res.externalId}` : ''}
+
+`;
+    }
+    
+    reservationContext += `Bu müşterinin yukarıdaki rezervasyonları var. Sorularına bu bilgiler doğrultusunda cevap ver.`;
+  } else if (context.hasReservation && context.reservation) {
     const res = context.reservation;
     reservationContext = `
 MÜŞTERİ BİLGİSİ (Sistemde kayıtlı):
@@ -5182,10 +5214,11 @@ export async function registerRoutes(
       const isViewer = viewerCheck.isViewer;
       const viewerUser = viewerCheck.viewerUser;
 
-      // Check reservation
+      // Check reservation - get ALL reservations for this phone
       const orderNumberMatch = Body.match(/\b(\d{4,})\b/);
       const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
       const userReservation = await storage.findReservationByPhoneOrOrder(From, potentialOrderId);
+      const allUserReservations = await storage.findAllReservationsByPhone(From, tenantId);
 
       // Get customer requests
       const customerRequestsForPhone = await storage.getCustomerRequestsByPhone(From);
@@ -5235,9 +5268,10 @@ export async function registerRoutes(
         activities: botAccess.activities ? activities : [], 
         packageTours: botAccess.packageTours ? packageTours : [],
         capacityData: botAccess.capacity ? upcomingCapacity : [],
-        hasReservation: !!userReservation,
+        hasReservation: !!userReservation || allUserReservations.length > 0,
         reservation: userReservation,
-        askForOrderNumber: !userReservation,
+        allReservations: allUserReservations,
+        askForOrderNumber: !userReservation && allUserReservations.length === 0,
         customerRequests: customerRequestsForPhone,
         pendingRequests,
         botAccess,
@@ -5415,14 +5449,18 @@ export async function registerRoutes(
         return;
       }
       
+      // Get all reservations for this phone
+      const allUserReservations = tenantId ? await storage.findAllReservationsByPhone(From, tenantId) : [];
+      
       // Generate AI response with reservation context, capacity data, package tours, customer requests, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
         activities: botAccess.activities ? activities : [], 
         packageTours: botAccess.packageTours ? packageTours : [],
         capacityData: botAccess.capacity ? upcomingCapacity : [],
-        hasReservation: !!userReservation,
+        hasReservation: !!userReservation || allUserReservations.length > 0,
         reservation: userReservation,
-        askForOrderNumber: !userReservation,
+        allReservations: allUserReservations,
+        askForOrderNumber: !userReservation && allUserReservations.length === 0,
         customerRequests: customerRequestsForPhone,
         pendingRequests: pendingRequests,
         botAccess,

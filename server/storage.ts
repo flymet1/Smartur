@@ -215,6 +215,7 @@ export interface IStorage {
   getDetailedStats(period: 'daily' | 'weekly' | 'monthly' | 'yearly'): Promise<any>;
   getDateDetails(date: string): Promise<any>;
   findReservationByPhoneOrOrder(phone: string, orderId?: string): Promise<Reservation | undefined>;
+  findAllReservationsByPhone(phone: string, tenantId?: number): Promise<any[]>;
 
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
@@ -1119,6 +1120,55 @@ export class DatabaseStorage implements IStorage {
     }
     
     return reservation;
+  }
+
+  async findAllReservationsByPhone(phone: string, tenantId?: number): Promise<any[]> {
+    // Normalize phone to last 10 digits
+    const normalizePhone = (p: string): string => {
+      const digitsOnly = p.replace(/\D/g, '');
+      return digitsOnly.slice(-10);
+    };
+    
+    const searchPhone = normalizePhone(phone);
+    if (searchPhone.length !== 10) return [];
+    
+    // Get all reservations with activity info
+    const allReservations = await db
+      .select({
+        id: reservations.id,
+        customerName: reservations.customerName,
+        customerPhone: reservations.customerPhone,
+        date: reservations.date,
+        time: reservations.time,
+        quantity: reservations.quantity,
+        status: reservations.status,
+        priceTl: reservations.priceTl,
+        priceUsd: reservations.priceUsd,
+        paymentStatus: reservations.paymentStatus,
+        paidAmount: reservations.paidAmount,
+        externalId: reservations.externalId,
+        activityId: reservations.activityId,
+        packageTourId: reservations.packageTourId,
+        tenantId: reservations.tenantId,
+        activityName: activities.name,
+      })
+      .from(reservations)
+      .leftJoin(activities, eq(reservations.activityId, activities.id))
+      .where(tenantId ? eq(reservations.tenantId, tenantId) : undefined);
+    
+    // Filter by phone (compare last 10 digits)
+    const matchedReservations = allReservations.filter(r => {
+      if (!r.customerPhone) return false;
+      const reservationPhone = normalizePhone(r.customerPhone);
+      return reservationPhone === searchPhone;
+    });
+    
+    // Sort by date (upcoming first)
+    return matchedReservations.sort((a, b) => {
+      if (a.date > b.date) return 1;
+      if (a.date < b.date) return -1;
+      return 0;
+    });
   }
 
   // Messages
