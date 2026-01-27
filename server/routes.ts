@@ -791,7 +791,17 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
           try {
             const zones = JSON.parse(a.transferZones || '[]');
             if (zones.length > 0) {
-              desc += ` (Bölgeler: ${zones.join(', ')})`;
+              // Check if new format (object with zone and minutesBefore) or old format (string array)
+              if (typeof zones[0] === 'object' && zones[0].zone) {
+                desc += `\n  Transfer Bölgeleri ve Alınış Süreleri:`;
+                for (const z of zones) {
+                  desc += `\n    * ${z.zone}: Aktivite saatinden ${z.minutesBefore} dakika önce alınır`;
+                }
+                desc += `\n  NOT: Müşteri otelinin hangi bölgede olduğunu sorup, yukarıdaki sürelere göre alınış saatini hesaplayıp söyle.`;
+              } else {
+                // Old format - just zone names
+                desc += ` (Bölgeler: ${zones.join(', ')})`;
+              }
             }
           } catch {}
         } else {
@@ -989,6 +999,62 @@ Toplam Rezervasyon Sayısı: ${reservations.length}
       const paidAmount = res.paidAmount || 0;
       const totalPrice = res.priceTl || 0;
       const remainingAmount = totalPrice - paidAmount;
+      const hotelName = (res as any).hotelName || '';
+      const hasHotelTransfer = (res as any).hasHotelTransfer || false;
+      
+      // Calculate pickup time if we have activity info with transfer zones
+      let pickupTimeInfo = '';
+      if (hasHotelTransfer && res.time) {
+        // Find activity to get transfer zones
+        const relatedActivity = context.activities?.find((a: any) => a.id === res.activityId);
+        if (relatedActivity && relatedActivity.transferZones) {
+          try {
+            const zones = JSON.parse(relatedActivity.transferZones || '[]');
+            if (zones.length > 0 && typeof zones[0] === 'object' && zones[0].zone) {
+              // Parse activity time (e.g., "10:00")
+              const timeParts = res.time.split(':');
+              if (timeParts.length >= 2) {
+                const hours = parseInt(timeParts[0], 10);
+                const minutes = parseInt(timeParts[1], 10);
+                if (!isNaN(hours) && !isNaN(minutes)) {
+                  // Check if customer's hotel matches a zone
+                  const customerZone = hotelName ? zones.find((z: any) => 
+                    hotelName.toLowerCase().includes(z.zone.toLowerCase()) ||
+                    z.zone.toLowerCase().includes(hotelName.toLowerCase())
+                  ) : null;
+                  
+                  if (customerZone) {
+                    // Customer's zone matched - show specific pickup time
+                    let pickupMinutes = (hours * 60 + minutes) - customerZone.minutesBefore;
+                    // Handle negative (previous day) - normalize to 24h
+                    if (pickupMinutes < 0) pickupMinutes += 24 * 60;
+                    const pickupHours = Math.floor(pickupMinutes / 60) % 24;
+                    const pickupMins = pickupMinutes % 60;
+                    const pickupTime = `${String(pickupHours).padStart(2, '0')}:${String(pickupMins).padStart(2, '0')}`;
+                    pickupTimeInfo = `\n   Alınış Saati: ${pickupTime} (${customerZone.zone} bölgesi)`;
+                  } else {
+                    // No match - show all zones
+                    pickupTimeInfo = '\n   Alınış Saatleri (Bölgeye Göre):';
+                    for (const z of zones) {
+                      let pickupMinutes = (hours * 60 + minutes) - z.minutesBefore;
+                      // Handle negative (previous day) - normalize to 24h
+                      if (pickupMinutes < 0) pickupMinutes += 24 * 60;
+                      const pickupHours = Math.floor(pickupMinutes / 60) % 24;
+                      const pickupMins = pickupMinutes % 60;
+                      const pickupTime = `${String(pickupHours).padStart(2, '0')}:${String(pickupMins).padStart(2, '0')}`;
+                      pickupTimeInfo += `\n     * ${z.zone}: ${pickupTime}`;
+                    }
+                    pickupTimeInfo += '\n   (Müşterinin oteli hangi bölgede olduğunu sor ve doğru saati söyle)';
+                  }
+                }
+              }
+            }
+          } catch {}
+        } else if (!context.activities) {
+          // Activities not loaded - ask for zone
+          pickupTimeInfo = '\n   (Alınış saati için müşterinin otelinin hangi bölgede olduğunu sor)';
+        }
+      }
       
       reservationContext += `📅 ${res.date} - ${res.time}
    Aktivite: ${res.activityName || 'Paket Tur'}
@@ -999,6 +1065,8 @@ Toplam Rezervasyon Sayısı: ${reservations.length}
    Kalan Ödeme: ${remainingAmount > 0 ? remainingAmount.toLocaleString() + ' TL' : 'Yok'}
    Rezervasyon Durumu: ${statusText}
    ${res.externalId ? `Sipariş No: ${res.externalId}` : ''}
+   ${hasHotelTransfer ? `Otel Transferi: EVET${pickupTimeInfo}` : ''}
+   ${hotelName ? `Otel Adı: ${hotelName}` : ''}
 
 `;
     }

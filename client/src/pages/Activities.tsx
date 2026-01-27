@@ -1,7 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useActivities, useCreateActivity, useDeleteActivity, useUpdateActivity } from "@/hooks/use-activities";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit, Clock, Tag, Users, Building2 } from "lucide-react";
+import { Plus, Trash2, Edit, Clock, Tag, Users, Building2, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -266,15 +266,24 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       setPartnerPrices({});
     }
   }, [activityShares]);
-  const [transferZones, setTransferZones] = useState(() => {
+  const [transferZones, setTransferZones] = useState<Array<{zone: string; minutesBefore: number}>>(() => {
     if (activity && (activity as any).transferZones) {
       try {
-        return JSON.parse((activity as any).transferZones).join(', ');
+        const parsed = JSON.parse((activity as any).transferZones);
+        // Support old format (simple string array) and new format (object array)
+        if (Array.isArray(parsed)) {
+          if (parsed.length > 0 && typeof parsed[0] === 'string') {
+            // Old format: convert to new format with default 60 minutes
+            return parsed.map((z: string) => ({ zone: z, minutesBefore: 60 }));
+          }
+          return parsed;
+        }
+        return [];
       } catch {
-        return '';
+        return [];
       }
     }
-    return '';
+    return [];
   });
   const [extras, setExtras] = useState<Array<{name: string; priceTl: number; priceUsd: number; description: string}>>(() => {
     if (activity && (activity as any).extras) {
@@ -486,7 +495,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setSharedWithPartners(false);
     setSelectedPartnershipIds([]);
     setPartnerPrices({});
-    setTransferZones("");
+    setTransferZones([]);
     setExtras([]);
     setFaq([]);
     setFormErrors({});
@@ -580,11 +589,8 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       .map((a: string) => a.trim())
       .filter((a: string) => a.length > 0);
     
-    // Parse transfer zones from comma-separated string
-    const zonesArray = transferZones
-      .split(',')
-      .map((z: string) => z.trim())
-      .filter((z: string) => z.length > 0);
+    // Transfer zones is already an array of {zone, minutesBefore} objects
+    const zonesArray = transferZones.filter(z => z.zone && z.zone.trim().length > 0);
     
     // Parse web sitesi alanları
     const tourLanguagesArray = tourLanguages.split(',').map((l: string) => l.trim().toLowerCase()).filter((l: string) => l.length > 0);
@@ -1374,16 +1380,71 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   </div>
                   
                   {hasFreeHotelTransfer && (
-                    <div className="space-y-2 pt-2 border-t">
-                      <Label>Transfer Bölgeleri</Label>
-                      <Textarea 
-                        value={transferZones}
-                        onChange={(e) => setTransferZones(e.target.value)}
-                        placeholder="Oludeniz, Fethiye Merkez, Hisaronu, Ovaçık, Calis"
-                        className="min-h-[60px]"
-                        data-testid="input-transfer-zones"
-                      />
-                      <p className="text-xs text-muted-foreground">Virgülle ayırarak bölgeleri girin. Bot bu verileri kullanabilir.</p>
+                    <div className="space-y-3 pt-2 border-t">
+                      <div className="flex items-center justify-between">
+                        <Label>Transfer Bölgeleri ve Alınış Süreleri</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setTransferZones([...transferZones, { zone: '', minutesBefore: 60 }])}
+                          data-testid="button-add-transfer-zone"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Bölge Ekle
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Her bölge için aktivite saatinden kaç dakika önce alınacağını belirtin. Bot bu bilgiyi kullanarak müşterilere alınış saatini söyleyecek.</p>
+                      
+                      {transferZones.length === 0 ? (
+                        <div className="text-sm text-muted-foreground text-center py-4 border rounded-md bg-muted/30">
+                          Henüz bölge eklenmedi. "Bölge Ekle" butonuna tıklayarak transfer bölgesi ekleyin.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {transferZones.map((zone, index) => (
+                            <div key={index} className="flex flex-wrap items-center gap-2" data-testid={`transfer-zone-row-${index}`}>
+                              <Input
+                                value={zone.zone}
+                                onChange={(e) => {
+                                  const updated = [...transferZones];
+                                  updated[index] = { ...updated[index], zone: e.target.value };
+                                  setTransferZones(updated);
+                                }}
+                                placeholder="Bölge adı (ör: Fethiye Merkez)"
+                                className="flex-1"
+                                data-testid={`input-zone-name-${index}`}
+                              />
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={zone.minutesBefore}
+                                  onChange={(e) => {
+                                    const updated = [...transferZones];
+                                    updated[index] = { ...updated[index], minutesBefore: parseInt(e.target.value) || 0 };
+                                    setTransferZones(updated);
+                                  }}
+                                  className="w-20"
+                                  min={0}
+                                  data-testid={`input-zone-minutes-${index}`}
+                                />
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">dk önce</span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  const updated = transferZones.filter((_, i) => i !== index);
+                                  setTransferZones(updated);
+                                }}
+                                data-testid={`button-remove-zone-${index}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 

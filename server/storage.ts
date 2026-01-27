@@ -1151,6 +1151,8 @@ export class DatabaseStorage implements IStorage {
         packageTourId: reservations.packageTourId,
         tenantId: reservations.tenantId,
         activityName: activities.name,
+        hotelName: reservations.hotelName,
+        hasHotelTransfer: reservations.hasHotelTransfer,
       })
       .from(reservations)
       .leftJoin(activities, eq(reservations.activityId, activities.id))
