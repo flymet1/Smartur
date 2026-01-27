@@ -1429,7 +1429,10 @@ export function registerPublicApiRoutes(app: Express) {
         date: input.date,
         time: input.time,
         quantity: input.quantity,
-        totalPrice: activity.price * input.quantity,
+        totalPrice,
+        paymentType,
+        depositRequired,
+        remainingPayment,
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1830,6 +1833,202 @@ ${urls}
     } catch (err) {
       console.error("Sitemap generation error:", err);
       res.status(500).send("Error generating sitemap");
+    }
+  });
+
+  // === PAYMENT ENDPOINTS ===
+  // Initialize checkout payment
+  app.post("/api/website/payment/initialize", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const { reservationId, customerName, customerSurname, customerEmail, customerPhone, customerIp } = req.body;
+
+      if (!reservationId) {
+        return res.status(400).json({ error: "Rezervasyon ID gerekli" });
+      }
+
+      // Get reservation details
+      const [reservation] = await db
+        .select()
+        .from(reservations)
+        .where(and(eq(reservations.id, reservationId), eq(reservations.tenantId, tenantId)))
+        .limit(1);
+
+      if (!reservation) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadı" });
+      }
+
+      // Get activity for name
+      const activityId = reservation.activityId;
+      let activityName = "Aktivite";
+      if (activityId) {
+        const [activity] = await db
+          .select({ name: activities.name })
+          .from(activities)
+          .where(eq(activities.id, activityId))
+          .limit(1);
+        if (activity) {
+          activityName = activity.name;
+        }
+      }
+
+      const { PaymentService } = await import("./paymentService");
+      
+      // Determine callback URL based on domain
+      const host = req.get("host") || "";
+      const protocol = req.protocol || "https";
+      const callbackUrl = `${protocol}://${host}/api/website/payment/callback`;
+
+      const result = await PaymentService.initializePayment({
+        tenantId,
+        reservationId: reservation.id,
+        price: reservation.priceTl || 0,
+        paidPrice: reservation.priceTl || 0,
+        currency: "TRY",
+        buyer: {
+          id: `BUYER-${reservation.id}`,
+          name: customerName || reservation.customerName?.split(" ")[0] || "Müşteri",
+          surname: customerSurname || reservation.customerName?.split(" ").slice(1).join(" ") || "",
+          email: customerEmail || reservation.customerEmail || "email@example.com",
+          gsmNumber: customerPhone || reservation.customerPhone || "",
+          ip: customerIp || req.ip || "127.0.0.1"
+        },
+        basketItems: [{
+          id: `ITEM-${reservation.activityId || 0}`,
+          name: activityName,
+          category1: "Turizm",
+          price: (reservation.priceTl || 0).toString(),
+          itemType: "VIRTUAL"
+        }],
+        callbackUrl
+      });
+
+      if (result.success) {
+        // Store token in reservation for later verification
+        await db
+          .update(reservations)
+          .set({ paymentToken: result.token })
+          .where(eq(reservations.id, reservationId));
+
+        res.json({
+          success: true,
+          paymentPageUrl: result.paymentPageUrl,
+          token: result.token
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.errorMessage || "Ödeme başlatılamadı"
+        });
+      }
+    } catch (err) {
+      console.error("Payment initialization error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Payment callback (from iyzico)
+  app.post("/api/website/payment/callback", async (req, res) => {
+    try {
+      const { token, status } = req.body;
+
+      if (!token) {
+        return res.status(400).send("Token required");
+      }
+
+      // Find reservation by payment token
+      const [reservation] = await db
+        .select()
+        .from(reservations)
+        .where(eq(reservations.paymentToken, token))
+        .limit(1);
+
+      if (!reservation || !reservation.tenantId) {
+        console.error("Payment callback: Reservation not found for token:", token);
+        return res.status(404).send("Reservation not found");
+      }
+
+      const resTenantId = reservation.tenantId;
+      const { PaymentService } = await import("./paymentService");
+      const result = await PaymentService.handleCallback(resTenantId, {
+        token,
+        status,
+        conversationId: `RES-${reservation.id}`
+      });
+
+      if (result.success) {
+        // Update reservation payment status
+        await db
+          .update(reservations)
+          .set({
+            paymentStatus: "paid",
+            paymentId: result.paymentId,
+            paymentDate: new Date()
+          })
+          .where(eq(reservations.id, reservation.id));
+
+        // Redirect to success page
+        const [tenant] = await db
+          .select({ websiteDomain: tenants.websiteDomain })
+          .from(tenants)
+          .where(eq(tenants.id, resTenantId))
+          .limit(1);
+
+        const baseUrl = tenant?.websiteDomain ? `https://${tenant.websiteDomain}` : "";
+        res.redirect(`${baseUrl}/tr/odeme-basarili?reservation=${reservation.id}&token=${reservation.trackingToken || ""}`);
+      } else {
+        // Update reservation payment status to failed
+        await db
+          .update(reservations)
+          .set({ paymentStatus: "failed" })
+          .where(eq(reservations.id, reservation.id));
+
+        const [tenant] = await db
+          .select({ websiteDomain: tenants.websiteDomain })
+          .from(tenants)
+          .where(eq(tenants.id, resTenantId))
+          .limit(1);
+
+        const baseUrl = tenant?.websiteDomain ? `https://${tenant.websiteDomain}` : "";
+        res.redirect(`${baseUrl}/tr/odeme-basarisiz?reservation=${reservation.id}&token=${reservation.trackingToken || ""}&error=${encodeURIComponent(result.errorMessage || "Ödeme başarısız")}`);
+      }
+    } catch (err) {
+      console.error("Payment callback error:", err);
+      res.status(500).send("Server error");
+    }
+  });
+
+  // Check payment status
+  app.get("/api/website/payment/status/:reservationId", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const reservationId = parseInt(req.params.reservationId);
+
+      const [reservation] = await db
+        .select({
+          id: reservations.id,
+          paymentStatus: reservations.paymentStatus,
+          paymentId: reservations.paymentId,
+          paymentDate: reservations.paymentDate,
+          priceTl: reservations.priceTl
+        })
+        .from(reservations)
+        .where(and(eq(reservations.id, reservationId), eq(reservations.tenantId, tenantId)))
+        .limit(1);
+
+      if (!reservation) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadı" });
+      }
+
+      res.json({
+        status: reservation.paymentStatus || "pending",
+        paymentId: reservation.paymentId,
+        paymentDate: reservation.paymentDate,
+        priceTl: reservation.priceTl
+      });
+    } catch (err) {
+      console.error("Payment status error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
     }
   });
 }

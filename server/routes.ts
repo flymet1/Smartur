@@ -6028,6 +6028,109 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     }
   });
 
+  // === PAYMENT SETTINGS ENDPOINTS ===
+  // GET payment settings
+  app.get("/api/settings/payment", requirePermission(PERMISSIONS.SETTINGS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      const [tenant] = await db
+        .select({
+          provider: tenants.websitePaymentProvider,
+          testMode: tenants.websitePaymentTestMode,
+          hasApiKey: tenants.websitePaymentApiKey,
+        })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+
+      if (!tenant) {
+        return res.status(404).json({ error: "Acenta bulunamadı" });
+      }
+
+      res.json({
+        provider: tenant.provider || "",
+        configured: !!(tenant.provider && tenant.hasApiKey),
+        testMode: tenant.testMode !== false
+      });
+    } catch (err) {
+      console.error("Get payment settings error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // POST payment settings
+  app.post("/api/settings/payment", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      const { provider, apiKey, secretKey, testMode } = req.body;
+
+      if (!provider || !apiKey || !secretKey) {
+        return res.status(400).json({ error: "Tüm alanlar gereklidir" });
+      }
+
+      // Encrypt the keys before storing
+      const { encrypt } = await import("./encryption");
+      const encryptedApiKey = encrypt(apiKey);
+      const encryptedSecretKey = encrypt(secretKey);
+
+      await db
+        .update(tenants)
+        .set({
+          websitePaymentProvider: provider,
+          websitePaymentApiKey: encryptedApiKey,
+          websitePaymentSecretKey: encryptedSecretKey,
+          websitePaymentTestMode: testMode !== false
+        })
+        .where(eq(tenants.id, tenantId));
+
+      // Clear provider cache
+      const { PaymentService } = await import("./paymentService");
+      PaymentService.clearProviderCache(tenantId);
+
+      res.json({ success: true, message: "Ödeme ayarları kaydedildi" });
+    } catch (err) {
+      console.error("Save payment settings error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // DELETE payment settings
+  app.delete("/api/settings/payment", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+
+      await db
+        .update(tenants)
+        .set({
+          websitePaymentProvider: null,
+          websitePaymentApiKey: null,
+          websitePaymentSecretKey: null,
+          websitePaymentTestMode: true
+        })
+        .where(eq(tenants.id, tenantId));
+
+      // Clear provider cache
+      const { PaymentService } = await import("./paymentService");
+      PaymentService.clearProviderCache(tenantId);
+
+      res.json({ success: true, message: "Ödeme entegrasyonu kaldırıldı" });
+    } catch (err) {
+      console.error("Delete payment settings error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
   // === COMPREHENSIVE WEBSITE SETTINGS ENDPOINT ===
   // GET all website settings for the tenant
   app.get("/api/website-settings", requirePermission(PERMISSIONS.SETTINGS_VIEW), async (req, res) => {

@@ -46,6 +46,7 @@ export const tenants = pgTable("tenants", {
   websitePaymentProvider: text("website_payment_provider"), // iyzico, paytr, stripe
   websitePaymentApiKey: text("website_payment_api_key"), // Ödeme API key (şifreli)
   websitePaymentSecretKey: text("website_payment_secret_key"), // Ödeme secret key (şifreli)
+  websitePaymentTestMode: boolean("website_payment_test_mode").default(true), // Test/Sandbox modu
   websiteLanguages: text("website_languages").default('["tr"]'), // Desteklenen diller JSON array
   // === WEB SİTESİ SAYFA İÇERİKLERİ ===
   websiteContactPageTitle: text("website_contact_page_title"), // İletişim sayfası başlığı
@@ -272,7 +273,10 @@ export const reservations = pgTable("reservations", {
   trackingTokenExpiresAt: timestamp("tracking_token_expires_at"), // Token geçerlilik süresi (aktivite tarihi + 1 gün)
   hotelName: text("hotel_name"), // WooCommerce'den gelen otel ismi
   hasTransfer: boolean("has_transfer").default(false), // Otel transferi istendi mi
-  paymentStatus: text("payment_status").default("unpaid"), // unpaid, partial, paid - Odeme durumu
+  paymentStatus: text("payment_status").default("unpaid"), // unpaid, partial, paid, failed - Odeme durumu
+  paymentToken: text("payment_token"), // iyzico ödeme token'ı
+  paymentId: text("payment_id"), // iyzico ödeme ID'si
+  paymentDate: timestamp("payment_date"), // Ödeme tarihi
   notes: text("notes"), // Notlar (partner rezervasyonlarında "[Partner: isim]" formatı)
   createdByUserId: integer("created_by_user_id"), // Manuel ekleyen kullanıcı ID'si
   createdAt: timestamp("created_at").defaultNow(),

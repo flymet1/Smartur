@@ -75,6 +75,14 @@ export default function Settings() {
   const [viewerPromptLoaded, setViewerPromptLoaded] = useState(false);
   const [customerSupportEmail, setCustomerSupportEmail] = useState("");
   const [whatsappConnected, setWhatsappConnected] = useState(false);
+  
+  // Payment settings
+  const [paymentProvider, setPaymentProvider] = useState<string>("");
+  const [paymentApiKey, setPaymentApiKey] = useState("");
+  const [paymentSecretKey, setPaymentSecretKey] = useState("");
+  const [paymentTestMode, setPaymentTestMode] = useState(true);
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
+  const [paymentConfigured, setPaymentConfigured] = useState(false);
   const [isRefreshingQR, setIsRefreshingQR] = useState(false);
   const [newBlacklistPhone, setNewBlacklistPhone] = useState("");
   const [newBlacklistReason, setNewBlacklistReason] = useState("");
@@ -270,6 +278,23 @@ export default function Settings() {
       setGmailUser(tenantIntegrations.gmailUser);
     }
   }, [tenantIntegrations?.gmailUser]);
+
+  // Load payment settings
+  const { data: paymentSettings, refetch: refetchPaymentSettings } = useQuery<{
+    provider: string;
+    configured: boolean;
+    testMode: boolean;
+  }>({
+    queryKey: ["/api/settings/payment"],
+  });
+
+  useEffect(() => {
+    if (paymentSettings) {
+      setPaymentProvider(paymentSettings.provider || "");
+      setPaymentConfigured(paymentSettings.configured || false);
+      setPaymentTestMode(paymentSettings.testMode !== false);
+    }
+  }, [paymentSettings]);
 
   // Apply loaded bot access settings when data arrives (using useEffect)
   useEffect(() => {
@@ -556,6 +581,60 @@ DEĞİŞİKLİK TALEPLERİNDE:
       }
     } catch (err) {
       toast({ title: "Hata", description: "Gmail baglantisi kaldırilamadi.", variant: "destructive" });
+    }
+  };
+
+  const handleSavePaymentSettings = async () => {
+    if (!paymentProvider) {
+      toast({ title: "Hata", description: "Ödeme sağlayıcısı seçiniz.", variant: "destructive" });
+      return;
+    }
+    if (!paymentApiKey || !paymentSecretKey) {
+      toast({ title: "Hata", description: "API Key ve Secret Key gereklidir.", variant: "destructive" });
+      return;
+    }
+    
+    setIsSavingPayment(true);
+    try {
+      const res = await fetch('/api/settings/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: paymentProvider,
+          apiKey: paymentApiKey,
+          secretKey: paymentSecretKey,
+          testMode: paymentTestMode
+        })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast({ title: "Başarılı", description: "Ödeme ayarları kaydedildi." });
+        setPaymentApiKey("");
+        setPaymentSecretKey("");
+        await refetchPaymentSettings();
+      } else {
+        toast({ title: "Hata", description: data.error || "Ödeme ayarları kaydedilemedi.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Ödeme ayarları kaydedilemedi.", variant: "destructive" });
+    } finally {
+      setIsSavingPayment(false);
+    }
+  };
+
+  const handleDisconnectPayment = async () => {
+    try {
+      const res = await fetch('/api/settings/payment', { method: 'DELETE' });
+      if (res.ok) {
+        toast({ title: "Başarılı", description: "Ödeme entegrasyonu kaldırıldı." });
+        setPaymentProvider("");
+        setPaymentApiKey("");
+        setPaymentSecretKey("");
+        await refetchPaymentSettings();
+      }
+    } catch (err) {
+      toast({ title: "Hata", description: "Ödeme entegrasyonu kaldırılamadı.", variant: "destructive" });
     }
   };
   
@@ -873,6 +952,20 @@ DEĞİŞİKLİK TALEPLERİNDE:
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Entegrasyonlar</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'payments' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('payments')}
+                  data-testid="tab-payments"
+                >
+                  <CreditCard className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Ödemeler</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Ödemeler</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -2023,6 +2116,180 @@ DEĞİŞİKLİK TALEPLERİNDE:
           {/* DATA EXPORT TAB */}
           <TabsContent value="data" className="space-y-6">
             <DataExportSection />
+          </TabsContent>
+
+          {/* PAYMENTS TAB */}
+          <TabsContent value="payments" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Ödeme Entegrasyonu
+                </CardTitle>
+                <CardDescription>
+                  Web sitenizde online ödeme almak için ödeme sağlayıcısı yapılandırın.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {paymentConfigured ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                      <div>
+                        <p className="font-medium text-green-800 dark:text-green-200">
+                          {paymentProvider === "iyzico" ? "iyzico" : paymentProvider} Bağlı
+                        </p>
+                        <p className="text-sm text-green-600 dark:text-green-400">
+                          {paymentTestMode ? "Test/Sandbox Modu" : "Canlı Mod"}
+                        </p>
+                      </div>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Bağlantıyı Kaldır
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Ödeme Entegrasyonunu Kaldır</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Bu işlem ödeme entegrasyonunu kaldıracak. Web sitenizde online ödeme özelliği devre dışı kalacak.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>İptal</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDisconnectPayment}>
+                            Kaldır
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Ödeme Sağlayıcısı</Label>
+                      <Select value={paymentProvider} onValueChange={setPaymentProvider}>
+                        <SelectTrigger data-testid="select-payment-provider">
+                          <SelectValue placeholder="Seçiniz..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="iyzico">iyzico</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {paymentProvider === "iyzico" && (
+                      <>
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                          <p className="text-sm text-blue-800 dark:text-blue-200">
+                            <strong>iyzico API bilgilerinizi</strong> iyzico Merchant Panel &gt; Ayarlar &gt; API Bilgileri sayfasından alabilirsiniz.
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="paymentApiKey">API Key</Label>
+                          <Input
+                            id="paymentApiKey"
+                            type="text"
+                            value={paymentApiKey}
+                            onChange={(e) => setPaymentApiKey(e.target.value)}
+                            placeholder="iyzico API Key"
+                            data-testid="input-payment-api-key"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="paymentSecretKey">Secret Key</Label>
+                          <Input
+                            id="paymentSecretKey"
+                            type="password"
+                            value={paymentSecretKey}
+                            onChange={(e) => setPaymentSecretKey(e.target.value)}
+                            placeholder="iyzico Secret Key"
+                            data-testid="input-payment-secret-key"
+                          />
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="paymentTestMode"
+                            checked={paymentTestMode}
+                            onCheckedChange={setPaymentTestMode}
+                            data-testid="switch-payment-test-mode"
+                          />
+                          <Label htmlFor="paymentTestMode" className="flex items-center gap-2">
+                            Test/Sandbox Modu
+                            {paymentTestMode && (
+                              <Badge variant="secondary">Aktif</Badge>
+                            )}
+                          </Label>
+                        </div>
+
+                        <p className="text-sm text-muted-foreground">
+                          Test modunda gerçek ödeme alınmaz. Canlıya geçmeden önce test edin.
+                        </p>
+
+                        <Button
+                          onClick={handleSavePaymentSettings}
+                          disabled={isSavingPayment || !paymentApiKey || !paymentSecretKey}
+                          data-testid="button-save-payment"
+                        >
+                          {isSavingPayment ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Kaydediliyor...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Kaydet
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  Nasıl Çalışır?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">1. Ödeme sağlayıcısı seçin</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Şu an sadece iyzico desteklenmektedir. İleride farklı sağlayıcılar da eklenecektir.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">2. API bilgilerinizi girin</h4>
+                  <p className="text-sm text-muted-foreground">
+                    iyzico Merchant Panel'den aldığınız API Key ve Secret Key bilgilerini girin.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">3. Test edin</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Önce Test modunda entegrasyonu test edin. Sorunsuz çalıştığından emin olduktan sonra canlıya geçin.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">4. Web sitenizde ödeme alın</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Entegrasyon tamamlandığında, müşterileriniz web sitenizden online ödeme yapabilecek.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* PARTNERS TAB */}

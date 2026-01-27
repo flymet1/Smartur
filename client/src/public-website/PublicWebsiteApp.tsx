@@ -11,6 +11,8 @@ import PublicTrackReservation from "./pages/PublicTrackReservation";
 import PublicBlog from "./pages/PublicBlog";
 import PublicBlogDetail from "./pages/PublicBlogDetail";
 import PublicPackageTours from "./pages/PublicPackageTours";
+import PublicPaymentSuccess from "./pages/PublicPaymentSuccess";
+import PublicPaymentFailed from "./pages/PublicPaymentFailed";
 import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
@@ -154,6 +156,8 @@ function PublicWebsiteContent() {
           <PublicBlogDetail websiteData={websiteData} />
         </Route>
         <Route path="/tr/paket-turlar" component={PublicPackageTours} />
+        <Route path="/tr/odeme-basarili" component={PublicPaymentSuccess} />
+        <Route path="/tr/odeme-basarisiz" component={PublicPaymentFailed} />
 
         {/* English routes */}
         <Route path="/en">
@@ -173,6 +177,8 @@ function PublicWebsiteContent() {
           <PublicBlogDetail websiteData={websiteData} />
         </Route>
         <Route path="/en/package-tours" component={PublicPackageTours} />
+        <Route path="/en/payment-success" component={PublicPaymentSuccess} />
+        <Route path="/en/payment-failed" component={PublicPaymentFailed} />
 
         {/* Redirect root to default language */}
         <Route path="/">

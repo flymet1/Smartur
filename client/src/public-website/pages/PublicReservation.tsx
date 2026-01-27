@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
-import { ChevronLeft, Calendar, Clock, Users, CheckCircle, Loader2, Plus, Minus, Package } from "lucide-react";
+import { ChevronLeft, Calendar, Clock, Users, CheckCircle, Loader2, Plus, Minus, Package, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,14 @@ export default function PublicReservation() {
   const [selectedExtras, setSelectedExtras] = useState<SelectedExtra[]>([]);
   const [isSuccess, setIsSuccess] = useState(false);
   const [trackingToken, setTrackingToken] = useState("");
+  const [reservationId, setReservationId] = useState<number | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<{
+    paymentType: string;
+    depositRequired: number;
+    remainingPayment: number;
+    totalPrice: number;
+  } | null>(null);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
 
   const { data: activity, isLoading: activityLoading } = useQuery<PublicActivity>({
     queryKey: [getApiUrl(`/api/website/activities/${activityId}`)],
@@ -70,9 +78,18 @@ export default function PublicReservation() {
     onSuccess: (data) => {
       setIsSuccess(true);
       setTrackingToken(data.trackingToken);
+      setReservationId(data.id);
+      if (data.paymentType && data.paymentType !== "none") {
+        setPaymentInfo({
+          paymentType: data.paymentType,
+          depositRequired: data.depositRequired || 0,
+          remainingPayment: data.remainingPayment || 0,
+          totalPrice: data.totalPrice || 0,
+        });
+      }
       toast({
-        title: "Rezervasyon Oluşturuldu",
-        description: "Rezervasyonunuz başarıyla alındı.",
+        title: "Rezervasyon Olusturuldu",
+        description: "Rezervasyonunuz basariyla alindi.",
       });
     },
     onError: (error: any) => {
@@ -87,6 +104,40 @@ export default function PublicReservation() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createReservationMutation.mutate({ ...formData, extras: selectedExtras });
+  };
+
+  const handlePayment = async () => {
+    if (!reservationId) return;
+    
+    setIsPaymentLoading(true);
+    try {
+      const response = await apiRequest("POST", getApiUrl("/api/website/payment/initialize"), {
+        reservationId,
+        customerName: formData.customerName.split(" ")[0] || "Musteri",
+        customerSurname: formData.customerName.split(" ").slice(1).join(" ") || "",
+        customerEmail: formData.customerEmail || "",
+        customerPhone: formData.customerPhone || "",
+      });
+      const data = await response.json();
+      
+      if (data.success && data.paymentPageUrl) {
+        window.location.href = data.paymentPageUrl;
+      } else {
+        toast({
+          title: "Hata",
+          description: data.error || "Odeme sayfasi acilamadi.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Odeme baslatılamadi.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPaymentLoading(false);
+    }
   };
 
   const updateField = (field: string, value: any) => {
@@ -172,9 +223,9 @@ export default function PublicReservation() {
           <CardContent className="pt-6 text-center">
             <div className="mb-6">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Rezervasyon Başarılı!</h2>
+              <h2 className="text-2xl font-bold mb-2">Rezervasyon Basarili!</h2>
               <p className="text-muted-foreground">
-                Rezervasyonunuz başarıyla oluşturuldu. Size en kısa sürede dönüş yapılacaktır.
+                Rezervasyonunuz basariyla olusturuldu. Size en kisa surede donus yapilacaktir.
               </p>
             </div>
 
@@ -183,12 +234,49 @@ export default function PublicReservation() {
               <p className="font-mono font-bold text-lg">{trackingToken}</p>
             </div>
 
+            {paymentInfo && paymentInfo.depositRequired > 0 && (
+              <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg mb-6">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <p className="font-semibold text-primary">
+                    {paymentInfo.paymentType === "full" ? "Tam Odeme" : "On Odeme"}
+                  </p>
+                </div>
+                <p className="text-2xl font-bold text-primary mb-1">
+                  {paymentInfo.depositRequired.toLocaleString()} TL
+                </p>
+                {paymentInfo.remainingPayment > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Kalan tutar: {paymentInfo.remainingPayment.toLocaleString()} TL
+                  </p>
+                )}
+                <Button 
+                  className="w-full mt-4" 
+                  onClick={handlePayment}
+                  disabled={isPaymentLoading}
+                  data-testid="button-pay-online"
+                >
+                  {isPaymentLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Yukleniyor...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Simdi Ode
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Link href={getLocalizedPath(`/takip?token=${trackingToken}`)}>
-                <Button className="w-full">Rezervasyonumu Takip Et</Button>
+                <Button variant={paymentInfo ? "outline" : "default"} className="w-full">Rezervasyonumu Takip Et</Button>
               </Link>
               <Link href={getLocalizedPath("/")}>
-                <Button variant="outline" className="w-full">Ana Sayfaya Dön</Button>
+                <Button variant="outline" className="w-full">Ana Sayfaya Don</Button>
               </Link>
             </div>
           </CardContent>
