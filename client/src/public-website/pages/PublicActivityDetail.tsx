@@ -1334,16 +1334,6 @@ export default function PublicActivityDetail() {
         {(websiteData?.contactPhone || websiteData?.websiteContactPhone || websiteData?.websiteWhatsappNumber) && (
           <div className="mt-16">
             <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 rounded-2xl p-8 md:p-12 overflow-hidden">
-              <div className="absolute inset-0 opacity-10">
-                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <defs>
-                    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
-                    </pattern>
-                  </defs>
-                  <rect width="100" height="100" fill="url(#grid)" />
-                </svg>
-              </div>
               <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full" />
               <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/10 rounded-full" />
               <div className="absolute top-1/2 right-1/4 w-3 h-3 bg-white/30 rounded-full" />
