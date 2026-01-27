@@ -64,6 +64,7 @@ export default function PublicActivityDetail() {
   const [, setLocation] = useLocation();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   
   // Reservation states
   const [reservationStep, setReservationStep] = useState<"selection" | "participants" | "contact" | "success">("selection");
@@ -933,7 +934,7 @@ export default function PublicActivityDetail() {
                         <>
                           <div className="space-y-3">
                             <Label>{language === "en" ? "Select Date" : "Tarih Seçin"}</Label>
-                            <Popover>
+                            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                               <PopoverTrigger asChild>
                                 <Button
                                   variant="outline"
@@ -958,6 +959,7 @@ export default function PublicActivityDetail() {
                                         date: format(date, "yyyy-MM-dd"), 
                                         time: "" 
                                       }));
+                                      setCalendarOpen(false);
                                     }
                                   }}
                                   locale={language === "tr" ? trLocale : enUS}
