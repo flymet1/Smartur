@@ -1346,10 +1346,15 @@ export default function PublicActivityDetail() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   {(websiteData?.websiteContactPhone || websiteData?.contactPhone) && (
                     <a href={`tel:${websiteData?.websiteContactPhone || websiteData?.contactPhone}`}>
-                      <Button size="lg" className="gap-3 rounded-full px-8 shadow-lg shadow-primary/25">
-                        <Phone className="h-5 w-5" />
-                        {websiteData?.websiteContactPhone || websiteData?.contactPhone}
-                      </Button>
+                      <div className="group relative inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/30 cursor-pointer">
+                        <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                          <Phone className="h-5 w-5" />
+                        </div>
+                        <div className="text-left">
+                          <div className="text-xs opacity-80">{language === "en" ? "Call Us" : "Bizi Arayın"}</div>
+                          <div className="font-semibold">{websiteData?.websiteContactPhone || websiteData?.contactPhone}</div>
+                        </div>
+                      </div>
                     </a>
                   )}
                   {websiteData?.websiteWhatsappNumber && (
@@ -1358,10 +1363,15 @@ export default function PublicActivityDetail() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <Button size="lg" variant="outline" className="gap-3 rounded-full px-8 border-2 border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20">
-                        <MessageCircle className="h-5 w-5" />
-                        WhatsApp
-                      </Button>
+                      <div className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-green-500/30 cursor-pointer">
+                        <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                          <MessageCircle className="h-5 w-5" />
+                        </div>
+                        <div className="text-left">
+                          <div className="text-xs opacity-80">{language === "en" ? "Chat with Us" : "Bizimle Yazışın"}</div>
+                          <div className="font-semibold">WhatsApp</div>
+                        </div>
+                      </div>
                     </a>
                   )}
                 </div>
