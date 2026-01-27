@@ -840,6 +840,11 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
         } catch {}
       }
       
+      // Bot için ek talimatlar (aktiviteye özel kurallar)
+      if (a.botPrompt) {
+        desc += `\n  ⚠️ ÖZEL TALİMATLAR: ${a.botPrompt}`;
+      }
+      
       // Minimum yaş bilgisi
       if (a.minAge) {
         desc += `\n  Minimum Yaş: ${a.minAge} yaş ve üzeri`;

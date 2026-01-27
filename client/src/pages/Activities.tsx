@@ -299,6 +299,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   // FAQ state
   const [faq, setFaq] = useState<FaqItem[]>(() => parseFaq((activity as any)?.faq));
   
+  // Bot için ek talimatlar
+  const [botPrompt, setBotPrompt] = useState(activity ? (activity as any).botPrompt || "" : "");
+  
   // Web sitesi için yeni alanlar
   const [region, setRegion] = useState(activity ? (activity as any).region || "" : "");
   const [meetingPoint, setMeetingPoint] = useState(activity ? (activity as any).meetingPoint || "" : "");
@@ -498,6 +501,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setTransferZones([]);
     setExtras([]);
     setFaq([]);
+    setBotPrompt("");
     setFormErrors({});
     setRegion("");
     setMeetingPoint("");
@@ -625,6 +629,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       transferZones: JSON.stringify(zonesArray),
       extras: JSON.stringify(extras),
       faq: stringifyFaq(faq),
+      botPrompt: botPrompt || null,
       sharedWithPartners: sharedWithPartners,
       region: region || null,
       meetingPoint: meetingPoint || null,
@@ -1460,6 +1465,23 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     />
                     <p className="text-xs text-muted-foreground">Her satır, etiket bulutu olarak transfer bölgelerinin altında gösterilecektir.</p>
                   </div>
+                </div>
+                
+                {/* Bot için Özel Talimatlar */}
+                <div className="space-y-2 bg-muted/50 p-4 rounded-lg border border-muted">
+                  <Label htmlFor="botPrompt" className="text-base flex items-center gap-2">
+                    Bot için Özel Talimatlar
+                    <span className="text-xs font-normal text-muted-foreground">(Sadece WhatsApp botu görür)</span>
+                  </Label>
+                  <Textarea 
+                    id="botPrompt"
+                    value={botPrompt}
+                    onChange={(e) => setBotPrompt(e.target.value)}
+                    placeholder="Bu aktiviteye özel kurallar ve talimatlar yazın. Örnek:&#10;• Bu aktivite için 5 yaş altı çocuk kabul edilmez&#10;• Kış aylarında bu tur yapılmıyor, alternatif olarak X turu öner&#10;• Ödeme şarttır, taksit yapılmaz&#10;• 2 kişiye 1 kişi bedava kampanyası var"
+                    rows={4}
+                    data-testid="input-bot-prompt"
+                  />
+                  <p className="text-xs text-muted-foreground">Bu talimatlar sadece WhatsApp botuna görünür ve web sitesinde gösterilmez. Bot bu kurallara göre müşterilere cevap verir.</p>
                 </div>
 
                 {/* Yorum Kartları */}

@@ -168,6 +168,8 @@ export const activities = pgTable("activities", {
   extras: text("extras").default("[]"), // JSON array of {name, priceTl, priceUsd, description}
   // Sık Sorulan Sorular
   faq: text("faq").default("[]"), // JSON array of {question, answer}
+  // Bot için ek talimatlar
+  botPrompt: text("bot_prompt"), // Aktiviteye özel bot talimatları (örn: "Bu aktivite için 5 yaş altı çocuk kabul edilmez")
   // Partner Paylaşımı
   sharedWithPartners: boolean("shared_with_partners").default(false), // Bu aktivite partner acentalarla paylaşılsın mı?
   // Web sitesi görselleri
