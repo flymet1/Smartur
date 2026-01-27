@@ -38,13 +38,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
-  NOTIFICATION_SOUNDS, 
-  getNotificationSoundSetting, 
-  setNotificationSoundSetting,
   isNotificationSoundEnabled,
   setNotificationSoundEnabled,
-  playNotificationSound,
-  type NotificationSoundType
+  playNotificationSound
 } from '@/lib/notificationSounds';
 
 export default function Settings() {
@@ -6357,23 +6353,16 @@ function NotificationPreferencesTab({ onNavigateToTemplate }: { onNavigateToTemp
 // Notification Sound Settings Component
 function NotificationSoundSettings() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => isNotificationSoundEnabled());
-  const [selectedSound, setSelectedSound] = useState<string>(() => getNotificationSoundSetting());
-  const [playingSound, setPlayingSound] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const handlePreviewSound = async (soundId: string) => {
-    if (soundId === 'none') return;
-    setPlayingSound(soundId);
+  const handlePreviewSound = async () => {
+    setIsPlaying(true);
     try {
-      await playNotificationSound(soundId as NotificationSoundType);
+      await playNotificationSound('alert');
     } catch (error) {
       console.error('Failed to play sound:', error);
     }
-    setTimeout(() => setPlayingSound(null), 500);
-  };
-
-  const handleSelectSound = (soundId: string) => {
-    setSelectedSound(soundId);
-    setNotificationSoundSetting(soundId as NotificationSoundType);
+    setTimeout(() => setIsPlaying(false), 500);
   };
 
   const handleToggleEnabled = (enabled: boolean) => {
@@ -6415,55 +6404,26 @@ function NotificationSoundSettings() {
         </div>
 
         {soundEnabled && (
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Ses Seçin</Label>
-            <Select value={selectedSound} onValueChange={handleSelectSound}>
-              <SelectTrigger className="w-full" data-testid="select-notification-sound">
-                <SelectValue placeholder="Ses seçin" />
-              </SelectTrigger>
-              <SelectContent>
-                {NOTIFICATION_SOUNDS.map((sound: { id: string; name: string; description: string }) => (
-                  <SelectItem key={sound.id} value={sound.id}>
-                    <div className="flex items-center gap-2">
-                      {sound.id === 'none' ? (
-                        <VolumeX className="h-4 w-4" />
-                      ) : (
-                        <Volume2 className="h-4 w-4" />
-                      )}
-                      <span>{sound.name}</span>
-                      <span className="text-xs text-muted-foreground">- {sound.description}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {selectedSound !== 'none' && (
-              <div className="flex items-center gap-3">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handlePreviewSound(selectedSound)}
-                  disabled={playingSound !== null}
-                  data-testid="button-preview-sound"
-                >
-                  {playingSound === selectedSound ? (
-                    <>
-                      <Volume2 className="h-4 w-4 mr-2 animate-pulse" />
-                      Çalınıyor...
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="h-4 w-4 mr-2" />
-                      Sesi Dinle
-                    </>
-                  )}
-                </Button>
-                <p className="text-sm text-muted-foreground">
-                  Seçilen: <span className="font-medium">{NOTIFICATION_SOUNDS.find((s: { id: string }) => s.id === selectedSound)?.name}</span>
-                </p>
-              </div>
-            )}
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handlePreviewSound}
+              disabled={isPlaying}
+              data-testid="button-preview-sound"
+            >
+              {isPlaying ? (
+                <>
+                  <Volume2 className="h-4 w-4 mr-2 animate-pulse" />
+                  Çalınıyor...
+                </>
+              ) : (
+                <>
+                  <Volume2 className="h-4 w-4 mr-2" />
+                  Sesi Dinle
+                </>
+              )}
+            </Button>
           </div>
         )}
       </CardContent>

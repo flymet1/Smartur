@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { playCurrentNotificationSound } from "@/lib/notificationSounds";
+import { isNotificationSoundEnabled, playNotificationSound } from "@/lib/notificationSounds";
 
 // Hook to detect mobile viewport (matches xl: breakpoint at 1280px)
 function useIsMobile() {
@@ -207,7 +207,7 @@ export function GlobalNotifications() {
       // New notifications arrived - show toast and play sound for important ones
       const newCount = count - previousRef.current;
       if (isImportant) {
-        playCurrentNotificationSound();
+        if (isNotificationSoundEnabled()) playNotificationSound('alert');
       }
       toast({
         title: newTitle.replace('{count}', newCount.toString()),
@@ -318,7 +318,7 @@ export function GlobalNotifications() {
 
         // Play sound only for important notifications (destructive ones)
         if (variant === 'destructive') {
-          playCurrentNotificationSound();
+          if (isNotificationSoundEnabled()) playNotificationSound('alert');
         }
         toast({
           title: notification.title,
