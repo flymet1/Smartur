@@ -834,6 +834,65 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
         } catch {}
       }
       
+      // Minimum yaş bilgisi
+      if (a.minAge) {
+        desc += `\n  Minimum Yaş: ${a.minAge} yaş ve üzeri`;
+      }
+      
+      // Tur dilleri
+      try {
+        const languages = JSON.parse(a.tourLanguages || '[]');
+        if (languages.length > 0) {
+          desc += `\n  Tur Dilleri: ${languages.join(', ')}`;
+        }
+      } catch {}
+      
+      // Dahil olanlar
+      try {
+        const included = JSON.parse(a.includedItems || '[]');
+        if (included.length > 0) {
+          desc += `\n  Fiyata Dahil Olanlar: ${included.join(', ')}`;
+        }
+      } catch {}
+      
+      // Dahil olmayanlar
+      try {
+        const excluded = JSON.parse(a.excludedItems || '[]');
+        if (excluded.length > 0) {
+          desc += `\n  Fiyata Dahil Olmayanlar: ${excluded.join(', ')}`;
+        }
+      } catch {}
+      
+      // Getirmeniz gerekenler
+      try {
+        const whatToBring = JSON.parse(a.whatToBring || '[]');
+        if (whatToBring.length > 0) {
+          desc += `\n  Yanınızda Getirmeniz Gerekenler: ${whatToBring.join(', ')}`;
+        }
+      } catch {}
+      
+      // İzin verilmeyenler
+      try {
+        const notAllowed = JSON.parse(a.notAllowed || '[]');
+        if (notAllowed.length > 0) {
+          desc += `\n  İzin Verilmeyenler: ${notAllowed.join(', ')}`;
+        }
+      } catch {}
+      
+      // Tur programı/itinerary
+      try {
+        const itinerary = JSON.parse(a.itinerary || '[]');
+        if (itinerary.length > 0) {
+          desc += `\n  Tur Programı:`;
+          for (const step of itinerary) {
+            if (step.time && step.title) {
+              desc += `\n    * ${step.time}: ${step.title}`;
+              if (step.description) desc += ` - ${step.description}`;
+            }
+          }
+        }
+      } catch {}
+      
       return desc;
     })
     .join("\n") || "") : "";
