@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, MapPin, Calendar, Users, Star, ArrowRight, Shield, Award, Clock, ThumbsUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MapPin, Calendar, Users, Star, ArrowRight, Shield, Award, Clock, ThumbsUp, ChevronDown, ChevronLeft, ChevronRight, Phone, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -741,6 +741,62 @@ export default function PublicHome({ websiteData }: PublicHomeProps) {
                   </p>
                 </a>
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {(websiteData?.contactPhone || websiteData?.websiteContactPhone || websiteData?.websiteWhatsappNumber) && (
+        <section className="py-12 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 rounded-2xl p-8 md:p-12 overflow-hidden">
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full" />
+              <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/10 rounded-full" />
+              <div className="absolute top-1/2 right-1/4 w-3 h-3 bg-white/30 rounded-full" />
+              <div className="absolute top-1/4 left-1/3 w-2 h-2 bg-white/40 rounded-full" />
+              <div className="absolute bottom-1/3 right-1/2 w-2 h-2 bg-white/20 rounded-full" />
+              <div className="relative z-10 text-center max-w-2xl mx-auto text-primary-foreground">
+                <h3 className="text-2xl md:text-3xl font-bold mb-3">
+                  {language === "en" ? "Need Help?" : "Yardıma mı İhtiyacınız Var?"}
+                </h3>
+                <p className="text-primary-foreground/80 mb-8">
+                  {language === "en" 
+                    ? "Our team is here to help you with your reservation. Contact us anytime!"
+                    : "Ekibimiz rezervasyonunuzla ilgili size yardımcı olmak için burada. Bize her zaman ulaşabilirsiniz!"}
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  {(websiteData?.websiteContactPhone || websiteData?.contactPhone) && (
+                    <a href={`tel:${websiteData?.websiteContactPhone || websiteData?.contactPhone}`}>
+                      <div className="group relative inline-flex items-center gap-3 bg-white text-foreground px-6 py-3.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer">
+                        <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                          <Phone className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="text-left">
+                          <div className="text-xs text-muted-foreground">{language === "en" ? "Call Us" : "Bizi Arayın"}</div>
+                          <div className="font-semibold">{websiteData?.websiteContactPhone || websiteData?.contactPhone}</div>
+                        </div>
+                      </div>
+                    </a>
+                  )}
+                  {websiteData?.websiteWhatsappNumber && (
+                    <a 
+                      href={`https://wa.me/${websiteData.websiteWhatsappNumber.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <div className="group relative inline-flex items-center gap-3 bg-white text-foreground px-6 py-3.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer">
+                        <div className="flex items-center justify-center w-10 h-10 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                          <MessageCircle className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div className="text-left">
+                          <div className="text-xs text-muted-foreground">{language === "en" ? "Chat with Us" : "Bizimle Yazışın"}</div>
+                          <div className="font-semibold text-green-600">WhatsApp</div>
+                        </div>
+                      </div>
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </section>
