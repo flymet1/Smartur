@@ -254,7 +254,6 @@ export function PublicFooter({ data }: PublicFooterProps) {
 
         {smarturSettings?.footer_enabled && (
           <div className="border-t mt-4 pt-4 flex flex-col items-center justify-center gap-1">
-            <span className={`text-xs ${mutedClass}`}>Powered by</span>
             <a
               href={smarturSettings.footer_link_url || "https://www.mysmartur.com"}
               target="_blank"
