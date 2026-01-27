@@ -10,6 +10,7 @@ import PublicContact from "./pages/PublicContact";
 import PublicTrackReservation from "./pages/PublicTrackReservation";
 import PublicBlog from "./pages/PublicBlog";
 import PublicBlogDetail from "./pages/PublicBlogDetail";
+import PublicPackageTours from "./pages/PublicPackageTours";
 import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
@@ -152,6 +153,7 @@ function PublicWebsiteContent() {
         <Route path="/tr/blog/:slug">
           <PublicBlogDetail websiteData={websiteData} />
         </Route>
+        <Route path="/tr/paket-turlar" component={PublicPackageTours} />
 
         {/* English routes */}
         <Route path="/en">
@@ -170,6 +172,7 @@ function PublicWebsiteContent() {
         <Route path="/en/blog/:slug">
           <PublicBlogDetail websiteData={websiteData} />
         </Route>
+        <Route path="/en/package-tours" component={PublicPackageTours} />
 
         {/* Redirect root to default language */}
         <Route path="/">

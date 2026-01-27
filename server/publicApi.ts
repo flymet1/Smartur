@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { tenants, activities, capacity, reservations, customerRequests, blogPosts, homepageSections, smarturSettings } from "@shared/schema";
+import { tenants, activities, capacity, reservations, customerRequests, blogPosts, homepageSections, smarturSettings, packageTours } from "@shared/schema";
 import { desc } from "drizzle-orm";
 import crypto from "crypto";
 import { z } from "zod";
@@ -865,6 +865,15 @@ export function registerPublicApiRoutes(app: Express) {
       try { heroSlides = JSON.parse(tenant.websiteHeroSlides || "[]"); } catch {}
       try { promoBoxes = JSON.parse(tenant.websitePromoBoxes || "[]"); } catch {}
 
+      // Check if tenant has any active package tours
+      const packageTourCount = await db
+        .select({ id: packageTours.id })
+        .from(packageTours)
+        .where(and(eq(packageTours.tenantId, tenantId), eq(packageTours.active, true)))
+        .limit(1);
+      
+      const hasPackageTours = packageTourCount.length > 0;
+
       let responseData: any = {
         ...tenant,
         websiteSocialLinks: socialLinks,
@@ -874,6 +883,7 @@ export function registerPublicApiRoutes(app: Express) {
         websiteHeroSlides: heroSlides,
         websitePromoBoxes: promoBoxes,
         faqItems,
+        hasPackageTours,
       };
 
       const lang = req.query.lang as string;
@@ -1010,6 +1020,47 @@ export function registerPublicApiRoutes(app: Express) {
       res.json(parsed);
     } catch (err) {
       console.error("Website activities error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  // Get package tours for public website (by domain)
+  app.get("/api/website/package-tours", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+
+      const packageTourList = await db
+        .select({
+          id: packageTours.id,
+          name: packageTours.name,
+          description: packageTours.description,
+          price: packageTours.price,
+          priceUsd: packageTours.priceUsd,
+          reservationLink: packageTours.reservationLink,
+          reservationLinkEn: packageTours.reservationLinkEn,
+          faq: packageTours.faq,
+        })
+        .from(packageTours)
+        .where(and(eq(packageTours.tenantId, tenantId), eq(packageTours.active, true)));
+
+      let parsed = packageTourList.map((pt) => ({
+        ...pt,
+        faq: JSON.parse(pt.faq || "[]"),
+      }));
+
+      const lang = req.query.lang as string;
+      if (lang && lang !== "tr") {
+        parsed = await translateArray(parsed, ["name", "description"], lang);
+        for (let i = 0; i < parsed.length; i++) {
+          if (parsed[i].faq?.length) {
+            parsed[i].faq = await translateArray(parsed[i].faq, ["question", "answer"], lang);
+          }
+        }
+      }
+
+      res.json(parsed);
+    } catch (err) {
+      console.error("Website package tours error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });

@@ -25,6 +25,7 @@ interface PublicHeaderProps {
   availableLanguages?: Language[];
   headerBackgroundColor?: string | null;
   headerTextColor?: string | null;
+  hasPackageTours?: boolean;
 }
 
 export function PublicHeader({ 
@@ -36,7 +37,8 @@ export function PublicHeader({
   socialLinks,
   availableLanguages = ["tr", "en"],
   headerBackgroundColor,
-  headerTextColor
+  headerTextColor,
+  hasPackageTours = false
 }: PublicHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -54,6 +56,7 @@ export function PublicHeader({
   const navItems = [
     { href: getLocalizedPath("/"), label: t.common.home },
     { href: getLocalizedPath("/aktiviteler"), label: t.common.activities },
+    ...(hasPackageTours ? [{ href: getLocalizedPath("/paket-turlar"), label: language === "en" ? "Package Tours" : "Paket Turlar" }] : []),
     { href: getLocalizedPath("/blog"), label: t.blog?.title || "Blog" },
     { href: getLocalizedPath("/iletisim"), label: t.common.contact },
   ];

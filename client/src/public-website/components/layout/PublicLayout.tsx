@@ -36,6 +36,7 @@ export function PublicLayout({ children, data }: PublicLayoutProps) {
         availableLanguages={availableLanguages}
         headerBackgroundColor={data?.websiteHeaderBackgroundColor}
         headerTextColor={data?.websiteHeaderTextColor}
+        hasPackageTours={data?.hasPackageTours}
       />
       <main className="flex-1">{children}</main>
       <PublicFooter data={data} />

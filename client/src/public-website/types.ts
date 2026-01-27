@@ -190,6 +190,8 @@ export interface PublicWebsiteData {
   websitePromoBannerImage: string | null;
   websitePromoBannerPriceText: string | null;
   websitePromoBannerPriceTextEn: string | null;
+  // Package Tours
+  hasPackageTours: boolean;
 }
 
 export interface AvailabilitySlot {
