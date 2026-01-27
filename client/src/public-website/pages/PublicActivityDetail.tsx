@@ -1333,17 +1333,27 @@ export default function PublicActivityDetail() {
 
         {(websiteData?.contactPhone || websiteData?.websiteContactPhone || websiteData?.websiteWhatsappNumber) && (
           <div className="mt-16">
-            <div className="relative bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-2xl p-8 md:p-12 overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary/8 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-              <div className="absolute top-1/2 left-1/4 w-32 h-32 bg-primary/5 rounded-full blur-xl" />
-              <div className="absolute top-1/4 right-1/4 w-24 h-24 border border-primary/10 rounded-full" />
-              <div className="absolute bottom-1/4 right-1/3 w-16 h-16 border border-primary/10 rounded-full" />
-              <div className="relative z-10 text-center max-w-2xl mx-auto">
+            <div className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 rounded-2xl p-8 md:p-12 overflow-hidden">
+              <div className="absolute inset-0 opacity-10">
+                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <defs>
+                    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                      <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5"/>
+                    </pattern>
+                  </defs>
+                  <rect width="100" height="100" fill="url(#grid)" />
+                </svg>
+              </div>
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full" />
+              <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white/10 rounded-full" />
+              <div className="absolute top-1/2 right-1/4 w-3 h-3 bg-white/30 rounded-full" />
+              <div className="absolute top-1/4 left-1/3 w-2 h-2 bg-white/40 rounded-full" />
+              <div className="absolute bottom-1/3 right-1/2 w-2 h-2 bg-white/20 rounded-full" />
+              <div className="relative z-10 text-center max-w-2xl mx-auto text-primary-foreground">
                 <h3 className="text-2xl md:text-3xl font-bold mb-3">
                   {language === "en" ? "Need Help?" : "Yardıma mı İhtiyacınız Var?"}
                 </h3>
-                <p className="text-muted-foreground mb-8">
+                <p className="text-primary-foreground/80 mb-8">
                   {language === "en" 
                     ? "Our team is here to help you with your reservation. Contact us anytime!"
                     : "Ekibimiz rezervasyonunuzla ilgili size yardımcı olmak için burada. Bize her zaman ulaşabilirsiniz!"}
@@ -1351,12 +1361,12 @@ export default function PublicActivityDetail() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   {(websiteData?.websiteContactPhone || websiteData?.contactPhone) && (
                     <a href={`tel:${websiteData?.websiteContactPhone || websiteData?.contactPhone}`}>
-                      <div className="group relative inline-flex items-center gap-3 bg-primary text-primary-foreground px-6 py-3.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-primary/30 cursor-pointer">
-                        <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
-                          <Phone className="h-5 w-5" />
+                      <div className="group relative inline-flex items-center gap-3 bg-white text-foreground px-6 py-3.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer">
+                        <div className="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                          <Phone className="h-5 w-5 text-primary" />
                         </div>
                         <div className="text-left">
-                          <div className="text-xs opacity-80">{language === "en" ? "Call Us" : "Bizi Arayın"}</div>
+                          <div className="text-xs text-muted-foreground">{language === "en" ? "Call Us" : "Bizi Arayın"}</div>
                           <div className="font-semibold">{websiteData?.websiteContactPhone || websiteData?.contactPhone}</div>
                         </div>
                       </div>
@@ -1368,13 +1378,13 @@ export default function PublicActivityDetail() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <div className="group relative inline-flex items-center gap-3 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-green-500/30 cursor-pointer">
-                        <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
-                          <MessageCircle className="h-5 w-5" />
+                      <div className="group relative inline-flex items-center gap-3 bg-white text-foreground px-6 py-3.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer">
+                        <div className="flex items-center justify-center w-10 h-10 bg-green-500/10 rounded-lg group-hover:bg-green-500/20 transition-colors">
+                          <MessageCircle className="h-5 w-5 text-green-600" />
                         </div>
                         <div className="text-left">
-                          <div className="text-xs opacity-80">{language === "en" ? "Chat with Us" : "Bizimle Yazışın"}</div>
-                          <div className="font-semibold">WhatsApp</div>
+                          <div className="text-xs text-muted-foreground">{language === "en" ? "Chat with Us" : "Bizimle Yazışın"}</div>
+                          <div className="font-semibold text-green-600">WhatsApp</div>
                         </div>
                       </div>
                     </a>
