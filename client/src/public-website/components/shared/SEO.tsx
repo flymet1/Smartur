@@ -42,16 +42,33 @@ export function SEO({
 
   if (activity) {
     Object.assign(structuredData, {
-      "@type": "Product",
+      "@type": "TouristTrip",
       name: activity.name,
       description: activity.description,
       image: activity.imageUrl,
+      url: canonicalUrl,
+      touristType: "Adventure",
+      provider: {
+        "@type": "TouristInformationCenter",
+        name: siteName,
+        url: domain,
+      },
       offers: {
         "@type": "Offer",
         price: activity.price,
         priceCurrency: "TRY",
         availability: "https://schema.org/InStock",
+        url: canonicalUrl,
       },
+      ...(activity.durationMinutes && {
+        duration: `PT${Math.floor(activity.durationMinutes / 60)}H${activity.durationMinutes % 60}M`,
+      }),
+      ...(activity.meetingPoint && {
+        itinerary: {
+          "@type": "Place",
+          name: activity.meetingPoint,
+        },
+      }),
     });
   } else {
     const socialLinks: string[] = [];
