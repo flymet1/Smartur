@@ -1103,7 +1103,7 @@ export default function PublicActivityDetail() {
                             </span>
                           </div>
 
-                          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                          <div className="space-y-4">
                             {participants.map((participant, idx) => (
                               <Card key={idx} className="p-4 border-0 shadow-sm">
                                 <div className="flex items-center gap-2 mb-3">
