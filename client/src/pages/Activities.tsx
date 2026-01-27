@@ -929,19 +929,6 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   <p className="text-xs text-muted-foreground">Takvimde bu aktivitenin rezervasyonları seçilen renkte görünecek</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmationMessage">WhatsApp Bot Onay Mesajı</Label>
-                  <p className="text-xs text-muted-foreground mb-1">WhatsApp bot, bu aktivite hakkında müşteriye bilgi verirken bu mesajı kullanır.</p>
-                  <Textarea 
-                    id="confirmationMessage" 
-                    name="confirmationMessage" 
-                    defaultValue={(activity as any)?.confirmationMessage || "Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Rezervasyonunuzu takip etmek için: {takip_linki} Teşekkür ederiz."} 
-                    placeholder="Rezervasyon onayı için özel mesaj..."
-                    className="min-h-[80px]"
-                  />
-                  <p className="text-xs text-muted-foreground">Kullanılabilir etiketler: {'{'}isim{'}'}, {'{'}tarih{'}'}, {'{'}saat{'}'}, {'{'}aktivite{'}'}, {'{'}takip_linki{'}'}</p>
-                </div>
-
                 {/* Partner Paylaşımı - Granüler Seçim */}
                 <div className="space-y-4 bg-primary/5 p-4 rounded-lg border border-primary/20">
                   <div className="space-y-1">

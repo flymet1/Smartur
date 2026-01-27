@@ -783,10 +783,6 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       if (a.reservationLink) desc += `\n  TR Rezervasyon Linki: ${a.reservationLink}`;
       if (a.reservationLinkEn) desc += `\n  EN Reservation Link: ${a.reservationLinkEn}`;
       
-      // Onay mesajı bilgisi (only if access enabled)
-      if (botAccess.confirmation && a.confirmationMessage) {
-        desc += `\n  Türkçe Sipariş Onay Mesajı: ${a.confirmationMessage}`;
-      }
       
       // Transfer bilgisi (only if access enabled)
       if (botAccess.transfer) {
@@ -907,10 +903,6 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       if (pt.reservationLink) desc += `\n  TR Rezervasyon Linki: ${pt.reservationLink}`;
       if (pt.reservationLinkEn) desc += `\n  EN Reservation Link: ${pt.reservationLinkEn}`;
       
-      // Onay mesajı bilgisi (only if access enabled)
-      if (botAccess.confirmation && pt.confirmationMessage) {
-        desc += `\n  Türkçe Sipariş Onay Mesajı: ${pt.confirmationMessage}`;
-      }
       
       // SSS bilgisi (only if access enabled)
       if (botAccess.faq) {
