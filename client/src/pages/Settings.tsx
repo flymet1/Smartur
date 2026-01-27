@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe, BarChart3 } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe, BarChart3, Volume2, VolumeX } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday, Agency } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6306,6 +6306,8 @@ function NotificationPreferencesTab({ onNavigateToTemplate }: { onNavigateToTemp
         </CardContent>
       </Card>
 
+      <NotificationSoundSettings />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -6340,6 +6342,126 @@ function NotificationPreferencesTab({ onNavigateToTemplate }: { onNavigateToTemp
         </CardContent>
       </Card>
     </>
+  );
+}
+
+// Notification Sound Settings Component
+function NotificationSoundSettings() {
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const saved = localStorage.getItem('smartur_notification_sound_enabled');
+    return saved !== 'false';
+  });
+
+  const [selectedSound, setSelectedSound] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'notification';
+    const saved = localStorage.getItem('smartur_notification_sound');
+    return saved || 'notification';
+  });
+
+  const [playingSound, setPlayingSound] = useState<string | null>(null);
+
+  const sounds = [
+    { id: 'chime', name: 'Chime', description: 'Yumuşak zil sesi' },
+    { id: 'bell', name: 'Bell', description: 'Klasik çan sesi' },
+    { id: 'ding', name: 'Ding', description: 'Kısa ding sesi' },
+    { id: 'pop', name: 'Pop', description: 'Pop sesi' },
+    { id: 'notification', name: 'Notification', description: 'Standart bildirim' },
+    { id: 'alert', name: 'Alert', description: 'Dikkat çekici uyarı' },
+  ];
+
+  const handlePreviewSound = async (soundId: string) => {
+    setPlayingSound(soundId);
+    try {
+      const { playNotificationSound } = await import('@/lib/notificationSounds');
+      await playNotificationSound(soundId as any);
+    } catch (error) {
+      console.error('Failed to play sound:', error);
+    }
+    setTimeout(() => setPlayingSound(null), 500);
+  };
+
+  const handleSelectSound = (soundId: string) => {
+    setSelectedSound(soundId);
+    localStorage.setItem('smartur_notification_sound', soundId);
+    handlePreviewSound(soundId);
+  };
+
+  const handleToggleEnabled = (enabled: boolean) => {
+    setSoundEnabled(enabled);
+    localStorage.setItem('smartur_notification_sound_enabled', enabled ? 'true' : 'false');
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Volume2 className="h-5 w-5 text-primary" />
+          Bildirim Sesi Ayarları
+        </CardTitle>
+        <CardDescription>
+          Önemli bildirimlerde ses çalınmasını ayarlayın. Ses seçmeden önce dinleyebilirsiniz.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={soundEnabled}
+              onCheckedChange={handleToggleEnabled}
+              data-testid="switch-notification-sound"
+            />
+            <div>
+              <p className="font-medium">Bildirim Sesi</p>
+              <p className="text-sm text-muted-foreground">
+                Önemli bildirimlerde ses çal
+              </p>
+            </div>
+          </div>
+          {soundEnabled && (
+            <Badge variant="outline" className="text-green-600 border-green-600">
+              Aktif
+            </Badge>
+          )}
+        </div>
+
+        {soundEnabled && (
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Ses Seçin (Dinlemek için tıklayın)</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {sounds.map((sound) => (
+                <Button
+                  key={sound.id}
+                  variant={selectedSound === sound.id ? 'default' : 'outline'}
+                  className={cn(
+                    'h-auto py-3 px-4 flex flex-col items-start gap-1 text-left',
+                    selectedSound === sound.id && 'ring-2 ring-primary'
+                  )}
+                  onClick={() => handleSelectSound(sound.id)}
+                  data-testid={`btn-sound-${sound.id}`}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    {playingSound === sound.id ? (
+                      <Volume2 className="h-4 w-4 animate-pulse" />
+                    ) : (
+                      <VolumeX className="h-4 w-4 opacity-50" />
+                    )}
+                    <span className="font-medium">{sound.name}</span>
+                    {selectedSound === sound.id && (
+                      <CheckCircle className="h-4 w-4 ml-auto text-primary-foreground" />
+                    )}
+                  </div>
+                  <span className="text-xs opacity-70">{sound.description}</span>
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Seçilen ses: <span className="font-medium">{sounds.find(s => s.id === selectedSound)?.name}</span>
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

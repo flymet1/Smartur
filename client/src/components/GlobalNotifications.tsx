@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { playCurrentNotificationSound } from "@/lib/notificationSounds";
 
 // Hook to detect mobile viewport (matches xl: breakpoint at 1280px)
 function useIsMobile() {
@@ -201,6 +202,7 @@ export function GlobalNotifications() {
     if (previousRef.current === null) {
       previousRef.current = count;
       if (count > 0) {
+        playCurrentNotificationSound();
         toast({
           title: title.replace('{count}', count.toString()),
           description,
@@ -215,6 +217,7 @@ export function GlobalNotifications() {
       }
     } else if (count > previousRef.current) {
       const newCount = count - previousRef.current;
+      playCurrentNotificationSound();
       toast({
         title: newTitle.replace('{count}', newCount.toString()),
         description,
@@ -313,6 +316,7 @@ export function GlobalNotifications() {
 
         const route = getNotificationRoute(notification.notificationType);
 
+        playCurrentNotificationSound();
         toast({
           title: notification.title,
           description: notification.message,
