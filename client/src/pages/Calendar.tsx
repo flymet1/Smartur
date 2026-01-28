@@ -8,7 +8,7 @@ import { useActivities } from "@/hooks/use-activities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Calendar, Users, Clock, TrendingUp, TrendingDown, Filter, CalendarDays, LayoutGrid, Trash2, ClipboardList, ChevronLeft, ChevronRight, Minus, Share2, FileText, AlertTriangle, BarChart3, Download, MessageSquare } from "lucide-react";
+import { Plus, Edit2, Calendar, Users, Clock, TrendingUp, TrendingDown, Filter, CalendarDays, LayoutGrid, Trash2, ClipboardList, ChevronLeft, ChevronRight, Minus, Share2, FileText, AlertTriangle, BarChart3, Download, MessageSquare, CalendarHeart } from "lucide-react";
 import { Link } from "wouter";
 import {
   Dialog,
@@ -1162,6 +1162,23 @@ export default function CalendarPage() {
               </TooltipTrigger>
               <TooltipContent>PDF Raporu</TooltipContent>
             </Tooltip>
+            <Dialog open={holidaysDialogOpen} onOpenChange={setHolidaysDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" data-testid="button-holidays">
+                  <CalendarHeart className="w-4 h-4 mr-2" />
+                  Tatiller
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Tatiller ve Özel Günler</DialogTitle>
+                  <DialogDescription>
+                    Takvimde gösterilecek tatilleri ve özel günleri yönetin
+                  </DialogDescription>
+                </DialogHeader>
+                <HolidaysSection />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
