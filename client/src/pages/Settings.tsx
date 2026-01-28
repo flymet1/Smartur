@@ -1000,20 +1000,6 @@ DEĞİŞİKLİK TALEPLERİNDE:
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Veri</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={settingsTab === 'api' ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setSettingsTab('api')}
-                  data-testid="tab-api"
-                >
-                  <Globe className="h-4 w-4 xl:mr-2" />
-                  <span className="hidden xl:inline">API</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="xl:hidden">Public API</TooltipContent>
-            </Tooltip>
           </div>
         </div>
 
