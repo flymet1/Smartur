@@ -34,32 +34,32 @@ import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimit
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ImageUpload } from "@/components/ImageUpload";
 
-const DEFAULT_CONFIRMATION_TEMPLATE = `Merhaba {isim},
+const DEFAULT_CONFIRMATION_TEMPLATE = `Merhaba Ahmet Yılmaz,
 
-{aktivite} rezervasyonunuz onaylanmıştır!
+Kapadokya Balon Turu rezervasyonunuz onaylanmıştır!
 
-📅 Tarih: {tarih}
-⏰ Saat: {saat}
-👥 Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
+📅 Tarih: 15 Şubat 2026
+⏰ Saat: 05:30
+👥 Kişi: 4 (2 yetişkin, 2 çocuk)
 
 💰 Ödeme Bilgisi:
-Toplam: {toplam}
-Ödenen: {odenen}
-Kalan: {kalan}
+Toplam: 4800 TL
+Ödenen: 2000 TL
+Kalan: 2800 TL
 
 🚐 Transfer Bilgisi:
-Otel: {otel}
-Bölge: {bolge}
-Alım Saati: {transfer_saat}
+Otel: Hilton Cappadocia
+Bölge: Göreme
+Alım Saati: 04:45
 
-📍 Buluşma Noktası: {bulusma_noktasi}
-⏱️ Varış Süresi: {varis_suresi} dakika önce
+📍 Buluşma Noktası: Otel lobisi
+⏱️ Varış Süresi: 15 dakika önce
 
-🎒 Yanınızda Getirin: {getirin}
+🎒 Yanınızda Getirin: Sıcak kıyafet, fotoğraf makinesi
 
-⚠️ Sağlık Notları: {saglik_notlari}
+⚠️ Sağlık Notları: Hamile veya kalp rahatsızlığı olanlar için uygun değildir
 
-🔗 Rezervasyon Takip: {takip_linki}
+🔗 Rezervasyon Takip: https://smartur.app/takip/abc123
 
 İyi tatiller dileriz!`;
 
