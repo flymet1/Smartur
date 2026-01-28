@@ -21,7 +21,7 @@ Consolidate redundant information, merging similar concepts and eliminating repe
 Prioritize architectural decisions over implementation specifics.
 External dependencies should focus on what's actually integrated.
 **CRITICAL: Always notify user immediately when making database schema changes** - User deploys to Coolify separately and needs SQL commands to update their production database.
-**DATABASE SQL FORMAT**: Provide ready-to-paste SQL commands for Coolify PostgreSQL terminal. Use `IF NOT EXISTS`/`IF EXISTS` to prevent errors. Always use `DEFAULT` values. Never use DROP or DELETE. Single command format, no extra steps needed. Example: `psql -U postgres -d postgres -c "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS new_column text DEFAULT '';"`
+**DATABASE SQL FORMAT - ZORUNLU**: Kullanıcıya veritabanı komutu verirken HER ZAMAN Coolify formatında hazır yapıştırılabilir komut ver. ASLA sadece SQL verme, HER ZAMAN `psql -U postgres -d postgres -c "..."` formatında ver. Örnek: `psql -U postgres -d postgres -c "SELECT * FROM tenants;"` veya `psql -U postgres -d postgres -c "ALTER TABLE activities ADD COLUMN IF NOT EXISTS new_column text DEFAULT '';"` Use `IF NOT EXISTS`/`IF EXISTS` to prevent errors. Always use `DEFAULT` values. Never use DROP or DELETE.
 
 ## System Architecture
 
