@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Shield } from "lucide-react";
+import { Shield, BookOpen, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TenantSettings {
@@ -90,38 +90,60 @@ export function AppFooter() {
   const licenseStatusInfo = getLicenseStatusInfo();
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 xl:left-64 h-10 bg-background border-t z-40 flex items-center justify-center gap-6 px-4" data-testid="app-footer">
-      <Link href="/settings?tab=whatsapp">
-        <div className="flex items-center gap-2 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity" data-testid="footer-whatsapp-status">
-          <div className={cn(
-            "w-2 h-2 rounded-full",
-            isBotEnabled ? "bg-accent animate-pulse" : "bg-muted-foreground"
-          )} />
-          <span className="text-foreground">WhatsApp Bot</span>
-          <span className={cn(
-            "text-[10px] px-1.5 py-0.5 rounded font-semibold",
-            isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
-          )}>
-            {isBotEnabled ? "Aktif" : "Kapalı"}
-          </span>
+    <footer className="mt-auto border-t bg-muted/30 py-4 px-6" data-testid="app-footer">
+      <div className="xl:ml-64 max-w-6xl mx-auto">
+        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8">
+          <Link href="/settings?tab=whatsapp">
+            <div className="flex items-center gap-2 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity" data-testid="footer-whatsapp-status">
+              <div className={cn(
+                "w-2 h-2 rounded-full",
+                isBotEnabled ? "bg-accent animate-pulse" : "bg-muted-foreground"
+              )} />
+              <span className="text-foreground">WhatsApp Bot</span>
+              <span className={cn(
+                "text-[10px] px-1.5 py-0.5 rounded font-semibold",
+                isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+              )}>
+                {isBotEnabled ? "Aktif" : "Kapalı"}
+              </span>
+            </div>
+          </Link>
+          
+          <div className="w-px h-4 bg-border hidden md:block" />
+          
+          <Link href="/subscription">
+            <div 
+              className={cn(
+                "flex items-center gap-2 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity",
+                licenseStatusInfo.color
+              )}
+              data-testid="footer-license-status"
+            >
+              <div className={cn("w-2 h-2 rounded-full", licenseStatusInfo.bgColor, licenseStatusInfo.isActive && "animate-pulse")} />
+              <Shield className="h-3 w-3" />
+              {licenseStatusInfo.text}
+            </div>
+          </Link>
+          
+          <div className="w-px h-4 bg-border hidden md:block" />
+          
+          <Link href="/user-guide">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-testid="footer-user-guide">
+              <BookOpen className="h-3.5 w-3.5" />
+              Kullanım Kılavuzu
+            </div>
+          </Link>
+          
+          <div className="w-px h-4 bg-border hidden md:block" />
+          
+          <Link href="/support">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-testid="footer-support">
+              <HelpCircle className="h-3.5 w-3.5" />
+              Destek
+            </div>
+          </Link>
         </div>
-      </Link>
-      
-      <div className="w-px h-4 bg-border" />
-      
-      <Link href="/subscription">
-        <div 
-          className={cn(
-            "flex items-center gap-2 text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity",
-            licenseStatusInfo.color
-          )}
-          data-testid="footer-license-status"
-        >
-          <div className={cn("w-2 h-2 rounded-full", licenseStatusInfo.bgColor, licenseStatusInfo.isActive && "animate-pulse")} />
-          <Shield className="h-3 w-3" />
-          {licenseStatusInfo.text}
-        </div>
-      </Link>
+      </div>
     </footer>
   );
 }
