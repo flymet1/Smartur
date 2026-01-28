@@ -186,17 +186,17 @@ export function PublicFooter({ data }: PublicFooterProps) {
                 </Link>
               </li>
               <li>
-                <Link href={getLocalizedPath("/iptal-iade")} className={`text-sm ${linkClass}`}>
+                <Link href={language === "en" ? "/en/cancellation-policy" : "/tr/iptal-iade"} className={`text-sm ${linkClass}`}>
                   {t.footer.cancellation}
                 </Link>
               </li>
               <li>
-                <Link href={getLocalizedPath("/gizlilik")} className={`text-sm ${linkClass}`}>
+                <Link href={language === "en" ? "/en/privacy-policy" : "/tr/gizlilik"} className={`text-sm ${linkClass}`}>
                   {t.footer.privacy}
                 </Link>
               </li>
               <li>
-                <Link href={getLocalizedPath("/kullanim-kosullari")} className={`text-sm ${linkClass}`}>
+                <Link href={language === "en" ? "/en/terms-of-use" : "/tr/kullanim-sartlari"} className={`text-sm ${linkClass}`}>
                   {t.footer.terms}
                 </Link>
               </li>

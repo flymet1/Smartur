@@ -117,6 +117,7 @@ export interface PublicWebsiteData {
   websiteTermsPageTitle: string | null;
   websiteTermsPageContent: string | null;
   websiteFaqPageTitle: string | null;
+  websiteFaqPageContent: string | null;
   faqItems: Array<{ question: string; answer: string }>;
   // Footer ayarları
   websiteDisplayName: string | null;

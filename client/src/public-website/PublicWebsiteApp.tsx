@@ -13,6 +13,7 @@ import PublicBlogDetail from "./pages/PublicBlogDetail";
 import PublicPackageTours from "./pages/PublicPackageTours";
 import PublicPaymentSuccess from "./pages/PublicPaymentSuccess";
 import PublicPaymentFailed from "./pages/PublicPaymentFailed";
+import { PublicLegalPage } from "./pages/PublicLegalPage";
 import type { PublicWebsiteData } from "./types";
 import { isPreviewMode, getApiUrl } from "./utils";
 import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
@@ -158,6 +159,18 @@ function PublicWebsiteContent() {
         <Route path="/tr/paket-turlar" component={PublicPackageTours} />
         <Route path="/tr/odeme-basarili" component={PublicPaymentSuccess} />
         <Route path="/tr/odeme-basarisiz" component={PublicPaymentFailed} />
+        <Route path="/tr/iptal-iade">
+          <PublicLegalPage websiteData={websiteData!} pageType="cancellation" />
+        </Route>
+        <Route path="/tr/gizlilik">
+          <PublicLegalPage websiteData={websiteData!} pageType="privacy" />
+        </Route>
+        <Route path="/tr/kullanim-sartlari">
+          <PublicLegalPage websiteData={websiteData!} pageType="terms" />
+        </Route>
+        <Route path="/tr/sss">
+          <PublicLegalPage websiteData={websiteData!} pageType="faq" />
+        </Route>
 
         {/* English routes */}
         <Route path="/en">
@@ -179,6 +192,18 @@ function PublicWebsiteContent() {
         <Route path="/en/package-tours" component={PublicPackageTours} />
         <Route path="/en/payment-success" component={PublicPaymentSuccess} />
         <Route path="/en/payment-failed" component={PublicPaymentFailed} />
+        <Route path="/en/cancellation-policy">
+          <PublicLegalPage websiteData={websiteData!} pageType="cancellation" />
+        </Route>
+        <Route path="/en/privacy-policy">
+          <PublicLegalPage websiteData={websiteData!} pageType="privacy" />
+        </Route>
+        <Route path="/en/terms-of-use">
+          <PublicLegalPage websiteData={websiteData!} pageType="terms" />
+        </Route>
+        <Route path="/en/faq">
+          <PublicLegalPage websiteData={websiteData!} pageType="faq" />
+        </Route>
 
         {/* Redirect root to default language */}
         <Route path="/">
