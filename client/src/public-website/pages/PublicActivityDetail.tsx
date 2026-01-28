@@ -666,12 +666,18 @@ export default function PublicActivityDetail() {
                           : "Bu bolgelerden ucretsiz otel transferi mevcuttur:"}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {ensureArray(activity.transferZones).map((zone, idx) => (
-                          <Badge key={idx} variant="outline" className="gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {ensureString(zone)}
-                          </Badge>
-                        ))}
+                        {ensureArray(activity.transferZones).map((zone, idx) => {
+                          // Zone can be a string or an object {zone: string, minutesBefore: number}
+                          const zoneName = typeof zone === 'object' && zone !== null && 'zone' in zone 
+                            ? (zone as {zone: string}).zone 
+                            : ensureString(zone);
+                          return (
+                            <Badge key={idx} variant="outline" className="gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {zoneName}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </>
                   )}
