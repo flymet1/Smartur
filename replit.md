@@ -20,8 +20,34 @@ Focus on high-level features only, avoiding granular implementation details.
 Consolidate redundant information, merging similar concepts and eliminating repetition.
 Prioritize architectural decisions over implementation specifics.
 External dependencies should focus on what's actually integrated.
-**CRITICAL: Always notify user immediately when making database schema changes** - User deploys to Coolify separately and needs SQL commands to update their production database.
-**DATABASE SQL FORMAT - ZORUNLU**: Kullanıcıya veritabanı komutu verirken HER ZAMAN Coolify formatında hazır yapıştırılabilir komut ver. ASLA sadece SQL verme, HER ZAMAN `psql -U postgres -d postgres -c "..."` formatında ver. Örnek: `psql -U postgres -d postgres -c "SELECT * FROM tenants;"` veya `psql -U postgres -d postgres -c "ALTER TABLE activities ADD COLUMN IF NOT EXISTS new_column text DEFAULT '';"` Use `IF NOT EXISTS`/`IF EXISTS` to prevent errors. Always use `DEFAULT` values. Never use DROP or DELETE.
+
+### KRİTİK VERİTABANI KURALLARI (ASLA İHLAL EDİLMEMELİ)
+
+**1. VERİTABANI DEĞİŞİKLİĞİ YAPMADAN ÖNCE KULLANICIYA BİLDİR**
+- Herhangi bir tablo veya sütun eklemeden/değiştirmeden ÖNCE kullanıcıya bildir
+- Kullanıcı onaylamadan veritabanı şemasına dokunma
+- Değişiklik yapıldıktan sonra değil, YAPMADAN ÖNCE bilgilendir
+
+**2. COOLIFY FORMATI ZORUNLU**
+- Veritabanı komutu verirken HER ZAMAN Coolify formatında hazır yapıştırılabilir komut ver
+- ASLA sadece SQL verme, HER ZAMAN `psql -U postgres -d postgres -c "..."` formatında ver
+- Örnek: `psql -U postgres -d postgres -c "ALTER TABLE activities ADD COLUMN IF NOT EXISTS new_column text DEFAULT '';"`
+
+**3. GÜVENLİ SQL KURALLARI**
+- `IF NOT EXISTS` / `IF EXISTS` kullanarak hata önle
+- Her zaman `DEFAULT` değer kullan
+- ASLA `DROP` veya `DELETE` kullanma
+- Tek seferde yapıştırılabilir komutlar ver
+
+**4. SİSTEM DEVRE DIŞI KALMAMALI**
+- Hiçbir değişiklik Coolify sistemini devre dışı bırakmamalı
+- Acenta verileri asla silinmemeli veya erişilemez olmamalı
+- Şema değişiklikleri geriye dönük uyumlu olmalı
+
+**5. DEPLOYMENT ENTEGRASYONU**
+- Sistem Coolify ile tam entegre çalışmalı
+- Replit'te yapılan değişiklikler Coolify'da da çalışmalı
+- Senkronizasyon sorunları oluşmamalı
 
 ## System Architecture
 
