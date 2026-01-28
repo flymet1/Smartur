@@ -56,6 +56,33 @@ const languageFlags: Record<string, { name: string; flag: string }> = {
   fr: { name: "Francais", flag: "FR" },
 };
 
+function ensureArray<T>(value: T[] | string | null | undefined): T[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function ensureString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '';
+    }
+  }
+  return String(value);
+}
+
 export default function PublicActivityDetail() {
   const { id } = useParams<{ id: string }>();
   const activityId = parseInt(id || "0");
@@ -128,11 +155,12 @@ export default function PublicActivityDetail() {
   const getMinDate = () => new Date().toISOString().split("T")[0];
 
   const getAvailableTimes = () => {
-    if (!activity?.defaultTimes) return [];
+    const times = ensureArray(activity?.defaultTimes);
+    if (times.length === 0) return [];
     if (availability && availability.length > 0) {
       return availability.filter((slot) => slot.available > 0).map((slot) => slot.time);
     }
-    return activity.defaultTimes;
+    return times;
   };
 
   const toggleExtra = (extra: { name: string; priceTl: number; priceUsd: number }) => {
@@ -279,7 +307,7 @@ export default function PublicActivityDetail() {
   const mainImage = activity.imageUrl || 
     "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80";
   
-  const allImages = [mainImage, ...(activity.galleryImages || [])];
+  const allImages = [mainImage, ...ensureArray(activity.galleryImages)];
   const difficulty = activity.difficulty && difficultyConfig[activity.difficulty] 
     ? difficultyConfig[activity.difficulty] 
     : null;
@@ -336,9 +364,9 @@ export default function PublicActivityDetail() {
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
           <div className="container mx-auto">
             <div className="flex flex-wrap gap-2 mb-4">
-              {activity.categories?.map((cat, idx) => (
+              {ensureArray(activity.categories).map((cat, idx) => (
                 <Badge key={idx} className="bg-primary/90 text-primary-foreground">
-                  {cat}
+                  {ensureString(cat)}
                 </Badge>
               ))}
               {difficulty && (
@@ -376,14 +404,14 @@ export default function PublicActivityDetail() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {activity.highlights && activity.highlights.length > 0 && (
+            {ensureArray(activity.highlights).length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {activity.highlights.slice(0, 4).map((highlight, idx) => (
+                {ensureArray(activity.highlights).slice(0, 4).map((highlight, idx) => (
                   <div key={idx} className="flex flex-col items-center text-center p-4 rounded-lg bg-primary/5 border border-primary/10">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mb-2">
                       <Star className="h-5 w-5 text-primary" />
                     </div>
-                    <span className="text-sm font-medium">{highlight}</span>
+                    <span className="text-sm font-medium">{ensureString(highlight)}</span>
                   </div>
                 ))}
               </div>
@@ -427,7 +455,7 @@ export default function PublicActivityDetail() {
             )}
 
             <div className="grid md:grid-cols-2 gap-6">
-              {activity.includedItems && activity.includedItems.length > 0 && (
+              {ensureArray(activity.includedItems).length > 0 && (
                 <Card className="border-0 shadow-md">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2 text-green-600">
@@ -437,10 +465,10 @@ export default function PublicActivityDetail() {
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
-                      {activity.includedItems.map((item, idx) => (
+                      {ensureArray(activity.includedItems).map((item, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                          <span className="text-sm">{item}</span>
+                          <span className="text-sm">{ensureString(item)}</span>
                         </li>
                       ))}
                     </ul>
@@ -448,7 +476,7 @@ export default function PublicActivityDetail() {
                 </Card>
               )}
 
-              {activity.excludedItems && activity.excludedItems.length > 0 && (
+              {ensureArray(activity.excludedItems).length > 0 && (
                 <Card className="border-0 shadow-md">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex items-center gap-2 text-blue-600 dark:text-blue-400">
@@ -458,10 +486,10 @@ export default function PublicActivityDetail() {
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
-                      {activity.excludedItems.map((item, idx) => (
+                      {ensureArray(activity.excludedItems).map((item, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <X className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-                          <span className="text-sm">{item}</span>
+                          <span className="text-sm">{ensureString(item)}</span>
                         </li>
                       ))}
                     </ul>
@@ -470,7 +498,7 @@ export default function PublicActivityDetail() {
               )}
             </div>
 
-            {(activity.meetingPoint || (activity.minAge != null && activity.minAge > 0) || (activity.tourLanguages && activity.tourLanguages.length > 0) || activity.importantInfo || (activity.importantInfoItems && activity.importantInfoItems.length > 0)) && (
+            {(activity.meetingPoint || (activity.minAge != null && activity.minAge > 0) || ensureArray(activity.tourLanguages).length > 0 || activity.importantInfo || ensureArray(activity.importantInfoItems).length > 0) && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -506,7 +534,7 @@ export default function PublicActivityDetail() {
                       </div>
                     )}
 
-                    {activity.tourLanguages && activity.tourLanguages.length > 0 && (
+                    {ensureArray(activity.tourLanguages).length > 0 && (
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
                           <Globe className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -514,7 +542,7 @@ export default function PublicActivityDetail() {
                         <div>
                           <p className="font-medium">{language === "en" ? "Languages" : "Diller"}</p>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {activity.tourLanguages.map((lang, idx) => (
+                            {ensureArray(activity.tourLanguages).map((lang, idx) => (
                               <Badge key={idx} variant="secondary" className="text-xs">
                                 {languageFlags[lang]?.flag || lang.toUpperCase()}
                               </Badge>
@@ -537,15 +565,15 @@ export default function PublicActivityDetail() {
                     </div>
                   </div>
 
-                  {activity.importantInfoItems && activity.importantInfoItems.length > 0 && (
+                  {ensureArray(activity.importantInfoItems).length > 0 && (
                     <div className="mt-6 pt-6 border-t">
                       <div className="grid md:grid-cols-2 gap-3">
-                        {activity.importantInfoItems.map((item, idx) => (
+                        {ensureArray(activity.importantInfoItems).map((item, idx) => (
                           <div key={idx} className="flex items-start gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
                               <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                             </div>
-                            <p className="text-sm text-foreground pt-1">{item}</p>
+                            <p className="text-sm text-foreground pt-1">{ensureString(item)}</p>
                           </div>
                         ))}
                       </div>
@@ -568,7 +596,7 @@ export default function PublicActivityDetail() {
               </Card>
             )}
 
-            {(activity.transferZones && activity.transferZones.length > 0) || activity.transferInfo ? (
+            {(ensureArray(activity.transferZones).length > 0) || activity.transferInfo ? (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -577,7 +605,7 @@ export default function PublicActivityDetail() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {activity.transferZones && activity.transferZones.length > 0 && (
+                  {ensureArray(activity.transferZones).length > 0 && (
                     <>
                       <p className="text-sm text-muted-foreground mb-3">
                         {language === "en" 
@@ -585,10 +613,10 @@ export default function PublicActivityDetail() {
                           : "Bu bolgelerden ucretsiz otel transferi mevcuttur:"}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {activity.transferZones.map((zone, idx) => (
+                        {ensureArray(activity.transferZones).map((zone, idx) => (
                           <Badge key={idx} variant="outline" className="gap-1">
                             <MapPin className="h-3 w-3" />
-                            {zone}
+                            {ensureString(zone)}
                           </Badge>
                         ))}
                       </div>
@@ -612,7 +640,7 @@ export default function PublicActivityDetail() {
             ) : null}
 
             {/* Getirmeniz Gerekenler */}
-            {(activity.whatToBring || []).length > 0 && (
+            {ensureArray(activity.whatToBring).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -622,10 +650,10 @@ export default function PublicActivityDetail() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {activity.whatToBring.map((item, idx) => (
+                    {ensureArray(activity.whatToBring).map((item, idx) => (
                       <li key={idx} className="flex items-start gap-3 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
                         <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">{item}</span>
+                        <span className="text-sm">{ensureString(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -634,7 +662,7 @@ export default function PublicActivityDetail() {
             )}
 
             {/* İzin Verilmeyenler */}
-            {(activity.notAllowed || []).length > 0 && (
+            {ensureArray(activity.notAllowed).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -644,10 +672,10 @@ export default function PublicActivityDetail() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {activity.notAllowed.map((item, idx) => (
+                    {ensureArray(activity.notAllowed).map((item, idx) => (
                       <li key={idx} className="flex items-start gap-3 p-2 bg-slate-50 dark:bg-slate-900/20 rounded-lg">
                         <X className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm">{item}</span>
+                        <span className="text-sm">{ensureString(item)}</span>
                       </li>
                     ))}
                   </ul>
@@ -656,7 +684,7 @@ export default function PublicActivityDetail() {
             )}
 
             {/* Tur Programı */}
-            {activity.itinerary && activity.itinerary.length > 0 && (
+            {ensureArray(activity.itinerary).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -671,20 +699,20 @@ export default function PublicActivityDetail() {
                   <div className="relative">
                     <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-primary/20" />
                     <div className="space-y-6">
-                      {activity.itinerary.map((step, idx) => (
+                      {ensureArray(activity.itinerary).map((step: any, idx) => (
                         <div key={idx} className="relative flex gap-4 pl-2">
                           <div className="absolute left-[11px] w-3 h-3 rounded-full bg-primary border-2 border-background z-10" />
                           <div className="flex-1 ml-6 pb-2">
                             <div className="flex items-center gap-2 mb-1">
-                              {step.time && (
+                              {step?.time && (
                                 <Badge variant="outline" className="text-xs font-mono">
-                                  {step.time}
+                                  {ensureString(step.time)}
                                 </Badge>
                               )}
-                              <h4 className="font-semibold text-foreground">{step.title}</h4>
+                              <h4 className="font-semibold text-foreground">{ensureString(step?.title)}</h4>
                             </div>
-                            {step.description && (
-                              <p className="text-sm text-muted-foreground">{step.description}</p>
+                            {step?.description && (
+                              <p className="text-sm text-muted-foreground">{ensureString(step.description)}</p>
                             )}
                           </div>
                         </div>
@@ -695,7 +723,7 @@ export default function PublicActivityDetail() {
               </Card>
             )}
 
-            {activity.faq && activity.faq.length > 0 && (
+            {ensureArray(activity.faq).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -705,11 +733,11 @@ export default function PublicActivityDetail() {
                 </CardHeader>
                 <CardContent>
                   <Accordion type="single" collapsible className="w-full">
-                    {activity.faq.map((item, idx) => (
+                    {ensureArray(activity.faq).map((item: any, idx) => (
                       <AccordionItem key={idx} value={`faq-${idx}`}>
-                        <AccordionTrigger className="text-left">{item.question}</AccordionTrigger>
+                        <AccordionTrigger className="text-left">{ensureString(item?.question)}</AccordionTrigger>
                         <AccordionContent className="text-muted-foreground">
-                          {item.answer}
+                          {ensureString(item?.answer)}
                         </AccordionContent>
                       </AccordionItem>
                     ))}
@@ -719,7 +747,7 @@ export default function PublicActivityDetail() {
             )}
 
             {/* Yorum Kartları */}
-            {activity.reviewCardsEnabled && Array.isArray(activity.reviewCards) && activity.reviewCards.length > 0 && (
+            {activity.reviewCardsEnabled && ensureArray(activity.reviewCards).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -729,41 +757,41 @@ export default function PublicActivityDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {activity.reviewCards.map((card, idx) => (
+                    {ensureArray(activity.reviewCards).map((card: any, idx) => (
                       <a
                         key={idx}
-                        href={card.url}
+                        href={ensureString(card?.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block p-4 bg-muted/50 rounded-lg border hover:shadow-md transition-shadow"
-                        data-testid={`activity-review-card-${card.platform}`}
+                        data-testid={`activity-review-card-${card?.platform || 'unknown'}`}
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          {card.platform === "google" && (
+                          {card?.platform === "google" && (
                             <div className="w-5 h-5 bg-[#4285F4] rounded-full flex items-center justify-center text-white text-xs font-bold">G</div>
                           )}
-                          {card.platform === "tripadvisor" && (
+                          {card?.platform === "tripadvisor" && (
                             <div className="w-5 h-5 bg-[#00AF87] rounded-full flex items-center justify-center text-white text-xs font-bold">T</div>
                           )}
-                          {card.platform === "trustpilot" && (
+                          {card?.platform === "trustpilot" && (
                             <div className="w-5 h-5 bg-[#00B67A] rounded-full flex items-center justify-center text-white text-xs font-bold">★</div>
                           )}
-                          {card.platform === "facebook" && (
+                          {card?.platform === "facebook" && (
                             <div className="w-5 h-5 bg-[#1877F2] rounded-full flex items-center justify-center text-white text-xs font-bold">f</div>
                           )}
-                          <span className="font-medium text-sm">{card.platform === "tripadvisor" ? "TripAdvisor" : card.platform.charAt(0).toUpperCase() + card.platform.slice(1)}</span>
+                          <span className="font-medium text-sm">{card?.platform === "tripadvisor" ? "TripAdvisor" : (card?.platform || '').charAt(0).toUpperCase() + (card?.platform || '').slice(1)}</span>
                         </div>
                         <div className="flex items-center gap-1 mb-1">
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              className={`h-3.5 w-3.5 ${i < Math.floor(parseFloat(card.rating)) ? "fill-yellow-400 text-yellow-400" : "text-muted"}`}
+                              className={`h-3.5 w-3.5 ${i < Math.floor(parseFloat(card?.rating || '0')) ? "fill-yellow-400 text-yellow-400" : "text-muted"}`}
                             />
                           ))}
-                          <span className="ml-1 text-sm font-medium">{card.rating}/5</span>
+                          <span className="ml-1 text-sm font-medium">{card?.rating || '0'}/5</span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {language === "en" ? `${card.reviewCount} Reviews` : `${card.reviewCount} Yorum`}
+                          {language === "en" ? `${card?.reviewCount || 0} Reviews` : `${card?.reviewCount || 0} Yorum`}
                         </p>
                       </a>
                     ))}
@@ -1023,27 +1051,27 @@ export default function PublicActivityDetail() {
                             </div>
                           </div>
 
-                          {activity.extras && activity.extras.length > 0 && (
+                          {ensureArray(activity.extras).length > 0 && (
                             <div className="space-y-3">
                               <Label className="flex items-center gap-2">
                                 <Package className="h-4 w-4" />
                                 {language === "en" ? "Extras" : "Ekstralar"}
                               </Label>
                               <div className="space-y-2">
-                                {activity.extras.map((extra, idx) => {
-                                  const selected = selectedExtras.find((e) => e.name === extra.name);
+                                {ensureArray(activity.extras).map((extra: any, idx) => {
+                                  const selected = selectedExtras.find((e) => e.name === extra?.name);
                                   return (
                                     <div key={idx} className="p-3 border rounded-lg space-y-2">
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                           <Checkbox
                                             checked={!!selected}
-                                            onCheckedChange={() => toggleExtra(extra)}
+                                            onCheckedChange={() => extra && toggleExtra(extra)}
                                             data-testid={`checkbox-extra-${idx}`}
                                           />
-                                          <span className="text-sm font-medium">{extra.name}</span>
+                                          <span className="text-sm font-medium">{ensureString(extra?.name)}</span>
                                         </div>
-                                        <span className="text-sm font-bold text-primary">+{extra.priceTl} TL</span>
+                                        <span className="text-sm font-bold text-primary">+{extra?.priceTl || 0} TL</span>
                                       </div>
                                       {selected && (
                                         <div className="flex items-center gap-2 pl-6">
