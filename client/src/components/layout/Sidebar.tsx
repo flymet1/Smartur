@@ -58,11 +58,11 @@ const allNavItems: NavItem[] = [
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, viewerOnly: true },
   { href: "/viewer-stats", label: "Izleyiciler", icon: Eye, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
-  { href: "/partner-availability", label: "Partnerler", icon: Share2, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW, gradient: true },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
   { href: "/messages", label: "WhatsApp", icon: MessageCircle, requiredPermission: PERMISSION_KEYS.WHATSAPP_VIEW },
+  { href: "/partner-availability", label: "Partnerler", icon: Share2, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW, gradient: true },
   { href: "/website", label: "Smartur Web Site", icon: Globe, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW, gradient: true },
   { href: "/settings", label: "Ayarlar", icon: Settings, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
 ];
