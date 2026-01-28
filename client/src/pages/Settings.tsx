@@ -1238,8 +1238,11 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   </p>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="manualConfirmationTemplate">Onay Mesajı Şablonu</Label>
-                  <p className="text-xs text-muted-foreground mb-1">Aktivitede özel mesaj tanımlanmamışsa bu şablon kullanılır.</p>
+                  <Label htmlFor="manualConfirmationTemplate">Varsayılan Onay Mesajı Şablonu</Label>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Bu şablon, aktivitede özel onay mesajı tanımlanmamışsa kullanılır. 
+                    Her aktivite için özel mesaj tanımlamak için Aktiviteler sayfasındaki "Sipariş Onay Mesajı Şablonu" alanını kullanın.
+                  </p>
                   <Textarea 
                     id="manualConfirmationTemplate"
                     value={manualConfirmationTemplate}
@@ -1250,7 +1253,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                     data-testid="textarea-manual-confirmation-template"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Desteklenen değişkenler: {"{isim}"}, {"{aktivite}"}, {"{tarih}"}, {"{saat}"}, {"{kisi}"}, {"{takip_linki}"}
+                    Desteklenen değişkenler: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}
                   </p>
                 </div>
                 {canManageTemplates && (

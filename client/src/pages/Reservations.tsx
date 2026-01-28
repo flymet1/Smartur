@@ -3903,6 +3903,8 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
   const [isSendingNotification, setIsSendingNotification] = useState(false);
   const [hotelName, setHotelName] = useState("");
   const [hasTransfer, setHasTransfer] = useState(false);
+  const [transferZone, setTransferZone] = useState("");
+  const [confirmationNote, setConfirmationNote] = useState("");
   const { data: activities } = useActivities();
   const createMutation = useCreateReservation();
   const { toast } = useToast();
@@ -3935,6 +3937,21 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
     }
   };
 
+  const getTransferZones = (activity: Activity | undefined): Array<{zone: string; minutesBefore: number}> => {
+    if (!activity) return [];
+    try {
+      const zones = JSON.parse((activity as any).transferZones || "[]");
+      if (zones.length > 0 && typeof zones[0] === 'object' && zones[0].zone) {
+        return zones;
+      }
+      return zones.map((z: string) => ({ zone: z, minutesBefore: 30 }));
+    } catch {
+      return [];
+    }
+  };
+
+  const availableTransferZones = selectedActivity ? getTransferZones(selectedActivity) : [];
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -3966,6 +3983,8 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
             source: "manual",
             hotelName: hotelName || undefined,
             hasTransfer,
+            transferZone: hasTransfer ? (transferZone || undefined) : undefined,
+            confirmationNote: confirmationNote || undefined,
           });
           if (!createdActivityId) {
             createdActivityId = activity.id;
@@ -4019,6 +4038,8 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
           source: "manual",
           hotelName: hotelName || undefined,
           hasTransfer,
+          transferZone: hasTransfer ? (transferZone || undefined) : undefined,
+          confirmationNote: confirmationNote || undefined,
         });
         
         if (notifyCustomer && customerPhone) {
@@ -4046,7 +4067,8 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
                 date,
                 time,
                 activityId,
-                trackingToken
+                trackingToken,
+                reservationId: createdReservation?.id
               })
             });
             if (!response.ok) {
@@ -4071,6 +4093,8 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
       setReservationType("activity");
       setNotifyCustomer(false);
       setHotelName("");
+      setTransferZone("");
+      setConfirmationNote("");
       setHasTransfer(false);
     } catch (err) {
       const licenseErr = parseLicenseError(err);
@@ -4176,7 +4200,10 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
               <Checkbox
                 id="hasTransfer"
                 checked={hasTransfer}
-                onCheckedChange={(checked) => setHasTransfer(checked === true)}
+                onCheckedChange={(checked) => {
+                  setHasTransfer(checked === true);
+                  if (!checked) setTransferZone("");
+                }}
                 data-testid="checkbox-has-transfer"
               />
               <Label htmlFor="hasTransfer" className="text-sm cursor-pointer flex items-center gap-2">
@@ -4185,6 +4212,25 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
               </Label>
             </div>
           </div>
+
+          {hasTransfer && availableTransferZones.length > 0 && (
+            <div className="space-y-2">
+              <Label>Transfer Bölgesi</Label>
+              <Select value={transferZone} onValueChange={setTransferZone}>
+                <SelectTrigger data-testid="select-transfer-zone">
+                  <SelectValue placeholder="Bölge seçin" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTransferZones.map((z) => (
+                    <SelectItem key={z.zone} value={z.zone}>
+                      {z.zone} ({z.minutesBefore} dk önce)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Transfer alınış saati aktivite saatinden seçilen dakika kadar önce hesaplanacaktır.</p>
+            </div>
+          )}
 
           {reservationType === "activity" ? (
             <div className="space-y-2">
@@ -4315,6 +4361,18 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
               <Label>Kişi Sayısı</Label>
               <Input name="quantity" type="number" min="1" defaultValue="1" required data-testid="input-quantity" />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Onay Mesajına Eklenecek Not (İsteğe bağlı)</Label>
+            <Textarea 
+              value={confirmationNote}
+              onChange={(e) => setConfirmationNote(e.target.value)}
+              placeholder="Örn: VIP misafir, özel ilgi gösterilecek. veya Ekstra video paketi dahil."
+              rows={2}
+              data-testid="input-confirmation-note"
+            />
+            <p className="text-xs text-muted-foreground">Bu not, müşteriye gönderilecek onay mesajının sonuna eklenecektir.</p>
           </div>
 
           <div className="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">

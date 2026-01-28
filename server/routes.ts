@@ -888,6 +888,24 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
         }
       } catch {}
       
+      // Buluşma noktası ve harita linki
+      if (a.meetingPoint) {
+        desc += `\n  Buluşma Noktası: ${a.meetingPoint}`;
+        if (a.meetingPointMapLink) {
+          desc += ` (Harita: ${a.meetingPointMapLink})`;
+        }
+      }
+      
+      // Varış süresi
+      if (a.arrivalMinutesBefore) {
+        desc += `\n  Önceden Varış Süresi: Aktiviteden ${a.arrivalMinutesBefore} dakika önce buluşma noktasında olunmalı`;
+      }
+      
+      // Sağlık ve güvenlik notları
+      if (a.healthNotes) {
+        desc += `\n  Sağlık ve Güvenlik Notları: ${a.healthNotes}`;
+      }
+      
       // Tur programı/itinerary
       try {
         const itinerary = JSON.parse(a.itinerary || '[]');
@@ -5568,7 +5586,7 @@ export async function registerRoutes(
   // === Send WhatsApp Notification (Twilio) ===
   app.post("/api/send-whatsapp-notification", async (req, res) => {
     try {
-      const { phone, customerName, activityName, date, time, activityId, packageTourId, trackingToken } = req.body;
+      const { phone, customerName, activityName, date, time, activityId, packageTourId, trackingToken, reservationId } = req.body;
       
       if (!phone || !customerName || !activityName || !date) {
         return res.status(400).json({ error: "Eksik bilgi: telefon, isim, aktivite ve tarih gerekli" });
@@ -5592,17 +5610,47 @@ export async function registerRoutes(
         formattedPhone = '90' + formattedPhone;
       }
       
-      // Fetch confirmation message from activity or package tour
-      let confirmationTemplate = "";
+      // Fetch reservation data if reservationId provided
+      let reservation: any = null;
+      if (reservationId) {
+        reservation = await storage.getReservation(reservationId);
+      }
+      
+      // Fetch activity data
+      let activity: any = null;
+      if (activityId) {
+        activity = await storage.getActivity(activityId);
+      }
+      
+      // Fetch package tour data
+      let packageTour: any = null;
       if (packageTourId) {
-        const packageTour = await storage.getPackageTour(packageTourId);
-        if (packageTour?.confirmationMessage) {
-          confirmationTemplate = packageTour.confirmationMessage;
-        }
-      } else if (activityId) {
-        const activity = await storage.getActivity(activityId);
-        if (activity?.confirmationMessage) {
-          confirmationTemplate = activity.confirmationMessage;
+        packageTour = await storage.getPackageTour(packageTourId);
+      }
+      
+      // Get confirmation template (priority: activity/package specific > global settings)
+      let confirmationTemplate = "";
+      if (packageTour?.confirmationMessage) {
+        confirmationTemplate = packageTour.confirmationMessage;
+      } else if (activity?.confirmationMessage) {
+        confirmationTemplate = activity.confirmationMessage;
+      }
+      
+      // If no activity/package template, try to get global template from settings
+      if (!confirmationTemplate) {
+        try {
+          const tenantId = req.session?.tenantId;
+          if (tenantId) {
+            const globalSetting = await storage.getTenantSetting(tenantId, 'manualConfirmation');
+            if (globalSetting?.value) {
+              const parsed = JSON.parse(globalSetting.value);
+              if (parsed.template) {
+                confirmationTemplate = parsed.template;
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore - use default template
         }
       }
       
@@ -5611,15 +5659,116 @@ export async function registerRoutes(
         ? `${req.protocol}://${req.get('host')}/takip/${trackingToken}`
         : '';
       
+      // Helper function to calculate transfer pickup time with negative time guard
+      const calculateTransferTime = (activityTime: string, transferZone: string | null, transferZones: string): string => {
+        if (!activityTime || !transferZone) return '';
+        try {
+          const zones = JSON.parse(transferZones || '[]');
+          const zoneData = zones.find((z: any) => 
+            (typeof z === 'object' && z.zone === transferZone) || z === transferZone
+          );
+          if (!zoneData) return '';
+          
+          const minutesBefore = typeof zoneData === 'object' ? (zoneData.minutesBefore || 30) : 30;
+          const [hours, minutes] = activityTime.split(':').map(Number);
+          let totalMinutes = hours * 60 + minutes - minutesBefore;
+          
+          // Guard against negative times - wrap around to previous day display
+          if (totalMinutes < 0) {
+            totalMinutes = totalMinutes + 24 * 60; // Wrap to previous day
+          }
+          // Ensure time stays within valid range (00:00 - 23:59)
+          totalMinutes = Math.max(0, Math.min(24 * 60 - 1, totalMinutes));
+          
+          const pickupHours = Math.floor(totalMinutes / 60);
+          const pickupMins = totalMinutes % 60;
+          return `${String(pickupHours).padStart(2, '0')}:${String(pickupMins).padStart(2, '0')}`;
+        } catch {
+          return '';
+        }
+      };
+      
+      // Helper function to format extras list with robust parsing
+      const formatExtras = (selectedExtras: string | null): string => {
+        if (!selectedExtras) return '';
+        try {
+          const extras = JSON.parse(selectedExtras);
+          if (!Array.isArray(extras) || extras.length === 0) return '';
+          return extras.map((e: any) => {
+            // Handle different JSON structures
+            const name = e.name || e.title || e.label || 'Ekstra';
+            const price = e.priceTl || e.price || e.amount || 0;
+            return `• ${name}${price ? `: ${price} TL` : ''}`;
+          }).join('\n');
+        } catch {
+          // If JSON parsing fails, return the string as-is if it looks like a list
+          if (typeof selectedExtras === 'string' && selectedExtras.trim()) {
+            return selectedExtras;
+          }
+          return '';
+        }
+      };
+      
+      // Helper function to format what to bring list
+      const formatWhatToBring = (whatToBring: string | null): string => {
+        if (!whatToBring) return '';
+        try {
+          const items = JSON.parse(whatToBring);
+          if (!Array.isArray(items) || items.length === 0) return '';
+          return items.join(', ');
+        } catch {
+          return '';
+        }
+      };
+      
+      // Build placeholder values with robust fallbacks
+      // Note: Currently no separate adult/child tracking - quantity is used for total people count
+      const totalPrice = reservation?.priceTl || reservation?.orderTotal || 0;
+      const paidAmount = reservation?.paidAmountTl || 0;
+      const remainingAmount = Math.max(0, totalPrice - paidAmount); // Guard against negative values
+      
+      const placeholderValues: Record<string, string> = {
+        isim: customerName || '',
+        tarih: date || '',
+        saat: time || '',
+        aktivite: activityName || '',
+        takip_linki: trackingLink,
+        // Reservation data - quantity represents total people (no separate adult/child tracking)
+        kisi: String(reservation?.quantity || quantity || 1),
+        yetiskin: String(reservation?.quantity || quantity || 1), // Uses total quantity (no separate tracking)
+        cocuk: '0', // Not tracked separately
+        otel: reservation?.hotelName || hotelName || '',
+        bolge: reservation?.transferZone || '',
+        transfer_saat: calculateTransferTime(time, reservation?.transferZone, activity?.transferZones || '[]'),
+        toplam: totalPrice > 0 ? `${totalPrice} TL` : '',
+        odenen: paidAmount > 0 ? `${paidAmount} TL` : '',
+        kalan: remainingAmount > 0 ? `${remainingAmount} TL` : '',
+        siparis_no: reservation?.orderNumber || reservation?.id?.toString() || '',
+        odeme_yontemi: reservation?.paymentStatus === 'paid' ? 'Ödendi' : (reservation?.paymentStatus === 'pending' ? 'Beklemede' : ''),
+        ekstralar: formatExtras(reservation?.selectedExtras),
+        // Activity data
+        bulusma_noktasi: activity?.meetingPoint 
+          ? (activity.meetingPointMapLink ? `${activity.meetingPoint}\n${activity.meetingPointMapLink}` : activity.meetingPoint)
+          : '',
+        varis_suresi: String(activity?.arrivalMinutesBefore || 30),
+        getirin: formatWhatToBring(activity?.whatToBring),
+        saglik_notlari: activity?.healthNotes || '',
+      };
+      
+      // Apply all placeholder replacements
+      const applyPlaceholders = (template: string): string => {
+        let result = template;
+        for (const [key, value] of Object.entries(placeholderValues)) {
+          const regex = new RegExp(`\\{${key}\\}`, 'gi');
+          result = result.replace(regex, value);
+        }
+        return result;
+      };
+      
       // Use template with placeholder replacement, or fallback to default
       let message: string;
       if (confirmationTemplate) {
-        message = confirmationTemplate
-          .replace(/\{isim\}/gi, customerName)
-          .replace(/\{tarih\}/gi, date)
-          .replace(/\{saat\}/gi, time || '')
-          .replace(/\{aktivite\}/gi, activityName)
-          .replace(/\{takip_linki\}/gi, trackingLink);
+        message = applyPlaceholders(confirmationTemplate);
       } else {
         message = `Merhaba ${customerName},
 
@@ -5634,6 +5783,11 @@ ${trackingLink}
 Aktivite saati ve tarih değişikliği talepleriniz için, lütfen yukarıdaki takip linkine tıklayın. (Değişiklik talepleriniz müsaitliğe göre değerlendirilecektir.)
 
 Sorularınız için bize bu numaradan yazabilirsiniz.`;
+      }
+      
+      // Append confirmation note if provided
+      if (reservation?.confirmationNote) {
+        message += `\n\n${reservation.confirmationNote}`;
       }
 
       // Use Twilio API to send WhatsApp message

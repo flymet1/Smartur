@@ -305,6 +305,10 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   // Web sitesi için yeni alanlar
   const [region, setRegion] = useState(activity ? (activity as any).region || "" : "");
   const [meetingPoint, setMeetingPoint] = useState(activity ? (activity as any).meetingPoint || "" : "");
+  const [meetingPointMapLink, setMeetingPointMapLink] = useState(activity ? (activity as any).meetingPointMapLink || "" : "");
+  const [arrivalMinutesBefore, setArrivalMinutesBefore] = useState(activity ? String((activity as any).arrivalMinutesBefore || "30") : "30");
+  const [healthNotes, setHealthNotes] = useState(activity ? (activity as any).healthNotes || "" : "");
+  const [confirmationMessageText, setConfirmationMessageText] = useState(activity ? (activity as any).confirmationMessage || "" : "");
   const [difficulty, setDifficulty] = useState(activity ? (activity as any).difficulty || "" : "");
   const [minAge, setMinAge] = useState(activity ? String((activity as any).minAge || "") : "");
   const [importantInfoItems, setImportantInfoItems] = useState(() => {
@@ -615,7 +619,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       defaultTimes: JSON.stringify(times),
       defaultCapacity: Number(defaultCapacity),
       color: color,
-      confirmationMessage: formData.get("confirmationMessage") as string,
+      confirmationMessage: confirmationMessageText || null,
       agencyPhone: agencyPhone || null,
       adminPhone: adminPhone || null,
       sendNotificationToAgency: sendNotificationToAgency,
@@ -633,6 +637,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       sharedWithPartners: sharedWithPartners,
       region: region || null,
       meetingPoint: meetingPoint || null,
+      meetingPointMapLink: meetingPointMapLink || null,
+      arrivalMinutesBefore: arrivalMinutesBefore ? Number(arrivalMinutesBefore) : 30,
+      healthNotes: healthNotes || null,
       difficulty: difficulty || null,
       minAge: minAge ? Number(minAge) : null,
       tourLanguages: JSON.stringify(tourLanguagesArray),
@@ -1098,6 +1105,76 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       data-testid="input-meeting-point"
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="meetingPointMapLink">Buluşma Noktası Harita Linki</Label>
+                    <Input 
+                      id="meetingPointMapLink"
+                      value={meetingPointMapLink}
+                      onChange={(e) => setMeetingPointMapLink(e.target.value)}
+                      placeholder="https://maps.app.goo.gl/..."
+                      data-testid="input-meeting-point-map-link"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="arrivalMinutesBefore">Varış Süresi (dakika önce)</Label>
+                    <Input 
+                      id="arrivalMinutesBefore"
+                      type="number"
+                      value={arrivalMinutesBefore}
+                      onChange={(e) => setArrivalMinutesBefore(e.target.value)}
+                      placeholder="30"
+                      data-testid="input-arrival-minutes-before"
+                    />
+                    <p className="text-xs text-muted-foreground">Müşterinin aktiviteden kaç dakika önce buluşma noktasında olması gerektiği</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="healthNotes">Sağlık ve Güvenlik Notları</Label>
+                  <Textarea 
+                    id="healthNotes"
+                    value={healthNotes}
+                    onChange={(e) => setHealthNotes(e.target.value)}
+                    placeholder="Örnek: Uçuştan önce alkol tüketmemeniz ve son 1 saat içerisinde yemek yememeniz önerilmektedir."
+                    rows={3}
+                    data-testid="input-health-notes"
+                  />
+                  <p className="text-xs text-muted-foreground">Sipariş onay mesajında ve bot yanıtlarında kullanılacaktır.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
+                  <Textarea 
+                    id="confirmationMessage"
+                    value={confirmationMessageText}
+                    onChange={(e) => setConfirmationMessageText(e.target.value)}
+                    placeholder={`Örnek şablon:
+
+Merhaba {isim},
+
+{aktivite} rezervasyonunuz onaylandı!
+
+📅 Tarih: {tarih}
+⏰ Saat: {saat}
+👥 Kişi: {kisi}
+
+💰 Ödeme: {odenen} TL ödendi, {kalan} TL kaldı
+
+🚐 Transfer: {otel} - {transfer_saat}
+
+📍 Buluşma: {bulusma_noktasi}
+
+Takip linki: {takip_linki}`}
+                    rows={10}
+                    data-testid="input-confirmation-message"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Kullanılabilir placeholder'lar: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}. 
+                    Boş bırakılırsa Ayarlar'daki genel şablon kullanılır.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
