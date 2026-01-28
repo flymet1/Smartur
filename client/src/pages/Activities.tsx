@@ -1889,39 +1889,23 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   {useCustomConfirmation && (
                     <>
                       <div className="space-y-2 pt-2 border-t">
-                        <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setConfirmationMessageText(DEFAULT_CONFIRMATION_TEMPLATE)}
+                            data-testid="button-load-default-template"
+                          >
+                            Örnek Şablonu Yükle
+                          </Button>
+                        </div>
                         <Textarea 
                           id="confirmationMessage"
                           value={confirmationMessageText}
                           onChange={(e) => setConfirmationMessageText(e.target.value)}
-                          placeholder={`Merhaba {isim},
-
-{aktivite} rezervasyonunuz onaylanmıştır!
-
-📅 Tarih: {tarih}
-⏰ Saat: {saat}
-👥 Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
-
-💰 Ödeme Bilgisi:
-Toplam: {toplam}
-Ödenen: {odenen}
-Kalan: {kalan}
-
-🚐 Transfer Bilgisi:
-Otel: {otel}
-Bölge: {bolge}
-Alım Saati: {transfer_saat}
-
-📍 Buluşma Noktası: {bulusma_noktasi}
-⏱️ Varış Süresi: {varis_suresi} dakika önce
-
-🎒 Yanınızda Getirin: {getirin}
-
-⚠️ Sağlık Notları: {saglik_notlari}
-
-🔗 Rezervasyon Takip: {takip_linki}
-
-İyi tatiller dileriz!`}
+                          placeholder="Mesaj şablonunuzu yazın veya 'Örnek Şablonu Yükle' butonuna tıklayın..."
                           rows={16}
                           data-testid="input-confirmation-message"
                         />
