@@ -1,0 +1,32 @@
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-01-28 17:33:48.241 UTC [1] LOG:  starting PostgreSQL 17.7 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-01-28 17:33:48.242 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-01-28 17:33:48.243 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-01-28 17:33:48.255 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-01-28 17:33:48.264 UTC [27] LOG:  database system was shut down at 2026-01-28 17:33:47 UTC
+2026-01-28 17:33:48.284 UTC [1] LOG:  database system is ready to accept connections
+2026-01-28 17:38:48.361 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 17:38:49.371 UTC [25] LOG:  checkpoint complete: wrote 13 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.005 s, sync=0.002 s, total=1.011 s; sync files=9, longest=0.001 s, average=0.001 s; distance=42 kB, estimate=42 kB; lsn=0/25ECB70, redo lsn=0/25ECB18
+2026-01-28 17:41:50.900 UTC [876] ERROR:  column "email_from_name" does not exist at character 530
+2026-01-28 17:41:50.900 UTC [876] HINT:  Perhaps you meant to reference the column "tenant_integrations.gmail_from_name".
+2026-01-28 17:41:50.900 UTC [876] STATEMENT:  select "id", "tenant_id", "twilio_account_sid", "twilio_auth_token_encrypted", "twilio_whatsapp_number", "twilio_webhook_url", "twilio_configured", "meta_access_token_encrypted", "meta_phone_number_id", "meta_business_account_id", "meta_verify_token", "meta_webhook_url", "meta_configured", "active_whatsapp_provider", "woocommerce_store_url", "woocommerce_consumer_key", "woocommerce_consumer_secret_encrypted", "woocommerce_webhook_secret", "woocommerce_configured", "email_provider", "email_user", "email_password_encrypted", "email_from_name", "email_smtp_host", "email_smtp_port", "email_smtp_secure", "email_configured", "gmail_user", "gmail_app_password_encrypted", "gmail_from_name", "gmail_configured", "created_at", "updated_at" from "tenant_integrations" where "tenant_integrations"."tenant_id" = $1
+2026-01-28 17:43:48.469 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 17:43:49.878 UTC [25] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.405 s, sync=0.002 s, total=1.410 s; sync files=14, longest=0.001 s, average=0.001 s; distance=82 kB, estimate=82 kB; lsn=0/2603480, redo lsn=0/2601570
+2026-01-28 17:48:48.975 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 17:48:50.084 UTC [25] LOG:  checkpoint complete: wrote 12 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.104 s, sync=0.002 s, total=1.110 s; sync files=9, longest=0.001 s, average=0.001 s; distance=50 kB, estimate=79 kB; lsn=0/260DEF0, redo lsn=0/260DE60
+2026-01-28 17:53:48.173 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 17:53:48.482 UTC [25] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.309 s; sync files=4, longest=0.001 s, average=0.001 s; distance=9 kB, estimate=72 kB; lsn=0/2610610, redo lsn=0/26105B8
+2026-01-28 17:58:48.579 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 17:58:49.089 UTC [25] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.504 s, sync=0.003 s, total=0.511 s; sync files=6, longest=0.002 s, average=0.001 s; distance=35 kB, estimate=68 kB; lsn=0/2619470, redo lsn=0/2619418
+2026-01-28 18:03:48.189 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 18:03:48.596 UTC [25] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.403 s, sync=0.002 s, total=0.408 s; sync files=5, longest=0.001 s, average=0.001 s; distance=33 kB, estimate=65 kB; lsn=0/2621928, redo lsn=0/26218D0
+2026-01-28 18:08:48.678 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 18:08:49.888 UTC [25] LOG:  checkpoint complete: wrote 13 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.204 s, sync=0.002 s, total=1.211 s; sync files=12, longest=0.001 s, average=0.001 s; distance=66 kB, estimate=66 kB; lsn=0/26322B8, redo lsn=0/2632260
+2026-01-28 18:13:48.978 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 18:13:49.385 UTC [25] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.402 s, sync=0.002 s, total=0.408 s; sync files=5, longest=0.001 s, average=0.001 s; distance=22 kB, estimate=61 kB; lsn=0/2637B18, redo lsn=0/2637AC0
+2026-01-28 18:18:48.484 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 18:18:49.393 UTC [25] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.904 s, sync=0.002 s, total=0.910 s; sync files=8, longest=0.001 s, average=0.001 s; distance=39 kB, estimate=59 kB; lsn=0/2641B08, redo lsn=0/2641AB0
+2026-01-28 18:23:48.488 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 18:23:49.898 UTC [25] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.405 s, sync=0.002 s, total=1.410 s; sync files=12, longest=0.001 s, average=0.001 s; distance=65 kB, estimate=65 kB; lsn=0/26521D8, redo lsn=0/2652180
+2026-01-28 18:28:48.994 UTC [25] LOG:  checkpoint starting: time
+2026-01-28 18:28:50.104 UTC [25] LOG:  checkpoint complete: wrote 12 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.105 s, sync=0.002 s, total=1.111 s; sync files=10, longest=0.001 s, average=0.001 s; distance=67 kB, estimate=67 kB; lsn=0/2662F80, redo lsn=0/2662F28
