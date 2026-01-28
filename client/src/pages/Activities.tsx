@@ -63,7 +63,7 @@ Alım Saati: {transfer_saat}
 
 ⚠️ Sağlık Notları: {saglik_notlari}
 
-🔗 Rezervasyon Takip: {takip_linki}
+🔗 Rezervasyonunuzu takip etmek, değişiklik veya iptal talebinde bulunmak için: {takip_linki}
 
 İyi tatiller dileriz!`;
 
