@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthGuard } from "@/components/AuthGuard";
 import { StickyAnnouncements } from "@/components/layout/StickyAnnouncements";
 import { GlobalNotifications } from "@/components/GlobalNotifications";
+import { AppFooter } from "@/components/layout/AppFooter";
 import { PopupThemeProvider } from "@/components/PopupThemeProvider";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
@@ -126,6 +127,7 @@ function App() {
               <GlobalNotifications />
               <Toaster />
               <Router />
+              <AppFooter />
             </AuthGuard>
           )}
         </TooltipProvider>
