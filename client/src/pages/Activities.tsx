@@ -762,14 +762,16 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   {formErrors.name && <p className="text-xs text-destructive">{formErrors.name}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nameAliases">Alternatif İsimler (Çok Dilli)</Label>
+                  <Label htmlFor="nameAliases">Bot Tanıma İsimleri (Çok Dilli)</Label>
                   <Input 
                     id="nameAliases"
                     value={nameAliases}
                     onChange={(e) => setNameAliases(e.target.value)}
-                    placeholder="paragliding fethiye, Fethiye paragliding"
+                    placeholder="paragliding, tandem flight, yamac parasut"
                   />
-                  <p className="text-xs text-muted-foreground">WooCommerce eşleştirmesi için virgülle ayrılmış alternatif isimler (TR/EN)</p>
+                  <p className="text-xs text-muted-foreground">
+                    WhatsApp botu bu isimleri tanıyarak aktiviteyi bulur. Virgülle ayırın (örn: İngilizce, Almanca, yanlış yazımlar)
+                  </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-2">
