@@ -788,6 +788,10 @@ export default function WebSite() {
             <TabsContent value="pages" className="mt-6">
               <Tabs value={activePagesTab} onValueChange={setActivePagesTab}>
                 <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6">
+                  <TabsTrigger value="sections" className="gap-1" data-testid="tab-sections">
+                    <Layers className="h-4 w-4" />
+                    <span className="hidden sm:inline">Anasayfa</span>
+                  </TabsTrigger>
                   <TabsTrigger value="about" className="gap-1" data-testid="tab-about">
                     <Info className="h-4 w-4" />
                     <span className="hidden sm:inline">Hakkımızda</span>
@@ -807,10 +811,6 @@ export default function WebSite() {
                   <TabsTrigger value="blog" className="gap-1" data-testid="tab-blog">
                     <PenSquare className="h-4 w-4" />
                     <span className="hidden sm:inline">Blog</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="sections" className="gap-1" data-testid="tab-sections">
-                    <Layers className="h-4 w-4" />
-                    <span className="hidden sm:inline">Anasayfa</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -1196,146 +1196,6 @@ export default function WebSite() {
                       </CardContent>
                     </Card>
 
-                    {/* Yorum Kartları */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Star className="h-5 w-5" />
-                          Yorum Kartları (Dış Platformlar)
-                        </CardTitle>
-                        <CardDescription>
-                          Google, TripAdvisor, Trustpilot gibi dış platformlardaki yorumlarınıza link verin
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <Label>Yorum Kartları Göster</Label>
-                            <p className="text-xs text-muted-foreground">Ana sayfada yorum kartları bölümünü göster</p>
-                          </div>
-                          <Switch
-                            checked={formData.websiteReviewCardsEnabled !== undefined 
-                              ? formData.websiteReviewCardsEnabled 
-                              : settings?.websiteReviewCardsEnabled ?? false}
-                            onCheckedChange={(checked) => updateField("websiteReviewCardsEnabled", checked)}
-                            data-testid="switch-review-cards-enabled"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label>Bölüm Başlığı (TR)</Label>
-                            <Input
-                              placeholder="Müşterilerimiz Bizi Öneriyor"
-                              value={getValue("websiteReviewCardsTitle")}
-                              onChange={(e) => updateField("websiteReviewCardsTitle", e.target.value)}
-                              data-testid="input-review-cards-title"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Bölüm Başlığı (EN)</Label>
-                            <Input
-                              placeholder="Our Customers Recommend Us"
-                              value={getValue("websiteReviewCardsTitleEn")}
-                              onChange={(e) => updateField("websiteReviewCardsTitleEn", e.target.value)}
-                              data-testid="input-review-cards-title-en"
-                            />
-                          </div>
-                        </div>
-
-                        {displayedReviewCards.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4 bg-muted/50 rounded-lg">
-                            Henüz yorum kartı eklenmemiş
-                          </p>
-                        ) : (
-                          <div className="space-y-3">
-                            {displayedReviewCards.map((card, index) => (
-                              <div key={index} className="flex gap-2 items-start p-3 bg-muted/50 rounded-lg">
-                                <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Platform</Label>
-                                    <Select
-                                      value={card.platform}
-                                      onValueChange={(value) => updateReviewCard(index, "platform", value)}
-                                    >
-                                      <SelectTrigger data-testid={`select-review-platform-${index}`}>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="google">Google</SelectItem>
-                                        <SelectItem value="tripadvisor">TripAdvisor</SelectItem>
-                                        <SelectItem value="trustpilot">Trustpilot</SelectItem>
-                                        <SelectItem value="facebook">Facebook</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Puan</Label>
-                                    <Input
-                                      placeholder="4.9"
-                                      value={card.rating}
-                                      onChange={(e) => updateReviewCard(index, "rating", e.target.value)}
-                                      data-testid={`input-review-rating-${index}`}
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">Yorum Sayısı</Label>
-                                    <Input
-                                      placeholder="1200+"
-                                      value={card.reviewCount}
-                                      onChange={(e) => updateReviewCard(index, "reviewCount", e.target.value)}
-                                      data-testid={`input-review-count-${index}`}
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">URL</Label>
-                                    <Input
-                                      placeholder="https://g.page/..."
-                                      value={card.url}
-                                      onChange={(e) => updateReviewCard(index, "url", e.target.value)}
-                                      data-testid={`input-review-url-${index}`}
-                                    />
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeReviewCard(index)}
-                                  className="shrink-0 text-destructive hover:text-destructive"
-                                  data-testid={`button-remove-review-${index}`}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={addReviewCard}
-                            className="gap-1"
-                            data-testid="button-add-review-card"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Yorum Kartı Ekle
-                          </Button>
-                          {(displayedReviewCards.length > 0 || formData.websiteReviewCardsEnabled !== undefined || formData.websiteReviewCardsTitle !== undefined) && (
-                            <Button
-                              onClick={saveReviewCards}
-                              disabled={saveMutation.isPending}
-                              className="gap-1"
-                              data-testid="button-save-review-cards"
-                            >
-                              <Save className="h-4 w-4" />
-                              Kaydet
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-
                     {/* Hero Slider ve Promosyon Kutuları */}
                     <Card>
                       <CardHeader>
@@ -1662,8 +1522,8 @@ export default function WebSite() {
                                               />
                                             </div>
                                           </div>
-                                          <div className="space-y-2">
-                                            <Label className="text-xs">Başlık (TR)</Label>
+                                          <div className="space-y-2 md:col-span-2">
+                                            <Label className="text-xs">Başlık</Label>
                                             <Input
                                               placeholder="Özel Fırsat"
                                               value={box.title}
@@ -1671,17 +1531,8 @@ export default function WebSite() {
                                               data-testid={`input-promo-title-${index}`}
                                             />
                                           </div>
-                                          <div className="space-y-2">
-                                            <Label className="text-xs">Başlık (EN)</Label>
-                                            <Input
-                                              placeholder="Special Deal"
-                                              value={box.titleEn}
-                                              onChange={(e) => updatePromoBox(index, "titleEn", e.target.value)}
-                                              data-testid={`input-promo-title-en-${index}`}
-                                            />
-                                          </div>
                                           <div className="space-y-2 md:col-span-2">
-                                            <Label className="text-xs">İçerik (TR)</Label>
+                                            <Label className="text-xs">İçerik</Label>
                                             <Textarea
                                               placeholder="Açıklama..."
                                               value={box.content}
@@ -1690,32 +1541,13 @@ export default function WebSite() {
                                               data-testid={`input-promo-content-${index}`}
                                             />
                                           </div>
-                                          <div className="space-y-2 md:col-span-2">
-                                            <Label className="text-xs">İçerik (EN)</Label>
-                                            <Textarea
-                                              placeholder="Description..."
-                                              value={box.contentEn}
-                                              onChange={(e) => updatePromoBox(index, "contentEn", e.target.value)}
-                                              rows={2}
-                                              data-testid={`input-promo-content-en-${index}`}
-                                            />
-                                          </div>
                                           <div className="space-y-2">
-                                            <Label className="text-xs">Buton Metni (TR)</Label>
+                                            <Label className="text-xs">Buton Metni</Label>
                                             <Input
                                               placeholder="İncele"
                                               value={box.buttonText}
                                               onChange={(e) => updatePromoBox(index, "buttonText", e.target.value)}
                                               data-testid={`input-promo-button-${index}`}
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label className="text-xs">Buton Metni (EN)</Label>
-                                            <Input
-                                              placeholder="View"
-                                              value={box.buttonTextEn}
-                                              onChange={(e) => updatePromoBox(index, "buttonTextEn", e.target.value)}
-                                              data-testid={`input-promo-button-en-${index}`}
                                             />
                                           </div>
                                           <div className="space-y-2 md:col-span-2">
@@ -1751,336 +1583,382 @@ export default function WebSite() {
                       </CardContent>
                     </Card>
 
-                    {/* Banner Sıralaması */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Settings className="h-5 w-5" />
-                          Banner Sıralaması
-                        </CardTitle>
-                        <CardDescription>
-                          Slogan ve Promosyon banner'larının görüntülenme sırasını ayarlayın
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Banner Sırası</Label>
-                          <Select
-                            value={getValue("websiteBannerOrder") || "slogan_first"}
-                            onValueChange={(value) => updateField("websiteBannerOrder", value)}
-                          >
-                            <SelectTrigger data-testid="select-banner-order">
-                              <SelectValue placeholder="Banner sırası seçin" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="slogan_first">Önce Slogan Banner, Sonra Promosyon Banner</SelectItem>
-                              <SelectItem value="promo_first">Önce Promosyon Banner, Sonra Slogan Banner</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex justify-end">
-                          <Button
-                            onClick={() => saveMutation.mutate({
-                              websiteBannerOrder: formData.websiteBannerOrder ?? settings?.websiteBannerOrder ?? "slogan_first",
-                            })}
-                            disabled={saveMutation.isPending}
-                            className="gap-1"
-                            data-testid="button-save-banner-order"
-                          >
-                            <Save className="h-4 w-4" />
-                            Sıralama Kaydet
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-
                     {/* Slogan Banner Ayarları */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Type className="h-5 w-5" />
-                          Slogan Banner
-                        </CardTitle>
-                        <CardDescription>
-                          Anasayfada gradient arka planlı slogan alanı
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                          <div className="space-y-0.5">
-                            <Label>Slogan Banner Göster</Label>
-                            <p className="text-sm text-muted-foreground">
-                              Gradient arka planlı slogan alanını göster
-                            </p>
-                          </div>
-                          <Switch
-                            checked={formData.websiteSloganBannerEnabled !== undefined 
-                              ? formData.websiteSloganBannerEnabled 
-                              : settings?.websiteSloganBannerEnabled ?? false}
-                            onCheckedChange={(checked) => updateField("websiteSloganBannerEnabled", checked)}
-                            data-testid="switch-slogan-banner"
-                          />
-                        </div>
+                    <Collapsible defaultOpen={false}>
+                      <Card>
+                        <CollapsibleTrigger asChild>
+                          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <CardTitle className="flex items-center gap-2">
+                                  <Type className="h-5 w-5" />
+                                  Slogan Banner
+                                </CardTitle>
+                                <CardDescription>
+                                  Anasayfada gradient arka planlı slogan alanı
+                                </CardDescription>
+                              </div>
+                              <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
+                            </div>
+                          </CardHeader>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                              <div className="space-y-0.5">
+                                <Label>Slogan Banner Göster</Label>
+                                <p className="text-sm text-muted-foreground">
+                                  Gradient arka planlı slogan alanını göster
+                                </p>
+                              </div>
+                              <Switch
+                                checked={formData.websiteSloganBannerEnabled !== undefined 
+                                  ? formData.websiteSloganBannerEnabled 
+                                  : settings?.websiteSloganBannerEnabled ?? false}
+                                onCheckedChange={(checked) => updateField("websiteSloganBannerEnabled", checked)}
+                                data-testid="switch-slogan-banner"
+                              />
+                            </div>
 
-                        <div className="space-y-2">
-                          <Label>Banner Rengi</Label>
-                          <Select
-                            value={getValue("websiteSloganBannerColor") || "cyan_blue"}
-                            onValueChange={(value) => updateField("websiteSloganBannerColor", value)}
-                          >
-                            <SelectTrigger data-testid="select-slogan-color">
-                              <SelectValue placeholder="Renk seçin" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="cyan_blue">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-4 rounded bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
-                                  Mavi / Cyan
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="purple_pink">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-4 rounded bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500" />
-                                  Mor / Pembe
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="green_teal">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-4 rounded bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500" />
-                                  Yeşil / Teal
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="orange_red">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-4 rounded bg-gradient-to-r from-orange-500 via-red-500 to-rose-500" />
-                                  Turuncu / Kırmızı
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                            <div className="space-y-2">
+                              <Label>Banner Rengi</Label>
+                              <Select
+                                value={getValue("websiteSloganBannerColor") || "cyan_blue"}
+                                onValueChange={(value) => updateField("websiteSloganBannerColor", value)}
+                              >
+                                <SelectTrigger data-testid="select-slogan-color">
+                                  <SelectValue placeholder="Renk seçin" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="cyan_blue">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-4 rounded bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500" />
+                                      Mavi / Cyan
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="purple_pink">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-4 rounded bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500" />
+                                      Mor / Pembe
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="green_teal">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-4 rounded bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500" />
+                                      Yeşil / Teal
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="orange_red">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-4 rounded bg-gradient-to-r from-orange-500 via-red-500 to-rose-500" />
+                                      Turuncu / Kırmızı
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                        <div className="grid gap-4">
-                          <div className="space-y-2">
-                            <Label>Slogan Başlığı (TR)</Label>
-                            <Textarea
-                              placeholder="Fethiye'nin en iyi firması ile gökyüzüne dokunmaya hazır mısınız?"
-                              value={getValue("websiteSloganBannerTitle")}
-                              onChange={(e) => updateField("websiteSloganBannerTitle", e.target.value)}
-                              rows={2}
-                              data-testid="input-slogan-title"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Slogan Başlığı (EN)</Label>
-                            <Textarea
-                              placeholder="Are you ready to touch the sky with Fethiye's best company?"
-                              value={getValue("websiteSloganBannerTitleEn")}
-                              onChange={(e) => updateField("websiteSloganBannerTitleEn", e.target.value)}
-                              rows={2}
-                              data-testid="input-slogan-title-en"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Slogan Açıklaması (TR)</Label>
-                            <Textarea
-                              placeholder="Dünya'nın farklı yerlerinden gelen konuklara..."
-                              value={getValue("websiteSloganBannerDescription")}
-                              onChange={(e) => updateField("websiteSloganBannerDescription", e.target.value)}
-                              rows={3}
-                              data-testid="input-slogan-description"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Slogan Açıklaması (EN)</Label>
-                            <Textarea
-                              placeholder="We are proud to offer first-class safe flight service..."
-                              value={getValue("websiteSloganBannerDescriptionEn")}
-                              onChange={(e) => updateField("websiteSloganBannerDescriptionEn", e.target.value)}
-                              rows={3}
-                              data-testid="input-slogan-description-en"
-                            />
-                          </div>
-                        </div>
+                            <div className="grid gap-4">
+                              <div className="space-y-2">
+                                <Label>Slogan Başlığı</Label>
+                                <Textarea
+                                  placeholder="Fethiye'nin en iyi firması ile gökyüzüne dokunmaya hazır mısınız?"
+                                  value={getValue("websiteSloganBannerTitle")}
+                                  onChange={(e) => updateField("websiteSloganBannerTitle", e.target.value)}
+                                  rows={2}
+                                  data-testid="input-slogan-title"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Slogan Açıklaması</Label>
+                                <Textarea
+                                  placeholder="Dünya'nın farklı yerlerinden gelen konuklara..."
+                                  value={getValue("websiteSloganBannerDescription")}
+                                  onChange={(e) => updateField("websiteSloganBannerDescription", e.target.value)}
+                                  rows={3}
+                                  data-testid="input-slogan-description"
+                                />
+                              </div>
+                            </div>
 
-                        <div className="flex justify-end">
-                          <Button
-                            onClick={() => saveMutation.mutate({
-                              websiteSloganBannerEnabled: formData.websiteSloganBannerEnabled ?? settings?.websiteSloganBannerEnabled ?? false,
-                              websiteSloganBannerTitle: formData.websiteSloganBannerTitle ?? settings?.websiteSloganBannerTitle ?? null,
-                              websiteSloganBannerTitleEn: formData.websiteSloganBannerTitleEn ?? settings?.websiteSloganBannerTitleEn ?? null,
-                              websiteSloganBannerDescription: formData.websiteSloganBannerDescription ?? settings?.websiteSloganBannerDescription ?? null,
-                              websiteSloganBannerDescriptionEn: formData.websiteSloganBannerDescriptionEn ?? settings?.websiteSloganBannerDescriptionEn ?? null,
-                              websiteSloganBannerColor: formData.websiteSloganBannerColor ?? settings?.websiteSloganBannerColor ?? "cyan_blue",
-                            })}
-                            disabled={saveMutation.isPending}
-                            className="gap-1"
-                            data-testid="button-save-slogan-banner"
-                          >
-                            <Save className="h-4 w-4" />
-                            Slogan Kaydet
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                            <div className="flex justify-end">
+                              <Button
+                                onClick={() => saveMutation.mutate({
+                                  websiteSloganBannerEnabled: formData.websiteSloganBannerEnabled ?? settings?.websiteSloganBannerEnabled ?? false,
+                                  websiteSloganBannerTitle: formData.websiteSloganBannerTitle ?? settings?.websiteSloganBannerTitle ?? null,
+                                  websiteSloganBannerDescription: formData.websiteSloganBannerDescription ?? settings?.websiteSloganBannerDescription ?? null,
+                                  websiteSloganBannerColor: formData.websiteSloganBannerColor ?? settings?.websiteSloganBannerColor ?? "cyan_blue",
+                                })}
+                                disabled={saveMutation.isPending}
+                                className="gap-1"
+                                data-testid="button-save-slogan-banner"
+                              >
+                                <Save className="h-4 w-4" />
+                                Slogan Kaydet
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
 
                     {/* Promo CTA Banner Ayarları */}
+                    <Collapsible defaultOpen={false}>
+                      <Card>
+                        <CollapsibleTrigger asChild>
+                          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <CardTitle className="flex items-center gap-2">
+                                  <Image className="h-5 w-5" />
+                                  Promosyon Banner
+                                </CardTitle>
+                                <CardDescription>
+                                  Anasayfada mavi gradient arka planlı görsel + metin banner alanı
+                                </CardDescription>
+                              </div>
+                              <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200" />
+                            </div>
+                          </CardHeader>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                              <div className="space-y-0.5">
+                                <Label>Promosyon Banner Göster</Label>
+                                <p className="text-sm text-muted-foreground">
+                                  Mavi gradient arka planlı CTA banner'ı göster
+                                </p>
+                              </div>
+                              <Switch
+                                checked={formData.websitePromoBannerEnabled !== undefined 
+                                  ? formData.websitePromoBannerEnabled 
+                                  : settings?.websitePromoBannerEnabled ?? false}
+                                onCheckedChange={(checked) => updateField("websitePromoBannerEnabled", checked)}
+                                data-testid="switch-promo-banner"
+                              />
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <div className="space-y-2 md:col-span-2">
+                                <Label>Başlık</Label>
+                                <Input
+                                  placeholder="Türkiye'nin Her Noktasını Keşfedin"
+                                  value={getValue("websitePromoBannerTitle")}
+                                  onChange={(e) => updateField("websitePromoBannerTitle", e.target.value)}
+                                  data-testid="input-promo-banner-title"
+                                />
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                <Label>Açıklama</Label>
+                                <Textarea
+                                  placeholder="Eşsiz deneyimler ve unutulmaz anılar için..."
+                                  value={getValue("websitePromoBannerDescription")}
+                                  onChange={(e) => updateField("websitePromoBannerDescription", e.target.value)}
+                                  rows={2}
+                                  data-testid="input-promo-banner-description"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Buton Metni</Label>
+                                <Input
+                                  placeholder="Hemen İncele"
+                                  value={getValue("websitePromoBannerButtonText")}
+                                  onChange={(e) => updateField("websitePromoBannerButtonText", e.target.value)}
+                                  data-testid="input-promo-banner-button"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Buton URL</Label>
+                                <Input
+                                  placeholder="/aktiviteler"
+                                  value={getValue("websitePromoBannerButtonUrl")}
+                                  onChange={(e) => updateField("websitePromoBannerButtonUrl", e.target.value)}
+                                  data-testid="input-promo-banner-url"
+                                />
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                <Label>Fiyat Etiketi</Label>
+                                <Input
+                                  placeholder="699,99 TL"
+                                  value={getValue("websitePromoBannerPriceText")}
+                                  onChange={(e) => updateField("websitePromoBannerPriceText", e.target.value)}
+                                  data-testid="input-promo-banner-price"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Sağ üst köşede görünecek fiyat etiketi (isteğe bağlı)
+                                </p>
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                <Label>Banner Görseli</Label>
+                                <ImageUpload
+                                  value={getValue("websitePromoBannerImage") || ""}
+                                  onChange={(url) => updateField("websitePromoBannerImage", url)}
+                                  label="Banner Görseli"
+                                  size="large"
+                                  placeholder="Banner görseli yükleyin"
+                                  recommendedSize="1200x400px (maks. 200KB, PNG/WebP)"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Arka plan görseli olarak görünecek (isteğe bağlı)
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                              <Button
+                                onClick={() => saveMutation.mutate({
+                                  websitePromoBannerEnabled: formData.websitePromoBannerEnabled ?? settings?.websitePromoBannerEnabled ?? false,
+                                  websitePromoBannerTitle: formData.websitePromoBannerTitle ?? settings?.websitePromoBannerTitle ?? null,
+                                  websitePromoBannerDescription: formData.websitePromoBannerDescription ?? settings?.websitePromoBannerDescription ?? null,
+                                  websitePromoBannerButtonText: formData.websitePromoBannerButtonText ?? settings?.websitePromoBannerButtonText ?? null,
+                                  websitePromoBannerButtonUrl: formData.websitePromoBannerButtonUrl ?? settings?.websitePromoBannerButtonUrl ?? null,
+                                  websitePromoBannerImage: formData.websitePromoBannerImage ?? settings?.websitePromoBannerImage ?? null,
+                                  websitePromoBannerPriceText: formData.websitePromoBannerPriceText ?? settings?.websitePromoBannerPriceText ?? null,
+                                })}
+                                disabled={saveMutation.isPending}
+                                className="gap-1"
+                                data-testid="button-save-promo-banner"
+                              >
+                                <Save className="h-4 w-4" />
+                                Promo Banner Kaydet
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Card>
+                    </Collapsible>
+
+                    {/* Yorum Kartları */}
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                          <Image className="h-5 w-5" />
-                          Promosyon Banner
+                          <Star className="h-5 w-5" />
+                          Yorum Kartları (Dış Platformlar)
                         </CardTitle>
                         <CardDescription>
-                          Anasayfada mavi gradient arka planlı görsel + metin banner alanı
+                          Google, TripAdvisor, Trustpilot gibi dış platformlardaki yorumlarınıza link verin
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                        <div className="flex items-center justify-between">
                           <div className="space-y-0.5">
-                            <Label>Promosyon Banner Göster</Label>
-                            <p className="text-sm text-muted-foreground">
-                              Mavi gradient arka planlı CTA banner'ı göster
-                            </p>
+                            <Label>Yorum Kartları Göster</Label>
+                            <p className="text-xs text-muted-foreground">Ana sayfada yorum kartları bölümünü göster</p>
                           </div>
                           <Switch
-                            checked={formData.websitePromoBannerEnabled !== undefined 
-                              ? formData.websitePromoBannerEnabled 
-                              : settings?.websitePromoBannerEnabled ?? false}
-                            onCheckedChange={(checked) => updateField("websitePromoBannerEnabled", checked)}
-                            data-testid="switch-promo-banner"
+                            checked={formData.websiteReviewCardsEnabled !== undefined 
+                              ? formData.websiteReviewCardsEnabled 
+                              : settings?.websiteReviewCardsEnabled ?? false}
+                            onCheckedChange={(checked) => updateField("websiteReviewCardsEnabled", checked)}
+                            data-testid="switch-review-cards-enabled-bottom"
                           />
                         </div>
 
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label>Başlık (TR)</Label>
-                            <Input
-                              placeholder="Türkiye'nin Her Noktasını Keşfedin"
-                              value={getValue("websitePromoBannerTitle")}
-                              onChange={(e) => updateField("websitePromoBannerTitle", e.target.value)}
-                              data-testid="input-promo-banner-title"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Başlık (EN)</Label>
-                            <Input
-                              placeholder="Discover Every Corner of Turkey"
-                              value={getValue("websitePromoBannerTitleEn")}
-                              onChange={(e) => updateField("websitePromoBannerTitleEn", e.target.value)}
-                              data-testid="input-promo-banner-title-en"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Açıklama (TR)</Label>
-                            <Textarea
-                              placeholder="Eşsiz deneyimler ve unutulmaz anılar için..."
-                              value={getValue("websitePromoBannerDescription")}
-                              onChange={(e) => updateField("websitePromoBannerDescription", e.target.value)}
-                              rows={2}
-                              data-testid="input-promo-banner-description"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Açıklama (EN)</Label>
-                            <Textarea
-                              placeholder="For unique experiences and unforgettable memories..."
-                              value={getValue("websitePromoBannerDescriptionEn")}
-                              onChange={(e) => updateField("websitePromoBannerDescriptionEn", e.target.value)}
-                              rows={2}
-                              data-testid="input-promo-banner-description-en"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Buton Metni (TR)</Label>
-                            <Input
-                              placeholder="Hemen İncele"
-                              value={getValue("websitePromoBannerButtonText")}
-                              onChange={(e) => updateField("websitePromoBannerButtonText", e.target.value)}
-                              data-testid="input-promo-banner-button"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Buton Metni (EN)</Label>
-                            <Input
-                              placeholder="Explore Now"
-                              value={getValue("websitePromoBannerButtonTextEn")}
-                              onChange={(e) => updateField("websitePromoBannerButtonTextEn", e.target.value)}
-                              data-testid="input-promo-banner-button-en"
-                            />
-                          </div>
-                          <div className="space-y-2 md:col-span-2">
-                            <Label>Buton URL</Label>
-                            <Input
-                              placeholder="/aktiviteler"
-                              value={getValue("websitePromoBannerButtonUrl")}
-                              onChange={(e) => updateField("websitePromoBannerButtonUrl", e.target.value)}
-                              data-testid="input-promo-banner-url"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Fiyat Etiketi (TR)</Label>
-                            <Input
-                              placeholder="699,99 TL"
-                              value={getValue("websitePromoBannerPriceText")}
-                              onChange={(e) => updateField("websitePromoBannerPriceText", e.target.value)}
-                              data-testid="input-promo-banner-price"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Sağ üst köşede görünecek fiyat etiketi (isteğe bağlı)
-                            </p>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Fiyat Etiketi (EN)</Label>
-                            <Input
-                              placeholder="$69.99"
-                              value={getValue("websitePromoBannerPriceTextEn")}
-                              onChange={(e) => updateField("websitePromoBannerPriceTextEn", e.target.value)}
-                              data-testid="input-promo-banner-price-en"
-                            />
-                          </div>
-                          <div className="space-y-2 md:col-span-2">
-                            <Label>Banner Görseli</Label>
-                            <ImageUpload
-                              value={getValue("websitePromoBannerImage") || ""}
-                              onChange={(url) => updateField("websitePromoBannerImage", url)}
-                              label="Banner Görseli"
-                              size="large"
-                              placeholder="Banner görseli yükleyin"
-                              recommendedSize="1200x400px (maks. 200KB, PNG/WebP)"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Arka plan görseli olarak görünecek (isteğe bağlı)
-                            </p>
-                          </div>
+                        <div className="space-y-2">
+                          <Label>Bölüm Başlığı</Label>
+                          <Input
+                            placeholder="Müşterilerimiz Bizi Öneriyor"
+                            value={getValue("websiteReviewCardsTitle")}
+                            onChange={(e) => updateField("websiteReviewCardsTitle", e.target.value)}
+                            data-testid="input-review-cards-title-bottom"
+                          />
                         </div>
 
-                        <div className="flex justify-end">
+                        {displayedReviewCards.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-4 bg-muted/50 rounded-lg">
+                            Henüz yorum kartı eklenmemiş
+                          </p>
+                        ) : (
+                          <div className="space-y-3">
+                            {displayedReviewCards.map((card, index) => (
+                              <div key={index} className="flex gap-2 items-start p-3 bg-muted/50 rounded-lg">
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-2">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Platform</Label>
+                                    <Select
+                                      value={card.platform}
+                                      onValueChange={(value) => updateReviewCard(index, "platform", value)}
+                                    >
+                                      <SelectTrigger data-testid={`select-review-platform-bottom-${index}`}>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="google">Google</SelectItem>
+                                        <SelectItem value="tripadvisor">TripAdvisor</SelectItem>
+                                        <SelectItem value="trustpilot">Trustpilot</SelectItem>
+                                        <SelectItem value="facebook">Facebook</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Puan</Label>
+                                    <Input
+                                      placeholder="4.9"
+                                      value={card.rating}
+                                      onChange={(e) => updateReviewCard(index, "rating", e.target.value)}
+                                      data-testid={`input-review-rating-bottom-${index}`}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Yorum Sayısı</Label>
+                                    <Input
+                                      placeholder="1200+"
+                                      value={card.reviewCount}
+                                      onChange={(e) => updateReviewCard(index, "reviewCount", e.target.value)}
+                                      data-testid={`input-review-count-bottom-${index}`}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">URL</Label>
+                                    <Input
+                                      placeholder="https://g.page/..."
+                                      value={card.url}
+                                      onChange={(e) => updateReviewCard(index, "url", e.target.value)}
+                                      data-testid={`input-review-url-bottom-${index}`}
+                                    />
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeReviewCard(index)}
+                                  className="shrink-0 text-destructive hover:text-destructive"
+                                  data-testid={`button-remove-review-bottom-${index}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
                           <Button
-                            onClick={() => saveMutation.mutate({
-                              websitePromoBannerEnabled: formData.websitePromoBannerEnabled ?? settings?.websitePromoBannerEnabled ?? false,
-                              websitePromoBannerTitle: formData.websitePromoBannerTitle ?? settings?.websitePromoBannerTitle ?? null,
-                              websitePromoBannerTitleEn: formData.websitePromoBannerTitleEn ?? settings?.websitePromoBannerTitleEn ?? null,
-                              websitePromoBannerDescription: formData.websitePromoBannerDescription ?? settings?.websitePromoBannerDescription ?? null,
-                              websitePromoBannerDescriptionEn: formData.websitePromoBannerDescriptionEn ?? settings?.websitePromoBannerDescriptionEn ?? null,
-                              websitePromoBannerButtonText: formData.websitePromoBannerButtonText ?? settings?.websitePromoBannerButtonText ?? null,
-                              websitePromoBannerButtonTextEn: formData.websitePromoBannerButtonTextEn ?? settings?.websitePromoBannerButtonTextEn ?? null,
-                              websitePromoBannerButtonUrl: formData.websitePromoBannerButtonUrl ?? settings?.websitePromoBannerButtonUrl ?? null,
-                              websitePromoBannerImage: formData.websitePromoBannerImage ?? settings?.websitePromoBannerImage ?? null,
-                              websitePromoBannerPriceText: formData.websitePromoBannerPriceText ?? settings?.websitePromoBannerPriceText ?? null,
-                              websitePromoBannerPriceTextEn: formData.websitePromoBannerPriceTextEn ?? settings?.websitePromoBannerPriceTextEn ?? null,
-                            })}
-                            disabled={saveMutation.isPending}
+                            variant="outline"
+                            onClick={addReviewCard}
                             className="gap-1"
-                            data-testid="button-save-promo-banner"
+                            data-testid="button-add-review-card-bottom"
                           >
-                            <Save className="h-4 w-4" />
-                            Promo Banner Kaydet
+                            <Plus className="h-4 w-4" />
+                            Yorum Kartı Ekle
                           </Button>
+                          {(displayedReviewCards.length > 0 || formData.websiteReviewCardsEnabled !== undefined || formData.websiteReviewCardsTitle !== undefined) && (
+                            <Button
+                              onClick={saveReviewCards}
+                              disabled={saveMutation.isPending}
+                              className="gap-1"
+                              data-testid="button-save-review-cards-bottom"
+                            >
+                              <Save className="h-4 w-4" />
+                              Kaydet
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
 
+                    {/* Anasayfa Bölümleri */}
                     <Card>
                       <CardHeader>
                         <CardTitle>Anasayfa Bölümleri</CardTitle>
