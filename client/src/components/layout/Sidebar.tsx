@@ -30,7 +30,8 @@ import {
   RefreshCw,
   Info,
   Globe,
-  FileText
+  FileText,
+  Share2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -57,7 +58,7 @@ const allNavItems: NavItem[] = [
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, viewerOnly: true },
   { href: "/viewer-stats", label: "Izleyiciler", icon: Eye, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
-  { href: "/partner-availability", label: "Partnerler", icon: Users, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW, gradient: true },
+  { href: "/partner-availability", label: "Partnerler", icon: Share2, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW, gradient: true },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
@@ -822,7 +823,6 @@ export function Sidebar() {
             const hasPartnerBadge = item.href === "/partner-availability" && pendingPartnerRequestsCount > 0;
             const badgeCount = item.href === "/viewer-stats" ? pendingViewerRequestsCount : 
                                item.href === "/partner-availability" ? pendingPartnerRequestsCount : 0;
-            const isPartnerPage = item.href === "/partner-availability";
             return (
               <Link key={item.href} href={item.href}>
                 <div className={cn(
@@ -831,14 +831,10 @@ export function Sidebar() {
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}>
-                  {isPartnerPage && smarturLogoUrl ? (
-                    <img src={smarturLogoUrl} alt="" className="h-5 w-5 object-contain transition-transform group-hover:scale-110" />
-                  ) : (
-                    <item.icon className={cn(
-                      "h-5 w-5 transition-transform group-hover:scale-110",
-                      location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
-                    )} />
-                  )}
+                  <item.icon className={cn(
+                    "h-5 w-5 transition-transform group-hover:scale-110",
+                    location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
+                  )} />
                   {item.gradient && location !== item.href ? (
                     <span className="bg-gradient-to-r from-cyan-500 via-teal-400 to-yellow-400 bg-clip-text text-transparent font-semibold">
                       {item.label}
