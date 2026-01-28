@@ -61,7 +61,7 @@ const allNavItems: NavItem[] = [
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
   { href: "/messages", label: "WhatsApp", icon: MessageCircle, requiredPermission: PERMISSION_KEYS.WHATSAPP_VIEW },
-  { href: "/website", label: "Web Site", icon: Globe, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
+  { href: "/website", label: "Smartur Web Site", icon: Globe, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
   { href: "/settings", label: "Ayarlar", icon: Settings, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
 ];
 
