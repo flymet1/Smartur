@@ -1185,147 +1185,142 @@ DEĞİŞİKLİK TALEPLERİNDE:
                 }, 100);
               }
             }} />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Mesaj Şablonları</CardTitle>
+                <CardDescription>
+                  Sipariş onayı ve hatırlatma mesajları varsayılan olarak e-posta ile gönderilir (WhatsApp spam riski nedeniyle).
+                  Müşteri WhatsApp'tan sorduğunda bot bu mesajları WhatsApp'tan da gönderebilir.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
+                  {!canManageTemplates && (
+                    <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Bu şablonu sadece acenta sahibi düzenleyebilir
+                    </p>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="manualConfirmationTemplate">Sipariş Onay Mesajı Şablonu</Label>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Bu şablon, aktivitede özel onay mesajı tanımlanmamışsa kullanılır. 
+                      Her aktivite için özel mesaj tanımlamak için Aktiviteler sayfasındaki "Onay Mesajı" sekmesini kullanın.
+                    </p>
+                    <Textarea 
+                      id="manualConfirmationTemplate"
+                      value={manualConfirmationTemplate}
+                      onChange={(e) => setManualConfirmationTemplate(e.target.value)}
+                      placeholder="Mesaj şablonunuzu yazın..."
+                      className="min-h-[150px]"
+                      disabled={!canManageTemplates}
+                      data-testid="textarea-manual-confirmation-template"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Desteklenen değişkenler: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}
+                    </p>
+                  </div>
+                  {canManageTemplates && (
+                    <Button 
+                      onClick={async () => {
+                        setIsSavingManualConfirmation(true);
+                        try {
+                          await fetch('/api/settings/manualConfirmation', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              value: JSON.stringify({
+                                template: manualConfirmationTemplate
+                              })
+                            }),
+                          });
+                          toast({ title: "Kaydedildi", description: "Onay mesajı şablonu güncellendi." });
+                        } catch (error) {
+                          toast({ title: "Hata", description: "Şablon kaydedilemedi.", variant: "destructive" });
+                        } finally {
+                          setIsSavingManualConfirmation(false);
+                        }
+                      }}
+                      disabled={isSavingManualConfirmation}
+                      data-testid="button-save-manual-confirmation"
+                    >
+                      {isSavingManualConfirmation ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4 mr-2" />
+                      )}
+                      Şablonu Kaydet
+                    </Button>
+                  )}
+                </div>
+
+                <div className="border-t pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="space-y-0.5">
+                      <Label>Otomatik Hatırlatma</Label>
+                      <p className="text-sm text-muted-foreground">Aktiviteye belirtilen süre kala e-posta ile hatırlatma gönder</p>
+                    </div>
+                    <Switch 
+                      checked={reminderEnabled} 
+                      onCheckedChange={setReminderEnabled}
+                    />
+                  </div>
+                  
+                  {reminderEnabled && (
+                    <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
+                      <div className="space-y-2">
+                        <Label htmlFor="reminderHours">Kaç saat kala hatırlatma yapılsın?</Label>
+                        <div className="flex gap-2 items-end">
+                          <Input 
+                            id="reminderHours"
+                            type="number" 
+                            min="1"
+                            max="72"
+                            value={reminderHours}
+                            onChange={(e) => setReminderHours(Math.max(1, Math.min(72, Number(e.target.value))))}
+                            placeholder="Saat cinsinden girin..."
+                            className="flex-1"
+                          />
+                          <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                            saat
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          1-72 saat arasında ayarlayın (Varsayılan: 24 saat)
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="reminderMessage">Hatırlatma Mesajı Şablonu</Label>
+                        <Textarea 
+                          id="reminderMessage"
+                          value={reminderMessage}
+                          onChange={(e) => setReminderMessage(e.target.value)}
+                          placeholder="Hatırlatma mesajınızı yazın..."
+                          className="min-h-[120px]"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Desteklenen değişkenler:
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktiviteler{'}'}</code> - Aktivite adları</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saatler{'}'}</code> - Aktivite saatleri</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}takip_linki{'}'}</code> - Takip linki</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* WHATSAPP TAB */}
           <TabsContent value="whatsapp" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Otomasyon Ayarları</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-0.5 mb-4">
-                <Label>Yeni Rezervasyon Onay Mesajı Şablonu</Label>
-                <p className="text-sm text-muted-foreground">
-                  Sipariş onay mesajları varsayılan olarak <strong>e-posta</strong> ile gönderilir (spam riski nedeniyle).
-                  Müşteri WhatsApp'tan "siparişim onaylandı mı?" diye sorarsa, bot bu mesajı WhatsApp'tan da gönderir.
-                  <span className="text-primary"> Bildirimi açmak/kapatmak için Bildirimler sekmesini kullanın.</span>
-                </p>
-              </div>
-              
-              <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
-                {!canManageTemplates && (
-                  <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Bu şablonu sadece acenta sahibi düzenleyebilir
-                  </p>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="manualConfirmationTemplate">Varsayılan Onay Mesajı Şablonu</Label>
-                  <p className="text-xs text-muted-foreground mb-1">
-                    Bu şablon, aktivitede özel onay mesajı tanımlanmamışsa kullanılır. 
-                    Her aktivite için özel mesaj tanımlamak için Aktiviteler sayfasındaki "Sipariş Onay Mesajı Şablonu" alanını kullanın.
-                  </p>
-                  <Textarea 
-                    id="manualConfirmationTemplate"
-                    value={manualConfirmationTemplate}
-                    onChange={(e) => setManualConfirmationTemplate(e.target.value)}
-                    placeholder="Mesaj şablonunuzu yazın..."
-                    className="min-h-[150px]"
-                    disabled={!canManageTemplates}
-                    data-testid="textarea-manual-confirmation-template"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Desteklenen değişkenler: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}
-                  </p>
-                </div>
-                {canManageTemplates && (
-                  <Button 
-                    onClick={async () => {
-                      setIsSavingManualConfirmation(true);
-                      try {
-                        await fetch('/api/settings/manualConfirmation', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            value: JSON.stringify({
-                              template: manualConfirmationTemplate
-                            })
-                          }),
-                        });
-                        toast({ title: "Kaydedildi", description: "Onay mesajı şablonu güncellendi." });
-                      } catch (error) {
-                        toast({ title: "Hata", description: "Şablon kaydedilemedi.", variant: "destructive" });
-                      } finally {
-                        setIsSavingManualConfirmation(false);
-                      }
-                    }}
-                    disabled={isSavingManualConfirmation}
-                    data-testid="button-save-manual-confirmation"
-                  >
-                    {isSavingManualConfirmation ? (
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
-                    Şablonu Kaydet
-                  </Button>
-                )}
-              </div>
-
-              <div className="border-t pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="space-y-0.5">
-                    <Label>Otomatik Hatırlatma</Label>
-                    <p className="text-sm text-muted-foreground">Aktiviteye belirtilen süre kala <strong>e-posta</strong> ile hatırlatma gönder (WhatsApp spam riski nedeniyle ilk mesaj e-posta ile gönderilir)</p>
-                  </div>
-                  <Switch 
-                    checked={reminderEnabled} 
-                    onCheckedChange={setReminderEnabled}
-                  />
-                </div>
-                
-                {reminderEnabled && (
-                  <div className="space-y-4 bg-muted/50 p-4 rounded-lg">
-                    <div className="space-y-2">
-                      <Label htmlFor="reminderHours">Kaç saat kala hatırlatma yapılsın?</Label>
-                      <div className="flex gap-2 items-end">
-                        <Input 
-                          id="reminderHours"
-                          type="number" 
-                          min="1"
-                          max="72"
-                          value={reminderHours}
-                          onChange={(e) => setReminderHours(Math.max(1, Math.min(72, Number(e.target.value))))}
-                          placeholder="Saat cinsinden girin..."
-                          className="flex-1"
-                        />
-                        <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                          saat
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        1-72 saat arasında ayarlayın (Varsayılan: 24 saat)
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="reminderMessage">Hatırlatma Mesajı</Label>
-                      <Textarea 
-                        id="reminderMessage"
-                        value={reminderMessage}
-                        onChange={(e) => setReminderMessage(e.target.value)}
-                        placeholder="Hatırlatma mesajınızı yazın..."
-                        className="min-h-[120px]"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Desteklenen değişkenler:
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
-                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
-                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
-                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktiviteler{'}'}</code> - Aktivite adları</div>
-                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saatler{'}'}</code> - Aktivite saatleri</div>
-                        <div><code className="bg-background px-1.5 py-1 rounded">{'{'}takip_linki{'}'}</code> - Takip linki</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle>WhatsApp Bot Ayarları</CardTitle>
