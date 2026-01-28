@@ -885,7 +885,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['security', 'whatsapp', 'integrations', 'system', 'data', 'partners', 'notifications'].includes(tab)) {
+    if (tab && ['security', 'whatsapp', 'integrations', 'holidays', 'system', 'data', 'partners', 'notifications'].includes(tab)) {
       setSettingsTab(tab);
     }
   }, [location]);
@@ -986,7 +986,21 @@ DEĞİŞİKLİK TALEPLERİNDE:
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Partnerler</TooltipContent>
             </Tooltip>
-                        <Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={settingsTab === 'holidays' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSettingsTab('holidays')}
+                  data-testid="tab-holidays"
+                >
+                  <CalendarHeart className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Tatiller</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Tatiller</TooltipContent>
+            </Tooltip>
+            <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant={settingsTab === 'data' ? "default" : "ghost"}
@@ -2100,6 +2114,11 @@ DEĞİŞİKLİK TALEPLERİNDE:
             <WooCommerceCard />
             <EmailCard />
             <GoogleTrackingCard />
+          </TabsContent>
+
+          {/* HOLIDAYS TAB */}
+          <TabsContent value="holidays" className="space-y-6">
+            <HolidaysSection />
           </TabsContent>
 
           {/* DATA EXPORT TAB */}
