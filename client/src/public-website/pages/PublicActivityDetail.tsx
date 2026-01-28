@@ -128,19 +128,58 @@ export default function PublicActivityDetail() {
     enabled: !!reservationData.date && activityId > 0,
   });
 
+  // Payment initialization mutation
+  const initializePaymentMutation = useMutation({
+    mutationFn: async (data: { reservationId: number; amount: number; customerName: string; customerEmail: string; customerPhone: string }) => {
+      const response = await apiRequest("POST", getApiUrl("/api/website/payment/initialize"), data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.paymentPageUrl) {
+        window.location.href = data.paymentPageUrl;
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === "en" ? "Payment Error" : "Ödeme Hatası",
+        description: error.message || (language === "en" ? "Could not initialize payment." : "Ödeme başlatılamadı."),
+        variant: "destructive",
+      });
+    },
+  });
+
   // Reservation mutation
   const createReservationMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiRequest("POST", getApiUrl("/api/website/reservations"), data);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setTrackingToken(data.trackingToken);
-      setReservationStep("success");
-      toast({
-        title: language === "en" ? "Reservation Created" : "Rezervasyon Oluşturuldu",
-        description: language === "en" ? "Your reservation has been received." : "Rezervasyonunuz başarıyla alındı.",
-      });
+      
+      // Check if payment is required (deposit or full payment)
+      if (data.depositRequired > 0 || data.paymentType === "full") {
+        const paymentAmount = data.paymentType === "full" ? data.totalPrice : data.depositRequired;
+        
+        toast({
+          title: language === "en" ? "Redirecting to Payment" : "Ödeme Sayfasına Yönlendiriliyorsunuz",
+          description: language === "en" ? "Please wait..." : "Lütfen bekleyin...",
+        });
+        
+        initializePaymentMutation.mutate({
+          reservationId: data.id,
+          amount: paymentAmount,
+          customerName: reservationData.customerName,
+          customerEmail: reservationData.customerEmail,
+          customerPhone: reservationData.customerPhone,
+        });
+      } else {
+        setReservationStep("success");
+        toast({
+          title: language === "en" ? "Reservation Created" : "Rezervasyon Oluşturuldu",
+          description: language === "en" ? "Your reservation has been received." : "Rezervasyonunuz başarıyla alındı.",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -249,6 +288,20 @@ export default function PublicActivityDetail() {
     if (hours === 0) return `${mins} dakika`;
     if (mins === 0) return `${hours} saat`;
     return `${hours} saat ${mins} dakika`;
+  };
+
+  const formatDateTurkish = (dateStr: string) => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return dateStr;
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
+    } catch {
+      return dateStr;
+    }
   };
 
   const handleShare = async () => {
@@ -826,7 +879,7 @@ export default function PublicActivityDetail() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{language === "en" ? "Date" : "Tarih"}</span>
-                          <span className="font-medium">{reservationData.date}</span>
+                          <span className="font-medium">{formatDateTurkish(reservationData.date)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">{language === "en" ? "Time" : "Saat"}</span>
@@ -1168,7 +1221,8 @@ export default function PublicActivityDetail() {
                                   <div>
                                     <Label className="text-xs">{language === "en" ? "Birth Date" : "Doğum Tarihi"}</Label>
                                     <Input
-                                      type="date"
+                                      type="text"
+                                      placeholder={language === "en" ? "DD.MM.YYYY" : "GG.AA.YYYY"}
                                       value={participant.birthDate}
                                       onChange={(e) => updateParticipant(idx, "birthDate", e.target.value)}
                                       data-testid={`input-birthdate-${idx}`}
@@ -1258,7 +1312,7 @@ export default function PublicActivityDetail() {
                           <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-1">
                             <div className="flex justify-between">
                               <span>{language === "en" ? "Date:" : "Tarih:"}</span>
-                              <span className="font-medium">{reservationData.date}</span>
+                              <span className="font-medium">{formatDateTurkish(reservationData.date)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span>{language === "en" ? "Time:" : "Saat:"}</span>
