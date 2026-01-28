@@ -872,22 +872,23 @@ export function Sidebar() {
           )}
         </div>
 
-        <div className="p-4 border-t space-y-3">
-          {/* System Status and Links - Hidden for viewer-only users */}
+        {/* Footer Section */}
+        <div className="border-t bg-muted/30">
+          {/* System Status and Quick Links - Hidden for viewer-only users */}
           {!isViewerOnly && (
-            <>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sistem Durumu</div>
-                <Link href="/settings?tab=whatsapp">
-                  <div className="flex items-center gap-2 text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity" data-testid="link-whatsapp-bot-status">
+            <div className="p-3 space-y-2">
+              {/* System Status Row */}
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <Link href="/settings?tab=whatsapp" className="flex-1">
+                  <div className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity" data-testid="link-whatsapp-bot-status">
                     <div className={cn(
-                      "w-2 h-2 rounded-full",
+                      "w-1.5 h-1.5 rounded-full flex-shrink-0",
                       isBotEnabled ? "bg-accent animate-pulse" : "bg-muted-foreground"
                     )} />
-                    <span className="text-foreground">WhatsApp Bot</span>
+                    <span className="text-muted-foreground truncate">Bot</span>
                     <span className={cn(
-                      "text-xs px-1.5 py-0.5 rounded font-semibold",
-                      isBotEnabled ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+                      "text-[10px] px-1 py-0.5 rounded font-medium",
+                      isBotEnabled ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
                     )}>
                       {isBotEnabled ? "Aktif" : "Kapalı"}
                     </span>
@@ -896,43 +897,48 @@ export function Sidebar() {
                 <Link href="/subscription">
                   <div 
                     className={cn(
-                      "flex items-center gap-2 text-sm font-medium mt-1 cursor-pointer hover:opacity-80 transition-opacity",
+                      "flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity",
                       licenseStatusInfo.color
                     )}
                     data-testid="link-license-status"
                   >
-                    <div className={cn("w-2 h-2 rounded-full", licenseStatusInfo.bgColor, licenseStatusInfo.isActive && "animate-pulse")} />
-                    <Shield className="h-3.5 w-3.5" />
-                    {licenseStatusInfo.text}
+                    <div className={cn("w-1.5 h-1.5 rounded-full flex-shrink-0", licenseStatusInfo.bgColor, licenseStatusInfo.isActive && "animate-pulse")} />
+                    <Shield className="h-3 w-3" />
+                    <span className="truncate">{licenseStatusInfo.text}</span>
                   </div>
                 </Link>
               </div>
-              <Link href="/user-guide">
-                <div className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
-                  location === "/user-guide"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )} data-testid="link-user-guide">
-                  <BookOpen className="h-4 w-4" />
-                  Kullanım Kılavuzu
-                </div>
-              </Link>
-              <Link href="/support">
-                <div className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer",
-                  location === "/support"
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )} data-testid="link-support">
-                  <HelpCircle className="h-4 w-4" />
-                  Destek
-                </div>
-              </Link>
-            </>
+              
+              {/* Quick Links Row */}
+              <div className="flex items-center gap-1">
+                <Link href="/user-guide" className="flex-1">
+                  <div className={cn(
+                    "flex items-center justify-center gap-1.5 px-2 py-1.5 rounded text-[11px] font-medium transition-all cursor-pointer",
+                    location === "/user-guide"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )} data-testid="link-user-guide">
+                    <BookOpen className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Kılavuz</span>
+                  </div>
+                </Link>
+                <Link href="/support" className="flex-1">
+                  <div className={cn(
+                    "flex items-center justify-center gap-1.5 px-2 py-1.5 rounded text-[11px] font-medium transition-all cursor-pointer",
+                    location === "/support"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )} data-testid="link-support">
+                    <HelpCircle className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Destek</span>
+                  </div>
+                </Link>
+              </div>
+            </div>
           )}
-
+          
           {/* User Login/Logout Section */}
+          <div className="p-3 pt-2 border-t border-border/50">
           {currentUser ? (
             <div className="flex items-center gap-2 px-2 py-1.5 bg-muted/50 rounded-lg">
               <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
