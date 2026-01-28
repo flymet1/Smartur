@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { SEO, FAQSchema } from "../components/shared/SEO";
@@ -101,6 +102,7 @@ export default function PublicActivityDetail() {
     quantity: 1,
     hotelName: "",
     hasTransfer: false,
+    transferZone: "",
     notes: "",
     customerName: "",
     customerPhone: "",
@@ -897,9 +899,15 @@ export default function PublicActivityDetail() {
                         </div>
                         
                         {/* Transfer Bilgisi */}
+                        {reservationData.hasTransfer && reservationData.transferZone && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">{language === "en" ? "Transfer Zone" : "Transfer Bölgesi"}</span>
+                            <span className="font-medium">{reservationData.transferZone}</span>
+                          </div>
+                        )}
                         {reservationData.hasTransfer && reservationData.hotelName && (
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">{language === "en" ? "Hotel/Pickup" : "Otel/Alınacak Yer"}</span>
+                            <span className="text-muted-foreground">{language === "en" ? "Hotel" : "Otel"}</span>
                             <span className="font-medium">{reservationData.hotelName}</span>
                           </div>
                         )}
@@ -1293,7 +1301,7 @@ export default function PublicActivityDetail() {
                               />
                             </div>
                             {/* Transfer seçeneği - sadece aktivitede transfer varsa göster */}
-                            {activity?.hasFreeHotelTransfer && (
+                            {activity?.hasFreeHotelTransfer && ensureArray(activity.transferZones).length > 0 && (
                               <div className="space-y-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                                 <div className="flex items-center gap-3">
                                   <Checkbox
@@ -1302,7 +1310,8 @@ export default function PublicActivityDetail() {
                                     onCheckedChange={(checked) => setReservationData((prev) => ({ 
                                       ...prev, 
                                       hasTransfer: checked === true,
-                                      hotelName: checked === true ? prev.hotelName : ""
+                                      hotelName: checked === true ? prev.hotelName : "",
+                                      transferZone: checked === true ? prev.transferZone : ""
                                     }))}
                                     data-testid="checkbox-has-transfer"
                                   />
@@ -1312,20 +1321,71 @@ export default function PublicActivityDetail() {
                                 </div>
                                 
                                 {reservationData.hasTransfer && (
-                                  <div className="space-y-2 pl-6">
-                                    <Label className="text-sm">{language === "en" ? "Hotel Name" : "Otel Adı"} *</Label>
-                                    <Input
-                                      value={reservationData.hotelName}
-                                      onChange={(e) => setReservationData((prev) => ({ ...prev, hotelName: e.target.value }))}
-                                      placeholder={language === "en" ? "Enter your hotel name" : "Otel adınızı girin"}
-                                      data-testid="input-hotel-name"
-                                      className="bg-white dark:bg-background"
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                      {language === "en" 
-                                        ? "Please enter your hotel name so we can arrange pickup." 
-                                        : "Sizi otelden alabilmemiz için otel adınızı girin."}
-                                    </p>
+                                  <div className="space-y-3 pl-6">
+                                    {/* Transfer Bölgesi Seçimi */}
+                                    <div className="space-y-2">
+                                      <Label className="text-sm">{language === "en" ? "Transfer Zone" : "Transfer Bölgesi"} *</Label>
+                                      <Select
+                                        value={reservationData.transferZone}
+                                        onValueChange={(value) => setReservationData((prev) => ({ ...prev, transferZone: value }))}
+                                      >
+                                        <SelectTrigger className="bg-white dark:bg-background" data-testid="select-transfer-zone">
+                                          <SelectValue placeholder={language === "en" ? "Select your zone" : "Bölgenizi seçin"} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {ensureArray(activity.transferZones).map((zone, idx) => {
+                                            const zoneName = typeof zone === 'object' && zone !== null && 'zone' in zone 
+                                              ? (zone as {zone: string}).zone 
+                                              : ensureString(zone);
+                                            return (
+                                              <SelectItem key={idx} value={zoneName}>
+                                                {zoneName}
+                                              </SelectItem>
+                                            );
+                                          })}
+                                        </SelectContent>
+                                      </Select>
+                                      
+                                      {/* Transfer süresi bildirimi */}
+                                      {reservationData.transferZone && (() => {
+                                        const selectedZoneData = ensureArray(activity.transferZones).find((zone) => {
+                                          const zoneName = typeof zone === 'object' && zone !== null && 'zone' in zone 
+                                            ? (zone as {zone: string}).zone 
+                                            : ensureString(zone);
+                                          return zoneName === reservationData.transferZone;
+                                        });
+                                        const minutesBefore = typeof selectedZoneData === 'object' && selectedZoneData !== null && 'minutesBefore' in selectedZoneData
+                                          ? (selectedZoneData as {minutesBefore: number}).minutesBefore
+                                          : 30;
+                                        return (
+                                          <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/30 rounded-md text-sm text-blue-700 dark:text-blue-300">
+                                            <Clock className="h-4 w-4" />
+                                            <span>
+                                              {language === "en" 
+                                                ? `Pickup will be ${minutesBefore} minutes before activity time.`
+                                                : `${reservationData.transferZone} bölgesinden aktiviteden ${minutesBefore} dakika önce alınacaksınız.`}
+                                            </span>
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+
+                                    {/* Otel Adı */}
+                                    <div className="space-y-2">
+                                      <Label className="text-sm">{language === "en" ? "Hotel Name" : "Otel Adı"} *</Label>
+                                      <Input
+                                        value={reservationData.hotelName}
+                                        onChange={(e) => setReservationData((prev) => ({ ...prev, hotelName: e.target.value }))}
+                                        placeholder={language === "en" ? "Enter your hotel name" : "Otel adınızı girin"}
+                                        data-testid="input-hotel-name"
+                                        className="bg-white dark:bg-background"
+                                      />
+                                      <p className="text-xs text-muted-foreground">
+                                        {language === "en" 
+                                          ? "Please enter your hotel name so we can arrange pickup." 
+                                          : "Sizi otelden alabilmemiz için otel adınızı girin."}
+                                      </p>
+                                    </div>
                                   </div>
                                 )}
                               </div>
