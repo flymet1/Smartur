@@ -10,10 +10,8 @@ import {
   X,
   AlertCircle,
   Send,
-  Loader2,
-  PartyPopper
+  Loader2
 } from "lucide-react";
-import { Link } from "wouter";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -200,25 +198,17 @@ export default function Musaitlik() {
                 Aktivite musaitlik durumunu goruntuleyebilir ve rezervasyon talebi olusturabilirsiniz.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" asChild data-testid="button-holidays">
-                <Link href="/holidays">
-                  <PartyPopper className="h-4 w-4 mr-1" />
-                  Tatiller
-                </Link>
-              </Button>
-              <Select value={selectedActivity} onValueChange={setSelectedActivity}>
-                <SelectTrigger className="w-48" data-testid="select-activity-filter">
-                  <SelectValue placeholder="Aktivite Sec" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tum Aktiviteler</SelectItem>
-                  {activities.map(a => (
-                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={selectedActivity} onValueChange={setSelectedActivity}>
+              <SelectTrigger className="w-48" data-testid="select-activity-filter">
+                <SelectValue placeholder="Aktivite Sec" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tum Aktiviteler</SelectItem>
+                {activities.map(a => (
+                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex items-center gap-2 mb-4">

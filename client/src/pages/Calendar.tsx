@@ -8,7 +8,7 @@ import { useActivities } from "@/hooks/use-activities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit2, Calendar, Users, Clock, TrendingUp, TrendingDown, Filter, CalendarDays, LayoutGrid, Trash2, ClipboardList, ChevronLeft, ChevronRight, Minus, Share2, FileText, AlertTriangle, BarChart3, Download, MessageSquare } from "lucide-react";
+import { Plus, Edit2, Calendar, Users, Clock, TrendingUp, TrendingDown, Filter, CalendarDays, LayoutGrid, Trash2, ClipboardList, ChevronLeft, ChevronRight, Minus, Share2, FileText, AlertTriangle, BarChart3, Download, MessageSquare, PartyPopper } from "lucide-react";
 import { Link } from "wouter";
 import {
   Dialog,
@@ -1152,6 +1152,12 @@ export default function CalendarPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button variant="outline" asChild data-testid="button-holidays">
+              <Link href="/settings?tab=holidays">
+                <PartyPopper className="w-4 h-4 mr-2" />
+                Tatiller
+              </Link>
+            </Button>
             <BulkCapacityDialog activities={activities || []} />
             <AddCapacityDialog />
             <Tooltip>
