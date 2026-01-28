@@ -1286,15 +1286,44 @@ export default function PublicActivityDetail() {
                                 data-testid="input-customer-email"
                               />
                             </div>
-                            <div>
-                              <Label>{language === "en" ? "Hotel Name (Optional)" : "Otel Adı (Opsiyonel)"}</Label>
-                              <Input
-                                value={reservationData.hotelName}
-                                onChange={(e) => setReservationData((prev) => ({ ...prev, hotelName: e.target.value }))}
-                                placeholder={language === "en" ? "Your hotel" : "Konakladığınız otel"}
-                                data-testid="input-hotel-name"
-                              />
-                            </div>
+                            {/* Transfer seçeneği - sadece aktivitede transfer varsa göster */}
+                            {activity?.hasFreeHotelTransfer && (
+                              <div className="space-y-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                <div className="flex items-center gap-3">
+                                  <Checkbox
+                                    id="hasTransfer"
+                                    checked={reservationData.hasTransfer}
+                                    onCheckedChange={(checked) => setReservationData((prev) => ({ 
+                                      ...prev, 
+                                      hasTransfer: checked === true,
+                                      hotelName: checked === true ? prev.hotelName : ""
+                                    }))}
+                                    data-testid="checkbox-has-transfer"
+                                  />
+                                  <Label htmlFor="hasTransfer" className="cursor-pointer font-medium text-green-800 dark:text-green-200">
+                                    {language === "en" ? "I want hotel pickup (Free)" : "Otelden alınmak istiyorum (Ücretsiz)"}
+                                  </Label>
+                                </div>
+                                
+                                {reservationData.hasTransfer && (
+                                  <div className="space-y-2 pl-6">
+                                    <Label className="text-sm">{language === "en" ? "Hotel Name" : "Otel Adı"} *</Label>
+                                    <Input
+                                      value={reservationData.hotelName}
+                                      onChange={(e) => setReservationData((prev) => ({ ...prev, hotelName: e.target.value }))}
+                                      placeholder={language === "en" ? "Enter your hotel name" : "Otel adınızı girin"}
+                                      data-testid="input-hotel-name"
+                                      className="bg-white dark:bg-background"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      {language === "en" 
+                                        ? "Please enter your hotel name so we can arrange pickup." 
+                                        : "Sizi otelden alabilmemiz için otel adınızı girin."}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <div>
                               <Label>{language === "en" ? "Notes (Optional)" : "Notlar (Opsiyonel)"}</Label>
                               <Textarea
