@@ -48,6 +48,7 @@ interface NavItem {
   icon: React.ElementType;
   requiredPermission?: string;
   viewerOnly?: boolean;
+  gradient?: boolean; // Turquoise to yellow gradient text
 }
 
 const allNavItems: NavItem[] = [
@@ -56,12 +57,12 @@ const allNavItems: NavItem[] = [
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, viewerOnly: true },
   { href: "/viewer-stats", label: "Izleyiciler", icon: Eye, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
-  { href: "/partner-availability", label: "Partnerler", icon: Users, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
+  { href: "/partner-availability", label: "Partnerler", icon: Users, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW, gradient: true },
   { href: "/activities", label: "Aktiviteler", icon: Activity, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/package-tours", label: "Paket Turlar", icon: Package, requiredPermission: PERMISSION_KEYS.ACTIVITIES_VIEW },
   { href: "/finance", label: "Finans", icon: Calculator, requiredPermission: PERMISSION_KEYS.FINANCE_VIEW },
   { href: "/messages", label: "WhatsApp", icon: MessageCircle, requiredPermission: PERMISSION_KEYS.WHATSAPP_VIEW },
-  { href: "/website", label: "Smartur Web Site", icon: Globe, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
+  { href: "/website", label: "Smartur Web Site", icon: Globe, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW, gradient: true },
   { href: "/settings", label: "Ayarlar", icon: Settings, requiredPermission: PERMISSION_KEYS.SETTINGS_VIEW },
 ];
 
@@ -838,7 +839,13 @@ export function Sidebar() {
                       location === item.href ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"
                     )} />
                   )}
-                  {item.label}
+                  {item.gradient && location !== item.href ? (
+                    <span className="bg-gradient-to-r from-cyan-500 via-teal-400 to-yellow-400 bg-clip-text text-transparent font-semibold">
+                      {item.label}
+                    </span>
+                  ) : (
+                    item.label
+                  )}
                   {(hasViewerBadge || hasPartnerBadge) && (
                     <Badge 
                       variant="destructive" 
@@ -998,7 +1005,13 @@ export function Sidebar() {
                         data-testid={`mobile-sheet-nav-${item.href.replace('/', '') || 'home'}`}
                       >
                         <item.icon className="h-5 w-5" />
-                        {item.label}
+                        {item.gradient && location !== item.href ? (
+                          <span className="bg-gradient-to-r from-cyan-500 via-teal-400 to-yellow-400 bg-clip-text text-transparent font-semibold">
+                            {item.label}
+                          </span>
+                        ) : (
+                          item.label
+                        )}
                         {(hasViewerBadge || hasPartnerBadge) && (
                           <Badge 
                             variant="destructive" 
