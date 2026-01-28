@@ -5956,6 +5956,7 @@ const TENANT_NOTIFICATION_TYPES = [
   { type: 'reservation_confirmed', label: 'Rezervasyon Onayı', description: 'Bekleyen bir rezervasyon onaylandığında müşteriye bildirim gönderilir' },
   { type: 'reservation_cancelled', label: 'Rezervasyon İptali', description: 'Bir rezervasyon iptal edildiğinde müşteriye bildirim gönderilir' },
   { type: 'customer_request', label: 'Müşteri Talebi Yanıtı', description: 'Müşterinin değişiklik veya iptal talebi işlendiğinde (onay/red) müşteriye bildirim gönderilir', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
+  { type: 'smartur_order', label: 'Smartur Web Site Siparişi', description: 'Smartur web sitesinden gelen siparişlerde müşteriye otomatik onay bildirimi gönderilir', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
   { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce web sitesinden gelen siparişlerde müşteriye otomatik onay bildirimi gönderilir', templateTab: 'whatsapp', templateSubTab: 'templates', templateLabel: 'Şablonu Düzenle' },
 ];
 
@@ -5966,6 +5967,7 @@ const USER_NOTIFICATION_TYPES = [
   { type: 'partner_request_approved', label: 'Partner Talebi Onaylandı', description: 'Gönderdiğiniz partner talebi onaylandığında' },
   { type: 'partner_request_rejected', label: 'Partner Talebi Reddedildi', description: 'Gönderdiğiniz partner talebi reddedildiğinde' },
   { type: 'capacity_warning', label: 'Kapasite Uyarısı', description: 'Aktivite kapasitesi azaldığında' },
+  { type: 'smartur_order', label: 'Smartur Web Site Siparişi', description: 'Smartur web sitesinden sipariş geldiğinde' },
   { type: 'woocommerce_order', label: 'WooCommerce Siparişi', description: 'WooCommerce siparişi geldiğinde' },
 ];
 
