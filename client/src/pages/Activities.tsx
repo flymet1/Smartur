@@ -63,11 +63,11 @@ Ekstralar: {ekstralar}
 
 Sağlık Notları: {saglik_notlari}
 
+Takip Linki: {takip_linki}
+
 Aktivite saati ve tarih değişikliği talepleriniz için, lütfen yukarıdaki takip linkine tıklayın. (Değişiklik talepleriniz müsaitliğe göre değerlendirilecektir.)
 
 Sorularınız için bu numaradan bize ulaşabilirsiniz.
-
-Rezervasyonunuzu takip etmek, değişiklik veya iptal talebinde bulunmak için: {takip_linki}
 
 İyi tatiller dileriz!`;
 
