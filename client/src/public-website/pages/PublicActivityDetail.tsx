@@ -1417,6 +1417,23 @@ export default function PublicActivityDetail() {
                               <span>{language === "en" ? "People:" : "Kişi:"}</span>
                               <span className="font-medium">{reservationData.quantity}</span>
                             </div>
+                            
+                            {/* Seçilen Ekstralar */}
+                            {selectedExtras.length > 0 && (
+                              <>
+                                <Separator className="my-2" />
+                                <div className="space-y-1">
+                                  <span className="text-muted-foreground text-xs">{language === "en" ? "Extras:" : "Ekstralar:"}</span>
+                                  {selectedExtras.map((extra, idx) => (
+                                    <div key={idx} className="flex justify-between text-xs">
+                                      <span>{extra.name} x{extra.quantity}</span>
+                                      <span>{(extra.priceTl * extra.quantity).toLocaleString()} TL</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                            
                             <Separator className="my-2" />
                             <div className="flex justify-between font-bold">
                               <span>{language === "en" ? "Total:" : "Toplam:"}</span>
