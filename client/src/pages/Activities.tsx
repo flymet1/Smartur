@@ -38,6 +38,8 @@ const DEFAULT_CONFIRMATION_TEMPLATE = `Merhaba {isim},
 
 {aktivite} rezervasyonunuz onaylanmıştır!
 
+🔢 Sipariş No: {siparis_no}
+
 📅 Tarih: {tarih}
 ⏰ Saat: {saat}
 👥 Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
@@ -56,6 +58,8 @@ Alım Saati: {transfer_saat}
 ⏱️ Varış Süresi: {varis_suresi} dakika önce
 
 🎒 Yanınızda Getirin: {getirin}
+
+🎁 Ekstralar: {ekstralar}
 
 ⚠️ Sağlık Notları: {saglik_notlari}
 
