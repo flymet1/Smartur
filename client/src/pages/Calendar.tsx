@@ -1153,7 +1153,7 @@ export default function CalendarPage() {
               </SelectContent>
             </Select>
             <Button variant="outline" asChild data-testid="button-holidays">
-              <Link href="/settings?tab=holidays">
+              <Link href="/holidays">
                 <PartyPopper className="w-4 h-4 mr-2" />
                 Tatiller
               </Link>
