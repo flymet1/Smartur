@@ -181,23 +181,13 @@ export function PublicFooter({ data }: PublicFooterProps) {
             <h3 className="font-semibold mb-4 text-base">{t.footer.legalLinks}</h3>
             <ul className="space-y-3">
               <li>
-                <Link href={getLocalizedPath("/blog")} className={`text-sm ${linkClass}`} data-testid="link-footer-blog">
+                <Link href={getLocalizedPath("/blog")} className={`text-sm ${linkClass}`}>
                   {t.blog?.title || "Blog"}
                 </Link>
               </li>
               <li>
-                <Link href={getLocalizedPath("/iptal-iade-politikasi")} className={`text-sm ${linkClass}`} data-testid="link-footer-cancellation">
-                  {t.footer.cancellation}
-                </Link>
-              </li>
-              <li>
-                <Link href={getLocalizedPath("/gizlilik-politikasi")} className={`text-sm ${linkClass}`} data-testid="link-footer-privacy">
-                  {t.footer.privacy}
-                </Link>
-              </li>
-              <li>
-                <Link href={getLocalizedPath("/kullanim-kosullari")} className={`text-sm ${linkClass}`} data-testid="link-footer-terms">
-                  {t.footer.terms}
+                <Link href={getLocalizedPath("/iletisim")} className={`text-sm ${linkClass}`}>
+                  {t.common.contact}
                 </Link>
               </li>
             </ul>
