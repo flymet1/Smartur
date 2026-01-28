@@ -347,6 +347,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [healthNotes, setHealthNotes] = useState(activity ? (activity as any).healthNotes || "" : "");
   const [confirmationMessageText, setConfirmationMessageText] = useState(DEFAULT_CONFIRMATION_TEMPLATE);
   const [useCustomConfirmation, setUseCustomConfirmation] = useState(activity ? (activity as any).useCustomConfirmation === true : false);
+  const [reminderEnabled, setReminderEnabled] = useState(activity ? (activity as any).reminderEnabled === true : false);
+  const [reminderHours, setReminderHours] = useState(activity ? Number((activity as any).reminderHours) || 24 : 24);
+  const [reminderMessage, setReminderMessage] = useState(activity ? (activity as any).reminderMessage || "" : "");
   
   const handleUseCustomConfirmationChange = (checked: boolean) => {
     setUseCustomConfirmation(checked);
@@ -666,6 +669,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       color: color,
       confirmationMessage: confirmationMessageText || null,
       useCustomConfirmation: useCustomConfirmation,
+      reminderEnabled: reminderEnabled,
+      reminderHours: reminderHours,
+      reminderMessage: reminderMessage || null,
       agencyPhone: agencyPhone || null,
       adminPhone: adminPhone || null,
       sendNotificationToAgency: sendNotificationToAgency,
@@ -1912,6 +1918,69 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                         <p className="text-xs text-muted-foreground">Sipariş onay mesajında {"{saglik_notlari}"} placeholder'ı ile ve bot yanıtlarında kullanılacaktır.</p>
                       </div>
                     </>
+                  )}
+                </div>
+
+                <div className="border rounded-lg p-4 space-y-4 bg-muted/30 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-base">Otomatik Hatırlatma</Label>
+                      <p className="text-xs text-muted-foreground">Aktiviteye belirtilen süre kala e-posta ile hatırlatma gönder</p>
+                    </div>
+                    <Switch 
+                      checked={reminderEnabled} 
+                      onCheckedChange={setReminderEnabled}
+                      data-testid="toggle-reminder-enabled"
+                    />
+                  </div>
+                  
+                  {reminderEnabled && (
+                    <div className="space-y-4 bg-background/50 p-4 rounded-lg border-t pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="reminderHours">Kaç saat kala hatırlatma yapılsın?</Label>
+                        <div className="flex gap-2 items-end">
+                          <Input 
+                            id="reminderHours"
+                            type="number" 
+                            min="1"
+                            max="72"
+                            value={reminderHours}
+                            onChange={(e) => setReminderHours(Math.max(1, Math.min(72, Number(e.target.value))))}
+                            placeholder="Saat cinsinden girin..."
+                            className="flex-1"
+                            data-testid="input-reminder-hours"
+                          />
+                          <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                            saat
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          1-72 saat arasında ayarlayın (Varsayılan: 24 saat)
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="reminderMessage">Hatırlatma Mesajı Şablonu</Label>
+                        <Textarea 
+                          id="reminderMessage"
+                          value={reminderMessage}
+                          onChange={(e) => setReminderMessage(e.target.value)}
+                          placeholder="Hatırlatma mesajınızı yazın..."
+                          className="min-h-[120px]"
+                          data-testid="textarea-reminder-message"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Desteklenen değişkenler:
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground bg-background/50 p-2 rounded">
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktiviteler{'}'}</code> - Aktivite adları</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saatler{'}'}</code> - Aktivite saatleri</div>
+                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}takip_linki{'}'}</code> - Takip linki</div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </TabsContent>

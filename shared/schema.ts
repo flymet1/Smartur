@@ -185,6 +185,9 @@ Alım Saati: {transfer_saat}
 
 İyi tatiller dileriz! 🌊`),
   useCustomConfirmation: boolean("use_custom_confirmation").default(false),
+  reminderEnabled: boolean("reminder_enabled").default(false),
+  reminderHours: integer("reminder_hours").default(24),
+  reminderMessage: text("reminder_message"),
   reservationLink: text("reservation_link"), // External reservation page URL (Turkish)
   reservationLinkEn: text("reservation_link_en"), // External reservation page URL (English)
   agencyPhone: text("agency_phone"),
