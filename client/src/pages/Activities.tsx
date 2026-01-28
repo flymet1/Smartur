@@ -1826,19 +1826,6 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   WhatsApp üzerinden gönderilecek sipariş onay mesajı ve güvenlik bilgileri.
                 </p>
 
-                <div className="space-y-2">
-                  <Label htmlFor="healthNotes">Sağlık ve Güvenlik Notları</Label>
-                  <Textarea 
-                    id="healthNotes"
-                    value={healthNotes}
-                    onChange={(e) => setHealthNotes(e.target.value)}
-                    placeholder="Örnek: Uçuştan önce alkol tüketmemeniz ve son 1 saat içerisinde yemek yememeniz önerilmektedir."
-                    rows={3}
-                    data-testid="input-health-notes"
-                  />
-                  <p className="text-xs text-muted-foreground">Sipariş onay mesajında {"{saglik_notlari}"} placeholder'ı ile ve bot yanıtlarında kullanılacaktır.</p>
-                </div>
-
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
@@ -1856,13 +1843,14 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   </div>
 
                   {useCustomConfirmation && (
-                    <div className="space-y-2 pt-2 border-t">
-                      <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
-                      <Textarea 
-                        id="confirmationMessage"
-                        value={confirmationMessageText}
-                        onChange={(e) => setConfirmationMessageText(e.target.value)}
-                        placeholder={`Merhaba {isim},
+                    <>
+                      <div className="space-y-2 pt-2 border-t">
+                        <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
+                        <Textarea 
+                          id="confirmationMessage"
+                          value={confirmationMessageText}
+                          onChange={(e) => setConfirmationMessageText(e.target.value)}
+                          placeholder={`Merhaba {isim},
 
 {aktivite} rezervasyonunuz onaylanmıştır!
 
@@ -1890,13 +1878,27 @@ Alım Saati: {transfer_saat}
 🔗 Rezervasyon Takip: {takip_linki}
 
 İyi tatiller dileriz!`}
-                        rows={16}
-                        data-testid="input-confirmation-message"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Kullanılabilir placeholder'lar: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}.
-                      </p>
-                    </div>
+                          rows={16}
+                          data-testid="input-confirmation-message"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Kullanılabilir placeholder'lar: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 pt-2 border-t">
+                        <Label htmlFor="healthNotes">Sağlık ve Güvenlik Notları</Label>
+                        <Textarea 
+                          id="healthNotes"
+                          value={healthNotes}
+                          onChange={(e) => setHealthNotes(e.target.value)}
+                          placeholder="Örnek: Uçuştan önce alkol tüketmemeniz ve son 1 saat içerisinde yemek yememeniz önerilmektedir."
+                          rows={3}
+                          data-testid="input-health-notes"
+                        />
+                        <p className="text-xs text-muted-foreground">Sipariş onay mesajında {"{saglik_notlari}"} placeholder'ı ile ve bot yanıtlarında kullanılacaktır.</p>
+                      </div>
+                    </>
                   )}
                 </div>
               </TabsContent>
