@@ -34,32 +34,32 @@ import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimit
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ImageUpload } from "@/components/ImageUpload";
 
-const DEFAULT_CONFIRMATION_TEMPLATE = `Merhaba Ahmet Yılmaz,
+const DEFAULT_CONFIRMATION_TEMPLATE = `Merhaba {isim},
 
-Kapadokya Balon Turu rezervasyonunuz onaylanmıştır!
+{aktivite} rezervasyonunuz onaylanmıştır!
 
-📅 Tarih: 15 Şubat 2026
-⏰ Saat: 05:30
-👥 Kişi: 4 (2 yetişkin, 2 çocuk)
+📅 Tarih: {tarih}
+⏰ Saat: {saat}
+👥 Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
 
 💰 Ödeme Bilgisi:
-Toplam: 4800 TL
-Ödenen: 2000 TL
-Kalan: 2800 TL
+Toplam: {toplam}
+Ödenen: {odenen}
+Kalan: {kalan}
 
 🚐 Transfer Bilgisi:
-Otel: Hilton Cappadocia
-Bölge: Göreme
-Alım Saati: 04:45
+Otel: {otel}
+Bölge: {bolge}
+Alım Saati: {transfer_saat}
 
-📍 Buluşma Noktası: Otel lobisi
-⏱️ Varış Süresi: 15 dakika önce
+📍 Buluşma Noktası: {bulusma_noktasi}
+⏱️ Varış Süresi: {varis_suresi} dakika önce
 
-🎒 Yanınızda Getirin: Sıcak kıyafet, fotoğraf makinesi
+🎒 Yanınızda Getirin: {getirin}
 
-⚠️ Sağlık Notları: Hamile veya kalp rahatsızlığı olanlar için uygun değildir
+⚠️ Sağlık Notları: {saglik_notlari}
 
-🔗 Rezervasyon Takip: https://smartur.app/takip/abc123
+🔗 Rezervasyon Takip: {takip_linki}
 
 İyi tatiller dileriz!`;
 
@@ -1889,29 +1889,14 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   {useCustomConfirmation && (
                     <>
                       <div className="space-y-2 pt-2 border-t">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setConfirmationMessageText(DEFAULT_CONFIRMATION_TEMPLATE)}
-                            data-testid="button-load-default-template"
-                          >
-                            Örnek Şablonu Yükle
-                          </Button>
-                        </div>
+                        <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
                         <Textarea 
                           id="confirmationMessage"
                           value={confirmationMessageText}
                           onChange={(e) => setConfirmationMessageText(e.target.value)}
-                          placeholder="Mesaj şablonunuzu yazın veya 'Örnek Şablonu Yükle' butonuna tıklayın..."
                           rows={16}
                           data-testid="input-confirmation-message"
                         />
-                        <p className="text-xs text-muted-foreground">
-                          Kullanılabilir placeholder'lar: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}.
-                        </p>
                       </div>
 
                       <div className="space-y-2 pt-2 border-t">
