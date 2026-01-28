@@ -1873,7 +1873,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
 
               <TabsContent value="confirmation" className="space-y-4 mt-0">
                 <p className="text-sm text-muted-foreground mb-4">
-                  Sipariş onay mesajı varsayılan olarak e-posta ile gönderilir. Müşteri WhatsApp'tan "siparişim onaylandı mı?" diye sorarsa, bot bu mesajı WhatsApp'tan da gönderir.
+                  Sipariş onay mesajı varsayılan olarak e-posta ile gönderilir.
                 </p>
 
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
@@ -1881,7 +1881,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     <div className="space-y-0.5">
                       <Label htmlFor="useCustomConfirmation" className="text-base">Özel Onay Mesajı Kullan</Label>
                       <p className="text-xs text-muted-foreground">
-                        Aktif olduğunda bu aktivite için aşağıdaki özel şablon kullanılır. Kapalıysa Ayarlar'daki varsayılan şablon kullanılır.
+                        Aktif olduğunda bu aktivite için aşağıdaki özel şablon kullanılır.
                       </p>
                     </div>
                     <Switch
