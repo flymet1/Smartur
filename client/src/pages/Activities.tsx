@@ -744,7 +744,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
               <TabsTrigger value="general" className="text-xs sm:text-sm">Genel</TabsTrigger>
               <TabsTrigger value="website" className="text-xs sm:text-sm">Web Sitesi</TabsTrigger>
               <TabsTrigger value="extras" className="text-xs sm:text-sm">Ekstra</TabsTrigger>
-              <TabsTrigger value="faq" className="text-xs sm:text-sm">SSS</TabsTrigger>
+              <TabsTrigger value="confirmation" className="text-xs sm:text-sm">Onay Mesajı</TabsTrigger>
               <TabsTrigger value="notifications" className="text-xs sm:text-sm">Bildirim</TabsTrigger>
             </TabsList>
             <div className="flex-1 overflow-y-auto py-4 px-1 min-h-0">
@@ -1130,51 +1130,6 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     />
                     <p className="text-xs text-muted-foreground">Müşterinin aktiviteden kaç dakika önce buluşma noktasında olması gerektiği</p>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="healthNotes">Sağlık ve Güvenlik Notları</Label>
-                  <Textarea 
-                    id="healthNotes"
-                    value={healthNotes}
-                    onChange={(e) => setHealthNotes(e.target.value)}
-                    placeholder="Örnek: Uçuştan önce alkol tüketmemeniz ve son 1 saat içerisinde yemek yememeniz önerilmektedir."
-                    rows={3}
-                    data-testid="input-health-notes"
-                  />
-                  <p className="text-xs text-muted-foreground">Sipariş onay mesajında ve bot yanıtlarında kullanılacaktır.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
-                  <Textarea 
-                    id="confirmationMessage"
-                    value={confirmationMessageText}
-                    onChange={(e) => setConfirmationMessageText(e.target.value)}
-                    placeholder={`Örnek şablon:
-
-Merhaba {isim},
-
-{aktivite} rezervasyonunuz onaylandı!
-
-📅 Tarih: {tarih}
-⏰ Saat: {saat}
-👥 Kişi: {kisi}
-
-💰 Ödeme: {odenen} TL ödendi, {kalan} TL kaldı
-
-🚐 Transfer: {otel} - {transfer_saat}
-
-📍 Buluşma: {bulusma_noktasi}
-
-Takip linki: {takip_linki}`}
-                    rows={10}
-                    data-testid="input-confirmation-message"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Kullanılabilir placeholder'lar: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}. 
-                    Boş bırakılırsa Ayarlar'daki genel şablon kullanılır.
-                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -1753,6 +1708,18 @@ Takip linki: {takip_linki}`}
                     </div>
                   )}
                 </div>
+
+                <div className="space-y-4 mt-6 pt-6 border-t">
+                  <div className="space-y-1">
+                    <Label className="text-base">Sık Sorulan Sorular (SSS)</Label>
+                    <p className="text-xs text-muted-foreground">Web sitesinde aktivite sayfasında gösterilecek SSS. Bot bu bilgilere erişebilir.</p>
+                  </div>
+                  <FaqEditor 
+                    faq={faq} 
+                    onChange={setFaq} 
+                    testIdPrefix="activity-faq"
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="extras" className="space-y-4 mt-0">
@@ -1848,12 +1815,55 @@ Takip linki: {takip_linki}`}
                 </div>
               </TabsContent>
 
-              <TabsContent value="faq" className="space-y-4 mt-0">
-                <FaqEditor 
-                  faq={faq} 
-                  onChange={setFaq} 
-                  testIdPrefix="activity-faq"
-                />
+              <TabsContent value="confirmation" className="space-y-4 mt-0">
+                <p className="text-sm text-muted-foreground mb-4">
+                  WhatsApp üzerinden gönderilecek sipariş onay mesajı ve güvenlik bilgileri.
+                </p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="healthNotes">Sağlık ve Güvenlik Notları</Label>
+                  <Textarea 
+                    id="healthNotes"
+                    value={healthNotes}
+                    onChange={(e) => setHealthNotes(e.target.value)}
+                    placeholder="Örnek: Uçuştan önce alkol tüketmemeniz ve son 1 saat içerisinde yemek yememeniz önerilmektedir."
+                    rows={3}
+                    data-testid="input-health-notes"
+                  />
+                  <p className="text-xs text-muted-foreground">Sipariş onay mesajında {"{saglik_notlari}"} placeholder'ı ile ve bot yanıtlarında kullanılacaktır.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
+                  <Textarea 
+                    id="confirmationMessage"
+                    value={confirmationMessageText}
+                    onChange={(e) => setConfirmationMessageText(e.target.value)}
+                    placeholder={`Örnek şablon:
+
+Merhaba {isim},
+
+{aktivite} rezervasyonunuz onaylandı!
+
+Tarih: {tarih}
+Saat: {saat}
+Kişi: {kisi}
+
+Ödeme: {odenen} ödendi, {kalan} kaldı
+
+Transfer: {otel} - {transfer_saat}
+
+Buluşma: {bulusma_noktasi}
+
+Takip linki: {takip_linki}`}
+                    rows={12}
+                    data-testid="input-confirmation-message"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Kullanılabilir placeholder'lar: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}. 
+                    Boş bırakılırsa Ayarlar'daki genel şablon kullanılır.
+                  </p>
+                </div>
               </TabsContent>
 
               <TabsContent value="notifications" className="space-y-4 mt-0">
