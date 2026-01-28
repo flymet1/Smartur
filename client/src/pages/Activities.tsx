@@ -337,15 +337,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [meetingPointMapLink, setMeetingPointMapLink] = useState(activity ? (activity as any).meetingPointMapLink || "" : "");
   const [arrivalMinutesBefore, setArrivalMinutesBefore] = useState(activity ? String((activity as any).arrivalMinutesBefore || "30") : "30");
   const [healthNotes, setHealthNotes] = useState(activity ? (activity as any).healthNotes || "" : "");
-  const [confirmationMessageText, setConfirmationMessageText] = useState(() => {
-    if (activity && (activity as any).confirmationMessage) {
-      return (activity as any).confirmationMessage;
-    }
-    if (activity && (activity as any).useCustomConfirmation === true) {
-      return DEFAULT_CONFIRMATION_TEMPLATE;
-    }
-    return DEFAULT_CONFIRMATION_TEMPLATE;
-  });
+  const [confirmationMessageText, setConfirmationMessageText] = useState(DEFAULT_CONFIRMATION_TEMPLATE);
   const [useCustomConfirmation, setUseCustomConfirmation] = useState(activity ? (activity as any).useCustomConfirmation === true : false);
   
   const handleUseCustomConfirmationChange = (checked: boolean) => {
