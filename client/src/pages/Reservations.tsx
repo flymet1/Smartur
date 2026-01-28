@@ -3773,18 +3773,28 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
             </div>
           )}
 
-          {reservation.hotelName && (
+          {(reservation.hotelName || reservation.hasTransfer) && (
             <div className="border-t pt-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground text-xs">Otel</Label>
-                  <div className="font-medium">{reservation.hotelName}</div>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Transfer</Label>
-                  <div className="font-medium">{reservation.hasTransfer ? "Var" : "Yok"}</div>
-                </div>
+                {reservation.hotelName && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Otel</Label>
+                    <div className="font-medium">{reservation.hotelName}</div>
+                  </div>
+                )}
+                {reservation.hasTransfer && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Transfer Bölgesi</Label>
+                    <div className="font-medium">{(reservation as any).transferZone || "Belirtilmedi"}</div>
+                  </div>
+                )}
               </div>
+              {reservation.hasTransfer && (
+                <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <Check className="h-3 w-3" />
+                  Otel transferi talep edildi
+                </div>
+              )}
             </div>
           )}
 
