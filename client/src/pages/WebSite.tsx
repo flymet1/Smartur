@@ -537,45 +537,6 @@ export default function WebSite() {
             </div>
           </div>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Settings2 className="h-5 w-5" />
-                Domain Ayarları
-              </CardTitle>
-              <CardDescription>
-                Web sitenizin yayınlanacağı alan adını belirleyin
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="websiteDomain">Alan Adı (Domain)</Label>
-                  <Input
-                    id="websiteDomain"
-                    placeholder="ornek.com veya rezervasyon.ornek.com"
-                    value={getValue("websiteDomain")}
-                    onChange={(e) => updateField("websiteDomain", e.target.value)}
-                    data-testid="input-website-domain"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Alan adınızın DNS ayarlarından A kaydını sunucu IP adresine yönlendirin
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="websiteName">Site Adı</Label>
-                  <Input
-                    id="websiteName"
-                    placeholder="Şirket Adınız"
-                    value={getValue("websiteName")}
-                    onChange={(e) => updateField("websiteName", e.target.value)}
-                    data-testid="input-website-name"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="general" className="gap-1" data-testid="tab-general">
@@ -596,7 +557,46 @@ export default function WebSite() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="general" className="mt-6">
+            <TabsContent value="general" className="mt-6 space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Settings2 className="h-5 w-5" />
+                    Domain Ayarları
+                  </CardTitle>
+                  <CardDescription>
+                    Web sitenizin yayınlanacağı alan adını belirleyin
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="websiteDomain">Alan Adı (Domain)</Label>
+                      <Input
+                        id="websiteDomain"
+                        placeholder="ornek.com veya rezervasyon.ornek.com"
+                        value={getValue("websiteDomain")}
+                        onChange={(e) => updateField("websiteDomain", e.target.value)}
+                        data-testid="input-website-domain"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Alan adınızın DNS ayarlarından A kaydını sunucu IP adresine yönlendirin
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="websiteName">Site Adı</Label>
+                      <Input
+                        id="websiteName"
+                        placeholder="Şirket Adınız"
+                        value={getValue("websiteName")}
+                        onChange={(e) => updateField("websiteName", e.target.value)}
+                        data-testid="input-website-name"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Genel Ayarlar</CardTitle>
