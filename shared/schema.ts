@@ -185,6 +185,9 @@ export const activities = pgTable("activities", {
   includedItems: text("included_items").default("[]"), // JSON array: Dahil olanlar ["Transfer", "Sigorta", "Ekipman"]
   excludedItems: text("excluded_items").default("[]"), // JSON array: Dahil olmayanlar ["Yemek", "Fotoğraf"]
   meetingPoint: text("meeting_point"), // Buluşma noktası
+  meetingPointMapLink: text("meeting_point_map_link"), // Buluşma noktası harita linki
+  arrivalMinutesBefore: integer("arrival_minutes_before").default(30), // Aktiviteden kaç dk önce gelmeli
+  healthNotes: text("health_notes"), // Sağlık ve güvenlik notları
   categories: text("categories").default("[]"), // JSON array: Kategoriler ["Su Sporları", "Macera", "Doğa"]
   highlights: text("highlights").default("[]"), // JSON array: Öne çıkan özellikler ["Profesyonel Rehber", "Ücretsiz Transfer"]
   minAge: integer("min_age"), // Minimum yaş
@@ -273,6 +276,9 @@ export const reservations = pgTable("reservations", {
   trackingTokenExpiresAt: timestamp("tracking_token_expires_at"), // Token geçerlilik süresi (aktivite tarihi + 1 gün)
   hotelName: text("hotel_name"), // WooCommerce'den gelen otel ismi
   hasTransfer: boolean("has_transfer").default(false), // Otel transferi istendi mi
+  transferZone: text("transfer_zone"), // Seçilen transfer bölgesi
+  selectedExtras: text("selected_extras").default("[]"), // JSON array: Seçilen ekstra hizmetler [{name, priceTl}]
+  confirmationNote: text("confirmation_note"), // Onay mesajına eklenecek manuel not
   paymentStatus: text("payment_status").default("unpaid"), // unpaid, partial, paid, failed - Odeme durumu
   paymentToken: text("payment_token"), // iyzico ödeme token'ı
   paymentId: text("payment_id"), // iyzico ödeme ID'si
