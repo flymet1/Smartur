@@ -49,7 +49,7 @@ export function PublicFooter({ data }: PublicFooterProps) {
     : "text-muted-foreground";
 
   return (
-    <footer className="bg-card border-t mt-auto" style={footerStyle}>
+    <footer className="bg-card border-t mt-auto pb-20 md:pb-0" style={footerStyle}>
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           <div className="lg:col-span-1">
