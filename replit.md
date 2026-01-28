@@ -47,6 +47,9 @@ External dependencies should focus on what's actually integrated.
 
 **Feature Specifications:**
 -   **AI Bot**:
+    -   **CRITICAL: Bot never sends the first WhatsApp message** - All automated notifications (order confirmations, reminders) are sent via email. WhatsApp is only used when customer messages first.
+    -   Order confirmation and reminder messages are sent via email by default (spam prevention).
+    -   If customer asks "siparişim onaylandı mı?" or similar on WhatsApp, bot sends confirmation via WhatsApp.
     -   Accesses calendar/capacity information.
     -   Understands dynamic Turkish date expressions ("yarın", "5 şubat", "hafta sonu", "15.01").
     -   Recognizes holidays/festivals (e.g., "bayramda müsait misiniz?").

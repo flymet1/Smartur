@@ -1267,7 +1267,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                 <div className="flex items-center justify-between mb-4">
                   <div className="space-y-0.5">
                     <Label>Otomatik Hatırlatma</Label>
-                    <p className="text-sm text-muted-foreground">Aktiviteye belirtilen süre kala WhatsApp hatırlatma gönder</p>
+                    <p className="text-sm text-muted-foreground">Aktiviteye belirtilen süre kala <strong>e-posta</strong> ile hatırlatma gönder (WhatsApp spam riski nedeniyle ilk mesaj e-posta ile gönderilir)</p>
                   </div>
                   <Switch 
                     checked={reminderEnabled} 
