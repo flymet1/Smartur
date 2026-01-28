@@ -1790,59 +1790,6 @@ DEĞİŞİKLİK TALEPLERİNDE:
                 </TabsContent>
 
                 <TabsContent value="templates" className="space-y-6 mt-4">
-                  {/* WooCommerce Auto-Notification */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Sipariş Bildirimi Şablonu</CardTitle>
-                      <CardDescription>
-                        WooCommerce ve Web Sitesi üzerinden gelen rezervasyonlarda müşteriye gönderilecek mesaj şablonu.
-                        <span className="text-primary"> Bildirimi açmak/kapatmak için Bildirimler sekmesini kullanın.</span>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Bildirim Mesajı Şablonu</Label>
-                        <Textarea
-                          value={wooNotificationTemplate}
-                          onChange={(e) => setWooNotificationTemplate(e.target.value)}
-                          placeholder="Bildirim mesajı şablonu..."
-                          className="min-h-[150px] font-mono text-sm"
-                          data-testid="textarea-woo-notification-template"
-                        />
-                      </div>
-                      
-                      <div className="bg-muted/50 p-3 rounded-lg text-sm space-y-2">
-                        <p className="font-medium">Kullanılabilir Değişkenler:</p>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}isim{'}'}</code> - Müşteri adı</div>
-                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}siparis_no{'}'}</code> - Sipariş numarası</div>
-                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}aktivite{'}'}</code> - Aktivite/tur adı</div>
-                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}tarih{'}'}</code> - Rezervasyon tarihi</div>
-                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}saat{'}'}</code> - Rezervasyon saati</div>
-                          <div><code className="bg-background px-1.5 py-1 rounded">{'{'}takip_linki{'}'}</code> - Takip linki</div>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        onClick={handleSaveWooNotification}
-                        disabled={isSavingWooNotification}
-                        data-testid="button-save-woo-notification"
-                      >
-                        {isSavingWooNotification ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                            Kaydediliyor...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Kaydet
-                          </>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-
                   <RequestMessageTemplatesSection />
                   
                   <div className="border-t pt-6">
