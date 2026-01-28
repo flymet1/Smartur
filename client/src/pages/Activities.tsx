@@ -71,6 +71,31 @@ Sorularınız için bu numaradan bize ulaşabilirsiniz.
 
 İyi tatiller dileriz!`;
 
+const DEFAULT_REMINDER_TEMPLATE = `Merhaba {isim},
+
+Yarınki {aktivite} rezervasyonunuz için hatırlatma!
+
+Sipariş No: {siparis_no}
+Tarih: {tarih}
+Saat: {saat}
+Kişi Sayısı: {kisi}
+
+Transfer Bilgisi:
+Otel: {otel}
+Alım Saati: {transfer_saat}
+
+Buluşma Noktası: {bulusma_noktasi}
+
+Yanınızda Getirin: {getirin}
+
+Kalan Ödeme: {kalan}
+
+Takip Linki: {takip_linki}
+
+Herhangi bir sorunuz varsa bu numaradan bize ulaşabilirsiniz.
+
+Harika bir deneyim geçirmenizi dileriz!`;
+
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
   const deleteMutation = useDeleteActivity();
@@ -355,6 +380,13 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setUseCustomConfirmation(checked);
     if (checked && !confirmationMessageText) {
       setConfirmationMessageText(DEFAULT_CONFIRMATION_TEMPLATE);
+    }
+  };
+  
+  const handleReminderEnabledChange = (checked: boolean) => {
+    setReminderEnabled(checked);
+    if (checked && !reminderMessage) {
+      setReminderMessage(DEFAULT_REMINDER_TEMPLATE);
     }
   };
   const [difficulty, setDifficulty] = useState(activity ? (activity as any).difficulty || "" : "");
@@ -1929,7 +1961,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     </div>
                     <Switch 
                       checked={reminderEnabled} 
-                      onCheckedChange={setReminderEnabled}
+                      onCheckedChange={handleReminderEnabledChange}
                       data-testid="toggle-reminder-enabled"
                     />
                   </div>
