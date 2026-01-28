@@ -156,7 +156,35 @@ export const activities = pgTable("activities", {
   defaultTimes: text("default_times").default("[]"), // JSON array of time strings like ["09:00", "14:00"]
   defaultCapacity: integer("default_capacity").default(10), // Default available slots per time slot
   color: text("color").default("blue"), // Calendar color: blue, purple, green, orange, pink, cyan, red, yellow
-  confirmationMessage: text("confirmation_message").default("Sayın {isim}, rezervasyonunuz onaylanmıştır. Tarih: {tarih}, Saat: {saat}. Teşekkür ederiz."),
+  confirmationMessage: text("confirmation_message").default(`Merhaba {isim},
+
+{aktivite} rezervasyonunuz onaylanmıştır! ✅
+
+📅 Tarih: {tarih}
+⏰ Saat: {saat}
+👥 Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
+
+💰 Ödeme Bilgisi:
+Toplam: {toplam}
+Ödenen: {odenen}
+Kalan: {kalan}
+
+🚐 Transfer Bilgisi:
+Otel: {otel}
+Bölge: {bolge}
+Alım Saati: {transfer_saat}
+
+📍 Buluşma Noktası: {bulusma_noktasi}
+⏱️ Varış Süresi: {varis_suresi} dakika önce
+
+🎒 Yanınızda Getirin: {getirin}
+
+⚠️ Sağlık Notları: {saglik_notlari}
+
+🔗 Rezervasyon Takip: {takip_linki}
+
+İyi tatiller dileriz! 🌊`),
+  useCustomConfirmation: boolean("use_custom_confirmation").default(false),
   reservationLink: text("reservation_link"), // External reservation page URL (Turkish)
   reservationLinkEn: text("reservation_link_en"), // External reservation page URL (English)
   agencyPhone: text("agency_phone"),
@@ -572,6 +600,7 @@ export const packageTours = pgTable("package_tours", {
   price: integer("price").default(0), // In TL
   priceUsd: integer("price_usd").default(0), // In USD
   confirmationMessage: text("confirmation_message").default("Sayın {isim}, paket tur rezervasyonunuz onaylanmıştır. Tarih: {tarih}. Teşekkür ederiz."),
+  useCustomConfirmation: boolean("use_custom_confirmation").default(false),
   reservationLink: text("reservation_link"), // External reservation page URL (Turkish)
   reservationLinkEn: text("reservation_link_en"), // External reservation page URL (English)
   active: boolean("active").default(true),

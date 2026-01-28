@@ -5628,15 +5628,15 @@ export async function registerRoutes(
         packageTour = await storage.getPackageTour(packageTourId);
       }
       
-      // Get confirmation template (priority: activity/package specific > global settings)
+      // Get confirmation template (priority: activity/package specific with toggle > global settings)
       let confirmationTemplate = "";
-      if (packageTour?.confirmationMessage) {
+      if (packageTour?.confirmationMessage && packageTour?.useCustomConfirmation) {
         confirmationTemplate = packageTour.confirmationMessage;
-      } else if (activity?.confirmationMessage) {
+      } else if (activity?.confirmationMessage && activity?.useCustomConfirmation) {
         confirmationTemplate = activity.confirmationMessage;
       }
       
-      // If no activity/package template, try to get global template from settings
+      // If no custom template (or toggle is off), try to get global template from settings
       if (!confirmationTemplate) {
         try {
           const tenantId = req.session?.tenantId;

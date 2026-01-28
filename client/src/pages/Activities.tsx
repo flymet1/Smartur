@@ -309,6 +309,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [arrivalMinutesBefore, setArrivalMinutesBefore] = useState(activity ? String((activity as any).arrivalMinutesBefore || "30") : "30");
   const [healthNotes, setHealthNotes] = useState(activity ? (activity as any).healthNotes || "" : "");
   const [confirmationMessageText, setConfirmationMessageText] = useState(activity ? (activity as any).confirmationMessage || "" : "");
+  const [useCustomConfirmation, setUseCustomConfirmation] = useState(activity ? (activity as any).useCustomConfirmation === true : false);
   const [difficulty, setDifficulty] = useState(activity ? (activity as any).difficulty || "" : "");
   const [minAge, setMinAge] = useState(activity ? String((activity as any).minAge || "") : "");
   const [importantInfoItems, setImportantInfoItems] = useState(() => {
@@ -620,6 +621,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       defaultCapacity: Number(defaultCapacity),
       color: color,
       confirmationMessage: confirmationMessageText || null,
+      useCustomConfirmation: useCustomConfirmation,
       agencyPhone: agencyPhone || null,
       adminPhone: adminPhone || null,
       sendNotificationToAgency: sendNotificationToAgency,
@@ -1837,36 +1839,65 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   <p className="text-xs text-muted-foreground">Sipariş onay mesajında {"{saglik_notlari}"} placeholder'ı ile ve bot yanıtlarında kullanılacaktır.</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
-                  <Textarea 
-                    id="confirmationMessage"
-                    value={confirmationMessageText}
-                    onChange={(e) => setConfirmationMessageText(e.target.value)}
-                    placeholder={`Örnek şablon:
+                <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="useCustomConfirmation" className="text-base">Özel Onay Mesajı Kullan</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Aktif olduğunda bu aktivite için aşağıdaki özel şablon kullanılır. Kapalıysa Ayarlar'daki varsayılan şablon kullanılır.
+                      </p>
+                    </div>
+                    <Switch
+                      id="useCustomConfirmation"
+                      checked={useCustomConfirmation}
+                      onCheckedChange={setUseCustomConfirmation}
+                      data-testid="toggle-custom-confirmation"
+                    />
+                  </div>
 
-Merhaba {isim},
+                  {useCustomConfirmation && (
+                    <div className="space-y-2 pt-2 border-t">
+                      <Label htmlFor="confirmationMessage">Sipariş Onay Mesajı Şablonu</Label>
+                      <Textarea 
+                        id="confirmationMessage"
+                        value={confirmationMessageText}
+                        onChange={(e) => setConfirmationMessageText(e.target.value)}
+                        placeholder={`Merhaba {isim},
 
-{aktivite} rezervasyonunuz onaylandı!
+{aktivite} rezervasyonunuz onaylanmıştır!
 
-Tarih: {tarih}
-Saat: {saat}
-Kişi: {kisi}
+📅 Tarih: {tarih}
+⏰ Saat: {saat}
+👥 Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
 
-Ödeme: {odenen} ödendi, {kalan} kaldı
+💰 Ödeme Bilgisi:
+Toplam: {toplam}
+Ödenen: {odenen}
+Kalan: {kalan}
 
-Transfer: {otel} - {transfer_saat}
+🚐 Transfer Bilgisi:
+Otel: {otel}
+Bölge: {bolge}
+Alım Saati: {transfer_saat}
 
-Buluşma: {bulusma_noktasi}
+📍 Buluşma Noktası: {bulusma_noktasi}
+⏱️ Varış Süresi: {varis_suresi} dakika önce
 
-Takip linki: {takip_linki}`}
-                    rows={12}
-                    data-testid="input-confirmation-message"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Kullanılabilir placeholder'lar: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}. 
-                    Boş bırakılırsa Ayarlar'daki genel şablon kullanılır.
-                  </p>
+🎒 Yanınızda Getirin: {getirin}
+
+⚠️ Sağlık Notları: {saglik_notlari}
+
+🔗 Rezervasyon Takip: {takip_linki}
+
+İyi tatiller dileriz!`}
+                        rows={16}
+                        data-testid="input-confirmation-message"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Kullanılabilir placeholder'lar: {"{isim}"}, {"{tarih}"}, {"{saat}"}, {"{aktivite}"}, {"{kisi}"}, {"{yetiskin}"}, {"{cocuk}"}, {"{otel}"}, {"{bolge}"}, {"{transfer_saat}"}, {"{toplam}"}, {"{odenen}"}, {"{kalan}"}, {"{siparis_no}"}, {"{takip_linki}"}, {"{bulusma_noktasi}"}, {"{varis_suresi}"}, {"{getirin}"}, {"{saglik_notlari}"}, {"{ekstralar}"}.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
