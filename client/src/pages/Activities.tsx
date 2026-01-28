@@ -34,6 +34,35 @@ import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimit
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ImageUpload } from "@/components/ImageUpload";
 
+const DEFAULT_CONFIRMATION_TEMPLATE = `Merhaba {isim},
+
+{aktivite} rezervasyonunuz onaylanmıştır!
+
+📅 Tarih: {tarih}
+⏰ Saat: {saat}
+👥 Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
+
+💰 Ödeme Bilgisi:
+Toplam: {toplam}
+Ödenen: {odenen}
+Kalan: {kalan}
+
+🚐 Transfer Bilgisi:
+Otel: {otel}
+Bölge: {bolge}
+Alım Saati: {transfer_saat}
+
+📍 Buluşma Noktası: {bulusma_noktasi}
+⏱️ Varış Süresi: {varis_suresi} dakika önce
+
+🎒 Yanınızda Getirin: {getirin}
+
+⚠️ Sağlık Notları: {saglik_notlari}
+
+🔗 Rezervasyon Takip: {takip_linki}
+
+İyi tatiller dileriz!`;
+
 export default function Activities() {
   const { data: activities, isLoading } = useActivities();
   const deleteMutation = useDeleteActivity();
@@ -308,8 +337,23 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [meetingPointMapLink, setMeetingPointMapLink] = useState(activity ? (activity as any).meetingPointMapLink || "" : "");
   const [arrivalMinutesBefore, setArrivalMinutesBefore] = useState(activity ? String((activity as any).arrivalMinutesBefore || "30") : "30");
   const [healthNotes, setHealthNotes] = useState(activity ? (activity as any).healthNotes || "" : "");
-  const [confirmationMessageText, setConfirmationMessageText] = useState(activity ? (activity as any).confirmationMessage || "" : "");
+  const [confirmationMessageText, setConfirmationMessageText] = useState(() => {
+    if (activity && (activity as any).confirmationMessage) {
+      return (activity as any).confirmationMessage;
+    }
+    if (activity && (activity as any).useCustomConfirmation === true) {
+      return DEFAULT_CONFIRMATION_TEMPLATE;
+    }
+    return DEFAULT_CONFIRMATION_TEMPLATE;
+  });
   const [useCustomConfirmation, setUseCustomConfirmation] = useState(activity ? (activity as any).useCustomConfirmation === true : false);
+  
+  const handleUseCustomConfirmationChange = (checked: boolean) => {
+    setUseCustomConfirmation(checked);
+    if (checked && !confirmationMessageText) {
+      setConfirmationMessageText(DEFAULT_CONFIRMATION_TEMPLATE);
+    }
+  };
   const [difficulty, setDifficulty] = useState(activity ? (activity as any).difficulty || "" : "");
   const [minAge, setMinAge] = useState(activity ? String((activity as any).minAge || "") : "");
   const [importantInfoItems, setImportantInfoItems] = useState(() => {
@@ -1837,7 +1881,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     <Switch
                       id="useCustomConfirmation"
                       checked={useCustomConfirmation}
-                      onCheckedChange={setUseCustomConfirmation}
+                      onCheckedChange={handleUseCustomConfirmationChange}
                       data-testid="toggle-custom-confirmation"
                     />
                   </div>
