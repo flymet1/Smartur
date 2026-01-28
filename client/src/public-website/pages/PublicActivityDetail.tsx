@@ -1439,6 +1439,45 @@ export default function PublicActivityDetail() {
                               <span>{language === "en" ? "Total:" : "Toplam:"}</span>
                               <span className="text-primary">{calculateTotalPrice().toLocaleString()} TL</span>
                             </div>
+                            
+                            {/* Ödeme Detayları */}
+                            {activity?.fullPaymentRequired && (
+                              <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-xs space-y-1">
+                                <div className="flex justify-between text-orange-700 dark:text-orange-300 font-medium">
+                                  <span>{language === "en" ? "Payment Required:" : "Ödenmesi Gereken:"}</span>
+                                  <span>{calculateTotalPrice().toLocaleString()} TL</span>
+                                </div>
+                                <p className="text-orange-600 dark:text-orange-400 text-[10px]">
+                                  {language === "en" ? "Full payment required at booking" : "Rezervasyonda tam ödeme gereklidir"}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {activity?.requiresDeposit && !activity?.fullPaymentRequired && (
+                              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs space-y-1">
+                                <div className="flex justify-between text-blue-700 dark:text-blue-300 font-medium">
+                                  <span>{language === "en" ? "Deposit:" : "Ön Ödeme:"}</span>
+                                  <span>
+                                    {activity.depositType === "percentage" 
+                                      ? `${(calculateTotalPrice() * (activity.depositAmount || 0) / 100).toLocaleString()} TL`
+                                      : `${(activity.depositAmount || 0).toLocaleString()} TL`
+                                    }
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-muted-foreground">
+                                  <span>{language === "en" ? "Remaining:" : "Kalan:"}</span>
+                                  <span>
+                                    {activity.depositType === "percentage"
+                                      ? (calculateTotalPrice() - (calculateTotalPrice() * (activity.depositAmount || 0) / 100)).toLocaleString()
+                                      : (calculateTotalPrice() - (activity.depositAmount || 0)).toLocaleString()
+                                    } TL
+                                  </span>
+                                </div>
+                                <p className="text-blue-600 dark:text-blue-400 text-[10px]">
+                                  {language === "en" ? "Pay remaining on activity day" : "Kalan tutar aktivite günü ödenir"}
+                                </p>
+                              </div>
+                            )}
                           </div>
 
                           <Button 
