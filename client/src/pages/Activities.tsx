@@ -38,32 +38,32 @@ const DEFAULT_CONFIRMATION_TEMPLATE = `Merhaba {isim},
 
 {aktivite} rezervasyonunuz onaylanmıştır!
 
-🔢 Sipariş No: {siparis_no}
+Sipariş No: {siparis_no}
 
-📅 Tarih: {tarih}
-⏰ Saat: {saat}
-👥 Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
+Tarih: {tarih}
+Saat: {saat}
+Kişi: {kisi} ({yetiskin} yetişkin, {cocuk} çocuk)
 
-💰 Ödeme Bilgisi:
+Ödeme Bilgisi:
 Toplam: {toplam}
 Ödenen: {odenen}
 Kalan: {kalan}
 
-🚐 Transfer Bilgisi:
+Transfer Bilgisi:
 Otel: {otel}
 Bölge: {bolge}
 Alım Saati: {transfer_saat}
 
-📍 Buluşma Noktası: {bulusma_noktasi}
-⏱️ Varış Süresi: {varis_suresi} dakika önce
+Buluşma Noktası: {bulusma_noktasi}
+Varış Süresi: {varis_suresi} dakika önce
 
-🎒 Yanınızda Getirin: {getirin}
+Yanınızda Getirin: {getirin}
 
-🎁 Ekstralar: {ekstralar}
+Ekstralar: {ekstralar}
 
-⚠️ Sağlık Notları: {saglik_notlari}
+Sağlık Notları: {saglik_notlari}
 
-🔗 Rezervasyonunuzu takip etmek, değişiklik veya iptal talebinde bulunmak için: {takip_linki}
+Rezervasyonunuzu takip etmek, değişiklik veya iptal talebinde bulunmak için: {takip_linki}
 
 İyi tatiller dileriz!`;
 
@@ -1863,7 +1863,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
 
               <TabsContent value="confirmation" className="space-y-4 mt-0">
                 <p className="text-sm text-muted-foreground mb-4">
-                  WhatsApp üzerinden gönderilecek sipariş onay mesajı ve güvenlik bilgileri.
+                  Sipariş onay mesajı varsayılan olarak e-posta ile gönderilir. Müşteri WhatsApp'tan "siparişim onaylandı mı?" diye sorarsa, bot bu mesajı WhatsApp'tan da gönderir.
                 </p>
 
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/30">

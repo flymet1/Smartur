@@ -16,6 +16,7 @@ import path from "path";
 import fs from "fs";
 import { encrypt, decrypt } from "./encryption";
 import { logError, logWarn, logInfo, attachLogsToSupportRequest, getSupportRequestLogs, getRecentLogs, logErrorEvent, type ErrorCategory, type ErrorSeverity } from "./logger";
+import { sendTenantEmail } from "./email";
 import { registerPublicApiRoutes } from "./publicApi";
 
 // Multer configuration for image uploads
@@ -5293,6 +5294,131 @@ export async function registerRoutes(
         return;
       }
 
+      // Check if customer is asking for order confirmation
+      const confirmationKeywords = [
+        'siparişim onaylandı', 'siparis onaylandi', 'sipariş onayı',
+        'ödeme yaptım', 'odeme yaptim', 'havale yaptım', 'havale yaptim',
+        'onay mesajı', 'onay mesaji', 'onaylandı mı', 'onaylandi mi',
+        'rezervasyon onayı', 'rezervasyonum onaylandı', 'sipariş durumu',
+        'siparis durumu', 'ödeme gönderdim', 'odeme gonderdim'
+      ];
+      const bodyLower = Body.toLowerCase().replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ç/g, 'c');
+      const isAskingForConfirmation = confirmationKeywords.some(kw => 
+        bodyLower.includes(kw.replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ç/g, 'c'))
+      );
+
+      // If asking for confirmation and has a reservation, send confirmation message
+      if (isAskingForConfirmation) {
+        // Check for order number in message
+        const orderNumberMatch = Body.match(/\b(\d{4,})\b/);
+        const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
+        const reservation = await storage.findReservationByPhoneOrOrder(From, potentialOrderId);
+        
+        if (reservation) {
+          // Get activity or package tour info
+          const activity = reservation.activityId ? await storage.getActivity(reservation.activityId) : null;
+          const packageTour = (reservation as any).packageTourId ? await storage.getPackageTour((reservation as any).packageTourId) : null;
+          
+          // Get confirmation template
+          let confirmationTemplate = "";
+          if (packageTour?.confirmationMessage && packageTour?.useCustomConfirmation) {
+            confirmationTemplate = packageTour.confirmationMessage;
+          } else if (activity?.confirmationMessage && (activity as any).useCustomConfirmation) {
+            confirmationTemplate = activity.confirmationMessage || '';
+          }
+          
+          // If no custom template, use global template
+          if (!confirmationTemplate) {
+            const globalSetting = await storage.getSetting('manualConfirmation', tenantId);
+            if (globalSetting) {
+              try {
+                const parsed = JSON.parse(globalSetting);
+                if (parsed.template) confirmationTemplate = parsed.template;
+              } catch {}
+            }
+          }
+          
+          // If still no template, use default
+          if (!confirmationTemplate) {
+            confirmationTemplate = `Merhaba {isim},
+
+{aktivite} rezervasyonunuz onaylanmıştır!
+
+Sipariş No: {siparis_no}
+Tarih: {tarih}
+Saat: {saat}
+Kişi: {kisi}
+
+Rezervasyon takip: {takip_linki}
+
+İyi tatiller dileriz!`;
+          }
+          
+          // Calculate transfer time helper
+          const calculateTransferTime = (activityTime: string, transferZone: string | null, transferZones: string): string => {
+            if (!activityTime || !transferZone) return '';
+            try {
+              const zones = JSON.parse(transferZones || '[]');
+              const zoneData = zones.find((z: any) => 
+                (typeof z === 'object' && z.zone === transferZone) || z === transferZone
+              );
+              if (!zoneData) return '';
+              const minutesBefore = typeof zoneData === 'object' ? (zoneData.minutesBefore || 30) : 30;
+              const [hours, minutes] = activityTime.split(':').map(Number);
+              let totalMinutes = hours * 60 + minutes - minutesBefore;
+              if (totalMinutes < 0) totalMinutes += 24 * 60;
+              const pickupHours = Math.floor(totalMinutes / 60);
+              const pickupMins = totalMinutes % 60;
+              return `${String(pickupHours).padStart(2, '0')}:${String(pickupMins).padStart(2, '0')}`;
+            } catch { return ''; }
+          };
+          
+          // Build tracking link
+          const trackingLink = reservation.trackingToken 
+            ? `${req.protocol}://${req.get('host')}/takip/${reservation.trackingToken}`
+            : '';
+          
+          // Build placeholder values
+          const totalPrice = (reservation as any).priceTl || (reservation as any).orderTotal || 0;
+          const paidAmount = (reservation as any).paidAmountTl || 0;
+          const remainingAmount = Math.max(0, totalPrice - paidAmount);
+          
+          const placeholders: Record<string, string> = {
+            isim: reservation.customerName || '',
+            tarih: reservation.date || '',
+            saat: reservation.time || '',
+            aktivite: activity?.name || packageTour?.name || '',
+            kisi: String(reservation.quantity || 1),
+            yetiskin: String(reservation.quantity || 1),
+            cocuk: '0',
+            otel: (reservation as any).hotelName || '',
+            bolge: (reservation as any).transferZone || '',
+            transfer_saat: calculateTransferTime(reservation.time, (reservation as any).transferZone, (activity as any)?.transferZones || '[]'),
+            toplam: totalPrice > 0 ? `${totalPrice} TL` : '',
+            odenen: paidAmount > 0 ? `${paidAmount} TL` : '',
+            kalan: remainingAmount > 0 ? `${remainingAmount} TL` : '',
+            siparis_no: (reservation as any).orderNumber || reservation.id?.toString() || '',
+            takip_linki: trackingLink,
+            bulusma_noktasi: (activity as any)?.meetingPoint || '',
+            varis_suresi: String((activity as any)?.arrivalMinutesBefore || 30),
+            getirin: '',
+            saglik_notlari: (activity as any)?.healthNotes || '',
+            ekstralar: '',
+          };
+          
+          // Apply placeholders
+          let confirmationMessage = confirmationTemplate;
+          for (const [key, value] of Object.entries(placeholders)) {
+            confirmationMessage = confirmationMessage.replace(new RegExp(`\\{${key}\\}`, 'gi'), value);
+          }
+          
+          await storage.addMessage({ phone: From, content: confirmationMessage, role: "assistant" });
+          res.type('text/xml');
+          res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMessage}</Message></Response>`);
+          return;
+        }
+      }
+
       // Check if sender is a partner agency
       const partnerCheck = await storage.checkIfPhoneIsPartner(From, tenantId);
       const isPartner = partnerCheck.isPartner;
@@ -5641,9 +5767,9 @@ export async function registerRoutes(
         try {
           const tenantId = req.session?.tenantId;
           if (tenantId) {
-            const globalSetting = await storage.getTenantSetting(tenantId, 'manualConfirmation');
-            if (globalSetting?.value) {
-              const parsed = JSON.parse(globalSetting.value);
+            const globalSetting = await storage.getSetting('manualConfirmation', tenantId);
+            if (globalSetting) {
+              const parsed = JSON.parse(globalSetting);
               if (parsed.template) {
                 confirmationTemplate = parsed.template;
               }
@@ -5826,6 +5952,223 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
     } catch (error) {
       await logError('whatsapp', 'WhatsApp bildirim hatası', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "WhatsApp mesajı gönderilemedi" });
+    }
+  });
+
+  // === Send Email Confirmation (Default for Smartur orders) ===
+  app.post("/api/send-email-confirmation", async (req, res) => {
+    try {
+      const { email, phone, customerName, activityName, date, time, activityId, packageTourId, trackingToken, reservationId, quantity } = req.body;
+      const tenantId = req.session?.tenantId;
+      
+      if (!email || !customerName || !activityName || !date) {
+        return res.status(400).json({ error: "Eksik bilgi: e-posta, isim, aktivite ve tarih gerekli" });
+      }
+      
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      // Fetch reservation data if reservationId provided
+      let reservation: any = null;
+      if (reservationId) {
+        reservation = await storage.getReservation(reservationId);
+      }
+      
+      // Fetch activity data
+      let activity: any = null;
+      if (activityId) {
+        activity = await storage.getActivity(activityId);
+      }
+      
+      // Fetch package tour data
+      let packageTour: any = null;
+      if (packageTourId) {
+        packageTour = await storage.getPackageTour(packageTourId);
+      }
+      
+      // Get confirmation template (priority: activity/package specific with toggle > global settings)
+      let confirmationTemplate = "";
+      if (packageTour?.confirmationMessage && packageTour?.useCustomConfirmation) {
+        confirmationTemplate = packageTour.confirmationMessage;
+      } else if (activity?.confirmationMessage && activity?.useCustomConfirmation) {
+        confirmationTemplate = activity.confirmationMessage;
+      }
+      
+      // If no custom template (or toggle is off), try to get global template from settings
+      if (!confirmationTemplate) {
+        try {
+          const globalSetting = await storage.getSetting('manualConfirmation', tenantId);
+          if (globalSetting) {
+            const parsed = JSON.parse(globalSetting);
+            if (parsed.template) {
+              confirmationTemplate = parsed.template;
+            }
+          }
+        } catch (e) {
+          // Ignore - use default template
+        }
+      }
+      
+      // Build tracking link if token is provided
+      const trackingLink = trackingToken 
+        ? `${req.protocol}://${req.get('host')}/takip/${trackingToken}`
+        : '';
+      
+      // Helper function to calculate transfer pickup time
+      const calculateTransferTime = (activityTime: string, transferZone: string | null, transferZones: string): string => {
+        if (!activityTime || !transferZone) return '';
+        try {
+          const zones = JSON.parse(transferZones || '[]');
+          const zoneData = zones.find((z: any) => 
+            (typeof z === 'object' && z.zone === transferZone) || z === transferZone
+          );
+          if (!zoneData) return '';
+          
+          const minutesBefore = typeof zoneData === 'object' ? (zoneData.minutesBefore || 30) : 30;
+          const [hours, minutes] = activityTime.split(':').map(Number);
+          let totalMinutes = hours * 60 + minutes - minutesBefore;
+          
+          if (totalMinutes < 0) {
+            totalMinutes = totalMinutes + 24 * 60;
+          }
+          totalMinutes = Math.max(0, Math.min(24 * 60 - 1, totalMinutes));
+          
+          const pickupHours = Math.floor(totalMinutes / 60);
+          const pickupMins = totalMinutes % 60;
+          return `${String(pickupHours).padStart(2, '0')}:${String(pickupMins).padStart(2, '0')}`;
+        } catch {
+          return '';
+        }
+      };
+      
+      // Helper function to format extras list
+      const formatExtras = (selectedExtras: string | null): string => {
+        if (!selectedExtras) return '';
+        try {
+          const extras = JSON.parse(selectedExtras);
+          if (!Array.isArray(extras) || extras.length === 0) return '';
+          return extras.map((e: any) => {
+            const name = e.name || e.title || e.label || 'Ekstra';
+            const price = e.priceTl || e.price || e.amount || 0;
+            return `${name}${price ? `: ${price} TL` : ''}`;
+          }).join(', ');
+        } catch {
+          return typeof selectedExtras === 'string' ? selectedExtras : '';
+        }
+      };
+      
+      // Helper function to format what to bring list
+      const formatWhatToBring = (whatToBring: string | null): string => {
+        if (!whatToBring) return '';
+        try {
+          const items = JSON.parse(whatToBring);
+          if (!Array.isArray(items) || items.length === 0) return '';
+          return items.join(', ');
+        } catch {
+          return '';
+        }
+      };
+      
+      // Build placeholder values
+      const totalPrice = reservation?.priceTl || reservation?.orderTotal || 0;
+      const paidAmount = reservation?.paidAmountTl || 0;
+      const remainingAmount = Math.max(0, totalPrice - paidAmount);
+      
+      const placeholderValues: Record<string, string> = {
+        isim: customerName || '',
+        tarih: date || '',
+        saat: time || '',
+        aktivite: activityName || '',
+        takip_linki: trackingLink,
+        kisi: String(reservation?.quantity || quantity || 1),
+        yetiskin: String(reservation?.quantity || quantity || 1),
+        cocuk: '0',
+        otel: reservation?.hotelName || '',
+        bolge: reservation?.transferZone || '',
+        transfer_saat: calculateTransferTime(time, reservation?.transferZone, activity?.transferZones || '[]'),
+        toplam: totalPrice > 0 ? `${totalPrice} TL` : '',
+        odenen: paidAmount > 0 ? `${paidAmount} TL` : '',
+        kalan: remainingAmount > 0 ? `${remainingAmount} TL` : '',
+        siparis_no: reservation?.orderNumber || reservation?.id?.toString() || '',
+        odeme_yontemi: reservation?.paymentStatus === 'paid' ? 'Ödendi' : (reservation?.paymentStatus === 'pending' ? 'Beklemede' : ''),
+        ekstralar: formatExtras(reservation?.selectedExtras),
+        bulusma_noktasi: activity?.meetingPoint 
+          ? (activity.meetingPointMapLink ? `${activity.meetingPoint} - ${activity.meetingPointMapLink}` : activity.meetingPoint)
+          : '',
+        varis_suresi: String(activity?.arrivalMinutesBefore || 30),
+        getirin: formatWhatToBring(activity?.whatToBring),
+        saglik_notlari: activity?.healthNotes || '',
+      };
+      
+      // Apply all placeholder replacements
+      const applyPlaceholders = (template: string): string => {
+        let result = template;
+        for (const [key, value] of Object.entries(placeholderValues)) {
+          const regex = new RegExp(`\\{${key}\\}`, 'gi');
+          result = result.replace(regex, value);
+        }
+        return result;
+      };
+      
+      // Use template with placeholder replacement, or fallback to default
+      let messageText: string;
+      if (confirmationTemplate) {
+        messageText = applyPlaceholders(confirmationTemplate);
+      } else {
+        messageText = `Merhaba ${customerName},
+
+Rezervasyonunuz oluşturulmuştur:
+Aktivite: ${activityName}
+Tarih: ${date}
+${time ? `Saat: ${time}` : ''}
+
+Rezervasyon detayları için:
+${trackingLink}
+
+Sorularınız için bizimle iletişime geçebilirsiniz.`;
+      }
+      
+      // Append confirmation note if provided
+      if (reservation?.confirmationNote) {
+        messageText += `\n\n${reservation.confirmationNote}`;
+      }
+      
+      // Convert text to HTML (preserve line breaks)
+      const messageHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #2563eb;">Rezervasyon Onayı</h2>
+          <div style="white-space: pre-line; line-height: 1.6;">
+            ${messageText.replace(/\n/g, '<br>')}
+          </div>
+          <hr style="margin-top: 30px; border: none; border-top: 1px solid #e5e7eb;" />
+          <p style="color: #6b7280; font-size: 12px;">Bu e-posta otomatik olarak gönderilmiştir.</p>
+        </div>
+      `;
+      
+      // Send email using tenant's SMTP config
+      const emailResult = await sendTenantEmail(tenantId, {
+        to: email,
+        subject: `Rezervasyon Onayı - ${activityName} - ${date}`,
+        html: messageHtml,
+        text: messageText,
+      });
+      
+      if (!emailResult.success) {
+        await logError('email', 'E-posta gönderme hatası', { email, error: emailResult.error });
+        return res.status(500).json({ error: emailResult.error || "E-posta gönderilemedi" });
+      }
+      
+      await logInfo('email', `Sipariş onay e-postası gönderildi: ${customerName} - ${activityName} (${email})`);
+      
+      res.json({ 
+        success: true, 
+        usedTenantSmtp: emailResult.usedTenantSmtp,
+        message: "E-posta ile onay mesajı gönderildi"
+      });
+    } catch (error) {
+      await logError('email', 'E-posta onay hatası', { error: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "E-posta gönderilemedi" });
     }
   });
 

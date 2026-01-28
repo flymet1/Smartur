@@ -1197,7 +1197,8 @@ DEĞİŞİKLİK TALEPLERİNDE:
               <div className="space-y-0.5 mb-4">
                 <Label>Yeni Rezervasyon Onay Mesajı Şablonu</Label>
                 <p className="text-sm text-muted-foreground">
-                  Yeni rezervasyon bildirimi açıkken müşteriye gönderilecek mesaj. 
+                  Sipariş onay mesajları varsayılan olarak <strong>e-posta</strong> ile gönderilir (spam riski nedeniyle).
+                  Müşteri WhatsApp'tan "siparişim onaylandı mı?" diye sorarsa, bot bu mesajı WhatsApp'tan da gönderir.
                   <span className="text-primary"> Bildirimi açmak/kapatmak için Bildirimler sekmesini kullanın.</span>
                 </p>
               </div>

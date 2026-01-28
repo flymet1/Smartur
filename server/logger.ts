@@ -3,7 +3,7 @@ import { systemLogs, supportRequestLogs, messages, errorEvents, tenants, type In
 import { desc, eq, gte, or, and, sql, isNull, lte, inArray } from "drizzle-orm";
 
 type LogLevel = 'error' | 'warn' | 'info';
-type LogSource = 'whatsapp' | 'ai' | 'webhook' | 'system';
+type LogSource = 'whatsapp' | 'ai' | 'webhook' | 'system' | 'email';
 
 interface LogEntry {
   level: LogLevel;
