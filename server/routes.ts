@@ -5340,7 +5340,30 @@ export async function registerRoutes(
           
           // If still no template, use default
           if (!confirmationTemplate) {
-            confirmationTemplate = `Merhaba {isim},
+            // Check if reservation has transfer
+            const hasTransferInfo = (reservation as any).hasTransfer && (reservation as any).transferZone;
+            
+            if (hasTransferInfo) {
+              confirmationTemplate = `Merhaba {isim},
+
+{aktivite} rezervasyonunuz onaylanmıştır!
+
+Sipariş No: {siparis_no}
+Tarih: {tarih}
+Saat: {saat}
+Kişi: {kisi}
+
+🚐 OTEL TRANSFERİ
+Bölge: {bolge}
+Otel: {otel}
+Alınış Saati: {transfer_saat}
+(Aktivite saatinden önce otelinizden alınacaksınız)
+
+Rezervasyon takip: {takip_linki}
+
+İyi tatiller dileriz!`;
+            } else {
+              confirmationTemplate = `Merhaba {isim},
 
 {aktivite} rezervasyonunuz onaylanmıştır!
 
@@ -5352,6 +5375,7 @@ Kişi: {kisi}
 Rezervasyon takip: {takip_linki}
 
 İyi tatiller dileriz!`;
+            }
           }
           
           // Calculate transfer time helper
