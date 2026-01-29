@@ -33,6 +33,7 @@
   
   --card: 0 0% 100%;
   --card-foreground: 255 30% 15%;
+  --card-border: 250 20% 92%;
   
   --popover: 0 0% 100%;
   --popover-foreground: 255 30% 15%;
@@ -76,6 +77,7 @@
   
   --card: 255 30% 12%;
   --card-foreground: 250 20% 95%;
+  --card-border: 255 25% 20%;
   
   --popover: 255 30% 12%;
   --popover-foreground: 250 20% 95%;
