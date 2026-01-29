@@ -1269,7 +1269,7 @@ export default function Finance() {
 
         {/* Navigation Menu - Settings style */}
         <div className="border-b bg-background mb-6">
-          <div className="flex items-center gap-1 pb-2">
+          <div className="grid grid-cols-5 gap-1 pb-2 xl:flex xl:items-center">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -1277,6 +1277,7 @@ export default function Finance() {
                   size="sm"
                   onClick={() => setFinanceTab('dispatches')}
                   data-testid="tab-dispatches"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <UserCheck className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Gönderilen Müşteri</span>
@@ -1291,6 +1292,7 @@ export default function Finance() {
                   size="sm"
                   onClick={() => setFinanceTab('payouts')}
                   data-testid="tab-payouts"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <CreditCard className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Ödemeler</span>
@@ -1305,6 +1307,7 @@ export default function Finance() {
                   size="sm"
                   onClick={() => setFinanceTab('rates')}
                   data-testid="tab-rates"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <TableProperties className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Fiyat Tablosu</span>
@@ -1319,6 +1322,7 @@ export default function Finance() {
                   size="sm"
                   onClick={() => setFinanceTab('partner-customers')}
                   data-testid="tab-partner-customers"
+                  className="w-full xl:w-auto justify-center"
                 >
                   {partnerLogoUrl ? (
                     <img src={partnerLogoUrl} alt="Partner" className="h-4 w-4 xl:mr-2 object-contain" />
@@ -1337,6 +1341,7 @@ export default function Finance() {
                   size="sm"
                   onClick={() => setFinanceTab('agencies')}
                   data-testid="tab-agencies"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <Building2 className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Acentalar</span>
@@ -1348,9 +1353,10 @@ export default function Finance() {
         </div>
 
         {/* Tarih Filtreleme - Tüm sekmeler için geçerli */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="space-y-3">
           <h3 className="text-lg font-semibold">Dönem Seçimi</h3>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+            {/* Hızlı Seçim */}
             <Select 
               value={datePreset}
               onValueChange={(value) => {
@@ -1392,7 +1398,7 @@ export default function Finance() {
                 }
               }}
             >
-              <SelectTrigger className="w-[100px] sm:w-[140px] text-xs sm:text-sm" data-testid="select-date-preset">
+              <SelectTrigger className="w-full md:w-[140px] text-sm" data-testid="select-date-preset">
                 <SelectValue placeholder="Hızlı Seç" />
               </SelectTrigger>
               <SelectContent>
@@ -1406,8 +1412,10 @@ export default function Finance() {
                 <SelectItem value="custom">Özel</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4 text-muted-foreground hidden sm:block" />
+            
+            {/* Tarih Aralığı */}
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Calendar className="h-4 w-4 text-muted-foreground hidden md:block" />
               <Input 
                 type="date" 
                 value={startDate} 
@@ -1415,28 +1423,30 @@ export default function Finance() {
                   setStartDate(e.target.value);
                   setDatePreset('custom');
                 }}
-                className="w-28 sm:w-36 text-xs sm:text-sm"
+                className="flex-1 md:w-36 text-sm"
                 data-testid="input-start-date"
               />
+              <span className="text-muted-foreground">-</span>
+              <Input 
+                type="date" 
+                value={endDate} 
+                onChange={e => {
+                  setEndDate(e.target.value);
+                  setDatePreset('custom');
+                }}
+                className="flex-1 md:w-36 text-sm"
+                data-testid="input-end-date"
+              />
             </div>
-            <span className="text-muted-foreground">-</span>
-            <Input 
-              type="date" 
-              value={endDate} 
-              onChange={e => {
-                setEndDate(e.target.value);
-                setDatePreset('custom');
-              }}
-              className="w-28 sm:w-36 text-xs sm:text-sm"
-              data-testid="input-end-date"
-            />
+            
+            {/* Acenta/Partner Filtresi */}
             {financeTab === 'partner-customers' ? (
               <Select
                 value={selectedPartnerId ? String(selectedPartnerId) : "all"}
                 onValueChange={(v) => setSelectedPartnerId(v === "all" ? null : parseInt(v))}
               >
-                <SelectTrigger className="w-[120px] sm:w-[180px] text-xs sm:text-sm" data-testid="select-partner-filter-top">
-                  <Handshake className="h-4 w-4 sm:mr-1" />
+                <SelectTrigger className="w-full md:w-[180px] text-sm" data-testid="select-partner-filter-top">
+                  <Handshake className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Partner" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1451,8 +1461,8 @@ export default function Finance() {
                 value={selectedAgencyId ? String(selectedAgencyId) : "all"}
                 onValueChange={(v) => setSelectedAgencyId(v === "all" ? null : parseInt(v))}
               >
-                <SelectTrigger className="w-[120px] sm:w-[180px] text-xs sm:text-sm" data-testid="select-agency-filter">
-                  <Building2 className="h-4 w-4 sm:mr-1" />
+                <SelectTrigger className="w-full md:w-[180px] text-sm" data-testid="select-agency-filter">
+                  <Building2 className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Acenta" />
                 </SelectTrigger>
                 <SelectContent>
