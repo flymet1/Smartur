@@ -679,8 +679,8 @@ export default function Reservations() {
                   className="relative"
                   data-testid="button-new-reservations"
                 >
-                  <Bell className="h-4 w-4 mr-2" />
-                  Yeni Rezervasyonlar
+                  <Bell className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Yeni Rezervasyonlar</span>
                   {unseenReservations.length > 0 && (
                     <Badge 
                       variant="destructive" 
@@ -961,9 +961,9 @@ export default function Reservations() {
                 </p>
               )}
               <Button 
-                variant="ghost" 
+                variant="link" 
                 size="sm" 
-                className="p-0 h-auto mt-2 text-xs text-primary"
+                className="mt-2 justify-start"
                 onClick={() => {
                   setViewMode("list");
                   setCurrentDate(new Date());
@@ -974,7 +974,8 @@ export default function Reservations() {
                 data-testid="button-today-reservations"
               >
                 <List className="h-3 w-3 mr-1" />
-                Bugünün Rezervasyonlarını Gör
+                <span className="hidden sm:inline">Bugünün Rezervasyonlarını Gör</span>
+                <span className="sm:hidden">Detayları Gör</span>
               </Button>
             </Card>
             <Card className="p-4">
@@ -1256,7 +1257,7 @@ export default function Reservations() {
 
         <div className="flex flex-col gap-4">
           <Card className="p-3 flex-1">
-            {/* Mobile: Search + Filter Button */}
+            {/* Mobile: Search + View Toggle + Filter Button */}
             <div className="flex md:hidden items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1266,6 +1267,27 @@ export default function Reservations() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+              </div>
+              {/* View Mode Toggle for Mobile */}
+              <div className="flex border rounded-md flex-shrink-0">
+                <Button
+                  variant={viewMode === "calendar" ? "default" : "ghost"}
+                  size="icon"
+                  onClick={() => setViewMode("calendar")}
+                  className="rounded-r-none"
+                  data-testid="button-view-calendar-mobile"
+                >
+                  <Calendar className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="icon"
+                  onClick={() => setViewMode("list")}
+                  className="rounded-l-none border-l"
+                  data-testid="button-view-list-mobile"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
               </div>
               <Sheet>
                 <SheetTrigger asChild>
@@ -4410,8 +4432,9 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
     <Dialog open={open} onOpenChange={setOpen}>
       {!controlledOpen && (
         <DialogTrigger asChild>
-          <Button className="w-full md:w-auto shadow-lg shadow-primary/20" data-testid="button-new-reservation">
-            <Plus className="h-4 w-4 mr-2" /> Yeni Rezervasyon
+          <Button className="shadow-lg shadow-primary/20" data-testid="button-new-reservation">
+            <Plus className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Yeni Rezervasyon</span>
           </Button>
         </DialogTrigger>
       )}
