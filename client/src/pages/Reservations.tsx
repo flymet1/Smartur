@@ -677,7 +677,8 @@ export default function Reservations() {
                 <PopoverTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="relative"
+                    size="icon"
+                    className="relative md:w-auto md:px-4"
                     data-testid="button-new-reservations"
                   >
                     <Bell className="h-4 w-4 md:mr-2" />
@@ -1263,27 +1264,25 @@ export default function Reservations() {
           <Card className="p-3 flex-1">
             {/* Mobile: View Toggle + Search Icon + Filter Button */}
             <div className="flex md:hidden items-center gap-2">
-              {/* View Mode Toggle for Mobile - Wider buttons */}
-              <div className="flex border rounded-md flex-1">
+              {/* View Mode Toggle for Mobile - Wider buttons, same height as icon buttons */}
+              <div className="flex border rounded-md flex-1 h-9">
                 <Button
                   variant={viewMode === "calendar" ? "default" : "ghost"}
-                  size="sm"
                   onClick={() => setViewMode("calendar")}
-                  className="rounded-r-none flex-1 gap-1"
+                  className="rounded-r-none flex-1 gap-1 h-full text-xs"
                   data-testid="button-view-calendar-mobile"
                 >
                   <Calendar className="h-4 w-4" />
-                  <span className="text-xs">Takvim</span>
+                  Takvim
                 </Button>
                 <Button
                   variant={viewMode === "list" ? "default" : "ghost"}
-                  size="sm"
                   onClick={() => setViewMode("list")}
-                  className="rounded-l-none border-l flex-1 gap-1"
+                  className="rounded-l-none border-l flex-1 gap-1 h-full text-xs"
                   data-testid="button-view-list-mobile"
                 >
                   <List className="h-4 w-4" />
-                  <span className="text-xs">Liste</span>
+                  Liste
                 </Button>
               </div>
               {/* Search Icon Button with Popover */}
@@ -1325,7 +1324,7 @@ export default function Reservations() {
                   <Button 
                     variant={statusFilter !== 'all' || activityFilter !== 'all' || sourceFilter !== 'all' || agencyFilter !== 'all' ? "default" : "outline"}
                     size="icon"
-                    className="h-10 w-10 flex-shrink-0"
+                    className="flex-shrink-0"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
