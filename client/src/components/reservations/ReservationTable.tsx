@@ -247,9 +247,214 @@ export function ReservationTable({
     return result;
   }, [reservations]);
 
+  // Mobile Card View Component
+  const MobileCardView = () => (
+    <div className="space-y-3 md:hidden">
+      {reservations.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          Henüz rezervasyon bulunmuyor.
+        </div>
+      ) : (
+        groupedReservations.map((group, groupIdx) => (
+          <Fragment key={group.type === 'group' ? group.groupKey : `single-${groupIdx}`}>
+            {group.type === 'group' && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-600 rounded-lg p-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Package className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <span className="font-medium text-purple-700 dark:text-purple-300">
+                    {getPackageTourName(group.reservations[0].packageTourId)}
+                  </span>
+                  <Badge variant="secondary" className="text-xs">
+                    {group.reservations.length} aktivite
+                  </Badge>
+                </div>
+              </div>
+            )}
+            {group.reservations.map((res) => (
+              <div 
+                key={res.id}
+                className={`rounded-lg border p-3 space-y-2 hover-elevate ${onReservationSelect ? 'cursor-pointer' : ''} ${group.type === 'group' ? 'border-purple-200 dark:border-purple-800 ml-2' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5 border-primary' : 'bg-card'}`}
+                onClick={() => onReservationSelect?.(res)}
+              >
+                {/* Header Row: Name, Status, Actions */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {hasSelection && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Checkbox 
+                          checked={selectedIds.has(res.id)}
+                          onCheckedChange={() => onToggleSelection(res.id)}
+                          data-testid={`checkbox-reservation-mobile-${res.id}`}
+                        />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate" data-testid={`text-customer-name-mobile-${res.id}`}>{res.customerName}</div>
+                      <div 
+                        className="text-xs text-muted-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/messages?phone=${encodeURIComponent(res.customerPhone)}`;
+                        }}
+                        data-testid={`link-phone-mobile-${res.id}`}
+                      >
+                        {res.customerPhone}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {getStatusBadge(res.status || 'pending', res.id)}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" data-testid={`button-actions-mobile-${res.id}`}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {res.status !== 'confirmed' && (
+                          <DropdownMenuItem 
+                            onClick={() => statusMutation.mutate({ id: res.id, status: 'confirmed' })}
+                            data-testid={`action-confirm-mobile-${res.id}`}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                            Onayla
+                          </DropdownMenuItem>
+                        )}
+                        {res.status !== 'cancelled' && (
+                          <DropdownMenuItem 
+                            onClick={() => statusMutation.mutate({ id: res.id, status: 'cancelled' })}
+                            data-testid={`action-cancel-mobile-${res.id}`}
+                          >
+                            <XCircle className="h-4 w-4 mr-2 text-red-600" />
+                            İptal Et
+                          </DropdownMenuItem>
+                        )}
+                        {onWhatsAppNotify && (
+                          <DropdownMenuItem 
+                            onClick={() => onWhatsAppNotify(res)}
+                            data-testid={`action-whatsapp-mobile-${res.id}`}
+                          >
+                            <Send className="h-4 w-4 mr-2 text-green-600" />
+                            Müşteriye WhatsApp Bildirimi
+                          </DropdownMenuItem>
+                        )}
+                        {onAddDispatch && (
+                          <DropdownMenuItem 
+                            onClick={() => onAddDispatch(res)}
+                            data-testid={`action-dispatch-mobile-${res.id}`}
+                          >
+                            <ArrowRightLeft className="h-4 w-4 mr-2 text-blue-600" />
+                            Partner Acentaya Gönder
+                          </DropdownMenuItem>
+                        )}
+                        {onNotifyAgency && (
+                          <DropdownMenuItem 
+                            onClick={() => onNotifyAgency(res)}
+                            data-testid={`action-notify-agency-mobile-${res.id}`}
+                          >
+                            <Phone className="h-4 w-4 mr-2 text-green-600" />
+                            Acentaya WhatsApp Bildirimi
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        {res.trackingToken ? (
+                          <>
+                            <DropdownMenuItem 
+                              onClick={() => copyExistingLink(res.trackingToken!, res.id)}
+                              data-testid={`copy-tracking-mobile-${res.id}`}
+                            >
+                              {copiedId === res.id ? (
+                                <>
+                                  <Check className="h-4 w-4 mr-2 text-green-600" />
+                                  Kopyalandı
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Takip Linkini Kopyala
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                const trackingUrl = `${window.location.origin}/takip/${res.trackingToken}`;
+                                window.open(trackingUrl, '_blank');
+                              }}
+                              data-testid={`open-tracking-mobile-${res.id}`}
+                            >
+                              <Link2 className="h-4 w-4 mr-2" />
+                              Takip Sayfasını Aç
+                            </DropdownMenuItem>
+                          </>
+                        ) : (
+                          <DropdownMenuItem 
+                            onClick={() => trackingMutation.mutate(res.id)}
+                            disabled={trackingMutation.isPending}
+                            data-testid={`generate-tracking-mobile-${res.id}`}
+                          >
+                            <Link2 className="h-4 w-4 mr-2" />
+                            Takip Linki Oluştur
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Activity & Date Row */}
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="font-medium truncate">{getActivityName(res.activityId)}</span>
+                  </div>
+                  <div className="text-muted-foreground text-xs flex-shrink-0">
+                    {format(new Date(res.date), "d MMM", { locale: tr })} • {res.time}
+                  </div>
+                </div>
+
+                {/* Details Row: Guests, Source, Amount */}
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground">{res.quantity} Kişi</span>
+                    <div className="flex items-center gap-1">
+                      {getSourceIcon(res.source)}
+                      <span className="text-xs">{getSourceLabel(res.source, res.notes)}</span>
+                    </div>
+                  </div>
+                  <span className="font-medium">
+                    {res.priceTl ? `₺${res.priceTl.toLocaleString('tr-TR')}` : ''}
+                    {res.priceTl && res.priceUsd ? ' / ' : ''}
+                    {res.priceUsd ? `$${res.priceUsd}` : ''}
+                    {!res.priceTl && !res.priceUsd ? '-' : ''}
+                  </span>
+                </div>
+
+                {/* Hotel/Transfer Row (if exists) */}
+                {(res.hotelName || res.hasTransfer) && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t">
+                    {res.hasTransfer && <Bus className="h-3 w-3 text-blue-600" />}
+                    {res.hotelName && (
+                      <span className="flex items-center gap-1">
+                        <Hotel className="h-3 w-3" />
+                        {res.hotelName}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </Fragment>
+        ))
+      )}
+    </div>
+  );
+
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
-      <Table>
+      {/* Mobile Card View */}
+      <MobileCardView />
+      
+      {/* Desktop Table View */}
+      <Table className="hidden md:table">
         <TableHeader className="bg-muted/50">
           <TableRow>
             {hasSelection && (
@@ -392,7 +597,10 @@ export function ReservationTable({
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
                     <TableCell className="text-right font-medium">
-                      ₺{(res.quantity * 1500).toLocaleString('tr-TR')}
+                      {res.priceTl ? `₺${res.priceTl.toLocaleString('tr-TR')}` : ''}
+                      {res.priceTl && res.priceUsd ? ' / ' : ''}
+                      {res.priceUsd ? `$${res.priceUsd}` : ''}
+                      {!res.priceTl && !res.priceUsd ? '-' : ''}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>

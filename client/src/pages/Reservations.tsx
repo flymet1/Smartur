@@ -671,12 +671,12 @@ export default function Reservations() {
             <h1 className="text-3xl font-bold font-display">Rezervasyonlar</h1>
             <p className="text-muted-foreground mt-1">Tüm rezervasyonları görüntüleyin ve yönetin</p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center w-full md:w-auto justify-end">
             <Popover open={showNewReservations} onOpenChange={setShowNewReservations}>
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline" 
-                  className="relative"
+                  className="relative order-2 md:order-1"
                   data-testid="button-new-reservations"
                 >
                   <Bell className="h-4 w-4 md:mr-2" />
@@ -734,7 +734,7 @@ export default function Reservations() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" data-testid="button-export">
+                    <Button variant="outline" size="icon" className="order-1 md:order-2" data-testid="button-export">
                       <Download className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -752,11 +752,13 @@ export default function Reservations() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <NewReservationDialog 
-              open={newReservationOpen} 
-              onOpenChange={setNewReservationOpen}
-              defaultDate={selectedDateForNew}
-            />
+            <div className="order-3">
+              <NewReservationDialog 
+                open={newReservationOpen} 
+                onOpenChange={setNewReservationOpen}
+                defaultDate={selectedDateForNew}
+              />
+            </div>
             <ReservationDetailDialog
               reservation={selectedReservation}
               activities={activities || []}
@@ -961,9 +963,9 @@ export default function Reservations() {
                 </p>
               )}
               <Button 
-                variant="link" 
+                variant="outline" 
                 size="sm" 
-                className="mt-2 justify-start"
+                className="mt-2"
                 onClick={() => {
                   setViewMode("list");
                   setCurrentDate(new Date());
