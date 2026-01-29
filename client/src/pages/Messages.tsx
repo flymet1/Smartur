@@ -26,6 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Label } from "@/components/ui/label";
 
 type FilterType = 'all' | 'with_reservation' | 'human_intervention';
 type AnalyticsPeriod = 'daily' | 'weekly' | 'monthly';
@@ -267,20 +269,85 @@ export default function Messages() {
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
       <main className="flex-1 xl:ml-64 p-4 pt-16 xl:pt-20 xl:px-8 xl:pb-8 pb-24 space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold font-display">WhatsApp</h1>
-            <p className="text-muted-foreground mt-1">WhatsApp bot görüşmeleri</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold font-display">WhatsApp</h1>
+              <p className="text-muted-foreground text-sm mt-1">WhatsApp bot görüşmeleri</p>
+            </div>
+            
+            {/* Mobile: Compact search + filter button */}
+            <div className="flex md:hidden items-center gap-2">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant={filter !== 'all' ? "default" : "outline"} 
+                    size="icon" 
+                    className="h-9 w-9"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-xl">
+                  <SheetHeader className="pb-4 border-b">
+                    <SheetTitle className="flex items-center gap-2">
+                      <Filter className="h-5 w-5" />
+                      Arama ve Filtreler
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Arama</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Telefon veya isim ara..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-9 h-12"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Filtre</Label>
+                      <Select value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
+                        <SelectTrigger className="w-full h-12">
+                          <SelectValue placeholder="Filtre seç" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tüm Mesajlar</SelectItem>
+                          <SelectItem value="with_reservation">Rezervasyonlu Müşteriler</SelectItem>
+                          <SelectItem value="human_intervention">Müdahale Gerekiyor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
+          {/* Mobile: Search bar below title */}
+          <div className="md:hidden relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Telefon veya isim ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-10"
+              data-testid="input-search-messages-mobile"
+            />
+          </div>
+
+          {/* Desktop: Full search and filter */}
+          <div className="hidden md:flex items-center gap-2">
+            <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Telefon veya isim ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-[200px]"
+                className="pl-9"
                 data-testid="input-search-messages"
               />
             </div>
