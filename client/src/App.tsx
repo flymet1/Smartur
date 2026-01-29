@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -77,6 +77,16 @@ function Router() {
   );
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+  
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  
+  return null;
+}
+
 function KeyboardShortcuts() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -116,12 +126,14 @@ function App() {
         <TooltipProvider>
           {isPublicRoute ? (
             <>
+              <ScrollToTop />
               <KeyboardShortcuts />
               <Toaster />
               <Router />
             </>
           ) : (
             <AuthGuard>
+              <ScrollToTop />
               <KeyboardShortcuts />
               <StickyAnnouncements />
               <GlobalNotifications />
