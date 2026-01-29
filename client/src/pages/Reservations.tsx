@@ -671,26 +671,27 @@ export default function Reservations() {
             <h1 className="text-3xl font-bold font-display">Rezervasyonlar</h1>
             <p className="text-muted-foreground mt-1">Tüm rezervasyonları görüntüleyin ve yönetin</p>
           </div>
-          <div className="flex gap-2 flex-wrap items-center w-full md:w-auto justify-end">
-            <Popover open={showNewReservations} onOpenChange={setShowNewReservations}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="relative order-2 md:order-1"
-                  data-testid="button-new-reservations"
-                >
-                  <Bell className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Yeni Rezervasyonlar</span>
-                  {unseenReservations.length > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px]"
-                    >
-                      {unseenReservations.length}
-                    </Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
+          <div className="flex gap-2 flex-wrap items-center w-full md:w-auto justify-between md:justify-end">
+            <div className="flex gap-2 items-center order-1">
+              <Popover open={showNewReservations} onOpenChange={setShowNewReservations}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="relative"
+                    data-testid="button-new-reservations"
+                  >
+                    <Bell className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">Yeni Rezervasyonlar</span>
+                    {unseenReservations.length > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-5 min-w-5 p-0 flex items-center justify-center text-[10px]"
+                      >
+                        {unseenReservations.length}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
               <PopoverContent className="w-80 p-0" align="end">
                 <div className="p-3 border-b flex items-center justify-between gap-2">
                   <span className="font-medium text-sm">Yeni Rezervasyonlar</span>
@@ -729,30 +730,31 @@ export default function Reservations() {
                   )}
                 </div>
               </PopoverContent>
-            </Popover>
-            <DropdownMenu>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="order-1 md:order-2" data-testid="button-export">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent>Rezervasyonları dışa aktar</TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={exportToCSV} data-testid="button-export-csv">
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  CSV / Excel
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={exportToPDF} data-testid="button-export-pdf">
-                  <FileText className="h-4 w-4 mr-2" />
-                  PDF / Yazdır
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <div className="order-3">
+              </Popover>
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" data-testid="button-export">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Rezervasyonları dışa aktar</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={exportToCSV} data-testid="button-export-csv">
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    CSV / Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToPDF} data-testid="button-export-pdf">
+                    <FileText className="h-4 w-4 mr-2" />
+                    PDF / Yazdır
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <div className="order-2">
               <NewReservationDialog 
                 open={newReservationOpen} 
                 onOpenChange={setNewReservationOpen}
@@ -1259,38 +1261,65 @@ export default function Reservations() {
 
         <div className="flex flex-col gap-4">
           <Card className="p-3 flex-1">
-            {/* Mobile: Search + View Toggle + Filter Button */}
+            {/* Mobile: View Toggle + Search Icon + Filter Button */}
             <div className="flex md:hidden items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Ara..." 
-                  className="pl-9 h-10" 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              {/* View Mode Toggle for Mobile */}
-              <div className="flex border rounded-md flex-shrink-0">
+              {/* View Mode Toggle for Mobile - Wider buttons */}
+              <div className="flex border rounded-md flex-1">
                 <Button
                   variant={viewMode === "calendar" ? "default" : "ghost"}
-                  size="icon"
+                  size="sm"
                   onClick={() => setViewMode("calendar")}
-                  className="rounded-r-none"
+                  className="rounded-r-none flex-1 gap-1"
                   data-testid="button-view-calendar-mobile"
                 >
                   <Calendar className="h-4 w-4" />
+                  <span className="text-xs">Takvim</span>
                 </Button>
                 <Button
                   variant={viewMode === "list" ? "default" : "ghost"}
-                  size="icon"
+                  size="sm"
                   onClick={() => setViewMode("list")}
-                  className="rounded-l-none border-l"
+                  className="rounded-l-none border-l flex-1 gap-1"
                   data-testid="button-view-list-mobile"
                 >
                   <List className="h-4 w-4" />
+                  <span className="text-xs">Liste</span>
                 </Button>
               </div>
+              {/* Search Icon Button with Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant={search ? "default" : "outline"} 
+                    size="icon" 
+                    className="flex-shrink-0"
+                    data-testid="button-search-mobile"
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-2" align="end">
+                  <Input 
+                    placeholder="Müşteri veya aktivite ara..." 
+                    className="h-10" 
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    autoFocus
+                    data-testid="input-search-mobile"
+                  />
+                  {search && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full mt-2" 
+                      onClick={() => setSearch("")}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Aramayı Temizle
+                    </Button>
+                  )}
+                </PopoverContent>
+              </Popover>
               <Sheet>
                 <SheetTrigger asChild>
                   <Button 
