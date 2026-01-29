@@ -35,6 +35,7 @@ import { LicenseLimitDialog, parseLicenseError } from "@/components/LicenseLimit
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 type CalendarView = "day" | "week" | "month";
 
@@ -1255,8 +1256,156 @@ export default function Reservations() {
 
         <div className="flex flex-col gap-4">
           <Card className="p-3 flex-1">
-            <div className="flex flex-wrap items-center gap-2 xl:gap-3">
-              {/* Search - Always visible */}
+            {/* Mobile: Search + Filter Button */}
+            <div className="flex md:hidden items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Ara..." 
+                  className="pl-9 h-10" 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant={statusFilter !== 'all' || activityFilter !== 'all' || sourceFilter !== 'all' || agencyFilter !== 'all' ? "default" : "outline"}
+                    size="icon"
+                    className="h-10 w-10 flex-shrink-0"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-auto max-h-[80vh] rounded-t-xl">
+                  <SheetHeader className="pb-4 border-b">
+                    <SheetTitle className="flex items-center gap-2">
+                      <Filter className="h-5 w-5" />
+                      Filtreler
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="py-4 space-y-4 overflow-y-auto">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Durum</Label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-full h-12">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tümü</SelectItem>
+                          <SelectItem value="pending">Beklemede</SelectItem>
+                          <SelectItem value="confirmed">Onaylı</SelectItem>
+                          <SelectItem value="cancelled">İptal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Sıralama</Label>
+                      <Select value={sortBy} onValueChange={handleSortChange}>
+                        <SelectTrigger className="w-full h-12">
+                          <SelectValue placeholder="Sıralama" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date-desc">Tarih (Yeni-Eski)</SelectItem>
+                          <SelectItem value="date-asc">Tarih (Eski-Yeni)</SelectItem>
+                          <SelectItem value="name-asc">Müşteri (A-Z)</SelectItem>
+                          <SelectItem value="name-desc">Müşteri (Z-A)</SelectItem>
+                          <SelectItem value="activity-asc">Aktivite (A-Z)</SelectItem>
+                          <SelectItem value="activity-desc">Aktivite (Z-A)</SelectItem>
+                          <SelectItem value="status">Durum</SelectItem>
+                          <SelectItem value="price-desc">Fiyat (Yüksek-Düşük)</SelectItem>
+                          <SelectItem value="price-asc">Fiyat (Düşük-Yüksek)</SelectItem>
+                          <SelectItem value="created-desc">Oluşturma (Yeni-Eski)</SelectItem>
+                          <SelectItem value="created-asc">Oluşturma (Eski-Yeni)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Aktivite</Label>
+                      <Select value={activityFilter} onValueChange={setActivityFilter}>
+                        <SelectTrigger className="w-full h-12">
+                          <SelectValue placeholder="Aktivite" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tüm Aktiviteler</SelectItem>
+                          {(activities || []).map(a => (
+                            <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Kaynak</Label>
+                      <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                        <SelectTrigger className="w-full h-12">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tümü</SelectItem>
+                          <SelectItem value="manual">Manuel</SelectItem>
+                          <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                          <SelectItem value="web">WooCommerce</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {agencies.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Acenta</Label>
+                        <Select value={agencyFilter} onValueChange={setAgencyFilter}>
+                          <SelectTrigger className="w-full h-12">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tümü</SelectItem>
+                            {agencies.map(a => (
+                              <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Fiyat Aralığı (TL)</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type="number" 
+                          placeholder="Min" 
+                          value={priceMinFilter}
+                          onChange={(e) => setPriceMinFilter(e.target.value)}
+                          className="h-12"
+                        />
+                        <Input 
+                          type="number" 
+                          placeholder="Max" 
+                          value={priceMaxFilter}
+                          onChange={(e) => setPriceMaxFilter(e.target.value)}
+                          className="h-12"
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full h-12 mt-2"
+                      onClick={() => {
+                        setStatusFilter("all");
+                        setActivityFilter("all");
+                        setSourceFilter("all");
+                        setAgencyFilter("all");
+                        setPriceMinFilter("");
+                        setPriceMaxFilter("");
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Filtreleri Temizle
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+            
+            {/* Desktop: All filters inline */}
+            <div className="hidden md:flex flex-wrap items-center gap-2 xl:gap-3">
+              {/* Search */}
               <div className="relative flex-1 min-w-[150px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
@@ -1266,7 +1415,7 @@ export default function Reservations() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              {/* Status Filter - Icon on mobile, full on desktop */}
+              {/* Status Filter */}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-auto min-w-[80px] xl:min-w-[120px]">
                   <SelectValue />
@@ -1278,7 +1427,7 @@ export default function Reservations() {
                   <SelectItem value="cancelled">İptal</SelectItem>
                 </SelectContent>
               </Select>
-              {/* Sort - Hidden on mobile, visible on desktop */}
+              {/* Sort */}
               <Select value={sortBy} onValueChange={handleSortChange}>
                 <SelectTrigger className="w-auto min-w-[50px] xl:min-w-[140px]" data-testid="select-sort-by">
                   <ArrowUpDown className="h-4 w-4 xl:mr-2 flex-shrink-0" />
@@ -1298,7 +1447,7 @@ export default function Reservations() {
                   <SelectItem value="created-asc">Oluşturma (Eski-Yeni)</SelectItem>
                 </SelectContent>
               </Select>
-              {/* Activity Filter - Compact on mobile, full on desktop */}
+              {/* Activity Filter */}
               <Select value={activityFilter} onValueChange={setActivityFilter}>
                 <SelectTrigger className="w-auto min-w-[100px] xl:min-w-[160px] max-w-[140px] xl:max-w-[260px]" data-testid="select-list-activity">
                   <TrendingUp className="h-4 w-4 xl:mr-2 flex-shrink-0" />
@@ -1308,7 +1457,6 @@ export default function Reservations() {
                 <SelectContent>
                   <SelectItem value="all">Tüm Aktiviteler</SelectItem>
                   {(activities || []).map(a => {
-                    // Calculate occupancy for current month for this activity
                     const monthStart = startOfMonth(currentDate);
                     const monthEnd = endOfMonth(currentDate);
                     const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
