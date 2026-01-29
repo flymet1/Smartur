@@ -788,13 +788,13 @@ export default function WebSite() {
             <TabsContent value="pages" className="mt-6">
               <Tabs value={activePagesTab} onValueChange={setActivePagesTab}>
                 <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 mb-6">
-                  <TabsTrigger value="sections" className="gap-1" data-testid="tab-sections">
-                    <Layers className="h-4 w-4" />
-                    <span className="hidden sm:inline">Anasayfa</span>
-                  </TabsTrigger>
                   <TabsTrigger value="about" className="gap-1" data-testid="tab-about">
                     <Info className="h-4 w-4" />
                     <span className="hidden sm:inline">Hakkımızda</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="sections" className="gap-1" data-testid="tab-sections">
+                    <Layers className="h-4 w-4" />
+                    <span className="hidden sm:inline">Anasayfa</span>
                   </TabsTrigger>
                   <TabsTrigger value="contact" className="gap-1" data-testid="tab-contact">
                     <MessageSquare className="h-4 w-4" />
@@ -1099,6 +1099,19 @@ export default function WebSite() {
 
                 <TabsContent value="sections">
                   <div className="space-y-6">
+                    {/* Anasayfa Bölümleri */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Anasayfa Bölümleri</CardTitle>
+                        <CardDescription>
+                          Anasayfada gösterilecek aktivite kategorilerini yönetin
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <HomepageSectionsManager />
+                      </CardContent>
+                    </Card>
+
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -1461,7 +1474,7 @@ export default function WebSite() {
                               Henüz promosyon kutusu eklenmemiş
                             </p>
                           ) : (
-                            <div className="space-y-2">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                               {displayedPromoBoxes.map((box, index) => (
                                 <Collapsible key={box.id || index} defaultOpen={false}>
                                   <Card className="overflow-hidden">
@@ -1958,18 +1971,6 @@ export default function WebSite() {
                       </CardContent>
                     </Card>
 
-                    {/* Anasayfa Bölümleri */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Anasayfa Bölümleri</CardTitle>
-                        <CardDescription>
-                          Anasayfada gösterilecek aktivite kategorilerini yönetin
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <HomepageSectionsManager />
-                      </CardContent>
-                    </Card>
                   </div>
                 </TabsContent>
               </Tabs>
