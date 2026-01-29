@@ -45,6 +45,8 @@ import type { CapacitySlot } from "@/hooks/use-capacity";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { MoreVertical } from "lucide-react";
 
 type ViewMode = 'day' | 'week' | 'month' | 'timeline';
 
@@ -1118,56 +1120,126 @@ export default function CalendarPage() {
     <div className="flex min-h-screen bg-muted/20">
       <Sidebar />
       <main className="flex-1 xl:ml-64 p-4 pt-16 xl:pt-20 xl:px-8 xl:pb-8 pb-24 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold" data-testid="text-page-title">Kapasite</h1>
-            <p className="text-muted-foreground mt-1">Müsaitlik durumunu yönetin</p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" data-testid="button-date-picker">
-                  <CalendarDays className="w-4 h-4 mr-2" />
-                  {format(date, "d MMMM yyyy", { locale: tr })}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <CalendarComponent
-                  mode="single"
-                  selected={date}
-                  onSelect={(d) => d && setDate(d)}
-                  locale={tr}
-                />
-              </PopoverContent>
-            </Popover>
-            <Select value={activityFilter} onValueChange={setActivityFilter}>
-              <SelectTrigger className="w-[120px] sm:w-[180px] text-xs sm:text-sm" data-testid="select-activity-filter">
-                <Filter className="w-4 h-4 sm:mr-2" />
-                <SelectValue placeholder="Aktivite" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tüm Aktiviteler</SelectItem>
-                {activities?.map(a => (
-                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" asChild data-testid="button-holidays">
-              <Link href="/holidays">
-                <PartyPopper className="w-4 h-4 mr-2" />
-                Tatiller
-              </Link>
-            </Button>
-            <BulkCapacityDialog activities={activities || []} />
-            <AddCapacityDialog />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={handlePrintReport}>
-                  <FileText className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>PDF Raporu</TooltipContent>
-            </Tooltip>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-page-title">Kapasite</h1>
+              <p className="text-muted-foreground text-sm mt-1">Müsaitlik durumunu yönetin</p>
+            </div>
+            
+            {/* Mobile: Compact actions */}
+            <div className="flex md:hidden items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9" data-testid="button-date-picker-mobile">
+                    <CalendarDays className="w-4 h-4 mr-1.5" />
+                    <span className="text-xs">{format(date, "d MMM", { locale: tr })}</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <CalendarComponent
+                    mode="single"
+                    selected={date}
+                    onSelect={(d) => d && setDate(d)}
+                    locale={tr}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-xl">
+                  <SheetHeader className="pb-4 border-b">
+                    <SheetTitle>Kapasite Ayarları</SheetTitle>
+                  </SheetHeader>
+                  <div className="py-4 space-y-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Aktivite Filtresi</Label>
+                      <Select value={activityFilter} onValueChange={setActivityFilter}>
+                        <SelectTrigger className="w-full h-12">
+                          <SelectValue placeholder="Aktivite" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tüm Aktiviteler</SelectItem>
+                          {activities?.map(a => (
+                            <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <Button variant="outline" asChild className="h-12">
+                        <Link href="/holidays">
+                          <PartyPopper className="w-4 h-4 mr-2" />
+                          Tatiller
+                        </Link>
+                      </Button>
+                      <Button variant="outline" className="h-12" onClick={handlePrintReport}>
+                        <FileText className="w-4 h-4 mr-2" />
+                        PDF Raporu
+                      </Button>
+                    </div>
+                    <div className="pt-2">
+                      <BulkCapacityDialog activities={activities || []} />
+                    </div>
+                    <div>
+                      <AddCapacityDialog />
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+            
+            {/* Desktop: Full actions */}
+            <div className="hidden md:flex items-center gap-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" data-testid="button-date-picker">
+                    <CalendarDays className="w-4 h-4 mr-2" />
+                    {format(date, "d MMMM yyyy", { locale: tr })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <CalendarComponent
+                    mode="single"
+                    selected={date}
+                    onSelect={(d) => d && setDate(d)}
+                    locale={tr}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Select value={activityFilter} onValueChange={setActivityFilter}>
+                <SelectTrigger className="w-[180px]" data-testid="select-activity-filter">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Aktivite" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tüm Aktiviteler</SelectItem>
+                  {activities?.map(a => (
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" asChild data-testid="button-holidays">
+                <Link href="/holidays">
+                  <PartyPopper className="w-4 h-4 mr-2" />
+                  Tatiller
+                </Link>
+              </Button>
+              <BulkCapacityDialog activities={activities || []} />
+              <AddCapacityDialog />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={handlePrintReport}>
+                    <FileText className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>PDF Raporu</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </div>
 
