@@ -1322,7 +1322,7 @@ export default function Reservations() {
               <Sheet>
                 <SheetTrigger asChild>
                   <Button 
-                    variant={statusFilter !== 'all' || activityFilter !== 'all' || sourceFilter !== 'all' || agencyFilter !== 'all' ? "default" : "outline"}
+                    variant={statusFilter !== 'all' || activityFilter !== 'all' || sourceFilter !== 'all' || agencyFilter !== 'all' || packageTourFilter !== 'all' ? "default" : "outline"}
                     size="icon"
                     className="flex-shrink-0"
                   >
@@ -1387,6 +1387,21 @@ export default function Reservations() {
                       </Select>
                     </div>
                     <div className="space-y-2">
+                      <Label className="text-sm font-medium">Paket Tur</Label>
+                      <Select value={packageTourFilter} onValueChange={setPackageTourFilter}>
+                        <SelectTrigger className="w-full h-12">
+                          <SelectValue placeholder="Paket Tur" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tüm Paketler</SelectItem>
+                          <SelectItem value="none">Paket Yok</SelectItem>
+                          {packageTours.map(p => (
+                            <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
                       <Label className="text-sm font-medium">Kaynak</Label>
                       <Select value={sourceFilter} onValueChange={setSourceFilter}>
                         <SelectTrigger className="w-full h-12">
@@ -1441,6 +1456,7 @@ export default function Reservations() {
                       onClick={() => {
                         setStatusFilter("all");
                         setActivityFilter("all");
+                        setPackageTourFilter("all");
                         setSourceFilter("all");
                         setAgencyFilter("all");
                         setPriceMinFilter("");
@@ -2646,63 +2662,6 @@ function BigCalendar({
                 />
               </PopoverContent>
             </Popover>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button 
-                  variant={activityFilter !== 'all' || packageTourFilter !== 'all' ? "default" : "outline"} 
-                  size="icon" 
-                  className="h-9 w-9"
-                >
-                  <Filter className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="h-auto max-h-[70vh] rounded-t-xl">
-                <SheetHeader className="pb-4 border-b">
-                  <SheetTitle className="flex items-center gap-2">
-                    <Filter className="h-5 w-5" />
-                    Takvim Filtreleri
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="py-4 space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Aktivite</Label>
-                    <Select value={activityFilter} onValueChange={onActivityFilterChange}>
-                      <SelectTrigger className="w-full h-12">
-                        <SelectValue placeholder="Aktivite" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tüm Aktiviteler</SelectItem>
-                        {activities.map(a => (
-                          <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Paket Tur</Label>
-                    <Select value={packageTourFilter} onValueChange={onPackageTourFilterChange}>
-                      <SelectTrigger className="w-full h-12">
-                        <SelectValue placeholder="Paket Tur" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tüm Paketler</SelectItem>
-                        <SelectItem value="none">Paket Yok</SelectItem>
-                        {packageTours.map(p => (
-                          <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full h-10"
-                    onClick={onGoToToday}
-                  >
-                    Bugüne Git
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
           <div className="flex border rounded-md w-full">
             <Button
