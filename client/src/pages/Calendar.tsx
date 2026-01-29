@@ -1290,13 +1290,13 @@ export default function CalendarPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <span className="w-1.5 h-6 bg-primary rounded-full"></span>
                 {format(date, "d MMMM yyyy, EEEE", { locale: tr })}
               </h3>
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-                <TabsList>
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-full">
+                <TabsList className="w-full grid grid-cols-3">
                   <TabsTrigger value="day" data-testid="tab-day-view">
                     <LayoutGrid className="w-4 h-4 mr-1" />
                     Gün
@@ -1307,7 +1307,8 @@ export default function CalendarPage() {
                   </TabsTrigger>
                   <TabsTrigger value="timeline" data-testid="tab-timeline-view">
                     <Clock className="w-4 h-4 mr-1" />
-                    Zaman Çizelgesi
+                    <span className="hidden sm:inline">Zaman Çizelgesi</span>
+                    <span className="sm:hidden">Çizelge</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>

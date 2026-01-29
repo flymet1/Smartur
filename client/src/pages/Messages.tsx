@@ -369,15 +369,15 @@ export default function Messages() {
 
         {/* Analytics Section */}
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-semibold">Mesaj Analizi</h2>
             </div>
-            <Tabs value={analyticsPeriod} onValueChange={(v) => setAnalyticsPeriod(v as AnalyticsPeriod)}>
-              <TabsList>
+            <Tabs value={analyticsPeriod} onValueChange={(v) => setAnalyticsPeriod(v as AnalyticsPeriod)} className="w-full">
+              <TabsList className="w-full grid grid-cols-3">
                 <TabsTrigger value="daily" data-testid="tab-analytics-daily">Günlük</TabsTrigger>
-                <TabsTrigger value="weekly" data-testid="tab-analytics-weekly">Haftalik</TabsTrigger>
+                <TabsTrigger value="weekly" data-testid="tab-analytics-weekly">Haftalık</TabsTrigger>
                 <TabsTrigger value="monthly" data-testid="tab-analytics-monthly">Aylık</TabsTrigger>
               </TabsList>
             </Tabs>

@@ -378,10 +378,10 @@ export default function Dashboard() {
               Hoş geldiniz! Hızlı erişim menüsü ile işlemlerinizi yönetin.
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Link href={`/reservations?date=${today}&view=list`}>
-              <Button size="lg" data-testid="button-today-reservations">
-                <CalendarDays className="w-5 h-5 mr-2" />
+          <div className="flex gap-2 flex-wrap w-full md:w-auto">
+            <Link href={`/reservations?date=${today}&view=list`} className="w-full md:w-auto">
+              <Button className="w-full md:w-auto" data-testid="button-today-reservations">
+                <CalendarDays className="w-4 h-4 mr-2" />
                 Bugünün Rezervasyonları
                 {todayReservations.length > 0 && (
                   <Badge variant="secondary" className="ml-2">
