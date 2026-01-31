@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useMemo } from "react";
@@ -273,7 +275,7 @@ export default function Messages() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold font-display">WhatsApp</h1>
-              <p className="text-muted-foreground text-sm mt-1">WhatsApp bot görüşmeleri</p>
+              <p className="text-muted-foreground text-sm mt-1">WhatsApp bot görüşmeleri ve test</p>
             </div>
             
             {/* Mobile: Compact search + filter button */}
@@ -366,6 +368,9 @@ export default function Messages() {
             </div>
           </div>
         </div>
+
+        {/* Bot Test Section */}
+        <BotTestSection />
 
         {/* Analytics Section */}
         <div className="space-y-4">
@@ -711,5 +716,212 @@ export default function Messages() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// === BOT TEST SECTION ===
+function BotTestSection() {
+  const { toast } = useToast();
+  const [phone, setPhone] = useState("+90532");
+  const [message, setMessage] = useState("");
+  const [history, setHistory] = useState<Array<{ role: string; content: string }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSend = async () => {
+    if (!phone || !message.trim()) {
+      toast({ title: "Hata", description: "Telefon ve mesaj gereklidir.", variant: "destructive" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/webhooks/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          From: phone,
+          Body: message,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Bot yanit veremedi");
+
+      const responseText = await res.text();
+      
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(responseText, "text/xml");
+      const messageContent = xmlDoc.getElementsByTagName("Message")[0]?.textContent || responseText;
+
+      setHistory([
+        ...history,
+        { role: "user", content: message },
+        { role: "assistant", content: messageContent },
+      ]);
+      setMessage("");
+      
+      toast({ title: "Başarılı", description: "Bot yanıt verdi." });
+    } catch (error) {
+      toast({ 
+        title: "Hata", 
+        description: "Bot test edilirken hata oluştu.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg">Bot Test Aracı</CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1"></span>
+                  Aktif
+                </Badge>
+              </div>
+              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Chat Area */}
+              <div className="lg:col-span-2 space-y-4">
+                {/* Chat Messages */}
+                <div className="border rounded-lg p-4 h-64 overflow-y-auto space-y-3 bg-muted/30">
+                  {history.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-center text-muted-foreground">
+                      <div>
+                        <p className="text-sm font-semibold mb-1">Henüz mesaj yok</p>
+                        <p className="text-xs">Botu test etmek için aşağıda bir mesaj yazın</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {history.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
+                              msg.role === "user"
+                                ? "bg-primary text-primary-foreground rounded-br-none"
+                                : "bg-muted text-foreground rounded-bl-none"
+                            }`}
+                          >
+                            {msg.content}
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+
+                {/* Input Area */}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="test-phone" className="text-xs">Telefon</Label>
+                      <Input
+                        id="test-phone"
+                        placeholder="+905321234567"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="text-sm"
+                        data-testid="input-bot-test-phone"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        onClick={handleSend}
+                        disabled={loading}
+                        className="w-full"
+                        data-testid="button-bot-test-send"
+                      >
+                        {loading ? "Gönderiliyor..." : "Gönder"}
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="test-message" className="text-xs">Mesaj</Label>
+                    <Textarea
+                      id="test-message"
+                      placeholder="Botunuza göndermek istediğiniz mesajı yazın..."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && e.ctrlKey) {
+                          handleSend();
+                        }
+                      }}
+                      className="h-16 text-sm"
+                      data-testid="input-bot-test-message"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bot Info */}
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    Bot Bilgisi
+                  </h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Model</span>
+                      <Badge variant="secondary" className="text-xs">Gemini 2.5 Flash</Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Dil</span>
+                      <span className="font-medium">Türkçe / English</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Durum</span>
+                      <span className="flex items-center gap-1 font-medium text-green-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                        Aktif
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-3 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                  <h4 className="font-bold text-blue-900 dark:text-blue-100 text-xs mb-2">İpuçları</h4>
+                  <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                    <li>Türkçe veya İngilizce soru sorun</li>
+                    <li>Bot aktiviteleri ve kapasiteyi görebilir</li>
+                    <li>Rezervasyon yapabilir</li>
+                    <li>Ctrl+Enter ile hızlı gönder</li>
+                  </ul>
+                </div>
+
+                {history.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-xs"
+                    onClick={() => setHistory([])}
+                    data-testid="button-clear-chat"
+                  >
+                    Sohbeti Temizle
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
