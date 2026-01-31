@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, HelpCircle, Bot, Globe, Languages } from "lucide-react";
+import { Plus, Trash2, HelpCircle, Bot, Globe, Languages, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -38,6 +38,7 @@ export function stringifyFaq(faq: FaqItem[]): string {
 
 export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProps) {
   const [openEnglish, setOpenEnglish] = useState<Record<number, boolean>>({});
+  const [translatingIndex, setTranslatingIndex] = useState<number | null>(null);
 
   const addFaq = () => {
     onChange([{ question: "", answer: "", questionEn: "", answerEn: "", botOnly: false }, ...faq]);
@@ -53,8 +54,52 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
     onChange(newFaq);
   };
 
-  const toggleEnglish = (index: number) => {
-    setOpenEnglish(prev => ({ ...prev, [index]: !prev[index] }));
+  const toggleEnglish = async (index: number) => {
+    const isOpening = !openEnglish[index];
+    setOpenEnglish(prev => ({ ...prev, [index]: isOpening }));
+    
+    // Auto-translate when opening if Turkish text exists and English is empty
+    if (isOpening) {
+      const item = faq[index];
+      if (item.question.trim() && !item.questionEn?.trim()) {
+        setTranslatingIndex(index);
+        try {
+          const translatePromises = [];
+          if (item.question.trim()) {
+            translatePromises.push(
+              fetch("/api/translate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: item.question.trim(), targetLang: "en" })
+              }).then(r => r.json()).then(d => ({ type: "question", translation: d.translation }))
+            );
+          }
+          if (item.answer.trim()) {
+            translatePromises.push(
+              fetch("/api/translate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: item.answer.trim(), targetLang: "en" })
+              }).then(r => r.json()).then(d => ({ type: "answer", translation: d.translation }))
+            );
+          }
+          const results = await Promise.all(translatePromises);
+          const newFaq = [...faq];
+          for (const result of results) {
+            if (result.type === "question" && result.translation) {
+              newFaq[index] = { ...newFaq[index], questionEn: result.translation };
+            } else if (result.type === "answer" && result.translation) {
+              newFaq[index] = { ...newFaq[index], answerEn: result.translation };
+            }
+          }
+          onChange(newFaq);
+        } catch (err) {
+          console.error("Translation error:", err);
+        } finally {
+          setTranslatingIndex(null);
+        }
+      }
+    }
   };
 
   return (
@@ -121,10 +166,16 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
                     variant="ghost"
                     size="sm"
                     className="w-full justify-start text-muted-foreground hover:text-foreground"
+                    disabled={translatingIndex === idx}
+                    data-testid={`${testIdPrefix}-toggle-english-${idx}`}
                   >
-                    <Languages className="w-4 h-4 mr-2" />
-                    {openEnglish[idx] ? "İngilizce Çeviriyi Gizle" : "İngilizce Çeviri Ekle"}
-                    {(item.questionEn || item.answerEn) && (
+                    {translatingIndex === idx ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Languages className="w-4 h-4 mr-2" />
+                    )}
+                    {translatingIndex === idx ? "Çevriliyor..." : openEnglish[idx] ? "İngilizce Çeviriyi Gizle" : "İngilizce Çeviri Ekle"}
+                    {(item.questionEn || item.answerEn) && translatingIndex !== idx && (
                       <span className="ml-2 text-xs text-green-600 dark:text-green-400">(Ekli)</span>
                     )}
                   </Button>

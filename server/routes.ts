@@ -8323,6 +8323,36 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
     }
   });
 
+  // Translation API endpoint - Translate Turkish text to English using Gemini AI
+  app.post("/api/translate", requireAuth, async (req, res) => {
+    try {
+      const { text, targetLang = "en" } = req.body;
+      
+      if (!text || typeof text !== 'string' || !text.trim()) {
+        return res.status(400).json({ error: "Çevrilecek metin gerekli" });
+      }
+      
+      if (!ai) {
+        return res.status(503).json({ error: "AI servisi kullanılamıyor" });
+      }
+      
+      const prompt = targetLang === "en" 
+        ? `Translate the following Turkish text to English. Only return the translation, nothing else:\n\n${text.trim()}`
+        : `Translate the following English text to Turkish. Only return the translation, nothing else:\n\n${text.trim()}`;
+      
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
+      });
+      
+      const translation = result.text?.trim() || "";
+      res.json({ translation });
+    } catch (err) {
+      console.error("Translation error:", err);
+      res.status(500).json({ error: "Çeviri yapılamadı" });
+    }
+  });
+
   // Verify admin token
   app.post("/api/admin/verify", async (req, res) => {
     try {

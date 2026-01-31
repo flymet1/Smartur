@@ -115,6 +115,7 @@ export default function Settings() {
   const [newFaqQuestionEn, setNewFaqQuestionEn] = useState("");
   const [newFaqAnswerEn, setNewFaqAnswerEn] = useState("");
   const [showNewFaqEnglish, setShowNewFaqEnglish] = useState(false);
+  const [isTranslatingFaq, setIsTranslatingFaq] = useState(false);
   const [isSavingGeneralFaq, setIsSavingGeneralFaq] = useState(false);
   
   // Gmail Settings (legacy - kept for data migration)
@@ -1731,11 +1732,60 @@ export default function Settings() {
                             variant="ghost"
                             size="sm"
                             className="w-full justify-start text-muted-foreground hover:text-foreground"
-                            onClick={() => setShowNewFaqEnglish(!showNewFaqEnglish)}
+                            onClick={async () => {
+                              if (!showNewFaqEnglish) {
+                                setShowNewFaqEnglish(true);
+                                // Auto-translate if Turkish text exists and English is empty
+                                if (newFaqQuestion.trim() && !newFaqQuestionEn.trim()) {
+                                  setIsTranslatingFaq(true);
+                                  try {
+                                    // Translate question and answer in parallel
+                                    const translatePromises = [];
+                                    if (newFaqQuestion.trim()) {
+                                      translatePromises.push(
+                                        fetch("/api/translate", {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ text: newFaqQuestion.trim(), targetLang: "en" })
+                                        }).then(r => r.json()).then(d => ({ type: "question", translation: d.translation }))
+                                      );
+                                    }
+                                    if (newFaqAnswer.trim()) {
+                                      translatePromises.push(
+                                        fetch("/api/translate", {
+                                          method: "POST",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ text: newFaqAnswer.trim(), targetLang: "en" })
+                                        }).then(r => r.json()).then(d => ({ type: "answer", translation: d.translation }))
+                                      );
+                                    }
+                                    const results = await Promise.all(translatePromises);
+                                    for (const result of results) {
+                                      if (result.type === "question" && result.translation) {
+                                        setNewFaqQuestionEn(result.translation);
+                                      } else if (result.type === "answer" && result.translation) {
+                                        setNewFaqAnswerEn(result.translation);
+                                      }
+                                    }
+                                  } catch (err) {
+                                    console.error("Translation error:", err);
+                                  } finally {
+                                    setIsTranslatingFaq(false);
+                                  }
+                                }
+                              } else {
+                                setShowNewFaqEnglish(false);
+                              }
+                            }}
+                            disabled={isTranslatingFaq}
                             data-testid="button-toggle-general-faq-english"
                           >
-                            <Languages className="w-4 h-4 mr-2" />
-                            {showNewFaqEnglish ? "İngilizce Çeviriyi Gizle" : "İngilizce Çeviri Ekle (Opsiyonel)"}
+                            {isTranslatingFaq ? (
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <Languages className="w-4 h-4 mr-2" />
+                            )}
+                            {isTranslatingFaq ? "Çevriliyor..." : showNewFaqEnglish ? "İngilizce Çeviriyi Gizle" : "İngilizce Çeviri Ekle (Opsiyonel)"}
                           </Button>
                           
                           {showNewFaqEnglish && (
