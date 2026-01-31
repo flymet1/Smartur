@@ -402,6 +402,25 @@ export const customerRequests = pgTable("customer_requests", {
   processedAt: timestamp("processed_at"),
 });
 
+// Cevaplanamayan Sorular (Bot "bilmiyorum" dediğinde kaydedilir)
+export const unansweredQuestions = pgTable("unanswered_questions", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
+  customerPhone: text("customer_phone").notNull(), // Müşteri telefonu
+  customerQuestion: text("customer_question").notNull(), // Müşterinin sorusu
+  botResponse: text("bot_response"), // Botun verdiği cevap
+  conversationContext: text("conversation_context"), // Önceki 3-4 mesaj (JSON)
+  status: text("status").default("pending"), // pending, handled, ignored
+  handledAt: timestamp("handled_at"),
+  handledBy: text("handled_by"), // İşleyen admin
+  notes: text("notes"), // Admin notu
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUnansweredQuestionSchema = createInsertSchema(unansweredQuestions).omit({ id: true, createdAt: true });
+export type InsertUnansweredQuestion = z.infer<typeof insertUnansweredQuestionSchema>;
+export type UnansweredQuestion = typeof unansweredQuestions.$inferSelect;
+
 export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").references(() => tenants.id),

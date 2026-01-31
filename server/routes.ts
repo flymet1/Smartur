@@ -6218,6 +6218,27 @@ Rezervasyon takip: {takip_linki}
         await storage.markHumanIntervention(From, true);
       }
       
+      // Check if bot couldn't answer (save for learning)
+      const responseLC = aiResponse.toLowerCase();
+      const couldntAnswer = responseLC.includes('bilmiyorum') || 
+                            responseLC.includes('net bilgim yok') ||
+                            responseLC.includes('aramanızı öner') ||
+                            responseLC.includes('bu konuda bilgim') ||
+                            responseLC.includes('cevap veremiyorum');
+      
+      if (couldntAnswer && tenantId && Body) {
+        // Save unanswered question for admin review
+        const context = history.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n');
+        await storage.createUnansweredQuestion({
+          tenantId,
+          customerPhone: From,
+          customerQuestion: Body,
+          botResponse: aiResponse,
+          conversationContext: context,
+          status: 'pending'
+        });
+      }
+      
       await storage.addMessage({ phone: From, content: aiResponse, role: "assistant", tenantId });
       res.type('text/xml');
       res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${aiResponse}</Message></Response>`);
@@ -6404,6 +6425,27 @@ Rezervasyon takip: {takip_linki}
         // Create support request (only if tenant is identified)
         await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
+      }
+      
+      // Check if bot couldn't answer (save for learning)
+      const responseLC = aiResponse.toLowerCase();
+      const couldntAnswer = responseLC.includes('bilmiyorum') || 
+                            responseLC.includes('net bilgim yok') ||
+                            responseLC.includes('aramanızı öner') ||
+                            responseLC.includes('bu konuda bilgim') ||
+                            responseLC.includes('cevap veremiyorum');
+      
+      if (couldntAnswer && tenantId && Body) {
+        // Save unanswered question for admin review
+        const context = history.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n');
+        await storage.createUnansweredQuestion({
+          tenantId,
+          customerPhone: From,
+          customerQuestion: Body,
+          botResponse: aiResponse,
+          conversationContext: context,
+          status: 'pending'
+        });
       }
       
       // Save AI response (with tenantId if known)
@@ -8970,6 +9012,57 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       res.json(logs);
     } catch (err) {
       res.status(500).json({ error: "Loglar alınamadı" });
+    }
+  });
+
+  // === Unanswered Questions (Bot Öğrenme Sistemi) ===
+  app.get("/api/unanswered-questions", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const status = req.query.status as 'pending' | 'handled' | 'ignored' | undefined;
+      const questions = await storage.getUnansweredQuestions(tenantId, status);
+      res.json(questions);
+    } catch (err) {
+      res.status(500).json({ error: "Cevaplanamayan sorular alınamadı" });
+    }
+  });
+
+  app.patch("/api/unanswered-questions/:id", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum gerekli" });
+      }
+      const id = parseInt(req.params.id);
+      const { status, notes, handledBy } = req.body;
+      
+      const updateData: any = { status };
+      if (notes !== undefined) updateData.notes = notes;
+      if (handledBy !== undefined) updateData.handledBy = handledBy;
+      if (status === 'handled' || status === 'ignored') {
+        updateData.handledAt = new Date();
+      }
+      
+      const updated = await storage.updateUnansweredQuestion(id, updateData);
+      res.json(updated);
+    } catch (err) {
+      res.status(500).json({ error: "Soru güncellenemedi" });
+    }
+  });
+
+  app.get("/api/unanswered-questions/count", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.json({ count: 0 });
+      }
+      const pending = await storage.getUnansweredQuestions(tenantId, 'pending');
+      res.json({ count: pending.length });
+    } catch (err) {
+      res.json({ count: 0 });
     }
   });
 

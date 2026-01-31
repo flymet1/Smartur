@@ -10,7 +10,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useMemo } from "react";
-import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search, ExternalLink, Users, TrendingUp, HeadphonesIcon, BarChart3, Bot, Percent, Send, Loader2 } from "lucide-react";
+import { Check, User, Phone, Calendar, MessageCircle, Filter, AlertTriangle, UserX, Search, ExternalLink, Users, TrendingUp, HeadphonesIcon, BarChart3, Bot, Percent, Send, Loader2, HelpCircle, CheckCircle, X } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -371,6 +371,9 @@ export default function Messages() {
 
         {/* Bot Test Section */}
         <BotTestSection />
+
+        {/* Unanswered Questions Section */}
+        <UnansweredQuestionsSection />
 
         {/* Analytics Section */}
         <div className="space-y-4">
@@ -920,6 +923,153 @@ function BotTestSection() {
                   </Button>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+}
+
+// === UNANSWERED QUESTIONS SECTION ===
+interface UnansweredQuestion {
+  id: number;
+  tenantId: number;
+  customerPhone: string;
+  customerQuestion: string;
+  botResponse: string | null;
+  conversationContext: string | null;
+  status: 'pending' | 'handled' | 'ignored';
+  handledAt: string | null;
+  handledBy: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+function UnansweredQuestionsSection() {
+  const { toast } = useToast();
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const { data: questions = [], isLoading, refetch } = useQuery<UnansweredQuestion[]>({
+    queryKey: ['/api/unanswered-questions', 'pending'],
+    queryFn: async () => {
+      const res = await fetch('/api/unanswered-questions?status=pending', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    }
+  });
+
+  const { data: countData } = useQuery<{ count: number }>({
+    queryKey: ['/api/unanswered-questions/count'],
+    refetchInterval: 30000
+  });
+
+  const handleMark = async (id: number, status: 'handled' | 'ignored') => {
+    try {
+      const res = await fetch(`/api/unanswered-questions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status })
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      toast({ title: status === 'handled' ? 'İşlendi' : 'Yoksayıldı', description: 'Soru güncellendi.' });
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['/api/unanswered-questions/count'] });
+    } catch {
+      toast({ title: 'Hata', description: 'Güncellenemedi.', variant: 'destructive' });
+    }
+  };
+
+  const pendingCount = countData?.count || questions.length;
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card className="border-orange-200 dark:border-orange-800">
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="h-5 w-5 text-orange-500" />
+                <CardTitle className="text-lg">Cevaplanamayan Sorular</CardTitle>
+                {pendingCount > 0 && (
+                  <Badge variant="destructive" className="text-xs">{pendingCount}</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  {isOpen ? 'Kapat' : 'Aç'}
+                </Badge>
+                {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            {isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : questions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <HelpCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Cevaplanamayan soru bulunmuyor.</p>
+                <p className="text-xs mt-1">Bot "bilmiyorum" dediğinde buraya düşecek.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {questions.map((q) => (
+                  <div key={q.id} className="border rounded-lg p-3 bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground font-mono">{q.customerPhone}</span>
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <span className="text-xs text-muted-foreground">{new Date(q.createdAt).toLocaleDateString('tr-TR')}</span>
+                        </div>
+                        <p className="font-medium text-sm mb-1">"{q.customerQuestion}"</p>
+                        {q.botResponse && (
+                          <p className="text-xs text-muted-foreground italic">Bot: {q.botResponse.substring(0, 100)}...</p>
+                        )}
+                        {q.conversationContext && (
+                          <details className="mt-2">
+                            <summary className="text-xs text-blue-600 cursor-pointer hover:underline">Konuşma bağlamı</summary>
+                            <pre className="text-xs mt-1 p-2 bg-muted rounded whitespace-pre-wrap">{q.conversationContext}</pre>
+                          </details>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-7 px-2 text-green-600 hover:bg-green-50 hover:text-green-700"
+                          onClick={() => handleMark(q.id, 'handled')}
+                          title="FAQ'a ekledim olarak işaretle"
+                          data-testid={`button-handle-${q.id}`}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="h-7 px-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                          onClick={() => handleMark(q.id, 'ignored')}
+                          title="Yoksay"
+                          data-testid={`button-ignore-${q.id}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-3 text-xs text-muted-foreground border-t pt-3">
+              <p><strong>Nasıl kullanılır:</strong> Botun cevaplayamadığı sorular burada listelenir. İlgili FAQ'a cevabı ekledikten sonra yeşil tik ile "işlendi" işaretleyin.</p>
             </div>
           </CardContent>
         </CollapsibleContent>

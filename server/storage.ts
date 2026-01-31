@@ -26,6 +26,7 @@ import {
   reservationRequests,
   requestMessageTemplates,
   dailyMessageUsage,
+  unansweredQuestions,
   type Activity,
   type InsertActivity,
   type Capacity,
@@ -70,6 +71,8 @@ import {
   type InsertAutoResponse,
   type CustomerRequest,
   type InsertCustomerRequest,
+  type UnansweredQuestion,
+  type InsertUnansweredQuestion,
   type ReservationRequest,
   type InsertReservationRequest,
   type RequestMessageTemplate,
@@ -228,6 +231,11 @@ export interface IStorage {
   createSupportRequest(request: InsertSupportRequest): Promise<SupportRequest>;
   resolveSupportRequest(id: number): Promise<SupportRequest>;
   getAllSupportRequests(status?: 'open' | 'resolved', tenantId?: number): Promise<SupportRequest[]>;
+
+  // Unanswered Questions (Bot öğrenme sistemi)
+  getUnansweredQuestions(tenantId: number, status?: 'pending' | 'handled' | 'ignored'): Promise<UnansweredQuestion[]>;
+  createUnansweredQuestion(question: InsertUnansweredQuestion): Promise<UnansweredQuestion>;
+  updateUnansweredQuestion(id: number, data: Partial<InsertUnansweredQuestion>): Promise<UnansweredQuestion>;
 
   // Settings (tenant-scoped)
   getSetting(key: string, tenantId?: number): Promise<string | undefined>;
@@ -1342,6 +1350,30 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(supportRequests.createdAt));
     }
     return await db.select().from(supportRequests).orderBy(desc(supportRequests.createdAt));
+  }
+
+  // Unanswered Questions (Bot öğrenme sistemi)
+  async getUnansweredQuestions(tenantId: number, status?: 'pending' | 'handled' | 'ignored'): Promise<UnansweredQuestion[]> {
+    const conditions = [eq(unansweredQuestions.tenantId, tenantId)];
+    if (status) {
+      conditions.push(eq(unansweredQuestions.status, status));
+    }
+    return await db.select().from(unansweredQuestions)
+      .where(and(...conditions))
+      .orderBy(desc(unansweredQuestions.createdAt));
+  }
+
+  async createUnansweredQuestion(question: InsertUnansweredQuestion): Promise<UnansweredQuestion> {
+    const [result] = await db.insert(unansweredQuestions).values(question).returning();
+    return result;
+  }
+
+  async updateUnansweredQuestion(id: number, data: Partial<InsertUnansweredQuestion>): Promise<UnansweredQuestion> {
+    const [result] = await db.update(unansweredQuestions)
+      .set(data)
+      .where(eq(unansweredQuestions.id, id))
+      .returning();
+    return result;
   }
 
   // Settings (tenant-scoped)
