@@ -6140,17 +6140,17 @@ Rezervasyon takip: {takip_linki}
       for (const dateStr of holidayDates) upcomingDates.add(dateStr);
       const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
       
-      // Get bot settings for this tenant
-      const botPrompt = await storage.getSetting('botPrompt');
-      const botAccessSetting = await storage.getSetting('botAccess');
+      // Get bot settings for this tenant (tenant-specific settings)
+      const botPrompt = await storage.getSetting('botPrompt', tenantId);
+      const botAccessSetting = await storage.getSetting('botAccess', tenantId);
       let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true };
       if (botAccessSetting) {
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
-      const botRules = await storage.getSetting('botRules');
-      const generalFaq = await storage.getSetting('generalFaq');
-      const partnerPrompt = await storage.getSetting('partner_prompt');
-      const viewerPrompt = await storage.getSetting('viewer_prompt');
+      const botRules = await storage.getSetting('botRules', tenantId);
+      const generalFaq = await storage.getSetting('generalFaq', tenantId);
+      const partnerPrompt = await storage.getSetting('partner_prompt', tenantId);
+      const viewerPrompt = await storage.getSetting('viewer_prompt', tenantId);
       
       // If bot is disabled, just log the message and don't respond
       if (botAccess.enabled === false) {
@@ -6188,7 +6188,7 @@ Rezervasyon takip: {takip_linki}
                          aiResponse.toLowerCase().includes('iletiyorum');
       
       if (needsHuman) {
-        await storage.createSupportRequest({ phone: From, status: 'open' });
+        await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
       }
       
@@ -6314,11 +6314,11 @@ Rezervasyon takip: {takip_linki}
       
       const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
       
-      // Get custom bot prompt from settings
-      const botPrompt = await storage.getSetting('botPrompt');
+      // Get custom bot prompt from settings (tenant-specific)
+      const botPrompt = await storage.getSetting('botPrompt', tenantId);
       
-      // Get bot access settings
-      const botAccessSetting = await storage.getSetting('botAccess');
+      // Get bot access settings (tenant-specific)
+      const botAccessSetting = await storage.getSetting('botAccess', tenantId);
       let botAccess: any = {
         enabled: true,
         activities: true,
@@ -6335,11 +6335,11 @@ Rezervasyon takip: {takip_linki}
         } catch {}
       }
       
-      // Get custom bot rules from settings
-      const botRules = await storage.getSetting('botRules');
+      // Get custom bot rules from settings (tenant-specific)
+      const botRules = await storage.getSetting('botRules', tenantId);
       
-      // Get general FAQ from settings
-      const generalFaq = await storage.getSetting('generalFaq');
+      // Get general FAQ from settings (tenant-specific)
+      const generalFaq = await storage.getSetting('generalFaq', tenantId);
       
       // If bot is disabled, just log the message and don't respond
       if (botAccess.enabled === false) {
@@ -6373,9 +6373,9 @@ Rezervasyon takip: {takip_linki}
                          aiResponse.toLowerCase().includes('müdahale') ||
                          aiResponse.toLowerCase().includes('iletiyorum');
       
-      if (needsHuman) {
-        // Create support request
-        await storage.createSupportRequest({ phone: From, status: 'open' });
+      if (needsHuman && tenantId) {
+        // Create support request (only if tenant is identified)
+        await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
       }
       
@@ -6436,15 +6436,15 @@ Rezervasyon takip: {takip_linki}
       
       const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
       
-      // Get bot settings
-      const botPrompt = await storage.getSetting('botPrompt');
-      const botAccessSetting = await storage.getSetting('botAccess');
+      // Get bot settings (tenant-specific)
+      const botPrompt = await storage.getSetting('botPrompt', tenantId);
+      const botAccessSetting = await storage.getSetting('botAccess', tenantId);
       let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true };
       if (botAccessSetting) {
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
-      const botRules = await storage.getSetting('botRules');
-      const generalFaq = await storage.getSetting('generalFaq');
+      const botRules = await storage.getSetting('botRules', tenantId);
+      const generalFaq = await storage.getSetting('generalFaq', tenantId);
       
       // Generate AI response (test mode - no escalation, no support requests)
       const aiResponse = await generateAIResponse(history, {
@@ -6712,11 +6712,13 @@ Sorularınız için bize bu numaradan yazabilirsiniz.`;
       const result = await twilioResponse.json();
       await logInfo('whatsapp', `WhatsApp bildirimi gönderildi: ${customerName} - ${activityName}`);
       
-      // Also save the message to conversation history
+      // Also save the message to conversation history (with tenantId from session)
+      const sessionTenantId = req.session?.tenantId;
       await storage.addMessage({
         phone: `whatsapp:+${formattedPhone}`,
         content: message,
-        role: "assistant"
+        role: "assistant",
+        tenantId: sessionTenantId || undefined
       });
       
       res.json({ success: true, messageSid: result.sid });
@@ -7007,7 +7009,8 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         await storage.addMessage({
           phone: `whatsapp:+${formattedPhone}`,
           content: message,
-          role: "assistant"
+          role: "assistant",
+          tenantId: tenantId || undefined
         });
         
         return res.json({ success: true, messageId: result.messages?.[0]?.id, provider: 'meta' });
@@ -7058,7 +7061,8 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       await storage.addMessage({
         phone: `whatsapp:+${formattedPhone}`,
         content: message,
-        role: "assistant"
+        role: "assistant",
+        tenantId: tenantId || undefined
       });
       
       res.json({ success: true, messageSid: result.sid, provider: 'twilio' });
