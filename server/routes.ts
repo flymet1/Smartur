@@ -826,6 +826,24 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
         }
       } catch {}
       
+      // Ödeme bilgileri
+      if (a.fullPaymentRequired) {
+        desc += `\n  Ödeme: Rezervasyon sırasında TAM ÖDEME gereklidir`;
+      } else if (a.requiresDeposit && a.depositAmount > 0) {
+        if (a.depositType === 'percentage') {
+          const depositTl = Math.round((a.price * a.depositAmount) / 100);
+          const remainingTl = a.price - depositTl;
+          desc += `\n  Ön Ödeme: %${a.depositAmount} (${depositTl} TL)`;
+          desc += `\n  Kalan Ödeme: ${remainingTl} TL (aktivite günü ödenir)`;
+        } else {
+          const remainingTl = a.price - a.depositAmount;
+          desc += `\n  Ön Ödeme: ${a.depositAmount} TL (sabit tutar)`;
+          desc += `\n  Kalan Ödeme: ${remainingTl} TL (aktivite günü ödenir)`;
+        }
+      } else {
+        desc += `\n  Ödeme: Ön ödeme zorunlu değil, aktivite günü ödeme yapılabilir`;
+      }
+      
       if (a.reservationLink) desc += `\n  TR Rezervasyon Linki: ${a.reservationLink}`;
       if (a.reservationLinkEn) desc += `\n  EN Reservation Link: ${a.reservationLinkEn}`;
       
