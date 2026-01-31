@@ -1306,35 +1306,41 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
       prompt += `Eğer sorulan konu aktivitelerle ilgili değilse, nazikçe yardımcı olamayacağını belirt.\n`;
   }
   
-  // Kapsamlı kurallar bölümü - DEFAULT_BOT_RULES eşdeğeri
-  prompt += `\n=== KRİTİK KURALLAR (MUTLAKA UYGULA) ===\n`;
-  prompt += `1. SADECE yukarıda verilen bilgilerden cevap ver - UYDURMAK YASAK\n`;
-  prompt += `2. BASİT BİLMİYORUM DURUMLARI - AKTARMA SORMA:\n`;
-  prompt += `   - "Bu hizmetimiz yok" → Sadece bilgi ver\n`;
-  prompt += `   - "O tarih dolu" → Alternatif öner\n`;
-  prompt += `   - "Fiyat bilgim yok" → Web sitesine yönlendir\n`;
-  prompt += `3. İNDİRİM TALEPLERİ - AKTARMA YAPMA:\n`;
-  prompt += `   - Kampanya varsa → Kampanyayı öner\n`;
-  prompt += `   - Kampanya yoksa → "Şu an aktif kampanyamız yok" de, yetkili aktarma YAPMA\n`;
-  prompt += `4. SADECE ŞUNLARDA AKTARMA SOR:\n`;
-  prompt += `   - Teknik sorun (ödeme hatası, sistem problemi)\n`;
-  prompt += `   - Takip linki çalışmıyor\n`;
-  prompt += `   - Müşteri aynı soruyu 2-3 kez sorup tatmin olmadıysa\n`;
-  prompt += `   - Ciddi şikayet varsa\n`;
-  prompt += `   → "Bu konuda size yardımcı olamadım. Sizi destek ekibine aktarmamı ister misiniz?"\n`;
-  prompt += `5. DOĞRUDAN AKTARMA: Müşteri "yetkili/operatör/müdür" isterse → "Talebinizi destek ekibine ilettim."\n`;
-  prompt += `6. Kısa ve net cevap ver, gereksiz uzatma\n`;
-  prompt += `7. DİL KURALI: İngilizce mesaja İngilizce, Türkçe mesaja Türkçe cevap ver\n`;
-  prompt += `8. FAQ SIRASI: Önce aktivite SSS'sine bak, sonra genel SSS'ye bak\n`;
-  prompt += `9. TRANSFER: Ücretsiz transfer varsa otomatik bildir, yoksa belirt\n`;
-  prompt += `10. EKSTRA: Video/fotoğraf paketleri için aktivite sayfasına yönlendir\n`;
-  prompt += `11. PAKET TUR: Paket tur sorularında içerikleri ve toplam fiyatı söyle\n`;
-  prompt += `\n⚠️ WHATSAPP REZERVASYON KURALI (KRİTİK) ⚠️\n`;
-  prompt += `- ASLA müşteriden isim, soyisim, telefon gibi bilgi toplama!\n`;
-  prompt += `- ASLA "bilgilerinizi alayım" deme!\n`;
-  prompt += `- Rezervasyon isterse → Sadece rezervasyon linkini gönder\n`;
-  prompt += `- DOĞRU: "Rezervasyon için şu linkten devam edebilirsiniz: [link]"\n`;
-  prompt += `- YANLIŞ: "Adınız ve soyadınızı alabilir miyim?"\n`;
+  // Kapsamlı kurallar bölümü - Custom veya varsayılan kuralları kullan
+  if (context.customSystemRules) {
+    prompt += `\n=== KRİTİK KURALLAR (ÖZELLEŞTIRILMIŞ) ===\n`;
+    prompt += context.customSystemRules;
+    prompt += `\n`;
+  } else {
+    prompt += `\n=== KRİTİK KURALLAR (MUTLAKA UYGULA) ===\n`;
+    prompt += `1. SADECE yukarıda verilen bilgilerden cevap ver - UYDURMAK YASAK\n`;
+    prompt += `2. BASİT BİLMİYORUM DURUMLARI - AKTARMA SORMA:\n`;
+    prompt += `   - "Bu hizmetimiz yok" → Sadece bilgi ver\n`;
+    prompt += `   - "O tarih dolu" → Alternatif öner\n`;
+    prompt += `   - "Fiyat bilgim yok" → Web sitesine yönlendir\n`;
+    prompt += `3. İNDİRİM TALEPLERİ - AKTARMA YAPMA:\n`;
+    prompt += `   - Kampanya varsa → Kampanyayı öner\n`;
+    prompt += `   - Kampanya yoksa → "Şu an aktif kampanyamız yok" de, yetkili aktarma YAPMA\n`;
+    prompt += `4. SADECE ŞUNLARDA AKTARMA SOR:\n`;
+    prompt += `   - Teknik sorun (ödeme hatası, sistem problemi)\n`;
+    prompt += `   - Takip linki çalışmıyor\n`;
+    prompt += `   - Müşteri aynı soruyu 2-3 kez sorup tatmin olmadıysa\n`;
+    prompt += `   - Ciddi şikayet varsa\n`;
+    prompt += `   → "Bu konuda size yardımcı olamadım. Sizi destek ekibine aktarmamı ister misiniz?"\n`;
+    prompt += `5. DOĞRUDAN AKTARMA: Müşteri "yetkili/operatör/müdür" isterse → "Talebinizi destek ekibine ilettim."\n`;
+    prompt += `6. Kısa ve net cevap ver, gereksiz uzatma\n`;
+    prompt += `7. DİL KURALI: İngilizce mesaja İngilizce, Türkçe mesaja Türkçe cevap ver\n`;
+    prompt += `8. FAQ SIRASI: Önce aktivite SSS'sine bak, sonra genel SSS'ye bak\n`;
+    prompt += `9. TRANSFER: Ücretsiz transfer varsa otomatik bildir, yoksa belirt\n`;
+    prompt += `10. EKSTRA: Video/fotoğraf paketleri için aktivite sayfasına yönlendir\n`;
+    prompt += `11. PAKET TUR: Paket tur sorularında içerikleri ve toplam fiyatı söyle\n`;
+    prompt += `\n⚠️ WHATSAPP REZERVASYON KURALI (KRİTİK) ⚠️\n`;
+    prompt += `- ASLA müşteriden isim, soyisim, telefon gibi bilgi toplama!\n`;
+    prompt += `- ASLA "bilgilerinizi alayım" deme!\n`;
+    prompt += `- Rezervasyon isterse → Sadece rezervasyon linkini gönder\n`;
+    prompt += `- DOĞRU: "Rezervasyon için şu linkten devam edebilirsiniz: [link]"\n`;
+    prompt += `- YANLIŞ: "Adınız ve soyadınızı alabilir miyim?"\n`;
+  }
   
   // ÇOK ÖNEMLİ: Konuşma bağlamı ve basit cevap kuralları
   prompt += `\n=== KONUŞMA BAĞLAMI (ÇOK ÖNEMLİ) ===\n`;
@@ -6219,6 +6225,7 @@ Rezervasyon takip: {takip_linki}
       const generalFaq = await storage.getSetting('generalFaq', tenantId);
       const partnerPrompt = await storage.getSetting('partner_prompt', tenantId);
       const viewerPrompt = await storage.getSetting('viewer_prompt', tenantId);
+      const customSystemRules = await storage.getSetting('customSystemRules', tenantId);
       
       // If bot is disabled, just log the message and don't respond
       if (botAccess.enabled === false) {
@@ -6242,6 +6249,7 @@ Rezervasyon takip: {takip_linki}
         botAccess,
         botRules,
         generalFaq,
+        customSystemRules,
         isPartner,
         partnerName: partnerTenant?.name,
         partnerPrompt,
