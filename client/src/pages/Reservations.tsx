@@ -4615,7 +4615,7 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className={`grid gap-4 ${reservationType === "activity" ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
             <div className="space-y-2">
               <Label>Tarih</Label>
               <Input 

@@ -901,7 +901,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
 
         {/* Settings Navigation - Wide format like SuperAdmin */}
         <div className="border-b bg-background mb-6">
-          <div className="flex items-center gap-1 pb-2">
+          <div className="grid grid-cols-7 gap-1 pb-2 xl:flex xl:items-center">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -909,6 +909,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   size="sm"
                   onClick={() => setSettingsTab('security')}
                   data-testid="tab-security"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <Shield className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Güvenlik</span>
@@ -923,6 +924,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   size="sm"
                   onClick={() => setSettingsTab('notifications')}
                   data-testid="tab-notifications"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <Bell className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Bildirimler</span>
@@ -937,6 +939,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   size="sm"
                   onClick={() => setSettingsTab('whatsapp')}
                   data-testid="tab-whatsapp"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <MessageSquare className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">WhatsApp</span>
@@ -951,6 +954,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   size="sm"
                   onClick={() => setSettingsTab('integrations')}
                   data-testid="tab-integrations"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <ExternalLink className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Entegrasyonlar</span>
@@ -965,6 +969,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   size="sm"
                   onClick={() => setSettingsTab('payments')}
                   data-testid="tab-payments"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <CreditCard className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Ödemeler</span>
@@ -979,6 +984,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   size="sm"
                   onClick={() => setSettingsTab('partners')}
                   data-testid="tab-partners"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <UserPlus className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Partnerler</span>
@@ -993,6 +999,7 @@ DEĞİŞİKLİK TALEPLERİNDE:
                   size="sm"
                   onClick={() => setSettingsTab('data')}
                   data-testid="tab-data"
+                  className="w-full xl:w-auto justify-center"
                 >
                   <Download className="h-4 w-4 xl:mr-2" />
                   <span className="hidden xl:inline">Veri</span>
@@ -1000,6 +1007,16 @@ DEĞİŞİKLİK TALEPLERİNDE:
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Veri</TooltipContent>
             </Tooltip>
+          </div>
+          {/* Mobile: Show current tab name */}
+          <div className="xl:hidden text-sm font-medium text-muted-foreground pt-1">
+            {settingsTab === 'security' && 'Güvenlik'}
+            {settingsTab === 'notifications' && 'Bildirimler'}
+            {settingsTab === 'whatsapp' && 'WhatsApp'}
+            {settingsTab === 'integrations' && 'Entegrasyonlar'}
+            {settingsTab === 'payments' && 'Ödemeler'}
+            {settingsTab === 'partners' && 'Partnerler'}
+            {settingsTab === 'data' && 'Veri'}
           </div>
         </div>
 
@@ -5937,7 +5954,7 @@ function NotificationPreferencesTab({ onNavigateToTemplate }: { onNavigateToTemp
                 </div>
 
                 {enabled && (
-                  <div className="flex items-center gap-2 ml-11 sm:ml-0">
+                  <div className="flex flex-wrap items-center gap-2 ml-11 sm:ml-0">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -6035,7 +6052,7 @@ function NotificationPreferencesTab({ onNavigateToTemplate }: { onNavigateToTemp
                 </div>
 
                 {enabled && (
-                  <div className="flex items-center gap-2 ml-11 sm:ml-0">
+                  <div className="flex flex-wrap items-center gap-2 ml-11 sm:ml-0">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button

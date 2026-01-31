@@ -90,7 +90,7 @@ export function AppFooter() {
   const licenseStatusInfo = getLicenseStatusInfo();
 
   return (
-    <footer className="mt-auto border-t bg-muted/30 py-4 px-6" data-testid="app-footer">
+    <footer className="mt-auto border-t bg-muted/30 py-4 px-6 mb-20 xl:mb-0" data-testid="app-footer">
       <div className="xl:ml-64 max-w-6xl mx-auto">
         <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8">
           <Link href="/settings?tab=whatsapp">

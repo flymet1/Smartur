@@ -1350,6 +1350,14 @@ export default function Finance() {
               <TooltipContent className="xl:hidden">Acentalar</TooltipContent>
             </Tooltip>
           </div>
+          {/* Mobile: Show current tab name */}
+          <div className="xl:hidden text-sm font-medium text-muted-foreground pt-1">
+            {financeTab === 'dispatches' && 'Gönderilen Müşteri'}
+            {financeTab === 'payouts' && 'Ödemeler'}
+            {financeTab === 'rates' && 'Fiyat Tablosu'}
+            {financeTab === 'partner-customers' && 'Partner Acentalar'}
+            {financeTab === 'agencies' && 'Acentalar'}
+          </div>
         </div>
 
         {/* Tarih Filtreleme - Tüm sekmeler için geçerli */}

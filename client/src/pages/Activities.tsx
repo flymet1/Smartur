@@ -824,14 +824,14 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <Tabs defaultValue="general" className="w-full flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 flex-shrink-0">
-              <TabsTrigger value="general" className="text-xs sm:text-sm">Genel</TabsTrigger>
-              <TabsTrigger value="website" className="text-xs sm:text-sm">Web Sitesi</TabsTrigger>
-              <TabsTrigger value="extras" className="text-xs sm:text-sm">Ekstra</TabsTrigger>
-              <TabsTrigger value="confirmation" className="text-xs sm:text-sm">Onay Mesajı</TabsTrigger>
-              <TabsTrigger value="notifications" className="text-xs sm:text-sm">Bildirim</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 gap-1 flex-shrink-0">
+              <TabsTrigger value="general" className="text-[10px] sm:text-sm px-1 sm:px-3">Genel</TabsTrigger>
+              <TabsTrigger value="website" className="text-[10px] sm:text-sm px-1 sm:px-3">Web</TabsTrigger>
+              <TabsTrigger value="extras" className="text-[10px] sm:text-sm px-1 sm:px-3">Ekstra</TabsTrigger>
+              <TabsTrigger value="confirmation" className="text-[10px] sm:text-sm px-1 sm:px-3">Onay</TabsTrigger>
+              <TabsTrigger value="notifications" className="text-[10px] sm:text-sm px-1 sm:px-3">Bildirim</TabsTrigger>
             </TabsList>
-            <div className="flex-1 overflow-y-auto py-4 px-1 min-h-0">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-1 min-h-0">
               <TabsContent value="general" className="space-y-4 mt-0">
                 <div className="space-y-2">
                   <Label htmlFor="name">Aktivite Adı <span className="text-destructive">*</span></Label>
