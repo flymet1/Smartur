@@ -408,7 +408,7 @@ const DEFAULT_BOT_RULES = `
 
 11. PAKET TUR: Birden fazla aktivite içeren paket turlar hakkında soru sorarsa PAKET TURLAR bölümünü kullan ve bilgi ver.
 
-12. SIK SORULAN SORULAR: Her aktivite veya paket tur için tanımlı SSS bölümünü kontrol et. Eğer orada cevap yoksa GENEL SSS bölümüne bak. Bu bölümde iptal politikası, ödeme yöntemleri gibi şirket geneli sorular yer alır.
+12. SSS KONTROLÜ: Sistem otomatik olarak Aktivite SSS ve Genel SSS'leri kontrol eder. Eğer sana mesaj geliyorsa, SSS'de uygun cevap bulunamamış demektir. Bu durumda mevcut aktivite, kapasite ve paket tur bilgilerini kullanarak en iyi şekilde yardımcı ol.
 
 13. ⚠️ WHATSAPP ÜZERİNDEN REZERVASYON ALMA - KRİTİK:
     - ASLA müşteriden isim, soyisim, telefon numarası gibi bilgi toplama
