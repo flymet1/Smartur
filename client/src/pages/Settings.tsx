@@ -1725,7 +1725,7 @@ export default function Settings() {
                           <Button 
                             onClick={async () => {
                               if (newFaqQuestion.trim() && newFaqAnswer.trim()) {
-                                const updatedFaq = [...generalFaq, { question: newFaqQuestion.trim(), answer: newFaqAnswer.trim() }];
+                                const updatedFaq = [{ question: newFaqQuestion.trim(), answer: newFaqAnswer.trim() }, ...generalFaq];
                                 setGeneralFaq(updatedFaq);
                                 setNewFaqQuestion("");
                                 setNewFaqAnswer("");
@@ -1801,8 +1801,6 @@ export default function Settings() {
                         </div>
                       </div>
 
-                      {/* Otomatik Yanıtlar - anahtar kelime eşleşmesiyle hızlı cevaplar */}
-                      <AutoResponsesCard />
                     </div>
                   )}
                 </TabsContent>

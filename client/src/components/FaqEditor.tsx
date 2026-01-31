@@ -34,7 +34,7 @@ export function stringifyFaq(faq: FaqItem[]): string {
 
 export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProps) {
   const addFaq = () => {
-    onChange([...faq, { question: "", answer: "", botOnly: false }]);
+    onChange([{ question: "", answer: "", botOnly: false }, ...faq]);
   };
 
   const removeFaq = (index: number) => {
