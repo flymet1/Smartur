@@ -820,8 +820,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <Tabs defaultValue="general" className="w-full flex-1 flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-5 gap-1 flex-shrink-0">
+            <TabsList className="grid w-full grid-cols-6 gap-1 flex-shrink-0">
               <TabsTrigger value="general" className="text-[10px] sm:text-sm px-1 sm:px-3">Genel</TabsTrigger>
+              <TabsTrigger value="sss" className="text-[10px] sm:text-sm px-1 sm:px-3">SSS</TabsTrigger>
               <TabsTrigger value="website" className="text-[10px] sm:text-sm px-1 sm:px-3">Web</TabsTrigger>
               <TabsTrigger value="extras" className="text-[10px] sm:text-sm px-1 sm:px-3">Ekstra</TabsTrigger>
               <TabsTrigger value="confirmation" className="text-[10px] sm:text-sm px-1 sm:px-3">Onay</TabsTrigger>
@@ -1137,6 +1138,21 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   )}
                 </div>
                 
+              </TabsContent>
+
+              <TabsContent value="sss" className="space-y-4 mt-0">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      Müşterilerin sık sorduğu soruları ve cevapları ekleyin. Bot bu bilgilere erişebilir ve WhatsApp'tan gelen sorulara otomatik cevap verebilir.
+                    </p>
+                  </div>
+                  <FaqEditor 
+                    faq={faq} 
+                    onChange={setFaq} 
+                    testIdPrefix="activity-faq"
+                  />
+                </div>
               </TabsContent>
 
               <TabsContent value="website" className="space-y-4 mt-0">
@@ -1777,17 +1793,6 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   )}
                 </div>
 
-                <div className="space-y-4 mt-6 pt-6 border-t">
-                  <div className="space-y-1">
-                    <Label className="text-base">Sık Sorulan Sorular (SSS)</Label>
-                    <p className="text-xs text-muted-foreground">Web sitesinde aktivite sayfasında gösterilecek SSS. Bot bu bilgilere erişebilir.</p>
-                  </div>
-                  <FaqEditor 
-                    faq={faq} 
-                    onChange={setFaq} 
-                    testIdPrefix="activity-faq"
-                  />
-                </div>
               </TabsContent>
 
               <TabsContent value="extras" className="space-y-4 mt-0">
