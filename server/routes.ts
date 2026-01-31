@@ -766,6 +766,369 @@ ${upcomingHolidays || 'Yakın tarihte resmi tatil yok.'}
 Müşteri "yarın", "öbür gün", "bu hafta sonu", "bayramda" gibi ifadeler kullanırsa yukarıdaki tarihleri referans al.`;
 }
 
+// ============================================
+// RAG (Retrieval Augmented Generation) SYSTEM
+// ============================================
+
+// Intent types for RAG
+type IntentType = 
+  | 'activity_info'      // Aktivite hakkında bilgi
+  | 'activity_list'      // Aktivite listesi
+  | 'availability'       // Müsaitlik sorgusu
+  | 'price'              // Fiyat sorgusu
+  | 'duration'           // Süre sorgusu
+  | 'reservation'        // Rezervasyon yapma
+  | 'reservation_status' // Rezervasyon durumu
+  | 'transfer'           // Transfer bilgisi
+  | 'payment'            // Ödeme bilgisi
+  | 'cancellation'       // İptal/değişiklik
+  | 'general'            // Genel soru
+  | 'greeting'           // Selamlama
+  | 'unknown';           // Bilinmeyen
+
+interface RAGIntent {
+  type: IntentType;
+  activityName?: string;    // Tespit edilen aktivite adı
+  activityId?: number;      // Eşleşen aktivite ID
+  packageTourName?: string; // Tespit edilen paket tur adı
+  packageTourId?: number;   // Eşleşen paket tur ID
+  date?: string;            // Tespit edilen tarih
+  confidence: number;       // 0-1 arası güven skoru
+}
+
+interface RAGContext {
+  intent: RAGIntent;
+  relevantActivity?: any;
+  relevantPackageTour?: any;
+  relevantCapacity?: any[];
+  relevantFaq?: any[];
+  isFirstMessage: boolean;
+}
+
+// Aktivite adı eşleştirme - fuzzy matching
+function findMatchingActivity(message: string, activities: any[]): { activity: any; confidence: number } | null {
+  const msgLower = message.toLowerCase()
+    .replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+    .replace(/ö/g, 'o').replace(/ı/g, 'i').replace(/ç/g, 'c');
+  
+  // Aktivite isimlerini ve alias'ları kontrol et
+  for (const activity of activities) {
+    const nameLower = (activity.name || '').toLowerCase()
+      .replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+      .replace(/ö/g, 'o').replace(/ı/g, 'i').replace(/ç/g, 'c');
+    
+    // Tam eşleşme veya içerme kontrolü
+    if (msgLower.includes(nameLower) || nameLower.includes(msgLower.split(' ')[0])) {
+      return { activity, confidence: 0.9 };
+    }
+    
+    // Anahtar kelime eşleştirme
+    const keywords: Record<string, string[]> = {
+      'parasut': ['yamaç paraşütü', 'paragliding', 'uçuş', 'babadağ'],
+      'tekne': ['tekne turu', 'boat tour', '12 ada', 'gezi'],
+      'atv': ['atv safari', 'quad', 'motor'],
+      'dalış': ['scuba', 'diving', 'dalış'],
+      'rafting': ['rafting', 'nehir'],
+      'jeep': ['jeep safari', 'arazi'],
+      'balon': ['balon', 'balloon'],
+    };
+    
+    for (const [key, variants] of Object.entries(keywords)) {
+      if (msgLower.includes(key) || variants.some(v => msgLower.includes(v.toLowerCase()))) {
+        if (nameLower.includes(key) || variants.some(v => nameLower.includes(v.toLowerCase()))) {
+          return { activity, confidence: 0.8 };
+        }
+      }
+    }
+    
+    // Alias kontrolü
+    try {
+      const aliases = JSON.parse(activity.nameAliases || '[]');
+      for (const alias of aliases) {
+        const aliasLower = alias.toLowerCase()
+          .replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+          .replace(/ö/g, 'o').replace(/ı/g, 'i').replace(/ç/g, 'c');
+        if (msgLower.includes(aliasLower)) {
+          return { activity, confidence: 0.85 };
+        }
+      }
+    } catch {}
+  }
+  
+  return null;
+}
+
+// Intent tespiti - mesajdan niyet çıkarma
+function detectIntent(message: string, activities: any[], packageTours: any[], history: any[]): RAGIntent {
+  const msgLower = message.toLowerCase();
+  
+  // Selamlama kontrolü
+  const greetings = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'hey', 'hi', 'hello'];
+  if (greetings.some(g => msgLower.includes(g)) && message.length < 30) {
+    return { type: 'greeting', confidence: 0.95 };
+  }
+  
+  // Aktivite eşleştirme
+  const activityMatch = findMatchingActivity(message, activities);
+  
+  // Intent keywords
+  const intentPatterns: Record<IntentType, string[]> = {
+    'availability': ['müsait', 'yer var', 'boş', 'kontenjan', 'doluluk', 'uygun'],
+    'price': ['fiyat', 'ücret', 'kaç para', 'ne kadar', 'tutar', 'maliyet'],
+    'duration': ['süre', 'kaç dakika', 'kaç saat', 'ne kadar sürer', 'uzunluk'],
+    'reservation': ['rezervasyon', 'kayıt', 'yer ayırt', 'katılmak', 'gelmek istiyorum'],
+    'reservation_status': ['siparişim', 'rezervasyonum', 'durumu', 'onaylandı mı', 'takip'],
+    'transfer': ['transfer', 'otel', 'alınış', 'servis', 'ulaşım'],
+    'payment': ['ödeme', 'ön ödeme', 'kapora', 'nakit', 'kart', 'havale'],
+    'cancellation': ['iptal', 'değişiklik', 'tarih değiştir', 'vazgeçtim'],
+    'activity_list': ['aktiviteler', 'turlar', 'neler var', 'ne yapabiliriz', 'seçenekler'],
+    'activity_info': [], // Aktivite bulundu ama spesifik intent yok
+    'general': [],
+    'greeting': [],
+    'unknown': []
+  };
+  
+  // Intent belirleme
+  let detectedType: IntentType = 'unknown';
+  let maxConfidence = 0;
+  
+  for (const [intentType, patterns] of Object.entries(intentPatterns)) {
+    for (const pattern of patterns) {
+      if (msgLower.includes(pattern)) {
+        const conf = 0.85;
+        if (conf > maxConfidence) {
+          maxConfidence = conf;
+          detectedType = intentType as IntentType;
+        }
+      }
+    }
+  }
+  
+  // Aktivite bulunduysa ama intent belirsizse
+  if (activityMatch && detectedType === 'unknown') {
+    detectedType = 'activity_info';
+    maxConfidence = 0.7;
+  }
+  
+  // Hiçbir şey bulunamadıysa genel soru
+  if (detectedType === 'unknown') {
+    detectedType = 'general';
+    maxConfidence = 0.5;
+  }
+  
+  return {
+    type: detectedType,
+    activityName: activityMatch?.activity?.name,
+    activityId: activityMatch?.activity?.id,
+    confidence: Math.max(maxConfidence, activityMatch?.confidence || 0)
+  };
+}
+
+// Tek aktivite için odaklı açıklama oluştur
+function buildFocusedActivityDescription(activity: any, intent: RAGIntent): string {
+  if (!activity) return '';
+  
+  let desc = `=== ${activity.name.toUpperCase()} ===\n`;
+  desc += `Açıklama: ${activity.description || 'Açıklama yok'}\n`;
+  desc += `Fiyat: ${activity.price} TL`;
+  if (activity.priceUsd) desc += ` ($${activity.priceUsd})`;
+  desc += `\nSüre: ${activity.durationMinutes} dakika\n`;
+  
+  // Intent'e göre ek bilgi ekle
+  if (intent.type === 'duration') {
+    desc += `\n⏱️ Bu aktivite toplam ${activity.durationMinutes} dakika sürmektedir.\n`;
+  }
+  
+  if (intent.type === 'price' || intent.type === 'payment') {
+    // Ödeme bilgileri
+    if (activity.fullPaymentRequired) {
+      desc += `\n💰 Ödeme: Rezervasyon sırasında TAM ÖDEME gereklidir.\n`;
+    } else if (activity.requiresDeposit && activity.depositAmount > 0) {
+      if (activity.depositType === 'percentage') {
+        const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
+        desc += `\n💰 Ön Ödeme: %${activity.depositAmount} (${depositTl} TL)\n`;
+        desc += `Kalan: ${activity.price - depositTl} TL (aktivite günü ödenir)\n`;
+      } else {
+        desc += `\n💰 Ön Ödeme: ${activity.depositAmount} TL\n`;
+        desc += `Kalan: ${activity.price - activity.depositAmount} TL (aktivite günü ödenir)\n`;
+      }
+    }
+  }
+  
+  if (intent.type === 'transfer') {
+    if (activity.hasFreeHotelTransfer) {
+      desc += `\n🚐 Ücretsiz Otel Transferi: EVET\n`;
+      try {
+        const zones = JSON.parse(activity.transferZones || '[]');
+        if (zones.length > 0 && typeof zones[0] === 'object') {
+          desc += `Transfer Bölgeleri:\n`;
+          for (const z of zones) {
+            desc += `  - ${z.zone}: Aktiviteden ${z.minutesBefore} dk önce alınır\n`;
+          }
+        }
+      } catch {}
+    } else {
+      desc += `\n🚐 Ücretsiz Transfer: HAYIR - Müşterinin kendi ulaşımını sağlaması gerekir.\n`;
+    }
+  }
+  
+  // Saatler
+  try {
+    const times = JSON.parse(activity.defaultTimes || '[]');
+    if (times.length > 0) {
+      desc += `\n🕐 Sefer Saatleri: ${times.join(', ')}\n`;
+    }
+  } catch {}
+  
+  // SSS (sadece alakalı intent'ler için)
+  if (intent.type === 'activity_info' || intent.type === 'general') {
+    try {
+      const faqItems = JSON.parse(activity.faq || '[]');
+      if (faqItems.length > 0) {
+        desc += `\n📋 Sık Sorulan Sorular:\n`;
+        for (const faq of faqItems.slice(0, 3)) { // Max 3 SSS
+          desc += `S: ${faq.question}\nC: ${faq.answer}\n`;
+        }
+      }
+    } catch {}
+  }
+  
+  // Bot talimatları
+  if (activity.botPrompt) {
+    desc += `\n⚠️ Özel Talimat: ${activity.botPrompt}\n`;
+  }
+  
+  return desc;
+}
+
+// RAG Context oluştur
+function buildRAGContext(
+  message: string, 
+  activities: any[], 
+  packageTours: any[],
+  capacityData: any[],
+  history: any[]
+): RAGContext {
+  const intent = detectIntent(message, activities, packageTours, history);
+  const isFirstMessage = history.filter(m => m.role === 'user').length <= 1;
+  
+  let relevantActivity = null;
+  let relevantCapacity: any[] = [];
+  
+  // Aktivite bulunduysa al
+  if (intent.activityId) {
+    relevantActivity = activities.find(a => a.id === intent.activityId);
+  }
+  
+  // Kapasite bilgisi gerekiyorsa
+  if (intent.type === 'availability' && relevantActivity) {
+    relevantCapacity = capacityData.filter(c => c.activityId === relevantActivity.id);
+  }
+  
+  return {
+    intent,
+    relevantActivity,
+    relevantCapacity,
+    isFirstMessage
+  };
+}
+
+// RAG Prompt oluştur - küçük ve odaklı
+function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[]): string {
+  const { intent, relevantActivity, relevantCapacity, isFirstMessage } = ragContext;
+  
+  let prompt = `Sen profesyonel bir turizm danışmanısın. Kısa ve net cevaplar ver.\n\n`;
+  
+  // Selamlama kontrolü
+  if (!isFirstMessage) {
+    prompt += `⚠️ Bu devam eden bir sohbet. Tekrar selamlama YAPMA, doğrudan cevap ver.\n\n`;
+  }
+  
+  // Intent'e göre context ekle
+  switch (intent.type) {
+    case 'greeting':
+      prompt += `Müşteri selamlıyor. Kısaca selamla ve nasıl yardımcı olabileceğini sor.\n`;
+      prompt += `\nMevcut Aktiviteler: ${activities.map(a => a.name).join(', ')}\n`;
+      break;
+      
+    case 'activity_list':
+      prompt += `Müşteri aktivite listesi istiyor.\n\n`;
+      prompt += `Mevcut Aktiviteler:\n`;
+      for (const a of activities) {
+        prompt += `- ${a.name}: ${a.price} TL, ${a.durationMinutes} dk\n`;
+      }
+      break;
+      
+    case 'activity_info':
+    case 'duration':
+    case 'price':
+    case 'payment':
+    case 'transfer':
+      if (relevantActivity) {
+        prompt += buildFocusedActivityDescription(relevantActivity, intent);
+      } else {
+        prompt += `Müşteri bir aktivite hakkında soruyor ama hangi aktivite olduğu belirsiz.\n`;
+        prompt += `Mevcut aktiviteler: ${activities.map(a => a.name).join(', ')}\n`;
+        prompt += `Hangi aktivite hakkında bilgi istediğini sor.\n`;
+      }
+      break;
+      
+    case 'availability':
+      if (relevantActivity) {
+        prompt += `Aktivite: ${relevantActivity.name}\n`;
+        if (relevantCapacity.length > 0) {
+          prompt += `\nMüsaitlik Bilgisi:\n`;
+          for (const cap of relevantCapacity.slice(0, 5)) {
+            const available = cap.totalSlots - cap.bookedSlots;
+            prompt += `${cap.date} ${cap.time}: ${available > 0 ? available + ' kişilik yer var' : 'DOLU'}\n`;
+          }
+        } else {
+          prompt += `\nBu aktivite için sistemde kayıtlı kapasite bilgisi yok. Müşteriyi aramaya yönlendir.\n`;
+        }
+      }
+      break;
+      
+    case 'reservation':
+      if (relevantActivity && relevantActivity.reservationLink) {
+        prompt += `Müşteri rezervasyon yapmak istiyor.\n`;
+        prompt += `Aktivite: ${relevantActivity.name}\n`;
+        prompt += `Rezervasyon Linki: ${relevantActivity.reservationLink}\n`;
+        prompt += `Bu linki paylaş ve kolayca rezervasyon yapabileceğini söyle.\n`;
+      } else {
+        prompt += `Müşteri rezervasyon yapmak istiyor. Hangi aktivite için olduğunu sor.\n`;
+        prompt += `Aktiviteler: ${activities.map(a => a.name).join(', ')}\n`;
+      }
+      break;
+      
+    case 'reservation_status':
+      prompt += `Müşteri rezervasyon durumunu soruyor.\n`;
+      if (context.reservation) {
+        prompt += `Rezervasyon bulundu: ${context.reservation.activityId}, Tarih: ${context.reservation.date}, Durum: ${context.reservation.status}\n`;
+      } else {
+        prompt += `Takip linki ile durumu kontrol edebileceklerini söyle. Link yoksa sipariş numarasını sor.\n`;
+      }
+      break;
+      
+    case 'cancellation':
+      prompt += `Müşteri iptal veya değişiklik istiyor.\n`;
+      prompt += `Takip linkinden talep oluşturabileceklerini söyle. Acil durumlarda yetkili yönlendirmesi yap.\n`;
+      break;
+      
+    default:
+      // Genel soru - minimal context
+      prompt += `Mevcut aktiviteler: ${activities.map(a => a.name).join(', ')}\n`;
+      prompt += `Eğer sorulan konu aktivitelerle ilgili değilse, nazikçe yardımcı olamayacağını belirt.\n`;
+  }
+  
+  // Temel kurallar - kısa versiyon
+  prompt += `\n=== KURALLAR ===\n`;
+  prompt += `1. Kısa ve net cevap ver\n`;
+  prompt += `2. Bilmediğin konuda uydurmak yerine "Bu konuda bilgim yok" de\n`;
+  prompt += `3. Listende olmayan aktivite/hizmet sorulursa "Bu hizmetimiz yok" de\n`;
+  
+  return prompt;
+}
+
 // AI function using Gemini API with activity descriptions, package tours, FAQs, and custom bot prompt
 async function generateAIResponse(history: any[], context: any, customPrompt?: string) {
   // Get bot access settings (default all to true if not provided)
