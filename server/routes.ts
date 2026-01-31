@@ -1131,6 +1131,58 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
 
 // AI function using Gemini API with activity descriptions, package tours, FAQs, and custom bot prompt
 async function generateAIResponse(history: any[], context: any, customPrompt?: string) {
+  // RAG Mode - Uses focused prompts instead of full context
+  const useRAG = context.enableRAG !== false; // Default enabled
+  
+  if (useRAG && context.activities && context.activities.length > 0) {
+    // Get last user message for intent detection
+    const lastUserMessage = history.filter((m: any) => m.role === "user").pop()?.content || "";
+    
+    // Build RAG context
+    const ragContext = buildRAGContext(
+      lastUserMessage,
+      context.activities || [],
+      context.packageTours || [],
+      context.capacityData || [],
+      history
+    );
+    
+    // Build focused prompt
+    const ragPrompt = buildRAGPrompt(ragContext, context, context.activities);
+    
+    // Log RAG metrics for debugging (token comparison)
+    const fullContextEstimate = JSON.stringify(context).length / 4; // Rough token estimate
+    const ragPromptEstimate = ragPrompt.length / 4;
+    console.log(`[RAG] Intent: ${ragContext.intent.type}, Confidence: ${ragContext.intent.confidence.toFixed(2)}`);
+    console.log(`[RAG] Token savings: ~${Math.round((1 - ragPromptEstimate/fullContextEstimate) * 100)}% (${Math.round(ragPromptEstimate)} vs ${Math.round(fullContextEstimate)} tokens)`);
+    
+    // Use RAG prompt for AI call
+    if (ai) {
+      try {
+        const contents = history.map((msg: any) => ({
+          role: msg.role === "user" ? "user" : "model",
+          parts: [{ text: msg.content }]
+        }));
+        
+        const result = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents,
+          config: {
+            systemInstruction: ragPrompt
+          }
+        });
+        
+        const responseText = result.text || "";
+        return responseText || "Merhaba! Nasıl yardımcı olabilirim?";
+      } catch (error) {
+        console.error('[RAG] AI error, falling back to full context:', error);
+        // Fall through to full context mode
+      }
+    }
+  }
+  
+  // === LEGACY MODE: Full context (fallback) ===
+  
   // Get bot access settings (default all to true if not provided)
   const botAccess = context.botAccess || {
     activities: true,
