@@ -74,10 +74,6 @@ export default function Settings() {
   );
   const [botRules, setBotRules] = useState("");
   const [botRulesLoaded, setBotRulesLoaded] = useState(false);
-  const [partnerPrompt, setPartnerPrompt] = useState("");
-  const [partnerPromptLoaded, setPartnerPromptLoaded] = useState(false);
-  const [viewerPrompt, setViewerPrompt] = useState("");
-  const [viewerPromptLoaded, setViewerPromptLoaded] = useState(false);
   const [customerSupportEmail, setCustomerSupportEmail] = useState("");
   const [whatsappConnected, setWhatsappConnected] = useState(false);
   
@@ -185,26 +181,6 @@ export default function Settings() {
     queryKey: ['/api/settings', 'botRules'],
     queryFn: async () => {
       const res = await fetch('/api/settings/botRules');
-      if (!res.ok) return null;
-      return res.json();
-    },
-  });
-
-  // Load partner prompt
-  const { data: partnerPromptSetting, isFetched: partnerPromptIsFetched } = useQuery<{ key: string; value: string | null } | null>({
-    queryKey: ['/api/settings', 'partner_prompt'],
-    queryFn: async () => {
-      const res = await fetch('/api/settings/partner_prompt');
-      if (!res.ok) return null;
-      return res.json();
-    },
-  });
-
-  // Load viewer prompt
-  const { data: viewerPromptSetting, isFetched: viewerPromptIsFetched } = useQuery<{ key: string; value: string | null } | null>({
-    queryKey: ['/api/settings', 'viewer_prompt'],
-    queryFn: async () => {
-      const res = await fetch('/api/settings/viewer_prompt');
       if (!res.ok) return null;
       return res.json();
     },
@@ -371,62 +347,6 @@ export default function Settings() {
       setBotRulesLoaded(true);
     }
   }, [botRulesSetting, botRulesLoaded, botRulesIsFetched]);
-
-  // Default partner prompt
-  const DEFAULT_PARTNER_PROMPT = `Partner acentalara FARKLI davran:
-1. Rezervasyon veya web sitesi linki VERME - bunun yerine müsaitlik/kapasite bilgisi paylaş
-2. Partner fiyatlarını kullan (eğer varsa)
-3. Daha profesyonel ve iş odaklı iletişim kur
-
-MÜSAİTLİK SORGULARINDA:
-- Sorulan tarih ve saat için müsaitlik bilgisini paylaş
-- Ardından "Smartur panelinizden rezervasyon talebinizi oluşturabilirsiniz" de
-
-DEĞİŞİKLİK TALEPLERİNDE:
-- Partner tarih/saat değişikliği isterse "Smartur panelinizden değişiklik talebinizi oluşturabilirsiniz" de
-- Takip linki veya web sitesi linki VERME`;
-
-  // Default viewer prompt
-  const DEFAULT_VIEWER_PROMPT = `İzleyicilere FARKLI davran:
-1. Rezervasyon veya web sitesi linki VERME
-2. Daha profesyonel ve iş odaklı iletişim kur
-3. İzleyicinin sisteme giriş yaparak işlem yapması gerektiğini belirt
-
-MÜSAİTLİK SORGULARINDA:
-- Sorulan tarih ve saat için müsaitlik bilgisini paylaş
-- Ardından "Smartur panelinize giriş yaparak istediğiniz aktiviteyi seçip rezervasyon talebi oluşturabilirsiniz" de
-
-REZERVASYON TALEPLERİNDE:
-- İzleyici WhatsApp'tan rezervasyon yapmak isterse "Smartur panelinize giriş yaparak kolayca rezervasyon talebi oluşturabilirsiniz. Aktiviteyi seçin, tarih ve kişi sayısını belirtin" de
-- WhatsApp üzerinden rezervasyon ALMA - panele yönlendir
-
-DEĞİŞİKLİK TALEPLERİNDE:
-- İzleyici tarih/saat değişikliği isterse "Smartur panelinizden değişiklik talebinizi oluşturabilirsiniz" de
-- Takip linki veya web sitesi linki VERME`;
-
-  // Apply loaded partner prompt when data arrives
-  useEffect(() => {
-    if (!partnerPromptLoaded && partnerPromptIsFetched) {
-      if (partnerPromptSetting?.value) {
-        setPartnerPrompt(partnerPromptSetting.value);
-      } else {
-        setPartnerPrompt(DEFAULT_PARTNER_PROMPT);
-      }
-      setPartnerPromptLoaded(true);
-    }
-  }, [partnerPromptSetting, partnerPromptLoaded, partnerPromptIsFetched]);
-
-  // Apply loaded viewer prompt when data arrives
-  useEffect(() => {
-    if (!viewerPromptLoaded && viewerPromptIsFetched) {
-      if (viewerPromptSetting?.value) {
-        setViewerPrompt(viewerPromptSetting.value);
-      } else {
-        setViewerPrompt(DEFAULT_VIEWER_PROMPT);
-      }
-      setViewerPromptLoaded(true);
-    }
-  }, [viewerPromptSetting, viewerPromptLoaded, viewerPromptIsFetched]);
 
   // Apply loaded general FAQ when data arrives
   useEffect(() => {
@@ -755,16 +675,6 @@ DEĞİŞİKLİK TALEPLERİNDE:
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: botRules })
-        }),
-        fetch("/api/settings/partner_prompt", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ value: partnerPrompt })
-        }),
-        fetch("/api/settings/viewer_prompt", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ value: viewerPrompt })
         }),
         fetch("/api/settings/reminderHours", {
           method: "POST",
@@ -1436,66 +1346,6 @@ DEĞİŞİKLİK TALEPLERİNDE:
                         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                           <p className="text-xs text-amber-900 dark:text-amber-200">
                             <strong>Önemli:</strong> Bu kurallar bot'un davranışını doğrudan etkiler. Yaptığınız değişiklikler kaydedildikten sonra bot yeni kurallara göre çalışmaya başlar.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor="partnerPrompt" className="text-base font-medium">Partner Acenta Talimatları</Label>
-                            {!isOwner && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Shield className="w-3 h-3 mr-1" />
-                                Kilitli
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Partner acentalardan gelen mesajlara bot'un nasıl yanıt vereceğini belirleyin. {!isOwner && "Bu alan sadece acenta yöneticisi tarafından düzenlenebilir."}
-                          </p>
-                          <Textarea 
-                            id="partnerPrompt"
-                            value={partnerPrompt}
-                            onChange={(e) => isOwner && setPartnerPrompt(e.target.value)}
-                            placeholder="Partner acentalara rezervasyon linki verme, sadece müsaitlik bilgisi paylaş. Smartur panelinizden rezervasyon oluşturabilirsiniz de..."
-                            className={cn("min-h-[150px] font-mono text-sm", !isOwner && "bg-muted cursor-not-allowed")}
-                            disabled={!isOwner}
-                            readOnly={!isOwner}
-                            data-testid="textarea-partner-prompt"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Partner acentalar Smartur kullanan diğer acentalardır. Bu talimatlar partner telefonundan mesaj geldiğinde kullanılır.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor="viewerPrompt" className="text-base font-medium">İzleyici Kullanıcı Talimatları</Label>
-                            {!isOwner && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Shield className="w-3 h-3 mr-1" />
-                                Kilitli
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            İzleyici rolündeki kullanıcılardan gelen mesajlara bot'un nasıl yanıt vereceğini belirleyin. {!isOwner && "Bu alan sadece acenta yöneticisi tarafından düzenlenebilir."}
-                          </p>
-                          <Textarea 
-                            id="viewerPrompt"
-                            value={viewerPrompt}
-                            onChange={(e) => isOwner && setViewerPrompt(e.target.value)}
-                            placeholder="İzleyicilere rezervasyon linki verme, sadece müsaitlik bilgisi paylaş. Rezervasyon talebi için operatörlerle iletişime geçmelerini öner..."
-                            className={cn("min-h-[150px] font-mono text-sm", !isOwner && "bg-muted cursor-not-allowed")}
-                            disabled={!isOwner}
-                            readOnly={!isOwner}
-                            data-testid="textarea-viewer-prompt"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            İzleyiciler acentanızın sadece müsaitlik görebilen kullanıcılarıdır. Bu talimatlar izleyici telefonundan mesaj geldiğinde kullanılır.
                           </p>
                         </div>
                       </div>
