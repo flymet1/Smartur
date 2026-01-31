@@ -729,42 +729,44 @@ function BotTestSection() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSend = async () => {
-    if (!phone || !message.trim()) {
-      toast({ title: "Hata", description: "Telefon ve mesaj gereklidir.", variant: "destructive" });
+    if (!message.trim()) {
+      toast({ title: "Hata", description: "Mesaj gereklidir.", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch("/api/webhooks/whatsapp", {
+      // Use dedicated bot test endpoint with proper tenant context
+      const res = await fetch("/api/bot-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          From: phone,
-          Body: message,
+          phone,
+          message,
+          conversationHistory: history, // Send conversation history for context
         }),
       });
 
-      if (!res.ok) throw new Error("Bot yanit veremedi");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Bilinmeyen hata" }));
+        throw new Error(errorData.error || "Bot yanıt veremedi");
+      }
 
-      const responseText = await res.text();
+      const data = await res.json();
       
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(responseText, "text/xml");
-      const messageContent = xmlDoc.getElementsByTagName("Message")[0]?.textContent || responseText;
-
-      setHistory([
+      // Update history with new conversation
+      setHistory(data.history || [
         ...history,
         { role: "user", content: message },
-        { role: "assistant", content: messageContent },
+        { role: "assistant", content: data.response },
       ]);
       setMessage("");
       
-      toast({ title: "Başarılı", description: "Bot yanıt verdi." });
-    } catch (error) {
+    } catch (error: any) {
       toast({ 
         title: "Hata", 
-        description: "Bot test edilirken hata oluştu.",
+        description: error.message || "Bot test edilirken hata oluştu.",
         variant: "destructive"
       });
     } finally {

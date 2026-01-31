@@ -367,18 +367,18 @@ const DEFAULT_BOT_RULES = `
 ⚠️ ÖNEMLİ: Bu kurallar SADECE normal müşteriler için geçerlidir. Partner veya İzleyici ise yukarıdaki PERSONA KURALLARINI uygula!
 
 🎯 TEMEL İLKELER:
-- SADECE sana verilen bilgiler çerçevesinde cevap ver. Bilmediğin veya listende olmayan konularda "Bu konuda bilgim yok" veya "Bu hizmeti sunmuyoruz" de.
+- SADECE sana verilen bilgiler çerçevesinde cevap ver. Bilmediğin konuları öğrenmeye çalış, hemen aktarma.
 - Sorulan soruya DOĞRUDAN ve ALAKALI cevap ver. Alakasız bilgi paylaşma.
-- Emin olmadığın durumlarda uydurmak yerine "Bu konuda size yardımcı olmak için yetkili arkadaşımıza bağlayabilirim" de.
+- ÖNEMLİ: "nereye iniyoruz", "iniş alanı neresi", "nerede buluşuyoruz" gibi lokasyon sorularında Buluşma/İniş Noktası bilgisini kullan.
 - Mantıklı ve tutarlı ol. Müşterinin ne istediğini anla ve ona göre cevap ver.
 
-1. ETKİNLİK BİLGİSİ: Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
+1. ETKİNLİK BİLGİSİ: Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan. Yamaç paraşütü için "meetingPoint" aynı zamanda iniş alanıdır.
 
 2. MÜSAİTLİK/KONTENJAN: Yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
 
 3. MÜSAİTLİK BİLGİSİ YOKSA: "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
 
-4. ESKALASYON: Karmaşık konularda, şikayetlerde, veya 2 mesaj içinde çözülemeyen sorunlarda "Bu konuyu yetkili arkadaşımıza iletiyorum, en kısa sürede sizinle iletişime geçilecektir" de. Müşteri memnuniyetsiz/agresifse veya "destek talebi", "operatör", "beni arayın" gibi ifadeler kullanırsa da aynı şekilde yönlendir.
+4. ESKALASYON: SADECE müşteri açıkça "yetkili istiyorum", "operatör", "beni arayın", "müdür" derse veya şikayet ederse aktarma yap. Basit bilgi sorularında (fiyat, süre, iniş yeri, transfer vb.) AKTARMA YAPMA - sana verilen bilgilerle cevapla.
 
 5. ÖZEL TALEPLER: Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
 
@@ -940,6 +940,16 @@ function buildFocusedActivityDescription(activity: any, intent: RAGIntent): stri
   if (activity.priceUsd) desc += ` ($${activity.priceUsd})`;
   desc += `\nSüre: ${activity.durationMinutes} dakika\n`;
   
+  // Bölge ve Buluşma/İniş Noktası (önemli lokasyon bilgisi)
+  if (activity.region) {
+    desc += `Bölge: ${activity.region}\n`;
+  }
+  if (activity.meetingPoint) {
+    // meetingPoint hem buluşma hem iniş noktası olabilir (özellikle yamaç paraşütü için)
+    desc += `Buluşma/İniş Noktası: ${activity.meetingPoint}\n`;
+    desc += `(Yamaç paraşütü için bu aynı zamanda iniş alanıdır)\n`;
+  }
+  
   // Intent'e göre ek bilgi ekle
   if (intent.type === 'duration') {
     desc += `\n⏱️ Bu aktivite toplam ${activity.durationMinutes} dakika sürmektedir.\n`;
@@ -1261,9 +1271,9 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   // Kapsamlı kurallar bölümü - DEFAULT_BOT_RULES eşdeğeri
   prompt += `\n=== KRİTİK KURALLAR (MUTLAKA UYGULA) ===\n`;
   prompt += `1. SADECE yukarıda verilen bilgilerden cevap ver - UYDURMAK YASAK\n`;
-  prompt += `2. Bilmediğin konuda "Bu konuda bilgim yok, yetkili arkadaşıma aktarıyorum" de\n`;
+  prompt += `2. Bilmediğin konuda önce verilen bilgileri tekrar kontrol et. Gerçekten bilmiyorsan "Bu konuda net bilgim yok, size yardımcı olmak için aramanızı önerebilirim" de. HEMEN AKTARMA.\n`;
   prompt += `3. Listende olmayan aktivite/hizmet sorulursa "Bu hizmetimiz yok" de\n`;
-  prompt += `4. Karmaşık sorunlarda ESCALATION: "Size yardımcı olmak için yetkiliye aktarıyorum"\n`;
+  prompt += `4. ESKALASYON: SADECE müşteri açıkça "yetkili", "operatör", "müdür" isterse veya ısrarlı şikayet varsa aktarma yap.\n`;
   prompt += `5. Kısa ve net cevap ver, gereksiz uzatma\n`;
   prompt += `6. DİL KURALI: İngilizce mesaja İngilizce, Türkçe mesaja Türkçe cevap ver\n`;
   prompt += `7. FAQ SIRASI: Önce aktivite SSS'sine bak, sonra genel SSS'ye bak\n`;
@@ -6382,6 +6392,91 @@ Rezervasyon takip: {takip_linki}
       res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${aiResponse}</Message></Response>`);
     } else {
       res.status(400).send("Missing Body or From");
+    }
+  });
+
+  // === Bot Test Endpoint (Panel Test Tool) ===
+  // This endpoint is for testing the bot from the admin panel without creating support requests
+  app.post("/api/bot-test", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const { phone, message, conversationHistory } = req.body;
+      if (!message) {
+        return res.status(400).json({ error: "Mesaj gerekli" });
+      }
+      
+      const testPhone = phone || "test-user";
+      
+      // Build history from conversation (don't use database for test)
+      const history = conversationHistory || [];
+      history.push({ role: "user", content: message });
+      
+      // Get activities and package tours for this tenant
+      const activities = await storage.getActivities(tenantId);
+      const packageTours = await storage.getPackageTours(tenantId);
+      
+      // Get capacity data for next 7 days
+      const today = new Date();
+      const upcomingDates: Set<string> = new Set();
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        upcomingDates.add(d.toISOString().split('T')[0]);
+      }
+      
+      // Parse dates from message
+      const messageDates = parseDatesFromMessage(message);
+      for (const dateStr of messageDates) upcomingDates.add(dateStr);
+      const holidayDates = await findHolidayDatesFromMessage(message);
+      for (const dateStr of holidayDates) upcomingDates.add(dateStr);
+      
+      const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
+      
+      // Get bot settings
+      const botPrompt = await storage.getSetting('botPrompt');
+      const botAccessSetting = await storage.getSetting('botAccess');
+      let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true };
+      if (botAccessSetting) {
+        try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
+      }
+      const botRules = await storage.getSetting('botRules');
+      const generalFaq = await storage.getSetting('generalFaq');
+      
+      // Generate AI response (test mode - no escalation, no support requests)
+      const aiResponse = await generateAIResponse(history, {
+        activities: botAccess.activities ? activities : [],
+        packageTours: botAccess.packageTours ? packageTours : [],
+        capacityData: botAccess.capacity ? upcomingCapacity : [],
+        hasReservation: false,
+        reservation: null,
+        allReservations: [],
+        askForOrderNumber: false,
+        customerRequests: [],
+        pendingRequests: [],
+        botAccess,
+        botRules,
+        generalFaq,
+        isPartner: false,
+        partnerName: null,
+        partnerPrompt: null,
+        isViewer: false,
+        viewerName: null,
+        viewerPrompt: null,
+        isTestMode: true // Flag to prevent escalation in test mode
+      }, botPrompt || undefined);
+      
+      // Return JSON response (not XML)
+      res.json({
+        response: aiResponse,
+        history: [...history, { role: "assistant", content: aiResponse }]
+      });
+    } catch (error: any) {
+      console.error("Bot test error:", error);
+      res.status(500).json({ error: "Bot test hatası: " + (error.message || "Bilinmeyen hata") });
     }
   });
 
