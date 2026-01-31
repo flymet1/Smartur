@@ -376,11 +376,17 @@ const DEFAULT_BOT_RULES = `
 
 2. MÜSAİTLİK/KONTENJAN: Yukarıdaki MÜSAİTLİK BİLGİSİ ve TARİH BİLGİSİ bölümlerini kontrol et. "Yarın" dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan.
 
-3. MÜSAİTLİK BİLGİSİ YOKSA: "Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum" de.
+3. MÜSAİTLİK BİLGİSİ YOKSA: "Bu tarih için kontenjan bilgim yok. Sizi müşteri destek ekibine aktarmamı ister misiniz?" diye sor.
 
-4. ESKALASYON: SADECE müşteri açıkça "yetkili istiyorum", "operatör", "beni arayın", "müdür" derse veya şikayet ederse aktarma yap. Basit bilgi sorularında (fiyat, süre, iniş yeri, transfer vb.) AKTARMA YAPMA - sana verilen bilgilerle cevapla.
+4. BİLMEDİĞİN KONULARDA: Direkt "arayın" deme! Önce şunu sor: "Bu konu hakkında yeterli bilgiye sahip değilim. Sizi müşteri destek ekibine aktarmamı ister misiniz?"
+   - Müşteri "evet", "olur", "lütfen", "aktarın" derse → "Talebinizi destek ekibine ilettim, en kısa sürede sizinle iletişime geçilecektir."
+   - Müşteri "hayır", "gerek yok" derse → "Anladım, başka bir konuda yardımcı olabilir miyim?"
 
-5. ÖZEL TALEPLER: Fiyat indirimi, grup indirimi gibi özel taleplerde yetkili yönlendirmesi yap.
+5. ESKALASYON TETİKLEYİCİLERİ: Müşteri şunları söylerse doğrudan aktarma yap:
+   - "yetkili istiyorum", "operatör", "müdür", "beni arayın"
+   - Şikayet veya memnuniyetsizlik ifadeleri
+
+6. ÖZEL TALEPLER: Fiyat indirimi, grup indirimi gibi özel taleplerde: "Bu talebi değerlendirmek için sizi yetkili arkadaşıma aktarmamı ister misiniz?" diye sor.
 
 6. REZERVASYON SORGUSU: Mevcut rezervasyonu olan müşteri bilgi isterse, kendilerine gönderilen takip linkini kullanmalarını söyle. Takip linki yoksa veya erişemedilerse yetkili yönlendirmesi yap.
 
@@ -1284,9 +1290,10 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   // Kapsamlı kurallar bölümü - DEFAULT_BOT_RULES eşdeğeri
   prompt += `\n=== KRİTİK KURALLAR (MUTLAKA UYGULA) ===\n`;
   prompt += `1. SADECE yukarıda verilen bilgilerden cevap ver - UYDURMAK YASAK\n`;
-  prompt += `2. Bilmediğin konuda önce verilen bilgileri tekrar kontrol et. Gerçekten bilmiyorsan "Bu konuda net bilgim yok, size yardımcı olmak için aramanızı önerebilirim" de. HEMEN AKTARMA.\n`;
+  prompt += `2. BİLMEDİĞİN KONULARDA: Direkt "arayın" deme! Önce şunu sor: "Bu konu hakkında yeterli bilgiye sahip değilim. Sizi müşteri destek ekibine aktarmamı ister misiniz?"\n`;
+  prompt += `   - Müşteri "evet/olur/lütfen/aktarın" derse → "Talebinizi destek ekibine ilettim, en kısa sürede sizinle iletişime geçilecektir."\n`;
   prompt += `3. Listende olmayan aktivite/hizmet sorulursa "Bu hizmetimiz yok" de\n`;
-  prompt += `4. ESKALASYON: SADECE müşteri açıkça "yetkili", "operatör", "müdür" isterse veya ısrarlı şikayet varsa aktarma yap.\n`;
+  prompt += `4. ESKALASYON: Müşteri "yetkili", "operatör", "müdür" isterse VEYA aktarma sorusuna "evet/olur" derse → "Talebinizi destek ekibine ilettim, en kısa sürede sizinle iletişime geçilecektir."\n`;
   prompt += `5. Kısa ve net cevap ver, gereksiz uzatma\n`;
   prompt += `6. DİL KURALI: İngilizce mesaja İngilizce, Türkçe mesaja Türkçe cevap ver\n`;
   prompt += `7. FAQ SIRASI: Önce aktivite SSS'sine bak, sonra genel SSS'ye bak\n`;
@@ -6208,23 +6215,28 @@ Rezervasyon takip: {takip_linki}
         viewerPrompt
       }, botPrompt || undefined);
       
-      // Check if needs human intervention
-      const needsHuman = aiResponse.toLowerCase().includes('yetkili') || 
-                         aiResponse.toLowerCase().includes('müdahale') ||
-                         aiResponse.toLowerCase().includes('iletiyorum');
+      // Check if needs human intervention (bot confirmed transfer to support)
+      const responseLC = aiResponse.toLowerCase();
+      const needsHuman = responseLC.includes('destek ekibine ilettim') || 
+                         responseLC.includes('iletişime geçilecektir') ||
+                         responseLC.includes('yetkili arkadaşım');
       
       if (needsHuman) {
         await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
       }
       
-      // Check if bot couldn't answer (save for learning)
-      const responseLC = aiResponse.toLowerCase();
+      // Check if bot asked for transfer permission (save for learning)
+      const askedForTransfer = responseLC.includes('aktarmamı ister misiniz') ||
+                               responseLC.includes('yeterli bilgiye sahip değilim') ||
+                               responseLC.includes('destek ekibine aktarmamı');
+      
+      // Check if bot couldn't answer at all
       const couldntAnswer = responseLC.includes('bilmiyorum') || 
                             responseLC.includes('net bilgim yok') ||
-                            responseLC.includes('aramanızı öner') ||
                             responseLC.includes('bu konuda bilgim') ||
-                            responseLC.includes('cevap veremiyorum');
+                            responseLC.includes('cevap veremiyorum') ||
+                            askedForTransfer;
       
       if (couldntAnswer && tenantId && Body) {
         // Save unanswered question for admin review
@@ -6416,10 +6428,11 @@ Rezervasyon takip: {takip_linki}
         generalFaq
       }, botPrompt || undefined);
       
-      // Check if response indicates human intervention needed
-      const needsHuman = aiResponse.toLowerCase().includes('yetkili') || 
-                         aiResponse.toLowerCase().includes('müdahale') ||
-                         aiResponse.toLowerCase().includes('iletiyorum');
+      // Check if bot confirmed transfer to support
+      const responseLC = aiResponse.toLowerCase();
+      const needsHuman = responseLC.includes('destek ekibine ilettim') || 
+                         responseLC.includes('iletişime geçilecektir') ||
+                         responseLC.includes('yetkili arkadaşım');
       
       if (needsHuman && tenantId) {
         // Create support request (only if tenant is identified)
@@ -6427,13 +6440,17 @@ Rezervasyon takip: {takip_linki}
         await storage.markHumanIntervention(From, true);
       }
       
-      // Check if bot couldn't answer (save for learning)
-      const responseLC = aiResponse.toLowerCase();
+      // Check if bot asked for transfer permission (save for learning)
+      const askedForTransfer = responseLC.includes('aktarmamı ister misiniz') ||
+                               responseLC.includes('yeterli bilgiye sahip değilim') ||
+                               responseLC.includes('destek ekibine aktarmamı');
+      
+      // Check if bot couldn't answer at all
       const couldntAnswer = responseLC.includes('bilmiyorum') || 
                             responseLC.includes('net bilgim yok') ||
-                            responseLC.includes('aramanızı öner') ||
                             responseLC.includes('bu konuda bilgim') ||
-                            responseLC.includes('cevap veremiyorum');
+                            responseLC.includes('cevap veremiyorum') ||
+                            askedForTransfer;
       
       if (couldntAnswer && tenantId && Body) {
         // Save unanswered question for admin review
