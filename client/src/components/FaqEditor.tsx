@@ -3,11 +3,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, HelpCircle, Bot, Globe } from "lucide-react";
+import { Plus, Trash2, HelpCircle, Bot, Globe, Languages } from "lucide-react";
+import { useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export interface FaqItem {
   question: string;
   answer: string;
+  questionEn?: string;
+  answerEn?: string;
   botOnly?: boolean;
 }
 
@@ -33,8 +37,10 @@ export function stringifyFaq(faq: FaqItem[]): string {
 }
 
 export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProps) {
+  const [openEnglish, setOpenEnglish] = useState<Record<number, boolean>>({});
+
   const addFaq = () => {
-    onChange([{ question: "", answer: "", botOnly: false }, ...faq]);
+    onChange([{ question: "", answer: "", questionEn: "", answerEn: "", botOnly: false }, ...faq]);
   };
 
   const removeFaq = (index: number) => {
@@ -45,6 +51,10 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
     const newFaq = [...faq];
     newFaq[index] = { ...newFaq[index], [field]: value };
     onChange(newFaq);
+  };
+
+  const toggleEnglish = (index: number) => {
+    setOpenEnglish(prev => ({ ...prev, [index]: !prev[index] }));
   };
 
   return (
@@ -74,7 +84,7 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
             <div key={idx} className="p-4 bg-muted/50 rounded-lg border border-muted space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 space-y-2">
-                  <Label className="text-sm font-medium">Soru {idx + 1}</Label>
+                  <Label className="text-sm font-medium">Soru {idx + 1} (Türkçe)</Label>
                   <Input
                     placeholder="Örn: Kilo sınırı var mı?"
                     value={item.question}
@@ -94,7 +104,7 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
                 </Button>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Cevap</Label>
+                <Label className="text-sm font-medium">Cevap (Türkçe)</Label>
                 <Textarea
                   placeholder="Örn: Evet, 110 kg üzeri için ek ücret uygulanır."
                   value={item.answer}
@@ -103,6 +113,51 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
                   data-testid={`${testIdPrefix}-answer-${idx}`}
                 />
               </div>
+
+              <Collapsible open={openEnglish[idx]} onOpenChange={() => toggleEnglish(idx)}>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground"
+                  >
+                    <Languages className="w-4 h-4 mr-2" />
+                    {openEnglish[idx] ? "İngilizce Çeviriyi Gizle" : "İngilizce Çeviri Ekle"}
+                    {(item.questionEn || item.answerEn) && (
+                      <span className="ml-2 text-xs text-green-600 dark:text-green-400">(Ekli)</span>
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-3 border-t border-dashed mt-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">EN</span>
+                      Question (English)
+                    </Label>
+                    <Input
+                      placeholder="E.g.: Is there a weight limit?"
+                      value={item.questionEn || ""}
+                      onChange={(e) => updateFaq(idx, "questionEn", e.target.value)}
+                      data-testid={`${testIdPrefix}-question-en-${idx}`}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">EN</span>
+                      Answer (English)
+                    </Label>
+                    <Textarea
+                      placeholder="E.g.: Yes, there is an extra fee for passengers over 110 kg."
+                      value={item.answerEn || ""}
+                      onChange={(e) => updateFaq(idx, "answerEn", e.target.value)}
+                      className="min-h-[60px]"
+                      data-testid={`${testIdPrefix}-answer-en-${idx}`}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
               <div className="flex items-center justify-between pt-2 border-t border-muted">
                 <div className="flex items-center gap-2">
                   {item.botOnly ? (

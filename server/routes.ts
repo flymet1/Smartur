@@ -6273,27 +6273,45 @@ Rezervasyon takip: {takip_linki}
       const normalizedMessage = normalizeTurkish(Body);
       let sssResponse: string | null = null;
       
+      // Detect if message is in English
+      const isEnglishMessage = /\b(hello|hi|price|booking|available|cancel|change|what|how|when|where|can|do|is|are|the|for|my|your)\b/i.test(Body);
+      const messageLower = Body.toLowerCase();
+      
       // 1. Aktivite SSS kontrolü (only if botAccess.faq is enabled)
       if (!sssResponse && botAccess.faq !== false && activities && activities.length > 0) {
         const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+        const messageWordsEn = messageLower.split(/\s+/).filter((w: string) => w.length > 3);
         for (const activity of activities) {
           if (!activity.faq) continue;
-          // Skip activities not mentioned in message for performance
-          const activityNameNorm = normalizeTurkish(activity.name || '');
-          const activityRelevant = messageWords.some((mw: string) => activityNameNorm.includes(mw) || mw.includes(activityNameNorm.substring(0, 4)));
           try {
             const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
             if (Array.isArray(faqItems)) {
               for (const item of faqItems) {
+                // Check Turkish question
                 const questionNormalized = normalizeTurkish(item.question || '');
                 const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
                 const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
-                  if (item.answer) {
+                const trMatch = matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5);
+                
+                // Check English question if available
+                let enMatch = false;
+                if (item.questionEn && isEnglishMessage) {
+                  const questionEnLower = (item.questionEn || '').toLowerCase();
+                  const questionEnWords = questionEnLower.split(/\s+/).filter((w: string) => w.length > 3);
+                  const enMatchCount = questionEnWords.filter((qw: string) => messageWordsEn.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+                  enMatch = enMatchCount >= 2 || (questionEnWords.length > 0 && enMatchCount / questionEnWords.length >= 0.5);
+                }
+                
+                if (trMatch || enMatch) {
+                  // Return English answer if message is English and English answer exists
+                  if (isEnglishMessage && item.answerEn) {
+                    sssResponse = item.answerEn;
+                    console.log(`[SSS] Aktivite SSS eşleşti (EN): "${activity.name}" - "${item.questionEn || item.question}"`);
+                  } else if (item.answer) {
                     sssResponse = item.answer;
-                    console.log(`[SSS] Aktivite SSS eşleşti: "${activity.name}" - "${item.question}"`);
-                    break;
+                    console.log(`[SSS] Aktivite SSS eşleşti (TR): "${activity.name}" - "${item.question}"`);
                   }
+                  if (sssResponse) break;
                 }
               }
             }
@@ -6307,17 +6325,33 @@ Rezervasyon takip: {takip_linki}
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
           const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+          const messageWordsEn = messageLower.split(/\s+/).filter((w: string) => w.length > 3);
           if (Array.isArray(generalFaqItems)) {
             for (const item of generalFaqItems) {
+              // Check Turkish question
               const questionNormalized = normalizeTurkish(item.question || '');
               const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
               const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-              if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
-                if (item.answer) {
+              const trMatch = matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5);
+              
+              // Check English question if available
+              let enMatch = false;
+              if (item.questionEn && isEnglishMessage) {
+                const questionEnLower = (item.questionEn || '').toLowerCase();
+                const questionEnWords = questionEnLower.split(/\s+/).filter((w: string) => w.length > 3);
+                const enMatchCount = questionEnWords.filter((qw: string) => messageWordsEn.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+                enMatch = enMatchCount >= 2 || (questionEnWords.length > 0 && enMatchCount / questionEnWords.length >= 0.5);
+              }
+              
+              if (trMatch || enMatch) {
+                if (isEnglishMessage && item.answerEn) {
+                  sssResponse = item.answerEn;
+                  console.log(`[SSS] Genel SSS eşleşti (EN): "${item.questionEn || item.question}"`);
+                } else if (item.answer) {
                   sssResponse = item.answer;
-                  console.log(`[SSS] Genel SSS eşleşti: "${item.question}"`);
-                  break;
+                  console.log(`[SSS] Genel SSS eşleşti (TR): "${item.question}"`);
                 }
+                if (sssResponse) break;
               }
             }
           }
@@ -6569,24 +6603,44 @@ Rezervasyon takip: {takip_linki}
       const testNormalizedMessage = normalizeTurkish(Body);
       let testSssResponse: string | null = null;
       
+      // Detect if message is in English
+      const testIsEnglishMessage = /\b(hello|hi|price|booking|available|cancel|change|what|how|when|where|can|do|is|are|the|for|my|your)\b/i.test(Body);
+      const testMessageLower = Body.toLowerCase();
+      
       // 1. Aktivite SSS kontrolü (tenantId and botAccess.faq required)
       if (!testSssResponse && tenantId && botAccess.faq !== false && activities && activities.length > 0) {
         const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+        const messageWordsEn = testMessageLower.split(/\s+/).filter((w: string) => w.length > 3);
         for (const activity of activities) {
           if (!activity.faq) continue;
           try {
             const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
             if (Array.isArray(faqItems)) {
               for (const item of faqItems) {
+                // Check Turkish question
                 const questionNormalized = normalizeTurkish(item.question || '');
                 const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
                 const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
-                  if (item.answer) {
+                const trMatch = matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5);
+                
+                // Check English question if available
+                let enMatch = false;
+                if (item.questionEn && testIsEnglishMessage) {
+                  const questionEnLower = (item.questionEn || '').toLowerCase();
+                  const questionEnWords = questionEnLower.split(/\s+/).filter((w: string) => w.length > 3);
+                  const enMatchCount = questionEnWords.filter((qw: string) => messageWordsEn.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+                  enMatch = enMatchCount >= 2 || (questionEnWords.length > 0 && enMatchCount / questionEnWords.length >= 0.5);
+                }
+                
+                if (trMatch || enMatch) {
+                  if (testIsEnglishMessage && item.answerEn) {
+                    testSssResponse = item.answerEn;
+                    console.log(`[SSS-TEST] Aktivite SSS eşleşti (EN): "${activity.name}" - "${item.questionEn || item.question}"`);
+                  } else if (item.answer) {
                     testSssResponse = item.answer;
-                    console.log(`[SSS-TEST] Aktivite SSS eşleşti: "${activity.name}" - "${item.question}"`);
-                    break;
+                    console.log(`[SSS-TEST] Aktivite SSS eşleşti (TR): "${activity.name}" - "${item.question}"`);
                   }
+                  if (testSssResponse) break;
                 }
               }
             }
@@ -6600,17 +6654,33 @@ Rezervasyon takip: {takip_linki}
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
           const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+          const messageWordsEn = testMessageLower.split(/\s+/).filter((w: string) => w.length > 3);
           if (Array.isArray(generalFaqItems)) {
             for (const item of generalFaqItems) {
+              // Check Turkish question
               const questionNormalized = normalizeTurkish(item.question || '');
               const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
               const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-              if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
-                if (item.answer) {
+              const trMatch = matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5);
+              
+              // Check English question if available
+              let enMatch = false;
+              if (item.questionEn && testIsEnglishMessage) {
+                const questionEnLower = (item.questionEn || '').toLowerCase();
+                const questionEnWords = questionEnLower.split(/\s+/).filter((w: string) => w.length > 3);
+                const enMatchCount = questionEnWords.filter((qw: string) => messageWordsEn.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+                enMatch = enMatchCount >= 2 || (questionEnWords.length > 0 && enMatchCount / questionEnWords.length >= 0.5);
+              }
+              
+              if (trMatch || enMatch) {
+                if (testIsEnglishMessage && item.answerEn) {
+                  testSssResponse = item.answerEn;
+                  console.log(`[SSS-TEST] Genel SSS eşleşti (EN): "${item.questionEn || item.question}"`);
+                } else if (item.answer) {
                   testSssResponse = item.answer;
-                  console.log(`[SSS-TEST] Genel SSS eşleşti: "${item.question}"`);
-                  break;
+                  console.log(`[SSS-TEST] Genel SSS eşleşti (TR): "${item.question}"`);
                 }
+                if (testSssResponse) break;
               }
             }
           }

@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe, BarChart3, Volume2, VolumeX } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe, BarChart3, Volume2, VolumeX, Languages } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday, Agency } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -108,10 +108,13 @@ export default function Settings() {
   const [showSystemRulesConfirm, setShowSystemRulesConfirm] = useState(false);
   
   // General FAQ - Company-wide frequently asked questions
-  const [generalFaq, setGeneralFaq] = useState<{ question: string; answer: string }[]>([]);
+  const [generalFaq, setGeneralFaq] = useState<{ question: string; answer: string; questionEn?: string; answerEn?: string }[]>([]);
   const [generalFaqLoaded, setGeneralFaqLoaded] = useState(false);
   const [newFaqQuestion, setNewFaqQuestion] = useState("");
   const [newFaqAnswer, setNewFaqAnswer] = useState("");
+  const [newFaqQuestionEn, setNewFaqQuestionEn] = useState("");
+  const [newFaqAnswerEn, setNewFaqAnswerEn] = useState("");
+  const [showNewFaqEnglish, setShowNewFaqEnglish] = useState(false);
   const [isSavingGeneralFaq, setIsSavingGeneralFaq] = useState(false);
   
   // Gmail Settings (legacy - kept for data migration)
@@ -1710,25 +1713,64 @@ export default function Settings() {
                         
                         <div className="flex flex-col gap-3">
                           <Input 
-                            placeholder="Soru (örn: İptal politikası nedir?)"
+                            placeholder="Soru (Türkçe) - örn: İptal politikası nedir?"
                             value={newFaqQuestion}
                             onChange={(e) => setNewFaqQuestion(e.target.value)}
                             data-testid="input-general-faq-question"
                           />
                           <Textarea 
-                            placeholder="Cevap"
+                            placeholder="Cevap (Türkçe)"
                             value={newFaqAnswer}
                             onChange={(e) => setNewFaqAnswer(e.target.value)}
                             rows={3}
                             data-testid="input-general-faq-answer"
                           />
+                          
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-muted-foreground hover:text-foreground"
+                            onClick={() => setShowNewFaqEnglish(!showNewFaqEnglish)}
+                          >
+                            <Languages className="w-4 h-4 mr-2" />
+                            {showNewFaqEnglish ? "İngilizce Çeviriyi Gizle" : "İngilizce Çeviri Ekle (Opsiyonel)"}
+                          </Button>
+                          
+                          {showNewFaqEnglish && (
+                            <div className="space-y-3 p-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <Input 
+                                placeholder="Question (English) - e.g.: What is the cancellation policy?"
+                                value={newFaqQuestionEn}
+                                onChange={(e) => setNewFaqQuestionEn(e.target.value)}
+                                data-testid="input-general-faq-question-en"
+                              />
+                              <Textarea 
+                                placeholder="Answer (English)"
+                                value={newFaqAnswerEn}
+                                onChange={(e) => setNewFaqAnswerEn(e.target.value)}
+                                rows={3}
+                                data-testid="input-general-faq-answer-en"
+                              />
+                            </div>
+                          )}
+                          
                           <Button 
                             onClick={async () => {
                               if (newFaqQuestion.trim() && newFaqAnswer.trim()) {
-                                const updatedFaq = [{ question: newFaqQuestion.trim(), answer: newFaqAnswer.trim() }, ...generalFaq];
+                                const newEntry: { question: string; answer: string; questionEn?: string; answerEn?: string } = { 
+                                  question: newFaqQuestion.trim(), 
+                                  answer: newFaqAnswer.trim() 
+                                };
+                                if (newFaqQuestionEn.trim()) newEntry.questionEn = newFaqQuestionEn.trim();
+                                if (newFaqAnswerEn.trim()) newEntry.answerEn = newFaqAnswerEn.trim();
+                                const updatedFaq = [newEntry, ...generalFaq];
                                 setGeneralFaq(updatedFaq);
                                 setNewFaqQuestion("");
                                 setNewFaqAnswer("");
+                                setNewFaqQuestionEn("");
+                                setNewFaqAnswerEn("");
+                                setShowNewFaqEnglish(false);
                                 setIsSavingGeneralFaq(true);
                                 try {
                                   await fetch("/api/settings/generalFaq", {
@@ -1762,9 +1804,20 @@ export default function Settings() {
                                 data-testid={`general-faq-entry-${index}`}
                               >
                                 <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1">
-                                    <div className="font-medium text-sm">{faq.question}</div>
-                                    <div className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{faq.answer}</div>
+                                  <div className="flex-1 space-y-2">
+                                    <div>
+                                      <div className="font-medium text-sm">{faq.question}</div>
+                                      <div className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{faq.answer}</div>
+                                    </div>
+                                    {(faq.questionEn || faq.answerEn) && (
+                                      <div className="pt-2 mt-2 border-t border-dashed">
+                                        <div className="flex items-center gap-1 mb-1">
+                                          <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">EN</span>
+                                        </div>
+                                        {faq.questionEn && <div className="font-medium text-sm text-blue-700 dark:text-blue-300">{faq.questionEn}</div>}
+                                        {faq.answerEn && <div className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{faq.answerEn}</div>}
+                                      </div>
+                                    )}
                                   </div>
                                   <Button 
                                     variant="ghost" 
