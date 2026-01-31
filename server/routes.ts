@@ -6265,6 +6265,116 @@ Rezervasyon takip: {takip_linki}
         return;
       }
       
+      // === SSS ÖNCELİKLİ SİSTEM ===
+      // 1. Önce Otomatik Yanıtlar kontrol et
+      // 2. Sonra Aktivite SSS kontrol et
+      // 3. Sonra Genel SSS kontrol et
+      // 4. Hiçbiri eşleşmezse AI'a gönder
+      
+      const messageLower = Body.toLowerCase();
+      const normalizedMessage = messageLower
+        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+        .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+      let sssResponse: string | null = null;
+      
+      // 1. Otomatik Yanıtlar kontrolü (tenant-specific auto responses)
+      if (!sssResponse) {
+        const autoResponses = await storage.getAutoResponses(tenantId);
+        if (autoResponses && autoResponses.length > 0) {
+          // Sort by priority (higher priority first)
+          const sortedResponses = [...autoResponses].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+          for (const autoResp of sortedResponses) {
+            if (!autoResp.isActive) continue;
+            try {
+              const keywords = typeof autoResp.keywords === 'string' ? JSON.parse(autoResp.keywords) : autoResp.keywords;
+              if (Array.isArray(keywords)) {
+                const matched = keywords.some((kw: string) => {
+                  const kwLower = kw.toLowerCase();
+                  const kwNormalized = kwLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+                  return messageLower.includes(kwLower) || normalizedMessage.includes(kwNormalized);
+                });
+                if (matched) {
+                  // Check language - use English response if message is in English
+                  const isEnglish = /\b(hello|hi|price|booking|available|cancel|change)\b/i.test(Body);
+                  sssResponse = isEnglish && autoResp.responseEn ? autoResp.responseEn : autoResp.response;
+                  console.log(`[SSS] Otomatik Yanıt eşleşti: "${autoResp.name}"`);
+                  break;
+                }
+              }
+            } catch (e) {
+              // Continue if parsing fails
+            }
+          }
+        }
+      }
+      
+      // 2. Aktivite SSS kontrolü
+      if (!sssResponse && activities && activities.length > 0) {
+        for (const activity of activities) {
+          if (!activity.faq) continue;
+          try {
+            const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
+            if (Array.isArray(faqItems)) {
+              for (const item of faqItems) {
+                const questionLower = (item.question || '').toLowerCase();
+                const questionNormalized = questionLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+                // Check if message contains significant words from the question
+                const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
+                const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+                const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+                // Require at least 2 matching words or 50% of question words
+                if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
+                  if (item.answer) {
+                    sssResponse = item.answer;
+                    console.log(`[SSS] Aktivite SSS eşleşti: "${activity.name}" - "${item.question}"`);
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Continue if parsing fails
+          }
+          if (sssResponse) break;
+        }
+      }
+      
+      // 3. Genel SSS kontrolü
+      if (!sssResponse && generalFaq) {
+        try {
+          const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
+          if (Array.isArray(generalFaqItems)) {
+            for (const item of generalFaqItems) {
+              const questionLower = (item.question || '').toLowerCase();
+              const questionNormalized = questionLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+              const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
+              const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+              const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+              if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
+                if (item.answer) {
+                  sssResponse = item.answer;
+                  console.log(`[SSS] Genel SSS eşleşti: "${item.question}"`);
+                  break;
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // Continue if parsing fails
+        }
+      }
+      
+      // SSS cevabı bulunduysa, AI çağırmadan direkt cevap ver
+      if (sssResponse) {
+        await storage.addMessage({ phone: From, content: sssResponse, role: "assistant", tenantId });
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${sssResponse}</Message></Response>`);
+        return;
+      }
+      
+      // SSS'de eşleşme bulunamadı, AI'a gönder
+      console.log(`[SSS] Eşleşme bulunamadı, AI'a gönderiliyor...`);
+      
       // Generate AI response
       const aiResponse = await generateAIResponse(history, { 
         activities: botAccess.activities ? activities : [], 
@@ -6494,6 +6604,100 @@ Rezervasyon takip: {takip_linki}
       
       // Get all reservations for this phone
       const allUserReservations = tenantId ? await storage.findAllReservationsByPhone(From, tenantId) : [];
+      
+      // === SSS ÖNCELİKLİ SİSTEM (TEST WEBHOOK) ===
+      const testMessageLower = Body.toLowerCase();
+      const testNormalizedMessage = testMessageLower
+        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+        .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+      let testSssResponse: string | null = null;
+      
+      // 1. Otomatik Yanıtlar kontrolü
+      if (!testSssResponse && tenantId) {
+        const autoResponses = await storage.getAutoResponses(tenantId);
+        if (autoResponses && autoResponses.length > 0) {
+          const sortedResponses = [...autoResponses].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+          for (const autoResp of sortedResponses) {
+            if (!autoResp.isActive) continue;
+            try {
+              const keywords = typeof autoResp.keywords === 'string' ? JSON.parse(autoResp.keywords) : autoResp.keywords;
+              if (Array.isArray(keywords)) {
+                const matched = keywords.some((kw: string) => {
+                  const kwLower = kw.toLowerCase();
+                  const kwNormalized = kwLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+                  return testMessageLower.includes(kwLower) || testNormalizedMessage.includes(kwNormalized);
+                });
+                if (matched) {
+                  const isEnglish = /\b(hello|hi|price|booking|available|cancel|change)\b/i.test(Body);
+                  testSssResponse = isEnglish && autoResp.responseEn ? autoResp.responseEn : autoResp.response;
+                  console.log(`[SSS-TEST] Otomatik Yanıt eşleşti: "${autoResp.name}"`);
+                  break;
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }
+      
+      // 2. Aktivite SSS kontrolü
+      if (!testSssResponse && activities && activities.length > 0) {
+        for (const activity of activities) {
+          if (!activity.faq) continue;
+          try {
+            const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
+            if (Array.isArray(faqItems)) {
+              for (const item of faqItems) {
+                const questionLower = (item.question || '').toLowerCase();
+                const questionNormalized = questionLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+                const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
+                const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+                const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+                if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
+                  if (item.answer) {
+                    testSssResponse = item.answer;
+                    console.log(`[SSS-TEST] Aktivite SSS eşleşti: "${activity.name}" - "${item.question}"`);
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (e) {}
+          if (testSssResponse) break;
+        }
+      }
+      
+      // 3. Genel SSS kontrolü
+      if (!testSssResponse && generalFaq) {
+        try {
+          const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
+          if (Array.isArray(generalFaqItems)) {
+            for (const item of generalFaqItems) {
+              const questionLower = (item.question || '').toLowerCase();
+              const questionNormalized = questionLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+              const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
+              const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
+              const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+              if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
+                if (item.answer) {
+                  testSssResponse = item.answer;
+                  console.log(`[SSS-TEST] Genel SSS eşleşti: "${item.question}"`);
+                  break;
+                }
+              }
+            }
+          }
+        } catch (e) {}
+      }
+      
+      // SSS cevabı bulunduysa, AI çağırmadan direkt cevap ver
+      if (testSssResponse) {
+        await storage.addMessage({ phone: From, content: testSssResponse, role: "assistant", tenantId });
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${testSssResponse}</Message></Response>`);
+        return;
+      }
+      
+      console.log(`[SSS-TEST] Eşleşme bulunamadı, AI'a gönderiliyor...`);
       
       // Generate AI response with reservation context, capacity data, package tours, customer requests, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
