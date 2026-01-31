@@ -7224,6 +7224,47 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
     }
   });
   
+  // Get default system rules (for transparency)
+  app.get("/api/settings/systemRules", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      // Get tenant's custom rules if any
+      const customRules = await storage.getSetting('customSystemRules', tenantId);
+      const isCustom = !!customRules;
+      
+      res.json({
+        defaultRules: DEFAULT_BOT_RULES,
+        customRules: customRules || null,
+        isCustom: isCustom
+      });
+    } catch (err) {
+      res.status(400).json({ error: "Sistem kuralları alınamadı" });
+    }
+  });
+  
+  // Save custom system rules
+  app.post("/api/settings/systemRules", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const { customRules, resetToDefault } = req.body;
+      
+      if (resetToDefault) {
+        // Delete custom rules to revert to default
+        await storage.deleteSetting('customSystemRules', tenantId);
+        res.json({ success: true, message: "Varsayılan kurallara dönüldü" });
+      } else {
+        await storage.setSetting('customSystemRules', customRules, tenantId);
+        res.json({ success: true, message: "Özel kurallar kaydedildi" });
+      }
+    } catch (err) {
+      res.status(400).json({ error: "Sistem kuralları kaydedilemedi" });
+    }
+  });
+  
   // Popup Appearance settings (tenant-aware)
   app.get("/api/settings/popupAppearance", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
     try {

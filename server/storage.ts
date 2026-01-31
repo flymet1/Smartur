@@ -240,6 +240,7 @@ export interface IStorage {
   // Settings (tenant-scoped)
   getSetting(key: string, tenantId?: number): Promise<string | undefined>;
   setSetting(key: string, value: string, tenantId?: number): Promise<Settings>;
+  deleteSetting(key: string, tenantId?: number): Promise<void>;
   
   // Tenant Integrations (Twilio, WooCommerce, Gmail)
   getTenantIntegration(tenantId: number): Promise<TenantIntegration | undefined>;
@@ -1420,6 +1421,16 @@ export class DatabaseStorage implements IStorage {
         const [created] = await db.insert(settings).values({ key, value }).returning();
         return created;
       }
+    }
+  }
+  
+  async deleteSetting(key: string, tenantId?: number): Promise<void> {
+    if (tenantId) {
+      await db.delete(settings)
+        .where(and(eq(settings.key, key), eq(settings.tenantId, tenantId)));
+    } else {
+      await db.delete(settings)
+        .where(and(eq(settings.key, key), isNull(settings.tenantId)));
     }
   }
   

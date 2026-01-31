@@ -98,6 +98,15 @@ export default function Settings() {
   const [botAccessExtras, setBotAccessExtras] = useState(true);
   const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
   
+  // System Rules (RAG Prompt Rules)
+  const [systemRulesDefault, setSystemRulesDefault] = useState("");
+  const [systemRulesCustom, setSystemRulesCustom] = useState("");
+  const [systemRulesIsCustom, setSystemRulesIsCustom] = useState(false);
+  const [systemRulesEditMode, setSystemRulesEditMode] = useState(false);
+  const [systemRulesLoaded, setSystemRulesLoaded] = useState(false);
+  const [isSavingSystemRules, setIsSavingSystemRules] = useState(false);
+  const [showSystemRulesConfirm, setShowSystemRulesConfirm] = useState(false);
+  
   // General FAQ - Company-wide frequently asked questions
   const [generalFaq, setGeneralFaq] = useState<{ question: string; answer: string }[]>([]);
   const [generalFaqLoaded, setGeneralFaqLoaded] = useState(false);
@@ -191,6 +200,20 @@ export default function Settings() {
     queryKey: ['/api/settings', 'generalFaq'],
     queryFn: async () => {
       const res = await fetch('/api/settings/generalFaq');
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  // Load system rules (RAG prompt rules)
+  const { data: systemRulesData, isFetched: systemRulesIsFetched } = useQuery<{ 
+    defaultRules: string; 
+    customRules: string | null; 
+    isCustom: boolean 
+  } | null>({
+    queryKey: ['/api/settings', 'systemRules'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/systemRules');
       if (!res.ok) return null;
       return res.json();
     },
@@ -347,6 +370,16 @@ export default function Settings() {
       setBotRulesLoaded(true);
     }
   }, [botRulesSetting, botRulesLoaded, botRulesIsFetched]);
+
+  // Load system rules (RAG prompt)
+  useEffect(() => {
+    if (!systemRulesLoaded && systemRulesIsFetched && systemRulesData) {
+      setSystemRulesDefault(systemRulesData.defaultRules || "");
+      setSystemRulesCustom(systemRulesData.customRules || systemRulesData.defaultRules || "");
+      setSystemRulesIsCustom(systemRulesData.isCustom);
+      setSystemRulesLoaded(true);
+    }
+  }, [systemRulesData, systemRulesLoaded, systemRulesIsFetched]);
 
   // Apply loaded general FAQ when data arrives
   useEffect(() => {
@@ -1345,6 +1378,141 @@ export default function Settings() {
                         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                           <p className="text-xs text-amber-900 dark:text-amber-200">
                             <strong>Önemli:</strong> Bu kurallar bot'un davranışını doğrudan etkiler. Yaptığınız değişiklikler kaydedildikten sonra bot yeni kurallara göre çalışmaya başlar.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* System Rules Section - Görüntülenebilir ve düzenlenebilir */}
+                      <div className="space-y-4 bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-base font-medium">Sistem Davranış Kuralları (RAG)</Label>
+                              {systemRulesIsCustom && (
+                                <Badge variant="outline" className="text-xs bg-blue-100 dark:bg-blue-900/50">
+                                  Özelleştirilmiş
+                                </Badge>
+                              )}
+                              {!systemRulesIsCustom && (
+                                <Badge variant="secondary" className="text-xs">
+                                  Varsayılan
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {systemRulesEditMode ? (
+                                <>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setSystemRulesEditMode(false);
+                                      setSystemRulesCustom(systemRulesIsCustom ? (systemRulesData?.customRules || systemRulesDefault) : systemRulesDefault);
+                                    }}
+                                    data-testid="button-cancel-system-rules"
+                                  >
+                                    İptal
+                                  </Button>
+                                  <Button 
+                                    size="sm"
+                                    disabled={isSavingSystemRules}
+                                    onClick={async () => {
+                                      setIsSavingSystemRules(true);
+                                      try {
+                                        const res = await fetch('/api/settings/systemRules', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({ customRules: systemRulesCustom })
+                                        });
+                                        if (res.ok) {
+                                          toast({ title: "Özel kurallar kaydedildi" });
+                                          setSystemRulesIsCustom(true);
+                                          setSystemRulesEditMode(false);
+                                        } else {
+                                          toast({ title: "Kayıt hatası", variant: "destructive" });
+                                        }
+                                      } catch {
+                                        toast({ title: "Bir hata oluştu", variant: "destructive" });
+                                      }
+                                      setIsSavingSystemRules(false);
+                                    }}
+                                    data-testid="button-save-system-rules"
+                                  >
+                                    {isSavingSystemRules ? "Kaydediliyor..." : "Kaydet"}
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  {systemRulesIsCustom && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      disabled={isSavingSystemRules}
+                                      onClick={async () => {
+                                        if (confirm("Varsayılan kurallara dönmek istediğinizden emin misiniz? Özel kurallarınız silinecek.")) {
+                                          setIsSavingSystemRules(true);
+                                          try {
+                                            const res = await fetch('/api/settings/systemRules', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ resetToDefault: true })
+                                            });
+                                            if (res.ok) {
+                                              toast({ title: "Varsayılan kurallara dönüldü" });
+                                              setSystemRulesIsCustom(false);
+                                              setSystemRulesCustom(systemRulesDefault);
+                                            }
+                                          } catch {
+                                            toast({ title: "Bir hata oluştu", variant: "destructive" });
+                                          }
+                                          setIsSavingSystemRules(false);
+                                        }
+                                      }}
+                                      data-testid="button-reset-system-rules"
+                                    >
+                                      Varsayılana Dön
+                                    </Button>
+                                  )}
+                                  <Button 
+                                    variant={systemRulesEditMode ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                      if (!systemRulesEditMode) {
+                                        if (confirm("Sistem kurallarını düzenlemek bot davranışını değiştirebilir. Devam etmek istiyor musunuz?")) {
+                                          setSystemRulesEditMode(true);
+                                        }
+                                      }
+                                    }}
+                                    data-testid="button-edit-system-rules"
+                                  >
+                                    <Pencil className="w-3 h-3 mr-1" />
+                                    Düzenle
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Bot'un temel davranış kuralları. Aktarma, indirim, müsaitlik ve rezervasyon yönlendirme kurallarını içerir.
+                          </p>
+                          <Textarea 
+                            value={systemRulesEditMode ? systemRulesCustom : (systemRulesIsCustom ? systemRulesCustom : systemRulesDefault)}
+                            onChange={(e) => systemRulesEditMode && setSystemRulesCustom(e.target.value)}
+                            className={cn(
+                              "min-h-[300px] font-mono text-xs",
+                              !systemRulesEditMode && "bg-muted/50 cursor-default"
+                            )}
+                            readOnly={!systemRulesEditMode}
+                            data-testid="textarea-system-rules"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Bu kurallar bot'a otomatik olarak eklenir. Özelleştirirseniz varsayılan yerine sizin kurallarınız kullanılır.
+                          </p>
+                        </div>
+
+                        <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-3">
+                          <p className="text-xs text-blue-900 dark:text-blue-200">
+                            <strong>Not:</strong> Varsayılan kurallar, WhatsApp rezervasyon yönlendirmesi, aktarma koşulları ve indirim davranışı gibi temel bot davranışlarını içerir. Değiştirmeden önce dikkatlice okuyun.
                           </p>
                         </div>
                       </div>
