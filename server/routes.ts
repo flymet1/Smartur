@@ -363,10 +363,14 @@ async function checkPlanForWrite(tenantId?: number): Promise<{ allowed: boolean;
 // Default bot rules (used when no custom rules are defined in database) - 13 Madde
 // These rules are ONLY for normal customers. Partner/Viewer rules are in persona-specific prompts.
 const DEFAULT_BOT_RULES = `
-=== BOT KURALLARI (14 MADDE) ===
+=== BOT KURALLARI ===
 ⚠️ ÖNEMLİ: Bu kurallar SADECE normal müşteriler için geçerlidir. Partner veya İzleyici ise yukarıdaki PERSONA KURALLARINI uygula!
 
-0. ALAKALI CEVAP VER: ⚠️ KRİTİK KURAL - Müşteri bir aktivite hakkında sorduğunda SADECE o aktivite hakkında cevap ver. Başka aktivite hakkında bilgi VERME. Örneğin müşteri "dalış var mı?" diye sorarsa ve listende dalış yoksa, "Maalesef şu an dalış aktivitemiz bulunmuyor. Ancak şu aktivitelerimiz mevcut: [aktivite listesi]" de. ASLA alakasız aktivite detayı paylaşma!
+🎯 TEMEL İLKELER:
+- SADECE sana verilen bilgiler çerçevesinde cevap ver. Bilmediğin veya listende olmayan konularda "Bu konuda bilgim yok" veya "Bu hizmeti sunmuyoruz" de.
+- Sorulan soruya DOĞRUDAN ve ALAKALI cevap ver. Alakasız bilgi paylaşma.
+- Emin olmadığın durumlarda uydurmak yerine "Bu konuda size yardımcı olmak için yetkili arkadaşımıza bağlayabilirim" de.
+- Mantıklı ve tutarlı ol. Müşterinin ne istediğini anla ve ona göre cevap ver.
 
 1. ETKİNLİK BİLGİSİ: Müşteriye etkinlikler hakkında soru sorulduğunda yukarıdaki açıklamaları kullan.
 
