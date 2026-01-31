@@ -780,6 +780,43 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       if (a.priceUsd) desc += `, $${a.priceUsd}`;
       desc += `, Süre: ${a.durationMinutes} dk)`;
       
+      // Bölge bilgisi
+      if (a.region) {
+        desc += `\n  Bölge: ${a.region}`;
+      }
+      
+      // Zorluk seviyesi
+      if (a.difficulty) {
+        const difficultyLabels: Record<string, string> = {
+          easy: 'Kolay - Herkes için uygun',
+          moderate: 'Orta - Temel fiziksel kondisyon gerektirir',
+          hard: 'Zor - İyi kondisyon gerektirir',
+          expert: 'Uzman - Deneyim gerektirir'
+        };
+        desc += `\n  Zorluk Seviyesi: ${difficultyLabels[a.difficulty] || a.difficulty}`;
+      }
+      
+      // Maksimum katılımcı sayısı
+      if (a.maxParticipants) {
+        desc += `\n  Maksimum Katılımcı: ${a.maxParticipants} kişi`;
+      }
+      
+      // Kategoriler
+      try {
+        const categories = JSON.parse(a.categories || '[]');
+        if (categories.length > 0) {
+          desc += `\n  Kategoriler: ${categories.join(', ')}`;
+        }
+      } catch {}
+      
+      // Öne çıkan özellikler
+      try {
+        const highlights = JSON.parse(a.highlights || '[]');
+        if (highlights.length > 0) {
+          desc += `\n  Öne Çıkan Özellikler: ${highlights.join(', ')}`;
+        }
+      } catch {}
+      
       // Aktivite saatleri bilgisi
       try {
         const times = JSON.parse(a.defaultTimes || '[]');
