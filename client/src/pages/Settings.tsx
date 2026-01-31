@@ -1732,6 +1732,7 @@ export default function Settings() {
                             size="sm"
                             className="w-full justify-start text-muted-foreground hover:text-foreground"
                             onClick={() => setShowNewFaqEnglish(!showNewFaqEnglish)}
+                            data-testid="button-toggle-general-faq-english"
                           >
                             <Languages className="w-4 h-4 mr-2" />
                             {showNewFaqEnglish ? "İngilizce Çeviriyi Gizle" : "İngilizce Çeviri Ekle (Opsiyonel)"}
