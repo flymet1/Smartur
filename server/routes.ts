@@ -779,6 +779,16 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
       let desc = `- ${a.name}: ${a.description || "Açıklama yok"} (Fiyat: ${a.price} TL`;
       if (a.priceUsd) desc += `, $${a.priceUsd}`;
       desc += `, Süre: ${a.durationMinutes} dk)`;
+      
+      // Aktivite saatleri bilgisi
+      try {
+        const times = JSON.parse(a.defaultTimes || '[]');
+        if (Array.isArray(times) && times.length > 0) {
+          desc += `\n  Sefer/Uçuş Saatleri: ${times.join(', ')}`;
+          desc += `\n  NOT: Müşteri en iyi saat sorduğunda, bu saatlerden birini öner. Sabah erken saatler genelde daha serin ve sakin olur.`;
+        }
+      } catch {}
+      
       if (a.reservationLink) desc += `\n  TR Rezervasyon Linki: ${a.reservationLink}`;
       if (a.reservationLinkEn) desc += `\n  EN Reservation Link: ${a.reservationLinkEn}`;
       
