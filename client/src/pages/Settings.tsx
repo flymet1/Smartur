@@ -1710,6 +1710,9 @@ export default function Settings() {
                           <p className="text-sm text-muted-foreground">
                             Tüm aktiviteler için geçerli genel sorular. Bot, aktivite SSS'inde cevap bulamazsa bu listeye bakar.
                           </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            <strong>İpucu:</strong> Aynı cevap için birden fazla soru varyasyonu eklemek isterseniz virgülle ayırın. Örn: "merhaba, iyi günler, günaydın, selam"
+                          </p>
                         </div>
                         
                         <div className="flex flex-col gap-3">

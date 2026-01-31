@@ -6277,29 +6277,51 @@ Rezervasyon takip: {takip_linki}
       const isEnglishMessage = /\b(hello|hi|price|booking|available|cancel|change|what|how|when|where|can|do|is|are|the|for|my|your)\b/i.test(Body);
       const messageLower = Body.toLowerCase();
       
+      // Helper function to check if message matches a question (supports comma-separated variations)
+      const checkQuestionMatch = (question: string, messageWords: string[], isEnglish: boolean = false): boolean => {
+        // Split by comma for multiple variations (e.g., "merhaba, iyi günler, günaydın")
+        const variations = question.split(',').map(v => v.trim()).filter(v => v.length > 0);
+        
+        for (const variation of variations) {
+          const varNormalized = isEnglish ? variation.toLowerCase() : normalizeTurkish(variation);
+          const varWords = varNormalized.split(/\s+/).filter((w: string) => w.length > 2); // Allow shorter words for greetings
+          
+          if (varWords.length === 0) continue;
+          
+          // For single-word variations (like "merhaba"), check exact or partial match
+          if (varWords.length === 1) {
+            const singleWord = varWords[0];
+            if (messageWords.some((mw: string) => mw === singleWord || mw.includes(singleWord) || singleWord.includes(mw))) {
+              return true;
+            }
+          } else {
+            // For multi-word variations, use the standard matching logic
+            const matchCount = varWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+            if (matchCount >= 2 || matchCount / varWords.length >= 0.5) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      
       // 1. Aktivite SSS kontrolü (only if botAccess.faq is enabled)
       if (!sssResponse && botAccess.faq !== false && activities && activities.length > 0) {
-        const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
-        const messageWordsEn = messageLower.split(/\s+/).filter((w: string) => w.length > 3);
+        const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 2);
+        const messageWordsEn = messageLower.split(/\s+/).filter((w: string) => w.length > 2);
         for (const activity of activities) {
           if (!activity.faq) continue;
           try {
             const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
             if (Array.isArray(faqItems)) {
               for (const item of faqItems) {
-                // Check Turkish question
-                const questionNormalized = normalizeTurkish(item.question || '');
-                const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
-                const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                const trMatch = matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5);
+                // Check Turkish question (with comma-separated variations)
+                const trMatch = checkQuestionMatch(item.question || '', messageWords, false);
                 
                 // Check English question if available
                 let enMatch = false;
                 if (item.questionEn && isEnglishMessage) {
-                  const questionEnLower = (item.questionEn || '').toLowerCase();
-                  const questionEnWords = questionEnLower.split(/\s+/).filter((w: string) => w.length > 3);
-                  const enMatchCount = questionEnWords.filter((qw: string) => messageWordsEn.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                  enMatch = enMatchCount >= 2 || (questionEnWords.length > 0 && enMatchCount / questionEnWords.length >= 0.5);
+                  enMatch = checkQuestionMatch(item.questionEn, messageWordsEn, true);
                 }
                 
                 if (trMatch || enMatch) {
@@ -6324,23 +6346,17 @@ Rezervasyon takip: {takip_linki}
       if (!sssResponse && botAccess.faq !== false && generalFaq) {
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
-          const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
-          const messageWordsEn = messageLower.split(/\s+/).filter((w: string) => w.length > 3);
+          const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 2);
+          const messageWordsEn = messageLower.split(/\s+/).filter((w: string) => w.length > 2);
           if (Array.isArray(generalFaqItems)) {
             for (const item of generalFaqItems) {
-              // Check Turkish question
-              const questionNormalized = normalizeTurkish(item.question || '');
-              const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
-              const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-              const trMatch = matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5);
+              // Check Turkish question (with comma-separated variations)
+              const trMatch = checkQuestionMatch(item.question || '', messageWords, false);
               
               // Check English question if available
               let enMatch = false;
               if (item.questionEn && isEnglishMessage) {
-                const questionEnLower = (item.questionEn || '').toLowerCase();
-                const questionEnWords = questionEnLower.split(/\s+/).filter((w: string) => w.length > 3);
-                const enMatchCount = questionEnWords.filter((qw: string) => messageWordsEn.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                enMatch = enMatchCount >= 2 || (questionEnWords.length > 0 && enMatchCount / questionEnWords.length >= 0.5);
+                enMatch = checkQuestionMatch(item.questionEn, messageWordsEn, true);
               }
               
               if (trMatch || enMatch) {
@@ -6607,29 +6623,46 @@ Rezervasyon takip: {takip_linki}
       const testIsEnglishMessage = /\b(hello|hi|price|booking|available|cancel|change|what|how|when|where|can|do|is|are|the|for|my|your)\b/i.test(Body);
       const testMessageLower = Body.toLowerCase();
       
+      // Helper function to check if message matches a question (supports comma-separated variations)
+      const testCheckQuestionMatch = (question: string, messageWords: string[], isEnglish: boolean = false): boolean => {
+        const variations = question.split(',').map(v => v.trim()).filter(v => v.length > 0);
+        
+        for (const variation of variations) {
+          const varNormalized = isEnglish ? variation.toLowerCase() : normalizeTurkish(variation);
+          const varWords = varNormalized.split(/\s+/).filter((w: string) => w.length > 2);
+          
+          if (varWords.length === 0) continue;
+          
+          if (varWords.length === 1) {
+            const singleWord = varWords[0];
+            if (messageWords.some((mw: string) => mw === singleWord || mw.includes(singleWord) || singleWord.includes(mw))) {
+              return true;
+            }
+          } else {
+            const matchCount = varWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
+            if (matchCount >= 2 || matchCount / varWords.length >= 0.5) {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+      
       // 1. Aktivite SSS kontrolü (tenantId and botAccess.faq required)
       if (!testSssResponse && tenantId && botAccess.faq !== false && activities && activities.length > 0) {
-        const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
-        const messageWordsEn = testMessageLower.split(/\s+/).filter((w: string) => w.length > 3);
+        const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 2);
+        const messageWordsEn = testMessageLower.split(/\s+/).filter((w: string) => w.length > 2);
         for (const activity of activities) {
           if (!activity.faq) continue;
           try {
             const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
             if (Array.isArray(faqItems)) {
               for (const item of faqItems) {
-                // Check Turkish question
-                const questionNormalized = normalizeTurkish(item.question || '');
-                const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
-                const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                const trMatch = matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5);
+                const trMatch = testCheckQuestionMatch(item.question || '', messageWords, false);
                 
-                // Check English question if available
                 let enMatch = false;
                 if (item.questionEn && testIsEnglishMessage) {
-                  const questionEnLower = (item.questionEn || '').toLowerCase();
-                  const questionEnWords = questionEnLower.split(/\s+/).filter((w: string) => w.length > 3);
-                  const enMatchCount = questionEnWords.filter((qw: string) => messageWordsEn.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                  enMatch = enMatchCount >= 2 || (questionEnWords.length > 0 && enMatchCount / questionEnWords.length >= 0.5);
+                  enMatch = testCheckQuestionMatch(item.questionEn, messageWordsEn, true);
                 }
                 
                 if (trMatch || enMatch) {
@@ -6653,23 +6686,15 @@ Rezervasyon takip: {takip_linki}
       if (!testSssResponse && tenantId && botAccess.faq !== false && generalFaq) {
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
-          const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
-          const messageWordsEn = testMessageLower.split(/\s+/).filter((w: string) => w.length > 3);
+          const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 2);
+          const messageWordsEn = testMessageLower.split(/\s+/).filter((w: string) => w.length > 2);
           if (Array.isArray(generalFaqItems)) {
             for (const item of generalFaqItems) {
-              // Check Turkish question
-              const questionNormalized = normalizeTurkish(item.question || '');
-              const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
-              const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-              const trMatch = matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5);
+              const trMatch = testCheckQuestionMatch(item.question || '', messageWords, false);
               
-              // Check English question if available
               let enMatch = false;
               if (item.questionEn && testIsEnglishMessage) {
-                const questionEnLower = (item.questionEn || '').toLowerCase();
-                const questionEnWords = questionEnLower.split(/\s+/).filter((w: string) => w.length > 3);
-                const enMatchCount = questionEnWords.filter((qw: string) => messageWordsEn.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                enMatch = enMatchCount >= 2 || (questionEnWords.length > 0 && enMatchCount / questionEnWords.length >= 0.5);
+                enMatch = testCheckQuestionMatch(item.questionEn, messageWordsEn, true);
               }
               
               if (trMatch || enMatch) {

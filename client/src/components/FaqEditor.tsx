@@ -110,6 +110,9 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
           <div>
             <Label className="text-base">Sık Sorulan Sorular</Label>
             <p className="text-xs text-muted-foreground">Bot bu bilgileri müşterilere cevap vermek için kullanır</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+              <strong>İpucu:</strong> Aynı cevap için birden fazla soru varyasyonu virgülle ayırın. Örn: "merhaba, iyi günler, günaydın"
+            </p>
           </div>
         </div>
         <Button
