@@ -378,8 +378,8 @@ export default function PublicActivityDetail() {
         activity={activity}
         language={language}
       />
-      {activity.faq && activity.faq.length > 0 && (
-        <FAQSchema faqs={activity.faq} />
+      {activity.faq && activity.faq.filter((f: any) => !f?.botOnly).length > 0 && (
+        <FAQSchema faqs={activity.faq.filter((f: any) => !f?.botOnly)} />
       )}
       <div className="relative h-[50vh] md:h-[60vh] overflow-hidden">
         <img
@@ -784,7 +784,7 @@ export default function PublicActivityDetail() {
               </Card>
             )}
 
-            {ensureArray(activity.faq).length > 0 && (
+            {ensureArray(activity.faq).filter((item: any) => !item?.botOnly).length > 0 && (
               <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -794,7 +794,7 @@ export default function PublicActivityDetail() {
                 </CardHeader>
                 <CardContent>
                   <Accordion type="single" collapsible className="w-full">
-                    {ensureArray(activity.faq).map((item: any, idx) => (
+                    {ensureArray(activity.faq).filter((item: any) => !item?.botOnly).map((item: any, idx) => (
                       <AccordionItem key={idx} value={`faq-${idx}`}>
                         <AccordionTrigger className="text-left">{ensureString(item?.question)}</AccordionTrigger>
                         <AccordionContent className="text-muted-foreground">

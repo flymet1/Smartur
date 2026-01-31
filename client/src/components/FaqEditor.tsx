@@ -2,11 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, HelpCircle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, HelpCircle, Bot, Globe } from "lucide-react";
 
 export interface FaqItem {
   question: string;
   answer: string;
+  botOnly?: boolean;
 }
 
 interface FaqEditorProps {
@@ -32,14 +34,14 @@ export function stringifyFaq(faq: FaqItem[]): string {
 
 export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProps) {
   const addFaq = () => {
-    onChange([...faq, { question: "", answer: "" }]);
+    onChange([...faq, { question: "", answer: "", botOnly: false }]);
   };
 
   const removeFaq = (index: number) => {
     onChange(faq.filter((_, i) => i !== index));
   };
 
-  const updateFaq = (index: number, field: "question" | "answer", value: string) => {
+  const updateFaq = (index: number, field: keyof FaqItem, value: string | boolean) => {
     const newFaq = [...faq];
     newFaq[index] = { ...newFaq[index], [field]: value };
     onChange(newFaq);
@@ -100,6 +102,29 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
                   className="min-h-[60px]"
                   data-testid={`${testIdPrefix}-answer-${idx}`}
                 />
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-muted">
+                <div className="flex items-center gap-2">
+                  {item.botOnly ? (
+                    <Bot className="w-4 h-4 text-orange-500" />
+                  ) : (
+                    <Globe className="w-4 h-4 text-green-500" />
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    {item.botOnly ? "Sadece bot görür (web sitede gizli)" : "Web sitede görünür"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor={`botOnly-${idx}`} className="text-xs text-muted-foreground">
+                    Sadece Bot
+                  </Label>
+                  <Switch
+                    id={`botOnly-${idx}`}
+                    checked={item.botOnly || false}
+                    onCheckedChange={(checked) => updateFaq(idx, "botOnly", checked)}
+                    data-testid={`${testIdPrefix}-botonly-${idx}`}
+                  />
+                </div>
               </div>
             </div>
           ))}
