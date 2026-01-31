@@ -1370,7 +1370,13 @@ ${reservationContext}
 ${customerRequestContext}
 
 === GENEL BOT KURALLARI (MÜŞTERİLER İÇİN) ===${customerOnlyRulesNote}
-${context.botRules || DEFAULT_BOT_RULES}`;
+${context.botRules || DEFAULT_BOT_RULES}
+
+⚠️⚠️⚠️ SON HATIRLATMA - MUTLAKA UYGULA ⚠️⚠️⚠️
+1. SADECE sorulan konuya cevap ver. Alakasız bilgi VERME.
+2. Listende OLMAYAN bir aktivite/hizmet sorulursa "Bu hizmetimiz bulunmuyor" de.
+3. Uydurmak YASAK. Bilmiyorsan "Bu konuda bilgim yok, yetkili arkadaşımıza bağlıyorum" de.
+4. Önce soruyu ANLA, sonra ALAKALI cevap ver.`;
 
   // Helper function to check if error is rate limit related
   const isRateLimitError = (error: unknown): boolean => {
