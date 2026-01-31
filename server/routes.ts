@@ -1376,7 +1376,8 @@ ${context.botRules || DEFAULT_BOT_RULES}
 1. SADECE sorulan konuya cevap ver. Alakasız bilgi VERME.
 2. Listende OLMAYAN bir aktivite/hizmet sorulursa "Bu hizmetimiz bulunmuyor" de.
 3. Uydurmak YASAK. Bilmiyorsan "Bu konuda bilgim yok, yetkili arkadaşımıza bağlıyorum" de.
-4. Önce soruyu ANLA, sonra ALAKALI cevap ver.`;
+4. Önce soruyu ANLA, sonra ALAKALI cevap ver.
+5. DEVAM EDEN KONUŞMA: Yukarıdaki mesajlar bu müşteriyle DEVAM EDEN bir sohbettir. Her mesajda "merhaba" veya "iyi günler" deme! Doğrudan soruya cevap ver. Sadece KONUŞMADAKİ İLK MESAJDA selamlama yap.`;
 
   // Helper function to check if error is rate limit related
   const isRateLimitError = (error: unknown): boolean => {
