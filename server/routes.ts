@@ -397,6 +397,19 @@ const DEFAULT_BOT_RULES = `
 12. MÜŞTERİ DEĞİŞİKLİK TALEPLERİ (SADECE MÜŞTERİLER İÇİN): Müşteri saat/tarih değişikliği veya iptal istediğinde, önce istenen yeni tarih/saat için müsaitlik bilgisini paylaş. Ardından kendilerine gönderilen takip linkinden değişiklik talebini oluşturabileceklerini söyle. (⚠️ Partner/İzleyicilere takip linki VERME - panele yönlendir!)
 
 13. REZERVASYON LİNKİ SEÇİMİ (SADECE MÜŞTERİLER İÇİN): Müşteriyle İngilizce konuşuyorsan "EN Reservation Link" kullan. İngilizce link yoksa/boşsa "TR Rezervasyon Linki" gönder. Türkçe konuşuyorsan her zaman "TR Rezervasyon Linki" kullan. (⚠️ Partner/İzleyicilere link VERME!)
+
+=== KONUŞMA BAĞLAMI (ÇOK ÖNEMLİ) ===
+14. TAKİP SORULARI: "kaç para", "fiyatı ne", "ne zaman", "nasıl gidilir" gibi kısa sorular ÖNCEKİ konuşmaya referanstır!
+    - Örnek: Müşteri önce "paraşüt" sonra "kaç para" derse → paraşütün fiyatını söyle
+    - Örnek: Müşteri önce "rafting" sonra "yarın müsait mi" derse → rafting müsaitliğini kontrol et
+    - ASLA "hangi aktivite için soruyorsunuz?" diye sorma - konuşma geçmişinden anla!
+
+15. BASİT CEVAP VER: Müşteri "2 kişi için yer var mı?" derse:
+    - DOĞRU: "Evet, 2 kişilik yeriniz var. Saat 08:00, 11:00 veya 15:00 seçebilirsiniz."
+    - YANLIŞ: "08:00: 10 kişilik yer, 11:00: 10 kişilik yer, 13:00: 10 kişilik yer..."
+    - Müşteri kaç kişi derse, sadece o kadar yer olup olmadığını KISA söyle. Tüm kapasiteyi dökme!
+
+16. SORULANI CEVAPLA: Fiyat soruldu → fiyat söyle. Müsaitlik soruldu → sadece müsaitlik söyle. Her şeyi birden anlatma.
 `;
 
 // Gemini AI Integration - supports both Replit integration and standalone API key
@@ -1280,6 +1293,18 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   prompt += `8. TRANSFER: Ücretsiz transfer varsa otomatik bildir, yoksa belirt\n`;
   prompt += `9. EKSTRA: Video/fotoğraf paketleri için aktivite sayfasına yönlendir\n`;
   prompt += `10. PAKET TUR: Paket tur sorularında içerikleri ve toplam fiyatı söyle\n`;
+  
+  // ÇOK ÖNEMLİ: Konuşma bağlamı ve basit cevap kuralları
+  prompt += `\n=== KONUŞMA BAĞLAMI (ÇOK ÖNEMLİ) ===\n`;
+  prompt += `11. TAKİP SORULARI: "kaç para", "fiyatı ne", "ne zaman" gibi kısa sorular ÖNCEKİ MESAJLARA referanstır!\n`;
+  prompt += `    - Örnek: Müşteri önce "paraşüt" sonra "kaç para" derse → paraşütün fiyatını söyle\n`;
+  prompt += `    - Örnek: Müşteri önce "rafting" sonra "yarın var mı" derse → rafting müsaitliğini kontrol et\n`;
+  prompt += `    - ASLA "hangi aktivite için" diye sorma - konuşma geçmişinden anla!\n`;
+  prompt += `12. BASİT CEVAP: Müşteri "2 kişi için yer var mı?" derse:\n`;
+  prompt += `    - DOĞRU: "Evet, 2 kişilik yeriniz var. Saat 08:00, 11:00 veya 15:00 seçebilirsiniz."\n`;
+  prompt += `    - YANLIŞ: "08:00: 10 kişilik yer, 11:00: 10 kişilik yer..." (tüm kapasiteyi dökme!)\n`;
+  prompt += `    - Müşteri kaç kişi derse, o kadar yer olup olmadığını KISA söyle.\n`;
+  prompt += `13. SORULANI CEVAPLA: Fiyat soruldu → fiyat söyle. Müsaitlik soruldu → müsaitlik söyle. Her şeyi birden anlatma.\n`;
   
   // Partner/Viewer için ek kurallar - EN YÜKSEK ÖNCELİK
   if (context.isPartner || context.isViewer) {
