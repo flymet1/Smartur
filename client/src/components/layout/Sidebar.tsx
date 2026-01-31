@@ -915,6 +915,20 @@ export function Sidebar() {
               </div>
             </Link>
           )}
+
+          {/* Subscription Status - Compact */}
+          {currentUser && (
+            <Link href="/subscription">
+              <div className={cn(
+                "flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium cursor-pointer hover:opacity-80 transition-opacity",
+                licenseStatusInfo.color
+              )} data-testid="sidebar-subscription-status">
+                <div className={cn("w-1.5 h-1.5 rounded-full", licenseStatusInfo.bgColor, licenseStatusInfo.isActive && "animate-pulse")} />
+                <Shield className="h-2.5 w-2.5" />
+                <span>{licenseStatusInfo.text}</span>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
 

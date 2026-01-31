@@ -18,69 +18,73 @@ interface TenantSettings {
   subscriptionEndDate?: string;
 }
 
+interface CurrentUser {
+  id: number;
+  username: string;
+  name?: string;
+  membershipEndDate?: string | null;
+}
+
 export function AppFooter() {
   const { data: settings } = useQuery<TenantSettings>({
     queryKey: ["/api/settings"],
   });
 
+  const { data: currentUser } = useQuery<CurrentUser>({
+    queryKey: ["/api/auth/me"],
+  });
+
   const isBotEnabled = settings?.botEnabled === true;
 
   const getLicenseStatusInfo = () => {
-    const status = settings?.licenseStatus || 'trial';
-    const type = settings?.licenseType || 'trial';
-    const endDate = settings?.subscriptionEndDate;
-    
-    let daysRemaining = 0;
-    if (endDate) {
-      const end = new Date(endDate);
-      const now = new Date();
-      daysRemaining = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    }
-
-    const typeLabels: Record<string, string> = {
-      trial: 'Deneme',
-      basic: 'Başlangıç',
-      professional: 'Profesyonel',
-      enterprise: 'Kurumsal'
-    };
-
-    if (status === 'active') {
-      if (daysRemaining <= 7 && daysRemaining > 0) {
-        return {
-          text: `${typeLabels[type]} (${daysRemaining} gün)`,
-          color: 'text-yellow-600 dark:text-yellow-400',
-          bgColor: 'bg-yellow-500',
+    // Use currentUser.membershipEndDate for accurate status (same logic as Sidebar)
+    if (currentUser) {
+      // Unlimited membership (membershipEndDate is null)
+      if (!currentUser.membershipEndDate) {
+        return { 
+          text: 'Aktif / Süresiz', 
+          color: 'text-accent', 
+          bgColor: 'bg-accent',
           isActive: true
         };
       }
-      return {
-        text: typeLabels[type],
-        color: 'text-accent',
-        bgColor: 'bg-accent',
-        isActive: true
-      };
+      
+      // Has an end date - calculate remaining days
+      const endDate = new Date(currentUser.membershipEndDate);
+      const now = new Date();
+      const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysRemaining <= 0) {
+        return { text: 'Yenileme Gerekli', color: 'text-destructive', bgColor: 'bg-destructive', isActive: false };
+      }
+      
+      if (daysRemaining <= 7) {
+        return { 
+          text: `Aktif / ${daysRemaining} Gün Kaldı`, 
+          color: 'text-yellow-600 dark:text-yellow-400', 
+          bgColor: 'bg-yellow-500',
+          isActive: true
+        };
+      } else if (daysRemaining <= 14) {
+        return { 
+          text: `Aktif / ${daysRemaining} Gün Kaldı`, 
+          color: 'text-amber-600 dark:text-amber-400', 
+          bgColor: 'bg-amber-500',
+          isActive: true
+        };
+      } else {
+        return { 
+          text: `Aktif / ${daysRemaining} Gün Kaldı`, 
+          color: 'text-accent', 
+          bgColor: 'bg-accent',
+          isActive: true
+        };
+      }
     }
-
-    if (status === 'expired') {
-      return {
-        text: 'Süresi Doldu',
-        color: 'text-destructive',
-        bgColor: 'bg-destructive',
-        isActive: false
-      };
-    }
-
-    if (status === 'cancelled') {
-      return {
-        text: 'İptal Edildi',
-        color: 'text-muted-foreground',
-        bgColor: 'bg-muted-foreground',
-        isActive: false
-      };
-    }
-
+    
+    // No user logged in
     return {
-      text: 'Deneme',
+      text: 'Giriş Yapınız',
       color: 'text-muted-foreground',
       bgColor: 'bg-muted-foreground',
       isActive: false
