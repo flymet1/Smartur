@@ -6147,7 +6147,8 @@ Rezervasyon takip: {takip_linki}
       const pendingRequests = customerRequestsForPhone.filter(r => r.status === 'pending');
 
       // Get history & context for this tenant (properly scoped)
-      const history = await storage.getMessages(From, 5, tenantId);
+      // Mesaj geçmişi - 15 mesaj konuşma bağlamını korumak için ideal
+      const history = await storage.getMessages(From, 15, tenantId);
       const activities = await storage.getActivities(tenantId);
       const packageTours = await storage.getPackageTours(tenantId);
       
@@ -6310,7 +6311,8 @@ Rezervasyon takip: {takip_linki}
       const pendingRequests = customerRequestsForPhone.filter(r => r.status === 'pending');
 
       // Get history (scoped to tenant if identified)
-      const history = await storage.getMessages(From, 5, tenantId);
+      // Mesaj geçmişi - 15 mesaj konuşma bağlamını korumak için ideal
+      const history = await storage.getMessages(From, 15, tenantId);
       const activities = await storage.getActivities(tenantId);
       const packageTours = await storage.getPackageTours(tenantId);
       
