@@ -6266,41 +6266,14 @@ Rezervasyon takip: {takip_linki}
       }
       
       // === SSS ÖNCELİKLİ SİSTEM ===
-      // 1. Önce Otomatik Yanıtlar kontrol et
-      // 2. Sonra Aktivite SSS kontrol et (eğer botAccess.faq aktifse)
-      // 3. Sonra Genel SSS kontrol et (eğer botAccess.faq aktifse)
-      // 4. Hiçbiri eşleşmezse AI'a gönder
+      // 1. Aktivite SSS kontrol et (eğer botAccess.faq aktifse)
+      // 2. Genel SSS kontrol et (eğer botAccess.faq aktifse)
+      // 3. Hiçbiri eşleşmezse AI'a gönder
       
       const normalizedMessage = normalizeTurkish(Body);
       let sssResponse: string | null = null;
       
-      // 1. Otomatik Yanıtlar kontrolü (tenant-specific auto responses)
-      if (!sssResponse) {
-        const autoResponses = await storage.getAutoResponses(tenantId);
-        if (autoResponses && autoResponses.length > 0) {
-          const sortedResponses = [...autoResponses].sort((a, b) => (b.priority || 0) - (a.priority || 0));
-          for (const autoResp of sortedResponses) {
-            if (!autoResp.isActive) continue;
-            try {
-              const keywords = typeof autoResp.keywords === 'string' ? JSON.parse(autoResp.keywords) : autoResp.keywords;
-              if (Array.isArray(keywords)) {
-                const matched = keywords.some((kw: string) => {
-                  const kwNormalized = normalizeTurkish(kw);
-                  return normalizedMessage.includes(kwNormalized);
-                });
-                if (matched) {
-                  const isEnglish = /\b(hello|hi|price|booking|available|cancel|change)\b/i.test(Body);
-                  sssResponse = isEnglish && autoResp.responseEn ? autoResp.responseEn : autoResp.response;
-                  console.log(`[SSS] Otomatik Yanıt eşleşti: "${autoResp.name}"`);
-                  break;
-                }
-              }
-            } catch (e) {}
-          }
-        }
-      }
-      
-      // 2. Aktivite SSS kontrolü (only if botAccess.faq is enabled)
+      // 1. Aktivite SSS kontrolü (only if botAccess.faq is enabled)
       if (!sssResponse && botAccess.faq !== false && activities && activities.length > 0) {
         const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
         for (const activity of activities) {
@@ -6329,7 +6302,7 @@ Rezervasyon takip: {takip_linki}
         }
       }
       
-      // 3. Genel SSS kontrolü (only if botAccess.faq is enabled)
+      // 2. Genel SSS kontrolü (only if botAccess.faq is enabled)
       if (!sssResponse && botAccess.faq !== false && generalFaq) {
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
@@ -6596,33 +6569,7 @@ Rezervasyon takip: {takip_linki}
       const testNormalizedMessage = normalizeTurkish(Body);
       let testSssResponse: string | null = null;
       
-      // 1. Otomatik Yanıtlar kontrolü (tenantId required)
-      if (!testSssResponse && tenantId) {
-        const autoResponses = await storage.getAutoResponses(tenantId);
-        if (autoResponses && autoResponses.length > 0) {
-          const sortedResponses = [...autoResponses].sort((a, b) => (b.priority || 0) - (a.priority || 0));
-          for (const autoResp of sortedResponses) {
-            if (!autoResp.isActive) continue;
-            try {
-              const keywords = typeof autoResp.keywords === 'string' ? JSON.parse(autoResp.keywords) : autoResp.keywords;
-              if (Array.isArray(keywords)) {
-                const matched = keywords.some((kw: string) => {
-                  const kwNormalized = normalizeTurkish(kw);
-                  return testNormalizedMessage.includes(kwNormalized);
-                });
-                if (matched) {
-                  const isEnglish = /\b(hello|hi|price|booking|available|cancel|change)\b/i.test(Body);
-                  testSssResponse = isEnglish && autoResp.responseEn ? autoResp.responseEn : autoResp.response;
-                  console.log(`[SSS-TEST] Otomatik Yanıt eşleşti: "${autoResp.name}"`);
-                  break;
-                }
-              }
-            } catch (e) {}
-          }
-        }
-      }
-      
-      // 2. Aktivite SSS kontrolü (tenantId and botAccess.faq required)
+      // 1. Aktivite SSS kontrolü (tenantId and botAccess.faq required)
       if (!testSssResponse && tenantId && botAccess.faq !== false && activities && activities.length > 0) {
         const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
         for (const activity of activities) {
@@ -6648,7 +6595,7 @@ Rezervasyon takip: {takip_linki}
         }
       }
       
-      // 3. Genel SSS kontrolü (tenantId and botAccess.faq required)
+      // 2. Genel SSS kontrolü (tenantId and botAccess.faq required)
       if (!testSssResponse && tenantId && botAccess.faq !== false && generalFaq) {
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
