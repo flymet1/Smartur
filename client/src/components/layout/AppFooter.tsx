@@ -43,7 +43,7 @@ export function AppFooter() {
       if (!currentUser.membershipEndDate) {
         return { 
           text: 'Aktif / Süresiz', 
-          color: 'text-accent', 
+          color: 'text-foreground', 
           bgColor: 'bg-accent',
           isActive: true
         };
@@ -75,7 +75,7 @@ export function AppFooter() {
       } else {
         return { 
           text: `Aktif / ${daysRemaining} Gün Kaldı`, 
-          color: 'text-accent', 
+          color: 'text-foreground', 
           bgColor: 'bg-accent',
           isActive: true
         };
