@@ -782,6 +782,9 @@ type IntentType =
   | 'transfer'           // Transfer bilgisi
   | 'payment'            // Ödeme bilgisi
   | 'cancellation'       // İptal/değişiklik
+  | 'faq'                // Sık sorulan sorular
+  | 'extras'             // Ekstra hizmetler
+  | 'package_tour'       // Paket turlar
   | 'general'            // Genel soru
   | 'greeting'           // Selamlama
   | 'unknown';           // Bilinmeyen
@@ -882,6 +885,9 @@ function detectIntent(message: string, activities: any[], packageTours: any[], h
     'payment': ['ödeme', 'ön ödeme', 'kapora', 'nakit', 'kart', 'havale'],
     'cancellation': ['iptal', 'değişiklik', 'tarih değiştir', 'vazgeçtim'],
     'activity_list': ['aktiviteler', 'turlar', 'neler var', 'ne yapabiliriz', 'seçenekler'],
+    'faq': ['sss', 'sık sorulan', 'merak edilen', 'soru-cevap'],
+    'extras': ['ekstra', 'ek hizmet', 'video çekim', 'fotoğraf çekim', 'sigorta', 'öğle yemeği'],
+    'package_tour': ['paket tur', 'tur paketi', 'paket program', 'günlük tur', 'kombinasyon tur', 'kombi tur', 'paketler'],
     'activity_info': [], // Aktivite bulundu ama spesifik intent yok
     'general': [],
     'greeting': [],
@@ -1037,7 +1043,35 @@ function buildRAGContext(
 function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[]): string {
   const { intent, relevantActivity, relevantCapacity, isFirstMessage } = ragContext;
   
+  // Get bot access settings
+  const botAccess = context.botAccess || {
+    activities: true, packageTours: true, capacity: true, faq: true,
+    confirmation: true, transfer: true, extras: true
+  };
+  
+  // MERKEZI PARTNER/VIEWER KONTROLÜ - aktivite listesi ve linkler temizlenir
+  const isRestrictedUser = context.isPartner || context.isViewer;
+  const safeActivities = isRestrictedUser ? [] : activities; // Partner/Viewer için aktivite listesi gizle
+  
   let prompt = `Sen profesyonel bir turizm danışmanısın. Kısa ve net cevaplar ver.\n\n`;
+  
+  // === PERSONA RULES (HIGHEST PRIORITY) - EN BAŞTA ===
+  if (context.isPartner) {
+    prompt += `⚠️⚠️⚠️ KRİTİK - PARTNER ACENTA KURALLARI ⚠️⚠️⚠️\n`;
+    prompt += `Bu kişi PARTNER ACENTADIR! Aşağıdaki kurallar MUTLAKA uygulanmalıdır:\n`;
+    prompt += `- HİÇBİR LİNK GÖNDERME (rezervasyon, web sitesi, tracking)\n`;
+    prompt += `- Aktivite listesi GÖNDERME\n`;
+    prompt += `- Fiyat/komisyon bilgisi VERME\n`;
+    prompt += `- Sadece "Panel üzerinden işlem yapabilirsiniz" de\n`;
+    prompt += `- Bu kurallar DİĞER TÜM KURALLARIN ÜSTÜNDEDİR!\n\n`;
+  } else if (context.isViewer) {
+    prompt += `⚠️⚠️⚠️ KRİTİK - İZLEYİCİ KURALLARI ⚠️⚠️⚠️\n`;
+    prompt += `Bu kişi İZLEYİCİDİR! Aşağıdaki kurallar MUTLAKA uygulanmalıdır:\n`;
+    prompt += `- HİÇBİR LİNK GÖNDERME\n`;
+    prompt += `- Aktivite listesi GÖNDERME\n`;
+    prompt += `- Sadece genel bilgi ver, işlem yapma\n`;
+    prompt += `- Bu kurallar DİĞER TÜM KURALLARIN ÜSTÜNDEDİR!\n\n`;
+  }
   
   // Selamlama kontrolü
   if (!isFirstMessage) {
@@ -1048,14 +1082,23 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   switch (intent.type) {
     case 'greeting':
       prompt += `Müşteri selamlıyor. Kısaca selamla ve nasıl yardımcı olabileceğini sor.\n`;
-      prompt += `\nMevcut Aktiviteler: ${activities.map(a => a.name).join(', ')}\n`;
+      if (botAccess.activities && safeActivities.length > 0) {
+        prompt += `\nMevcut Aktiviteler: ${safeActivities.map(a => a.name).join(', ')}\n`;
+      }
       break;
       
     case 'activity_list':
       prompt += `Müşteri aktivite listesi istiyor.\n\n`;
-      prompt += `Mevcut Aktiviteler:\n`;
-      for (const a of activities) {
-        prompt += `- ${a.name}: ${a.price} TL, ${a.durationMinutes} dk\n`;
+      if (isRestrictedUser) {
+        prompt += `Bu kişi ${context.isPartner ? 'Partner' : 'İzleyici'} olduğu için aktivite listesi paylaşılmaz.\n`;
+        prompt += `"Panel üzerinden aktiviteleri görüntüleyebilirsiniz" de.\n`;
+      } else if (botAccess.activities && safeActivities.length > 0) {
+        prompt += `Mevcut Aktiviteler:\n`;
+        for (const a of safeActivities) {
+          prompt += `- ${a.name}: ${a.price} TL, ${a.durationMinutes} dk\n`;
+        }
+      } else {
+        prompt += `Aktivite bilgilerine erişim devre dışı. Müşteriyi web sitesine yönlendir.\n`;
       }
       break;
       
@@ -1064,17 +1107,30 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
     case 'price':
     case 'payment':
     case 'transfer':
-      if (relevantActivity) {
+      if (isRestrictedUser) {
+        prompt += `Bu kişi ${context.isPartner ? 'Partner' : 'İzleyici'}. Genel bilgi ver, link paylaşma.\n`;
+        if (relevantActivity) {
+          prompt += `Aktivite: ${relevantActivity.name} hakkında genel bilgi verebilirsin.\n`;
+        }
+      } else if (!botAccess.activities) {
+        prompt += `Aktivite bilgilerine erişim devre dışı. Müşteriyi web sitesine yönlendir.\n`;
+      } else if (intent.type === 'transfer' && !botAccess.transfer) {
+        prompt += `Transfer bilgilerine erişim devre dışı. Müşteriyi arayarak bilgi almasını öner.\n`;
+      } else if (relevantActivity) {
         prompt += buildFocusedActivityDescription(relevantActivity, intent);
-      } else {
+      } else if (safeActivities.length > 0) {
         prompt += `Müşteri bir aktivite hakkında soruyor ama hangi aktivite olduğu belirsiz.\n`;
-        prompt += `Mevcut aktiviteler: ${activities.map(a => a.name).join(', ')}\n`;
+        prompt += `Mevcut aktiviteler: ${safeActivities.map(a => a.name).join(', ')}\n`;
         prompt += `Hangi aktivite hakkında bilgi istediğini sor.\n`;
+      } else {
+        prompt += `Aktivite bilgisi mevcut değil. Müşteriyi web sitesine yönlendir.\n`;
       }
       break;
       
     case 'availability':
-      if (relevantActivity) {
+      if (!botAccess.capacity) {
+        prompt += `Kapasite bilgilerine erişim devre dışı. Müsaitlik için arayarak sormalarını öner.\n`;
+      } else if (relevantActivity) {
         prompt += `Aktivite: ${relevantActivity.name}\n`;
         if (relevantCapacity.length > 0) {
           prompt += `\nMüsaitlik Bilgisi:\n`;
@@ -1089,14 +1145,31 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
       break;
       
     case 'reservation':
-      if (relevantActivity && relevantActivity.reservationLink) {
+      // Partner/Viewer için link paylaşma - HİÇBİR LİNK GÖNDERME
+      if (context.isPartner || context.isViewer) {
+        prompt += `Müşteri rezervasyon yapmak istiyor ama bu kişi ${context.isPartner ? 'Partner' : 'İzleyici'}.\n`;
+        prompt += `Rezervasyon linki GÖNDERME. Panel üzerinden işlem yapmalarını söyle.\n`;
+      } else if (!botAccess.activities) {
+        prompt += `Aktivite bilgilerine erişim devre dışı. Genel web sitesine yönlendir.\n`;
+      } else if (relevantActivity) {
         prompt += `Müşteri rezervasyon yapmak istiyor.\n`;
         prompt += `Aktivite: ${relevantActivity.name}\n`;
-        prompt += `Rezervasyon Linki: ${relevantActivity.reservationLink}\n`;
-        prompt += `Bu linki paylaş ve kolayca rezervasyon yapabileceğini söyle.\n`;
-      } else {
+        // Dil bazlı link seçimi
+        const isEnglish = context.language === 'en' || context.lastMessageLang === 'en';
+        const link = isEnglish && relevantActivity.reservationLinkEn 
+          ? relevantActivity.reservationLinkEn 
+          : relevantActivity.reservationLink;
+        if (link) {
+          prompt += `Rezervasyon Linki: ${link}\n`;
+          prompt += `Bu linki paylaş ve kolayca rezervasyon yapabileceğini söyle.\n`;
+        } else {
+          prompt += `Bu aktivite için online rezervasyon linki yok. Telefon/WhatsApp ile iletişime geçmelerini öner.\n`;
+        }
+      } else if (botAccess.activities && safeActivities.length > 0) {
         prompt += `Müşteri rezervasyon yapmak istiyor. Hangi aktivite için olduğunu sor.\n`;
-        prompt += `Aktiviteler: ${activities.map(a => a.name).join(', ')}\n`;
+        prompt += `Aktiviteler: ${safeActivities.map(a => a.name).join(', ')}\n`;
+      } else {
+        prompt += `Rezervasyon için web sitesine yönlendir.\n`;
       }
       break;
       
@@ -1114,17 +1187,99 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
       prompt += `Takip linkinden talep oluşturabileceklerini söyle. Acil durumlarda yetkili yönlendirmesi yap.\n`;
       break;
       
+    case 'faq':
+      if (!botAccess.faq) {
+        prompt += `SSS bilgilerine erişim devre dışı.\n`;
+      } else {
+        // FAQ SIRASI: Önce aktivite SSS, sonra genel SSS (legacy kural)
+        prompt += `=== SIK SORULAN SORULAR ===\n`;
+        
+        // 1. Aktivite-spesifik SSS (varsa)
+        if (relevantActivity) {
+          try {
+            const activityFaqs = JSON.parse(relevantActivity.faq || '[]');
+            if (activityFaqs.length > 0) {
+              prompt += `\n📌 ${relevantActivity.name} SSS:\n`;
+              for (const faq of activityFaqs.slice(0, 3)) {
+                prompt += `S: ${faq.question}\nC: ${faq.answer}\n\n`;
+              }
+            }
+          } catch {}
+        }
+        
+        // 2. Genel SSS
+        const generalFaqs = context.generalFaqs || [];
+        if (generalFaqs.length > 0) {
+          prompt += `\n📋 Genel SSS:\n`;
+          for (const faq of generalFaqs.slice(0, 3)) {
+            prompt += `S: ${faq.question}\nC: ${faq.answer}\n\n`;
+          }
+        }
+        
+        if (!relevantActivity && generalFaqs.length === 0) {
+          prompt += `Şu anda kayıtlı SSS bulunmuyor.\n`;
+        }
+      }
+      break;
+      
+    case 'extras':
+      if (!botAccess.extras) {
+        prompt += `Ekstra hizmet bilgilerine erişim devre dışı.\n`;
+      } else {
+        prompt += `Müşteri ekstra hizmetler hakkında soruyor.\n`;
+        prompt += `Mevcut ekstra hizmetler için web sitesine yönlendir veya aktivite seçmesini iste.\n`;
+      }
+      break;
+      
+    case 'package_tour':
+      if (!botAccess.packageTours) {
+        prompt += `Paket tur bilgilerine erişim devre dışı.\n`;
+      } else {
+        const packageTours = context.packageTours || [];
+        if (packageTours.length > 0) {
+          prompt += `=== PAKET TURLAR ===\n`;
+          for (const pt of packageTours.slice(0, 3)) {
+            prompt += `- ${pt.name}: ${pt.price} TL, ${pt.durationDays} gün\n`;
+          }
+        } else {
+          prompt += `Şu anda aktif paket tur bulunmuyor.\n`;
+        }
+      }
+      break;
+      
     default:
       // Genel soru - minimal context
-      prompt += `Mevcut aktiviteler: ${activities.map(a => a.name).join(', ')}\n`;
+      if (isRestrictedUser) {
+        prompt += `Bu kişi ${context.isPartner ? 'Partner' : 'İzleyici'}. Aktivite listesi veya link paylaşma.\n`;
+        prompt += `"Panel üzerinden bilgi alabilirsiniz" diye yönlendir.\n`;
+      } else if (botAccess.activities && safeActivities.length > 0) {
+        prompt += `Mevcut aktiviteler: ${safeActivities.map(a => a.name).join(', ')}\n`;
+      }
       prompt += `Eğer sorulan konu aktivitelerle ilgili değilse, nazikçe yardımcı olamayacağını belirt.\n`;
   }
   
-  // Temel kurallar - kısa versiyon
-  prompt += `\n=== KURALLAR ===\n`;
-  prompt += `1. Kısa ve net cevap ver\n`;
-  prompt += `2. Bilmediğin konuda uydurmak yerine "Bu konuda bilgim yok" de\n`;
+  // Kapsamlı kurallar bölümü - DEFAULT_BOT_RULES eşdeğeri
+  prompt += `\n=== KRİTİK KURALLAR (MUTLAKA UYGULA) ===\n`;
+  prompt += `1. SADECE yukarıda verilen bilgilerden cevap ver - UYDURMAK YASAK\n`;
+  prompt += `2. Bilmediğin konuda "Bu konuda bilgim yok, yetkili arkadaşıma aktarıyorum" de\n`;
   prompt += `3. Listende olmayan aktivite/hizmet sorulursa "Bu hizmetimiz yok" de\n`;
+  prompt += `4. Karmaşık sorunlarda ESCALATION: "Size yardımcı olmak için yetkiliye aktarıyorum"\n`;
+  prompt += `5. Kısa ve net cevap ver, gereksiz uzatma\n`;
+  prompt += `6. DİL KURALI: İngilizce mesaja İngilizce, Türkçe mesaja Türkçe cevap ver\n`;
+  prompt += `7. FAQ SIRASI: Önce aktivite SSS'sine bak, sonra genel SSS'ye bak\n`;
+  prompt += `8. TRANSFER: Ücretsiz transfer varsa otomatik bildir, yoksa belirt\n`;
+  prompt += `9. EKSTRA: Video/fotoğraf paketleri için aktivite sayfasına yönlendir\n`;
+  prompt += `10. PAKET TUR: Paket tur sorularında içerikleri ve toplam fiyatı söyle\n`;
+  
+  // Partner/Viewer için ek kurallar - EN YÜKSEK ÖNCELİK
+  if (context.isPartner || context.isViewer) {
+    prompt += `\n⚠️⚠️⚠️ ${context.isPartner ? 'PARTNER' : 'İZLEYİCİ'} KURALLARI (EN YÜKSEK ÖNCELİK) ⚠️⚠️⚠️\n`;
+    prompt += `- HİÇBİR LİNK GÖNDERME (rezervasyon, web sitesi, tracking, hiçbiri)\n`;
+    prompt += `- Fiyat/komisyon bilgisi VERME\n`;
+    prompt += `- Aktivite listesi bile GÖNDERME\n`;
+    prompt += `- "Panel üzerinden işlem yapabilirsiniz" diye yönlendir\n`;
+    prompt += `- Bu kurallar DİĞER TÜM KURALLARIN ÜSTÜNDEDİR\n`;
+  }
   
   return prompt;
 }
