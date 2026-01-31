@@ -1,0 +1,91 @@
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-01-31 14:51:03.922 UTC [1] LOG:  starting PostgreSQL 17.7 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-01-31 14:51:03.924 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-01-31 14:51:03.924 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-01-31 14:51:03.927 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-01-31 14:51:03.937 UTC [28] LOG:  database system was shut down at 2026-01-31 14:51:02 UTC
+2026-01-31 14:51:03.952 UTC [1] LOG:  database system is ready to accept connections
+2026-01-31 14:56:04.033 UTC [26] LOG:  checkpoint starting: time
+2026-01-31 14:56:04.038 UTC [26] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.001 s, total=0.006 s; sync files=3, longest=0.001 s, average=0.001 s; distance=0 kB, estimate=0 kB; lsn=0/283F918, redo lsn=0/283F8C0
+2026-01-31 15:02:21.764 UTC [1123] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:02:21.764 UTC [1123] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:02:21.764 UTC [1123] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:02:21.767 UTC [1122] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:02:21.767 UTC [1122] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:02:21.767 UTC [1122] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:02:51.938 UTC [1166] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:02:51.938 UTC [1166] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:02:51.938 UTC [1166] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:03:22.040 UTC [1243] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:03:22.040 UTC [1243] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:03:22.040 UTC [1243] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:03:52.136 UTC [1269] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:03:52.136 UTC [1269] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:03:52.136 UTC [1269] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:04:22.248 UTC [1294] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:04:22.248 UTC [1294] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:04:22.248 UTC [1294] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:06:04.227 UTC [26] LOG:  checkpoint starting: time
+2026-01-31 15:06:05.338 UTC [26] LOG:  checkpoint complete: wrote 12 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.105 s, sync=0.003 s, total=1.111 s; sync files=10, longest=0.002 s, average=0.001 s; distance=48 kB, estimate=48 kB; lsn=0/284B938, redo lsn=0/284B8E0
+2026-01-31 15:11:04.437 UTC [26] LOG:  checkpoint starting: time
+2026-01-31 15:11:05.244 UTC [26] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.803 s, sync=0.002 s, total=0.808 s; sync files=7, longest=0.001 s, average=0.001 s; distance=30 kB, estimate=46 kB; lsn=0/2857170, redo lsn=0/28532E8
+2026-01-31 15:16:12.266 UTC [2498] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:16:12.266 UTC [2498] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:16:12.266 UTC [2498] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:16:12.283 UTC [2502] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:16:12.283 UTC [2502] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:16:12.283 UTC [2502] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:16:42.386 UTC [2560] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:16:42.386 UTC [2560] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:16:42.386 UTC [2560] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:16:58.020 UTC [2585] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:16:58.020 UTC [2585] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:16:58.020 UTC [2585] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:17:12.913 UTC [2624] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:17:12.913 UTC [2624] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:17:12.913 UTC [2624] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:17:43.166 UTC [2682] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:17:43.166 UTC [2682] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:17:43.166 UTC [2682] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:17:43.167 UTC [2681] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:17:43.167 UTC [2681] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:17:43.167 UTC [2681] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:18:13.274 UTC [2738] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:18:13.274 UTC [2738] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:18:13.274 UTC [2738] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:21:04.439 UTC [26] LOG:  checkpoint starting: time
+2026-01-31 15:21:04.946 UTC [26] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.502 s, sync=0.002 s, total=0.508 s; sync files=6, longest=0.001 s, average=0.001 s; distance=44 kB, estimate=46 kB; lsn=0/285E3F0, redo lsn=0/285E398
+2026-01-31 15:28:26.289 UTC [3744] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:28:26.289 UTC [3744] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:28:26.289 UTC [3744] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:28:29.690 UTC [3738] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:28:29.690 UTC [3738] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:28:29.690 UTC [3738] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:28:29.726 UTC [3742] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:28:29.726 UTC [3742] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:28:29.726 UTC [3742] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:28:59.856 UTC [3809] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:28:59.856 UTC [3809] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:28:59.856 UTC [3809] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:29:29.953 UTC [3863] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:29:29.953 UTC [3863] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:29:29.953 UTC [3863] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:30:00.052 UTC [3890] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:30:00.052 UTC [3890] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:30:00.052 UTC [3890] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:31:05.104 UTC [26] LOG:  checkpoint starting: time
+2026-01-31 15:31:05.511 UTC [26] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.402 s, sync=0.002 s, total=0.408 s; sync files=5, longest=0.001 s, average=0.001 s; distance=28 kB, estimate=44 kB; lsn=0/2865710, redo lsn=0/28656B8
+2026-01-31 15:32:30.148 UTC [4177] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:32:30.148 UTC [4177] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:32:30.148 UTC [4177] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:34:02.908 UTC [4342] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:34:02.908 UTC [4342] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:34:02.908 UTC [4342] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:35:02.907 UTC [4449] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:35:02.907 UTC [4449] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:35:02.907 UTC [4449] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:35:32.993 UTC [4503] ERROR:  column "handled_by" does not exist at character 130
+2026-01-31 15:35:32.993 UTC [4503] HINT:  Perhaps you meant to reference the column "unanswered_questions.handled_at".
+2026-01-31 15:35:32.993 UTC [4503] STATEMENT:  select "id", "tenant_id", "customer_phone", "customer_question", "bot_response", "conversation_context", "status", "handled_at", "handled_by", "notes", "created_at" from "unanswered_questions" where ("unanswered_questions"."tenant_id" = $1 and "unanswered_questions"."status" = $2) order by "unanswered_questions"."created_at" desc
+2026-01-31 15:36:05.606 UTC [26] LOG:  checkpoint starting: time
+2026-01-31 15:36:07.216 UTC [26] LOG:  checkpoint complete: wrote 17 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.605 s, sync=0.002 s, total=1.611 s; sync files=14, longest=0.001 s, average=0.001 s; distance=57 kB, estimate=57 kB; lsn=0/2873DC0, redo lsn=0/2873D68
