@@ -5902,7 +5902,7 @@ export async function registerRoutes(
     const tenantId = tenant.id;
     
     if (From && Body) {
-      await storage.addMessage({ phone: From, content: Body, role: "user" });
+      await storage.addMessage({ phone: From, content: Body, role: "user", tenantId });
 
       // Check blacklist
       const isBlacklisted = await storage.isBlacklisted(From);
@@ -5916,7 +5916,7 @@ export async function registerRoutes(
       const messageLimit = await storage.getTenantMessageLimit(tenantId);
       if (messageLimit.remaining <= 0) {
         const limitExceededMsg = "Günlük mesaj limitimize ulaştık. Lütfen yarın tekrar deneyin veya bizi doğrudan arayın.";
-        await storage.addMessage({ phone: From, content: limitExceededMsg, role: "assistant" });
+        await storage.addMessage({ phone: From, content: limitExceededMsg, role: "assistant", tenantId });
         res.type('text/xml');
         res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${limitExceededMsg}</Message></Response>`);
         return;
@@ -5936,7 +5936,7 @@ export async function registerRoutes(
       // Check for auto-response match
       const autoResponseMatch = await storage.findMatchingAutoResponse(Body);
       if (autoResponseMatch) {
-        await storage.addMessage({ phone: From, content: autoResponseMatch.response, role: "assistant" });
+        await storage.addMessage({ phone: From, content: autoResponseMatch.response, role: "assistant", tenantId });
         res.type('text/xml');
         res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${autoResponseMatch.response}</Message></Response>`);
         return;
@@ -6084,7 +6084,7 @@ Rezervasyon takip: {takip_linki}
             confirmationMessage = confirmationMessage.replace(new RegExp(`\\{${key}\\}`, 'gi'), value);
           }
           
-          await storage.addMessage({ phone: From, content: confirmationMessage, role: "assistant" });
+          await storage.addMessage({ phone: From, content: confirmationMessage, role: "assistant", tenantId });
           res.type('text/xml');
           res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMessage}</Message></Response>`);
           return;
@@ -6111,8 +6111,8 @@ Rezervasyon takip: {takip_linki}
       const customerRequestsForPhone = await storage.getCustomerRequestsByPhone(From);
       const pendingRequests = customerRequestsForPhone.filter(r => r.status === 'pending');
 
-      // Get history & context for this tenant
-      const history = await storage.getMessages(From, 5);
+      // Get history & context for this tenant (properly scoped)
+      const history = await storage.getMessages(From, 5, tenantId);
       const activities = await storage.getActivities(tenantId);
       const packageTours = await storage.getPackageTours(tenantId);
       
@@ -6182,7 +6182,7 @@ Rezervasyon takip: {takip_linki}
         await storage.markHumanIntervention(From, true);
       }
       
-      await storage.addMessage({ phone: From, content: aiResponse, role: "assistant" });
+      await storage.addMessage({ phone: From, content: aiResponse, role: "assistant", tenantId });
       res.type('text/xml');
       res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${aiResponse}</Message></Response>`);
     } else {
@@ -6195,12 +6195,24 @@ Rezervasyon takip: {takip_linki}
   app.post(api.webhooks.whatsapp.path, async (req, res) => {
     const { Body, From } = req.body;
     
-    // Save user message
+    // Check if user has a reservation (by phone or order number in message) - do this FIRST to determine tenant
+    const orderNumberMatch = Body?.match(/\b(\d{4,})\b/);
+    const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
+    const userReservation = await storage.findReservationByPhoneOrOrder(From, potentialOrderId);
+
+    // Try to determine tenantId from reservation or session
+    let tenantId = req.session?.tenantId;
+    if (!tenantId && userReservation?.tenantId) {
+      tenantId = userReservation.tenantId;
+    }
+    
+    // Save user message (with tenantId if known)
     if (From && Body) {
       await storage.addMessage({
         phone: From,
         content: Body,
-        role: "user"
+        role: "user",
+        tenantId: tenantId || undefined
       });
 
       // Check blacklist - don't respond if blacklisted
@@ -6227,24 +6239,14 @@ Rezervasyon takip: {takip_linki}
         await storage.addMessage({
           phone: From,
           content: autoResponseMatch.response,
-          role: "assistant"
+          role: "assistant",
+          tenantId: tenantId || undefined
         });
         
         // Return TwiML with matched response
         res.type('text/xml');
         res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${autoResponseMatch.response}</Message></Response>`);
         return;
-      }
-
-      // Check if user has a reservation (by phone or order number in message)
-      const orderNumberMatch = Body.match(/\b(\d{4,})\b/);
-      const potentialOrderId = orderNumberMatch ? orderNumberMatch[1] : undefined;
-      const userReservation = await storage.findReservationByPhoneOrOrder(From, potentialOrderId);
-
-      // Try to determine tenantId from reservation or session
-      let tenantId = req.session?.tenantId;
-      if (!tenantId && userReservation?.tenantId) {
-        tenantId = userReservation.tenantId;
       }
       
       // Check daily message limit for tenant (if identified)
@@ -6256,7 +6258,8 @@ Rezervasyon takip: {takip_linki}
           await storage.addMessage({
             phone: From,
             content: limitExceededMsg,
-            role: "assistant"
+            role: "assistant",
+            tenantId
           });
           res.type('text/xml');
           res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${limitExceededMsg}</Message></Response>`);
@@ -6271,8 +6274,8 @@ Rezervasyon takip: {takip_linki}
       const customerRequestsForPhone = await storage.getCustomerRequestsByPhone(From);
       const pendingRequests = customerRequestsForPhone.filter(r => r.status === 'pending');
 
-      // Get history
-      const history = await storage.getMessages(From, 5);
+      // Get history (scoped to tenant if identified)
+      const history = await storage.getMessages(From, 5, tenantId);
       const activities = await storage.getActivities(tenantId);
       const packageTours = await storage.getPackageTours(tenantId);
       
@@ -6366,11 +6369,12 @@ Rezervasyon takip: {takip_linki}
         await storage.markHumanIntervention(From, true);
       }
       
-      // Save AI response
+      // Save AI response (with tenantId if known)
       await storage.addMessage({
         phone: From,
         content: aiResponse,
-        role: "assistant"
+        role: "assistant",
+        tenantId: tenantId || undefined
       });
 
       // Return TwiML

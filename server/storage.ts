@@ -219,7 +219,7 @@ export interface IStorage {
 
   // Messages
   addMessage(message: InsertMessage): Promise<Message>;
-  getMessages(phone: string, limit?: number): Promise<Message[]>;
+  getMessages(phone: string, limit?: number, tenantId?: number): Promise<Message[]>;
   getAllConversations(filter?: 'all' | 'with_reservation' | 'human_intervention', tenantId?: number): Promise<any[]>;
   markHumanIntervention(phone: string, requires: boolean): Promise<void>;
 
@@ -1179,13 +1179,23 @@ export class DatabaseStorage implements IStorage {
     return msg;
   }
 
-  async getMessages(phone: string, limit: number = 5): Promise<Message[]> {
-    return await db
+  async getMessages(phone: string, limit: number = 5, tenantId?: number): Promise<Message[]> {
+    // Build conditions
+    const conditions = [eq(messages.phone, phone)];
+    if (tenantId) {
+      conditions.push(eq(messages.tenantId, tenantId));
+    }
+    
+    // Get messages in descending order (newest first) then reverse for chronological AI context
+    const result = await db
       .select()
       .from(messages)
-      .where(eq(messages.phone, phone))
+      .where(and(...conditions))
       .orderBy(desc(messages.timestamp))
       .limit(limit);
+    
+    // Return in chronological order (oldest first) for proper AI conversation flow
+    return result.reverse();
   }
 
   async getAllConversations(filter?: 'all' | 'with_reservation' | 'human_intervention', tenantId?: number): Promise<any[]> {
