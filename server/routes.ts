@@ -6267,21 +6267,17 @@ Rezervasyon takip: {takip_linki}
       
       // === SSS ÖNCELİKLİ SİSTEM ===
       // 1. Önce Otomatik Yanıtlar kontrol et
-      // 2. Sonra Aktivite SSS kontrol et
-      // 3. Sonra Genel SSS kontrol et
+      // 2. Sonra Aktivite SSS kontrol et (eğer botAccess.faq aktifse)
+      // 3. Sonra Genel SSS kontrol et (eğer botAccess.faq aktifse)
       // 4. Hiçbiri eşleşmezse AI'a gönder
       
-      const messageLower = Body.toLowerCase();
-      const normalizedMessage = messageLower
-        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
-        .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+      const normalizedMessage = normalizeTurkish(Body);
       let sssResponse: string | null = null;
       
       // 1. Otomatik Yanıtlar kontrolü (tenant-specific auto responses)
       if (!sssResponse) {
         const autoResponses = await storage.getAutoResponses(tenantId);
         if (autoResponses && autoResponses.length > 0) {
-          // Sort by priority (higher priority first)
           const sortedResponses = [...autoResponses].sort((a, b) => (b.priority || 0) - (a.priority || 0));
           for (const autoResp of sortedResponses) {
             if (!autoResp.isActive) continue;
@@ -6289,40 +6285,36 @@ Rezervasyon takip: {takip_linki}
               const keywords = typeof autoResp.keywords === 'string' ? JSON.parse(autoResp.keywords) : autoResp.keywords;
               if (Array.isArray(keywords)) {
                 const matched = keywords.some((kw: string) => {
-                  const kwLower = kw.toLowerCase();
-                  const kwNormalized = kwLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
-                  return messageLower.includes(kwLower) || normalizedMessage.includes(kwNormalized);
+                  const kwNormalized = normalizeTurkish(kw);
+                  return normalizedMessage.includes(kwNormalized);
                 });
                 if (matched) {
-                  // Check language - use English response if message is in English
                   const isEnglish = /\b(hello|hi|price|booking|available|cancel|change)\b/i.test(Body);
                   sssResponse = isEnglish && autoResp.responseEn ? autoResp.responseEn : autoResp.response;
                   console.log(`[SSS] Otomatik Yanıt eşleşti: "${autoResp.name}"`);
                   break;
                 }
               }
-            } catch (e) {
-              // Continue if parsing fails
-            }
+            } catch (e) {}
           }
         }
       }
       
-      // 2. Aktivite SSS kontrolü
-      if (!sssResponse && activities && activities.length > 0) {
+      // 2. Aktivite SSS kontrolü (only if botAccess.faq is enabled)
+      if (!sssResponse && botAccess.faq !== false && activities && activities.length > 0) {
+        const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
         for (const activity of activities) {
           if (!activity.faq) continue;
+          // Skip activities not mentioned in message for performance
+          const activityNameNorm = normalizeTurkish(activity.name || '');
+          const activityRelevant = messageWords.some((mw: string) => activityNameNorm.includes(mw) || mw.includes(activityNameNorm.substring(0, 4)));
           try {
             const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
             if (Array.isArray(faqItems)) {
               for (const item of faqItems) {
-                const questionLower = (item.question || '').toLowerCase();
-                const questionNormalized = questionLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
-                // Check if message contains significant words from the question
+                const questionNormalized = normalizeTurkish(item.question || '');
                 const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
-                const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
                 const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
-                // Require at least 2 matching words or 50% of question words
                 if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
                   if (item.answer) {
                     sssResponse = item.answer;
@@ -6332,23 +6324,20 @@ Rezervasyon takip: {takip_linki}
                 }
               }
             }
-          } catch (e) {
-            // Continue if parsing fails
-          }
+          } catch (e) {}
           if (sssResponse) break;
         }
       }
       
-      // 3. Genel SSS kontrolü
-      if (!sssResponse && generalFaq) {
+      // 3. Genel SSS kontrolü (only if botAccess.faq is enabled)
+      if (!sssResponse && botAccess.faq !== false && generalFaq) {
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
+          const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
           if (Array.isArray(generalFaqItems)) {
             for (const item of generalFaqItems) {
-              const questionLower = (item.question || '').toLowerCase();
-              const questionNormalized = questionLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+              const questionNormalized = normalizeTurkish(item.question || '');
               const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
-              const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
               const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
               if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
                 if (item.answer) {
@@ -6359,9 +6348,7 @@ Rezervasyon takip: {takip_linki}
               }
             }
           }
-        } catch (e) {
-          // Continue if parsing fails
-        }
+        } catch (e) {}
       }
       
       // SSS cevabı bulunduysa, AI çağırmadan direkt cevap ver
@@ -6606,13 +6593,10 @@ Rezervasyon takip: {takip_linki}
       const allUserReservations = tenantId ? await storage.findAllReservationsByPhone(From, tenantId) : [];
       
       // === SSS ÖNCELİKLİ SİSTEM (TEST WEBHOOK) ===
-      const testMessageLower = Body.toLowerCase();
-      const testNormalizedMessage = testMessageLower
-        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
-        .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+      const testNormalizedMessage = normalizeTurkish(Body);
       let testSssResponse: string | null = null;
       
-      // 1. Otomatik Yanıtlar kontrolü
+      // 1. Otomatik Yanıtlar kontrolü (tenantId required)
       if (!testSssResponse && tenantId) {
         const autoResponses = await storage.getAutoResponses(tenantId);
         if (autoResponses && autoResponses.length > 0) {
@@ -6623,9 +6607,8 @@ Rezervasyon takip: {takip_linki}
               const keywords = typeof autoResp.keywords === 'string' ? JSON.parse(autoResp.keywords) : autoResp.keywords;
               if (Array.isArray(keywords)) {
                 const matched = keywords.some((kw: string) => {
-                  const kwLower = kw.toLowerCase();
-                  const kwNormalized = kwLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
-                  return testMessageLower.includes(kwLower) || testNormalizedMessage.includes(kwNormalized);
+                  const kwNormalized = normalizeTurkish(kw);
+                  return testNormalizedMessage.includes(kwNormalized);
                 });
                 if (matched) {
                   const isEnglish = /\b(hello|hi|price|booking|available|cancel|change)\b/i.test(Body);
@@ -6639,18 +6622,17 @@ Rezervasyon takip: {takip_linki}
         }
       }
       
-      // 2. Aktivite SSS kontrolü
-      if (!testSssResponse && activities && activities.length > 0) {
+      // 2. Aktivite SSS kontrolü (tenantId and botAccess.faq required)
+      if (!testSssResponse && tenantId && botAccess.faq !== false && activities && activities.length > 0) {
+        const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
         for (const activity of activities) {
           if (!activity.faq) continue;
           try {
             const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
             if (Array.isArray(faqItems)) {
               for (const item of faqItems) {
-                const questionLower = (item.question || '').toLowerCase();
-                const questionNormalized = questionLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+                const questionNormalized = normalizeTurkish(item.question || '');
                 const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
-                const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
                 const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
                 if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
                   if (item.answer) {
@@ -6666,16 +6648,15 @@ Rezervasyon takip: {takip_linki}
         }
       }
       
-      // 3. Genel SSS kontrolü
-      if (!testSssResponse && generalFaq) {
+      // 3. Genel SSS kontrolü (tenantId and botAccess.faq required)
+      if (!testSssResponse && tenantId && botAccess.faq !== false && generalFaq) {
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
+          const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
           if (Array.isArray(generalFaqItems)) {
             for (const item of generalFaqItems) {
-              const questionLower = (item.question || '').toLowerCase();
-              const questionNormalized = questionLower.replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
+              const questionNormalized = normalizeTurkish(item.question || '');
               const questionWords = questionNormalized.split(/\s+/).filter((w: string) => w.length > 3);
-              const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 3);
               const matchCount = questionWords.filter((qw: string) => messageWords.some((mw: string) => mw.includes(qw) || qw.includes(mw))).length;
               if (matchCount >= 2 || (questionWords.length > 0 && matchCount / questionWords.length >= 0.5)) {
                 if (item.answer) {
