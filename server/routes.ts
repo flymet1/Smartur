@@ -2131,6 +2131,36 @@ ${context.botRules || DEFAULT_BOT_RULES}
     return `Merhaba! Rezervasyon değişikliği veya iptal talepleriniz için size gönderdiğimiz takip linkini kullanabilirsiniz. Takip linkiniz yoksa veya süresi dolmuşsa, lütfen sipariş numaranızı paylaşın, size yeni link gönderelim.`;
   }
   
+  // Smart FAQ fallback - search activities' FAQ for relevant answers
+  if (context?.activities && Array.isArray(context.activities)) {
+    const searchTerms = lastUserMessage.split(/\s+/).filter((w: string) => w.length > 2);
+    for (const activity of context.activities) {
+      if (activity.faq) {
+        try {
+          const faqItems = typeof activity.faq === 'string' ? JSON.parse(activity.faq) : activity.faq;
+          if (Array.isArray(faqItems)) {
+            for (const item of faqItems) {
+              const questionLower = (item.question || '').toLowerCase();
+              const answerLower = (item.answer || '').toLowerCase();
+              // Check if any search terms match the FAQ question
+              const hasMatch = searchTerms.some((term: string) => 
+                questionLower.includes(term) || 
+                (term.includes('saat') && questionLower.includes('saat')) ||
+                (term.includes('uçuş') && questionLower.includes('uçuş')) ||
+                (term.includes('zaman') && questionLower.includes('zaman'))
+              );
+              if (hasMatch && item.answer) {
+                return `${item.answer}`;
+              }
+            }
+          }
+        } catch (e) {
+          // Continue if FAQ parsing fails
+        }
+      }
+    }
+  }
+  
   // Check for request status queries
   if (lastUserMessage.includes("talep") || lastUserMessage.includes("başvuru") || lastUserMessage.includes("durumu") || lastUserMessage.includes("ne oldu")) {
     if (context?.pendingRequests && context.pendingRequests.length > 0) {
