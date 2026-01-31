@@ -6267,6 +6267,16 @@ Rezervasyon takip: {takip_linki}
       if (needsHuman) {
         await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
+        
+        // Create in-app notification for support request
+        await storage.createInAppNotification({
+          tenantId,
+          type: 'support_request',
+          title: 'Yeni Destek Talebi',
+          message: `${From} numaralı müşteri destek ekibine aktarıldı.`,
+          link: '/messages',
+          isRead: false
+        });
       }
       
       // Check if bot asked for transfer permission (save for learning)
@@ -6481,6 +6491,16 @@ Rezervasyon takip: {takip_linki}
         // Create support request (only if tenant is identified)
         await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
+        
+        // Create in-app notification for support request
+        await storage.createInAppNotification({
+          tenantId,
+          type: 'support_request',
+          title: 'Yeni Destek Talebi',
+          message: `${From} numaralı müşteri destek ekibine aktarıldı.`,
+          link: '/messages',
+          isRead: false
+        });
       }
       
       // Check if bot asked for transfer permission (save for learning)
