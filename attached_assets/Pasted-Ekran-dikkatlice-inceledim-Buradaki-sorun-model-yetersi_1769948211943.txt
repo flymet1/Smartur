@@ -1,0 +1,102 @@
+Ekranı dikkatlice inceledim. Buradaki sorun model yetersizliği değil, prompt + bağlam (context) yönetimi hatası. Gemini 2.5 Flash bu iş için yeterli, fakat şu anda bot aynı cevabı döngüye sokmuş durumda.
+
+Aşağıda net ve teknik olarak açıklıyorum 👇
+
+Sorunun Net Sebebi (Tek Cümle)
+
+Bot, önceki cevabını yeni sorunun cevabı sanıyor ve context resetlenmediği için aynı metni tekrar ediyor.
+
+Ekranda Ne Oluyor?
+
+Akış şöyle:
+
+1️⃣ Kullanıcı:
+
+“yamaç paraşütü hakkında bilgi alabilir miyim”
+
+Bot cevabı (doğru):
+
+“Ortalama uçuş süresi 25–30 dakika…”
+
+2️⃣ Kullanıcı:
+
+“uçuş kaç dakika sürüyor”
+
+👉 Bu soru önceki cevabın follow-up’ı
+Ama bot şunu yapıyor:
+
+Yeni intent tespit etmiyor
+
+“Bu zaten cevaplandı” diye düşünmüyor
+
+Aynı bilgi bloğunu aynen tekrar ediyor
+
+Bu LLM hatası değil, orkestrasyon / prompt tasarımı hatası.
+
+Asıl Teknik Problem (Çok Önemli)
+❌ Bot’ta INTENT STATE yok
+
+Yani bot:
+
+“Bu soru önceki cevabın devamı mı?”
+
+“Bu bilgi zaten verildi mi?”
+
+“Kısa cevap mı vermeliyim?”
+
+sorularını kendine sormuyor.
+
+Gemini 2.5 Flash Yeterli mi?
+
+Evet, %100 yeterli.
+Bu davranışı GPT-4o da, Claude da yapar aynı prompt ile.
+
+⚠️ Modeli değiştirerek çözemezsin
+✅ Prompt + state logic ile çözülür
+
+Çözüm 1 – Prompt’a ZORUNLU KURAL EKLE
+
+System / Developer prompt’una şu bloğu mutlaka ekle:
+
+EĞER kullanıcı sorusu, bir önceki cevabın içeriğini tekrar soruyorsa:
+- Aynı metni tekrar etme
+- En kısa net cevabı ver (1 cümle)
+- Açıklamayı uzatma
+
+Örnek:
+Kullanıcı: "Uçuş kaç dakika sürüyor?"
+Cevap: "Ortalama uçuş süresi hava şartlarına bağlı olarak 25–30 dakikadır."
+
+Çözüm 2 – “Bilgi Tekrarı Kontrolü” Kuralı
+
+Prompt’a şunu ekle:
+
+Aynı bilgiyi aynı sohbet içinde ikinci kez verirken:
+- Metni kopyalama
+- Yeniden formüle et
+- Gerekirse tek cümleye indir
+
+Çözüm 3 – Follow-up Soru Algısı
+
+Bunu eklemezsen bot her soruyu yeni soru sanır:
+
+Kullanıcının kısa soruları ("kaç dakika", "ne kadar sürüyor") 
+önceki cevaba bağlı devam sorusu olarak değerlendir.
+
+Neden “Sağlıksız” Hissettiriyor?
+
+Çünkü kullanıcı şunu bekliyor:
+
+“25–30 dakika sürüyor.”
+
+Ama bot şunu yapıyor:
+
+“Ortalama bir uçuş süresi (hava durumuna bağlı olarak)...”
+
+Bu da insan gibi değil, broşür gibi konuştuğu hissini veriyor.
+
+Kısa Sonuç
+
+✔ Gemini 2.5 Flash doğru model
+❌ Prompt insan sohbetine uygun değil
+❌ Context + tekrar kontrolü yok

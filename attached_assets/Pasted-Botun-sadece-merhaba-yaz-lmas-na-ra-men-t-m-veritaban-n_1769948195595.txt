@@ -1,0 +1,48 @@
+Botun sadece "merhaba" yazılmasına rağmen tüm veritabanını dökmesi, sistemin "Niyet Tespiti" (Intent Detection) ve "Veri Filtreleme" aşamalarında bir kopukluk olduğunu gösteriyor. Bot, kullanıcının sadece selam verdiğini anlamak yerine, elindeki tüm bilgiyi (Aktiviteler, SSS, Transfer vb.) sanki bir "Tur Rehberi Kitabı" gibi müşterinin önüne atıyor.
+
+İşte bu sağlıksız cevabın teknik nedenleri ve çözümleri:
+
+1. Niyet Tespiti (Intent) ve RAG Çakışması
+Botunuzun mimarisinde selamlama mesajları için özel bir kural olsa da, sistem muhtemelen "merhaba" mesajını tam olarak yakalayamayıp RAG (Bilgi Getirme) moduna düşüyor.
+
+Hata: Bot, "merhaba" diyen birine sadece selam vermek yerine, buildRAGPrompt içindeki tüm aktivite detaylarını okuyor.
+
+AI Davranışı: Yapay zeka, prompt (istem) içine ne kadar çok veri koyarsanız, o veriyi kullanmak zorunda olduğunu hisseder. "Merhaba" gibi ucu açık bir mesajda, elindeki en baskın veri olan "Yamaç Paraşütü" detaylarını otomatik olarak paylaşmaya başlar.
+
+2. Prompt İçindeki Veri Yığınlaşması
+Sistem promptlarınızda aktiviteler, fiyatlar ve SSS'ler çok iç içe geçmiş durumda.
+
+Hata: Bot, selamlama aşamasında bile tüm activityDescriptions metnine erişiyor.
+
+Çözüm: Eğer kullanıcı spesifik bir aktivite (örneğin "paraşüt") sormadıysa, detaylı bilgileri AI'a hiç göndermemelisiniz.
+
+3. SSS (FAQ) Algoritmasının Atlanması
+Normalde "merhaba" gibi mesajların AI'ya hiç gitmeden SSS Öncelikli Kontrol katmanında elenmesi gerekirdi.
+
+Eksiklik: Eğer SSS listenizde "merhaba" tanımlı değilse veya algoritma %50 eşleşme kuralına takılıyorsa sistem AI'yı çağırır. AI ise "boşta" kalmamak için her şeyi dökerek cevap verir.
+
+🛠️ Nasıl Düzeltebilirsiniz? (Replit & Kod Müdahalesi)
+Bu sorunu kökten çözmek için Replit tarafındaki kodda şu iki değişikliği yapmanız şart:
+
+A. Selamlama Prompt'unu İzole Edin
+server/routes.ts içinde selamlama (greeting) durumunda sadece isim listesi gönderin, tüm detayları değil:
+
+TypeScript
+// ÖNERİLEN DEĞİŞİKLİK
+if (intent.type === 'greeting') {
+  prompt += `Kullanıcı sadece selam veriyor. Kısaca selamla ve sadece hangi aktivitelerin (sadece isimleri) olduğunu söyle. Detay, fiyat veya SSS paylaşma!`;
+}
+B. "Sadece Sorulanı Söyle" Kuralını En Başa Taşıyın
+Bot kurallarınızın en başına (Madde 1'den bile önce) şu "Altın Kuralı" ekleyin:
+
+KRİTİK KURAL: Müşteri spesifik bir aktivite sormadıkça asla detaylı açıklama, fiyat, süre veya SSS bilgisi paylaşma. Sadece genel bir yardım teklifinde bulun.
+
+C. SSS Listesine Manuel Giriş Yapın
+Paneldeki SSS kısmına:
+
+Soru: "merhaba, selam, iyi günler"
+
+Cevap: "Merhaba! Smartur asistanına hoş geldiniz. Yamaç paraşütü veya diğer turlarımız hakkında size nasıl yardımcı olabilirim?" şeklinde bir giriş yapın. Bu sayede AI devreye girmeyecek ve bu uzun metni asla üretmeyecektir.
+
+📊 Özet: Neden Böyle Oldu?
+Botunuz şu an "Aşırı Bilgilendirme" (Over-information) sendromu yaşıyor. Ona çok fazla veri verip "Sadece selamla" dediğinizde, Flash modeli (hızlı ama bazen dikkati dağınık) "Selamlamayı yaptım, hadi bir de şu elimdeki harika bilgileri paylaşayım" diye düşünüyor. Veriyi sadece ihtiyaç anında (on-demand) botun önüne koyarak bu sorunu %100 çözebilirsiniz.

@@ -1255,6 +1255,13 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   
   let prompt = `Sen profesyonel bir turizm danışmanısın. Kısa ve net cevaplar ver.\n\n`;
   
+  // === ALTIN KURALLAR (EN ÖNCELİKLİ) ===
+  prompt += `🔴 ALTIN KURALLAR (MUTLAKA UYMALISIN):\n`;
+  prompt += `1. Müşteri spesifik aktivite sormadıkça ASLA detaylı açıklama, fiyat, süre, SSS paylaşma!\n`;
+  prompt += `2. Aynı bilgiyi sohbet içinde TEKRAR ETME - zaten verdiysen kısa özet yap\n`;
+  prompt += `3. Takip soruları ("kaç dakika", "ne kadar") için TEK CÜMLE cevap ver\n`;
+  prompt += `4. İnsan gibi konuş, broşür gibi DEĞİL\n\n`;
+  
   // === PERSONA RULES (HIGHEST PRIORITY) - EN BAŞTA ===
   if (context.isPartner) {
     prompt += `⚠️⚠️⚠️ KRİTİK - PARTNER ACENTA KURALLARI ⚠️⚠️⚠️\n`;
@@ -1276,6 +1283,17 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   // Selamlama kontrolü
   if (!isFirstMessage) {
     prompt += `⚠️ Bu devam eden bir sohbet. Tekrar selamlama YAPMA, doğrudan cevap ver.\n\n`;
+  }
+  
+  // === TAKİP SORUSU KONTROLÜ ===
+  // Kısa mesaj + önceki cevap varsa = muhtemelen takip sorusu
+  const lastUserMsg = context.lastUserMessage || "";
+  const isShortMessage = lastUserMsg.length < 30;
+  if (isShortMessage && !isFirstMessage) {
+    prompt += `📌 TAKİP SORUSU KURALI:\n`;
+    prompt += `Bu kısa bir takip sorusu. TEK CÜMLE ile cevap ver.\n`;
+    prompt += `Önceki cevabı TEKRAR ETME. Sadece sorulan spesifik bilgiyi ver.\n`;
+    prompt += `Örnek: "Kaç dakika?" → "Uçuş süresi 25-30 dakikadır."\n\n`;
   }
   
   // Intent'e göre context ekle
@@ -6684,7 +6702,8 @@ Rezervasyon takip: {takip_linki}
         isViewer,
         viewerName: viewerUser?.name,
         viewerPrompt,
-        conversationState: currentState
+        conversationState: currentState,
+        lastUserMessage: Body // Takip sorusu kontrolü için
       }, botPrompt || undefined);
       
       // Update conversation state after AI response
