@@ -1119,90 +1119,93 @@ function detectIntent(
 }
 
 // Tek aktivite için odaklı açıklama oluştur
+// === ATOMİK VERİ SİSTEMİ ===
+// Her intent için SADECE gerekli bilgiyi döndürür - veri sızıntısını önler
 function buildFocusedActivityDescription(activity: any, intent: RAGIntent): string {
   if (!activity) return '';
   
-  let desc = `=== ${activity.name.toUpperCase()} ===\n`;
-  desc += `Açıklama: ${activity.description || 'Açıklama yok'}\n`;
-  desc += `Fiyat: ${activity.price} TL`;
-  if (activity.priceUsd) desc += ` ($${activity.priceUsd})`;
-  desc += `\nSüre: ${activity.durationMinutes} dakika\n`;
+  const name = activity.name;
   
-  // Bölge ve Buluşma/İniş Noktası (önemli lokasyon bilgisi)
-  if (activity.region) {
-    desc += `Bölge: ${activity.region}\n`;
-  }
-  if (activity.meetingPoint) {
-    // meetingPoint hem buluşma hem iniş noktası olabilir (özellikle yamaç paraşütü için)
-    desc += `Buluşma/İniş Noktası: ${activity.meetingPoint}\n`;
-    desc += `(Yamaç paraşütü için bu aynı zamanda iniş alanıdır)\n`;
-  }
-  
-  // Intent'e göre ek bilgi ekle
-  if (intent.type === 'duration') {
-    desc += `\n⏱️ Bu aktivite toplam ${activity.durationMinutes} dakika sürmektedir.\n`;
-  }
-  
-  if (intent.type === 'price' || intent.type === 'payment') {
-    // Ödeme bilgileri
-    if (activity.fullPaymentRequired) {
-      desc += `\n💰 Ödeme: Rezervasyon sırasında TAM ÖDEME gereklidir.\n`;
-    } else if (activity.requiresDeposit && activity.depositAmount > 0) {
-      if (activity.depositType === 'percentage') {
-        const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
-        desc += `\n💰 Ön Ödeme: %${activity.depositAmount} (${depositTl} TL)\n`;
-        desc += `Kalan: ${activity.price - depositTl} TL (aktivite günü ödenir)\n`;
-      } else {
-        desc += `\n💰 Ön Ödeme: ${activity.depositAmount} TL\n`;
-        desc += `Kalan: ${activity.price - activity.depositAmount} TL (aktivite günü ödenir)\n`;
+  // INTENT'E GÖRE ATOMİK CEVAP - SADECE GEREKLİ BİLGİ
+  switch (intent.type) {
+    case 'price':
+      // SADECE FİYAT - başka hiçbir şey
+      let priceInfo = `${name} fiyatı: ${activity.price} TL`;
+      if (activity.priceUsd) priceInfo += ` ($${activity.priceUsd})`;
+      if (activity.fullPaymentRequired) {
+        priceInfo += `\nÖdeme: Rezervasyonda tam ödeme gerekli.`;
+      } else if (activity.requiresDeposit && activity.depositAmount > 0) {
+        if (activity.depositType === 'percentage') {
+          const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
+          priceInfo += `\nÖn ödeme: ${depositTl} TL, kalan aktivite günü.`;
+        } else {
+          priceInfo += `\nÖn ödeme: ${activity.depositAmount} TL, kalan aktivite günü.`;
+        }
       }
-    }
-  }
-  
-  if (intent.type === 'transfer') {
-    if (activity.hasFreeHotelTransfer) {
-      desc += `\n🚐 Ücretsiz Otel Transferi: EVET\n`;
-      try {
-        const zones = JSON.parse(activity.transferZones || '[]');
-        if (zones.length > 0 && typeof zones[0] === 'object') {
-          desc += `Transfer Bölgeleri:\n`;
-          for (const z of zones) {
-            desc += `  - ${z.zone}: Aktiviteden ${z.minutesBefore} dk önce alınır\n`;
+      return priceInfo;
+      
+    case 'duration':
+      // SADECE SÜRE
+      return `${name} süresi: ${activity.durationMinutes} dakika.`;
+      
+    case 'transfer':
+      // SADECE TRANSFER BİLGİSİ
+      if (activity.hasFreeHotelTransfer) {
+        let transferInfo = `${name}: Ücretsiz otel transferi VAR.`;
+        try {
+          const zones = JSON.parse(activity.transferZones || '[]');
+          if (zones.length > 0 && typeof zones[0] === 'object') {
+            const zoneNames = zones.map((z: any) => z.zone).join(', ');
+            transferInfo += `\nÜcretsiz bölgeler: ${zoneNames}`;
           }
+        } catch {}
+        return transferInfo;
+      } else {
+        return `${name}: Ücretsiz transfer yok, kendi ulaşımınızı sağlamanız gerekir.`;
+      }
+      
+    case 'availability':
+      // MÜSAİTLİK - saatler
+      try {
+        const times = JSON.parse(activity.defaultTimes || '[]');
+        if (times.length > 0) {
+          return `${name} saatleri: ${times.join(', ')}`;
         }
       } catch {}
-    } else {
-      desc += `\n🚐 Ücretsiz Transfer: HAYIR - Müşterinin kendi ulaşımını sağlaması gerekir.\n`;
-    }
-  }
-  
-  // Saatler
-  try {
-    const times = JSON.parse(activity.defaultTimes || '[]');
-    if (times.length > 0) {
-      desc += `\n🕐 Sefer Saatleri: ${times.join(', ')}\n`;
-    }
-  } catch {}
-  
-  // SSS (sadece alakalı intent'ler için)
-  if (intent.type === 'activity_info' || intent.type === 'general') {
-    try {
-      const faqItems = JSON.parse(activity.faq || '[]');
-      if (faqItems.length > 0) {
-        desc += `\n📋 Sık Sorulan Sorular:\n`;
-        for (const faq of faqItems.slice(0, 3)) { // Max 3 SSS
-          desc += `S: ${faq.question}\nC: ${faq.answer}\n`;
+      return `${name} için saat bilgisi mevcut değil.`;
+      
+    case 'payment':
+      // SADECE ÖDEME DETAYI
+      let paymentInfo = `${name} fiyatı: ${activity.price} TL`;
+      if (activity.fullPaymentRequired) {
+        paymentInfo += `\nTam ödeme gerekli.`;
+      } else if (activity.requiresDeposit && activity.depositAmount > 0) {
+        if (activity.depositType === 'percentage') {
+          const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
+          paymentInfo += `\nÖn ödeme: ${depositTl} TL (%${activity.depositAmount})`;
+        } else {
+          paymentInfo += `\nÖn ödeme: ${activity.depositAmount} TL`;
         }
+        paymentInfo += `\nKalan tutar aktivite günü ödenir.`;
+      } else {
+        paymentInfo += `\nÖn ödeme gerekmez, aktivite günü ödeme yapılır.`;
       }
-    } catch {}
+      return paymentInfo;
+      
+    case 'activity_info':
+      // GENEL BİLGİ - ama yine de KISA
+      let info = `${name}:\n`;
+      info += `• Süre: ${activity.durationMinutes} dk\n`;
+      info += `• Fiyat: ${activity.price} TL`;
+      if (activity.priceUsd) info += ` ($${activity.priceUsd})`;
+      if (activity.region) info += `\n• Bölge: ${activity.region}`;
+      // SSS EKLEME - çok uzun olur
+      return info;
+      
+    default:
+      // Diğer durumlar için minimal bilgi
+      return `${name}: ${activity.durationMinutes} dk, ${activity.price} TL`;
   }
-  
-  // Bot talimatları
-  if (activity.botPrompt) {
-    desc += `\n⚠️ Özel Talimat: ${activity.botPrompt}\n`;
-  }
-  
-  return desc;
 }
 
 // RAG Context oluştur - conversation state destekli
@@ -1253,14 +1256,27 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   const isRestrictedUser = context.isPartner || context.isViewer;
   const safeActivities = isRestrictedUser ? [] : activities; // Partner/Viewer için aktivite listesi gizle
   
-  let prompt = `Sen profesyonel bir turizm danışmanısın. Kısa ve net cevaplar ver.\n\n`;
+  let prompt = `Sen profesyonel bir turizm danışmanısın.\n\n`;
   
-  // === ALTIN KURALLAR (EN ÖNCELİKLİ) ===
-  prompt += `🔴 ALTIN KURALLAR (MUTLAKA UYMALISIN):\n`;
-  prompt += `1. Müşteri spesifik aktivite sormadıkça ASLA detaylı açıklama, fiyat, süre, SSS paylaşma!\n`;
-  prompt += `2. Aynı bilgiyi sohbet içinde TEKRAR ETME - zaten verdiysen kısa özet yap\n`;
-  prompt += `3. Takip soruları ("kaç dakika", "ne kadar") için TEK CÜMLE cevap ver\n`;
-  prompt += `4. İnsan gibi konuş, broşür gibi DEĞİL\n\n`;
+  // === FEW-SHOT ÖRNEKLER (EN ÖNEMLİ - AI BUNLARI TAKLİT EDER) ===
+  prompt += `📌 DOĞRU CEVAP ÖRNEKLERİ (Bunları taklit et!):\n\n`;
+  prompt += `Kullanıcı: "merhaba"\n`;
+  prompt += `Asistan: "Merhaba! Size nasıl yardımcı olabilirim?"\n\n`;
+  prompt += `Kullanıcı: "yamaç paraşütü fiyatı nedir"\n`;
+  prompt += `Asistan: "Yamaç paraşütü fiyatımız 6000 TL'dir. Rezervasyon yapmak ister misiniz?"\n\n`;
+  prompt += `Kullanıcı: "kaç dakika sürüyor"\n`;
+  prompt += `Asistan: "Uçuş süresi 25-30 dakikadır."\n\n`;
+  prompt += `Kullanıcı: "transfer var mı"\n`;
+  prompt += `Asistan: "Evet, ücretsiz otel transferi sunuyoruz."\n\n`;
+  
+  // === ALTIN KURALLAR ===
+  prompt += `🔴 KRİTİK KURALLAR:\n`;
+  prompt += `1. KISA SORU = KISA CEVAP (1-2 cümle)\n`;
+  prompt += `2. "Fiyat nedir?" = SADECE fiyat söyle, SSS/program/detay EKLEME\n`;
+  prompt += `3. "Kaç dakika?" = SADECE süre söyle\n`;
+  prompt += `4. Müşteri "detay", "bilgi ver", "anlat" DEMEDİKÇE uzun cevap VERME\n`;
+  prompt += `5. NOT:, S:, C: gibi teknik ifadeleri müşteriye GÖSTERME\n`;
+  prompt += `6. Broşür gibi değil, arkadaşça konuş\n\n`;
   
   // === PERSONA RULES (HIGHEST PRIORITY) - EN BAŞTA ===
   if (context.isPartner) {
@@ -1286,14 +1302,10 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   }
   
   // === TAKİP SORUSU KONTROLÜ ===
-  // Kısa mesaj + önceki cevap varsa = muhtemelen takip sorusu
   const lastUserMsg = context.lastUserMessage || "";
   const isShortMessage = lastUserMsg.length < 30;
   if (isShortMessage && !isFirstMessage) {
-    prompt += `📌 TAKİP SORUSU KURALI:\n`;
-    prompt += `Bu kısa bir takip sorusu. TEK CÜMLE ile cevap ver.\n`;
-    prompt += `Önceki cevabı TEKRAR ETME. Sadece sorulan spesifik bilgiyi ver.\n`;
-    prompt += `Örnek: "Kaç dakika?" → "Uçuş süresi 25-30 dakikadır."\n\n`;
+    prompt += `⚡ TAKİP SORUSU - TEK CÜMLE CEVAP VER!\n\n`;
   }
   
   // Intent'e göre context ekle

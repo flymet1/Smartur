@@ -1,0 +1,176 @@
+Bu örnek çok iyi; çünkü sorun tekil bir “cevap hatası” değil, mimari bir tasarım hatası olduğunu net biçimde gösteriyor.
+Açık ve teknik anlatacağım.
+
+KISA CEVAP (Net Teşhis)
+
+❌ Sorun modelde değil
+❌ Sorun tek bir prompt hatası değil
+✅ Sorun: Botun “konuşma yönetimi (dialog management)” OLMAMASI
+
+Bu düzeltilmezse evet, bu sorunlar uzayıp gider.
+
+NEDEN BU KONUŞMA “SAĞLIKSIZ”?
+
+Konuşmayı insan gibi düşünelim:
+
+İnsan beklentisi
+
+Kullanıcı adım adım sorar
+
+Bot her adımda sadece isteneni söyler
+
+Bilgiyi parça parça verir
+
+Botun yaptığı
+
+Her soruyu “broşür isteği” sanıyor
+
+“fiyatı nedir” sorusuna:
+
+AKTİVİTE DETAY SAYFASININ TAMAMINI KUSUYOR
+
+Bu LLM’lerin doğal davranışıdır eğer engel konmazsa.
+
+ASIL KÖK SEBEP (ÇOK ÖNEMLİ)
+Botta 3 kritik şey YOK:
+1️⃣ Soru Niyeti (Intent) Ayrımı Yok
+
+Bot şunu ayırt etmiyor:
+
+“Fiyat kaç TL?”
+
+“Aktiviteyi bana sat”
+
+“Detaylı bilgi istiyorum”
+
+Hepsini tek sepet görüyor.
+
+2️⃣ Cevap Seviyesi Kontrolü Yok
+
+Botta şu kavram yok:
+
+KISA cevap
+
+ORTA cevap
+
+DETAYLI cevap
+
+Bu yüzden en detaylı versiyonu seçiyor.
+
+3️⃣ Konuşma Aşaması (Conversation Stage) Yok
+
+Bot bilmiyor:
+
+Bu konuşma ilk temas mı?
+
+Kullanıcı daha ısınma aşamasında mı?
+
+Satın almaya yakın mı?
+
+Sonuç:
+📌 İlk soruda katalog fırlatıyor
+
+BU NEDEN MODELLE ÇÖZÜLMEZ?
+
+Şunu çok net söyleyeyim:
+
+GPT-4o
+Claude 3.5
+Gemini 2.5 Pro
+
+👉 Hepsi aynı şeyi yapar
+👉 Çünkü hepsi verilen prompt’a itaat eder
+
+Model “akıllı”, ama yönetilmiyor.
+
+BU SORUNLAR UZAR MI?
+
+EVET.
+Şu şekilde uzar:
+
+Kullanıcı “saat kaçta” der → bot 3 paragraf
+
+Kullanıcı “transfer var mı” der → 10 madde
+
+Kullanıcı kaçar
+
+WhatsApp bot “itici” olur
+
+KÖKTEN ÇÖZÜM NEDİR?
+TEK CÜMLE:
+
+LLM + DİYALOG KURALLARI
+
+Yani:
+
+“Ne soruldu?”
+“Ne kadar isteniyor?”
+“Şu an kaçıncı adımdayız?”
+
+PRATİK KÖKTEN ÇÖZÜM (UYGULANABİLİR)
+1️⃣ CEVAP SEVİYESİ ZORLAMASI (ŞART)
+
+System prompt’a şu kuralı koymazsan bu bitmez:
+
+Kural:
+- Kullanıcı kısa soru soruyorsa → kısa cevap ver
+- Kullanıcı "detay", "bilgi alabilir miyim", "program" demedikçe
+  ASLA uzun açıklama yapma
+
+2️⃣ “FİYAT” SORUSU İÇİN ÖZEL KURAL
+
+Şu anki en büyük hata bu.
+
+EĞER soru sadece "fiyat", "ücret", "kaç TL" ise:
+- Sadece fiyatı söyle
+- 1 ek cümle ekle (istersen detay verebilirim gibi)
+- Program, SSS, teknik detay EKLEME
+
+Doğru cevap örneği:
+
+“Yamaç paraşütü fiyatımız kişi başı 6000 TL’dir.
+İstersen uçuş saatleri veya detaylar hakkında da bilgi verebilirim.”
+
+3️⃣ “DETAY İSTEMEDİKÇE DETAY YOK” KURALI
+
+Bunu yazılı koymazsan bot asla susmaz:
+
+Kullanıcı "detaylı", "tam bilgi", "program" demedikçe:
+- SSS
+- Uçuş programı
+- Uzun açıklamalar
+- Madde listeleri
+VERME
+
+4️⃣ BOTUN KONUŞMA EVRESİ (MINI STATE)
+
+En basit haliyle:
+
+Konuşma Evreleri:
+1. Tanışma
+2. Temel bilgi
+3. Fiyat
+4. Rezervasyon
+
+Bot, evre atlamadan bilgi veremez
+
+
+Bu bile sistemi %70 iyileştirir.
+
+SONUÇ (DÜRÜST VE NET)
+
+❌ Sorun Gemini değil
+
+❌ Sorun “bir iki düzeltme” ile geçmez
+
+✅ Sorun tasarım seviyesi
+
+Bu kökten çözülür, ama:
+
+Prompt mimarisi
+
+Cevap kademesi
+
+Intent filtresi
+
+olmayan hiçbir WhatsApp botu insan gibi konuşamaz.
