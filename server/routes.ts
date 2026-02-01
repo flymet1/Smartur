@@ -518,6 +518,7 @@ interface ConversationState {
   messageCount: number;
   lastUpdated: Date;
   stage: ConversationStage; // Satış aşaması
+  repeatCount: number; // Aynı intent'in tekrar sayısı (Repeat Guard için)
 }
 
 // In-memory conversation state storage (per phone number per tenant)
@@ -548,7 +549,8 @@ function getConversationState(phone: string, tenantId: number): ConversationStat
     language: 'tr',
     messageCount: 0,
     lastUpdated: new Date(),
-    stage: 'info' // Başlangıç aşaması
+    stage: 'info', // Başlangıç aşaması
+    repeatCount: 0 // Tekrar sayısı
   };
   conversationStates.set(key, newState);
   return newState;
@@ -577,11 +579,20 @@ function updateConversationState(
 ): void {
   const key = getStateKey(phone, tenantId);
   const current = getConversationState(phone, tenantId);
+  
+  // REPEAT GUARD: Aynı intent tekrar ediliyorsa sayacı artır
+  // Aktivite olmadan da repeat guard çalışmalı (örn: "fiyat" deyip aktivite belirtmeden)
+  const isSameIntent = updates.lastIntent && updates.lastIntent === current.lastIntent;
+  const bothHaveActivity = updates.lastActivityId && current.lastActivityId;
+  const isSameActivity = bothHaveActivity ? updates.lastActivityId === current.lastActivityId : true;
+  const isRepeat = isSameIntent && isSameActivity;
+  
   conversationStates.set(key, {
     ...current,
     ...updates,
     messageCount: current.messageCount + 1,
-    lastUpdated: new Date()
+    lastUpdated: new Date(),
+    repeatCount: isRepeat ? current.repeatCount + 1 : 0 // Reset if different intent
   });
 }
 
@@ -1078,18 +1089,47 @@ function detectIntent(
   const hotelEntityPatterns = ['otelimiz', 'otelim', 'otel adı', 'otelimizin', 'otelinde', 'otelindeyiz', 'hotel is', 'staying at'];
   const isHotelEntity = hotelEntityPatterns.some(p => msgLower.includes(p));
   
+  // === ÖZEL REGEX KURALLARI (keyword'lerden ÖNCE çalışır) ===
+  // "ne kadar sürüyor" gibi belirsiz ifadeleri doğru intent'e yönlendirir
+  const specialRegexRules: { pattern: RegExp; intent: IntentType }[] = [
+    // SÜRE - çeşitli kalıplar (FİYATTAN ÖNCE KONTROL EDİLMELİ)
+    { pattern: /ne kadar\s*(sürer|sürüyor|sürecek|uzun|dakika|saat)/i, intent: 'duration' },
+    { pattern: /süresi?\s*(ne kadar|kaç|nedir)/i, intent: 'duration' },  // "süresi ne kadar"
+    { pattern: /kaç\s*(dakika|saat|dk|sa)/i, intent: 'duration' },
+    { pattern: /how\s*long/i, intent: 'duration' },
+    { pattern: /duration/i, intent: 'duration' },
+    // FİYAT - "ne kadar" tek başına (süre göstergesi yoksa)
+    { pattern: /ne\s*kadar\s*(?!sürer|sürüyor|sürecek|uzun|dakika|saat)/i, intent: 'price' },
+    // MÜSAİTLİK - tarih + soru
+    { pattern: /(yarın|bugün|pazar|cumartesi|hafta sonu).*(var mı|müsait|boş)/i, intent: 'availability' },
+    { pattern: /(var mı|müsait|boş).*(yarın|bugün|pazar|cumartesi)/i, intent: 'availability' },
+  ];
+  
+  // Önce regex kurallarını kontrol et
+  for (const rule of specialRegexRules) {
+    if (rule.pattern.test(msgLower)) {
+      console.log(`[Intent] Regex rule matched: ${rule.intent} for "${message}"`);
+      return {
+        type: rule.intent,
+        activityId: activityMatch?.activity?.id,
+        activityName: activityMatch?.activity?.name,
+        confidence: 0.95
+      };
+    }
+  }
+  
   // Intent keywords - "otel" kelimesi sadece entity değilse transfer olarak değerlendirilir
   const intentPatterns: Record<IntentType, string[]> = {
     'availability': ['müsait', 'yer var', 'boş', 'kontenjan', 'doluluk', 'uygun', 'available', 'slot'],
-    'price': ['fiyat', 'ücret', 'kaç para', 'ne kadar', 'tutar', 'maliyet', 'price', 'cost', 'how much'],
-    'duration': ['süre', 'kaç dakika', 'kaç saat', 'ne kadar sürer', 'uzunluk', 'duration', 'how long'],
+    'price': ['fiyat', 'ücret', 'kaç para', 'tutar', 'maliyet', 'price', 'cost', 'how much'], // "ne kadar" ÇIKARILDI - regex'te
+    'duration': ['süre', 'uzunluk', 'duration'], // dakika/saat regex'te
     'reservation': ['rezervasyon', 'kayıt', 'yer ayırt', 'katılmak', 'gelmek istiyorum', 'book', 'reserve'],
     'reservation_status': ['siparişim', 'rezervasyonum', 'durumu', 'onaylandı mı', 'takip', 'my booking', 'my order'],
-    'transfer': ['transfer', 'alınış', 'servis', 'ulaşım', 'pickup', 'shuttle'], // "otel" ÇIKARILDI - aşağıda kontrol edilecek
+    'transfer': ['transfer', 'alınış', 'servis', 'ulaşım', 'pickup', 'shuttle'],
     'payment': ['ödeme', 'ön ödeme', 'kapora', 'nakit', 'kart', 'havale', 'payment', 'deposit'],
     'cancellation': ['iptal', 'değişiklik', 'tarih değiştir', 'vazgeçtim', 'cancel', 'change date'],
-    'activity_list': ['aktiviteler', 'turlar', 'neler var', 'ne yapabiliriz', 'seçenekler', 'activities', 'tours', 'options'],
-    'faq': ['sss', 'sık sorulan', 'merak edilen', 'soru-cevap'],
+    'activity_list': ['aktiviteler', 'turlar', 'neler var', 'ne yapabiliriz', 'seçenekler', 'activities', 'tours', 'options', 'what activities'],
+    'faq': ['sss', 'sık sorulan', 'merak edilen', 'soru-cevap', 'faq'],
     'extras': ['ekstra', 'ek hizmet', 'video çekim', 'fotoğraf çekim', 'sigorta', 'öğle yemeği', 'extra', 'photo', 'video'],
     'package_tour': ['paket tur', 'tur paketi', 'paket program', 'günlük tur', 'kombinasyon tur', 'kombi tur', 'paketler', 'package tour'],
     'activity_info': [],
@@ -1279,15 +1319,44 @@ interface TemplateContext {
     websiteUrl?: string;
     whatsappNumber?: string;
   };
+  originalMessage?: string; // İlk mesaj dil tespiti için
+}
+
+// Dil algılama - İngilizce mi Türkçe mi?
+function detectLanguage(message: string, state?: ConversationState | null): 'tr' | 'en' {
+  // State'te dil varsa öncelikli
+  if (state?.language) return state.language;
+  
+  const msgLower = message.toLowerCase();
+  const englishPatterns = /\b(hello|hi|price|how much|booking|reserve|available|cancel|change|what|when|where|can|do|is|are|the|for|my|your|want|need|please|thank|thanks)\b/i;
+  
+  if (englishPatterns.test(msgLower)) return 'en';
+  return 'tr';
 }
 
 // Şablon tabanlı cevap üretici - AI kullanmaz
 function generateTemplateResponse(ctx: TemplateContext): string {
-  const { intent, activity, packageTour, activities, packageTours, capacityData, conversationState, trackingLink, faqMatch, tenantSettings } = ctx;
+  const { intent, activity, packageTour, activities, packageTours, capacityData, conversationState, trackingLink, faqMatch, tenantSettings, originalMessage } = ctx;
+  
+  // DİL TESPİTİ - İlk mesajda state.language olmayabilir, orijinal mesajdan tespit et
+  const lang = originalMessage 
+    ? detectLanguage(originalMessage, conversationState) 
+    : (conversationState?.language || 'tr');
+  const isEn = lang === 'en';
+  
+  // REPEAT GUARD: Aynı soru 2+ kez sorulduysa alternatif öner
+  if (conversationState && conversationState.repeatCount >= 2) {
+    if (isEn) {
+      return "I've shared this information. Would you like me to send you a reservation link, or is there anything else I can help with?";
+    }
+    return "Bu bilgiyi paylaştım. İsterseniz rezervasyon linki gönderebilirim veya başka bir konuda yardımcı olabilirim.";
+  }
   
   // 1. SELAMLAMA
   if (intent.type === 'greeting') {
-    return "Merhaba! Size nasıl yardımcı olabilirim?";
+    return isEn 
+      ? "Hello! How can I help you?" 
+      : "Merhaba! Size nasıl yardımcı olabilirim?";
   }
   
   // 2. FAQ EŞLEŞME VARSA - direkt cevap
@@ -1298,14 +1367,14 @@ function generateTemplateResponse(ctx: TemplateContext): string {
   // 3. AKTİVİTE LİSTESİ
   if (intent.type === 'activity_list') {
     if (activities.length === 0) {
-      return "Şu an aktif aktivitemiz bulunmuyor.";
+      return isEn ? "No activities available at the moment." : "Şu an aktif aktivitemiz bulunmuyor.";
     }
-    let response = "Aktivitelerimiz:\n";
+    let response = isEn ? "Our activities:\n" : "Aktivitelerimiz:\n";
     activities.slice(0, 5).forEach((a, i) => {
       response += `${i + 1}. ${a.name} - ${a.price} TL\n`;
     });
     if (activities.length > 5) {
-      response += `...ve ${activities.length - 5} aktivite daha.`;
+      response += isEn ? `...and ${activities.length - 5} more.` : `...ve ${activities.length - 5} aktivite daha.`;
     }
     return response.trim();
   }
@@ -1313,107 +1382,146 @@ function generateTemplateResponse(ctx: TemplateContext): string {
   // 4. PAKET TUR SORGUSU
   if (intent.type === 'package_tour') {
     if (packageTour) {
-      return `${packageTour.name}: ${packageTour.price} TL, ${packageTour.duration}. Detay için web sitemizi ziyaret edebilirsiniz.`;
+      return isEn 
+        ? `${packageTour.name}: ${packageTour.price} TL, ${packageTour.duration}. Visit our website for details.`
+        : `${packageTour.name}: ${packageTour.price} TL, ${packageTour.duration}. Detay için web sitemizi ziyaret edebilirsiniz.`;
     }
     if (packageTours.length > 0) {
-      let response = "Paket turlarımız:\n";
+      let response = isEn ? "Our package tours:\n" : "Paket turlarımız:\n";
       packageTours.slice(0, 3).forEach((p, i) => {
         response += `${i + 1}. ${p.name} - ${p.price} TL\n`;
       });
       return response.trim();
     }
-    return "Şu an aktif paket turumuz bulunmuyor.";
+    return isEn ? "No package tours available at the moment." : "Şu an aktif paket turumuz bulunmuyor.";
   }
   
   // 5. REZERVASYON DURUMU
   if (intent.type === 'reservation_status') {
     if (trackingLink) {
-      return `Rezervasyon durumunuzu buradan takip edebilirsiniz: ${trackingLink}`;
+      return isEn 
+        ? `You can track your reservation here: ${trackingLink}`
+        : `Rezervasyon durumunuzu buradan takip edebilirsiniz: ${trackingLink}`;
     }
-    return "Rezervasyon durumu için lütfen rezervasyon numaranızı paylaşın.";
+    return isEn 
+      ? "Please share your reservation number to check the status."
+      : "Rezervasyon durumu için lütfen rezervasyon numaranızı paylaşın.";
   }
   
-  // 6. REZERVASYON TALEBİ
+  // 6. REZERVASYON TALEBİ - KURAL: WhatsApp'ta bilgi toplama, sadece link yönlendir
   if (intent.type === 'reservation') {
+    const websiteUrl = tenantSettings?.websiteUrl || '';
     if (activity) {
-      const websiteUrl = tenantSettings?.websiteUrl || '';
       if (websiteUrl) {
-        return `${activity.name} için rezervasyon yapmak isterseniz: ${websiteUrl}\n\nVeya bize tarih ve kişi sayısını bildirin, yardımcı olalım.`;
+        return isEn 
+          ? `To book ${activity.name}, please use our reservation link: ${websiteUrl}`
+          : `${activity.name} için rezervasyon yapmak isterseniz: ${websiteUrl}`;
       }
-      return `${activity.name} için rezervasyon yapmak isterseniz tarih ve kişi sayısını bildirin, size yardımcı olalım.`;
+      // Website yoksa destek ekibine yönlendir
+      return isEn 
+        ? `For ${activity.name} booking, our team will contact you shortly.`
+        : `${activity.name} rezervasyonu için ekibimiz sizinle iletişime geçecektir.`;
     }
-    return "Hangi aktivite için rezervasyon yapmak istiyorsunuz?";
+    // Aktivite belirtilmemiş ama website varsa
+    if (websiteUrl) {
+      return isEn 
+        ? `For reservations, please visit: ${websiteUrl}`
+        : `Rezervasyon için: ${websiteUrl}`;
+    }
+    return isEn ? "Which activity would you like to book?" : "Hangi aktivite için rezervasyon yapmak istiyorsunuz?";
   }
   
   // 7. İPTAL/DEĞİŞİKLİK
   if (intent.type === 'cancellation') {
     if (trackingLink) {
-      return `Rezervasyon değişikliği veya iptal için: ${trackingLink}\n\nVeya destek ekibimiz size yardımcı olacaktır.`;
+      return isEn 
+        ? `For changes or cancellation: ${trackingLink}\n\nOr our support team will help you.`
+        : `Rezervasyon değişikliği veya iptal için: ${trackingLink}\n\nVeya destek ekibimiz size yardımcı olacaktır.`;
     }
-    return "Rezervasyon değişikliği veya iptal için lütfen rezervasyon numaranızı paylaşın. Destek ekibimiz size yardımcı olacaktır.";
+    return isEn 
+      ? "Please share your reservation number for changes or cancellation. Our support team will help you."
+      : "Rezervasyon değişikliği veya iptal için lütfen rezervasyon numaranızı paylaşın. Destek ekibimiz size yardımcı olacaktır.";
   }
   
   // 8. AKTİVİTE BAZLI CEVAPLAR (fiyat, süre, transfer vb.)
   if (activity) {
     switch (intent.type) {
       case 'price':
-        let priceResponse = `${activity.name} fiyatımız ${activity.price} TL`;
+        let priceResponse = isEn 
+          ? `${activity.name} price is ${activity.price} TL`
+          : `${activity.name} fiyatımız ${activity.price} TL`;
         if (activity.priceUsd) priceResponse += ` ($${activity.priceUsd})`;
         priceResponse += ".";
         if (activity.requiresDeposit && activity.depositAmount > 0) {
           if (activity.depositType === 'percentage') {
             const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
-            priceResponse += ` Ön ödeme: ${depositTl} TL.`;
+            priceResponse += isEn ? ` Deposit: ${depositTl} TL.` : ` Ön ödeme: ${depositTl} TL.`;
           } else {
-            priceResponse += ` Ön ödeme: ${activity.depositAmount} TL.`;
+            priceResponse += isEn ? ` Deposit: ${activity.depositAmount} TL.` : ` Ön ödeme: ${activity.depositAmount} TL.`;
           }
         }
         return priceResponse;
         
       case 'duration':
-        return `${activity.name} süresi ${activity.durationMinutes} dakikadır.`;
+        return isEn 
+          ? `${activity.name} duration is ${activity.durationMinutes} minutes.`
+          : `${activity.name} süresi ${activity.durationMinutes} dakikadır.`;
         
       case 'transfer':
         if (activity.hasFreeHotelTransfer) {
-          let transferResponse = `${activity.name} için ücretsiz otel transferi sunuyoruz.`;
+          let transferResponse = isEn 
+            ? `We offer free hotel transfer for ${activity.name}.`
+            : `${activity.name} için ücretsiz otel transferi sunuyoruz.`;
           try {
             const zones = JSON.parse(activity.transferZones || '[]');
             if (zones.length > 0 && typeof zones[0] === 'object') {
               const zoneNames = zones.map((z: any) => z.zone).join(', ');
-              transferResponse += ` Ücretsiz bölgeler: ${zoneNames}.`;
+              transferResponse += isEn ? ` Free zones: ${zoneNames}.` : ` Ücretsiz bölgeler: ${zoneNames}.`;
             }
           } catch {}
           return transferResponse;
         }
-        return `${activity.name} için ücretsiz transfer bulunmuyor. Kendi ulaşımınızı sağlamanız gerekmektedir.`;
+        return isEn 
+          ? `No free transfer for ${activity.name}. You need to arrange your own transportation.`
+          : `${activity.name} için ücretsiz transfer bulunmuyor. Kendi ulaşımınızı sağlamanız gerekmektedir.`;
         
       case 'availability':
         try {
           const times = JSON.parse(activity.defaultTimes || '[]');
           if (times.length > 0) {
-            return `${activity.name} saatleri: ${times.join(', ')}.`;
+            return isEn 
+              ? `${activity.name} times: ${times.join(', ')}.`
+              : `${activity.name} saatleri: ${times.join(', ')}.`;
           }
         } catch {}
-        return `${activity.name} için saat bilgisi almak isterseniz bize ulaşın.`;
+        return isEn 
+          ? `Contact us for ${activity.name} schedule.`
+          : `${activity.name} için saat bilgisi almak isterseniz bize ulaşın.`;
         
       case 'payment':
-        let paymentResponse = `${activity.name} fiyatı ${activity.price} TL.`;
+        let paymentResponse = isEn 
+          ? `${activity.name} price is ${activity.price} TL.`
+          : `${activity.name} fiyatı ${activity.price} TL.`;
         if (activity.fullPaymentRequired) {
-          paymentResponse += " Rezervasyonda tam ödeme gereklidir.";
+          paymentResponse += isEn ? " Full payment required at booking." : " Rezervasyonda tam ödeme gereklidir.";
         } else if (activity.requiresDeposit && activity.depositAmount > 0) {
           if (activity.depositType === 'percentage') {
             const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
-            paymentResponse += ` Ön ödeme ${depositTl} TL, kalan tutar aktivite günü ödenir.`;
+            paymentResponse += isEn 
+              ? ` Deposit ${depositTl} TL, balance on activity day.`
+              : ` Ön ödeme ${depositTl} TL, kalan tutar aktivite günü ödenir.`;
           } else {
-            paymentResponse += ` Ön ödeme ${activity.depositAmount} TL, kalan tutar aktivite günü ödenir.`;
+            paymentResponse += isEn 
+              ? ` Deposit ${activity.depositAmount} TL, balance on activity day.`
+              : ` Ön ödeme ${activity.depositAmount} TL, kalan tutar aktivite günü ödenir.`;
           }
         } else {
-          paymentResponse += " Ön ödeme gerekmez, aktivite günü ödeme yapılır.";
+          paymentResponse += isEn ? " No deposit required, pay on activity day." : " Ön ödeme gerekmez, aktivite günü ödeme yapılır.";
         }
         return paymentResponse;
         
       case 'extras':
-        let extrasResponse = `${activity.name} ekstra hizmetleri:\n`;
+        let extrasResponse = isEn ? `${activity.name} extras:\n` : `${activity.name} ekstra hizmetleri:\n`;
         try {
           const extras = JSON.parse(activity.extras || '[]');
           if (extras.length > 0) {
@@ -1423,65 +1531,81 @@ function generateTemplateResponse(ctx: TemplateContext): string {
             return extrasResponse.trim();
           }
         } catch {}
-        return `${activity.name} için ekstra hizmet bilgisi mevcut değil.`;
+        return isEn 
+          ? `No extras information available for ${activity.name}.`
+          : `${activity.name} için ekstra hizmet bilgisi mevcut değil.`;
         
       case 'activity_info':
         let infoResponse = `${activity.name}:\n`;
-        infoResponse += `• Fiyat: ${activity.price} TL\n`;
-        infoResponse += `• Süre: ${activity.durationMinutes} dakika`;
+        infoResponse += isEn ? `• Price: ${activity.price} TL\n` : `• Fiyat: ${activity.price} TL\n`;
+        infoResponse += isEn ? `• Duration: ${activity.durationMinutes} minutes` : `• Süre: ${activity.durationMinutes} dakika`;
         if (activity.hasFreeHotelTransfer) {
-          infoResponse += `\n• Ücretsiz otel transferi dahil`;
+          infoResponse += isEn ? `\n• Free hotel transfer included` : `\n• Ücretsiz otel transferi dahil`;
         }
         if (activity.region) {
-          infoResponse += `\n• Bölge: ${activity.region}`;
+          infoResponse += isEn ? `\n• Region: ${activity.region}` : `\n• Bölge: ${activity.region}`;
         }
         return infoResponse;
         
       default:
-        return `${activity.name}: ${activity.price} TL, ${activity.durationMinutes} dakika.`;
+        return isEn 
+          ? `${activity.name}: ${activity.price} TL, ${activity.durationMinutes} minutes.`
+          : `${activity.name}: ${activity.price} TL, ${activity.durationMinutes} dakika.`;
     }
   }
   
   // 9. AKTİVİTE BELİRTİLMEMİŞ - soru sor
   if (['price', 'duration', 'transfer', 'availability', 'payment', 'activity_info'].includes(intent.type)) {
     if (activities.length > 0) {
-      let response = "Hangi aktivite hakkında bilgi almak istiyorsunuz?\n\nAktivitelerimiz:\n";
+      let response = isEn 
+        ? "Which activity would you like to know about?\n\nOur activities:\n"
+        : "Hangi aktivite hakkında bilgi almak istiyorsunuz?\n\nAktivitelerimiz:\n";
       activities.slice(0, 5).forEach((a, i) => {
         response += `• ${a.name}\n`;
       });
       return response.trim();
     }
-    return "Hangi aktivite hakkında bilgi almak istiyorsunuz?";
+    return isEn ? "Which activity would you like to know about?" : "Hangi aktivite hakkında bilgi almak istiyorsunuz?";
   }
   
   // 10. FAQ İNTENT (SSS sistemi eşleşemezse buraya düşer)
   if (intent.type === 'faq') {
-    return "Sık sorulan sorular için web sitemizi ziyaret edebilir veya bize sormak istediğiniz konuyu belirtebilirsiniz.";
+    return isEn 
+      ? "Visit our website for FAQs or let me know what you'd like to ask."
+      : "Sık sorulan sorular için web sitemizi ziyaret edebilir veya bize sormak istediğiniz konuyu belirtebilirsiniz.";
   }
   
   // 11. GENEL/BİLİNMEYEN
   if (intent.type === 'general' || intent.type === 'unknown') {
-    return "Size nasıl yardımcı olabilirim? Aktivitelerimiz, fiyatlar veya rezervasyon hakkında bilgi verebilirim.";
+    return isEn 
+      ? "How can I help you? I can provide information about activities, prices, or reservations."
+      : "Size nasıl yardımcı olabilirim? Aktivitelerimiz, fiyatlar veya rezervasyon hakkında bilgi verebilirim.";
   }
   
   // 12. FALLBACK
-  return "Size nasıl yardımcı olabilirim?";
+  return isEn ? "How can I help you?" : "Size nasıl yardımcı olabilirim?";
 }
 
 // Destek talebi gerekip gerekmediğini kontrol et
 function needsEscalation(message: string): boolean {
   const escalationKeywords = [
+    // Türkçe
     'yetkili', 'müşteri temsilcisi', 'insan', 'destek', 'şikayet', 
     'problem', 'sorun', 'yardım', 'acil', 'yönetici', 'patron',
-    'konuşmak istiyorum', 'birine bağla', 'aktarın'
+    'konuşmak istiyorum', 'birine bağla', 'aktarın',
+    // English
+    'speak to someone', 'human', 'agent', 'representative', 'manager',
+    'complaint', 'urgent', 'help me', 'talk to', 'customer service'
   ];
   const msgLower = message.toLowerCase();
   return escalationKeywords.some(k => msgLower.includes(k));
 }
 
 // Şablon sisteminin destek yanıtı
-function getEscalationResponse(): string {
-  return "Talebinizi destek ekibimize ilettim. En kısa sürede size dönüş yapılacaktır. Teşekkürler!";
+function getEscalationResponse(lang: 'tr' | 'en' = 'tr'): string {
+  return lang === 'en'
+    ? "I've forwarded your request to our support team. We'll get back to you shortly. Thank you!"
+    : "Talebinizi destek ekibimize ilettim. En kısa sürede size dönüş yapılacaktır. Teşekkürler!";
 }
 
 // RAG Context oluştur - conversation state destekli
@@ -6770,10 +6894,13 @@ Rezervasyon takip: {takip_linki}
       // Intent ve aktivite tespiti (kural bazlı)
       const detectedIntent = detectIntent(Body, activities, packageTours, history, currentState);
       const nextStage = determineNextStage(currentState?.stage || 'info', detectedIntent.type);
+      // Dil tespiti ve state güncelleme
+      const detectedLang = detectLanguage(Body, currentState);
       updateConversationState(From, tenantId, {
         lastIntent: detectedIntent.type,
         lastActivityId: detectedIntent.activityId || currentState?.lastActivityId,
-        stage: nextStage
+        stage: nextStage,
+        language: detectedLang
       });
       
       console.log(`[ŞABLON] Intent: ${detectedIntent.type}, Aktivite: ${detectedIntent.activityName || 'yok'}`);
@@ -6807,7 +6934,8 @@ Rezervasyon takip: {takip_linki}
       
       // 1. ÖNCE DESTEK TALEBİ KONTROLÜ (escalation)
       if (needsEscalation(Body)) {
-        const escalationResponse = getEscalationResponse();
+        const msgLang = detectLanguage(Body, currentState);
+        const escalationResponse = getEscalationResponse(msgLang);
         
         // Destek talebi oluştur
         await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
@@ -6840,7 +6968,8 @@ Rezervasyon takip: {takip_linki}
         conversationState: currentState,
         trackingLink,
         faqMatch: null, // SSS zaten yukarıda kontrol edildi
-        tenantSettings: tenantSettingsForTemplate
+        tenantSettings: tenantSettingsForTemplate,
+        originalMessage: Body // İlk mesaj dil tespiti için
       });
       
       console.log(`[ŞABLON] Cevap: ${templateResponse.substring(0, 100)}...`);
@@ -7122,10 +7251,13 @@ Rezervasyon takip: {takip_linki}
       // Intent ve aktivite tespiti (kural bazlı)
       const testDetectedIntent = detectIntent(Body, activities, packageTours, history, testCurrentState);
       const testNextStage = determineNextStage(testCurrentState?.stage || 'info', testDetectedIntent.type);
+      // Dil tespiti ve state güncelleme
+      const testDetectedLang = detectLanguage(Body, testCurrentState);
       updateConversationState(From, tenantId || 0, {
         lastIntent: testDetectedIntent.type,
         lastActivityId: testDetectedIntent.activityId || testCurrentState?.lastActivityId,
-        stage: testNextStage
+        stage: testNextStage,
+        language: testDetectedLang
       });
       
       // Aktivite bul
@@ -7154,7 +7286,8 @@ Rezervasyon takip: {takip_linki}
       
       // 1. DESTEK TALEBİ KONTROLÜ
       if (needsEscalation(Body) && tenantId) {
-        const escalationResponse = getEscalationResponse();
+        const legacyMsgLang = detectLanguage(Body, testCurrentState);
+        const escalationResponse = getEscalationResponse(legacyMsgLang);
         await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
         await storage.createInAppNotification({
@@ -7182,7 +7315,8 @@ Rezervasyon takip: {takip_linki}
         conversationState: testCurrentState,
         trackingLink: legacyTrackingLink,
         faqMatch: null,
-        tenantSettings: { websiteUrl: legacyWebsiteUrl || '', whatsappNumber: '' }
+        tenantSettings: { websiteUrl: legacyWebsiteUrl || '', whatsappNumber: '' },
+        originalMessage: Body // İlk mesaj dil tespiti için
       });
       
       // Save response (with tenantId if known)
@@ -7303,7 +7437,8 @@ Rezervasyon takip: {takip_linki}
         conversationState: testModeState,
         trackingLink: '',
         faqMatch: null,
-        tenantSettings: { websiteUrl: testModeWebsiteUrl || '', whatsappNumber: '' }
+        tenantSettings: { websiteUrl: testModeWebsiteUrl || '', whatsappNumber: '' },
+        originalMessage: message // İlk mesaj dil tespiti için
       });
       
       // Return JSON response (not XML)
