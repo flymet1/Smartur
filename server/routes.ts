@@ -609,6 +609,43 @@ function cleanupConversationStates(): void {
 // Run cleanup every 10 minutes
 setInterval(cleanupConversationStates, 10 * 60 * 1000);
 
+// Helper function to extract person count from message (e.g., "2 kişi", "3 kişilik")
+function extractPersonCount(message: string): number | null {
+  const msgLower = message.toLowerCase();
+  
+  // Pattern: "X kişi", "X kişilik", "X kisilik", "X person", "X people", "X pax"
+  const patterns = [
+    /(\d+)\s*(kişi|kisi|kişilik|kisilik)/i,
+    /(\d+)\s*(person|people|pax)/i,
+    /(bir|iki|üç|uc|dört|dort|beş|bes|altı|alti|yedi|sekiz|dokuz|on)\s*(kişi|kisi|kişilik|kisilik)/i
+  ];
+  
+  // Number word mapping
+  const wordToNum: Record<string, number> = {
+    'bir': 1, 'iki': 2, 'üç': 3, 'uc': 3, 'dört': 4, 'dort': 4, 
+    'beş': 5, 'bes': 5, 'altı': 6, 'alti': 6, 'yedi': 7, 
+    'sekiz': 8, 'dokuz': 9, 'on': 10
+  };
+  
+  for (const pattern of patterns) {
+    const match = msgLower.match(pattern);
+    if (match) {
+      const numStr = match[1];
+      // Check if it's a word number
+      if (wordToNum[numStr]) {
+        return wordToNum[numStr];
+      }
+      // Otherwise parse as digit
+      const num = parseInt(numStr, 10);
+      if (num > 0 && num <= 100) {
+        return num;
+      }
+    }
+  }
+  
+  return null;
+}
+
 // Helper function to parse Turkish date expressions from message and return relevant dates
 function parseDatesFromMessage(message: string): string[] {
   const today = new Date();
@@ -1321,6 +1358,10 @@ interface TemplateContext {
   };
   originalMessage?: string; // İlk mesaj dil tespiti için
   aiFallbackEnabled?: boolean; // AI Fallback toggle
+  // Yeni: Gelişmiş müsaitlik kontrolü için
+  parsedDates?: string[]; // Mesajdan çıkarılan tarihler (YYYY-MM-DD)
+  requestedPax?: number | null; // İstenen kişi sayısı
+  holidayDates?: string[]; // Tatil/bayram tarihleri
 }
 
 // =============================================================================
@@ -1605,17 +1646,79 @@ function generateTemplateResponse(ctx: TemplateContext): string {
           : `${activity.name} için ücretsiz transfer bulunmuyor. Kendi ulaşımınızı sağlamanız gerekmektedir.`;
         
       case 'availability':
+        // GELİŞMİŞ MÜSAİTLİK KONTROLÜ - Tarih, kişi sayısı ve kapasite kullanarak
+        // KURAL 13: Tüm slotları dökme, kısa ve öz cevap ver
+        const { parsedDates: avDates, requestedPax: avPax, holidayDates: avHolidays } = ctx;
+        
+        // 1. Tarih belirtildiyse gerçek kapasite kontrolü yap
+        if (avDates && avDates.length > 0 && capacityData && capacityData.length > 0) {
+          const activityCapacity = capacityData.filter(c => c.activityId === activity.id);
+          const matchingCapacity = activityCapacity.filter(c => avDates.includes(c.date));
+          
+          if (matchingCapacity.length > 0) {
+            const paxNeeded = avPax || 1;
+            
+            // Uygun slotları bul
+            const availableSlots = matchingCapacity.filter(c => (c.totalSlots - c.bookedSlots) >= paxNeeded);
+            
+            if (availableSlots.length > 0) {
+              // En iyi 2-3 seçeneği göster (KURAL 13)
+              const bestSlots = availableSlots.slice(0, 3);
+              const times = bestSlots.map(s => s.time).join(', ');
+              const dateFormatted = new Date(bestSlots[0].date).toLocaleDateString(isEn ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'long' });
+              
+              if (avPax) {
+                return isEn 
+                  ? `Yes, we have availability for ${avPax} people on ${dateFormatted}! Times: ${times}.`
+                  : `Evet, ${dateFormatted} tarihinde ${avPax} kişilik yerimiz var! Saatler: ${times}.`;
+              }
+              return isEn 
+                ? `${activity.name} available on ${dateFormatted}. Times: ${times}.`
+                : `${activity.name} ${dateFormatted} tarihinde müsait. Saatler: ${times}.`;
+            } else {
+              // Yer yok
+              const dateStr = new Date(matchingCapacity[0].date).toLocaleDateString(isEn ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'long' });
+              return isEn 
+                ? `Sorry, no availability for ${avPax || 1} people on ${dateStr}. Would you like to try another date?`
+                : `Maalesef ${dateStr} tarihinde ${avPax || 1} kişilik yer bulunmuyor. Başka bir tarih denemek ister misiniz?`;
+            }
+          }
+        }
+        
+        // 2. Bayram/tatil kontrolü
+        if (avHolidays && avHolidays.length > 0 && capacityData && capacityData.length > 0) {
+          const activityCapacity = capacityData.filter(c => c.activityId === activity.id);
+          const holidayCapacity = activityCapacity.filter(c => avHolidays.includes(c.date));
+          
+          if (holidayCapacity.length > 0) {
+            const paxNeeded = avPax || 1;
+            const availableHoliday = holidayCapacity.filter(c => (c.totalSlots - c.bookedSlots) >= paxNeeded);
+            
+            if (availableHoliday.length > 0) {
+              const best = availableHoliday[0];
+              const dateStr = new Date(best.date).toLocaleDateString(isEn ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'long' });
+              return isEn 
+                ? `Yes, ${activity.name} is available during the holiday! ${dateStr} at ${best.time}.`
+                : `Evet, bayramda ${activity.name} müsait! ${dateStr} saat ${best.time}.`;
+            }
+            return isEn 
+              ? `${activity.name} is fully booked during the holiday. Try another activity or date.`
+              : `Bayramda ${activity.name} dolu. Başka aktivite veya tarih deneyebilirsiniz.`;
+          }
+        }
+        
+        // 3. Fallback: Varsayılan saatleri göster
         try {
           const times = JSON.parse(activity.defaultTimes || '[]');
           if (times.length > 0) {
             return isEn 
-              ? `${activity.name} times: ${times.join(', ')}.`
-              : `${activity.name} saatleri: ${times.join(', ')}.`;
+              ? `${activity.name} times: ${times.join(', ')}. Which date are you interested in?`
+              : `${activity.name} saatleri: ${times.join(', ')}. Hangi tarih için bakıyorsunuz?`;
           }
         } catch {}
         return isEn 
-          ? `Contact us for ${activity.name} schedule.`
-          : `${activity.name} için saat bilgisi almak isterseniz bize ulaşın.`;
+          ? `Which date would you like for ${activity.name}?`
+          : `${activity.name} için hangi tarihe bakalım?`;
         
       case 'payment':
         let paymentResponse = isEn 
@@ -7074,6 +7177,10 @@ Rezervasyon takip: {takip_linki}
       }
       
       // 2. ŞABLON CEVAP OLUŞTUR
+      // Gelişmiş müsaitlik için tarih ve kişi sayısı parse et (holidayDates zaten yukarıda parse edildi)
+      const templateParsedDates = parseDatesFromMessage(Body);
+      const templateRequestedPax = extractPersonCount(Body);
+      
       const templateResponse = generateTemplateResponse({
         intent: detectedIntent,
         activity: matchedActivity,
@@ -7085,7 +7192,11 @@ Rezervasyon takip: {takip_linki}
         trackingLink,
         faqMatch: null, // SSS zaten yukarıda kontrol edildi
         tenantSettings: tenantSettingsForTemplate,
-        originalMessage: Body // İlk mesaj dil tespiti için
+        originalMessage: Body, // İlk mesaj dil tespiti için
+        // Gelişmiş müsaitlik parametreleri
+        parsedDates: templateParsedDates,
+        requestedPax: templateRequestedPax,
+        holidayDates: holidayDates // Yukarıda zaten parse edildi
       });
       
       // 3. AI FALLBACK (Opsiyonel - Ayarlardan açılabilir)
@@ -7434,6 +7545,10 @@ Rezervasyon takip: {takip_linki}
       }
       
       // 2. ŞABLON CEVAP OLUŞTUR
+      // Gelişmiş müsaitlik için tarih ve kişi sayısı parse et (holidayDates zaten yukarıda parse edildi)
+      const legacyParsedDates = parseDatesFromMessage(Body);
+      const legacyRequestedPax = extractPersonCount(Body);
+      
       const legacyTemplateResponse = generateTemplateResponse({
         intent: testDetectedIntent,
         activity: legacyMatchedActivity,
@@ -7445,7 +7560,10 @@ Rezervasyon takip: {takip_linki}
         trackingLink: legacyTrackingLink,
         faqMatch: null,
         tenantSettings: { websiteUrl: legacyWebsiteUrl || '', whatsappNumber: '' },
-        originalMessage: Body // İlk mesaj dil tespiti için
+        originalMessage: Body, // İlk mesaj dil tespiti için
+        parsedDates: legacyParsedDates,
+        requestedPax: legacyRequestedPax,
+        holidayDates: holidayDates // Yukarıda zaten parse edildi
       });
       
       // 3. AI FALLBACK (Legacy webhook için de)
@@ -7568,6 +7686,11 @@ Rezervasyon takip: {takip_linki}
       const testModeWebsiteUrl = await storage.getSetting('websiteUrl', tenantId);
       
       // ŞABLON CEVAP OLUŞTUR (test mode)
+      // Gelişmiş müsaitlik için tarih, kişi sayısı ve tatil parse et
+      const testParsedDates = parseDatesFromMessage(message);
+      const testRequestedPax = extractPersonCount(message);
+      const testHolidayDates = await findHolidayDatesFromMessage(message);
+      
       const testModeTemplateResponse = generateTemplateResponse({
         intent: testModeIntent,
         activity: testModeMatchedActivity,
@@ -7579,7 +7702,10 @@ Rezervasyon takip: {takip_linki}
         trackingLink: '',
         faqMatch: null,
         tenantSettings: { websiteUrl: testModeWebsiteUrl || '', whatsappNumber: '' },
-        originalMessage: message // İlk mesaj dil tespiti için
+        originalMessage: message, // İlk mesaj dil tespiti için
+        parsedDates: testParsedDates,
+        requestedPax: testRequestedPax,
+        holidayDates: testHolidayDates
       });
       
       // AI FALLBACK (Test mode için de)
