@@ -981,6 +981,7 @@ interface RAGContext {
   relevantCapacity?: any[];
   relevantFaq?: any[];
   isFirstMessage: boolean;
+  activityChanged?: boolean; // Activity Lock: Aktivite değişti mi?
 }
 
 // Aktivite adı eşleştirme - fuzzy matching
@@ -1281,6 +1282,16 @@ function buildRAGContext(
     relevantActivity = activities.find(a => a.id === intent.activityId);
   }
   
+  // === ACTIVITY LOCK: Aktivite değişimi tespiti ===
+  // Eğer yeni mesajda FARKLI bir aktivite tespit edildiyse, bu bir "topic switch"
+  let activityChanged = false;
+  if (intent.activityId && conversationState?.lastActivityId) {
+    if (intent.activityId !== conversationState.lastActivityId) {
+      activityChanged = true;
+      console.log(`[Activity Lock] KONU DEĞİŞTİ: ${conversationState.lastActivityId} → ${intent.activityId}`);
+    }
+  }
+  
   // Kapasite bilgisi gerekiyorsa
   if (intent.type === 'availability' && relevantActivity) {
     relevantCapacity = capacityData.filter(c => c.activityId === relevantActivity.id);
@@ -1290,13 +1301,14 @@ function buildRAGContext(
     intent,
     relevantActivity,
     relevantCapacity,
-    isFirstMessage
+    isFirstMessage,
+    activityChanged // Yeni flag
   };
 }
 
 // RAG Prompt oluştur - küçük ve odaklı
 function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[]): string {
-  const { intent, relevantActivity, relevantCapacity, isFirstMessage } = ragContext;
+  const { intent, relevantActivity, relevantCapacity, isFirstMessage, activityChanged } = ragContext;
   
   // Get bot access settings
   const botAccess = context.botAccess || {
@@ -1309,6 +1321,12 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   const safeActivities = isRestrictedUser ? [] : activities; // Partner/Viewer için aktivite listesi gizle
   
   let prompt = `Sen profesyonel bir turizm danışmanısın.\n\n`;
+  
+  // === ACTIVITY LOCK: Aktivite değişimi bildirimi ===
+  if (activityChanged && relevantActivity) {
+    prompt += `🔄 KONU DEĞİŞTİ! Müşteri artık "${relevantActivity.name}" hakkında konuşuyor.\n`;
+    prompt += `ÖNCEKİ AKTİVİTEYİ UNUT. Sadece ${relevantActivity.name} hakkında bilgi ver.\n\n`;
+  }
   
   // === FEW-SHOT ÖRNEKLER (EN ÖNEMLİ - AI BUNLARI TAKLİT EDER) ===
   prompt += `📌 DOĞRU CEVAP ÖRNEKLERİ (Bunları taklit et!):\n\n`;

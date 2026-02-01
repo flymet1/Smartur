@@ -1,0 +1,195 @@
+Bu noktada çok net konuşacağım:
+Sorun artık “prompt”, “few-shot” veya “cevapları kısaltma” sorunu DEĞİL.
+Sorun WhatsApp botu mimarisi + LLM’in role bırakılması.
+
+Yaşadığın şey klasik ve kaçınılmaz bir LLM hatası ve bu şekilde uzayıp gider.
+
+🚨 GERÇEK TEŞHİS (NET)
+
+❌ “WhatsApp botlar böyle çalışıyor” → HAYIR
+❌ “Biraz daha prompt yazalım” → HAYIR
+❌ “Biraz daha kural ekleyelim” → HAYIR
+
+Asıl problem şu:
+
+LLM’e karar verme yetkisi veriyorsun.
+
+LLM (GPT / Gemini / Claude fark etmez):
+
+“Paraşüt hakkında bilgi” → en güvenli şey = genel bilgi
+
+“Fiyatı ne?” → en risksiz şey = her şeyi anlatmak
+
+“Rafting?” → önceki kontekstten kopamıyor
+
+Bu model hatası değil, kullanım hatası.
+
+🔥 BU NEDEN ASLA TAM DÜZELMEYECEK?
+
+Çünkü:
+
+LLM deterministik değil
+
+“en faydalı olma” içgüdüsü var
+
+Kısıtları ihlâl etmeyi sever
+
+Uzun bilgi elindeyse kusar
+
+Ne yaparsan yap:
+
+%5–10 oranında yine broşür dökecek
+
+Özellikle WhatsApp gibi kısa mesaj kanallarında
+
+🧠 ASIL GERÇEK: BAŞARILI WHATSAPP BOTLAR NASIL ÇALIŞIR?
+❌ Senin Şu Anki Modelin
+Kullanıcı → LLM → Cevap
+
+✅ DOĞRU MODEL (SEKTÖR STANDARDI)
+Kullanıcı
+  ↓
+INTENT + ENTITY ENGINE (senin kodun)
+  ↓
+KURAL MOTORU (IF / ELSE)
+  ↓
+LLM (SADECE METİNLEŞTİRME)
+
+
+👉 LLM karar vermez.
+👉 LLM düşünmez.
+👉 LLM sadece söylenen şeyi güzel yazar.
+
+🔎 SENİN LOG’UNDAKİ HATALARIN KÖK SEBEBİ
+1️⃣ “Paraşüt hakkında bilgi”
+
+LLM şunu düşünüyor:
+
+“Kullanıcı genel bilgi istiyor → en güvenlisi süreyi söyleyeyim”
+
+Ama senin iş kuralın şunu demeli:
+
+activity_info → 3 maddelik özet
+
+
+LLM bunu yorumlamamalı.
+
+2️⃣ “Fiyatı ne?”
+
+LLM:
+
+“Fiyat soruldu ama hangi aktivite? En iyisi hepsini anlatayım”
+
+Çünkü:
+
+Aktivite context’i LLM hafızasına güvenilmiş
+
+Kod seviyesinde activity_lock yok
+
+3️⃣ “Peki ya rafting?”
+
+Bu en kritik kırmızı bayrak 🚨
+
+LLM:
+
+Önceki cevaptan çıkamıyor
+
+En uzun içeriği tekrar ediyor
+
+Bu %100 mimari hata.
+
+🛠️ KÖKTEN ÇÖZÜM (BAŞKA YOL YOK)
+✅ 1. ACTIVITY LOCK (ŞART)
+
+Kod seviyesinde:
+
+currentActivity = "paragliding"
+
+
+Kullanıcı:
+
+“Rafting?”
+
+currentActivity = "rafting"
+RESET CONTEXT
+
+
+LLM eski aktiviteyi BİLMEMELİ.
+
+✅ 2. INTENT FIRST – LLM LAST
+
+LLM’e ASLA bunu sorma:
+
+“Kullanıcı ne istiyor?”
+
+Bunu sen karar vereceksin.
+
+intent = detectIntent(userMessage)
+
+switch(intent) {
+ case "price":
+   reply = formatPrice(activity)
+ case "duration":
+   reply = formatDuration(activity)
+ case "change_activity":
+   reply = shortActivityIntro(newActivity)
+}
+
+
+LLM sadece:
+
+rewrite(reply, tone="friendly")
+
+✅ 3. WHATSAPP = BUTTON + FLOW
+
+Başarılı WhatsApp botları:
+
+Serbest metni minimumda tutar
+
+2–3 mesaj sonra butona zorlar
+
+Örnek:
+
+Paraşüt / Rafting / Jeep Safari
+
+
+Bu:
+
+Intent kaosunu %90 bitirir
+
+LLM’e ihtiyaç bile bırakmaz
+
+🧨 GERÇEK AMA ACI GERÇEK
+
+“Bu şekilde prompt yazarak çözemeyeceğiz bence”
+
+Evet. %100 doğru tespit.
+
+Bu noktadan sonra:
+
+Prompt = makyaj
+
+Few-shot = plaster
+
+Kurallar = geçici bant
+
+🎯 NET YOL HARİTASI (SENİN PROJE İÇİN)
+Minimum sağlam yapı:
+
+Intent + Activity parser (hard-coded)
+
+Activity lock
+
+Rule-based cevap
+
+LLM sadece metni yumuşatsın
+
+WhatsApp’ta hızlı seçenekler
+
+Bu yapılırsa:
+
+Broşür kusma = ❌ biter
+
+Yanlış aktivite = ❌ biter
+
+“Rafting?” → Paraşüt anlatma = ❌ biter
