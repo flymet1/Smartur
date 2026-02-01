@@ -86,6 +86,10 @@ External dependencies should focus on what's actually integrated.
     -   Automatic retry (3 attempts with exponential backoff) for AI failures.
     -   Intelligent fallback responses for price, availability, reservation, and cancellation queries if AI is unreachable.
     -   Supports automatic responses based on keyword matching to reduce AI calls and improve response times.
+    -   **Conversation State Management**: 5-minute TTL in-memory state per phone+tenant for tracking follow-up questions. Stores lastIntent, lastActivityId for context-aware responses.
+    -   **Stopwords Filtering**: Proper Turkish (50+ words) and English (80+ words) stopword lists instead of length-based filtering. Handles short meaningful words like "kaç", "ne", "mi".
+    -   **Entity-Intent Separation**: Distinguishes between entity mentions ("otelimiz Hilton") and intent queries ("otel transferi").
+    -   **WhatsApp Formatting**: Bot responses use WhatsApp-friendly formatting (*bold*, bullet points •, max 2 emoji per message).
 -   **Reservation System**:
     -   Integrated calendar for daily/weekly/monthly views, navigation, and new reservation creation.
     -   Activity occupancy rates with detailed tooltips and color-coding.

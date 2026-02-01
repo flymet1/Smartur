@@ -466,6 +466,106 @@ try {
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Hazıran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 
+// Stopwords list - words to filter out when matching SSS (instead of w.length > 2)
+const TURKISH_STOPWORDS = new Set([
+  've', 'veya', 'de', 'da', 'mi', 'mu', 'mü', 'mı', 'bir', 'bu', 'şu', 'o', 'ile', 
+  'için', 'ben', 'sen', 'biz', 'siz', 'onlar', 'ki', 'ya', 'yani', 'ama', 'fakat',
+  'ancak', 'çok', 'az', 'daha', 'en', 'gibi', 'kadar', 'olarak', 'olan', 'değil',
+  'var', 'yok', 'ise', 'hem', 'ne', 'nasıl', 'neden', 'niye', 'kim', 'kime', 'hangi',
+  'her', 'hiç', 'bazı', 'tüm', 'hep', 'sadece', 'yalnız', 'bile', 'artık', 'henüz',
+  'şey', 'şeyi', 'hala', 'zaten', 'hatta', 'sanki'
+]);
+
+const ENGLISH_STOPWORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 
+  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+  'may', 'might', 'must', 'shall', 'can', 'need', 'dare', 'ought', 'used',
+  'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'as', 'into',
+  'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under',
+  'and', 'but', 'or', 'nor', 'so', 'yet', 'both', 'either', 'neither',
+  'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them',
+  'my', 'your', 'his', 'its', 'our', 'their', 'this', 'that', 'these', 'those'
+]);
+
+// Helper function to filter words using stopwords (replaces w.length > 2)
+function filterStopwords(words: string[], isEnglish: boolean = false): string[] {
+  const stopwords = isEnglish ? ENGLISH_STOPWORDS : TURKISH_STOPWORDS;
+  return words.filter(w => w.length > 0 && !stopwords.has(w.toLowerCase()));
+}
+
+// Conversation State Management - stores last activity/intent per phone for follow-up questions
+interface ConversationState {
+  lastActivity: string | null;
+  lastActivityId: number | null;
+  lastIntent: string | null;
+  lastDate: string | null;
+  language: 'tr' | 'en';
+  messageCount: number;
+  lastUpdated: Date;
+}
+
+// In-memory conversation state storage (per phone number per tenant)
+const conversationStates: Map<string, ConversationState> = new Map();
+const CONVERSATION_STATE_TTL = 5 * 60 * 1000; // 5 minutes TTL
+
+// Get conversation state key (phone + tenant)
+function getStateKey(phone: string, tenantId: number): string {
+  return `${tenantId}:${phone}`;
+}
+
+// Get or create conversation state
+function getConversationState(phone: string, tenantId: number): ConversationState {
+  const key = getStateKey(phone, tenantId);
+  const existing = conversationStates.get(key);
+  
+  // Check if state is still valid (within TTL)
+  if (existing && (Date.now() - existing.lastUpdated.getTime()) < CONVERSATION_STATE_TTL) {
+    return existing;
+  }
+  
+  // Create new state
+  const newState: ConversationState = {
+    lastActivity: null,
+    lastActivityId: null,
+    lastIntent: null,
+    lastDate: null,
+    language: 'tr',
+    messageCount: 0,
+    lastUpdated: new Date()
+  };
+  conversationStates.set(key, newState);
+  return newState;
+}
+
+// Update conversation state
+function updateConversationState(
+  phone: string, 
+  tenantId: number, 
+  updates: Partial<ConversationState>
+): void {
+  const key = getStateKey(phone, tenantId);
+  const current = getConversationState(phone, tenantId);
+  conversationStates.set(key, {
+    ...current,
+    ...updates,
+    messageCount: current.messageCount + 1,
+    lastUpdated: new Date()
+  });
+}
+
+// Cleanup old conversation states (run periodically)
+function cleanupConversationStates(): void {
+  const now = Date.now();
+  for (const [key, state] of conversationStates.entries()) {
+    if (now - state.lastUpdated.getTime() > CONVERSATION_STATE_TTL * 2) {
+      conversationStates.delete(key);
+    }
+  }
+}
+
+// Run cleanup every 10 minutes
+setInterval(cleanupConversationStates, 10 * 60 * 1000);
+
 // Helper function to parse Turkish date expressions from message and return relevant dates
 function parseDatesFromMessage(message: string): string[] {
   const today = new Date();
@@ -899,34 +999,62 @@ function findMatchingActivity(message: string, activities: any[]): { activity: a
   return null;
 }
 
-// Intent tespiti - mesajdan niyet çıkarma
-function detectIntent(message: string, activities: any[], packageTours: any[], history: any[]): RAGIntent {
+// Intent tespiti - mesajdan niyet çıkarma (state-aware version)
+function detectIntent(
+  message: string, 
+  activities: any[], 
+  packageTours: any[], 
+  history: any[],
+  conversationState?: ConversationState | null
+): RAGIntent {
   const msgLower = message.toLowerCase();
   
-  // Selamlama kontrolü
+  // Selamlama kontrolü - sadece tek başına selamlama (ticari intent içermiyorsa)
   const greetings = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'hey', 'hi', 'hello'];
-  if (greetings.some(g => msgLower.includes(g)) && message.length < 30) {
+  const hasGreeting = greetings.some(g => msgLower.includes(g));
+  
+  // Ticari intent anahtar kelimeleri - selamla birlikte geldiyse selamlama değil
+  const commercialKeywords = ['fiyat', 'ücret', 'kaç', 'müsait', 'rezervasyon', 'bilgi', 'price', 'available', 'booking'];
+  const hasCommercialIntent = commercialKeywords.some(k => msgLower.includes(k));
+  
+  // Sadece saf selamlama ise (ticari intent yoksa ve kısa mesajsa)
+  if (hasGreeting && !hasCommercialIntent && message.length < 25) {
     return { type: 'greeting', confidence: 0.95 };
   }
   
   // Aktivite eşleştirme
-  const activityMatch = findMatchingActivity(message, activities);
+  let activityMatch = findMatchingActivity(message, activities);
   
-  // Intent keywords
+  // CONVERSATION STATE: Eğer bu mesajda aktivite bulunamadı ama önceki state'te varsa, onu kullan
+  if (!activityMatch && conversationState?.lastActivityId) {
+    const stateActivity = activities.find(a => a.id === conversationState.lastActivityId);
+    if (stateActivity) {
+      activityMatch = { activity: stateActivity, confidence: 0.7 };
+      console.log(`[Intent] State'ten aktivite alındı: ${stateActivity.name}`);
+    }
+  }
+  
+  // ENTITY-FIRST: "otel" kelimesi için akıllı tespit
+  // "otelimiz X", "otel adı", "X otelinde" → entity (otel ismi belirtiliyor)
+  // "otel transferi", "otelden alış" → intent (transfer soruluyor)
+  const hotelEntityPatterns = ['otelimiz', 'otelim', 'otel adı', 'otelimizin', 'otelinde', 'otelindeyiz', 'hotel is', 'staying at'];
+  const isHotelEntity = hotelEntityPatterns.some(p => msgLower.includes(p));
+  
+  // Intent keywords - "otel" kelimesi sadece entity değilse transfer olarak değerlendirilir
   const intentPatterns: Record<IntentType, string[]> = {
-    'availability': ['müsait', 'yer var', 'boş', 'kontenjan', 'doluluk', 'uygun'],
-    'price': ['fiyat', 'ücret', 'kaç para', 'ne kadar', 'tutar', 'maliyet'],
-    'duration': ['süre', 'kaç dakika', 'kaç saat', 'ne kadar sürer', 'uzunluk'],
-    'reservation': ['rezervasyon', 'kayıt', 'yer ayırt', 'katılmak', 'gelmek istiyorum'],
-    'reservation_status': ['siparişim', 'rezervasyonum', 'durumu', 'onaylandı mı', 'takip'],
-    'transfer': ['transfer', 'otel', 'alınış', 'servis', 'ulaşım'],
-    'payment': ['ödeme', 'ön ödeme', 'kapora', 'nakit', 'kart', 'havale'],
-    'cancellation': ['iptal', 'değişiklik', 'tarih değiştir', 'vazgeçtim'],
-    'activity_list': ['aktiviteler', 'turlar', 'neler var', 'ne yapabiliriz', 'seçenekler'],
+    'availability': ['müsait', 'yer var', 'boş', 'kontenjan', 'doluluk', 'uygun', 'available', 'slot'],
+    'price': ['fiyat', 'ücret', 'kaç para', 'ne kadar', 'tutar', 'maliyet', 'price', 'cost', 'how much'],
+    'duration': ['süre', 'kaç dakika', 'kaç saat', 'ne kadar sürer', 'uzunluk', 'duration', 'how long'],
+    'reservation': ['rezervasyon', 'kayıt', 'yer ayırt', 'katılmak', 'gelmek istiyorum', 'book', 'reserve'],
+    'reservation_status': ['siparişim', 'rezervasyonum', 'durumu', 'onaylandı mı', 'takip', 'my booking', 'my order'],
+    'transfer': ['transfer', 'alınış', 'servis', 'ulaşım', 'pickup', 'shuttle'], // "otel" ÇIKARILDI - aşağıda kontrol edilecek
+    'payment': ['ödeme', 'ön ödeme', 'kapora', 'nakit', 'kart', 'havale', 'payment', 'deposit'],
+    'cancellation': ['iptal', 'değişiklik', 'tarih değiştir', 'vazgeçtim', 'cancel', 'change date'],
+    'activity_list': ['aktiviteler', 'turlar', 'neler var', 'ne yapabiliriz', 'seçenekler', 'activities', 'tours', 'options'],
     'faq': ['sss', 'sık sorulan', 'merak edilen', 'soru-cevap'],
-    'extras': ['ekstra', 'ek hizmet', 'video çekim', 'fotoğraf çekim', 'sigorta', 'öğle yemeği'],
-    'package_tour': ['paket tur', 'tur paketi', 'paket program', 'günlük tur', 'kombinasyon tur', 'kombi tur', 'paketler'],
-    'activity_info': [], // Aktivite bulundu ama spesifik intent yok
+    'extras': ['ekstra', 'ek hizmet', 'video çekim', 'fotoğraf çekim', 'sigorta', 'öğle yemeği', 'extra', 'photo', 'video'],
+    'package_tour': ['paket tur', 'tur paketi', 'paket program', 'günlük tur', 'kombinasyon tur', 'kombi tur', 'paketler', 'package tour'],
+    'activity_info': [],
     'general': [],
     'greeting': [],
     'unknown': []
@@ -946,6 +1074,14 @@ function detectIntent(message: string, activities: any[], packageTours: any[], h
         }
       }
     }
+  }
+  
+  // Özel durum: "otel" kelimesi + entity değilse + transfer intent'i yoksa → transfer
+  if (msgLower.includes('otel') && !isHotelEntity && detectedType === 'unknown') {
+    // "otel" kelimesi geçiyor ama başka intent belirlenmedi ve entity de değil
+    // Bu durumda transfer soruyordur
+    detectedType = 'transfer';
+    maxConfidence = 0.7;
   }
   
   // Aktivite bulunduysa ama intent belirsizse
@@ -1055,15 +1191,17 @@ function buildFocusedActivityDescription(activity: any, intent: RAGIntent): stri
   return desc;
 }
 
-// RAG Context oluştur
+// RAG Context oluştur - conversation state destekli
 function buildRAGContext(
   message: string, 
   activities: any[], 
   packageTours: any[],
   capacityData: any[],
-  history: any[]
+  history: any[],
+  conversationState?: ConversationState | null
 ): RAGContext {
-  const intent = detectIntent(message, activities, packageTours, history);
+  // Pass conversation state to detectIntent for follow-up questions
+  const intent = detectIntent(message, activities, packageTours, history, conversationState);
   const isFirstMessage = history.filter(m => m.role === 'user').length <= 1;
   
   let relevantActivity = null;
@@ -1364,6 +1502,14 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
     prompt += `- Bu kurallar DİĞER TÜM KURALLARIN ÜSTÜNDEDİR\n`;
   }
   
+  // WhatsApp formatting rules
+  prompt += `\n📱 WHATSAPP FORMATI:\n`;
+  prompt += `- Cevaplarını WhatsApp estetiğine uygun ver\n`;
+  prompt += `- Önemli kelimeleri *bold* yap (örn: *fiyat*, *tarih*)\n`;
+  prompt += `- Liste yaparken mermi (•) kullan\n`;
+  prompt += `- Her mesajda en fazla 2 emoji kullan\n`;
+  prompt += `- Mesajları kısa ve okunabilir tut\n`;
+  
   return prompt;
 }
 
@@ -1376,13 +1522,14 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
     // Get last user message for intent detection
     const lastUserMessage = history.filter((m: any) => m.role === "user").pop()?.content || "";
     
-    // Build RAG context
+    // Build RAG context - pass conversation state for follow-up questions
     const ragContext = buildRAGContext(
       lastUserMessage,
       context.activities || [],
       context.packageTours || [],
       context.capacityData || [],
-      history
+      history,
+      context.conversationState || null
     );
     
     // Build focused prompt
@@ -2030,7 +2177,14 @@ ${context.botRules || DEFAULT_BOT_RULES}
 2. Listende OLMAYAN bir aktivite/hizmet sorulursa "Bu hizmetimiz bulunmuyor" de.
 3. Uydurmak YASAK. Bilmiyorsan "Bu konuda bilgim yok, yetkili arkadaşımıza bağlıyorum" de.
 4. Önce soruyu ANLA, sonra ALAKALI cevap ver.
-5. DEVAM EDEN KONUŞMA: Yukarıdaki mesajlar bu müşteriyle DEVAM EDEN bir sohbettir. Her mesajda "merhaba" veya "iyi günler" deme! Doğrudan soruya cevap ver. Sadece KONUŞMADAKİ İLK MESAJDA selamlama yap.`;
+5. DEVAM EDEN KONUŞMA: Yukarıdaki mesajlar bu müşteriyle DEVAM EDEN bir sohbettir. Her mesajda "merhaba" veya "iyi günler" deme! Doğrudan soruya cevap ver. Sadece KONUŞMADAKİ İLK MESAJDA selamlama yap.
+
+📱 WHATSAPP FORMATI:
+- Cevaplarını WhatsApp estetiğine uygun ver
+- Önemli kelimeleri *bold* yap (örn: *fiyat*, *tarih*)
+- Liste yaparken mermi (•) kullan
+- Her mesajda en fazla 2 emoji kullan
+- Mesajları kısa ve okunabilir tut`;
 
   // Helper function to check if error is rate limit related
   const isRateLimitError = (error: unknown): boolean => {
@@ -2133,7 +2287,8 @@ ${context.botRules || DEFAULT_BOT_RULES}
   
   // Smart FAQ fallback - search activities' FAQ for relevant answers
   if (context?.activities && Array.isArray(context.activities)) {
-    const searchTerms = lastUserMessage.split(/\s+/).filter((w: string) => w.length > 2);
+    // Use stopwords filtering instead of w.length > 2
+    const searchTerms = filterStopwords(lastUserMessage.split(/\s+/), false);
     for (const activity of context.activities) {
       if (activity.faq) {
         try {
@@ -5590,9 +5745,9 @@ export async function registerRoutes(
           .trim();
       };
       
-      // Helper: Extract tokens for comparison
+      // Helper: Extract tokens for comparison (using stopwords filtering)
       const getTokens = (text: string): string[] => {
-        return normalizeText(text).split(' ').filter(t => t.length > 2);
+        return filterStopwords(normalizeText(text).split(' '), false);
       };
       
       // Helper: Calculate token overlap score
@@ -6284,7 +6439,8 @@ Rezervasyon takip: {takip_linki}
         
         for (const variation of variations) {
           const varNormalized = isEnglish ? variation.toLowerCase() : normalizeTurkish(variation);
-          const varWords = varNormalized.split(/\s+/).filter((w: string) => w.length > 2); // Allow shorter words for greetings
+          // Use stopwords filtering instead of w.length > 2
+          const varWords = filterStopwords(varNormalized.split(/\s+/), isEnglish);
           
           if (varWords.length === 0) continue;
           
@@ -6307,8 +6463,9 @@ Rezervasyon takip: {takip_linki}
       
       // 1. Aktivite SSS kontrolü (only if botAccess.faq is enabled)
       if (!sssResponse && botAccess.faq !== false && activities && activities.length > 0) {
-        const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 2);
-        const messageWordsEn = messageLower.split(/\s+/).filter((w: string) => w.length > 2);
+        // Use stopwords filtering instead of w.length > 2
+        const messageWords = filterStopwords(normalizedMessage.split(/\s+/), false);
+        const messageWordsEn = filterStopwords(messageLower.split(/\s+/), true);
         for (const activity of activities) {
           if (!activity.faq) continue;
           try {
@@ -6346,8 +6503,9 @@ Rezervasyon takip: {takip_linki}
       if (!sssResponse && botAccess.faq !== false && generalFaq) {
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
-          const messageWords = normalizedMessage.split(/\s+/).filter((w: string) => w.length > 2);
-          const messageWordsEn = messageLower.split(/\s+/).filter((w: string) => w.length > 2);
+          // Use stopwords filtering instead of w.length > 2
+          const messageWords = filterStopwords(normalizedMessage.split(/\s+/), false);
+          const messageWordsEn = filterStopwords(messageLower.split(/\s+/), true);
           if (Array.isArray(generalFaqItems)) {
             for (const item of generalFaqItems) {
               // Check Turkish question (with comma-separated variations)
@@ -6385,7 +6543,10 @@ Rezervasyon takip: {takip_linki}
       // SSS'de eşleşme bulunamadı, AI'a gönder
       console.log(`[SSS] Eşleşme bulunamadı, AI'a gönderiliyor...`);
       
-      // Generate AI response
+      // Get conversation state for follow-up questions
+      const currentState = getConversationState(From, tenantId);
+      
+      // Generate AI response with conversation state
       const aiResponse = await generateAIResponse(history, { 
         activities: botAccess.activities ? activities : [], 
         packageTours: botAccess.packageTours ? packageTours : [],
@@ -6405,8 +6566,16 @@ Rezervasyon takip: {takip_linki}
         partnerPrompt,
         isViewer,
         viewerName: viewerUser?.name,
-        viewerPrompt
+        viewerPrompt,
+        conversationState: currentState
       }, botPrompt || undefined);
+      
+      // Update conversation state after AI response
+      const detectedIntent = detectIntent(Body, activities, packageTours, history, currentState);
+      updateConversationState(From, tenantId, {
+        lastIntent: detectedIntent.type,
+        lastActivityId: detectedIntent.activityId || currentState?.lastActivityId
+      });
       
       // Check if needs human intervention (bot confirmed transfer to support)
       const responseLC = aiResponse.toLowerCase();
@@ -6629,7 +6798,8 @@ Rezervasyon takip: {takip_linki}
         
         for (const variation of variations) {
           const varNormalized = isEnglish ? variation.toLowerCase() : normalizeTurkish(variation);
-          const varWords = varNormalized.split(/\s+/).filter((w: string) => w.length > 2);
+          // Use stopwords filtering instead of w.length > 2
+          const varWords = filterStopwords(varNormalized.split(/\s+/), isEnglish);
           
           if (varWords.length === 0) continue;
           
@@ -6650,8 +6820,9 @@ Rezervasyon takip: {takip_linki}
       
       // 1. Aktivite SSS kontrolü (tenantId and botAccess.faq required)
       if (!testSssResponse && tenantId && botAccess.faq !== false && activities && activities.length > 0) {
-        const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 2);
-        const messageWordsEn = testMessageLower.split(/\s+/).filter((w: string) => w.length > 2);
+        // Use stopwords filtering instead of w.length > 2
+        const messageWords = filterStopwords(testNormalizedMessage.split(/\s+/), false);
+        const messageWordsEn = filterStopwords(testMessageLower.split(/\s+/), true);
         for (const activity of activities) {
           if (!activity.faq) continue;
           try {
@@ -6686,8 +6857,9 @@ Rezervasyon takip: {takip_linki}
       if (!testSssResponse && tenantId && botAccess.faq !== false && generalFaq) {
         try {
           const generalFaqItems = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : generalFaq;
-          const messageWords = testNormalizedMessage.split(/\s+/).filter((w: string) => w.length > 2);
-          const messageWordsEn = testMessageLower.split(/\s+/).filter((w: string) => w.length > 2);
+          // Use stopwords filtering instead of w.length > 2
+          const messageWords = filterStopwords(testNormalizedMessage.split(/\s+/), false);
+          const messageWordsEn = filterStopwords(testMessageLower.split(/\s+/), true);
           if (Array.isArray(generalFaqItems)) {
             for (const item of generalFaqItems) {
               const trMatch = testCheckQuestionMatch(item.question || '', messageWords, false);
@@ -6722,6 +6894,9 @@ Rezervasyon takip: {takip_linki}
       
       console.log(`[SSS-TEST] Eşleşme bulunamadı, AI'a gönderiliyor...`);
       
+      // Get conversation state for follow-up questions
+      const testCurrentState = getConversationState(From, tenantId || 0);
+      
       // Generate AI response with reservation context, capacity data, package tours, customer requests, and custom prompt
       const aiResponse = await generateAIResponse(history, { 
         activities: botAccess.activities ? activities : [], 
@@ -6735,8 +6910,16 @@ Rezervasyon takip: {takip_linki}
         pendingRequests: pendingRequests,
         botAccess,
         botRules,
-        generalFaq
+        generalFaq,
+        conversationState: testCurrentState
       }, botPrompt || undefined);
+      
+      // Update conversation state after response
+      const testDetectedIntent = detectIntent(Body, activities, packageTours, history, testCurrentState);
+      updateConversationState(From, tenantId || 0, {
+        lastIntent: testDetectedIntent.type,
+        lastActivityId: testDetectedIntent.activityId || testCurrentState?.lastActivityId
+      });
       
       // Check if bot confirmed transfer to support
       const responseLC = aiResponse.toLowerCase();
@@ -6852,6 +7035,9 @@ Rezervasyon takip: {takip_linki}
       const botRules = await storage.getSetting('botRules', tenantId);
       const generalFaq = await storage.getSetting('generalFaq', tenantId);
       
+      // Get conversation state for follow-up questions in test mode (use 'test' as phone)
+      const testModeState = getConversationState('test', tenantId);
+      
       // Generate AI response (test mode - no escalation, no support requests)
       const aiResponse = await generateAIResponse(history, {
         activities: botAccess.activities ? activities : [],
@@ -6872,8 +7058,16 @@ Rezervasyon takip: {takip_linki}
         isViewer: false,
         viewerName: null,
         viewerPrompt: null,
-        isTestMode: true // Flag to prevent escalation in test mode
+        isTestMode: true, // Flag to prevent escalation in test mode
+        conversationState: testModeState
       }, botPrompt || undefined);
+      
+      // Update conversation state for test mode
+      const testModeIntent = detectIntent(message, activities, packageTours, history, testModeState);
+      updateConversationState('test', tenantId, {
+        lastIntent: testModeIntent.type,
+        lastActivityId: testModeIntent.activityId || testModeState?.lastActivityId
+      });
       
       // Return JSON response (not XML)
       res.json({
