@@ -2281,6 +2281,88 @@ ${context.botRules || DEFAULT_BOT_RULES}
   }
   
   if (lastUserMessage.includes("müsait") || lastUserMessage.includes("yer var") || lastUserMessage.includes("boş")) {
+    // Try to provide actual capacity info if available
+    if (context?.capacityData && context.capacityData.length > 0) {
+      // Parse date from message (yarın, bugün, etc.)
+      let targetDate: string | null = null;
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      if (lastUserMessage.includes('yarın')) {
+        targetDate = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD
+      } else if (lastUserMessage.includes('bugün')) {
+        targetDate = today.toISOString().split('T')[0];
+      }
+      
+      // Find mentioned activity
+      const mentionedActivity = context?.activities?.find((a: any) => 
+        lastUserMessage.includes(a.name.toLowerCase()) ||
+        (lastUserMessage.includes('paraşüt') && a.name.toLowerCase().includes('paraşüt')) ||
+        (lastUserMessage.includes('tekne') && a.name.toLowerCase().includes('tekne')) ||
+        (lastUserMessage.includes('atv') && a.name.toLowerCase().includes('atv')) ||
+        (lastUserMessage.includes('rafting') && a.name.toLowerCase().includes('rafting'))
+      );
+      
+      if (mentionedActivity) {
+        let activityCapacity = context.capacityData.filter((c: any) => c.activityId === mentionedActivity.id);
+        
+        // Filter by target date if specified
+        if (targetDate) {
+          activityCapacity = activityCapacity.filter((c: any) => c.date === targetDate);
+        }
+        
+        if (activityCapacity.length > 0) {
+          const dateLabel = targetDate === tomorrow.toISOString().split('T')[0] ? 'Yarın' : 
+                           targetDate === today.toISOString().split('T')[0] ? 'Bugün' : '';
+          const slots = activityCapacity.slice(0, 5).map((c: any) => {
+            const available = c.totalSlots - c.bookedSlots;
+            return `• ${dateLabel || c.date} saat ${c.time}: ${available > 0 ? available + ' kişilik yer MÜSAİT ✓' : 'DOLU ✗'}`;
+          }).join('\n');
+          return `*${mentionedActivity.name}* için müsaitlik:\n\n${slots}\n\nRezervasyon için web sitemizi ziyaret edebilirsiniz.`;
+        } else if (targetDate) {
+          // Activity found but no capacity data for this date - use default times
+          const defaultTimes = JSON.parse(mentionedActivity.defaultTimes || '["09:00", "11:00", "14:00"]');
+          const defaultCapacity = mentionedActivity.defaultCapacity || 10;
+          const dateLabel = targetDate === tomorrow.toISOString().split('T')[0] ? 'Yarın' : 'Bugün';
+          const slots = defaultTimes.slice(0, 4).map((time: string) => 
+            `• ${dateLabel} saat ${time}: ${defaultCapacity} kişilik yer MÜSAİT ✓`
+          ).join('\n');
+          return `*${mentionedActivity.name}* için ${dateLabel.toLowerCase()} müsaitlik:\n\n${slots}\n\n(Varsayılan kontenjan gösterilmektedir)\n\nRezervasyon için web sitemizi ziyaret edebilirsiniz.`;
+        }
+      }
+      
+      // If no specific activity mentioned, show general availability
+      const generalInfo = context.capacityData.slice(0, 5).map((c: any) => {
+        const activity = context.activities?.find((a: any) => a.id === c.activityId);
+        const available = c.totalSlots - c.bookedSlots;
+        return `• ${activity?.name || 'Aktivite'} - ${c.date} ${c.time}: ${available > 0 ? 'MÜSAİT' : 'DOLU'}`;
+      }).join('\n');
+      return `Merhaba! İşte yaklaşan tarihler için müsaitlik durumu:\n\n${generalInfo}\n\nDetaylı bilgi için web sitemizi ziyaret edebilirsiniz.`;
+    }
+    
+    // No capacity data available - check if activity has default times
+    if (context?.activities && Array.isArray(context.activities)) {
+      const mentionedActivity = context.activities.find((a: any) => 
+        lastUserMessage.includes(a.name.toLowerCase()) ||
+        (lastUserMessage.includes('paraşüt') && a.name.toLowerCase().includes('paraşüt')) ||
+        (lastUserMessage.includes('tekne') && a.name.toLowerCase().includes('tekne')) ||
+        (lastUserMessage.includes('atv') && a.name.toLowerCase().includes('atv'))
+      );
+      
+      if (mentionedActivity?.defaultTimes) {
+        try {
+          const defaultTimes = JSON.parse(mentionedActivity.defaultTimes);
+          const defaultCapacity = mentionedActivity.defaultCapacity || 10;
+          const slots = defaultTimes.slice(0, 4).map((time: string) => 
+            `• Saat ${time}: ${defaultCapacity} kişilik yer MÜSAİT ✓`
+          ).join('\n');
+          return `*${mentionedActivity.name}* için varsayılan saatler:\n\n${slots}\n\nGüncel müsaitlik için web sitemizi ziyaret edebilirsiniz.`;
+        } catch {}
+      }
+    }
+    
+    // No capacity data available - genuine fallback
     return `Merhaba! Bu tarih için anlık müsaitlik bilgim yok. Güncel durumu web sitemizden kontrol edebilir veya doğrudan online rezervasyon yapabilirsiniz.`;
   }
   
