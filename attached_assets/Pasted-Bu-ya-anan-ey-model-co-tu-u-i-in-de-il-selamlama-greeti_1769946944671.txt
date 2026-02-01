@@ -1,0 +1,143 @@
+Bu yaşanan şey model “coştu”ğu için değil, selamlama (greeting) akışının yanlış tasarlanması yüzünden olmuş.
+Açık ve teknik olarak nedenini anlatıyorum.
+
+🔴 PROBLEMİN NET TANIMI
+
+Kullanıcı mesajı:
+
+“merhaba”
+
+Botun yapması gereken (senin kurallarına göre):
+
+KISA selamlama + “Nasıl yardımcı olabilirim?”
+
+Botun yaptığı:
+
+❌ Tüm Yamaç Paraşütü RAG datasını kusması
+
+Bu kesinlikle yanlış davranış ve prompt ihlali.
+
+1️⃣ BU NEDEN OLUR? (ANA SEBEP)
+❗️ “MERHABA” INTENT’İ YANLIŞ YERE BAĞLANMIŞ
+
+Şu an sistemde büyük ihtimalle şu var:
+
+merhaba, selam, iyi günler
+→ default activity = Yamaç Paraşütü
+→ default intent = info
+
+Yani bot şunu düşünüyor:
+
+“Kullanıcı aktivite seçmedi → en popüler aktiviteyi anlatayım”
+
+Bu LLM’in kararı değil, routing logic hatası.
+
+2️⃣ LLM NEDEN BU KADAR UZUN CEVAP VERDİ?
+
+Çünkü sen prompt’ta şunu demişsin (farkında olmadan):
+
+“Etkinlik bilgisi sorulduğunda yukarıdaki açıklamaları kullan”
+
+“SSS bulunamazsa mevcut aktivite bilgileriyle yardımcı ol”
+
+Ama şunu net dememişsin:
+
+❌ “SELAMLAMADA ASLA AKTİVİTE BİLGİSİ VERME”
+
+LLM de verilen tek dolu veri setini (Yamaç Paraşütü) dökmüş.
+
+Yani:
+
+Model itaatkâr
+
+Ama yanlış tetiklenmiş
+
+3️⃣ BU MODEL PROBLEMİ Mİ?
+
+❌ Hayır.
+Aynı şeyi GPT-4.1 veya Gemini Pro da yapardı.
+
+Bu tamamen:
+
+Greeting intent
+
+Default activity
+
+Fallback intent
+
+arasındaki bağlantı hatası.
+
+4️⃣ SİSTEMDE ŞU AN MUHTEMEL AKIŞ
+"merhaba"
+↓
+intent = greeting
+↓
+activity = null
+↓
+fallbackActivity = Yamaç Paraşütü ❌
+↓
+intent = info
+↓
+→ TÜM AKTİVİTE DATA’SI DÖK
+
+5️⃣ NET VE KESİN ÇÖZÜM (YAPMAN GEREKENLER)
+✅ 1. GREETING İÇİN HARD RULE EKLE (EN ÖNEMLİ)
+
+Prompt’a aynen bunu ekle:
+
+SELAMLAMA KURALI (KRİTİK):
+- Kullanıcı sadece "merhaba", "selam", "iyi günler", "hello" gibi bir selamlama yazarsa
+- ASLA aktivite bilgisi, fiyat, saat, SSS, paket tur anlatma
+- Sadece kısa bir karşılama yap ve "Nasıl yardımcı olabilirim?" diye sor
+
+
+Bu olmazsa bu hata tekrar eder.
+
+✅ 2. GREETING → ACTIVITY BAĞLANTISINI KES
+
+Backend tarafında:
+
+❌ Yanlış:
+
+if (intent === 'greeting') activity = defaultActivity;
+
+
+✅ Doğru:
+
+if (intent === 'greeting') {
+  activity = null;
+  intent = 'wait_for_question';
+}
+
+✅ 3. “SORULANI CEVAPLA” KURALINI ÖNE AL
+
+Prompt’ta şu var ama selamlama için override edilmemiş:
+
+“Sorulan soruya cevap ver”
+
+Ama “merhaba” soru değil.
+
+Bunu ekle:
+
+Eğer kullanıcı bir soru sormadıysa bilgi verme.
+
+6️⃣ DOĞRU DAVRANIŞ NASIL OLMALI? (ÖRNEK)
+
+Kullanıcı:
+
+merhaba
+
+Bot (doğru):
+
+Merhaba! Size nasıl yardımcı olabilirim? 😊
+
+Sonra kullanıcı:
+
+yarın paraşüt var mı
+
+👉 İşte o zaman bilgi başlar.
+
+7️⃣ TEK CÜMLELİK TEŞHİS
+
+Bot, “merhaba” mesajını bilgi talebi sanmış ve default aktiviteye bağlamış.
+Bu bir greeting routing hatasıdır, model problemi değildir.

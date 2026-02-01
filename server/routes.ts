@@ -1281,10 +1281,14 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   // Intent'e göre context ekle
   switch (intent.type) {
     case 'greeting':
-      prompt += `Müşteri selamlıyor. Kısaca selamla ve nasıl yardımcı olabileceğini sor.\n`;
-      if (botAccess.activities && safeActivities.length > 0) {
-        prompt += `\nMevcut Aktiviteler: ${safeActivities.map(a => a.name).join(', ')}\n`;
-      }
+      // SELAMLAMA - SADECE KISA KARŞILAMA, AKTİVİTE BİLGİSİ VERİLMEZ!
+      prompt += `⚠️ SELAMLAMA KURALI (KRİTİK):\n`;
+      prompt += `- Müşteri SADECE selamlama yapıyor ("merhaba", "selam", vb.)\n`;
+      prompt += `- ASLA aktivite detayı, fiyat, süre, SSS, paket tur bilgisi VERME!\n`;
+      prompt += `- ASLA aktivite listesi DÖKME!\n`;
+      prompt += `- SADECE kısa bir karşılama yap ve "Nasıl yardımcı olabilirim?" diye sor\n\n`;
+      prompt += `Örnek doğru cevap: "Merhaba! Size nasıl yardımcı olabilirim? 😊"\n`;
+      // Aktivite isimlerini bile EKLEME - bot coşmasın
       break;
       
     case 'activity_list':
@@ -6278,6 +6282,24 @@ export async function registerRoutes(
         res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
         return;
       }
+      
+      // === GREETING SHORTCUT - AI çağırmadan hızlı cevap ===
+      const msgLower = Body.toLowerCase().trim();
+      const pureGreetings = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'hey', 'hi', 'hello', 'mrb', 'slm'];
+      const isPureGreeting = pureGreetings.some(g => msgLower === g || msgLower === g + '!') && Body.length < 20;
+      
+      // Check if this is the first message from this phone (no history)
+      const recentHistory = await storage.getMessages(From, 5, tenantId);
+      const isFirstMessage = recentHistory.length <= 1; // Only the current message
+      
+      if (isPureGreeting && isFirstMessage) {
+        // İlk mesaj ve sadece selamlama - AI çağırma, direkt cevap ver (token tasarrufu)
+        const greetingResponse = "Merhaba! Size nasıl yardımcı olabilirim? 😊";
+        await storage.addMessage({ phone: From, content: greetingResponse, role: "assistant", tenantId });
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${greetingResponse}</Message></Response>`);
+        return;
+      }
 
       // Check daily message limit for tenant
       const messageLimit = await storage.getTenantMessageLimit(tenantId);
@@ -7102,6 +7124,20 @@ Rezervasyon takip: {takip_linki}
       // Build history from conversation (don't use database for test)
       const history = conversationHistory || [];
       history.push({ role: "user", content: message });
+      
+      // === GREETING SHORTCUT - AI çağırmadan hızlı cevap ===
+      const msgLower = message.toLowerCase().trim();
+      const pureGreetings = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'hey', 'hi', 'hello', 'mrb', 'slm'];
+      const isPureGreeting = pureGreetings.some(g => msgLower === g || msgLower === g + '!') && message.length < 20;
+      
+      if (isPureGreeting && (!conversationHistory || conversationHistory.length === 0)) {
+        // İlk mesaj ve sadece selamlama - AI çağırma, direkt cevap ver
+        const greetingResponse = "Merhaba! Size nasıl yardımcı olabilirim? 😊";
+        return res.json({
+          response: greetingResponse,
+          history: [...history, { role: "assistant", content: greetingResponse }]
+        });
+      }
       
       // Get activities and package tours for this tenant
       const activities = await storage.getActivities(tenantId);

@@ -1,0 +1,36 @@
+Bu durumun sebebi, botun "RAG Prompt" veya "Legacy Prompt" yapısındaki bir mantık hatasından kaynaklanıyor. Sadece "merhaba" yazmanıza rağmen botun size tüm veritabanını dökmesinin temel nedenleri şunlardır:
+
+1. Intent (Niyet) Tespitindeki Hata
+Kodunuzdaki detectIntent fonksiyonu "merhaba" kelimesini yakalıyor ancak sonrasında botu yanlış yönlendiriyor.
+
+Hata: Bot, selamlamaya karşılık sadece kısa bir selamlama vermek yerine, sistemdeki aktivite bilgilerini (descriptions) prompt içine dahil ediyor ve AI da "müşteri bilgi istiyor olabilir" diyerek elindeki her şeyi döküyor.
+
+Neden: switch (intent.type) bloğunda case 'greeting' kısmında activities.map(a => a.name).join(', ') gibi bir komut yerine, muhtemelen tüm objeyi veya tüm metni gönderiyorsunuz.
+
+2. "System Prompt" İçindeki Kuralların Sıralaması
+Prompt içindeki "SADECE sorulan konuya cevap ver" kuralı, metnin en başında yer alan aktivite detayları tarafından eziliyor.
+
+Hata: Bot, prompt içine yerleştirilen devasa "Aktivite Bilgileri" metnini bir talimat gibi algılıyor. "Merhaba" dendiğinde "boşta" kalan AI, en baskın metin olan aktivite detaylarını kullanarak cevap üretiyor.
+
+3. RAG Modunun Yanlış Tetiklenmesi
+Normalde "merhaba" mesajı SSS (Sık Sorulan Sorular) kontrolünde elenmeliydi.
+
+Hata: Eğer "merhaba" kelimesi SSS listenizde yoksa veya SSS algoritması bunu yakalayamadıysa, sistem direkt RAG veya Legacy moduna geçiyor. Bu modlar ise "bilgi verme" odaklı olduğu için gereksiz uzunlukta cevaplar üretiyor.
+
+🛠️ Nasıl Düzeltebilirsiniz? (Replit İçin Çözüm)
+Replit'teki server/routes.ts dosyasında şu iki noktayı kontrol etmesini isteyin:
+
+A. Selamlama Prompt'unu Kısıtlayın: buildRAGPrompt fonksiyonunda selamlama (greeting) durumunu şu şekilde güncelleyin:
+
+TypeScript
+if (intent.type === 'greeting') {
+  prompt += `Müşteri sadece selam veriyor. Kısaca selamla ve hangi aktiviteler olduğunu SADECE İSİM OLARAK listele (Detay verme, fiyat verme). Örn: 'Merhaba! Size Yamaç Paraşütü ve Rafting turlarımız hakkında bilgi verebilirim. Hangisini istersiniz?'`;
+  // Aktivite detaylarını (descriptions) buraya eklemeyin!
+}
+B. "İlgili Aktivite" (Relevant Activity) Kontrolü: Eğer mesajda spesifik bir aktivite adı geçmiyorsa, botun detaylı bilgileri (fiyat, süre, SSS) prompt'a eklemesini engelleyin.
+
+Botun eline tüm rehberi (kitabı) verirseniz, o da hepsini okumaya çalışır. Sadece kullanıcının sorduğu "sayfayı" eline verin.
+
+C. SSS Kontrolüne "Merhaba" Ekleyin: En hızlı çözüm; SSS (FAQ) tablosuna "merhaba" sorusunu ekleyip, cevabına sadece "Merhaba! Smartur asistanına hoş geldiniz. Size turlarımız hakkında nasıl yardımcı olabilirim?" yazmaktır. Böylece sistem AI çağırmadan bu kısa cevabı döner ve token tasarrufu sağlar.
+
+Özetle: Botunuz şu an "fazla hevesli" davranıyor. Ona "Sadece sorulursa detay ver" kuralını daha sert bir şekilde (örneğin kural listesinin en sonuna "KULLANICI SORU SORMADAN ASLA FİYAT VE DETAY LİSTESİ PAYLAŞMA" yazarak) hatırlatmalısınız.
