@@ -6288,12 +6288,8 @@ export async function registerRoutes(
       const pureGreetings = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'hey', 'hi', 'hello', 'mrb', 'slm'];
       const isPureGreeting = pureGreetings.some(g => msgLower === g || msgLower === g + '!') && Body.length < 20;
       
-      // Check if this is the first message from this phone (no history)
-      const recentHistory = await storage.getMessages(From, 5, tenantId);
-      const isFirstMessage = recentHistory.length <= 1; // Only the current message
-      
-      if (isPureGreeting && isFirstMessage) {
-        // İlk mesaj ve sadece selamlama - AI çağırma, direkt cevap ver (token tasarrufu)
+      if (isPureGreeting) {
+        // Saf selamlama - AI çağırma, direkt cevap ver (token tasarrufu)
         const greetingResponse = "Merhaba! Size nasıl yardımcı olabilirim? 😊";
         await storage.addMessage({ phone: From, content: greetingResponse, role: "assistant", tenantId });
         res.type('text/xml');
@@ -7130,8 +7126,8 @@ Rezervasyon takip: {takip_linki}
       const pureGreetings = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'hey', 'hi', 'hello', 'mrb', 'slm'];
       const isPureGreeting = pureGreetings.some(g => msgLower === g || msgLower === g + '!') && message.length < 20;
       
-      if (isPureGreeting && (!conversationHistory || conversationHistory.length === 0)) {
-        // İlk mesaj ve sadece selamlama - AI çağırma, direkt cevap ver
+      if (isPureGreeting) {
+        // Saf selamlama - AI çağırma, direkt cevap ver (token tasarrufu)
         const greetingResponse = "Merhaba! Size nasıl yardımcı olabilirim? 😊";
         return res.json({
           response: greetingResponse,
