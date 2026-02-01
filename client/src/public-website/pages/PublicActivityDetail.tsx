@@ -71,6 +71,14 @@ function ensureArray<T>(value: T[] | string | null | undefined): T[] {
   return [];
 }
 
+function formatWhatsAppToHtml(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\*([^*]+)\*/g, '<strong>$1</strong>')
+    .replace(/•\s*/g, '<span class="inline-block w-4">•</span>')
+    .replace(/\n/g, '<br />');
+}
+
 function ensureString(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value === null || value === undefined) return '';
@@ -798,7 +806,11 @@ export default function PublicActivityDetail() {
                       <AccordionItem key={idx} value={`faq-${idx}`}>
                         <AccordionTrigger className="text-left">{ensureString(item?.question)}</AccordionTrigger>
                         <AccordionContent className="text-muted-foreground">
-                          {ensureString(item?.answer)}
+                          <div 
+                            dangerouslySetInnerHTML={{ 
+                              __html: formatWhatsAppToHtml(ensureString(language === "en" && item?.answerEn ? item.answerEn : item?.answer)) 
+                            }} 
+                          />
                         </AccordionContent>
                       </AccordionItem>
                     ))}
