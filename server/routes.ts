@@ -503,6 +503,12 @@ function filterStopwords(words: string[], isEnglish: boolean = false): string[] 
 }
 
 // Conversation State Management - stores last activity/intent per phone for follow-up questions
+// === KONUŞMA AŞAMASI (SATIŞ MODU) ===
+// info: Bilgi toplama aşaması
+// pricing: Fiyat soruldu, ilgi var
+// booking: Kişi/tarih belirtildi, satışa yakın
+type ConversationStage = 'info' | 'pricing' | 'booking';
+
 interface ConversationState {
   lastActivity: string | null;
   lastActivityId: number | null;
@@ -511,6 +517,7 @@ interface ConversationState {
   language: 'tr' | 'en';
   messageCount: number;
   lastUpdated: Date;
+  stage: ConversationStage; // Satış aşaması
 }
 
 // In-memory conversation state storage (per phone number per tenant)
@@ -540,10 +547,26 @@ function getConversationState(phone: string, tenantId: number): ConversationStat
     lastDate: null,
     language: 'tr',
     messageCount: 0,
-    lastUpdated: new Date()
+    lastUpdated: new Date(),
+    stage: 'info' // Başlangıç aşaması
   };
   conversationStates.set(key, newState);
   return newState;
+}
+
+// === AŞAMA GEÇİŞ KURALLARI ===
+// Intent'e göre aşama ilerletme
+function determineNextStage(currentStage: ConversationStage, intent: string): ConversationStage {
+  // Fiyat soruldu -> pricing aşamasına geç
+  if (intent === 'price' || intent === 'payment') {
+    return currentStage === 'booking' ? 'booking' : 'pricing';
+  }
+  // Rezervasyon, kişi sayısı veya tarih -> booking aşamasına geç
+  if (intent === 'reservation' || intent === 'availability') {
+    return 'booking';
+  }
+  // Diğer durumlarda mevcut aşamayı koru
+  return currentStage;
 }
 
 // Update conversation state
@@ -1074,19 +1097,48 @@ function detectIntent(
     'unknown': []
   };
   
-  // Intent belirleme
-  let detectedType: IntentType = 'unknown';
-  let maxConfidence = 0;
+  // === INTENT ÖNCELİK SIRASI (EN ÖNEMLİ) ===
+  // Birden fazla intent eşleşirse, EN YÜKSEK ÖNCELİKLİ olan seçilir
+  // Bu sayede "fiyat ve süre nedir?" gibi sorularda sadece fiyat cevaplanır
+  const intentPriority: IntentType[] = [
+    'reservation',      // 1. Rezervasyon - satış öncelikli
+    'price',            // 2. Fiyat
+    'availability',     // 3. Müsaitlik
+    'duration',         // 4. Süre
+    'transfer',         // 5. Transfer
+    'payment',          // 6. Ödeme
+    'reservation_status', // 7. Durum sorgusu
+    'cancellation',     // 8. İptal
+    'extras',           // 9. Ekstralar
+    'activity_list',    // 10. Liste
+    'package_tour',     // 11. Paket tur
+    'faq',              // 12. SSS
+    'activity_info',    // 13. Genel bilgi
+    'general',          // 14. Genel
+  ];
   
+  // Tüm eşleşen intentleri bul
+  const matchedIntents: IntentType[] = [];
   for (const [intentType, patterns] of Object.entries(intentPatterns)) {
     for (const pattern of patterns) {
       if (msgLower.includes(pattern)) {
-        const conf = 0.85;
-        if (conf > maxConfidence) {
-          maxConfidence = conf;
-          detectedType = intentType as IntentType;
+        if (!matchedIntents.includes(intentType as IntentType)) {
+          matchedIntents.push(intentType as IntentType);
         }
+        break; // Bir pattern eşleşince diğerlerine bakma
       }
+    }
+  }
+  
+  // Öncelik sırasına göre EN YÜKSEK öncelikli intent'i seç
+  let detectedType: IntentType = 'unknown';
+  let maxConfidence = 0;
+  
+  for (const priorityIntent of intentPriority) {
+    if (matchedIntents.includes(priorityIntent)) {
+      detectedType = priorityIntent;
+      maxConfidence = 0.85;
+      break; // İlk (en yüksek öncelikli) eşleşmeyi al
     }
   }
   
@@ -1306,6 +1358,17 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   const isShortMessage = lastUserMsg.length < 30;
   if (isShortMessage && !isFirstMessage) {
     prompt += `⚡ TAKİP SORUSU - TEK CÜMLE CEVAP VER!\n\n`;
+  }
+  
+  // === SATIŞ AŞAMASI DAVRANIŞI ===
+  const stage = context.conversationState?.stage || 'info';
+  if (stage === 'pricing') {
+    prompt += `💰 [PRICING AŞAMASI] Müşteri fiyatla ilgileniyor. Kısa cevap ver, sonra "Rezervasyon yapmak ister misiniz?" diye sor.\n\n`;
+  } else if (stage === 'booking') {
+    prompt += `🎯 [BOOKING AŞAMASI] Müşteri rezervasyona yakın!\n`;
+    prompt += `- KISA cevaplar ver, anlatma - sor!\n`;
+    prompt += `- Tarih ve kişi sayısını sor\n`;
+    prompt += `- Yönlendirici ol\n\n`;
   }
   
   // Intent'e göre context ekle
@@ -6718,11 +6781,13 @@ Rezervasyon takip: {takip_linki}
         lastUserMessage: Body // Takip sorusu kontrolü için
       }, botPrompt || undefined);
       
-      // Update conversation state after AI response
+      // Update conversation state after AI response (including stage advancement)
       const detectedIntent = detectIntent(Body, activities, packageTours, history, currentState);
+      const nextStage = determineNextStage(currentState?.stage || 'info', detectedIntent.type);
       updateConversationState(From, tenantId, {
         lastIntent: detectedIntent.type,
-        lastActivityId: detectedIntent.activityId || currentState?.lastActivityId
+        lastActivityId: detectedIntent.activityId || currentState?.lastActivityId,
+        stage: nextStage
       });
       
       // Check if needs human intervention (bot confirmed transfer to support)
@@ -7062,11 +7127,13 @@ Rezervasyon takip: {takip_linki}
         conversationState: testCurrentState
       }, botPrompt || undefined);
       
-      // Update conversation state after response
+      // Update conversation state after response (including stage)
       const testDetectedIntent = detectIntent(Body, activities, packageTours, history, testCurrentState);
+      const testNextStage = determineNextStage(testCurrentState?.stage || 'info', testDetectedIntent.type);
       updateConversationState(From, tenantId || 0, {
         lastIntent: testDetectedIntent.type,
-        lastActivityId: testDetectedIntent.activityId || testCurrentState?.lastActivityId
+        lastActivityId: testDetectedIntent.activityId || testCurrentState?.lastActivityId,
+        stage: testNextStage
       });
       
       // Check if bot confirmed transfer to support
