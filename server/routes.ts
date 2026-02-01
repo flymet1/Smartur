@@ -1454,12 +1454,17 @@ function generateTemplateResponse(ctx: TemplateContext): string {
     return "Hangi aktivite hakkında bilgi almak istiyorsunuz?";
   }
   
-  // 10. GENEL/BİLİNMEYEN
+  // 10. FAQ İNTENT (SSS sistemi eşleşemezse buraya düşer)
+  if (intent.type === 'faq') {
+    return "Sık sorulan sorular için web sitemizi ziyaret edebilir veya bize sormak istediğiniz konuyu belirtebilirsiniz.";
+  }
+  
+  // 11. GENEL/BİLİNMEYEN
   if (intent.type === 'general' || intent.type === 'unknown') {
     return "Size nasıl yardımcı olabilirim? Aktivitelerimiz, fiyatlar veya rezervasyon hakkında bilgi verebilirim.";
   }
   
-  // 11. FALLBACK
+  // 12. FALLBACK
   return "Size nasıl yardımcı olabilirim?";
 }
 
@@ -7129,6 +7134,24 @@ Rezervasyon takip: {takip_linki}
         legacyMatchedActivity = activities.find(a => a.id === testDetectedIntent.activityId);
       }
       
+      // Paket tur bul
+      let legacyMatchedPackageTour = null;
+      if (testDetectedIntent.type === 'package_tour') {
+        const tourMatch = findMatchingActivity(Body, packageTours);
+        if (tourMatch) legacyMatchedPackageTour = tourMatch.activity;
+      }
+      
+      // Tracking link oluştur
+      let legacyTrackingLink = '';
+      if (userReservation?.trackingToken && tenantId) {
+        const websiteUrl = await storage.getSetting('websiteUrl', tenantId);
+        const baseUrl = websiteUrl || `${req.protocol}://${req.get('host')}`;
+        legacyTrackingLink = `${baseUrl}/track/${userReservation.trackingToken}`;
+      }
+      
+      // Tenant ayarları
+      const legacyWebsiteUrl = tenantId ? await storage.getSetting('websiteUrl', tenantId) : '';
+      
       // 1. DESTEK TALEBİ KONTROLÜ
       if (needsEscalation(Body) && tenantId) {
         const escalationResponse = getEscalationResponse();
@@ -7152,14 +7175,14 @@ Rezervasyon takip: {takip_linki}
       const legacyTemplateResponse = generateTemplateResponse({
         intent: testDetectedIntent,
         activity: legacyMatchedActivity,
-        packageTour: null,
+        packageTour: legacyMatchedPackageTour,
         activities: botAccess.activities ? activities : [],
         packageTours: botAccess.packageTours ? packageTours : [],
         capacityData: botAccess.capacity ? upcomingCapacity : [],
         conversationState: testCurrentState,
-        trackingLink: '',
+        trackingLink: legacyTrackingLink,
         faqMatch: null,
-        tenantSettings: { websiteUrl: '', whatsappNumber: '' }
+        tenantSettings: { websiteUrl: legacyWebsiteUrl || '', whatsappNumber: '' }
       });
       
       // Save response (with tenantId if known)
@@ -7259,18 +7282,28 @@ Rezervasyon takip: {takip_linki}
         testModeMatchedActivity = activities.find(a => a.id === testModeIntent.activityId);
       }
       
+      // Paket tur bul
+      let testModeMatchedPackageTour = null;
+      if (testModeIntent.type === 'package_tour') {
+        const tourMatch = findMatchingActivity(message, packageTours);
+        if (tourMatch) testModeMatchedPackageTour = tourMatch.activity;
+      }
+      
+      // Tenant ayarları
+      const testModeWebsiteUrl = await storage.getSetting('websiteUrl', tenantId);
+      
       // ŞABLON CEVAP OLUŞTUR (test mode - AI yok)
       const testModeTemplateResponse = generateTemplateResponse({
         intent: testModeIntent,
         activity: testModeMatchedActivity,
-        packageTour: null,
+        packageTour: testModeMatchedPackageTour,
         activities: botAccess.activities ? activities : [],
         packageTours: botAccess.packageTours ? packageTours : [],
         capacityData: botAccess.capacity ? upcomingCapacity : [],
         conversationState: testModeState,
         trackingLink: '',
         faqMatch: null,
-        tenantSettings: { websiteUrl: '', whatsappNumber: '' }
+        tenantSettings: { websiteUrl: testModeWebsiteUrl || '', whatsappNumber: '' }
       });
       
       // Return JSON response (not XML)
