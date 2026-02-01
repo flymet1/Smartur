@@ -2275,16 +2275,17 @@ ${context.botRules || DEFAULT_BOT_RULES}
   const lastUserMessage = history.filter((m: any) => m.role === "user").pop()?.content?.toLowerCase() || "";
   
   // Check for common intents and provide smart fallback
+  // UPDATED: Fallback messages now match prompt rules - no "sistem yoğun", direct web redirect
   if (lastUserMessage.includes("fiyat") || lastUserMessage.includes("ücret") || lastUserMessage.includes("ne kadar")) {
-    return `Merhaba! Fiyatlarımız hakkında bilgi almak için web sitemizi ziyaret edebilir veya size yardımcı olabilmemiz için lütfen biraz bekleyiniz. Sistemimiz şu an yoğun, kısa süre içinde size geri döneceğiz.\n\nAktivitelerimiz:\n${activityDescriptions}`;
+    return `Merhaba! Fiyatlarımız aktiviteye göre değişmektedir.\n\nAktivitelerimiz:\n${activityDescriptions}\n\nDetaylı fiyat bilgisi için web sitemizi ziyaret edebilirsiniz.`;
   }
   
   if (lastUserMessage.includes("müsait") || lastUserMessage.includes("yer var") || lastUserMessage.includes("boş")) {
-    return `Merhaba! Müsaitlik bilgisi için lütfen biraz bekleyiniz. Sistemimiz şu an yoğun olduğu için kısa süre içinde size geri döneceğiz. Alternatif olarak web sitemizden online rezervasyon yapabilirsiniz.`;
+    return `Merhaba! Bu tarih için anlık müsaitlik bilgim yok. Güncel durumu web sitemizden kontrol edebilir veya doğrudan online rezervasyon yapabilirsiniz.`;
   }
   
   if (lastUserMessage.includes("rezervasyon") || lastUserMessage.includes("kayıt")) {
-    return `Merhaba! Rezervasyon talebinizi aldık. Sistemimiz şu an yoğun olduğu için size en kısa sürede geri döneceğiz. Acil durumlarda web sitemizden online rezervasyon yapabilirsiniz.`;
+    return `Merhaba! Rezervasyon için web sitemizden online işlem yapabilirsiniz. Aktivitelerimiz:\n${activityDescriptions}\n\nHangi aktivite için rezervasyon yapmak istersiniz?`;
   }
   
   if (lastUserMessage.includes("iptal") || lastUserMessage.includes("değişiklik") || lastUserMessage.includes("tarih")) {
@@ -2341,8 +2342,8 @@ ${context.botRules || DEFAULT_BOT_RULES}
     return `Merhaba! Talebinizin durumunu kontrol edebilmem için lütfen sipariş numaranızı paylaşır mısınız?`;
   }
   
-  // Default fallback with activity list
-  return `Merhaba! Size yardımcı olmak için buradayım. Sistemimiz şu an biraz meşgul olduğu için kısa süre içinde size detaylı bilgi vereceğiz.\n\nAktivitelerimiz:\n${activityDescriptions}\n\nBunlardan hangisi hakkında bilgi almak istersiniz?`;
+  // Default fallback with activity list - no "sistem yoğun" language
+  return `Merhaba! Size yardımcı olmak için buradayım.\n\nAktivitelerimiz:\n${activityDescriptions}\n\nHangi aktivite hakkında bilgi almak istersiniz?`;
 }
 
 export async function registerRoutes(

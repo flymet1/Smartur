@@ -1,0 +1,153 @@
+Bu cevap modelden değil, kontrol katmanından (logic / guard / fallback) kaynaklanıyor.
+Ekrandaki davranışın nedenini net ve maddeli anlatıyorum.
+
+🔴 BOT NEDEN BU CEVABI VERDİ?
+
+Kullanıcı mesajı:
+
+“yarın paraşüt müsait mi”
+
+Bot cevabı:
+
+“Müsaitlik bilgisi için lütfen biraz bekleyiniz… sistemimiz şu an yoğun…”
+
+Bu cevap LLM’in ürettiği bir cevap değil.
+Bu bir fallback / sistem mesajı.
+
+1️⃣ En Güçlü İhtimal ( %80 )
+❗️ MÜSAİTLİK DATASI BOT’A GELMEMİŞ
+
+Yani akış şunu yapmış:
+
+Intent doğru tespit edildi
+→ intent = availability
+
+Entity doğru tespit edildi
+→ activity = Yamaç Paraşütü
+
+Tarih doğru çözüldü
+→ yarın = 2 Şubat 2026
+
+AMA:
+👉 availabilityData === null || undefined
+
+Bu durumda sistem:
+
+if (!availabilityData) {
+  return SYSTEM_BUSY_MESSAGE
+}
+
+
+Ve bu hardcoded cevap dönüyor.
+
+📌 Bu cevap prompttan değil, backend kuralından geliyor.
+
+2️⃣ Prompt’ta BİR ÇELİŞKİ VAR MI?
+
+Evet, küçük ama kritik bir çelişki var.
+
+Senin yeni kuralın:
+
+“Müsaitlik bilgisi yoksa → web sitemizi kontrol edebilirsiniz de”
+
+Ama botun verdiği cevap:
+
+“Sistemimiz şu an yoğun, bekleyin”
+
+Bu şu demek:
+❌ Eski fallback mesajı hâlâ aktif
+
+Prompt güncellenmiş
+Ama fallback response override edilmemiş
+
+3️⃣ Bu Modelin Suçu mu?
+
+❌ Hayır.
+Gemini 2.5 Flash burada hiç konuşmamış olabilir bile.
+
+Çünkü:
+
+Müsaitlik verisi gelmeyince
+
+LLM çağrısı bypass edilmiş
+
+Sistem direkt “yoğunluk” mesajı basmış
+
+4️⃣ Neden “Yarın” Daha Çok Bu Hatayı Tetikler?
+
+Çünkü:
+
+“bugün” → cache’lenmiş olabilir
+
+“yarın” →
+
+tarih mapping
+
+kapasite tablosu
+
+saat bazlı slotlar
+zincir halinde kontrol edilir
+
+Bu zincirin tek bir halkası boşsa, fallback çalışır.
+
+5️⃣ Bu Davranışı NASIL DÜZELTİRSİN? (Net Çözüm)
+✅ 1. Fallback mesajını değiştir (EN KRİTİK)
+
+Şunu SİL:
+
+“Sistemimiz şu an yoğun…”
+
+Yerine:
+
+“Bu tarih için anlık müsaitlik bilgim yok. Güncel durumu web sitemizden kontrol edebilirsiniz.”
+
+Bu promptuna %100 uyumlu.
+
+✅ 2. LLM’yi devreden çıkarmadan önce kontrol et
+
+Yanlış:
+
+if (!availabilityData) return fallback;
+
+
+Doğru:
+
+if (!availabilityData) {
+  callLLMWithContext("availability_missing");
+}
+
+
+LLM şunu desin:
+
+Tahmin yok
+
+Aktarma yok
+
+Panik yok
+
+✅ 3. Log ekle (1 satır, büyük fark)
+console.log({
+  activity,
+  date,
+  availabilityFound: !!availabilityData
+});
+
+
+Bir daha neden böyle cevap verdiğini anında görürsün.
+
+6️⃣ Net Teşhis (Tek Cümle)
+
+Bu cevap Gemini’nin değil, eski fallback logic’in eseri.
+Model doğru çalışıyor, ama bazı durumlarda konu ona hiç gelmiyor.
+
+7️⃣ Emin Olmak İster misin?
+
+Şunu test et:
+
+“Bugün paraşüt müsait mi”
+
+“Yarın rafting müsait mi”
+
+“2 Şubat paraşüt var mı”
+
+Eğer sadece bazı tarihlerde bu cevap geliyorsa → %100 data/fallback sorunu.
