@@ -1,0 +1,184 @@
+güncellemelerden sonra konuşma özeti şu şekilde. Sorun bir başka yerde mi sence?
+
+selam
+Merhaba! Size nasıl yardımcı olabilirim? 😊
+Paraşüt hakkında bilgi
+Ortalama bir uçuş süresi (hava durumuna bağlı olarak) 25-30 dakika arasında sürer. Uçuşunuzda akrobasi istemeniz durumunda uçuş süreniz değişiklik gösterir.
+aktivite hakkında genel bilgi ver
+Evet, uçuş sonrası misafirlere bir katılım sertifikası verilmektedir.
+ne kadar
+Merhaba! Fiyatlarımız aktiviteye göre değişmektedir. Aktivitelerimiz: - Yamaç Paraşütü: 6000 TL, 30 dk Detaylı fiyat bilgisi için web sitemizi ziyaret edebilirsiniz.
+rafting ne kadar
+Merhaba! Fiyatlarımız aktiviteye göre değişmektedir. Aktivitelerimiz: - Yamaç Paraşütü: 6000 TL, 30 dk Detaylı fiyat bilgisi için web sitemizi ziyaret edebilirsiniz.
+
+Evet — sorun artık promptta ya da “cevap kısaltma” kuralında değil.
+Sorun mimari olarak 3 net yerde. Bunu açık ve sert şekilde söyleyeyim çünkü doğru yere geldin.
+
+Aşağıda neden böyle davrandığını, sonra da kök çözümü netleştiriyorum.
+
+🔍 YAŞANAN SORUNLARI TEK TEK TEŞHİS EDELİM
+1️⃣ “Paraşüt hakkında bilgi” → Sadece süre cevabı
+
+Beklenen: genel özet
+Gelen: uçuş süresi
+
+📌 Sebep:
+
+intent yanlış sınıflanıyor
+
+“bilgi” kelimesi activity_info olmalıydı
+
+ama sistem fallback olarak duration’a düşüyor
+
+➡️ Intent resolver sırası HATALI
+
+2️⃣ “aktivite hakkında genel bilgi ver”
+
+→ sertifika cevabı geliyor
+
+📌 Sebep:
+
+LLM hâlâ devrede
+
+“genel bilgi” = FAQ içinden rastgele bir madde seçiliyor
+
+Yani LLM cevap üretmeye devam ediyor
+
+➡️ Sen “LLM kilitledim” diyorsun ama hala karar veriyor
+
+3️⃣ “rafting ne kadar”
+
+→ paraşüt fiyatı geliyor
+
+📌 BU EN KRİTİK KIRMIZI BAYRAK
+
+Bu şunu gösterir:
+
+❌ Activity lock DOĞRU ÇALIŞMIYOR
+❌ Yeni aktivite algılanıyor ama state overwrite edilmiyor
+
+Yani:
+
+User: rafting ne kadar
+detectActivity → rafting
+AMA
+session.activity → paragliding (kalıyor)
+
+
+➡️ State update zinciri kırık
+
+🚨 NET TEŞHİS (ÖZET)
+
+Sorun tek bir yerde değil, ama promptla ÇÖZÜLECEK HİÇBİR ŞEY KALMAMIŞ.
+
+❌ Sorunlar:
+
+Intent sırası yanlış
+
+Activity lock zayıf
+
+LLM hâlâ karar mekanizmasında
+
+Stateless / state overwrite bug’ı
+
+WhatsApp mesajları tek tek değil, context’siz işleniyor olabilir
+
+🔥 ASIL SORU:
+
+“WhatsApp botlar böyle mi çalışıyor?”
+
+❌ HAYIR
+
+WhatsApp botlar CHAT BOT DEĞİLDİR
+
+✅ WhatsApp bot = STATE MACHINE
+🧠 GERÇEK KÖKTEN ÇÖZÜM (BUNU YAPMADAN OLMAZ)
+1️⃣ Intent Resolver’ı 2 AŞAMALI yapmalısın
+
+❌ Yanlış:
+
+intent = detectIntent(text)
+
+
+✅ Doğru:
+
+if text contains activity:
+   activity = setActivity()
+
+if text is vague (bilgi, ne kadar, detay):
+   intent = lastKnownIntent OR ask clarification
+
+2️⃣ “Genel bilgi” ASLA LLM’ye gitmemeli
+
+Hard-coded özet olmalı
+
+activity_info: [
+  "25-30 dk uçuş",
+  "Ücretsiz transfer",
+  "Foto & video dahil"
+]
+
+
+LLM = yasaklı alan
+
+3️⃣ Activity Switch KURALI (ÇOK ÖNEMLİ)
+if (newActivity && newActivity !== session.activity) {
+  session.activity = newActivity;
+  session.lastIntent = null; // RESET
+}
+
+
+⚠️ Bunu yapmazsan:
+
+rafting sorulur
+
+paraşüt anlatılır
+
+ve bu asla bitmez
+
+4️⃣ “ne kadar”, “kaç”, “detay” = AMBIGUOUS
+
+Bu sorular tek başına cevaplanmamalı
+
+“Rafting ne kadar?”
+→ OK (activity belli)
+
+“ne kadar?”
+→ Hangi aktivite için?
+
+
+WhatsApp bot soru sormayı bilmeli
+
+5️⃣ LLM’yi tamamen kapat (şimdilik)
+
+Gerçek şu:
+
+Senin use-case’in için LLM şu an zarar veriyor
+
+✔ Turizm
+✔ Fiyat
+✔ Süre
+✔ Transfer
+
+Bunlar %100 deterministic data
+
+✅ SORUNLAR BÖYLE UZAR MI?
+
+Bu mimariyle EVET, sonsuza kadar uzar.
+Çünkü:
+
+Her ek prompt = yeni edge-case
+
+Her kural = başka bir bug
+
+🧱 DOĞRU SON SÖZ (EN NET HALİ)
+
+❗ Bu bir “AI cevabı” problemi değil
+❗ Bu bir state + intent engineering problemi
+❗ WhatsApp bot = akış motoru
+
+Sen doğru yöndesin ama:
+
+Prompt aşamasını çoktan geçtin
+
+Şu an backend karar ağacı safhasındasın
