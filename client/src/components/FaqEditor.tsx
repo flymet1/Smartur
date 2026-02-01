@@ -157,6 +157,9 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
   };
 
   const toggleEnglish = async (index: number) => {
+    // Prevent concurrent translations to avoid stale closure issues
+    if (translatingIndex !== null) return;
+    
     const isOpening = !openEnglish[index];
     setOpenEnglish(prev => ({ ...prev, [index]: isOpening }));
     
@@ -186,15 +189,20 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
             );
           }
           const results = await Promise.all(translatePromises);
-          const newFaq = [...faq];
+          // Update both fields at once to avoid stale closure issues
+          const updates: Partial<FaqItem> = {};
           for (const result of results) {
             if (result.type === "question" && result.translation) {
-              newFaq[index] = { ...newFaq[index], questionEn: result.translation };
+              updates.questionEn = result.translation;
             } else if (result.type === "answer" && result.translation) {
-              newFaq[index] = { ...newFaq[index], answerEn: result.translation };
+              updates.answerEn = result.translation;
             }
           }
-          onChange(newFaq);
+          if (Object.keys(updates).length > 0) {
+            const newFaq = [...faq];
+            newFaq[index] = { ...newFaq[index], ...updates };
+            onChange(newFaq);
+          }
         } catch (err) {
           console.error("Translation error:", err);
         } finally {
