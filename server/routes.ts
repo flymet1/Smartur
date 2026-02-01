@@ -1261,6 +1261,224 @@ function buildFocusedActivityDescription(activity: any, intent: RAGIntent): stri
   }
 }
 
+// =============================================================================
+// ŞABLON TABANLI CEVAP SİSTEMİ (LLM YOK - %100 DETERMİNİSTİK)
+// =============================================================================
+
+interface TemplateContext {
+  intent: RAGIntent;
+  activity?: any;
+  packageTour?: any;
+  activities: any[];
+  packageTours: any[];
+  capacityData?: any[];
+  conversationState?: ConversationState | null;
+  trackingLink?: string;
+  faqMatch?: { question: string; answer: string } | null;
+  tenantSettings?: {
+    websiteUrl?: string;
+    whatsappNumber?: string;
+  };
+}
+
+// Şablon tabanlı cevap üretici - AI kullanmaz
+function generateTemplateResponse(ctx: TemplateContext): string {
+  const { intent, activity, packageTour, activities, packageTours, capacityData, conversationState, trackingLink, faqMatch, tenantSettings } = ctx;
+  
+  // 1. SELAMLAMA
+  if (intent.type === 'greeting') {
+    return "Merhaba! Size nasıl yardımcı olabilirim?";
+  }
+  
+  // 2. FAQ EŞLEŞME VARSA - direkt cevap
+  if (faqMatch) {
+    return faqMatch.answer;
+  }
+  
+  // 3. AKTİVİTE LİSTESİ
+  if (intent.type === 'activity_list') {
+    if (activities.length === 0) {
+      return "Şu an aktif aktivitemiz bulunmuyor.";
+    }
+    let response = "Aktivitelerimiz:\n";
+    activities.slice(0, 5).forEach((a, i) => {
+      response += `${i + 1}. ${a.name} - ${a.price} TL\n`;
+    });
+    if (activities.length > 5) {
+      response += `...ve ${activities.length - 5} aktivite daha.`;
+    }
+    return response.trim();
+  }
+  
+  // 4. PAKET TUR SORGUSU
+  if (intent.type === 'package_tour') {
+    if (packageTour) {
+      return `${packageTour.name}: ${packageTour.price} TL, ${packageTour.duration}. Detay için web sitemizi ziyaret edebilirsiniz.`;
+    }
+    if (packageTours.length > 0) {
+      let response = "Paket turlarımız:\n";
+      packageTours.slice(0, 3).forEach((p, i) => {
+        response += `${i + 1}. ${p.name} - ${p.price} TL\n`;
+      });
+      return response.trim();
+    }
+    return "Şu an aktif paket turumuz bulunmuyor.";
+  }
+  
+  // 5. REZERVASYON DURUMU
+  if (intent.type === 'reservation_status') {
+    if (trackingLink) {
+      return `Rezervasyon durumunuzu buradan takip edebilirsiniz: ${trackingLink}`;
+    }
+    return "Rezervasyon durumu için lütfen rezervasyon numaranızı paylaşın.";
+  }
+  
+  // 6. REZERVASYON TALEBİ
+  if (intent.type === 'reservation') {
+    if (activity) {
+      const websiteUrl = tenantSettings?.websiteUrl || '';
+      if (websiteUrl) {
+        return `${activity.name} için rezervasyon yapmak isterseniz: ${websiteUrl}\n\nVeya bize tarih ve kişi sayısını bildirin, yardımcı olalım.`;
+      }
+      return `${activity.name} için rezervasyon yapmak isterseniz tarih ve kişi sayısını bildirin, size yardımcı olalım.`;
+    }
+    return "Hangi aktivite için rezervasyon yapmak istiyorsunuz?";
+  }
+  
+  // 7. İPTAL/DEĞİŞİKLİK
+  if (intent.type === 'cancellation') {
+    if (trackingLink) {
+      return `Rezervasyon değişikliği veya iptal için: ${trackingLink}\n\nVeya destek ekibimiz size yardımcı olacaktır.`;
+    }
+    return "Rezervasyon değişikliği veya iptal için lütfen rezervasyon numaranızı paylaşın. Destek ekibimiz size yardımcı olacaktır.";
+  }
+  
+  // 8. AKTİVİTE BAZLI CEVAPLAR (fiyat, süre, transfer vb.)
+  if (activity) {
+    switch (intent.type) {
+      case 'price':
+        let priceResponse = `${activity.name} fiyatımız ${activity.price} TL`;
+        if (activity.priceUsd) priceResponse += ` ($${activity.priceUsd})`;
+        priceResponse += ".";
+        if (activity.requiresDeposit && activity.depositAmount > 0) {
+          if (activity.depositType === 'percentage') {
+            const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
+            priceResponse += ` Ön ödeme: ${depositTl} TL.`;
+          } else {
+            priceResponse += ` Ön ödeme: ${activity.depositAmount} TL.`;
+          }
+        }
+        return priceResponse;
+        
+      case 'duration':
+        return `${activity.name} süresi ${activity.durationMinutes} dakikadır.`;
+        
+      case 'transfer':
+        if (activity.hasFreeHotelTransfer) {
+          let transferResponse = `${activity.name} için ücretsiz otel transferi sunuyoruz.`;
+          try {
+            const zones = JSON.parse(activity.transferZones || '[]');
+            if (zones.length > 0 && typeof zones[0] === 'object') {
+              const zoneNames = zones.map((z: any) => z.zone).join(', ');
+              transferResponse += ` Ücretsiz bölgeler: ${zoneNames}.`;
+            }
+          } catch {}
+          return transferResponse;
+        }
+        return `${activity.name} için ücretsiz transfer bulunmuyor. Kendi ulaşımınızı sağlamanız gerekmektedir.`;
+        
+      case 'availability':
+        try {
+          const times = JSON.parse(activity.defaultTimes || '[]');
+          if (times.length > 0) {
+            return `${activity.name} saatleri: ${times.join(', ')}.`;
+          }
+        } catch {}
+        return `${activity.name} için saat bilgisi almak isterseniz bize ulaşın.`;
+        
+      case 'payment':
+        let paymentResponse = `${activity.name} fiyatı ${activity.price} TL.`;
+        if (activity.fullPaymentRequired) {
+          paymentResponse += " Rezervasyonda tam ödeme gereklidir.";
+        } else if (activity.requiresDeposit && activity.depositAmount > 0) {
+          if (activity.depositType === 'percentage') {
+            const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
+            paymentResponse += ` Ön ödeme ${depositTl} TL, kalan tutar aktivite günü ödenir.`;
+          } else {
+            paymentResponse += ` Ön ödeme ${activity.depositAmount} TL, kalan tutar aktivite günü ödenir.`;
+          }
+        } else {
+          paymentResponse += " Ön ödeme gerekmez, aktivite günü ödeme yapılır.";
+        }
+        return paymentResponse;
+        
+      case 'extras':
+        let extrasResponse = `${activity.name} ekstra hizmetleri:\n`;
+        try {
+          const extras = JSON.parse(activity.extras || '[]');
+          if (extras.length > 0) {
+            extras.forEach((e: any, i: number) => {
+              extrasResponse += `• ${e.name}: ${e.price} TL\n`;
+            });
+            return extrasResponse.trim();
+          }
+        } catch {}
+        return `${activity.name} için ekstra hizmet bilgisi mevcut değil.`;
+        
+      case 'activity_info':
+        let infoResponse = `${activity.name}:\n`;
+        infoResponse += `• Fiyat: ${activity.price} TL\n`;
+        infoResponse += `• Süre: ${activity.durationMinutes} dakika`;
+        if (activity.hasFreeHotelTransfer) {
+          infoResponse += `\n• Ücretsiz otel transferi dahil`;
+        }
+        if (activity.region) {
+          infoResponse += `\n• Bölge: ${activity.region}`;
+        }
+        return infoResponse;
+        
+      default:
+        return `${activity.name}: ${activity.price} TL, ${activity.durationMinutes} dakika.`;
+    }
+  }
+  
+  // 9. AKTİVİTE BELİRTİLMEMİŞ - soru sor
+  if (['price', 'duration', 'transfer', 'availability', 'payment', 'activity_info'].includes(intent.type)) {
+    if (activities.length > 0) {
+      let response = "Hangi aktivite hakkında bilgi almak istiyorsunuz?\n\nAktivitelerimiz:\n";
+      activities.slice(0, 5).forEach((a, i) => {
+        response += `• ${a.name}\n`;
+      });
+      return response.trim();
+    }
+    return "Hangi aktivite hakkında bilgi almak istiyorsunuz?";
+  }
+  
+  // 10. GENEL/BİLİNMEYEN
+  if (intent.type === 'general' || intent.type === 'unknown') {
+    return "Size nasıl yardımcı olabilirim? Aktivitelerimiz, fiyatlar veya rezervasyon hakkında bilgi verebilirim.";
+  }
+  
+  // 11. FALLBACK
+  return "Size nasıl yardımcı olabilirim?";
+}
+
+// Destek talebi gerekip gerekmediğini kontrol et
+function needsEscalation(message: string): boolean {
+  const escalationKeywords = [
+    'yetkili', 'müşteri temsilcisi', 'insan', 'destek', 'şikayet', 
+    'problem', 'sorun', 'yardım', 'acil', 'yönetici', 'patron',
+    'konuşmak istiyorum', 'birine bağla', 'aktarın'
+  ];
+  const msgLower = message.toLowerCase();
+  return escalationKeywords.some(k => msgLower.includes(k));
+}
+
+// Şablon sisteminin destek yanıtı
+function getEscalationResponse(): string {
+  return "Talebinizi destek ekibimize ilettim. En kısa sürede size dönüş yapılacaktır. Teşekkürler!";
+}
+
 // RAG Context oluştur - conversation state destekli
 function buildRAGContext(
   message: string, 
