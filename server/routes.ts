@@ -428,6 +428,7 @@ const DEFAULT_BOT_RULES = `
     - Örnek: Müşteri önce "paraşüt" sonra "kaç para" derse → paraşütün fiyatını söyle
     - Örnek: Müşteri önce "rafting" sonra "yarın müsait mi" derse → rafting müsaitliğini kontrol et
     - ASLA "hangi aktivite için soruyorsunuz?" diye sorma - konuşma geçmişinden anla!
+    - ÇOKLU AKTİVİTE: Geçmişte birden fazla aktivite (örn: paraşüt VE rafting) konuşulduysa ve müşteri "fiyatı ne?" derse, HER İKİSİNİN fiyatını kısa ver
 
 13. BASİT CEVAP VER: Müşteri "2 kişi için yer var mı?" derse:
     - DOĞRU: "Evet, 2 kişilik yeriniz var. Saat 08:00, 11:00 veya 15:00 seçebilirsiniz."
@@ -435,6 +436,14 @@ const DEFAULT_BOT_RULES = `
     - Müşteri kaç kişi derse, sadece o kadar yer olup olmadığını KISA söyle. Tüm kapasiteyi dökme!
 
 14. SORULANI CEVAPLA: Fiyat soruldu → fiyat söyle. Müsaitlik soruldu → sadece müsaitlik söyle. Her şeyi birden anlatma.
+
+=== GÜVENLİK KURALI (ÇİFT DİKİŞ) ===
+15. PARTNER/İZLEYİCİ İSE (bu mesajı gönderen kişi Partner veya İzleyici olarak tanımlandıysa):
+    ⛔ ASLA rezervasyon linki gönderme
+    ⛔ ASLA web sitesi linki gönderme
+    ⛔ ASLA aktivite listesi paylaşma (müşteri gibi davranma)
+    ✅ Sadece müsaitlik/kapasite bilgisi ver
+    ✅ "Smartur panelinizden işlem yapabilirsiniz" de
 `;
 
 // Gemini AI Integration - supports both Replit integration and standalone API key
@@ -891,7 +900,12 @@ function buildDateContext(): string {
     })
     .join('\n');
   
+  const hours = localNow.getHours().toString().padStart(2, '0');
+  const minutes = localNow.getMinutes().toString().padStart(2, '0');
+  const currentTime = `${hours}:${minutes}`;
+  
   return `=== TARİH BİLGİSİ (Türkiye Saati) ===
+Şu an: ${currentTime} (Türkiye saati)
 Bugün: ${formatDate(today)} - ${formatReadable(today)}
 Yarın: ${formatDate(tomorrow)} - ${formatReadable(tomorrow)}
 Öbür gün: ${formatDate(dayAfter)} - ${formatReadable(dayAfter)}
