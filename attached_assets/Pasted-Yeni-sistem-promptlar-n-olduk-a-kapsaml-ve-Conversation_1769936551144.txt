@@ -1,0 +1,40 @@
+Yeni sistem promptların oldukça kapsamlı ve Conversation State (Hafıza) mantığını içerecek şekilde güzel optimize edilmiş. Özellikle 17, 18 ve 19. maddeler botun "insansı" ve "zeki" görünmesi için hayati önem taşıyor.
+
+Ancak, LLM'lerin (özellikle Flash gibi modellerin) kafasının karışmaması için birkaç kritik çakışma ve eksiklik tespit ettim. Bunları düzeltirsen sistem çok daha stabil çalışır:
+
+1. "Eskalasyon" ve "Aktarma" Çakışması (Madde 4 vs. Madde 6)
+İki farklı kural listesinde (14 Madde ve RAG Kuralları) aktarma şartları biraz çelişiyor.
+
+Sorun: İlk listede "2 mesajda çözülemeyen sorunda aktar" diyor, ikinci listede "Bilmediğin konuyu öğrenmeye çalış, hemen aktarma" diyor.
+
+Düzeltme: Bu iki kuralı birleştir. Botun önceliği çözüm olmalı.
+
+Öneri: "Müşteri aynı soruyu 2 kez üst üste sorarsa veya açıkça 'insanla görüşmek istiyorum' derse aktar" şeklinde tek bir standart belirle.
+
+2. Madde 17: "Takip Soruları" İçin Küçük Bir İpucu
+Botun "Hangi aktivite?" diye sormasını yasaklamışsın (ki bu harika), ancak model bazen geçmişte birden fazla aktivite geçtiğinde hangisini seçeceğini şaşırabilir.
+
+Ekleme yap: "Eğer geçmişte birden fazla aktivite (örn: hem paraşüt hem rafting) konuşulduysa ve müşteri 'fiyatı ne' dediyse, her ikisinin de fiyatını kısa ve net şekilde belirt."
+
+3. "Partner/İzleyici" Ayrımı (En Tehlikeli Bölüm)
+Prompt'un başında "Partner ise yukarıdaki PERSONA KURALLARINI uygula" demişsin. Ancak LLM'ler uzun metinlerde "yukarıdaki" veya "aşağıdaki" referanslarını bazen kaçırabilir.
+
+Düzeltme: Partner kurallarını RAG Kuralları listesinin içine de 20. madde olarak çok kısa özetle ekle:
+
+"20. PARTNER/VİEWER ise: ASLA link gönderme, ASLA aktivite listesi paylaşma, sadece panele yönlendir."
+
+Bu "çift dikiş" kural, botun partnerlere yanlışlıkla link sızdırmasını (en büyük risk) engeller.
+
+4. "Yamaç Paraşütü = Meeting Point = İniş Alanı" (Madde 1)
+Bu çok spesifik ve doğru bir ekleme olmuş. Ancak müşteriler "Nereye iniyoruz?" diye sorduğunda botun sadece "Meeting Point" demesi kaba kaçabilir.
+
+Öneri: "Müşteri iniş yerini sorduğunda: 'Uçuşumuzun iniş alanı, aynı zamanda buluşma noktamız olan [Meeting Point] bölgesidir' şeklinde açıklayıcı bir cümle kur" diyebilirsin.
+
+⚠️ Gözden Kaçan Bir Risk: "Tarih Karmaşası"
+Madde 2'de "Yarın dendiğinde TARİH BİLGİSİ'ndeki yarın tarihini kullan" demişsin.
+
+Eksiklik: Kullanıcı gece 00:00'dan sonra mesaj atarsa "yarın" kavramı karışır.
+
+Çözüm: Prompt'un en başına dinamik olarak şu satırı ekletmelisin (Replit tarafında):
+
+"Şu anki gerçek zaman: [Sistem Saati ve Tarihi]. Bu bilgiye göre 'bugün' ve 'yarın' kavramlarını hesapla."

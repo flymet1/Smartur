@@ -1,0 +1,184 @@
+Genel çerçevede söyleyeyim: çok ciddi bir iyileştirme yapmışsın 👍
+Bu prompt, konuştuğumuz state / intent / sade cevap yaklaşımıyla %90 uyumlu.
+Ama birkaç kritik çelişki, belirsizlik ve ileride bug çıkaracak nokta var.
+Aşağıda “doğru”, “riskli”, “net düzeltilmeli” diye ayırıyorum.
+
+🟢 GENEL DEĞERLENDİRME (Özet)
+
+✅ Mimari olarak doğru yöndesin
+
+✅ State + follow-up mantığı prompt’a yansımış
+
+❌ Aynı konuyu farklı maddelerde çelişkili yöneten kurallar var
+
+❌ “aktarma” (eskalasyon) kuralları birbirini bozan şekilde tanımlanmış
+
+❌ Bazı maddeler modeli kararsız bırakıyor (özellikle 3–4–6. maddeler)
+
+Bunlar düzeltilmezse:
+
+Bot bazen erken eskale eder
+
+Bazen eskale etmesi gerekirken etmez
+
+Bazen aynı durumda farklı cevaplar üretir
+
+🔴 NET ÇELİŞKİLER / HATALAR (ÖNEMLİ)
+❌ 1️⃣ MÜSAİTLİK BİLGİSİ YOKSA – ÇELİŞKİ
+
+Üst blok (14 madde):
+
+"Kontenjan bilgisi için takvimimize bakmanızı veya bizi aramanızı öneriyorum"
+
+RAG Kuralları – Madde 3:
+
+"Bu tarih için kontenjan bilgim yok. Sizi müşteri destek ekibine aktarmamı ister misiniz?"
+
+📌 Sorun:
+Aynı durumda iki farklı davranış tanımlanmış.
+
+🔧 ÖNERİLEN TEK DOĞRU KURAL:
+
+Müsaitlik bilgisi yoksa:
+→ Bilgi ver
+→ AKTARMA SORMA (otomatik eskalasyon yok)
+
+
+Netleştirilmiş versiyon:
+
+"Bu tarih için kontenjan bilgim yok. Güncel müsaitlik için web sitemizi kontrol edebilirsiniz."
+
+(Ancak müşteri ısrar ederse → Madde 6 devreye girsin)
+
+❌ 2️⃣ İNDİRİM / ÖZEL TALEP – ÇELİŞKİ
+
+İlk blok – Madde 5:
+
+“Özel taleplerde yetkili yönlendirmesi yap.”
+
+RAG – Madde 5:
+
+“ASLA indirim için yetkili aktarma yapma!”
+
+📌 Bu direkt çelişki.
+Model hangisini seçeceğini bilemez.
+
+🔧 Tek karar vermelisin. Tavsiyem:
+
+RAG kuralı daha doğru
+
+İndirim = satış politikası → eskalasyon YOK
+
+➡️ İlk bloktaki Madde 5 silinmeli veya revize edilmeli.
+
+❌ 3️⃣ REZERVASYON SORGUSU – BELİRSİZLİK
+
+İlk blok – Madde 6:
+
+“Mevcut rezervasyonu olmayan ama rezervasyon bilgisi soran müşterilerden sipariş numarası iste.”
+
+RAG – Madde 8:
+
+“Mevcut rezervasyonu olan müşteri bilgi isterse…”
+
+📌 Sorun:
+
+Rezervasyonu OLMAYAN müşteriden sipariş numarası istemek mantıksız
+
+WhatsApp rezervasyon almama kuralıyla da çakışıyor
+
+🔧 Doğru ayrım şöyle olmalı:
+
+- Rezervasyonu VAR → sipariş no / takip linki
+- Rezervasyonu YOK → bilgilendir, link ver
+
+
+İlk blok Madde 6 hatalı tanımlanmış.
+
+🟡 RİSKLİ / İYİLEŞTİRİLMESİ GEREKEN NOKTALAR
+⚠️ 4️⃣ AKTARMA KURALLARI ÇOK DAĞINIK
+
+Şu an:
+
+4. madde (ilk blok)
+
+madde (RAG)
+
+madde (RAG)
+
+Aynı konu 3 yerde geçiyor.
+
+📌 Bu modeller için risklidir
+Çünkü “öncelik” net değil.
+
+🔧 ÖNERİ:
+Tek bir başlık altında topla:
+
+AKTARMA KARARI (TEK KAYNAK):
+
+1. Kullanıcı açıkça isterse → direkt aktar
+2. Teknik problem / şikayet → sorarak aktar
+3. Aynı soru 2-3 kez → sorarak aktar
+4. Diğer tüm durumlarda → aktarma YOK
+
+⚠️ 5️⃣ “BİLMEDİĞİNİ ÖĞRENMEYE ÇALIŞ” CÜMLESİ
+
+“Bilmediğin konuları öğrenmeye çalış, hemen aktarma.”
+
+LLM’ler için bu tehlikeli bir ifade.
+
+Model:
+
+Tahmin etmeye
+
+Uydurmaya
+
+Bağlamdan olmayan bilgi üretmeye yönelebilir
+
+🔧 Daha güvenli versiyon:
+
+“Bilmediğin konularda tahmin yürütme. Sadece mevcut bilgilerle cevap ver.”
+
+🟢 ÇOK İYİ OLAN KISIMLAR (BUNLAR KALSIN)
+
+Özellikle şunlar çok doğru 👌
+
+✅ Madde 17 – Takip soruları (state’i prompt seviyesinde çok net tanımlıyor)
+
+✅ Madde 18 – Basit cevap (over-verbose’ü keser)
+
+✅ Madde 19 – Sorulanı cevapla
+
+✅ WhatsApp üzerinden bilgi toplama yasağı
+
+✅ Dil bazlı rezervasyon linki seçimi
+
+✅ Partner / İzleyici ayrımı
+
+Bunlar seni birçok bottan bir seviye yukarı taşır.
+
+🧠 SON NET SONUÇ
+
+Bu prompt sistemiyle UYUMLU mu?
+➡️ Evet, %80–85 uyumlu.
+
+Ama prod’da sorun çıkarır mı?
+➡️ Evet, özellikle eskalasyon ve indirim konularında.
+
+🔧 ACİL DÜZELTİLMESİ GEREKENLER (ÖNCELİK)
+
+İndirim / özel talep çelişkisi
+
+Müsaitlik bilgisi yoksa ne yapılacağı
+
+Rezervasyonu olmayan müşteriden sipariş no isteme hatası
+
+Aktarma kurallarını tek yerde toplama
+
+İstersen bir sonraki adımda:
+
+❇️ Temizlenmiş, çelişkisiz “FINAL SYSTEM PROMPT”
+
+❇️ Madde madde sadeleştirilmiş
+
+❇️ Modelin kafasını karıştırmayacak tek versiyon
