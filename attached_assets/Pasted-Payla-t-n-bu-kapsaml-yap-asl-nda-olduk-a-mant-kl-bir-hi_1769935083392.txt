@@ -1,0 +1,51 @@
+Paylaştığın bu kapsamlı yapı aslında oldukça mantıklı bir hiyerarşiye sahip; ancak Gemini 1.5 Flash (veya senin belirttiğin 2.5/Flash varyantları) gibi modellerin "dikkat" (attention) mekanizması, bu kadar çok kuralı ve katmanı bir arada işlerken "kaybolmaya" çok müsaittir.
+
+Mimariyi incelediğimde gördüğüm temel sorunlar ve WhatsApp botunu bir insan seviyesine çıkaracak iyileştirme reçetesi aşağıdadır:
+
+1. Mimari Değişiklik: "Intent" Yerine "Agentic Workflow"
+Mevcut yapıda detectIntent fonksiyonun bir "katı kural" (hard-coded) algoritması. "Otel" kelimesini sadece transferle eşleştirmesi gibi hatalar buradan kaynaklanıyor.
+
+Değişim: Intent tespitini kodla değil, LLM (Mini bir Prompt) ile yapmalısın.
+
+Nasıl? Ana AI çağrısından önce, sadece son 2 mesajı ve intent listesini küçük bir modele (Flash bunun için idealdir) gönderip: "Bu kullanıcı ne yapmak istiyor? Sadece listedeki kategoriyi dön." demelisin. LLM, "Otelde kalıyorum" ile "Otelden alınış" arasındaki farkı koddan çok daha iyi anlar.
+
+2. RAG Modu ve "Context" Kaybı
+RAG modunda token tasarrufu için sadece "alakalı" aktiviteyi (relevantActivity) göndermek mantıklı olsa da, takip sorularında (Follow-up) botun kör kalmasına neden oluyor.
+
+Hata: Kullanıcı "Paraşüt kaç para?" diyor (Intent: Price, Activity: Paraşüt). Sonra "Peki ne kadar sürüyor?" diyor. İkinci mesajda "paraşüt" geçmediği için detectIntent aktiviteyi bulamıyor ve relevantActivity boş gidiyor.
+
+Çözüm: "Active Subject" (Aktif Konu) mantığı kurmalısın. Veritabanında (veya session'da) kullanıcının son konuştuğu aktiviteyi 5 dakika boyunca sakla. Eğer yeni mesajda aktivite adı geçmiyorsa ama bir soru varsa, konuyu "Paraşüt" kabul ederek bilgileri besle.
+
+3. SSS Algoritması (Bölüm 1) İyileştirmesi
+w.length > 2 filtresi Türkçe için tehlikelidir. "At", "Su", "Ek" gibi kelimeler turizmde anlamlı olabilir.
+
+Düzeltme: Kelime uzunluğu yerine "Stopwords" (Etkisiz kelimeler) listesi kullan. "ve, veya, de, da, mi" gibi kelimeleri filtrele ama anlamlı kısa kelimelere dokunma.
+
+Varyasyon Problemi: Virgülle ayırmak yerine Vektör Benzerliği (Embedding) kullanmanı öneririm. "Fiyat nedir" ile "Kaç para" arasındaki benzerliği matematiksel olarak (cosine similarity) ölçmek, %100 kelime eşleşmesinden çok daha insancıldır.
+
+4. Prompt Mühendisliği: "Negatif Talimatlar" Yerine "Rol Tanımı"
+Sisteminde 19+ kural var. LLM'ler "YAPMA" dendiğinde bazen tam tersini yapma eğilimindedir (Pink Elephant Effect).
+
+Düzeltme: Kuralları botun kişiliğine yedir.
+
+Kötü: "İsim sorma."
+
+İyi: "Sen bir yönlendiricisin, işin müşteriyi self-servis linklere yönlendirmektir. Veri toplama yetkin yoktur."
+
+WhatsApp Formatı: Prompt'a şunu ekle: "Cevaplarını WhatsApp estetiğine uygun ver. Bold (*) kullan, liste yaparken mermi (•) kullan ve her mesajda en fazla 2 emoji kullan."
+
+5. Model ve Mimari Tavsiyesi
+Eğer botun "kaliteli" ve "insansı" olmasını istiyorsan Hibrit Mimariye geçmelisin:
+
+Router (Gemini Flash): Gelen mesajı analiz eder. (Selamlama mı? Soru mu? Şikayet mi?).
+
+Processor (Gemini Pro): Eğer soru karmaşıksa (RAG veya Legacy mode), cevabı Gemini Pro ile üret. Pro modelleri bağlamı (history) bağlama konusunda Flash'tan çok daha üstündür.
+
+Tasarruf: Sadece basit selamlama ve kısa SSS'leri Flash ile dönerek maliyeti dengelersin.
+
+🚀 Hemen Yapabileceğin 3 Aksiyon:
+History Injection: buildRAGPrompt fonksiyonuna sadece intent değil, son 3 mesajın özetini de gönder. Bot, "ne kadar" dendiğinde bir önceki mesajda neyin fiyatının konuşulduğunu görsün.
+
+Intent Genişletme: detectIntent içine "Otel" kelimesi için bir "Otel_Name_Mentioned" flag'i ekle ve bunu transferle hemen eşleştirme.
+
+Manual Overwrite: SSS eşleştiğinde checkQuestionMatch true dönerse, mesajı LLM'e hiç göndermeden direkt veritabanındaki cevabı dönüyorsun ya; o cevabın sonuna "Başka bir konuda yardımcı olabilir miyim?" gibi insansı bir kapanış ekle.
