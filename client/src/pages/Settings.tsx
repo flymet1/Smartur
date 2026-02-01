@@ -96,6 +96,7 @@ export default function Settings() {
   const [botAccessConfirmation, setBotAccessConfirmation] = useState(true);
   const [botAccessTransfer, setBotAccessTransfer] = useState(true);
   const [botAccessExtras, setBotAccessExtras] = useState(true);
+  const [botAccessAiFallback, setBotAccessAiFallback] = useState(false); // Default kapalı
   const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
   
   // System Rules (RAG Prompt Rules)
@@ -317,6 +318,7 @@ export default function Settings() {
         if (settings.confirmation !== undefined) setBotAccessConfirmation(settings.confirmation);
         if (settings.transfer !== undefined) setBotAccessTransfer(settings.transfer);
         if (settings.extras !== undefined) setBotAccessExtras(settings.extras);
+        if (settings.aiFallbackEnabled !== undefined) setBotAccessAiFallback(settings.aiFallbackEnabled);
         setBotAccessSettingsLoaded(true);
       } catch {}
     }
@@ -693,25 +695,17 @@ export default function Settings() {
         faq: botAccessFaq,
         confirmation: botAccessConfirmation,
         transfer: botAccessTransfer,
-        extras: botAccessExtras
+        extras: botAccessExtras,
+        aiFallbackEnabled: botAccessAiFallback
       });
 
       // Save all settings
+      // NOT: botPrompt ve botRules kaldırıldı - şablon tabanlı sistem bunları kullanmıyor
       const savePromises = [
         fetch("/api/settings/customerSupportEmail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ value: customerSupportEmail })
-        }),
-        fetch("/api/settings/botPrompt", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ value: botPrompt })
-        }),
-        fetch("/api/settings/bot_rules", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ value: botRules })
         }),
         fetch("/api/settings/reminderHours", {
           method: "POST",
@@ -1308,216 +1302,24 @@ export default function Settings() {
 
                   {botEnabled && (
                     <div className="space-y-6">
-                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
-                        <div className="space-y-2">
-                          <Label htmlFor="botPrompt">Bot Sistemi Prompt'u</Label>
-                          <Textarea 
-                            id="botPrompt"
-                            value={botPrompt}
-                            onChange={(e) => setBotPrompt(e.target.value)}
-                            placeholder="Bot'un nasıl davranacağını tanımlayan talimatleri yazın..."
-                            className="min-h-[150px]"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Bu prompt'u değiştirerek bot'un kişiliğini ve davranışını özelleştirebilirsiniz. Bot bu talimatlara uyarak müşterilerle konuşacak.
-                          </p>
-                        </div>
-
-                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                          <p className="text-xs text-blue-900 dark:text-blue-200">
-                            <strong>Ipucu:</strong> Prompt'unuzda müşterilerle samimi olmalarini, kibar olmalarini, hızlı cevap vermelerini ve rezervasyon yapmalarina yardimci olmalarini belirtin.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
+                      {/* Şablon Tabanlı Bot Açıklaması */}
+                      <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
                         <div className="flex items-start gap-2">
-                          <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                          <Info className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                           <div className="space-y-2">
-                            <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">Bot Kural Hiyerarşisi</h4>
-                            <p className="text-xs text-amber-800 dark:text-amber-300">
-                              Bot, mesaj atan kişinin kimliğine göre farklı kurallar uygular:
+                            <h4 className="text-sm font-semibold text-green-900 dark:text-green-200">Şablon Tabanlı Bot Sistemi</h4>
+                            <p className="text-xs text-green-800 dark:text-green-300">
+                              Bot, önceden tanımlı şablonlar ve SSS eşleştirmesi kullanarak %100 tutarlı ve hızlı cevaplar verir.
                             </p>
-                            <ul className="text-xs text-amber-800 dark:text-amber-300 space-y-1 ml-4 list-disc">
-                              <li><strong>Partner:</strong> Partner talimatları uygulanır (link paylaşılmaz, panele yönlendirilir)</li>
-                              <li><strong>İzleyici:</strong> İzleyici talimatları uygulanır (panelden talep oluşturması istenir)</li>
-                              <li><strong>Müşteri:</strong> Aşağıdaki genel kurallar uygulanır (link paylaşılır, takip linki verilir)</li>
+                            <ul className="text-xs text-green-800 dark:text-green-300 space-y-1 ml-4 list-disc">
+                              <li><strong>SSS:</strong> Aktivite SSS'leri ve Genel SSS'ler en yüksek önceliğe sahiptir</li>
+                              <li><strong>Aktivite Bilgileri:</strong> Fiyat, süre, transfer bilgileri otomatik şablonlardan gelir</li>
+                              <li><strong>AI Fallback:</strong> Bilinmeyen sorular için opsiyonel AI desteği (aşağıda açabilirsiniz)</li>
                             </ul>
-                            <p className="text-xs text-amber-800 dark:text-amber-300 mt-2">
-                              <strong>Öncelik:</strong> Partner/İzleyici talimatları, genel kuralların üstündedir.
+                            <p className="text-xs text-green-800 dark:text-green-300 mt-2">
+                              <strong>İpucu:</strong> Bot cevaplarını özelleştirmek için aktivitelerinize SSS ekleyin.
                             </p>
                           </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor="botRules" className="text-base font-medium">Bot Kuralları (Müşteriler İçin)</Label>
-                            {!isOwner && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Shield className="w-3 h-3 mr-1" />
-                                Kilitli
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Bu kurallar sadece normal müşteriler için geçerlidir. Partner ve izleyiciler için aşağıdaki özel talimatlar kullanılır. {!isOwner && "Bu alan sadece acenta yöneticisi tarafından düzenlenebilir."}
-                          </p>
-                          <Textarea 
-                            id="botRules"
-                            value={botRules}
-                            onChange={(e) => isOwner && setBotRules(e.target.value)}
-                            placeholder="1. Müşterilere her zaman nazik ve profesyonel ol&#10;2. Fiyat bilgisi verirken net rakamlar kullan&#10;3. Rezervasyon detaylarını mutlaka teyit et&#10;..."
-                            className={cn("min-h-[250px] font-mono text-sm", !isOwner && "bg-muted cursor-not-allowed")}
-                            disabled={!isOwner}
-                            readOnly={!isOwner}
-                            data-testid="textarea-bot-rules"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Her kuralı yeni satırda yazın. Bot bu kurallara sıkı sıkıya uyacak şekilde yapılandırılmıştır.
-                          </p>
-                        </div>
-
-                        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                          <p className="text-xs text-amber-900 dark:text-amber-200">
-                            <strong>Önemli:</strong> Bu kurallar bot'un davranışını doğrudan etkiler. Yaptığınız değişiklikler kaydedildikten sonra bot yeni kurallara göre çalışmaya başlar.
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* System Rules Section - Görüntülenebilir ve düzenlenebilir */}
-                      <div className="space-y-4 bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <Label className="text-base font-medium">Sistem Davranış Kuralları (RAG)</Label>
-                              {systemRulesIsCustom && (
-                                <Badge variant="outline" className="text-xs bg-blue-100 dark:bg-blue-900/50">
-                                  Özelleştirilmiş
-                                </Badge>
-                              )}
-                              {!systemRulesIsCustom && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Varsayılan
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {systemRulesEditMode ? (
-                                <>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => {
-                                      setSystemRulesEditMode(false);
-                                      setSystemRulesCustom(systemRulesIsCustom ? (systemRulesData?.customRules || systemRulesDefault) : systemRulesDefault);
-                                    }}
-                                    data-testid="button-cancel-system-rules"
-                                  >
-                                    İptal
-                                  </Button>
-                                  <Button 
-                                    size="sm"
-                                    disabled={isSavingSystemRules}
-                                    onClick={async () => {
-                                      setIsSavingSystemRules(true);
-                                      try {
-                                        const res = await fetch('/api/settings/systemRules', {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify({ customRules: systemRulesCustom })
-                                        });
-                                        if (res.ok) {
-                                          toast({ title: "Özel kurallar kaydedildi" });
-                                          setSystemRulesIsCustom(true);
-                                          setSystemRulesEditMode(false);
-                                        } else {
-                                          toast({ title: "Kayıt hatası", variant: "destructive" });
-                                        }
-                                      } catch {
-                                        toast({ title: "Bir hata oluştu", variant: "destructive" });
-                                      }
-                                      setIsSavingSystemRules(false);
-                                    }}
-                                    data-testid="button-save-system-rules"
-                                  >
-                                    {isSavingSystemRules ? "Kaydediliyor..." : "Kaydet"}
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  {systemRulesIsCustom && (
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      disabled={isSavingSystemRules}
-                                      onClick={async () => {
-                                        if (confirm("Varsayılan kurallara dönmek istediğinizden emin misiniz? Özel kurallarınız silinecek.")) {
-                                          setIsSavingSystemRules(true);
-                                          try {
-                                            const res = await fetch('/api/settings/systemRules', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({ resetToDefault: true })
-                                            });
-                                            if (res.ok) {
-                                              toast({ title: "Varsayılan kurallara dönüldü" });
-                                              setSystemRulesIsCustom(false);
-                                              setSystemRulesCustom(systemRulesDefault);
-                                            }
-                                          } catch {
-                                            toast({ title: "Bir hata oluştu", variant: "destructive" });
-                                          }
-                                          setIsSavingSystemRules(false);
-                                        }
-                                      }}
-                                      data-testid="button-reset-system-rules"
-                                    >
-                                      Varsayılana Dön
-                                    </Button>
-                                  )}
-                                  <Button 
-                                    variant={systemRulesEditMode ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => {
-                                      if (!systemRulesEditMode) {
-                                        if (confirm("Sistem kurallarını düzenlemek bot davranışını değiştirebilir. Devam etmek istiyor musunuz?")) {
-                                          setSystemRulesEditMode(true);
-                                        }
-                                      }
-                                    }}
-                                    data-testid="button-edit-system-rules"
-                                  >
-                                    <Pencil className="w-3 h-3 mr-1" />
-                                    Düzenle
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Bot'un temel davranış kuralları. Aktarma, indirim, müsaitlik ve rezervasyon yönlendirme kurallarını içerir.
-                          </p>
-                          <Textarea 
-                            value={systemRulesEditMode ? systemRulesCustom : (systemRulesIsCustom ? systemRulesCustom : systemRulesDefault)}
-                            onChange={(e) => systemRulesEditMode && setSystemRulesCustom(e.target.value)}
-                            className={cn(
-                              "min-h-[300px] font-mono text-xs",
-                              !systemRulesEditMode && "bg-muted/50 cursor-default"
-                            )}
-                            readOnly={!systemRulesEditMode}
-                            data-testid="textarea-system-rules"
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Bu kurallar bot'a otomatik olarak eklenir. Özelleştirirseniz varsayılan yerine sizin kurallarınız kullanılır.
-                          </p>
-                        </div>
-
-                        <div className="bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-lg p-3">
-                          <p className="text-xs text-blue-900 dark:text-blue-200">
-                            <strong>Not:</strong> Varsayılan kurallar, WhatsApp rezervasyon yönlendirmesi, aktarma koşulları ve indirim davranışı gibi temel bot davranışlarını içerir. Değiştirmeden önce dikkatlice okuyun.
-                          </p>
                         </div>
                       </div>
 
@@ -1602,7 +1404,7 @@ export default function Settings() {
                             />
                           </div>
 
-                          <div className="flex items-center justify-between gap-4 py-2">
+                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
                             <div className="space-y-0.5">
                               <Label>Ekstra Hizmetler</Label>
                               <p className="text-xs text-muted-foreground">Aktivitelere eklenebilecek ekstra hizmetler ve fiyatlari</p>
@@ -1611,6 +1413,23 @@ export default function Settings() {
                               checked={botAccessExtras} 
                               onCheckedChange={setBotAccessExtras}
                               data-testid="switch-bot-access-extras"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between gap-4 py-2 bg-purple-50/50 dark:bg-purple-950/20 -mx-4 px-4 rounded-b-lg">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <Label>AI Fallback (Gelişmiş)</Label>
+                                <Badge variant="outline" className="text-xs">Beta</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                SSS ve şablonlarla cevaplanamayan sorular için AI desteği. Sadece güvenli, kısa cevaplar üretir.
+                              </p>
+                            </div>
+                            <Switch 
+                              checked={botAccessAiFallback} 
+                              onCheckedChange={setBotAccessAiFallback}
+                              data-testid="switch-bot-access-ai-fallback"
                             />
                           </div>
                         </div>
