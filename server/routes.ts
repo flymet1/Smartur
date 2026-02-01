@@ -1320,6 +1320,125 @@ interface TemplateContext {
     whatsappNumber?: string;
   };
   originalMessage?: string; // İlk mesaj dil tespiti için
+  aiFallbackEnabled?: boolean; // AI Fallback toggle
+}
+
+// =============================================================================
+// AI FALLBACK SİSTEMİ (SON ADIM - OPSİYONEL)
+// =============================================================================
+
+// AI cevap güvenlik filtresi
+function aiSafetyCheck(answer: string): { safe: boolean; reason?: string } {
+  const forbidden = ['garanti', 'kesinlikle', 'mutlaka', 'guarantee', 'definitely', 'certainly', '100%', 'always'];
+  const hasForbidden = forbidden.some(w => answer.toLowerCase().includes(w));
+  if (hasForbidden) return { safe: false, reason: 'forbidden_word' };
+  
+  const maxLength = 300; // ~2-3 cümle
+  if (answer.length > maxLength) return { safe: false, reason: 'too_long' };
+  
+  // Fiyat/süre içeriyorsa güvenli değil (bunlar template'den gelmeli)
+  if (/\d+\s*(tl|lira|₺|euro|€|\$|usd)/i.test(answer)) return { safe: false, reason: 'contains_price' };
+  
+  return { safe: true };
+}
+
+// AI Fallback için güvenli prompt oluştur (sadece DB verileriyle sınırlı)
+function buildAIFallbackPrompt(
+  activity: any | undefined,
+  activities: any[],
+  lang: 'tr' | 'en'
+): string {
+  const isEn = lang === 'en';
+  
+  // Sadece izin verilen alanlar
+  const allowedFields = ['name', 'description', 'region', 'difficulty', 'minAge', 'highlights', 'includedItems', 'excludedItems', 'meetingPoint'];
+  
+  let activityData = '';
+  if (activity) {
+    const safeData: Record<string, any> = {};
+    for (const field of allowedFields) {
+      if (activity[field]) {
+        safeData[field] = activity[field];
+      }
+    }
+    activityData = JSON.stringify(safeData, null, 2);
+  }
+  
+  const activityNames = activities.map(a => a.name).join(', ');
+  
+  return isEn ? `
+You are a helpful tour assistant. Answer ONLY using the data below.
+
+STRICT RULES:
+- Maximum 2 sentences
+- Never mention prices, durations, or times (user must ask specifically)
+- Never use words: guarantee, definitely, certainly, always, 100%
+- Never invent information not in the data
+- If unsure, say "Please contact us for details"
+- Be friendly but brief
+
+AVAILABLE ACTIVITIES: ${activityNames}
+
+${activityData ? `ACTIVITY DATA:\n${activityData}` : 'No specific activity selected.'}
+` : `
+Sen yardımcı bir tur asistanısın. SADECE aşağıdaki verileri kullanarak cevap ver.
+
+KESİN KURALLAR:
+- Maksimum 2 cümle
+- Asla fiyat, süre veya saat söyleme (bunları kullanıcı özellikle sormalı)
+- Şu kelimeleri asla kullanma: garanti, kesinlikle, mutlaka, her zaman
+- Veride olmayan bilgi uydurma
+- Emin değilsen "Detaylar için bizimle iletişime geçin" de
+- Samimi ama kısa ol
+
+MEVCUT AKTİVİTELER: ${activityNames}
+
+${activityData ? `AKTİVİTE VERİSİ:\n${activityData}` : 'Belirli bir aktivite seçilmedi.'}
+`;
+}
+
+// AI Fallback çağrısı (Gemini API)
+async function callAIFallback(
+  message: string,
+  activity: any | undefined,
+  activities: any[],
+  lang: 'tr' | 'en'
+): Promise<string | null> {
+  if (!ai) {
+    console.log('[AI_FALLBACK] Gemini API not available');
+    return null;
+  }
+  
+  try {
+    const systemPrompt = buildAIFallbackPrompt(activity, activities, lang);
+    
+    const result = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: [{ role: "user", parts: [{ text: message }] }],
+      config: {
+        systemInstruction: systemPrompt,
+        maxOutputTokens: 150 // Kısa cevap zorla
+      }
+    });
+    
+    const responseText = result.text?.trim() || null;
+    
+    if (responseText) {
+      // Güvenlik kontrolü
+      const safety = aiSafetyCheck(responseText);
+      if (!safety.safe) {
+        console.log(`[AI_FALLBACK] Safety check failed: ${safety.reason}`);
+        return null;
+      }
+      console.log(`[AI_FALLBACK] Success: ${responseText.substring(0, 80)}...`);
+      return responseText;
+    }
+    
+    return null;
+  } catch (error: any) {
+    console.error('[AI_FALLBACK] Error:', error.message);
+    return null;
+  }
 }
 
 // Dil algılama - İngilizce mi Türkçe mi?
@@ -6747,7 +6866,7 @@ Rezervasyon takip: {takip_linki}
       // Get bot settings for this tenant (tenant-specific settings)
       const botPrompt = await storage.getSetting('botPrompt', tenantId);
       const botAccessSetting = await storage.getSetting('botAccess', tenantId);
-      let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true };
+      let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true, aiFallbackEnabled: false };
       if (botAccessSetting) {
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
@@ -6972,11 +7091,28 @@ Rezervasyon takip: {takip_linki}
         originalMessage: Body // İlk mesaj dil tespiti için
       });
       
-      console.log(`[ŞABLON] Cevap: ${templateResponse.substring(0, 100)}...`);
+      // 3. AI FALLBACK (Opsiyonel - Ayarlardan açılabilir)
+      // Sadece unknown/general intent + AI Fallback aktif ise çalışır
+      let finalResponse = templateResponse;
       
-      await storage.addMessage({ phone: From, content: templateResponse, role: "assistant", tenantId });
+      if (botAccess.aiFallbackEnabled && (detectedIntent.type === 'unknown' || detectedIntent.type === 'general')) {
+        console.log('[AI_FALLBACK] Template returned generic, trying AI...');
+        const lang = detectLanguage(Body, currentState);
+        const aiResponse = await callAIFallback(Body, matchedActivity, activities, lang);
+        
+        if (aiResponse) {
+          finalResponse = aiResponse;
+          console.log('[AI_FALLBACK] Using AI response');
+        } else {
+          console.log('[AI_FALLBACK] AI failed or unsafe, using template');
+        }
+      }
+      
+      console.log(`[CEVAP] ${finalResponse.substring(0, 100)}...`);
+      
+      await storage.addMessage({ phone: From, content: finalResponse, role: "assistant", tenantId });
       res.type('text/xml');
-      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${templateResponse}</Message></Response>`);
+      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${finalResponse}</Message></Response>`);
     } else {
       res.type('text/xml');
       res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
@@ -7319,17 +7455,30 @@ Rezervasyon takip: {takip_linki}
         originalMessage: Body // İlk mesaj dil tespiti için
       });
       
+      // 3. AI FALLBACK (Legacy webhook için de)
+      let legacyFinalResponse = legacyTemplateResponse;
+      
+      if (botAccess.aiFallbackEnabled && (testDetectedIntent.type === 'unknown' || testDetectedIntent.type === 'general')) {
+        console.log('[AI_FALLBACK] Legacy - trying AI...');
+        const lang = detectLanguage(Body, testCurrentState);
+        const aiResponse = await callAIFallback(Body, legacyMatchedActivity, activities, lang);
+        
+        if (aiResponse) {
+          legacyFinalResponse = aiResponse;
+        }
+      }
+      
       // Save response (with tenantId if known)
       await storage.addMessage({
         phone: From,
-        content: legacyTemplateResponse,
+        content: legacyFinalResponse,
         role: "assistant",
         tenantId: tenantId || undefined
       });
 
       // Return TwiML
       res.type('text/xml');
-      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${legacyTemplateResponse}</Message></Response>`);
+      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${legacyFinalResponse}</Message></Response>`);
     } else {
       res.status(400).send("Missing Body or From");
     }
@@ -7393,7 +7542,7 @@ Rezervasyon takip: {takip_linki}
       // Get bot settings (tenant-specific)
       const botPrompt = await storage.getSetting('botPrompt', tenantId);
       const botAccessSetting = await storage.getSetting('botAccess', tenantId);
-      let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true };
+      let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true, aiFallbackEnabled: false };
       if (botAccessSetting) {
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
@@ -7426,7 +7575,7 @@ Rezervasyon takip: {takip_linki}
       // Tenant ayarları
       const testModeWebsiteUrl = await storage.getSetting('websiteUrl', tenantId);
       
-      // ŞABLON CEVAP OLUŞTUR (test mode - AI yok)
+      // ŞABLON CEVAP OLUŞTUR (test mode)
       const testModeTemplateResponse = generateTemplateResponse({
         intent: testModeIntent,
         activity: testModeMatchedActivity,
@@ -7441,10 +7590,23 @@ Rezervasyon takip: {takip_linki}
         originalMessage: message // İlk mesaj dil tespiti için
       });
       
+      // AI FALLBACK (Test mode için de)
+      let testModeFinalResponse = testModeTemplateResponse;
+      
+      if (botAccess.aiFallbackEnabled && (testModeIntent.type === 'unknown' || testModeIntent.type === 'general')) {
+        console.log('[AI_FALLBACK] Test mode - trying AI...');
+        const lang = detectLanguage(message, testModeState);
+        const aiResponse = await callAIFallback(message, testModeMatchedActivity, activities, lang);
+        
+        if (aiResponse) {
+          testModeFinalResponse = aiResponse;
+        }
+      }
+      
       // Return JSON response (not XML)
       res.json({
-        response: testModeTemplateResponse,
-        history: [...history, { role: "assistant", content: testModeTemplateResponse }]
+        response: testModeFinalResponse,
+        history: [...history, { role: "assistant", content: testModeFinalResponse }]
       });
     } catch (error: any) {
       console.error("Bot test error:", error);
