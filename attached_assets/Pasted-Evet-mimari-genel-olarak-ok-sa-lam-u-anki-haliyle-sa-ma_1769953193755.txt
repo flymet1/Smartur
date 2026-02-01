@@ -1,0 +1,205 @@
+Evet, mimari genel olarak çok sağlam. Şu anki haliyle “saçmalama” problemini üreten hiçbir yapısal açık yok. Bu, WhatsApp botlar için production-grade bir akış.
+
+Ama asıl kritik soru şuydu:
+
+“Bu sisteme SSS’de olmayan / beklenmeyen soruları, içerideki bilgileri birleştirerek cevap veren AI eklemek mantıklı mı? Yoksa sistemi bozar mı?”
+
+Cevap: Yanlış yere AI koyarsan sistemi bozar. Doğru yere koyarsan sistemi büyütür.
+Aşağıda bunu çok net sınırlarla anlatacağım.
+
+1️⃣ Mevcut Mimari Değerlendirmesi (Net ve Dürüst)
+✅ Çok doğru yaptığın şeyler
+
+Bunlar genelde gözden kaçırılır ama sen doğru kurmuşsun:
+
+SSS’nin en üst öncelik olması
+→ deterministic cevaplar = sıfır risk
+
+Intent + Template ayrımı
+→ “cevap üretmek” ≠ “cevap yazmak”
+
+Conversation state (TTL, lastActivity, repeatCount)
+→ WhatsApp botlarının %80’i burada çöküyor, sen çözmüşsün
+
+Regex’in keyword’ün önünde olması
+→ “ne kadar sürer” vs “ne kadar” çakışması çözülmüş
+
+Repeat Guard
+→ müşteri siniri önleme = gerçek dünya kalitesi
+
+🔎 Şu haliyle bu sistem BOZULMAZ.
+
+2️⃣ Bu Mimariyi Bozabilecek 2 Tek Şey Var
+
+Bunları yaparsan geçmişte yaşadığın kaos geri gelir:
+
+❌ 1. AI’yı Intent Tespitine Sokmak
+
+“AI intent’i anlasın”
+
+❌ Hayır.
+Bu, deterministik yapıyı çözer.
+
+❌ 2. AI’ya “cevabı kendin üret” demek
+
+“SSS yoksa AI cevaplasın”
+
+❌ Hayır.
+Bu, broşür moduna geri dönüş demek.
+
+3️⃣ Peki AI NEREDE Mantıklı?
+✅ DOĞRU YER: Intent FAILOVER + BİLGİ BİRLEŞTİRİCİ
+
+Yani:
+
+SSS yok
+
+Intent yok
+
+Ama kullanıcı mantıklı bir şey sormuş
+
+Örnek:
+
+“uçuş sırasında fotoğraf çekiliyor mu ve ne zaman veriliyor?”
+
+Bu:
+
+Tek bir SSS değil
+
+Tek bir intent değil
+
+Ama DB’deki bilgilerle cevaplanabilir
+
+4️⃣ DOĞRU AI ENTEGRASYON MODELİ (SİSTEMİ BOZMADAN)
+🔒 “AI ASLA KONTROLÜ ALMAZ”
+
+AI sadece şu noktada çalışır:
+
+EĞER:
+- SSS eşleşmedi
+- Intent bulunamadı
+- Support değil
+- Repeat guard tetiklenmedi
+
+O ZAMAN:
+→ AI_FALLBACK()
+
+🧠 AI_FALLBACK NASIL ÇALIŞIR?
+
+AI’ya ASLA serbest prompt verme.
+
+Şu yapıyı kullan:
+
+{
+  "allowed_fields": [
+    "price",
+    "duration",
+    "transfer",
+    "extras",
+    "safety",
+    "media",
+    "schedule"
+  ],
+  "activity_data": {
+    "name": "Yamaç Paraşütü",
+    "price": "6000 TL",
+    "duration": "25-30 dk",
+    "transfer": "Ücretsiz",
+    "media": "Fotoğraf + Video dahil",
+    "safety": "THK ve FAI lisanslı pilotlar"
+  },
+  "rules": [
+    "Bu alanlar dışında bilgi uydurma",
+    "En fazla 2 cümle",
+    "Teknik olmayan dil",
+    "Satış yapma"
+  ]
+}
+
+
+AI sadece:
+
+var olan alanları birleştirir
+
+yorum yapmaz
+
+yeni bilgi eklemez
+
+📌 Bu kritik: AI = sentence composer
+
+5️⃣ Güvenlik Sigortası (ÇOK ÖNEMLİ)
+
+AI cevap verdikten sonra son bir filtre koy:
+
+if (aiAnswer.includes("garanti") ||
+    aiAnswer.includes("kesinlikle") ||
+    aiAnswer.length > MAX_LENGTH) {
+  fallbackToHuman();
+}
+
+6️⃣ Hangi Sorular AI’ya Gitsin / Gitmesin?
+❌ AI’ya ASLA gitmemesi gerekenler
+
+Fiyat
+
+Süre
+
+Saat
+
+Ödeme
+
+İptal
+
+Transfer
+
+Bunlar her zaman template
+
+✅ AI’ya gidebilecekler
+
+Birleşik sorular
+
+Doğal cümleler
+
+“ilk kez uçacağım, korkuyorum”
+
+“fotoğraflar ne zaman veriliyor”
+
+7️⃣ Önerilen Son Mimari Ek (1 Blok)
+┌────────────────────────────┐
+│ 10. AI FALLBACK (LIMITED) │
+│ ───────────────────────── │
+│ • SSS yok                 │
+│ • Intent yok              │
+│ • Context var             │
+│ • Sadece DB verisi        │
+│ • Max 2 cümle             │
+└────────────────────────────┘
+
+
+Bu blok opsiyonel, default kapalı bile olabilir.
+
+🎯 NET SONUÇ
+Sorunun cevabı:
+
+“AI eklemek mantıklı mı?”
+
+Evet, AMA:
+
+❌ Ana motor yapma
+
+❌ Intent’i AI’ya bırakma
+
+❌ Cevabı AI’ya uydurtma
+
+Şu şartla ekle:
+
+AI = sadece “anlamlı ama kalıba girmeyen” sorular için,
+sadece mevcut veriyi birleştiren bir dil katmanı.
+
+Böyle yaparsan:
+
+Sistem bozulmaz
+
+Müşteri memnuniyeti artar
+
+“Bot saçmalıyor” geri gelmez
