@@ -6864,17 +6864,14 @@ Rezervasyon takip: {takip_linki}
       const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
       
       // Get bot settings for this tenant (tenant-specific settings)
-      const botPrompt = await storage.getSetting('botPrompt', tenantId);
+      // NOT: botPrompt, botRules, partnerPrompt, viewerPrompt, customSystemRules KALDIRILDI
+      // Şablon tabanlı sistem bunları kullanmıyor, karışıklığı önlemek için okunmuyor
       const botAccessSetting = await storage.getSetting('botAccess', tenantId);
       let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true, aiFallbackEnabled: false };
       if (botAccessSetting) {
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
-      const botRules = await storage.getSetting('botRules', tenantId);
       const generalFaq = await storage.getSetting('generalFaq', tenantId);
-      const partnerPrompt = await storage.getSetting('partner_prompt', tenantId);
-      const viewerPrompt = await storage.getSetting('viewer_prompt', tenantId);
-      const customSystemRules = await storage.getSetting('customSystemRules', tenantId);
       
       // If bot is disabled, just log the message and don't respond
       if (botAccess.enabled === false) {
@@ -7233,10 +7230,8 @@ Rezervasyon takip: {takip_linki}
       
       const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
       
-      // Get custom bot prompt from settings (tenant-specific)
-      const botPrompt = await storage.getSetting('botPrompt', tenantId);
-      
       // Get bot access settings (tenant-specific)
+      // NOT: botPrompt, botRules KALDIRILDI - şablon tabanlı sistem bunları kullanmıyor
       const botAccessSetting = await storage.getSetting('botAccess', tenantId);
       let botAccess: any = {
         enabled: true,
@@ -7246,16 +7241,14 @@ Rezervasyon takip: {takip_linki}
         faq: true,
         confirmation: true,
         transfer: true,
-        extras: true
+        extras: true,
+        aiFallbackEnabled: false
       };
       if (botAccessSetting) {
         try {
           botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) };
         } catch {}
       }
-      
-      // Get custom bot rules from settings (tenant-specific)
-      const botRules = await storage.getSetting('botRules', tenantId);
       
       // Get general FAQ from settings (tenant-specific)
       const generalFaq = await storage.getSetting('generalFaq', tenantId);
@@ -7540,13 +7533,12 @@ Rezervasyon takip: {takip_linki}
       const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
       
       // Get bot settings (tenant-specific)
-      const botPrompt = await storage.getSetting('botPrompt', tenantId);
+      // NOT: botPrompt, botRules KALDIRILDI - şablon tabanlı sistem bunları kullanmıyor
       const botAccessSetting = await storage.getSetting('botAccess', tenantId);
       let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true, aiFallbackEnabled: false };
       if (botAccessSetting) {
         try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
       }
-      const botRules = await storage.getSetting('botRules', tenantId);
       const generalFaq = await storage.getSetting('generalFaq', tenantId);
       
       // Get conversation state for follow-up questions in test mode (use 'test' as phone)
