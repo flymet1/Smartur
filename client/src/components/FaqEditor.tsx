@@ -3,9 +3,111 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, HelpCircle, Bot, Globe, Languages, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Plus, Trash2, HelpCircle, Bot, Globe, Languages, Loader2, Bold, List, CornerDownLeft } from "lucide-react";
+import { useState, useRef } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface FormattedTextareaProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  "data-testid"?: string;
+}
+
+function FormattedTextarea({ value, onChange, placeholder, className, "data-testid": testId }: FormattedTextareaProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertAtCursor = (before: string, after: string = "") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = value.substring(start, end);
+    
+    let newText: string;
+    let newCursorPos: number;
+
+    if (selectedText) {
+      newText = value.substring(0, start) + before + selectedText + after + value.substring(end);
+      newCursorPos = start + before.length + selectedText.length + after.length;
+    } else {
+      newText = value.substring(0, start) + before + after + value.substring(end);
+      newCursorPos = start + before.length;
+    }
+
+    onChange(newText);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
+  const addBold = () => insertAtCursor("*", "*");
+  const addBullet = () => insertAtCursor("• ");
+  const addLineBreak = () => insertAtCursor("\n");
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1 p-1 bg-muted/30 rounded-t-md border border-b-0 border-input">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={addBold}
+            >
+              <Bold className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Kalın (*metin*)</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={addBullet}
+            >
+              <List className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Madde işareti (•)</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={addLineBreak}
+            >
+              <CornerDownLeft className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Alt satır</TooltipContent>
+        </Tooltip>
+        <span className="text-xs text-muted-foreground ml-2">WhatsApp formatı</span>
+      </div>
+      <Textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`rounded-t-none ${className || ""}`}
+        data-testid={testId}
+      />
+    </div>
+  );
+}
 
 export interface FaqItem {
   question: string;
@@ -153,11 +255,11 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Cevap (Türkçe)</Label>
-                <Textarea
+                <FormattedTextarea
                   placeholder="Örn: Evet, 110 kg üzeri için ek ücret uygulanır."
                   value={item.answer}
-                  onChange={(e) => updateFaq(idx, "answer", e.target.value)}
-                  className="min-h-[60px]"
+                  onChange={(val) => updateFaq(idx, "answer", val)}
+                  className="min-h-[80px]"
                   data-testid={`${testIdPrefix}-answer-${idx}`}
                 />
               </div>
@@ -201,11 +303,11 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
                       <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">EN</span>
                       Answer (English)
                     </Label>
-                    <Textarea
+                    <FormattedTextarea
                       placeholder="E.g.: Yes, there is an extra fee for passengers over 110 kg."
                       value={item.answerEn || ""}
-                      onChange={(e) => updateFaq(idx, "answerEn", e.target.value)}
-                      className="min-h-[60px]"
+                      onChange={(val) => updateFaq(idx, "answerEn", val)}
+                      className="min-h-[80px]"
                       data-testid={`${testIdPrefix}-answer-en-${idx}`}
                     />
                   </div>
