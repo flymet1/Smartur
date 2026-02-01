@@ -1362,6 +1362,22 @@ interface TemplateContext {
   parsedDates?: string[]; // Mesajdan çıkarılan tarihler (YYYY-MM-DD)
   requestedPax?: number | null; // İstenen kişi sayısı
   holidayDates?: string[]; // Tatil/bayram tarihleri
+  // Yeni: Sipariş onay mesajı için rezervasyon bilgisi
+  userReservation?: {
+    id: number;
+    status: string;
+    customerName?: string;
+    date?: string;
+    time?: string;
+    activityId?: number;
+    packageTourId?: number;
+    pax?: number;
+    trackingToken?: string;
+    // Onay mesajı için aktivite/paket tur bilgisi (botAccess bypass)
+    activityName?: string;
+    confirmationMessage?: string;
+    useCustomConfirmation?: boolean;
+  } | null;
 }
 
 // =============================================================================
@@ -1556,16 +1572,80 @@ function generateTemplateResponse(ctx: TemplateContext): string {
     return isEn ? "No package tours available at the moment." : "Şu an aktif paket turumuz bulunmuyor.";
   }
   
-  // 5. REZERVASYON DURUMU
+  // 5. REZERVASYON DURUMU / SİPARİŞ ONAY MESAJI
   if (intent.type === 'reservation_status') {
-    if (trackingLink) {
-      return isEn 
-        ? `You can track your reservation here: ${trackingLink}`
-        : `Rezervasyon durumunuzu buradan takip edebilirsiniz: ${trackingLink}`;
+    const { userReservation } = ctx;
+    
+    // Rezervasyon varsa
+    if (userReservation) {
+      const resStatus = userReservation.status;
+      
+      // Onaylanmış rezervasyon için onay mesajı gönder
+      if (resStatus === 'confirmed') {
+        // Onay mesajı template'i userReservation içinde geliyor (botAccess bypass)
+        const confirmationTemplate = userReservation.useCustomConfirmation && userReservation.confirmationMessage 
+          ? userReservation.confirmationMessage 
+          : '';
+        const activityName = userReservation.activityName || '';
+        
+        if (confirmationTemplate) {
+          // Placeholder'ları değiştir
+          const dateFormatted = userReservation.date 
+            ? new Date(userReservation.date).toLocaleDateString(isEn ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+            : '';
+          
+          let filledMessage = confirmationTemplate
+            .replace(/\{isim\}/gi, userReservation.customerName || '')
+            .replace(/\{name\}/gi, userReservation.customerName || '')
+            .replace(/\{aktivite\}/gi, activityName)
+            .replace(/\{activity\}/gi, activityName)
+            .replace(/\{tarih\}/gi, dateFormatted)
+            .replace(/\{date\}/gi, dateFormatted)
+            .replace(/\{saat\}/gi, userReservation.time || '')
+            .replace(/\{time\}/gi, userReservation.time || '')
+            .replace(/\{kisi_sayisi\}/gi, String(userReservation.pax || ''))
+            .replace(/\{pax\}/gi, String(userReservation.pax || ''))
+            .replace(/\{takip_linki\}/gi, trackingLink || '')
+            .replace(/\{tracking_link\}/gi, trackingLink || '');
+          
+          return filledMessage;
+        }
+        
+        // Özel onay mesajı yoksa varsayılan (emoji yok)
+        const dateStr = userReservation.date 
+          ? new Date(userReservation.date).toLocaleDateString(isEn ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'long' })
+          : '';
+        return isEn 
+          ? `Your reservation is confirmed. Date: ${dateStr}, Time: ${userReservation.time || 'TBA'}. ${trackingLink ? `Track here: ${trackingLink}` : 'Contact us for details.'}`
+          : `Rezervasyonunuz onaylanmistir. Tarih: ${dateStr}, Saat: ${userReservation.time || 'Bildirilecek'}. ${trackingLink ? `Takip: ${trackingLink}` : 'Detay icin bize ulasin.'}`;
+      }
+      
+      // Beklemede
+      if (resStatus === 'pending') {
+        return isEn 
+          ? "Your reservation is being processed. We'll confirm shortly."
+          : "Rezervasyonunuz işleniyor, kısa sürede onay alacaksınız.";
+      }
+      
+      // İptal edilmiş
+      if (resStatus === 'cancelled') {
+        return isEn 
+          ? "Your reservation was cancelled. Contact us for a new booking."
+          : "Rezervasyonunuz iptal edilmiş. Yeni rezervasyon için bize ulaşın.";
+      }
+      
+      // Diğer durumlar için takip linki
+      if (trackingLink) {
+        return isEn 
+          ? `Track your reservation here: ${trackingLink}`
+          : `Rezervasyonunuzu buradan takip edebilirsiniz: ${trackingLink}`;
+      }
     }
+    
+    // Rezervasyon bulunamadı
     return isEn 
       ? "Please share your reservation number to check the status."
-      : "Rezervasyon durumu için lütfen rezervasyon numaranızı paylaşın.";
+      : "Rezervasyon durumu için lütfen sipariş numaranızı paylaşın.";
   }
   
   // 6. REZERVASYON TALEBİ - KURAL: WhatsApp'ta bilgi toplama, sadece link yönlendir
@@ -7196,7 +7276,29 @@ Rezervasyon takip: {takip_linki}
         // Gelişmiş müsaitlik parametreleri
         parsedDates: templateParsedDates,
         requestedPax: templateRequestedPax,
-        holidayDates: holidayDates // Yukarıda zaten parse edildi
+        holidayDates: holidayDates, // Yukarıda zaten parse edildi
+        // Sipariş onay mesajı için rezervasyon bilgisi
+        userReservation: userReservation ? (() => {
+          // Aktivite veya paket tur onay mesajını bul (botAccess bypass - tüm aktivitelerden ara)
+          const resActivity = activities.find(a => a.id === userReservation.activityId);
+          const resPackageTour = packageTours.find(p => p.id === userReservation.packageTourId);
+          // Öncelik: Paket tur > Aktivite
+          const source = resPackageTour || resActivity;
+          return {
+            id: userReservation.id,
+            status: userReservation.status || 'pending',
+            customerName: userReservation.customerName,
+            date: userReservation.date,
+            time: userReservation.time,
+            activityId: userReservation.activityId || undefined,
+            packageTourId: userReservation.packageTourId || undefined,
+            pax: userReservation.quantity || 1,
+            trackingToken: userReservation.trackingToken || undefined,
+            activityName: source?.name || '',
+            confirmationMessage: source?.confirmationMessage || undefined,
+            useCustomConfirmation: source?.useCustomConfirmation || false
+          };
+        })() : null
       });
       
       // 3. AI FALLBACK (Opsiyonel - Ayarlardan açılabilir)
@@ -7563,7 +7665,26 @@ Rezervasyon takip: {takip_linki}
         originalMessage: Body, // İlk mesaj dil tespiti için
         parsedDates: legacyParsedDates,
         requestedPax: legacyRequestedPax,
-        holidayDates: holidayDates // Yukarıda zaten parse edildi
+        holidayDates: holidayDates, // Yukarıda zaten parse edildi
+        userReservation: userReservation ? (() => {
+          const resActivity = activities.find(a => a.id === userReservation.activityId);
+          const resPackageTour = packageTours.find(p => p.id === userReservation.packageTourId);
+          const source = resPackageTour || resActivity;
+          return {
+            id: userReservation.id,
+            status: userReservation.status || 'pending',
+            customerName: userReservation.customerName,
+            date: userReservation.date,
+            time: userReservation.time,
+            activityId: userReservation.activityId || undefined,
+            packageTourId: userReservation.packageTourId || undefined,
+            pax: userReservation.quantity || 1,
+            trackingToken: userReservation.trackingToken || undefined,
+            activityName: source?.name || '',
+            confirmationMessage: source?.confirmationMessage || undefined,
+            useCustomConfirmation: source?.useCustomConfirmation || false
+          };
+        })() : null
       });
       
       // 3. AI FALLBACK (Legacy webhook için de)
@@ -7705,7 +7826,8 @@ Rezervasyon takip: {takip_linki}
         originalMessage: message, // İlk mesaj dil tespiti için
         parsedDates: testParsedDates,
         requestedPax: testRequestedPax,
-        holidayDates: testHolidayDates
+        holidayDates: testHolidayDates,
+        userReservation: null // Test modda rezervasyon bilgisi yok
       });
       
       // AI FALLBACK (Test mode için de)
