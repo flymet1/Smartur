@@ -1108,6 +1108,17 @@ function detectIntent(
     return { type: 'greeting', confidence: 0.95 };
   }
   
+  // CONVERSATION STATE FOLLOW-UP: Önceki intent reservation_status ise ve sadece numara gönderildiyse
+  // Bu, "sipariş numaranızı paylaşın" sorusuna cevap olarak numara gönderildiğini gösterir
+  const isJustOrderNumber = /^\s*\d{4,}\s*$/.test(message.trim());
+  if (isJustOrderNumber && conversationState?.lastIntent === 'reservation_status') {
+    console.log(`[Intent] Order number follow-up detected: "${message}"`);
+    return {
+      type: 'reservation_status',
+      confidence: 0.9
+    };
+  }
+  
   // Aktivite eşleştirme
   let activityMatch = findMatchingActivity(message, activities);
   
