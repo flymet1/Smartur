@@ -2283,16 +2283,29 @@ ${context.botRules || DEFAULT_BOT_RULES}
   if (lastUserMessage.includes("müsait") || lastUserMessage.includes("yer var") || lastUserMessage.includes("boş")) {
     // Try to provide actual capacity info if available
     if (context?.capacityData && context.capacityData.length > 0) {
-      // Parse date from message (yarın, bugün, etc.)
+      // Parse date from message (yarın, bugün, bayram, etc.)
       let targetDate: string | null = null;
+      let targetDateLabel: string = '';
       const today = new Date();
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       
       if (lastUserMessage.includes('yarın')) {
         targetDate = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD
+        targetDateLabel = 'Yarın';
       } else if (lastUserMessage.includes('bugün')) {
         targetDate = today.toISOString().split('T')[0];
+        targetDateLabel = 'Bugün';
+      } else if (lastUserMessage.includes('bayram') || lastUserMessage.includes('tatil')) {
+        // Find upcoming holiday
+        const upcomingHoliday = TURKISH_HOLIDAYS.find(h => {
+          const holidayDate = new Date(h.date);
+          return holidayDate >= today;
+        });
+        if (upcomingHoliday) {
+          targetDate = upcomingHoliday.date;
+          targetDateLabel = upcomingHoliday.name;
+        }
       }
       
       // Find mentioned activity
@@ -2313,22 +2326,19 @@ ${context.botRules || DEFAULT_BOT_RULES}
         }
         
         if (activityCapacity.length > 0) {
-          const dateLabel = targetDate === tomorrow.toISOString().split('T')[0] ? 'Yarın' : 
-                           targetDate === today.toISOString().split('T')[0] ? 'Bugün' : '';
           const slots = activityCapacity.slice(0, 5).map((c: any) => {
             const available = c.totalSlots - c.bookedSlots;
-            return `• ${dateLabel || c.date} saat ${c.time}: ${available > 0 ? available + ' kişilik yer MÜSAİT ✓' : 'DOLU ✗'}`;
+            return `• ${targetDateLabel || c.date} saat ${c.time}: ${available > 0 ? available + ' kişilik yer MÜSAİT ✓' : 'DOLU ✗'}`;
           }).join('\n');
           return `*${mentionedActivity.name}* için müsaitlik:\n\n${slots}\n\nRezervasyon için web sitemizi ziyaret edebilirsiniz.`;
         } else if (targetDate) {
           // Activity found but no capacity data for this date - use default times
           const defaultTimes = JSON.parse(mentionedActivity.defaultTimes || '["09:00", "11:00", "14:00"]');
           const defaultCapacity = mentionedActivity.defaultCapacity || 10;
-          const dateLabel = targetDate === tomorrow.toISOString().split('T')[0] ? 'Yarın' : 'Bugün';
           const slots = defaultTimes.slice(0, 4).map((time: string) => 
-            `• ${dateLabel} saat ${time}: ${defaultCapacity} kişilik yer MÜSAİT ✓`
+            `• ${targetDateLabel || targetDate} saat ${time}: ${defaultCapacity} kişilik yer MÜSAİT ✓`
           ).join('\n');
-          return `*${mentionedActivity.name}* için ${dateLabel.toLowerCase()} müsaitlik:\n\n${slots}\n\n(Varsayılan kontenjan gösterilmektedir)\n\nRezervasyon için web sitemizi ziyaret edebilirsiniz.`;
+          return `*${mentionedActivity.name}* için ${targetDateLabel || targetDate} müsaitlik:\n\n${slots}\n\n(Varsayılan kontenjan gösterilmektedir)\n\nRezervasyon için web sitemizi ziyaret edebilirsiniz.`;
         }
       }
       
