@@ -1670,7 +1670,8 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
     }
   }
   
-  // === LEGACY MODE: Full context (fallback) ===
+  // === LEGACY MODE: Minimal context only (fallback) ===
+  // CRITICAL: Legacy mode MUST NOT dump full activity data - only activity names and basic info
   
   // Get bot access settings (default all to true if not provided)
   const botAccess = context.botAccess || {
@@ -1683,251 +1684,20 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
     extras: true
   };
 
-  // Build activity descriptions for context (only if access enabled)
+  // Build MINIMAL activity descriptions - only name, price, duration (NO description, FAQ, transfer, extras!)
   const activityDescriptions = botAccess.activities ? (context.activities
     ?.map((a: any) => {
-      let desc = `- ${a.name}: ${a.description || "Açıklama yok"} (Fiyat: ${a.price} TL`;
-      if (a.priceUsd) desc += `, $${a.priceUsd}`;
-      desc += `, Süre: ${a.durationMinutes} dk)`;
-      
-      // Bölge bilgisi
-      if (a.region) {
-        desc += `\n  Bölge: ${a.region}`;
-      }
-      
-      // Zorluk seviyesi
-      if (a.difficulty) {
-        const difficultyLabels: Record<string, string> = {
-          easy: 'Kolay - Herkes için uygun',
-          moderate: 'Orta - Temel fiziksel kondisyon gerektirir',
-          hard: 'Zor - İyi kondisyon gerektirir',
-          expert: 'Uzman - Deneyim gerektirir'
-        };
-        desc += `\n  Zorluk Seviyesi: ${difficultyLabels[a.difficulty] || a.difficulty}`;
-      }
-      
-      // Maksimum katılımcı sayısı
-      if (a.maxParticipants) {
-        desc += `\n  Maksimum Katılımcı: ${a.maxParticipants} kişi`;
-      }
-      
-      // Kategoriler
-      try {
-        const categories = JSON.parse(a.categories || '[]');
-        if (categories.length > 0) {
-          desc += `\n  Kategoriler: ${categories.join(', ')}`;
-        }
-      } catch {}
-      
-      // Öne çıkan özellikler
-      try {
-        const highlights = JSON.parse(a.highlights || '[]');
-        if (highlights.length > 0) {
-          desc += `\n  Öne Çıkan Özellikler: ${highlights.join(', ')}`;
-        }
-      } catch {}
-      
-      // Aktivite saatleri bilgisi
-      try {
-        const times = JSON.parse(a.defaultTimes || '[]');
-        if (Array.isArray(times) && times.length > 0) {
-          desc += `\n  Sefer/Uçuş Saatleri: ${times.join(', ')}`;
-          desc += `\n  NOT: Müşteri en iyi saat sorduğunda, bu saatlerden birini öner. Sabah erken saatler genelde daha serin ve sakin olur.`;
-        }
-      } catch {}
-      
-      // Ödeme bilgileri
-      if (a.fullPaymentRequired) {
-        desc += `\n  Ödeme: Rezervasyon sırasında TAM ÖDEME gereklidir`;
-      } else if (a.requiresDeposit && a.depositAmount > 0) {
-        if (a.depositType === 'percentage') {
-          const depositTl = Math.round((a.price * a.depositAmount) / 100);
-          const remainingTl = a.price - depositTl;
-          desc += `\n  Ön Ödeme: %${a.depositAmount} (${depositTl} TL)`;
-          desc += `\n  Kalan Ödeme: ${remainingTl} TL (aktivite günü ödenir)`;
-        } else {
-          const remainingTl = a.price - a.depositAmount;
-          desc += `\n  Ön Ödeme: ${a.depositAmount} TL (sabit tutar)`;
-          desc += `\n  Kalan Ödeme: ${remainingTl} TL (aktivite günü ödenir)`;
-        }
-      } else {
-        desc += `\n  Ödeme: Ön ödeme zorunlu değil, aktivite günü ödeme yapılabilir`;
-      }
-      
-      if (a.reservationLink) desc += `\n  TR Rezervasyon Linki: ${a.reservationLink}`;
-      if (a.reservationLinkEn) desc += `\n  EN Reservation Link: ${a.reservationLinkEn}`;
-      
-      
-      // Transfer bilgisi (only if access enabled)
-      if (botAccess.transfer) {
-        if (a.hasFreeHotelTransfer) {
-          desc += `\n  Ücretsiz Otel Transferi: EVET`;
-          try {
-            const zones = JSON.parse(a.transferZones || '[]');
-            if (zones.length > 0) {
-              // Check if new format (object with zone and minutesBefore) or old format (string array)
-              if (typeof zones[0] === 'object' && zones[0].zone) {
-                desc += `\n  Transfer Bölgeleri ve Alınış Süreleri:`;
-                for (const z of zones) {
-                  desc += `\n    * ${z.zone}: Aktivite saatinden ${z.minutesBefore} dakika önce alınır`;
-                }
-                desc += `\n  NOT: Müşteri otelinin hangi bölgede olduğunu sorup, yukarıdaki sürelere göre alınış saatini hesaplayıp söyle.`;
-              } else {
-                // Old format - just zone names
-                desc += ` (Bölgeler: ${zones.join(', ')})`;
-              }
-            }
-          } catch {}
-        } else {
-          desc += `\n  Ücretsiz Otel Transferi: HAYIR`;
-        }
-      }
-      
-      // Ekstralar bilgisi (only if access enabled)
-      if (botAccess.extras) {
-        try {
-          const extras = JSON.parse(a.extras || '[]');
-          if (extras.length > 0) {
-            desc += `\n  Ekstra Hizmetler:`;
-            for (const extra of extras) {
-              desc += `\n    * ${extra.name}: ${extra.priceTl} TL`;
-              if (extra.priceUsd) desc += ` / $${extra.priceUsd}`;
-              if (extra.description) desc += ` (${extra.description})`;
-            }
-          }
-        } catch {}
-      }
-      
-      // SSS bilgisi (only if access enabled)
-      if (botAccess.faq) {
-        try {
-          const faqItems = JSON.parse(a.faq || '[]');
-          if (faqItems.length > 0) {
-            desc += `\n  Sık Sorulan Sorular:`;
-            for (const faq of faqItems) {
-              if (faq.question && faq.answer) {
-                desc += `\n    S: ${faq.question}`;
-                desc += `\n    C: ${faq.answer}`;
-              }
-            }
-          }
-        } catch {}
-      }
-      
-      // Bot için ek talimatlar (aktiviteye özel kurallar)
-      if (a.botPrompt) {
-        desc += `\n  ⚠️ ÖZEL TALİMATLAR: ${a.botPrompt}`;
-      }
-      
-      // Minimum yaş bilgisi
-      if (a.minAge) {
-        desc += `\n  Minimum Yaş: ${a.minAge} yaş ve üzeri`;
-      }
-      
-      // Tur dilleri
-      try {
-        const languages = JSON.parse(a.tourLanguages || '[]');
-        if (languages.length > 0) {
-          desc += `\n  Tur Dilleri: ${languages.join(', ')}`;
-        }
-      } catch {}
-      
-      // Dahil olanlar
-      try {
-        const included = JSON.parse(a.includedItems || '[]');
-        if (included.length > 0) {
-          desc += `\n  Fiyata Dahil Olanlar: ${included.join(', ')}`;
-        }
-      } catch {}
-      
-      // Dahil olmayanlar
-      try {
-        const excluded = JSON.parse(a.excludedItems || '[]');
-        if (excluded.length > 0) {
-          desc += `\n  Fiyata Dahil Olmayanlar: ${excluded.join(', ')}`;
-        }
-      } catch {}
-      
-      // Getirmeniz gerekenler
-      try {
-        const whatToBring = JSON.parse(a.whatToBring || '[]');
-        if (whatToBring.length > 0) {
-          desc += `\n  Yanınızda Getirmeniz Gerekenler: ${whatToBring.join(', ')}`;
-        }
-      } catch {}
-      
-      // İzin verilmeyenler
-      try {
-        const notAllowed = JSON.parse(a.notAllowed || '[]');
-        if (notAllowed.length > 0) {
-          desc += `\n  İzin Verilmeyenler: ${notAllowed.join(', ')}`;
-        }
-      } catch {}
-      
-      // Buluşma noktası ve harita linki
-      if (a.meetingPoint) {
-        desc += `\n  Buluşma Noktası: ${a.meetingPoint}`;
-        if (a.meetingPointMapLink) {
-          desc += ` (Harita: ${a.meetingPointMapLink})`;
-        }
-      }
-      
-      // Varış süresi
-      if (a.arrivalMinutesBefore) {
-        desc += `\n  Önceden Varış Süresi: Aktiviteden ${a.arrivalMinutesBefore} dakika önce buluşma noktasında olunmalı`;
-      }
-      
-      // Sağlık ve güvenlik notları
-      if (a.healthNotes) {
-        desc += `\n  Sağlık ve Güvenlik Notları: ${a.healthNotes}`;
-      }
-      
-      // Tur programı/itinerary
-      try {
-        const itinerary = JSON.parse(a.itinerary || '[]');
-        if (itinerary.length > 0) {
-          desc += `\n  Tur Programı:`;
-          for (const step of itinerary) {
-            if (step.time && step.title) {
-              desc += `\n    * ${step.time}: ${step.title}`;
-              if (step.description) desc += ` - ${step.description}`;
-            }
-          }
-        }
-      } catch {}
-      
-      return desc;
+      // ATOMIC: Only basic info - never dump full descriptions
+      return `- ${a.name}: ${a.price} TL, ${a.durationMinutes} dk`;
     })
     .join("\n") || "") : "";
   
-  // Build package tour descriptions for context (only if access enabled)
+  // Build MINIMAL package tour descriptions (only name, price, days - NO description, FAQ!)
   const packageTourDescriptions = botAccess.packageTours ? (context.packageTours
     ?.filter((pt: any) => pt.active)
     ?.map((pt: any) => {
-      let desc = `- ${pt.name}: ${pt.description || "Paket tur"} (Fiyat: ${pt.price} TL`;
-      if (pt.priceUsd) desc += `, $${pt.priceUsd}`;
-      desc += `)`;
-      if (pt.reservationLink) desc += `\n  TR Rezervasyon Linki: ${pt.reservationLink}`;
-      if (pt.reservationLinkEn) desc += `\n  EN Reservation Link: ${pt.reservationLinkEn}`;
-      
-      
-      // SSS bilgisi (only if access enabled)
-      if (botAccess.faq) {
-        try {
-          const faqItems = JSON.parse(pt.faq || '[]');
-          if (faqItems.length > 0) {
-            desc += `\n  Sık Sorulan Sorular:`;
-            for (const faq of faqItems) {
-              if (faq.question && faq.answer) {
-                desc += `\n    S: ${faq.question}`;
-                desc += `\n    C: ${faq.answer}`;
-              }
-            }
-          }
-        } catch {}
-      }
-      
-      return desc;
+      // ATOMIC: Only basic info
+      return `- ${pt.name}: ${pt.price} TL, ${pt.durationDays || '?'} gün`;
     })
     .join("\n") || "") : "";
   
