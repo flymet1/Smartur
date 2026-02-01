@@ -1,0 +1,250 @@
+Aşağıda sana gerçek hayatta bu mimariyle yaşanan OLABİLECEK sorunları ve net önlemlerini vereceğim. Teorik değil, birebir yaşanan senaryolar.
+
+1️⃣ Intent Yanlış Eşleşmesi (En Yaygın Risk)
+🔴 Sorun
+
+Kullanıcı:
+
+“rafting ne kadar sürüyor”
+
+Sistem:
+
+ne kadar → price intent
+
+ama soru duration
+
+🟢 Önlem (ZORUNLU)
+
+Intent öncelik sırası koy
+
+const INTENT_PRIORITY = [
+  "availability",
+  "duration",
+  "price",
+  "transfer",
+  "activity_info"
+];
+
+
+Ve şunu uygula:
+
+“kaç dk / sürüyor / dakika” → her zaman duration
+
+“ne kadar” tek başına ise price
+
+📌 Regex + priority şart, sadece keyword yetmez.
+
+2️⃣ Aktivite Bağlamının Kaybolması
+🔴 Sorun
+
+Konuşma:
+
+rafting ne kadar
+→ rafting fiyatı
+kaç dakika
+→ yamaç paraşütü süresi (HATA)
+
+🟢 Önlem
+
+Session Context zorunlu
+
+session = {
+  lastActivity: "rafting",
+  lastIntent: "price",
+  lastUpdated: 1700000000
+}
+
+
+Kurallar:
+
+Yeni aktivite adı yoksa → lastActivity
+
+10 dk geçerse → context reset
+
+📌 WhatsApp botlarda context süresi kritik
+
+3️⃣ Çok Kısa / Çok Uzun Cevap Sapması
+🔴 Sorun
+
+Bazı cevaplar:
+
+Gereksiz uzun
+
+Broşür gibi
+
+Satış diline kaçıyor
+
+🟢 Önlem
+
+AI yoksa bile:
+
+MAX_SENTENCE = 2
+NO_EXTRA_INFO = true
+
+
+Her intent için:
+
+price → 1 cümle
+
+duration → 1 cümle
+
+activity_info → max 3 madde
+
+📌 Bu kuralları kod seviyesinde zorla, prompt’a bırakma.
+
+4️⃣ Tanınmayan Soru (Undefined Intent)
+🔴 Sorun
+
+Kullanıcı:
+
+“uçuş güvenli mi rüzgar olursa ne olur”
+
+Sistem:
+
+hiçbir intent’e uymuyor
+
+yanlış template çalışıyor
+
+🟢 Önlem
+
+Fallback şart
+
+Bunu tam anlayamadım 🙏
+İsterseniz şu konularda yardımcı olabilirim:
+• Fiyat
+• Süre
+• Saatler
+• Transfer
+
+
+📌 Asla uydurma cevap verme
+📌 Asla başka aktivite anlatma
+
+5️⃣ Aynı Sorunun Döngüye Girmesi
+🔴 Sorun
+
+Kullanıcı:
+
+fiyat
+ne kadar
+kaç para
+
+
+Bot:
+
+Aynı cevabı 3 kez verir
+
+Müşteri sinirlenir
+
+🟢 Önlem
+
+Repeat Guard
+
+if (sameIntentRepeated >= 2) {
+  suggestNextStep();
+}
+
+
+Örnek:
+
+“Fiyat bilgisini paylaştım.
+İsterseniz rezervasyon linkini gönderebilirim.”
+
+6️⃣ DB Güncellemesi Anında Cache Sorunu
+🔴 Sorun
+
+Admin panel fiyat güncelledi
+
+Bot eski fiyatı cevapladı
+
+🟢 Önlem
+
+In-memory cache varsa → TTL max 5 dk
+
+Ya da her price request → fresh DB read
+
+📌 Fiyat = asla stale data
+
+7️⃣ İnsan Aktarma Kuralının Delinmesi
+🔴 Sorun
+
+Kullanıcı:
+
+“bir yetkiliyle konuşmak istiyorum”
+
+Ama intent sistemi bunu anlayamaz.
+
+🟢 Önlem
+
+Hard keyword list
+
+["canlı", "yetkili", "insan", "biriyle konuş"]
+
+
+Bunlar her şeyin önüne geçer.
+
+8️⃣ Gelecekte Aktivite Sayısı Artınca Karmaşa
+🔴 Sorun
+
+3 aktivite → sorun yok
+
+12 aktivite → isim çakışmaları
+
+🟢 Önlem
+
+Her aktivite:
+
+{
+  id: "rafting",
+  aliases: ["rafting", "nehir turu", "dalaman rafting"]
+}
+
+
+Eşleşme:
+
+Alias üzerinden yapılır
+
+Name sadece display için
+
+9️⃣ “AI Ekleyelim mi?” Baskısı (Yanlış Yerde)
+🔴 Sorun
+
+İleride biri der ki:
+
+“Her şeyi AI’ya bağlayalım”
+
+Bu, sistemi tekrar bozar.
+
+🟢 Önlem
+
+Başından kural koy:
+
+AI = presentation layer
+
+Logic = rule engine
+
+Bu ayrımı dokümante et.
+
+🧩 ÖZET TABLO
+Risk	Önlem
+Yanlış intent	Priority + regex
+Aktivite kaybı	Session context
+Broşür cevap	Max sentence rule
+Alakasız cevap	Strict fallback
+Döngü	Repeat guard
+Eski fiyat	No cache / TTL
+Yetkili isteği	Hard override
+Ölçek	Activity alias
+AI kaosu	Layer separation
+🎯 SONUÇ
+
+Seçtiğin mimari:
+
+✅ Doğru
+
+✅ Ölçeklenebilir
+
+✅ Para kazandırır
+
+Ama bu önlemler uygulanmazsa,
+2–3 ay sonra yine “bot saçmalıyor” noktasına gelinir.

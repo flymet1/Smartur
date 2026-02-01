@@ -6756,38 +6756,13 @@ Rezervasyon takip: {takip_linki}
         return;
       }
       
-      // SSS'de eşleşme bulunamadı, AI'a gönder
-      console.log(`[SSS] Eşleşme bulunamadı, AI'a gönderiliyor...`);
+      // SSS'de eşleşme bulunamadı, ŞABLON SİSTEMİ kullan (AI YOK)
+      console.log(`[ŞABLON] SSS eşleşme yok, şablon sistemi kullanılıyor...`);
       
       // Get conversation state for follow-up questions
       const currentState = getConversationState(From, tenantId);
       
-      // Generate AI response with conversation state
-      const aiResponse = await generateAIResponse(history, { 
-        activities: botAccess.activities ? activities : [], 
-        packageTours: botAccess.packageTours ? packageTours : [],
-        capacityData: botAccess.capacity ? upcomingCapacity : [],
-        hasReservation: !!userReservation || allUserReservations.length > 0,
-        reservation: userReservation,
-        allReservations: allUserReservations,
-        askForOrderNumber: !userReservation && allUserReservations.length === 0,
-        customerRequests: customerRequestsForPhone,
-        pendingRequests,
-        botAccess,
-        botRules,
-        generalFaq,
-        customSystemRules,
-        isPartner,
-        partnerName: partnerTenant?.name,
-        partnerPrompt,
-        isViewer,
-        viewerName: viewerUser?.name,
-        viewerPrompt,
-        conversationState: currentState,
-        lastUserMessage: Body // Takip sorusu kontrolü için
-      }, botPrompt || undefined);
-      
-      // Update conversation state after AI response (including stage advancement)
+      // Intent ve aktivite tespiti (kural bazlı)
       const detectedIntent = detectIntent(Body, activities, packageTours, history, currentState);
       const nextStage = determineNextStage(currentState?.stage || 'info', detectedIntent.type);
       updateConversationState(From, tenantId, {
@@ -6796,17 +6771,44 @@ Rezervasyon takip: {takip_linki}
         stage: nextStage
       });
       
-      // Check if needs human intervention (bot confirmed transfer to support)
-      const responseLC = aiResponse.toLowerCase();
-      const needsHuman = responseLC.includes('destek ekibine ilettim') || 
-                         responseLC.includes('iletişime geçilecektir') ||
-                         responseLC.includes('yetkili arkadaşım');
+      console.log(`[ŞABLON] Intent: ${detectedIntent.type}, Aktivite: ${detectedIntent.activityName || 'yok'}`);
       
-      if (needsHuman) {
+      // Aktivite bul
+      let matchedActivity = null;
+      if (detectedIntent.activityId) {
+        matchedActivity = activities.find(a => a.id === detectedIntent.activityId);
+      }
+      
+      // Paket tur bul
+      let matchedPackageTour = null;
+      if (detectedIntent.type === 'package_tour') {
+        const tourMatch = findMatchingActivity(Body, packageTours);
+        if (tourMatch) matchedPackageTour = tourMatch.activity;
+      }
+      
+      // Tenant ayarlarını al
+      const websiteUrl = await storage.getSetting('websiteUrl', tenantId);
+      const tenantSettingsForTemplate = {
+        websiteUrl: websiteUrl || '',
+        whatsappNumber: ''
+      };
+      
+      // Tracking link oluştur (eğer rezervasyon varsa)
+      let trackingLink = '';
+      if (userReservation?.trackingToken) {
+        const baseUrl = websiteUrl || `${req.protocol}://${req.get('host')}`;
+        trackingLink = `${baseUrl}/track/${userReservation.trackingToken}`;
+      }
+      
+      // 1. ÖNCE DESTEK TALEBİ KONTROLÜ (escalation)
+      if (needsEscalation(Body)) {
+        const escalationResponse = getEscalationResponse();
+        
+        // Destek talebi oluştur
         await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
         
-        // Create in-app notification for support request
+        // Bildirim oluştur
         await storage.createInAppNotification({
           tenantId,
           type: 'support_request',
@@ -6815,36 +6817,32 @@ Rezervasyon takip: {takip_linki}
           link: '/messages',
           isRead: false
         });
+        
+        await storage.addMessage({ phone: From, content: escalationResponse, role: "assistant", tenantId });
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escalationResponse}</Message></Response>`);
+        return;
       }
       
-      // Check if bot asked for transfer permission (save for learning)
-      const askedForTransfer = responseLC.includes('aktarmamı ister misiniz') ||
-                               responseLC.includes('yeterli bilgiye sahip değilim') ||
-                               responseLC.includes('destek ekibine aktarmamı');
+      // 2. ŞABLON CEVAP OLUŞTUR
+      const templateResponse = generateTemplateResponse({
+        intent: detectedIntent,
+        activity: matchedActivity,
+        packageTour: matchedPackageTour,
+        activities: botAccess.activities ? activities : [],
+        packageTours: botAccess.packageTours ? packageTours : [],
+        capacityData: botAccess.capacity ? upcomingCapacity : [],
+        conversationState: currentState,
+        trackingLink,
+        faqMatch: null, // SSS zaten yukarıda kontrol edildi
+        tenantSettings: tenantSettingsForTemplate
+      });
       
-      // Check if bot couldn't answer at all
-      const couldntAnswer = responseLC.includes('bilmiyorum') || 
-                            responseLC.includes('net bilgim yok') ||
-                            responseLC.includes('bu konuda bilgim') ||
-                            responseLC.includes('cevap veremiyorum') ||
-                            askedForTransfer;
+      console.log(`[ŞABLON] Cevap: ${templateResponse.substring(0, 100)}...`);
       
-      if (couldntAnswer && tenantId && Body) {
-        // Save unanswered question for admin review
-        const context = history.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n');
-        await storage.createUnansweredQuestion({
-          tenantId,
-          customerPhone: From,
-          customerQuestion: Body,
-          botResponse: aiResponse,
-          conversationContext: context,
-          status: 'pending'
-        });
-      }
-      
-      await storage.addMessage({ phone: From, content: aiResponse, role: "assistant", tenantId });
+      await storage.addMessage({ phone: From, content: templateResponse, role: "assistant", tenantId });
       res.type('text/xml');
-      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${aiResponse}</Message></Response>`);
+      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${templateResponse}</Message></Response>`);
     } else {
       res.type('text/xml');
       res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
@@ -7111,29 +7109,12 @@ Rezervasyon takip: {takip_linki}
         return;
       }
       
-      console.log(`[SSS-TEST] Eşleşme bulunamadı, AI'a gönderiliyor...`);
+      console.log(`[SSS-TEST] Eşleşme bulunamadı, şablon sistemi kullanılıyor...`);
       
       // Get conversation state for follow-up questions
       const testCurrentState = getConversationState(From, tenantId || 0);
       
-      // Generate AI response with reservation context, capacity data, package tours, customer requests, and custom prompt
-      const aiResponse = await generateAIResponse(history, { 
-        activities: botAccess.activities ? activities : [], 
-        packageTours: botAccess.packageTours ? packageTours : [],
-        capacityData: botAccess.capacity ? upcomingCapacity : [],
-        hasReservation: !!userReservation || allUserReservations.length > 0,
-        reservation: userReservation,
-        allReservations: allUserReservations,
-        askForOrderNumber: !userReservation && allUserReservations.length === 0,
-        customerRequests: customerRequestsForPhone,
-        pendingRequests: pendingRequests,
-        botAccess,
-        botRules,
-        generalFaq,
-        conversationState: testCurrentState
-      }, botPrompt || undefined);
-      
-      // Update conversation state after response (including stage)
+      // Intent ve aktivite tespiti (kural bazlı)
       const testDetectedIntent = detectIntent(Body, activities, packageTours, history, testCurrentState);
       const testNextStage = determineNextStage(testCurrentState?.stage || 'info', testDetectedIntent.type);
       updateConversationState(From, tenantId || 0, {
@@ -7142,18 +7123,17 @@ Rezervasyon takip: {takip_linki}
         stage: testNextStage
       });
       
-      // Check if bot confirmed transfer to support
-      const responseLC = aiResponse.toLowerCase();
-      const needsHuman = responseLC.includes('destek ekibine ilettim') || 
-                         responseLC.includes('iletişime geçilecektir') ||
-                         responseLC.includes('yetkili arkadaşım');
+      // Aktivite bul
+      let legacyMatchedActivity = null;
+      if (testDetectedIntent.activityId) {
+        legacyMatchedActivity = activities.find(a => a.id === testDetectedIntent.activityId);
+      }
       
-      if (needsHuman && tenantId) {
-        // Create support request (only if tenant is identified)
+      // 1. DESTEK TALEBİ KONTROLÜ
+      if (needsEscalation(Body) && tenantId) {
+        const escalationResponse = getEscalationResponse();
         await storage.createSupportRequest({ phone: From, status: 'open', tenantId });
         await storage.markHumanIntervention(From, true);
-        
-        // Create in-app notification for support request
         await storage.createInAppNotification({
           tenantId,
           type: 'support_request',
@@ -7162,44 +7142,37 @@ Rezervasyon takip: {takip_linki}
           link: '/messages',
           isRead: false
         });
+        await storage.addMessage({ phone: From, content: escalationResponse, role: "assistant", tenantId: tenantId || undefined });
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escalationResponse}</Message></Response>`);
+        return;
       }
       
-      // Check if bot asked for transfer permission (save for learning)
-      const askedForTransfer = responseLC.includes('aktarmamı ister misiniz') ||
-                               responseLC.includes('yeterli bilgiye sahip değilim') ||
-                               responseLC.includes('destek ekibine aktarmamı');
+      // 2. ŞABLON CEVAP OLUŞTUR
+      const legacyTemplateResponse = generateTemplateResponse({
+        intent: testDetectedIntent,
+        activity: legacyMatchedActivity,
+        packageTour: null,
+        activities: botAccess.activities ? activities : [],
+        packageTours: botAccess.packageTours ? packageTours : [],
+        capacityData: botAccess.capacity ? upcomingCapacity : [],
+        conversationState: testCurrentState,
+        trackingLink: '',
+        faqMatch: null,
+        tenantSettings: { websiteUrl: '', whatsappNumber: '' }
+      });
       
-      // Check if bot couldn't answer at all
-      const couldntAnswer = responseLC.includes('bilmiyorum') || 
-                            responseLC.includes('net bilgim yok') ||
-                            responseLC.includes('bu konuda bilgim') ||
-                            responseLC.includes('cevap veremiyorum') ||
-                            askedForTransfer;
-      
-      if (couldntAnswer && tenantId && Body) {
-        // Save unanswered question for admin review
-        const context = history.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n');
-        await storage.createUnansweredQuestion({
-          tenantId,
-          customerPhone: From,
-          customerQuestion: Body,
-          botResponse: aiResponse,
-          conversationContext: context,
-          status: 'pending'
-        });
-      }
-      
-      // Save AI response (with tenantId if known)
+      // Save response (with tenantId if known)
       await storage.addMessage({
         phone: From,
-        content: aiResponse,
+        content: legacyTemplateResponse,
         role: "assistant",
         tenantId: tenantId || undefined
       });
 
       // Return TwiML
       res.type('text/xml');
-      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${aiResponse}</Message></Response>`);
+      res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${legacyTemplateResponse}</Message></Response>`);
     } else {
       res.status(400).send("Missing Body or From");
     }
@@ -7273,41 +7246,37 @@ Rezervasyon takip: {takip_linki}
       // Get conversation state for follow-up questions in test mode (use 'test' as phone)
       const testModeState = getConversationState('test', tenantId);
       
-      // Generate AI response (test mode - no escalation, no support requests)
-      const aiResponse = await generateAIResponse(history, {
-        activities: botAccess.activities ? activities : [],
-        packageTours: botAccess.packageTours ? packageTours : [],
-        capacityData: botAccess.capacity ? upcomingCapacity : [],
-        hasReservation: false,
-        reservation: null,
-        allReservations: [],
-        askForOrderNumber: false,
-        customerRequests: [],
-        pendingRequests: [],
-        botAccess,
-        botRules,
-        generalFaq,
-        isPartner: false,
-        partnerName: null,
-        partnerPrompt: null,
-        isViewer: false,
-        viewerName: null,
-        viewerPrompt: null,
-        isTestMode: true, // Flag to prevent escalation in test mode
-        conversationState: testModeState
-      }, botPrompt || undefined);
-      
-      // Update conversation state for test mode
+      // Intent ve aktivite tespiti (kural bazlı) - test mode
       const testModeIntent = detectIntent(message, activities, packageTours, history, testModeState);
       updateConversationState('test', tenantId, {
         lastIntent: testModeIntent.type,
         lastActivityId: testModeIntent.activityId || testModeState?.lastActivityId
       });
       
+      // Aktivite bul
+      let testModeMatchedActivity = null;
+      if (testModeIntent.activityId) {
+        testModeMatchedActivity = activities.find(a => a.id === testModeIntent.activityId);
+      }
+      
+      // ŞABLON CEVAP OLUŞTUR (test mode - AI yok)
+      const testModeTemplateResponse = generateTemplateResponse({
+        intent: testModeIntent,
+        activity: testModeMatchedActivity,
+        packageTour: null,
+        activities: botAccess.activities ? activities : [],
+        packageTours: botAccess.packageTours ? packageTours : [],
+        capacityData: botAccess.capacity ? upcomingCapacity : [],
+        conversationState: testModeState,
+        trackingLink: '',
+        faqMatch: null,
+        tenantSettings: { websiteUrl: '', whatsappNumber: '' }
+      });
+      
       // Return JSON response (not XML)
       res.json({
-        response: aiResponse,
-        history: [...history, { role: "assistant", content: aiResponse }]
+        response: testModeTemplateResponse,
+        history: [...history, { role: "assistant", content: testModeTemplateResponse }]
       });
     } catch (error: any) {
       console.error("Bot test error:", error);
