@@ -33,6 +33,12 @@ const TEST_SCENARIOS = [
     { label: "Müsaitlik", message: "Yarın müsait misiniz?" },
     { label: "Onay sorgusu", message: "Rezervasyonum onaylandı mı?" },
   ]},
+  { category: "İptal/Değişiklik", tests: [
+    { label: "İptal edebilir miyim?", message: "Rezervasyonumu iptal edebilir miyim?" },
+    { label: "İptal politikası", message: "İptal ve iade politikanız nedir?" },
+    { label: "Tarih değişikliği", message: "Rezervasyon tarihimi değiştirebilir miyim?" },
+    { label: "Sipariş no ile", message: "12345 numaralı siparişimi iptal etmek istiyorum" },
+  ]},
   { category: "Diğer", tests: [
     { label: "Selamlaşma", message: "Merhaba" },
     { label: "Aktivite listesi", message: "Hangi aktiviteleriniz var?" },

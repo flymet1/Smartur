@@ -3390,6 +3390,11 @@ Format: Bold important info (*Price*, *Time*, *Location*). Use bullet points (�
 - Link Sharing: For booking requests, share the activity's bookingLink
 - Contact: For support or special cases, give company.phone
 
+🔄 CANCELLATION/CHANGE REQUESTS:
+- If customerReservation exists: Compare reservation date with today. If more than 24 hours: "You can cancel for free", if less: "Cancellation period has passed, please call us"
+- If no customerReservation: Ask "Could you share your order number so I can check your reservation?"
+- If asked about cancellation policy: Share the cancellationPolicy info
+
 📂 DATA SOURCES (JSON):
 ${JSON.stringify(dataJson, null, 2)}
 `;
@@ -3418,6 +3423,11 @@ Format: Önemli bilgileri (*Fiyat*, *Saat*, *Konum*) bold yaz. Liste için madde
 - Yönlendirme: Bilgi verdikten sonra "Rezervasyon yapmak ister misiniz?" veya "Başka bir sorunuz var mı?" sor
 - Link Paylaşımı: Rezervasyon isteği gelirse ilgili aktivitenin bookingLink bilgisini paylaş
 - İletişim: Destek veya özel durumlar için company.phone bilgisini ver
+
+🔄 İPTAL/DEĞİŞİKLİK TALEPLERİ:
+- customerReservation varsa: Rezervasyon tarihini bugünle karşılaştır. 24 saatten fazla varsa "Ücretsiz iptal edebilirsiniz", yoksa "İptal süresi geçmiş, lütfen bizi arayın"
+- customerReservation yoksa: "Rezervasyonunuzu kontrol edebilmem için sipariş numaranızı paylaşır mısınız?" de
+- İptal politikası sorulursa: cancellationPolicy bilgisini paylaş
 
 📂 VERİ KAYNAKLARI (JSON):
 ${JSON.stringify(dataJson, null, 2)}
