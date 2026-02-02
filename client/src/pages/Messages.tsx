@@ -885,7 +885,11 @@ function BotTestSection() {
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Model</span>
-                      <Badge variant="secondary" className="text-xs">Gemini 2.5 Flash</Badge>
+                      <Badge variant="secondary" className="text-xs">GPT-4o</Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Yedek</span>
+                      <Badge variant="outline" className="text-xs">Gemini 2.5 Flash</Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Dil</span>
