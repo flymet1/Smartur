@@ -8,7 +8,7 @@ import { supplierDispatches, reservations, userRoles, roles, tenants, homepageSe
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
-import { GoogleGenAI } from "@google/genai";
+// Gemini support removed - using only OpenAI GPT-4o
 import OpenAI from "openai";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
@@ -461,30 +461,7 @@ try {
   console.warn("OpenAI initialization failed:", err);
 }
 
-// Gemini AI Integration - supports both Replit integration and standalone API key (fallback)
-let ai: GoogleGenAI | null = null;
-try {
-  // Check for Replit AI Integration first, then fallback to standard GEMINI_API_KEY
-  const apiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-  const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
-  
-  if (apiKey) {
-    const options: any = { apiKey };
-    // Only add httpOptions if using Replit integration with base URL
-    if (baseUrl) {
-      options.httpOptions = {
-        apiVersion: "",
-        baseUrl: baseUrl,
-      };
-    }
-    ai = new GoogleGenAI(options);
-    console.log("Gemini AI Integration initialized successfully (fallback)");
-  } else {
-    console.warn("Gemini API not available, falling back to mock responses");
-  }
-} catch (err) {
-  console.warn("Gemini API not available, falling back to mock responses");
-}
+// Note: Gemini support removed - using only OpenAI GPT-4o for consistency
 
 // Turkish day names
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -1481,34 +1458,34 @@ ${activityData ? `AKTİVİTE VERİSİ:\n${activityData}` : 'Belirli bir aktivite
 `;
 }
 
-// AI Fallback çağrısı (Gemini API)
+// AI Fallback çağrısı (OpenAI GPT-4o)
 async function callAIFallback(
   message: string,
   activity: any | undefined,
   activities: any[],
   lang: 'tr' | 'en'
 ): Promise<string | null> {
-  if (!ai) {
-    console.log('[AI_FALLBACK] Gemini API not available');
+  if (!openai) {
+    console.log('[AI_FALLBACK] OpenAI not available');
     return null;
   }
   
   try {
     const systemPrompt = buildAIFallbackPrompt(activity, activities, lang);
     
-    const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: [{ role: "user", parts: [{ text: message }] }],
-      config: {
-        systemInstruction: systemPrompt,
-        maxOutputTokens: 150 // Kısa cevap zorla
-      }
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ],
+      temperature: 0.7,
+      max_tokens: 150
     });
     
-    const responseText = result.text?.trim() || null;
+    const responseText = completion.choices[0]?.message?.content?.trim() || null;
     
     if (responseText) {
-      // Güvenlik kontrolü
       const safety = aiSafetyCheck(responseText);
       if (!safety.safe) {
         console.log(`[AI_FALLBACK] Safety check failed: ${safety.reason}`);
@@ -2327,7 +2304,7 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   return prompt;
 }
 
-// AI function using Gemini API with activity descriptions, package tours, FAQs, and custom bot prompt
+// AI function using OpenAI GPT-4o with activity descriptions, package tours, FAQs, and custom bot prompt
 async function generateAIResponse(history: any[], context: any, customPrompt?: string) {
   // RAG Mode - Uses focused prompts instead of full context
   const useRAG = context.enableRAG !== false; // Default enabled
@@ -2355,23 +2332,28 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
     console.log(`[RAG] Intent: ${ragContext.intent.type}, Confidence: ${ragContext.intent.confidence.toFixed(2)}`);
     console.log(`[RAG] Token savings: ~${Math.round((1 - ragPromptEstimate/fullContextEstimate) * 100)}% (${Math.round(ragPromptEstimate)} vs ${Math.round(fullContextEstimate)} tokens)`);
     
-    // Use RAG prompt for AI call
-    if (ai) {
+    // Use RAG prompt for AI call with OpenAI
+    if (openai) {
       try {
-        const contents = history.map((msg: any) => ({
-          role: msg.role === "user" ? "user" : "model",
-          parts: [{ text: msg.content }]
-        }));
+        const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+          { role: 'system', content: ragPrompt }
+        ];
         
-        const result = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents,
-          config: {
-            systemInstruction: ragPrompt
-          }
+        for (const msg of history) {
+          messages.push({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          });
+        }
+        
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages,
+          temperature: 0.7,
+          max_tokens: 500
         });
         
-        const responseText = result.text || "";
+        const responseText = completion.choices[0]?.message?.content?.trim() || "";
         return responseText || "Merhaba! Nasıl yardımcı olabilirim?";
       } catch (error) {
         console.error('[RAG] AI error, falling back to full context:', error);
@@ -2789,33 +2771,37 @@ ${context.botRules || DEFAULT_BOT_RULES}
   const INITIAL_DELAY = 1000; // 1 second
   const MAX_DELAY = 16000; // 16 seconds
 
-  // If Replit AI Integration is available, use it with retry logic
-  if (ai) {
+  // Use OpenAI GPT-4o with retry logic
+  if (openai) {
     let lastError: unknown = null;
     
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        // Convert message history to Gemini format
-        const contents = history.map((msg: any) => ({
-          role: msg.role === "user" ? "user" : "model",
-          parts: [{ text: msg.content }]
-        }));
+        const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+          { role: 'system', content: systemPrompt }
+        ];
+        
+        for (const msg of history) {
+          messages.push({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          });
+        }
 
-        const result = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents,
-          config: {
-            systemInstruction: systemPrompt
-          }
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages,
+          temperature: 0.7,
+          max_tokens: 500
         });
 
-        const responseText = result.text || "";
+        const responseText = completion.choices[0]?.message?.content?.trim() || "";
         return responseText || "Merhaba! Nasıl yardımcı olabilirim?";
       } catch (error) {
         lastError = error;
         const errorMsg = error instanceof Error ? error.message : String(error);
         
-        console.error(`Gemini API error (attempt ${attempt + 1}/${MAX_RETRIES}):`, errorMsg);
+        console.error(`OpenAI API error (attempt ${attempt + 1}/${MAX_RETRIES}):`, errorMsg);
         
         // If rate limit error and not last attempt, retry with exponential backoff
         if (isRateLimitError(error) && attempt < MAX_RETRIES - 1) {
@@ -2840,9 +2826,9 @@ ${context.botRules || DEFAULT_BOT_RULES}
     await logApiError({
       severity: 'error',
       category: 'ai_bot',
-      source: 'gemini_api',
+      source: 'openai_api',
       message: 'AI yanıt oluşturulamadı - tüm denemeler başarısız',
-      suggestion: 'Gemini API kotasını kontrol edin veya bir süre bekleyin',
+      suggestion: 'OpenAI API kotasını kontrol edin veya bir süre bekleyin',
       metadata: { error: lastError instanceof Error ? lastError.message : String(lastError) }
     });
   }
@@ -3463,19 +3449,15 @@ ${JSON.stringify(dataJson, null, 2)}
   return prompt;
 }
 
-// Generate AI-First response using Gemini
+// Generate AI-First response using OpenAI GPT-4o
 async function generateAIFirstResponse(
   userMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
   context: AIFirstContext,
   customBotPrompt?: string
 ): Promise<string> {
-  // Check for OpenAI first, then Gemini as fallback
-  const useOpenAI = !!openai;
-  const useGemini = !useOpenAI && !!ai;
-  
-  if (!useOpenAI && !useGemini) {
-    console.error('[AI-FIRST] No AI provider initialized');
+  if (!openai) {
+    console.error('[AI-FIRST] OpenAI not initialized');
     return context.activities.length > 0 
       ? `Merhaba! Aktivitelerimiz:\n${context.activities.map(a => `• ${a.name}: ${a.price}`).join('\n')}\n\nHangi aktivite hakkında bilgi almak istersiniz?`
       : 'Merhaba! Size nasıl yardımcı olabilirim?';
@@ -3488,60 +3470,31 @@ async function generateAIFirstResponse(
   const systemPrompt = buildAIFirstPrompt(context, customBotPrompt, isEnglish);
   
   try {
-    let responseText = '';
+    console.log(`[AI-FIRST] Calling OpenAI GPT-4o with ${conversationHistory.length + 1} messages, language: ${isEnglish ? 'EN' : 'TR'}`);
     
-    if (useOpenAI) {
-      // Use OpenAI GPT-4o
-      console.log(`[AI-FIRST] Calling OpenAI GPT-4o with ${conversationHistory.length + 1} messages, language: ${isEnglish ? 'EN' : 'TR'}`);
-      
-      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt }
-      ];
-      
-      // Add conversation history
-      for (const msg of conversationHistory) {
-        messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        });
-      }
-      
-      // Add current message
-      messages.push({ role: 'user', content: userMessage });
-      
-      const completion = await openai!.chat.completions.create({
-        model: 'gpt-4o',
-        messages,
-        temperature: 0.7,
-        max_tokens: 500
+    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt }
+    ];
+    
+    // Add conversation history
+    for (const msg of conversationHistory) {
+      messages.push({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.content
       });
-      
-      responseText = completion.choices[0]?.message?.content?.trim() || '';
-      
-    } else if (useGemini) {
-      // Fallback to Gemini
-      console.log(`[AI-FIRST] Calling Gemini (fallback) with ${conversationHistory.length + 1} messages, language: ${isEnglish ? 'EN' : 'TR'}`);
-      
-      const contents = conversationHistory.map((msg) => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-      }));
-      
-      contents.push({
-        role: 'user',
-        parts: [{ text: userMessage }]
-      });
-      
-      const result = await ai!.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents,
-        config: {
-          systemInstruction: systemPrompt
-        }
-      });
-      
-      responseText = result.text?.trim() || '';
     }
+    
+    // Add current message
+    messages.push({ role: 'user', content: userMessage });
+    
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages,
+      temperature: 0.7,
+      max_tokens: 500
+    });
+    
+    const responseText = completion.choices[0]?.message?.content?.trim() || '';
     
     if (responseText) {
       console.log(`[AI-FIRST] Response generated successfully (${responseText.length} chars)`);
@@ -10205,7 +10158,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
     }
   });
 
-  // Translation API endpoint - Translate Turkish text to English using Gemini AI
+  // Translation API endpoint - Translate Turkish text to English using OpenAI
   app.post("/api/translate", requireAuth, async (req, res) => {
     try {
       const { text, targetLang = "en" } = req.body;
@@ -10214,7 +10167,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         return res.status(400).json({ error: "Çevrilecek metin gerekli" });
       }
       
-      if (!ai) {
+      if (!openai) {
         return res.status(503).json({ error: "AI servisi kullanılamıyor" });
       }
       
@@ -10222,12 +10175,14 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         ? `Translate the following Turkish text to English. Only return the translation, nothing else:\n\n${text.trim()}`
         : `Translate the following English text to Turkish. Only return the translation, nothing else:\n\n${text.trim()}`;
       
-      const result = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts: [{ text: prompt }] }]
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3,
+        max_tokens: 500
       });
       
-      const translation = result.text?.trim() || "";
+      const translation = completion.choices[0]?.message?.content?.trim() || "";
       res.json({ translation });
     } catch (err) {
       console.error("Translation error:", err);
@@ -12590,7 +12545,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
           id: 'ai_errors',
           severity: 'error',
           title: 'AI Baglanti Sorunu',
-          description: `Son 24 saatte ${aiErrors.length} AI hatası. Gemini API limitine ulasilmis olabilir.`,
+          description: `Son 24 saatte ${aiErrors.length} AI hatası. OpenAI API limitine ulasilmis olabilir.`,
           suggestion: 'Biraz bekleyin veya API kotasini kontrol edin.'
         });
       }

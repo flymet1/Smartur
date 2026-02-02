@@ -553,7 +553,7 @@ function WhatsAppBotFeatures() {
             <MessageCircle className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-green-800 text-lg">Google Gemini AI Destekli</h3>
+            <h3 className="font-bold text-green-800 text-lg">OpenAI GPT-4o Destekli</h3>
             <p className="text-green-700">
               En gelişmiş yapay zeka teknolojisi ile müşterilerinize doğal, akıcı ve profesyonel yanıtlar.
             </p>
@@ -805,7 +805,7 @@ function IntegrationFeatures() {
         />
         <IntegrationCard 
           icon={<Bot className="w-12 h-12 text-blue-600" />}
-          title="Google Gemini AI"
+          title="OpenAI GPT-4o"
           description="En gelişmiş yapay zeka ile akıllı müşteri yanıtları."
           features={[
             "Doğal dil işleme",

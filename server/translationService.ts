@@ -1,20 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import crypto from "crypto";
 
-let ai: GoogleGenAI | null = null;
+let openai: OpenAI | null = null;
 try {
-  const apiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-  const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
-  
+  const apiKey = process.env.OPENAI_API_KEY;
   if (apiKey) {
-    const options: any = { apiKey };
-    if (baseUrl) {
-      options.httpOptions = {
-        apiVersion: "",
-        baseUrl: baseUrl,
-      };
-    }
-    ai = new GoogleGenAI(options);
+    openai = new OpenAI({ apiKey });
   }
 } catch (err) {
   console.error("Translation service initialization error:", err);
@@ -47,7 +38,7 @@ function cleanExpiredCache() {
 
 export async function translateText(text: string, targetLang: string): Promise<string> {
   if (!text || !text.trim()) return text;
-  if (!ai) return text;
+  if (!openai) return text;
   
   const cacheKey = getCacheKey(text, targetLang);
   const cached = translationCache.get(cacheKey);
@@ -65,24 +56,20 @@ export async function translateText(text: string, targetLang: string): Promise<s
   const targetLangName = langNames[targetLang] || "English";
   
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{
-        role: "user",
-        parts: [{
-          text: `Translate the following text to ${targetLangName}. Return ONLY the translated text, no explanations or additional text. If the text contains HTML, preserve the HTML tags. If the text is already in ${targetLangName}, return it as is.
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{
+        role: 'user',
+        content: `Translate the following text to ${targetLangName}. Return ONLY the translated text, no explanations or additional text. If the text contains HTML, preserve the HTML tags. If the text is already in ${targetLangName}, return it as is.
 
 Text to translate:
 ${text}`
-        }]
       }],
-      config: {
-        maxOutputTokens: 2048,
-        temperature: 0.1,
-      }
+      temperature: 0.1,
+      max_tokens: 2048
     });
     
-    const translatedText = response.text?.trim() || text;
+    const translatedText = completion.choices[0]?.message?.content?.trim() || text;
     
     if (translationCache.size >= MAX_CACHE_SIZE) {
       cleanExpiredCache();
@@ -101,39 +88,74 @@ ${text}`
   }
 }
 
-export async function translateObject(
-  obj: Record<string, any>, 
-  fields: string[], 
-  targetLang: string
-): Promise<Record<string, any>> {
-  if (targetLang === "tr") return obj;
+export async function translateField(value: any, targetLang: string): Promise<any> {
+  if (typeof value === "string") {
+    return translateText(value, targetLang);
+  }
+  if (Array.isArray(value)) {
+    return Promise.all(value.map(v => translateField(v, targetLang)));
+  }
+  if (typeof value === "object" && value !== null) {
+    const result: any = {};
+    for (const key of Object.keys(value)) {
+      result[key] = await translateField(value[key], targetLang);
+    }
+    return result;
+  }
+  return value;
+}
+
+export async function translateObject(obj: any, fields: string[], targetLang: string): Promise<any> {
+  if (!obj || typeof obj !== 'object') return obj;
   
   const result = { ...obj };
-  
-  const translations = await Promise.all(
-    fields.map(async (field) => {
-      if (result[field] && typeof result[field] === "string") {
-        return { field, value: await translateText(result[field], targetLang) };
-      }
-      return null;
-    })
-  );
-  
-  translations.forEach(t => {
-    if (t) result[t.field] = t.value;
-  });
-  
+  for (const field of fields) {
+    if (result[field] && typeof result[field] === 'string') {
+      result[field] = await translateText(result[field], targetLang);
+    }
+  }
   return result;
 }
 
-export async function translateArray<T extends Record<string, any>>(
-  arr: T[], 
-  fields: string[], 
-  targetLang: string
-): Promise<T[]> {
-  if (targetLang === "tr") return arr;
+export async function translateArray(arr: any[], fields: string[], targetLang: string): Promise<any[]> {
+  if (!Array.isArray(arr)) return arr;
   
-  return Promise.all(
-    arr.map(item => translateObject(item, fields, targetLang) as Promise<T>)
-  );
+  return Promise.all(arr.map(item => translateObject(item, fields, targetLang)));
+}
+
+export async function translateActivityToEnglish(activity: any): Promise<any> {
+  if (!openai) return activity;
+  
+  const fieldsToTranslate = ['name', 'description', 'confirmationMessage', 'tourProgram'];
+  const translated = { ...activity };
+  
+  for (const field of fieldsToTranslate) {
+    if (translated[field]) {
+      translated[field] = await translateText(translated[field], 'en');
+    }
+  }
+  
+  if (translated.faq && Array.isArray(translated.faq)) {
+    translated.faq = await Promise.all(
+      translated.faq.map(async (item: { question: string; answer: string }) => ({
+        question: await translateText(item.question, 'en'),
+        answer: await translateText(item.answer, 'en')
+      }))
+    );
+  }
+  
+  return translated;
+}
+
+export function clearTranslationCache() {
+  translationCache.clear();
+}
+
+export function getTranslationCacheStats() {
+  cleanExpiredCache();
+  return {
+    size: translationCache.size,
+    maxSize: MAX_CACHE_SIZE,
+    ttlHours: CACHE_TTL / (60 * 60 * 1000)
+  };
 }

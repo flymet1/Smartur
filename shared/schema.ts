@@ -954,7 +954,7 @@ export const invoices = pgTable("invoices", {
 // API Durum Logları (Sistem İzleme)
 export const apiStatusLogs = pgTable("api_status_logs", {
   id: serial("id").primaryKey(),
-  service: text("service").notNull(), // twilio, woocommerce, gemini, paytr
+  service: text("service").notNull(), // twilio, woocommerce, openai, paytr
   status: text("status").notNull(), // up, down, degraded
   responseTimeMs: integer("response_time_ms"),
   errorMessage: text("error_message"),

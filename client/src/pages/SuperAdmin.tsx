@@ -3049,7 +3049,7 @@ function ApiMonitoringSection() {
     switch (service) {
       case 'twilio': return <MessageSquare className="h-5 w-5" />;
       case 'woocommerce': return <CreditCard className="h-5 w-5" />;
-      case 'gemini': return <Zap className="h-5 w-5" />;
+      case 'openai': return <Zap className="h-5 w-5" />;
       case 'paytr': return <Receipt className="h-5 w-5" />;
       default: return <Radio className="h-5 w-5" />;
     }
@@ -3076,7 +3076,7 @@ function ApiMonitoringSection() {
   const serviceNames: Record<string, string> = {
     twilio: 'Twilio (WhatsApp)',
     woocommerce: 'WooCommerce',
-    gemini: 'Google Gemini AI',
+    openai: 'OpenAI GPT-4o',
     paytr: 'PayTR Ödeme'
   };
 
@@ -3106,7 +3106,7 @@ function ApiMonitoringSection() {
           <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {['twilio', 'woocommerce', 'gemini', 'paytr'].map((service) => {
+            {['twilio', 'woocommerce', 'openai', 'paytr'].map((service) => {
               const status = apiStatuses.find(s => s.service === service);
               return (
                 <div 

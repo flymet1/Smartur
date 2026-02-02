@@ -218,7 +218,7 @@ export default function UserGuide() {
               <FeatureCard 
                 icon={<Bot className="h-5 w-5 text-green-500" />}
                 title="Akıllı WhatsApp Asistanı"
-                description="Google Gemini AI destekli bot, müşteri sorularını otomatik yanıtlar ve rezervasyona yönlendirir."
+                description="OpenAI GPT-4o destekli bot, müşteri sorularını otomatik yanıtlar ve rezervasyona yönlendirir."
               />
               <FeatureCard 
                 icon={<Calendar className="h-5 w-5 text-orange-500" />}

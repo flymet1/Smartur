@@ -888,8 +888,8 @@ function BotTestSection() {
                       <Badge variant="secondary" className="text-xs">GPT-4o</Badge>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Yedek</span>
-                      <Badge variant="outline" className="text-xs">Gemini 2.5 Flash</Badge>
+                      <span className="text-muted-foreground">AI Model</span>
+                      <Badge variant="outline" className="text-xs">GPT-4o</Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Dil</span>

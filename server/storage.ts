@@ -2817,7 +2817,7 @@ Sky Fethiye`,
   }
 
   async checkApiStatus(): Promise<ApiStatusLog[]> {
-    const services = ['twilio', 'woocommerce', 'gemini', 'paytr'];
+    const services = ['twilio', 'woocommerce', 'openai', 'paytr'];
     const results: ApiStatusLog[] = [];
     
     for (const service of services) {

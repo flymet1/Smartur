@@ -251,8 +251,8 @@ export default function BotTest() {
                   <Badge variant="secondary" className="mt-1">GPT-4o</Badge>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Yedek</p>
-                  <Badge variant="outline" className="mt-1">Gemini 2.5</Badge>
+                  <p className="text-xs text-muted-foreground">AI Model</p>
+                  <Badge variant="outline" className="mt-1">GPT-4o</Badge>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Hafıza</p>
