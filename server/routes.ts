@@ -3119,6 +3119,24 @@ function buildCleanContext(
       notAllowed = typeof a.notAllowed === 'string' ? JSON.parse(a.notAllowed) : (a.notAllowed || []);
     } catch {}
     
+    // Parse importantInfoItems from JSON
+    let importantInfoItems: string[] = [];
+    try {
+      importantInfoItems = typeof a.importantInfoItems === 'string' ? JSON.parse(a.importantInfoItems) : (a.importantInfoItems || []);
+    } catch {}
+    
+    // Parse itinerary from JSON
+    let itinerary: Array<{ time: string; title: string; description?: string }> = [];
+    try {
+      itinerary = typeof a.itinerary === 'string' ? JSON.parse(a.itinerary) : (a.itinerary || []);
+    } catch {}
+    
+    // Parse categories from JSON
+    let categories: string[] = [];
+    try {
+      categories = typeof a.categories === 'string' ? JSON.parse(a.categories) : (a.categories || []);
+    } catch {}
+    
     // Parse transfer zones
     let transferInfo = '';
     if (a.hasFreeHotelTransfer || a.hotelTransfer) {
@@ -3147,6 +3165,12 @@ function buildCleanContext(
       whatToBring: whatToBring.length > 0 ? whatToBring : undefined,
       notAllowed: notAllowed.length > 0 ? notAllowed : undefined,
       importantNotes: a.importantNotes || undefined,
+      importantInfo: a.importantInfo || undefined,
+      importantInfoItems: importantInfoItems.length > 0 ? importantInfoItems : undefined,
+      healthNotes: a.healthNotes || undefined,
+      categories: categories.length > 0 ? categories : undefined,
+      itinerary: itinerary.length > 0 ? itinerary : undefined,
+      description: a.description || undefined,
       transferInfo: transferInfo || undefined,
       hotelTransfer: !!(a.hasFreeHotelTransfer || a.hotelTransfer),
       pickupMinutesBefore: a.arrivalMinutesBefore || a.pickupMinutesBefore || undefined,
@@ -3359,6 +3383,32 @@ function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, i
     // Important notes
     if (act.importantNotes) {
       prompt += `\n  ${isEnglish ? 'Important' : 'Önemli'}: ${act.importantNotes}`;
+    }
+    
+    // Important info items
+    if (act.importantInfoItems && act.importantInfoItems.length > 0) {
+      prompt += `\n  ${isEnglish ? 'Important info' : 'Önemli bilgiler'}: ${act.importantInfoItems.join(', ')}`;
+    }
+    
+    // Important info text
+    if (act.importantInfo) {
+      prompt += `\n  ${isEnglish ? 'Note' : 'Not'}: ${act.importantInfo}`;
+    }
+    
+    // Health notes
+    if (act.healthNotes) {
+      prompt += `\n  ${isEnglish ? 'Health & Safety' : 'Sağlık ve güvenlik'}: ${act.healthNotes}`;
+    }
+    
+    // Itinerary (tour program)
+    if (act.itinerary && act.itinerary.length > 0) {
+      const itineraryStr = act.itinerary.map(step => `${step.time}: ${step.title}`).join(' → ');
+      prompt += `\n  ${isEnglish ? 'Program' : 'Program'}: ${itineraryStr}`;
+    }
+    
+    // Description (brief)
+    if (act.description && act.description.length < 200) {
+      prompt += `\n  ${isEnglish ? 'Description' : 'Açıklama'}: ${act.description}`;
     }
     
     // Activity FAQs as reference
