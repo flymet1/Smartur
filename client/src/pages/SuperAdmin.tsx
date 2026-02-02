@@ -4392,6 +4392,128 @@ function PlatformAdminsSection() {
   );
 }
 
+function AiSettingsSection() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { data: aiSettings, isLoading } = useQuery<{ model: string }>({
+    queryKey: ['/api/super-admin/ai-settings'],
+  });
+
+  useEffect(() => {
+    if (aiSettings?.model) {
+      setSelectedModel(aiSettings.model);
+    }
+  }, [aiSettings]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (model: string) => {
+      return apiRequest('POST', '/api/super-admin/ai-settings', { model });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/super-admin/ai-settings'] });
+      toast({ title: "AI modeli güncellendi", description: `Aktif model: ${selectedModel}` });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Model güncellenemedi", variant: "destructive" });
+    }
+  });
+
+  const models = [
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Hızlı ve ekonomik (~$0.0002/mesaj)', recommended: true },
+    { value: 'gpt-4o', label: 'GPT-4o', description: 'En gelişmiş model (~$0.003/mesaj)', recommended: false },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="h-5 w-5" />
+          AI Model Ayarları
+        </CardTitle>
+        <CardDescription>WhatsApp bot ve diğer AI özellikleri için kullanılacak modeli seçin</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Yükleniyor...</div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <Label>Aktif AI Modeli</Label>
+              <div className="grid gap-3">
+                {models.map((model) => (
+                  <div
+                    key={model.value}
+                    className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
+                      selectedModel === model.value 
+                        ? 'border-primary bg-primary/5' 
+                        : 'hover:border-muted-foreground/50'
+                    }`}
+                    onClick={() => setSelectedModel(model.value)}
+                    data-testid={`radio-model-${model.value}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        selectedModel === model.value ? 'border-primary' : 'border-muted-foreground'
+                      }`}>
+                        {selectedModel === model.value && (
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium flex items-center gap-2">
+                          {model.label}
+                          {model.recommended && (
+                            <Badge variant="secondary" className="text-xs">Önerilen</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{model.description}</p>
+                      </div>
+                    </div>
+                    {selectedModel === model.value && (
+                      <Check className="h-5 w-5 text-primary" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button 
+                onClick={() => saveMutation.mutate(selectedModel)}
+                disabled={saveMutation.isPending || selectedModel === aiSettings?.model}
+                data-testid="button-save-ai-model"
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Kaydediliyor...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Kaydet
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <h4 className="font-medium text-sm">Model Karşılaştırması</h4>
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p><strong>GPT-4o Mini:</strong> WhatsApp bot için yeterli. Hızlı yanıt, düşük maliyet.</p>
+                <p><strong>GPT-4o:</strong> Karmaşık sorular için daha iyi. Yüksek kalite, yüksek maliyet.</p>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function SmtpConfigSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -5807,6 +5929,7 @@ export default function SuperAdmin() {
     ],
     system: [
       { id: "system", label: "Sistem Durumu", icon: Server },
+      { id: "ai-settings", label: "AI Ayarları", icon: Zap },
       { id: "smtp", label: "SMTP Ayarları", icon: Mail },
       { id: "error-events", label: "Hata İzleme", icon: AlertTriangle },
       { id: "updates", label: "Güncellemeler", icon: RefreshCw },
@@ -6117,6 +6240,7 @@ export default function SuperAdmin() {
             {activeSubTab === "platform-admins" && <PlatformAdminsSection />}
 
             {activeSubTab === "system" && <SystemMonitoringSection />}
+            {activeSubTab === "ai-settings" && <AiSettingsSection />}
             {activeSubTab === "smtp" && <SmtpConfigSection />}
             {activeSubTab === "error-events" && <ErrorEventsSection />}
             {activeSubTab === "updates" && <ApplicationUpdatesSection />}

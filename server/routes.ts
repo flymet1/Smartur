@@ -463,6 +463,16 @@ try {
 
 // Note: Gemini support removed - using only OpenAI GPT-4o for consistency
 
+// Helper function to get current AI model from settings
+async function getAIModel(): Promise<string> {
+  try {
+    const model = await storage.getSetting('aiModel');
+    return model || 'gpt-4o-mini';
+  } catch {
+    return 'gpt-4o-mini';
+  }
+}
+
 // Turkish day names
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Hazıran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
@@ -1472,9 +1482,10 @@ async function callAIFallback(
   
   try {
     const systemPrompt = buildAIFallbackPrompt(activity, activities, lang);
+    const aiModel = await getAIModel();
     
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: aiModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
@@ -2346,8 +2357,9 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
           });
         }
         
+        const aiModel = await getAIModel();
         const completion = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: aiModel,
           messages,
           temperature: 0.7,
           max_tokens: 500
@@ -2788,8 +2800,9 @@ ${context.botRules || DEFAULT_BOT_RULES}
           });
         }
 
+        const aiModel = await getAIModel();
         const completion = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: aiModel,
           messages,
           temperature: 0.7,
           max_tokens: 500
@@ -3487,8 +3500,9 @@ async function generateAIFirstResponse(
     // Add current message
     messages.push({ role: 'user', content: userMessage });
     
+    const aiModel = await getAIModel();
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: aiModel,
       messages,
       temperature: 0.7,
       max_tokens: 500
@@ -10175,8 +10189,9 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         ? `Translate the following Turkish text to English. Only return the translation, nothing else:\n\n${text.trim()}`
         : `Translate the following English text to Turkish. Only return the translation, nothing else:\n\n${text.trim()}`;
       
+      const aiModel = await getAIModel();
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: aiModel,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
         max_tokens: 500
@@ -13389,6 +13404,46 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
     } catch (err) {
       console.error("Mesaj kullanım istatistiği hatası:", err);
       res.status(500).json({ error: "İstatistikler alınamadı" });
+    }
+  });
+
+  // Super Admin: Get AI Settings
+  app.get("/api/super-admin/ai-settings", async (req, res) => {
+    try {
+      const isPlatformAdmin = req.session?.isPlatformAdmin;
+      if (!isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      
+      const model = await storage.getSetting('aiModel') || 'gpt-4o-mini';
+      res.json({ model });
+    } catch (err) {
+      console.error("AI settings error:", err);
+      res.status(500).json({ error: "Ayarlar alınamadı" });
+    }
+  });
+
+  // Super Admin: Save AI Settings
+  app.post("/api/super-admin/ai-settings", async (req, res) => {
+    try {
+      const isPlatformAdmin = req.session?.isPlatformAdmin;
+      if (!isPlatformAdmin) {
+        return res.status(403).json({ error: "Yetkisiz erişim" });
+      }
+      
+      const { model } = req.body;
+      const allowedModels = ['gpt-4o-mini', 'gpt-4o'];
+      
+      if (!model || !allowedModels.includes(model)) {
+        return res.status(400).json({ error: "Geçersiz model" });
+      }
+      
+      await storage.setSetting('aiModel', model);
+      console.log(`[AI_SETTINGS] Model changed to: ${model}`);
+      res.json({ success: true, model });
+    } catch (err) {
+      console.error("AI settings save error:", err);
+      res.status(500).json({ error: "Ayarlar kaydedilemedi" });
     }
   });
   
