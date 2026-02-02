@@ -108,6 +108,9 @@ export default function Settings() {
   const [newFaqQuestion, setNewFaqQuestion] = useState("");
   const [newFaqAnswer, setNewFaqAnswer] = useState("");
   const [isSavingGeneralFaq, setIsSavingGeneralFaq] = useState(false);
+  const [editingFaqIndex, setEditingFaqIndex] = useState<number | null>(null);
+  const [editFaqQuestion, setEditFaqQuestion] = useState("");
+  const [editFaqAnswer, setEditFaqAnswer] = useState("");
   
   // Gmail Settings (legacy - kept for data migration)
   const [gmailUser, setGmailUser] = useState("");
@@ -1475,40 +1478,117 @@ export default function Settings() {
                             Henüz genel SSS eklenmemiş
                           </div>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="space-y-1">
                             {generalFaq.map((faq, index) => (
-                              <div 
-                                key={index} 
-                                className="p-2 bg-background/50 rounded-md flex items-start justify-between gap-2"
-                                data-testid={`general-faq-entry-${index}`}
-                              >
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-sm truncate">{faq.question}</div>
-                                  <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{faq.answer}</div>
-                                </div>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0"
-                                  onClick={async () => {
-                                    const updatedFaq = generalFaq.filter((_, i) => i !== index);
-                                    setGeneralFaq(updatedFaq);
-                                    setIsSavingGeneralFaq(true);
-                                    try {
-                                      await fetch("/api/settings/generalFaq", {
-                                        method: "POST",
-                                        headers: { "Content-Type": "application/json" },
-                                        body: JSON.stringify({ value: JSON.stringify(updatedFaq) })
-                                      });
-                                    } finally {
-                                      setIsSavingGeneralFaq(false);
-                                    }
-                                  }}
-                                  disabled={isSavingGeneralFaq}
-                                  data-testid={`button-remove-general-faq-${index}`}
-                                >
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                </Button>
+                              <div key={index}>
+                                {editingFaqIndex === index ? (
+                                  <div className="p-3 bg-background/50 rounded-md border border-primary/30 space-y-2">
+                                    <Input
+                                      placeholder="Soru (Türkçe)"
+                                      value={editFaqQuestion}
+                                      onChange={(e) => setEditFaqQuestion(e.target.value)}
+                                      className="h-8 text-sm"
+                                      autoFocus
+                                    />
+                                    <Textarea
+                                      placeholder="Cevap (Türkçe)"
+                                      value={editFaqAnswer}
+                                      onChange={(e) => setEditFaqAnswer(e.target.value)}
+                                      className="min-h-[60px] text-sm resize-none"
+                                      rows={2}
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingFaqIndex(null);
+                                          setEditFaqQuestion("");
+                                          setEditFaqAnswer("");
+                                        }}
+                                      >
+                                        <X className="w-4 h-4 mr-1" /> İptal
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        disabled={!editFaqQuestion.trim() || !editFaqAnswer.trim() || isSavingGeneralFaq}
+                                        onClick={async () => {
+                                          if (editFaqQuestion.trim() && editFaqAnswer.trim()) {
+                                            const updatedFaq = [...generalFaq];
+                                            updatedFaq[index] = { question: editFaqQuestion.trim(), answer: editFaqAnswer.trim() };
+                                            setGeneralFaq(updatedFaq);
+                                            setIsSavingGeneralFaq(true);
+                                            try {
+                                              await fetch("/api/settings/generalFaq", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ value: JSON.stringify(updatedFaq) })
+                                              });
+                                            } finally {
+                                              setIsSavingGeneralFaq(false);
+                                              setEditingFaqIndex(null);
+                                              setEditFaqQuestion("");
+                                              setEditFaqAnswer("");
+                                            }
+                                          }
+                                        }}
+                                      >
+                                        <Save className="w-4 h-4 mr-1" /> Kaydet
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div 
+                                    className="py-2 px-3 hover:bg-background/50 rounded-md flex items-start justify-between gap-2 group border-b border-muted last:border-b-0"
+                                    data-testid={`general-faq-entry-${index}`}
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-sm truncate">{faq.question}</div>
+                                      <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{faq.answer}</div>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity shrink-0">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={() => {
+                                          setEditingFaqIndex(index);
+                                          setEditFaqQuestion(faq.question);
+                                          setEditFaqAnswer(faq.answer);
+                                        }}
+                                        disabled={isSavingGeneralFaq}
+                                        data-testid={`button-edit-general-faq-${index}`}
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        className="h-7 w-7"
+                                        onClick={async () => {
+                                          const updatedFaq = generalFaq.filter((_, i) => i !== index);
+                                          setGeneralFaq(updatedFaq);
+                                          setIsSavingGeneralFaq(true);
+                                          try {
+                                            await fetch("/api/settings/generalFaq", {
+                                              method: "POST",
+                                              headers: { "Content-Type": "application/json" },
+                                              body: JSON.stringify({ value: JSON.stringify(updatedFaq) })
+                                            });
+                                          } finally {
+                                            setIsSavingGeneralFaq(false);
+                                          }
+                                        }}
+                                        disabled={isSavingGeneralFaq}
+                                        data-testid={`button-remove-general-faq-${index}`}
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
