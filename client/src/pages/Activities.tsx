@@ -965,7 +965,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 ) : (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="reservationLink">(Türkçe) Rezervasyon Linki</Label>
+                      <Label htmlFor="reservationLink">Rezervasyon Linki</Label>
                       <Input 
                         id="reservationLink"
                         type="url"
