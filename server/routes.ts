@@ -7722,8 +7722,7 @@ Rezervasyon takip: {takip_linki}
           workingHours: await storage.getSetting('workingHours', tenantId)
         };
         
-        // Get custom bot prompt from botAccess JSON (stored together with aiFirstMode)
-        const customBotPrompt = botAccess.customBotPrompt || '';
+        // customBotPrompt removed - using JSON-based prompt system now
         
         // Fetch holidays for context
         const allHolidays = await storage.getHolidays(tenantId);
@@ -7818,8 +7817,7 @@ Rezervasyon takip: {takip_linki}
         const aiFirstResponse = await generateAIFirstResponse(
           Body,
           conversationHistory,
-          aiFirstContext,
-          customBotPrompt || undefined
+          aiFirstContext
         );
         
         // Check if AI response contains escalation trigger phrases
