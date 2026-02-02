@@ -3042,6 +3042,7 @@ interface AIFirstContext {
     time?: string;
     status?: string;
     trackingLink?: string;
+    confirmationMessage?: string;
   };
 }
 
@@ -3184,7 +3185,8 @@ function buildCleanContext(
       date: userReservation.date,
       time: userReservation.time,
       status: userReservation.status === 'confirmed' ? 'Onaylı' : userReservation.status === 'pending' ? 'Beklemede' : userReservation.status,
-      trackingLink: userReservation.trackingLink
+      trackingLink: userReservation.trackingLink,
+      confirmationMessage: userReservation.confirmationMessage
     };
   }
   
@@ -7572,6 +7574,9 @@ Rezervasyon takip: {takip_linki}
         // Fetch holidays for context
         const allHolidays = await storage.getHolidays(tenantId);
         
+        // Get activity for confirmation message
+        const reservationActivity = userReservation ? activities.find(a => a.id === userReservation.activityId) : null;
+        
         // Build clean context (N8N style)
         const aiFirstContext = buildCleanContext(
           activities,
@@ -7579,14 +7584,75 @@ Rezervasyon takip: {takip_linki}
           generalFaq,
           tenantSettings,
           userReservation ? {
-            activityName: activities.find(a => a.id === userReservation.activityId)?.name || 'Aktivite',
+            activityName: reservationActivity?.name || 'Aktivite',
             date: userReservation.date,
             time: userReservation.time,
             status: userReservation.status,
-            trackingLink: `https://${req.headers.host}/tracking/${userReservation.trackingToken}`
+            trackingLink: `https://${req.headers.host}/tracking/${userReservation.trackingToken}`,
+            confirmationMessage: reservationActivity?.confirmationMessage || undefined
           } : undefined,
           allHolidays
         );
+        
+        // Check if user is asking about reservation confirmation - use template directly
+        const confirmationKeywords = ['onaylandı mı', 'onaylandi mi', 'onay', 'confirmed', 'confirmation', 'rezervasyonum', 'siparişim', 'siparisim', 'siparis durumu', 'sipariş durumu'];
+        const isConfirmationQuery = userReservation && 
+          userReservation.status === 'confirmed' && 
+          confirmationKeywords.some(kw => Body.toLowerCase().includes(kw));
+        
+        if (isConfirmationQuery && reservationActivity?.confirmationMessage) {
+          // Use the activity's confirmation template
+          let confirmationMessage = reservationActivity.confirmationMessage;
+          
+          // Replace placeholders - use correct field names from database schema
+          const replacements: Record<string, string> = {
+            'isim': userReservation.customerName || '',
+            'name': userReservation.customerName || '',
+            'aktivite': reservationActivity.name || '',
+            'activity': reservationActivity.name || '',
+            'tarih': userReservation.date || '',
+            'date': userReservation.date || '',
+            'saat': userReservation.time || '',
+            'time': userReservation.time || '',
+            'kisi': String(userReservation.quantity || 1),
+            'participants': String(userReservation.quantity || 1),
+            'yetiskin': String(userReservation.quantity || 1),
+            'adults': String(userReservation.quantity || 1),
+            'cocuk': '0',
+            'children': '0',
+            'toplam': `${userReservation.priceTl || 0} TL`,
+            'total': `${userReservation.priceTl || 0} TL`,
+            'odenen': '0 TL',
+            'paid': '0 TL',
+            'kalan': `${userReservation.priceTl || 0} TL`,
+            'remaining': `${userReservation.priceTl || 0} TL`,
+            'otel': userReservation.hotelName || '',
+            'hotel': userReservation.hotelName || '',
+            'bolge': userReservation.transferZone || '',
+            'zone': userReservation.transferZone || '',
+            'transfer_saat': userReservation.time || '',
+            'pickup_time': userReservation.time || '',
+            'bulusma_noktasi': reservationActivity.meetingPoint || '',
+            'meeting_point': reservationActivity.meetingPoint || '',
+            'takip_linki': `https://${req.headers.host}/tracking/${userReservation.trackingToken}`,
+            'tracking_link': `https://${req.headers.host}/tracking/${userReservation.trackingToken}`,
+            'siparis_no': userReservation.orderNumber || '',
+            'order_number': userReservation.orderNumber || ''
+          };
+          
+          for (const [key, value] of Object.entries(replacements)) {
+            confirmationMessage = confirmationMessage.replace(new RegExp(`\\{${key}\\}`, 'gi'), value);
+          }
+          
+          // Save messages
+          await storage.addMessage({ phone: From, content: Body, role: "user", tenantId });
+          await storage.addMessage({ phone: From, content: confirmationMessage, role: "assistant", tenantId });
+          
+          console.log(`[AI-FIRST] Using confirmation template for ${From}`);
+          res.type('text/xml');
+          res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${confirmationMessage}</Message></Response>`);
+          return;
+        }
         
         // Format conversation history for AI
         const conversationHistory = history.map((msg: any) => ({
