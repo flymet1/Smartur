@@ -519,6 +519,8 @@ interface ConversationState {
   lastUpdated: Date;
   stage: ConversationStage; // Satış aşaması
   repeatCount: number; // Aynı intent'in tekrar sayısı (Repeat Guard için)
+  awaitingEscalation: boolean; // Müşteri temsilcisi aktarma onayı bekliyor mu?
+  lastUnansweredQuestion: string | null; // Cevaplanamayan son soru
 }
 
 // In-memory conversation state storage (per phone number per tenant)
@@ -550,7 +552,9 @@ function getConversationState(phone: string, tenantId: number): ConversationStat
     messageCount: 0,
     lastUpdated: new Date(),
     stage: 'info', // Başlangıç aşaması
-    repeatCount: 0 // Tekrar sayısı
+    repeatCount: 0, // Tekrar sayısı
+    awaitingEscalation: false, // Aktarma onayı beklenmiyor
+    lastUnansweredQuestion: null // Cevaplanamayan soru yok
   };
   conversationStates.set(key, newState);
   return newState;
@@ -7559,6 +7563,79 @@ Rezervasyon takip: {takip_linki}
           return;
         }
         
+        // === ESCALATION CONFIRMATION CHECK ===
+        // If user was asked about transfer to human and is responding
+        const convState = getConversationState(From, tenantId);
+        if (convState.awaitingEscalation) {
+          const bodyLower = Body.toLowerCase().trim();
+          const yesKeywords = ['evet', 'tamam', 'olur', 'lütfen', 'yes', 'ok', 'please', 'isterim', 'istiyorum', 'aktarın', 'bağlayın'];
+          const noKeywords = ['hayır', 'yok', 'istemem', 'istemiyorum', 'gerek yok', 'no', 'thanks', 'teşekkürler', 'sağol'];
+          
+          const wantsEscalation = yesKeywords.some(kw => bodyLower.includes(kw));
+          const refusesEscalation = noKeywords.some(kw => bodyLower.includes(kw));
+          
+          if (wantsEscalation) {
+            // User confirmed - create support request
+            console.log(`[AI-FIRST] User confirmed escalation: ${From}`);
+            
+            // Save the unanswered question for learning
+            if (convState.lastUnansweredQuestion) {
+              try {
+                await storage.createUnansweredQuestion({
+                  question: convState.lastUnansweredQuestion,
+                  phone: From,
+                  tenantId,
+                  status: 'pending'
+                });
+              } catch (err) {
+                console.error('[AI-FIRST] Failed to save unanswered question:', err);
+              }
+            }
+            
+            // Create support request
+            await storage.createSupportRequest({ 
+              phone: From, 
+              status: 'open', 
+              tenantId,
+              description: convState.lastUnansweredQuestion || Body
+            });
+            
+            // Reset escalation state
+            updateConversationState(From, tenantId, { 
+              awaitingEscalation: false, 
+              lastUnansweredQuestion: null 
+            });
+            
+            const escalationConfirmResponse = "Talebinizi destek ekibimize ilettim. En kısa sürede size dönüş yapılacaktır. Teşekkürler! 🙏";
+            await storage.addMessage({ phone: From, content: Body, role: "user", tenantId });
+            await storage.addMessage({ phone: From, content: escalationConfirmResponse, role: "assistant", tenantId });
+            
+            res.type('text/xml');
+            res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escalationConfirmResponse}</Message></Response>`);
+            return;
+          } else if (refusesEscalation) {
+            // User refused - reset state and continue
+            console.log(`[AI-FIRST] User refused escalation: ${From}`);
+            updateConversationState(From, tenantId, { 
+              awaitingEscalation: false, 
+              lastUnansweredQuestion: null 
+            });
+            
+            const refuseResponse = "Tamam, başka bir konuda yardımcı olabilir miyim?";
+            await storage.addMessage({ phone: From, content: Body, role: "user", tenantId });
+            await storage.addMessage({ phone: From, content: refuseResponse, role: "assistant", tenantId });
+            
+            res.type('text/xml');
+            res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${refuseResponse}</Message></Response>`);
+            return;
+          }
+          // If neither yes nor no, treat as a new question - reset escalation state and continue
+          updateConversationState(From, tenantId, { 
+            awaitingEscalation: false, 
+            lastUnansweredQuestion: null 
+          });
+        }
+        
         // Get tenant settings for company info
         const tenantSettings = {
           companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
@@ -7668,28 +7745,58 @@ Rezervasyon takip: {takip_linki}
           customBotPrompt || undefined
         );
         
-        // Save messages
+        // Check if AI response contains escalation trigger phrases
+        // These phrases mean AI couldn't fully answer - ask user if they want human support
+        const escalationTriggers = [
+          'müşteri temsilcimiz',
+          'yetkilimiz',
+          'temsilcimiz en kısa sürede',
+          'sizinle iletişime geçecek',
+          'arayalım',
+          'team call',
+          'representative will contact',
+          'contact you shortly'
+        ];
+        
+        const needsEscalationConfirm = escalationTriggers.some(trigger => 
+          aiFirstResponse.toLowerCase().includes(trigger.toLowerCase())
+        );
+        
+        if (needsEscalationConfirm) {
+          // Ask for escalation confirmation instead of directly sending AI response
+          console.log(`[AI-FIRST] AI couldn't fully answer, asking for escalation confirmation`);
+          
+          // Store state and original question
+          updateConversationState(From, tenantId, {
+            awaitingEscalation: true,
+            lastUnansweredQuestion: Body
+          });
+          
+          // Save the unanswered question immediately for learning (regardless of user choice)
+          try {
+            await storage.createUnansweredQuestion({
+              question: Body,
+              phone: From,
+              tenantId,
+              status: 'pending'
+            });
+          } catch (err) {
+            console.error('[AI-FIRST] Failed to save unanswered question:', err);
+          }
+          
+          const askEscalationMessage = "Bu konuda size daha detaylı yardımcı olabilmemiz için müşteri temsilcisine aktarmamı ister misiniz?";
+          
+          await storage.addMessage({ phone: From, content: Body, role: "user", tenantId });
+          await storage.addMessage({ phone: From, content: askEscalationMessage, role: "assistant", tenantId });
+          
+          res.type('text/xml');
+          res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${askEscalationMessage}</Message></Response>`);
+          return;
+        }
+        
+        // Normal response - save and send
         await storage.addMessage({ phone: From, content: Body, role: "user", tenantId });
         await storage.addMessage({ phone: From, content: aiFirstResponse, role: "assistant", tenantId });
-        
-        // Check for support request triggers in response
-        if (aiFirstResponse.includes('yetkilimiz') || aiFirstResponse.includes('arayalım') || 
-            aiFirstResponse.includes('team call') || aiFirstResponse.includes('representative')) {
-          // Create support request for follow-up
-          try {
-            await storage.createCustomerRequest({
-              phone: From,
-              reservationId: userReservation?.id,
-              type: 'support',
-              notes: `AI-First destek talebi: ${Body}`,
-              status: 'pending',
-              tenantId
-            });
-            console.log(`[AI-FIRST] Support request created for ${From}`);
-          } catch (err) {
-            console.error('[AI-FIRST] Failed to create support request:', err);
-          }
-        }
         
         res.type('text/xml');
         res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${aiFirstResponse}</Message></Response>`);
