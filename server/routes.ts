@@ -1184,7 +1184,7 @@ function detectIntent(
     'cancellation': ['iptal', 'değişiklik', 'tarih değiştir', 'vazgeçtim', 'cancel', 'change date'],
     'activity_list': ['aktiviteler', 'turlar', 'neler var', 'ne yapabiliriz', 'seçenekler', 'activities', 'tours', 'options', 'what activities'],
     'faq': ['sss', 'sık sorulan', 'merak edilen', 'soru-cevap', 'faq'],
-    'extras': ['ekstra', 'ek hizmet', 'video çekim', 'fotoğraf çekim', 'sigorta', 'öğle yemeği', 'extra', 'photo', 'video'],
+    'extras': ['ekstra', 'ek hizmet', 'video çekim', 'fotoğraf çekim', 'sigorta', 'öğle yemeği', 'extra', 'photo', 'video', 'kadın pilot', 'bayan pilot', 'female pilot', 'gopro', 'kamera', 'camera', 'tandem', 'ek ücret', 'ek fiyat'],
     'package_tour': ['paket tur', 'tur paketi', 'paket program', 'günlük tur', 'kombinasyon tur', 'kombi tur', 'paketler', 'package tour'],
     'activity_info': [],
     'general': [],
