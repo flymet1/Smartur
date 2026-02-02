@@ -8605,7 +8605,14 @@ Rezervasyon takip: {takip_linki}
       // Template mode kaldırıldı, sadece AI-First kullanılıyor
       
       // Get tenant settings
-      const tenantSettings = await storage.getTenantSettings(tenantId);
+      const tenantSettings = {
+        companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
+        phone: await storage.getSetting('phone', tenantId),
+        email: await storage.getSetting('email', tenantId),
+        address: await storage.getSetting('address', tenantId),
+        cancellationPolicyUrl: await storage.getSetting('cancellationPolicyUrl', tenantId),
+        workingHours: await storage.getSetting('workingHours', tenantId)
+      };
       const generalFaq = await storage.getSetting('generalFaq', tenantId);
       const allHolidays = await storage.getHolidays(tenantId);
       
