@@ -1281,63 +1281,46 @@ function detectIntent(
 // Tek aktivite için odaklı açıklama oluştur
 // === ATOMİK VERİ SİSTEMİ ===
 // Her intent için SADECE gerekli bilgiyi döndürür - veri sızıntısını önler
-function buildFocusedActivityDescription(activity: any, intent: RAGIntent, lang: 'tr' | 'en' = 'tr'): string {
+function buildFocusedActivityDescription(activity: any, intent: RAGIntent): string {
   if (!activity) return '';
   
   const name = activity.name;
-  const isEn = lang === 'en';
   
   // INTENT'E GÖRE ATOMİK CEVAP - SADECE GEREKLİ BİLGİ
   switch (intent.type) {
     case 'price':
       // SADECE FİYAT - başka hiçbir şey
-      let priceInfo = isEn 
-        ? `${name} price: ${activity.price} TL`
-        : `${name} fiyatı: ${activity.price} TL`;
+      let priceInfo = `${name} fiyatı: ${activity.price} TL`;
       if (activity.fullPaymentRequired) {
-        priceInfo += isEn 
-          ? `\nPayment: Full payment required at booking.`
-          : `\nÖdeme: Rezervasyonda tam ödeme gerekli.`;
+        priceInfo += `\nÖdeme: Rezervasyonda tam ödeme gerekli.`;
       } else if (activity.requiresDeposit && activity.depositAmount > 0) {
         if (activity.depositType === 'percentage') {
           const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
-          priceInfo += isEn 
-            ? `\nDeposit: ${depositTl} TL, remaining on activity day.`
-            : `\nÖn ödeme: ${depositTl} TL, kalan aktivite günü.`;
+          priceInfo += `\nÖn ödeme: ${depositTl} TL, kalan aktivite günü.`;
         } else {
-          priceInfo += isEn 
-            ? `\nDeposit: ${activity.depositAmount} TL, remaining on activity day.`
-            : `\nÖn ödeme: ${activity.depositAmount} TL, kalan aktivite günü.`;
+          priceInfo += `\nÖn ödeme: ${activity.depositAmount} TL, kalan aktivite günü.`;
         }
       }
       return priceInfo;
       
     case 'duration':
       // SADECE SÜRE
-      return isEn 
-        ? `${name} duration: ${activity.durationMinutes} minutes.`
-        : `${name} süresi: ${activity.durationMinutes} dakika.`;
+      return `${name} süresi: ${activity.durationMinutes} dakika.`;
       
     case 'transfer':
       // SADECE TRANSFER BİLGİSİ
       if (activity.hasFreeHotelTransfer) {
-        let transferInfo = isEn 
-          ? `${name}: Free hotel transfer included.`
-          : `${name}: Ücretsiz otel transferi VAR.`;
+        let transferInfo = `${name}: Ücretsiz otel transferi VAR.`;
         try {
           const zones = JSON.parse(activity.transferZones || '[]');
           if (zones.length > 0 && typeof zones[0] === 'object') {
             const zoneNames = zones.map((z: any) => z.zone).join(', ');
-            transferInfo += isEn 
-              ? `\nFree zones: ${zoneNames}`
-              : `\nÜcretsiz bölgeler: ${zoneNames}`;
+            transferInfo += `\nÜcretsiz bölgeler: ${zoneNames}`;
           }
         } catch {}
         return transferInfo;
       } else {
-        return isEn 
-          ? `${name}: No free transfer, you need to arrange your own transportation.`
-          : `${name}: Ücretsiz transfer yok, kendi ulaşımınızı sağlamanız gerekir.`;
+        return `${name}: Ücretsiz transfer yok, kendi ulaşımınızı sağlamanız gerekir.`;
       }
       
     case 'availability':
@@ -1345,60 +1328,40 @@ function buildFocusedActivityDescription(activity: any, intent: RAGIntent, lang:
       try {
         const times = JSON.parse(activity.defaultTimes || '[]');
         if (times.length > 0) {
-          return isEn 
-            ? `${name} times: ${times.join(', ')}`
-            : `${name} saatleri: ${times.join(', ')}`;
+          return `${name} saatleri: ${times.join(', ')}`;
         }
       } catch {}
-      return isEn 
-        ? `No time information available for ${name}.`
-        : `${name} için saat bilgisi mevcut değil.`;
+      return `${name} için saat bilgisi mevcut değil.`;
       
     case 'payment':
       // SADECE ÖDEME DETAYI
-      let paymentInfo = isEn 
-        ? `${name} price: ${activity.price} TL`
-        : `${name} fiyatı: ${activity.price} TL`;
+      let paymentInfo = `${name} fiyatı: ${activity.price} TL`;
       if (activity.fullPaymentRequired) {
-        paymentInfo += isEn ? `\nFull payment required.` : `\nTam ödeme gerekli.`;
+        paymentInfo += `\nTam ödeme gerekli.`;
       } else if (activity.requiresDeposit && activity.depositAmount > 0) {
         if (activity.depositType === 'percentage') {
           const depositTl = Math.round((activity.price * activity.depositAmount) / 100);
-          paymentInfo += isEn 
-            ? `\nDeposit: ${depositTl} TL (${activity.depositAmount}%)`
-            : `\nÖn ödeme: ${depositTl} TL (%${activity.depositAmount})`;
+          paymentInfo += `\nÖn ödeme: ${depositTl} TL (%${activity.depositAmount})`;
         } else {
-          paymentInfo += isEn 
-            ? `\nDeposit: ${activity.depositAmount} TL`
-            : `\nÖn ödeme: ${activity.depositAmount} TL`;
+          paymentInfo += `\nÖn ödeme: ${activity.depositAmount} TL`;
         }
-        paymentInfo += isEn 
-          ? `\nRemaining amount is paid on the activity day.`
-          : `\nKalan tutar aktivite günü ödenir.`;
+        paymentInfo += `\nKalan tutar aktivite günü ödenir.`;
       } else {
-        paymentInfo += isEn 
-          ? `\nNo deposit required, payment on activity day.`
-          : `\nÖn ödeme gerekmez, aktivite günü ödeme yapılır.`;
+        paymentInfo += `\nÖn ödeme gerekmez, aktivite günü ödeme yapılır.`;
       }
       return paymentInfo;
       
     case 'activity_info':
       // GENEL BİLGİ - ama yine de KISA
       let info = `${name}:\n`;
-      info += isEn 
-        ? `• Duration: ${activity.durationMinutes} min\n`
-        : `• Süre: ${activity.durationMinutes} dk\n`;
-      info += isEn 
-        ? `• Price: ${activity.price} TL`
-        : `• Fiyat: ${activity.price} TL`;
-      if (activity.region) info += isEn 
-        ? `\n• Region: ${activity.region}`
-        : `\n• Bölge: ${activity.region}`;
+      info += `• Süre: ${activity.durationMinutes} dk\n`;
+      info += `• Fiyat: ${activity.price} TL`;
+      if (activity.region) info += `\n• Bölge: ${activity.region}`;
       return info;
       
     default:
       // Diğer durumlar için minimal bilgi
-      return `${name}: ${activity.durationMinutes} ${isEn ? 'min' : 'dk'}, ${activity.price} TL`;
+      return `${name}: ${activity.durationMinutes} dk, ${activity.price} TL`;
   }
 }
 
@@ -2071,8 +2034,10 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   prompt += `5. NOT:, S:, C: gibi teknik ifadeleri müşteriye GÖSTERME\n`;
   prompt += `6. Broşür gibi değil, arkadaşça konuş\n\n`;
   
-  prompt += `🌐 DİL VE PARA BİRİMİ KURALLARI:\n`;
-  prompt += `1. Müşteri İngilizce yazarsa İngilizce cevap ver, Türkçe yazarsa Türkçe cevap ver\n`;
+  prompt += `🌐 DİL VE PARA BİRİMİ KURALLARI (ÇOK ÖNEMLİ):\n`;
+  prompt += `1. MÜŞTERİ HANGİ DİLDE YAZIYORSA O DİLDE CEVAP VER!\n`;
+  prompt += `   - İngilizce soru = İngilizce cevap (Türkçe içerikleri çevir)\n`;
+  prompt += `   - Türkçe soru = Türkçe cevap\n`;
   prompt += `2. Fiyatları HER ZAMAN TL (Türk Lirası) olarak söyle - $ KULLANMA\n`;
   prompt += `3. Depozito/ön ödeme tutarlarını da TL olarak söyle\n`;
   prompt += `4. Yüzde (%) ve tutar (TL) karıştırma - verilen rakamı doğrudan kullan\n\n`;
@@ -2161,8 +2126,7 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
       } else if (intent.type === 'transfer' && !botAccess.transfer) {
         prompt += `Transfer bilgilerine erişim devre dışı. Müşteriyi arayarak bilgi almasını öner.\n`;
       } else if (relevantActivity) {
-        const msgLang = context.language || context.lastMessageLang || 'tr';
-        prompt += buildFocusedActivityDescription(relevantActivity, intent, msgLang);
+        prompt += buildFocusedActivityDescription(relevantActivity, intent);
       } else if (safeActivities.length > 0) {
         prompt += `Müşteri bir aktivite hakkında soruyor ama hangi aktivite olduğu belirsiz.\n`;
         prompt += `Mevcut aktiviteler: ${safeActivities.map(a => a.name).join(', ')}\n`;
