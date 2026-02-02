@@ -311,6 +311,10 @@ export default function Subscription() {
                         <Users className="h-4 w-4 text-primary" />
                         <span>{plan.maxUsers} kullanıcı</span>
                       </div>
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-primary" />
+                        <span>{(plan as any).maxDailyMessages >= 9999 ? "Sınırsız" : (plan as any).maxDailyMessages || 50} mesaj/gün</span>
+                      </div>
                     </div>
 
                     <div className="border-t pt-4 space-y-2">
