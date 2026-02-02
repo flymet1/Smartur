@@ -19,7 +19,8 @@ import {
   ArrowRight,
   Calendar,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Globe
 } from "lucide-react";
 import type { SubscriptionPlan } from "@shared/schema";
 
@@ -27,6 +28,8 @@ const FEATURE_LABELS: Record<string, { label: string; icon: typeof Activity }> =
   basic_calendar: { label: "Temel Takvim", icon: Activity },
   manual_reservations: { label: "Manuel Rezervasyon", icon: Activity },
   whatsapp_notifications: { label: "WhatsApp Bildirim", icon: MessageSquare },
+  whatsapp_bot: { label: "WhatsApp AI Bot", icon: MessageSquare },
+  website_builder: { label: "Web Sitesi Hizmeti", icon: Globe },
   basic_reports: { label: "Temel Raporlar", icon: Activity },
   advanced_reports: { label: "Gelişmiş Raporlar", icon: Activity },
   ai_bot: { label: "AI Bot", icon: Zap },
