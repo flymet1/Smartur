@@ -3216,10 +3216,15 @@ function buildCleanContext(
     } catch {}
     
     // Parse extras from JSON
-    let extras: Array<{ name: string; price: number }> = [];
+    let extras: Array<{ name: string; priceTl: number; priceUsd: number; description: string }> = [];
     try {
       const extrasData = typeof a.extras === 'string' ? JSON.parse(a.extras) : (a.extras || []);
-      extras = extrasData.filter((e: any) => e.name).map((e: any) => ({ name: e.name, price: e.price || 0 }));
+      extras = extrasData.filter((e: any) => e.name).map((e: any) => ({ 
+        name: e.name, 
+        priceTl: e.priceTl || e.price || 0,
+        priceUsd: e.priceUsd || 0,
+        description: e.description || ''
+      }));
     } catch {}
     
     // Parse whatToBring from JSON
