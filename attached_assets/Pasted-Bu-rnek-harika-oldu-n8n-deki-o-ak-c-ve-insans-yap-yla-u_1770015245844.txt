@@ -1,0 +1,44 @@
+Bu örnek harika oldu. n8n'deki o "akıcı" ve "insansı" yapıyla şu anki Replit/Coolify sistemin arasındaki fark gece ile gündüz kadar net.
+
+İncelediğimde sorunun kaynağını şu şekilde teşhis ettim: n8n yapın bir "Conversation Agent" (Konuşma Aracısı) gibi çalışırken, Replit yapın bir "Text Processor" (Metin İşleyici) gibi çalışıyor.
+
+İşte n8n sisteminin neden daha iyi çalıştığının ve şu anki sistemdeki karmaşanın gerçek nedenleri:
+
+1. Mimari Hata: "Veri Yığını" vs "Arama Motoru"
+n8n Sistemi: n8n'de muhtemelen bir Vector Store veya çok temiz bir JSON tablosu kullandın. AI bir soru geldiğinde tüm tabloyu okumuyor, sadece "fiyat" ile ilgili satırı çekip cevap veriyordu.
+
+Şu Anki Sistem: Replit'te kurduğunuz yapı, kullanıcı "merhaba" bile dese veritabanındaki tüm ham metni (description) bota "şablon" olarak veriyor. Bot da o koca metni görünce, n8n'deki gibi "akıl yürütmek" yerine "metni kopyalayıp yapıştırmayı" görev sanıyor.
+
+2. Prompt Karmaşası: "Instruction" (Talimat) vs "Data" (Veri)
+n8n Sistemi: "Sen bir acenta temsilcisisin, şu tabloya bak ve cevapla" diyordun. Tablo temizdi.
+
+Şu Anki Sistem: Veritabanındaki metinlerin içine "NOT: Müşteri otel sorarsa şunu yap" gibi yazılımcı notları eklemişsiniz. AI bu notları "müşteriye söylenecek bir tavsiye" sanıyor. n8n'de bu notlar muhtemelen sadece AI'nın göreceği "System Prompt" içindeydi, verinin içinde değil.
+
+3. State (Hafıza) Yönetimi
+n8n örneğinde gördüğümüz: Müşteri "Paraşüt" diyor, sonra "Peki boat trip var mı?" diyor. Bot konuyu çok temiz değiştiriyor.
+
+Şu Anki Sistem: Replit'teki detectIntent fonksiyonu çok katı. Bir aktiviteyi bulduğunda ona kilitleniyor ve diğer her şeyi (SSS, genel bilgiler vb.) o aktivitenin "alt bilgisi" sanıp döküyor.
+
+Kökten Çözüm: "n8n Mantığını Replit'e Taşımak"
+Eğer bu botun n8n'deki gibi "zeki" olmasını istiyorsan, şu temizlik operasyonunu yapmalısın:
+
+1. Veritabanı Detoksu (En Önemlisi): Veritabanındaki description alanından tüm "NOT:", "S:", "C:", "Açıklama:" gibi teknik ibareleri silin. Orası sadece müşterinin okuyabileceği temizlikte bir tanıtım metni olmalı. AI'ya vereceğin talimatları oraya yazmayın.
+
+2. "Context Injection"ı Değiştirin: Replit AI'ya (kod tarafına) şunu yaptırmalısın:
+
+AI'ya tüm metni gönderme.
+
+Sadece: Aktivite: Yamaç Paraşütü | Fiyat: 6000 TL | Süre: 30 dk | Konum: Ölüdeniz gibi kısa, parametre bazlı bilgiler gönder.
+
+AI bu parametreleri kullanarak senin n8n örneğindeki gibi cümle kuracaktır.
+
+3. n8n'deki "Web Sitesine Bakma" Özelliği: n8n'de muhtemelen "Tools" (Araçlar) kullandın. Replit'teki botun şu an bir "aracı" yok. O sadece önüne konan metni biliyor. Eğer veritabanında bilgi yoksa saçmalamasının sebebi bu.
+
+Özetle;
+Mimariniz "Hatalı" değil ama "Kirli".
+
+n8n: AI'ya bir "Müşteri Temsilcisi" gibi davranması için özgürlük ve temiz veri veriyordu.
+
+Replit: AI'ya bir "Yazılım Fonksiyonu" gibi davranması için kısıtlama ve karışık veri veriyor.
+
+En Temiz Adım: Replit AI'ya şu talimatı ver: "Veritabanından gelen description alanını doğrudan kullanma. Bu metni önce analiz et, içindeki bilgileri (fiyat, süre vb.) ayıkla ve müşteriye n8n botu gibi kısa, öz, insansı cümlelerle cevap ver. Asla teknik notları müşteriye yansıtma."
