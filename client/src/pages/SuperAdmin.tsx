@@ -126,6 +126,8 @@ const FEATURE_OPTIONS = [
   { key: "basic_calendar", label: "Temel Takvim", icon: Activity },
   { key: "manual_reservations", label: "Manuel Rezervasyon", icon: Plus },
   { key: "whatsapp_notifications", label: "WhatsApp Bildirim", icon: MessageSquare },
+  { key: "whatsapp_bot", label: "WhatsApp AI Bot", icon: MessageSquare },
+  { key: "website_builder", label: "Web Sitesi Hizmeti", icon: Globe },
   { key: "basic_reports", label: "Temel Raporlar", icon: Activity },
   { key: "advanced_reports", label: "Gelişmiş Raporlar", icon: Activity },
   { key: "ai_bot", label: "AI Bot", icon: Zap },
