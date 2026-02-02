@@ -1413,6 +1413,16 @@ function aiSafetyCheck(answer: string): { safe: boolean; reason?: string } {
   return { safe: true };
 }
 
+// Veriyi AI'ya göndermeden önce teknik işaretleri temizle
+function cleanTechnicalMarkers(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/NOT:|S:|C:|Q:|A:/gi, '')
+    .replace(/\[.*?\]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // AI Fallback için güvenli prompt oluştur (sadece DB verileriyle sınırlı)
 function buildAIFallbackPrompt(
   activity: any | undefined,
@@ -1447,6 +1457,8 @@ STRICT RULES:
 - Never invent information not in the data
 - If unsure, say "Please contact us for details"
 - Be friendly but brief
+- Never ask follow-up questions
+- Never suggest booking or reservation
 
 AVAILABLE ACTIVITIES: ${activityNames}
 
@@ -1461,6 +1473,8 @@ KESİN KURALLAR:
 - Veride olmayan bilgi uydurma
 - Emin değilsen "Detaylar için bizimle iletişime geçin" de
 - Samimi ama kısa ol
+- Asla takip sorusu sorma
+- Asla rezervasyon önerme
 
 MEVCUT AKTİVİTELER: ${activityNames}
 
@@ -1984,6 +1998,20 @@ function buildRAGContext(
 function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[]): string {
   const { intent, relevantActivity, relevantCapacity, isFirstMessage, activityChanged } = ragContext;
   
+  // GREETING İÇİN HAFİF PROMPT - Token tasarrufu
+  if (intent.type === 'greeting') {
+    const isEnglish = context.language === 'en' || context.lastMessageLang === 'en';
+    if (isEnglish) {
+      return `You are a friendly tour assistant. The customer just said hello.
+RESPOND WITH ONLY: "Hello! How can I help you today? 😊"
+DO NOT mention any activities, prices, or details. Just greet back.`;
+    } else {
+      return `Sen samimi bir tur asistanısın. Müşteri sadece selamladı.
+SADECE ŞU CEVABI VER: "Merhaba! Size nasıl yardımcı olabilirim? 😊"
+Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
+    }
+  }
+  
   // Get bot access settings
   const botAccess = context.botAccess || {
     activities: true, packageTours: true, capacity: true, faq: true,
@@ -2068,30 +2096,8 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
     prompt += `⚡ TAKİP SORUSU - TEK CÜMLE CEVAP VER!\n\n`;
   }
   
-  // === SATIŞ AŞAMASI DAVRANIŞI ===
-  const stage = context.conversationState?.stage || 'info';
-  if (stage === 'pricing') {
-    prompt += `💰 [PRICING AŞAMASI] Müşteri fiyatla ilgileniyor. Kısa cevap ver, sonra "Rezervasyon yapmak ister misiniz?" diye sor.\n\n`;
-  } else if (stage === 'booking') {
-    prompt += `🎯 [BOOKING AŞAMASI] Müşteri rezervasyona yakın!\n`;
-    prompt += `- KISA cevaplar ver, anlatma - sor!\n`;
-    prompt += `- Tarih ve kişi sayısını sor\n`;
-    prompt += `- Yönlendirici ol\n\n`;
-  }
-  
   // Intent'e göre context ekle
-  switch (intent.type) {
-    case 'greeting':
-      // SELAMLAMA - SADECE KISA KARŞILAMA, AKTİVİTE BİLGİSİ VERİLMEZ!
-      prompt += `⚠️ SELAMLAMA KURALI (KRİTİK):\n`;
-      prompt += `- Müşteri SADECE selamlama yapıyor ("merhaba", "selam", vb.)\n`;
-      prompt += `- ASLA aktivite detayı, fiyat, süre, SSS, paket tur bilgisi VERME!\n`;
-      prompt += `- ASLA aktivite listesi DÖKME!\n`;
-      prompt += `- SADECE kısa bir karşılama yap ve "Nasıl yardımcı olabilirim?" diye sor\n\n`;
-      prompt += `Örnek doğru cevap: "Merhaba! Size nasıl yardımcı olabilirim? 😊"\n`;
-      // Aktivite isimlerini bile EKLEME - bot coşmasın
-      break;
-      
+  switch (intent.type) {      
     case 'activity_list':
       prompt += `Müşteri aktivite listesi istiyor.\n\n`;
       if (isRestrictedUser) {
@@ -2206,7 +2212,7 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
             if (activityFaqs.length > 0) {
               prompt += `\n📌 ${relevantActivity.name} SSS:\n`;
               for (const faq of activityFaqs.slice(0, 3)) {
-                prompt += `S: ${faq.question}\nC: ${faq.answer}\n\n`;
+                prompt += `Soru: ${cleanTechnicalMarkers(faq.question)}\nCevap: ${cleanTechnicalMarkers(faq.answer)}\n\n`;
               }
             }
           } catch {}
@@ -2217,7 +2223,7 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
         if (generalFaqs.length > 0) {
           prompt += `\n📋 Genel SSS:\n`;
           for (const faq of generalFaqs.slice(0, 3)) {
-            prompt += `S: ${faq.question}\nC: ${faq.answer}\n\n`;
+            prompt += `Soru: ${cleanTechnicalMarkers(faq.question)}\nCevap: ${cleanTechnicalMarkers(faq.answer)}\n\n`;
           }
         }
         
@@ -2427,8 +2433,8 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
         generalFaqInfo += "(Bu sorular tüm aktiviteler için geçerlidir)\n";
         for (const faq of generalFaqItems) {
           if (faq.question && faq.answer) {
-            generalFaqInfo += `S: ${faq.question}\n`;
-            generalFaqInfo += `C: ${faq.answer}\n\n`;
+            generalFaqInfo += `Soru: ${cleanTechnicalMarkers(faq.question)}\n`;
+            generalFaqInfo += `Cevap: ${cleanTechnicalMarkers(faq.answer)}\n\n`;
           }
         }
       }
@@ -3402,7 +3408,9 @@ Data Usage: Only use information from the DATA SOURCES below. If info is missing
 
 Short & Clear: Keep answers to 3-4 sentences max. Don't dump brochure info - answer only what was asked.
 
-Smart Calculation: When person count is given (e.g., "2 people"), multiply the activity's priceNumeric by the count and calculate total deposit.
+Smart Calculation: When person count is given (e.g., "2 people"), ONLY use the priceNumeric field for math. Multiply priceNumeric by person count. Report result as "Total: [result] TL" or "Total: $[result]".
+
+Currency: Always show prices in USD ($) for English conversations. Use the price field directly which already contains USD amounts.
 
 Focused Info:
 - Location question → Give only meetingPoint and location
@@ -3422,11 +3430,10 @@ Format: Bold important info (*Price*, *Time*, *Location*). Use bullet points (�
 - Contact: For support or special cases, give company.phone
 
 🔄 CANCELLATION/CHANGE REQUESTS:
-- If customerReservation exists AND has trackingLink: Compare reservation date with today. If more than activity's freeCancellationHours: "You can cancel for free. Here is your tracking link to make changes: [trackingLink]", if less: "Cancellation period has passed, please call us at [company.phone]"
+- If customerReservation exists AND has trackingLink: Use the ACTUAL URL from customerReservation.trackingLink field. Say "You can cancel for free. Here is your tracking link: [paste actual URL from trackingLink field]"
 - If customerReservation exists but no trackingLink: Say "I'll send you a tracking link shortly" and provide company.phone
 - If no customerReservation: Ask "Could you share your order number so I can check your reservation?"
-- If asked about cancellation policy: Use the activity's freeCancellationHours (e.g., "Free cancellation up to X hours before activity")
-- IMPORTANT: Always include the actual trackingLink URL when available for cancellation/change requests
+- CRITICAL: Never write "[trackingLink]" as text. Always paste the actual URL from the data.
 
 📂 DATA SOURCES (JSON):
 ${JSON.stringify(dataJson, null, 2)}
@@ -3438,7 +3445,9 @@ Veri Kullanımı: Sadece aşağıdaki VERİ KAYNAKLARI'ndaki bilgileri kullan. B
 
 Kısa ve Net: Cevapların 3-4 cümleyi geçmesin. Müşteriye "broşür" dökme, sadece sorduğu sorunun cevabını ver.
 
-Akıllı Hesaplama: Kişi sayısı belirtildiğinde (örn: 2 kişi), ilgili aktivitenin priceNumeric değerini kişi sayısıyla çarpıp toplam tutarı ve toplam ön ödeme miktarını hesaplayarak söyle.
+Akıllı Hesaplama: Kişi sayısı belirtildiğinde (örn: 2 kişi), SADECE priceNumeric alanını kullanarak hesapla. priceNumeric × kişi sayısı = toplam. Sonucu "Toplam: [sonuç] TL" şeklinde net ifade et.
+
+Para Birimi: Türkçe konuşmalarda fiyatları her zaman TL olarak göster.
 
 Odaklı Bilgi:
 - Konum sorulursa → Sadece meetingPoint ve location bilgisini ver
@@ -3458,11 +3467,10 @@ Format: Önemli bilgileri (*Fiyat*, *Saat*, *Konum*) bold yaz. Liste için madde
 - İletişim: Destek veya özel durumlar için company.phone bilgisini ver
 
 🔄 İPTAL/DEĞİŞİKLİK TALEPLERİ:
-- customerReservation varsa VE trackingLink varsa: Rezervasyon tarihini bugünle karşılaştır. freeCancellationHours süresinden fazla varsa "Ücretsiz iptal edebilirsiniz. İşte takip linkiniz: [trackingLink] - buradan iptal veya değişiklik yapabilirsiniz", süre geçmişse "Ücretsiz iptal süresi dolmuş, lütfen bizi arayın: [company.phone]"
+- customerReservation varsa VE trackingLink varsa: customerReservation.trackingLink alanındaki GERÇEK URL'yi kullan. "Ücretsiz iptal edebilirsiniz. İşte takip linkiniz: [trackingLink alanındaki gerçek URL'yi yapıştır]" de
 - customerReservation varsa ama trackingLink yoksa: "Takip linkinizi kısa süre içinde göndereceğiz" de ve company.phone bilgisini ver
 - customerReservation yoksa: "Rezervasyonunuzu kontrol edebilmem için sipariş numaranızı paylaşır mısınız?" de
-- İptal politikası sorulursa: Aktivitenin freeCancellationHours bilgisini ver (örn: "Aktivite tarihinden X saat öncesine kadar ücretsiz iptal")
-- ÖNEMLİ: İptal/değişiklik taleplerinde trackingLink varsa MUTLAKA yanıta dahil et
+- KRİTİK: Asla "[trackingLink]" metnini yazma. Her zaman veriden gerçek URL'yi yapıştır.
 
 📂 VERİ KAYNAKLARI (JSON):
 ${JSON.stringify(dataJson, null, 2)}
