@@ -2034,13 +2034,11 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   prompt += `5. NOT:, S:, C: gibi teknik ifadeleri müşteriye GÖSTERME\n`;
   prompt += `6. Broşür gibi değil, arkadaşça konuş\n\n`;
   
-  prompt += `🌐 DİL VE PARA BİRİMİ KURALLARI (ÇOK ÖNEMLİ):\n`;
-  prompt += `1. MÜŞTERİ HANGİ DİLDE YAZIYORSA O DİLDE CEVAP VER!\n`;
-  prompt += `   - İngilizce soru = İngilizce cevap (Türkçe içerikleri çevir)\n`;
-  prompt += `   - Türkçe soru = Türkçe cevap\n`;
-  prompt += `2. Fiyatları HER ZAMAN TL (Türk Lirası) olarak söyle - $ KULLANMA\n`;
-  prompt += `3. Depozito/ön ödeme tutarlarını da TL olarak söyle\n`;
-  prompt += `4. Yüzde (%) ve tutar (TL) karıştırma - verilen rakamı doğrudan kullan\n\n`;
+  prompt += `🌐 DİL KURALI:\n`;
+  prompt += `Müşteri İngilizce yazıyorsa → TAMAMEN İNGİLİZCE cevap ver (aktivite isimleri dahil)\n`;
+  prompt += `Müşteri Türkçe yazıyorsa → Türkçe cevap ver\n\n`;
+  
+  prompt += `💰 PARA BİRİMİ: Fiyatları sadece TL olarak söyle, $ kullanma.\n\n`;
   
   // === PERSONA RULES (HIGHEST PRIORITY) - EN BAŞTA ===
   if (context.isPartner) {
