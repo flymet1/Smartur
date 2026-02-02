@@ -3033,6 +3033,8 @@ interface AIFirstContext {
   generalFaqs: Array<{ q: string; a: string; qEn?: string; aEn?: string }>;
   currentDate: string;
   currentDayName: string;
+  tomorrowDate?: string;
+  upcomingHolidays?: Array<{ name: string; date: string }>;
   userReservation?: {
     exists: boolean;
     activityName?: string;
@@ -3049,7 +3051,8 @@ function buildCleanContext(
   packageTours: any[],
   generalFaq: string | null,
   tenantSettings: any,
-  userReservation?: any
+  userReservation?: any,
+  holidays?: Array<{ name: string; startDate: string }>
 ): AIFirstContext {
   const now = new Date();
   const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
@@ -3185,6 +3188,28 @@ function buildCleanContext(
     };
   }
   
+  // Calculate tomorrow's date
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+  
+  // Filter upcoming holidays (next 60 days)
+  const upcomingHolidays: Array<{ name: string; date: string }> = [];
+  if (holidays && holidays.length > 0) {
+    const sixtyDaysLater = new Date(now);
+    sixtyDaysLater.setDate(sixtyDaysLater.getDate() + 60);
+    
+    for (const h of holidays) {
+      const holidayDate = new Date(h.startDate);
+      if (holidayDate >= now && holidayDate <= sixtyDaysLater) {
+        upcomingHolidays.push({
+          name: h.name,
+          date: holidayDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+        });
+      }
+    }
+  }
+  
   return {
     company: {
       name: tenantSettings?.companyName || 'Şirket',
@@ -3199,6 +3224,8 @@ function buildCleanContext(
     generalFaqs: cleanGeneralFaqs,
     currentDate: now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
     currentDayName: dayNames[now.getDay()],
+    tomorrowDate: tomorrowStr,
+    upcomingHolidays: upcomingHolidays.length > 0 ? upcomingHolidays : undefined,
     userReservation: userResInfo
   };
 }
@@ -3241,8 +3268,16 @@ function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, i
     prompt += `\n${isEnglish ? 'ADDITIONAL INSTRUCTIONS' : 'EK TALİMATLAR'}:\n${customBotPrompt}\n`;
   }
   
-  // Add context as clean JSON
-  prompt += `\n${isEnglish ? 'CURRENT DATE' : 'BUGÜNÜN TARİHİ'}: ${context.currentDate} (${context.currentDayName})\n`;
+  // Add context as clean JSON with date references
+  prompt += `\n${isEnglish ? 'DATE REFERENCE' : 'TARİH BİLGİSİ'}:`;
+  prompt += `\n• ${isEnglish ? 'Today' : 'Bugün'}: ${context.currentDate} (${context.currentDayName})`;
+  if (context.tomorrowDate) {
+    prompt += `\n• ${isEnglish ? 'Tomorrow' : 'Yarın'}: ${context.tomorrowDate}`;
+  }
+  if (context.upcomingHolidays && context.upcomingHolidays.length > 0) {
+    prompt += `\n• ${isEnglish ? 'Upcoming holidays' : 'Yaklaşan tatiller'}: ${context.upcomingHolidays.map(h => `${h.name} (${h.date})`).join(', ')}`;
+  }
+  prompt += `\n`;
   
   // Add activities in clean format with all details
   prompt += `\n${isEnglish ? 'OUR ACTIVITIES' : 'AKTİVİTELERİMİZ'}:\n`;
@@ -7534,6 +7569,9 @@ Rezervasyon takip: {takip_linki}
         // Get custom bot prompt from botAccess JSON (stored together with aiFirstMode)
         const customBotPrompt = botAccess.customBotPrompt || '';
         
+        // Fetch holidays for context
+        const allHolidays = await storage.getHolidays(tenantId);
+        
         // Build clean context (N8N style)
         const aiFirstContext = buildCleanContext(
           activities,
@@ -7546,7 +7584,8 @@ Rezervasyon takip: {takip_linki}
             time: userReservation.time,
             status: userReservation.status,
             trackingLink: `https://${req.headers.host}/tracking/${userReservation.trackingToken}`
-          } : undefined
+          } : undefined,
+          allHolidays
         );
         
         // Format conversation history for AI
