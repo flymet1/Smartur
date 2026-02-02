@@ -817,7 +817,7 @@ function BotTestSection() {
                           className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                         >
                           <div
-                            className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
+                            className={`max-w-xs px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
                               msg.role === "user"
                                 ? "bg-primary text-primary-foreground rounded-br-none"
                                 : "bg-muted text-foreground rounded-bl-none"
