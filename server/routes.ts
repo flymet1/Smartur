@@ -1515,11 +1515,17 @@ async function callAIFallback(
 
 // Dil algılama - İngilizce mi Türkçe mi?
 function detectLanguage(message: string, state?: ConversationState | null): 'tr' | 'en' {
-  // State'te dil varsa öncelikli
+  // State'te dil varsa öncelikli (konuşma dilini koru)
   if (state?.language) return state.language;
   
   const msgLower = message.toLowerCase();
-  const englishPatterns = /\b(hello|hi|price|how much|booking|reserve|available|cancel|change|what|when|where|can|do|is|are|the|for|my|your|want|need|please|thank|thanks)\b/i;
+  
+  // Genişletilmiş İngilizce kelime kalıpları
+  const englishPatterns = /\b(hello|hi|hey|price|how much|booking|reserve|available|cancel|change|what|when|where|can|do|is|are|the|for|my|your|want|need|please|thank|thanks|more|details|info|information|tour|tours|boat|activity|activities|which|have|yes|no|ok|okay|tell|show|give|about|this|that|with|would|like|any|other|question|questions|duration|time|location|cost|person|people|adult|child|children|deposit|pay|payment|included|include)\b/i;
+  
+  // Türkçe özel karakterler varsa Türkçe olarak kabul et
+  const turkishChars = /[çğıöşüÇĞİÖŞÜ]/;
+  if (turkishChars.test(message)) return 'tr';
   
   if (englishPatterns.test(msgLower)) return 'en';
   return 'tr';
@@ -2022,9 +2028,13 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   prompt += `5. NOT:, S:, C: gibi teknik ifadeleri müşteriye GÖSTERME\n`;
   prompt += `6. Broşür gibi değil, arkadaşça konuş\n\n`;
   
-  prompt += `🌐 DİL KURALI:\n`;
-  prompt += `Müşteri İngilizce yazıyorsa → TAMAMEN İNGİLİZCE cevap ver (aktivite isimleri dahil)\n`;
-  prompt += `Müşteri Türkçe yazıyorsa → Türkçe cevap ver\n\n`;
+  prompt += `🌐 LANGUAGE RULE (CRITICAL - HIGHEST PRIORITY):\n`;
+  prompt += `If customer writes in ENGLISH → You MUST respond COMPLETELY in English:\n`;
+  prompt += `  - Translate ALL activity names (Yamaç Paraşütü → Paragliding)\n`;
+  prompt += `  - Translate ALL labels (Fiyat → Price, Ön ödeme → Deposit, Saat → Time, Konum → Location)\n`;
+  prompt += `  - Translate ALL phrases (Başka sorunuz var mı? → Any other questions?)\n`;
+  prompt += `  - Use English for EVERYTHING - no Turkish words allowed in English conversation\n`;
+  prompt += `If customer writes in TURKISH → Respond in Turkish\n\n`;
   
   prompt += `💰 PARA BİRİMİ: Fiyatları sadece TL olarak söyle, $ kullanma.\n\n`;
   
@@ -2262,7 +2272,7 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
     prompt += `\n=== KRİTİK KURALLAR ===\n`;
     prompt += `1. SADECE yukarıda verilen bilgilerden cevap ver - TAHMİN YÜRÜTME, UYDURMAK YASAK\n`;
     prompt += `2. Kısa ve net cevap ver, gereksiz uzatma\n`;
-    prompt += `3. DİL KURALI: İngilizce mesaja İngilizce, Türkçe mesaja Türkçe cevap ver\n`;
+    prompt += `3. LANGUAGE: If English message → respond FULLY in English (translate activity names, labels like Price/Deposit/Location)\n`;
     prompt += `4. TRANSFER: Ücretsiz transfer varsa otomatik bildir, yoksa belirt\n`;
     prompt += `5. EKSTRA: Video/fotoğraf paketleri için aktivite sayfasına yönlendir\n`;
     prompt += `6. PAKET TUR: Paket tur sorularında içerikleri ve toplam fiyatı söyle\n`;
@@ -3476,8 +3486,23 @@ async function generateAIFirstResponse(
       : 'Merhaba! Size nasıl yardımcı olabilirim?';
   }
   
-  // Detect language
-  const isEnglish = /\b(hello|hi|price|booking|available|cancel|change|what|how|when|where|can|do|is|are|the|for|my|your|want|need|book)\b/i.test(userMessage);
+  // Detect language - check conversation history for established language
+  let isEnglish = false;
+  
+  // First check if any message in history establishes English
+  for (const msg of conversationHistory) {
+    const msgLang = detectLanguage(msg.content, null);
+    if (msgLang === 'en') {
+      isEnglish = true;
+      break;
+    }
+  }
+  
+  // Then check current message
+  const currentMsgLang = detectLanguage(userMessage, null);
+  if (currentMsgLang === 'en') {
+    isEnglish = true;
+  }
   
   // Build simple prompt
   const systemPrompt = buildAIFirstPrompt(context, customBotPrompt, isEnglish);
@@ -7893,8 +7918,8 @@ Rezervasyon takip: {takip_linki}
       const normalizedMessage = normalizeTurkish(Body);
       let sssResponse: string | null = null;
       
-      // Detect if message is in English
-      const isEnglishMessage = /\b(hello|hi|price|booking|available|cancel|change|what|how|when|where|can|do|is|are|the|for|my|your)\b/i.test(Body);
+      // Detect if message is in English - use detectLanguage for consistent detection
+      const isEnglishMessage = detectLanguage(Body, currentState) === 'en';
       const messageLower = Body.toLowerCase();
       
       // Helper function to check if message matches a question (supports comma-separated variations)
