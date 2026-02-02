@@ -2009,14 +2009,20 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   
   // === FEW-SHOT ÖRNEKLER (EN ÖNEMLİ - AI BUNLARI TAKLİT EDER) ===
   prompt += `📌 DOĞRU CEVAP ÖRNEKLERİ (Bunları taklit et!):\n\n`;
+  prompt += `--- TÜRKÇE ÖRNEKLER ---\n`;
   prompt += `Kullanıcı: "merhaba"\n`;
   prompt += `Asistan: "Merhaba! Size nasıl yardımcı olabilirim?"\n\n`;
   prompt += `Kullanıcı: "yamaç paraşütü fiyatı nedir"\n`;
   prompt += `Asistan: "Yamaç paraşütü fiyatımız 6000 TL'dir. Rezervasyon yapmak ister misiniz?"\n\n`;
   prompt += `Kullanıcı: "kaç dakika sürüyor"\n`;
   prompt += `Asistan: "Uçuş süresi 25-30 dakikadır."\n\n`;
-  prompt += `Kullanıcı: "transfer var mı"\n`;
-  prompt += `Asistan: "Evet, ücretsiz otel transferi sunuyoruz."\n\n`;
+  prompt += `--- ENGLISH EXAMPLES ---\n`;
+  prompt += `User: "hello" or "hi"\n`;
+  prompt += `Assistant: "Hello! How can I help you?"\n\n`;
+  prompt += `User: "how much is paragliding"\n`;
+  prompt += `Assistant: "Paragliding is 6000 TL. Would you like to make a reservation?"\n\n`;
+  prompt += `User: "what about deposit"\n`;
+  prompt += `Assistant: "A deposit of 1500 TL is required. The remaining amount is paid on the activity day."\n\n`;
   
   // === ALTIN KURALLAR ===
   prompt += `🔴 KRİTİK KURALLAR:\n`;
@@ -2026,6 +2032,12 @@ function buildRAGPrompt(ragContext: RAGContext, context: any, activities: any[])
   prompt += `4. Müşteri "detay", "bilgi ver", "anlat" DEMEDİKÇE uzun cevap VERME\n`;
   prompt += `5. NOT:, S:, C: gibi teknik ifadeleri müşteriye GÖSTERME\n`;
   prompt += `6. Broşür gibi değil, arkadaşça konuş\n\n`;
+  
+  prompt += `🌐 DİL VE PARA BİRİMİ KURALLARI:\n`;
+  prompt += `1. Müşteri İngilizce yazarsa İngilizce cevap ver, Türkçe yazarsa Türkçe cevap ver\n`;
+  prompt += `2. Fiyatları HER ZAMAN TL (Türk Lirası) olarak söyle - $ KULLANMA\n`;
+  prompt += `3. Depozito/ön ödeme tutarlarını da TL olarak söyle\n`;
+  prompt += `4. Yüzde (%) ve tutar (TL) karıştırma - verilen rakamı doğrudan kullan\n\n`;
   
   // === PERSONA RULES (HIGHEST PRIORITY) - EN BAŞTA ===
   if (context.isPartner) {
