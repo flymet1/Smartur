@@ -1,0 +1,43 @@
+1. RAG Prompt Analizi (Gereksiz Yük)
+RAG promptun (2. Madde) çok fazla "yasak" ve "kural" içeriyor. GPT-4o gibi modellerde çok fazla negatif emir ("şunu yapma", "bunu söyleme") bazen modelin kafasını karıştırır.
+
+Tavsiye: Switch(intent.type) yapısı çok güzel ancak greeting durumunda bile bota koca bir prompt gönderiyorsun.
+
+Düzeltme: Eğer kullanıcı sadece "Selam" verdiyse, buildRAGPrompt yerine çok daha hafif, sadece selamlama yetkisi olan bir prompt göndererek token tasarrufu yapabilirsin.
+
+2. AI-First Prompt (JSON) İçin Kritik İyileştirme
+JSON yapın (3. Madde) çok temiz. Ancak modelin matematiksel hesaplama yaparken hata yapmaması için küçük bir dokunuş lazım:
+
+Sorun: priceNumeric değerini veriyorsun ama model bazen "6000 TL" metnine takılıp çarpma işlemini unutabilir.
+
+İyileştirme: Prompt içine şu cümleyi ekle:
+
+"Hesaplama yaparken sadece priceNumeric alanını baz al. Müşteriye sonucu söylerken 'Toplam tutar: [Sonuç] TL' şeklinde net bir şekilde ifade et."
+
+3. "Döviz" ve "Dil" Paradoksu
+Promptta "Fiyatları sadece TL olarak söyle" demişsin ama JSON içinde priceUsd gönderiyorsun.
+
+Çelişki: İngilizce konuşan bir turist genelde Dolar/Euro fiyatını bilmek ister.
+
+Tavsiye: Eğer isEnglish true ise, önceliği priceUsd'ye ver. "Fiyatları sadece TL söyle" kuralını sadece Türkçe konuşmalar için sınırlandır.
+
+4. En Büyük Risk: "Veri Sızıntısı" (Technical Leak)
+Prompt içinde hala NOT:, S:, C: gibi ifadelerin müşteriye gösterilmemesi gerektiğini hatırlatıyorsun.
+
+Kökten Çözüm: JSON'a veriyi basmadan önce description veya faqs içindeki bu ibareleri kod tarafında (Regex ile) temizle. AI'ya kirli veri verip "bunu temizle" demek yerine, AI'ya temiz veri verip "bunu kullan" demek daha garantidir.
+
+5. Konum ve Adres (Manuel Girişten Kurtulma)
+"Adres manuel girilmiş, webden alsa daha iyi olmaz mı?" demiştin.
+
+Çözüm: buildAIFirstPrompt fonksiyonunda dataJson.company.address kısmına manuel metin yazmak yerine, veritabanındaki tenant_settings tablosundan gelen address kolonunu bağla.
+
+Aktivite bazlı buluşma noktası içinse; her aktivitenin JSON objesine bir googleMapsLink anahtarı ekle.
+
+🚀 Uygulaman Gereken "Altın" Dokunuşlar (Özet)
+Matematik: priceNumeric talimatını "Kesin Hesapla" diyerek vurgula.
+
+Tracking Link: [trackingLink] ibaresini promptta bırakma. GPT-4o bunu bazen metin olarak (köşeli parantezlerle) yazabilir. dataJson.customerReservation.trackingLink şeklinde doğrudan JSON yolunu göster.
+
+Hafıza: Promptun sonuna SON MESAJLAR kısmını eklediğinden emin ol. GPT-4o geçmiş mesajları görmezse "Ofis nerede?" sorusuna (hangi aktivite olduğunu bilmediği için) cevap veremez.
+
+A/B Testi: AI-First Prompt senin ana silahın olsun. RAG Prompt ise daha çok "Intent" yakalanamayan durumlar için yedek kalsın.

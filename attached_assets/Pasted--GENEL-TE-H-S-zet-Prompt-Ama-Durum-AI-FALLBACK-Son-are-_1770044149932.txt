@@ -1,0 +1,185 @@
+🔍 GENEL TEŞHİS (Özet)
+Prompt	Amaç	Durum
+AI FALLBACK	Son çare, kısa genel bilgi	✅ İYİ
+RAG PROMPT	Kontrollü bilgi + satış	⚠️ AŞIRI YÜKLÜ
+AI-FIRST PROMPT	Ana motor	❌ BU MİMARİYE TERS
+
+👉 En büyük problem: Aynı sistemde hem “AI-first” hem “Template-first” hem “RAG” aynı anda aktif.
+Bu kaçınılmaz olarak tutarsız davranış üretir.
+
+1️⃣ AI FALLBACK PROMPT — ✅ NEREDEYSE MÜKEMMEL
+Güçlü yanları
+
+Allowed fields kısıtı ✔
+
+“Never invent” ✔
+
+2 cümle sınırı ✔
+
+Fiyat / süre yasağı ✔
+
+Belirsizlikte standart cevap ✔
+
+🔧 Küçük ama önemli iyileştirme
+
+Şunu ekle:
+
+- Never ask follow-up questions
+- Never suggest booking
+
+
+Çünkü fallback:
+
+soru sormamalı
+
+satışa yönelmemeli
+
+📌 Fallback = “sessiz bilgi panosu” olmalı.
+
+2️⃣ RAG PROMPT — ⚠️ ASIL PROBLEM BURADA
+
+Bu prompt çok zeki ama çok tehlikeli.
+
+🚨 Temel sorunlar
+❌ 1. RAG + Intent + Stage + Partner + Viewer = aşırı bilişsel yük
+
+Model aynı anda:
+
+intent yorumluyor
+
+satış aşaması düşünüyor
+
+dil çeviriyor
+
+partner mi diye karar veriyor
+
+fiyat mı süre mi ayırıyor
+
+➡️ Bu kadar rol, en iyi modelde bile sapma üretir.
+
+❌ 2. RAG prompt içinde ŞABLON İŞİ YAPIYORSUN
+
+Örneğin:
+
+case 'activity_list':
+  prompt += `- ${a.name}: ${a.price} TL, ${a.durationMinutes} dk`
+
+
+Bu şablon işidir, AI işi değil.
+
+📛 RAG:
+
+“verilen bilgiden cevap üretir”
+
+bilgi seçmez / formatlamaz
+
+❌ 3. “AKTARMA KARARI” AI’ya bırakılmış
+
+Bu çok kritik.
+
+AI:
+
+“tatmin olmadı mı?” anlayamaz
+
+teknik sorun tespit edemez
+
+➡️ Aktarma kararı %100 backend logic olmalı
+
+✅ RAG PROMPT için NET TAVSİYE
+
+Bu promptu sadece şuna indir:
+
+“SSS yok”
+
+“Şablon yok”
+
+“Ama cevap tamamen DB’den üretilebilir”
+
+RAG PROMPT’TA SADECE ŞU OLSUN:
+- Use ONLY provided context
+- Combine relevant fields if needed
+- Max 2 sentences
+- Never introduce new facts
+- Never ask questions
+
+
+❗ Sales, booking, stage, pricing gibi şeyleri tamamen çıkar.
+
+3️⃣ AI-FIRST PROMPT — ❌ BU MİMARİYE UYGUN DEĞİL
+
+Bu prompt tek başına bir chatbot mimarisi.
+Ama sen artık:
+
+“AI karar verici değil, yardımcı olacak”
+“Business logic backend’de”
+
+diyorsun.
+
+🚨 Neden riskli?
+
+“Smart Calculation” → AI hesap yapıyor ❌
+
+“Intent Analysis” → zaten backend yapıyor ❌
+
+“FAQ lookup” → zaten SSS katmanı var ❌
+
+“Booking yönlendirme” → template işi ❌
+
+📌 Bu prompt eski, broşür-bot dönemine ait.
+
+✅ NET TAVSİYE
+
+AI-FIRST PROMPT’u YA TAMAMEN KALDIR
+ya da:
+
+❗ SADECE bu senaryoda kullan:
+
+serbest metin
+
+marketing
+
+blog / açıklama
+
+WhatsApp bot DIŞI
+
+WhatsApp prod botunda AI-FIRST olmamalı.
+
+🧠 SENİN MİMARİNE UYGUN DOĞRU MODEL
+🧱 Tek doğru zincir
+1. SSS (hard match)
+2. Campaign Engine (hard rules)
+3. Intent + Template (deterministic)
+4. AI RAG (sadece bağlama)
+5. AI Fallback (son çare)
+
+AI’nın yapabileceği tek şey:
+
+Cümleyi düzgün kurmak
+
+2 veriyi bağlamak
+
+Tonu yumuşatmak
+
+AI’nın ASLA yapmaması gerekenler:
+
+fiyat hesaplama
+
+indirim kararı
+
+müsaitlik
+
+aktarma kararı
+
+satış aşaması belirleme
+
+🎯 SORUNA NET CEVAP
+
+“Bu promptlar uygun mu?”
+
+🔴 Hayır, üçü birlikte uygun değil.
+
+“Ne yapmalıyım?”
+
+✅ AI-FIRST’i çıkar
+✅ RAG’i sadeleştir
+✅ Fallback’i koru ve sertleştir
