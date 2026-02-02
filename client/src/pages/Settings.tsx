@@ -14,7 +14,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
-import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe, BarChart3, Volume2, VolumeX } from "lucide-react";
+import { Smartphone, QrCode, CheckCircle, Circle, RefreshCw, MessageSquare, Wifi, WifiOff, Plus, Trash2, Ban, Upload, Image, X, Shield, Eye, EyeOff, ExternalLink, Mail, AlertCircle, Download, Server, GitBranch, Clock, Terminal, Key, CalendarHeart, Edit2, CreditCard, AlertTriangle, Loader2, XCircle, Crown, Users, UserPlus, Pencil, Info, Save, Bell, Settings2, Building2, Phone, DollarSign, FileText, HelpCircle, Globe, BarChart3, Volume2, VolumeX, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Holiday, Agency } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1862,6 +1862,76 @@ export default function Settings() {
   );
 }
 
+// Shared interface for subscription plans
+interface SubscriptionPlanCheck {
+  id: number;
+  code: string;
+  name: string;
+  features: string;
+}
+
+// Check if user's plan has whatsapp_bot feature
+function useHasWhatsappFeature(): boolean {
+  const { data: subscriptionPlans } = useQuery<SubscriptionPlanCheck[]>({
+    queryKey: ["/api/subscription-plans"],
+  });
+
+  try {
+    const userData = localStorage.getItem("userData");
+    if (!userData) return false;
+    const user = JSON.parse(userData);
+    const membershipType = user.membershipType;
+    
+    if (!subscriptionPlans || !membershipType) return false;
+    
+    const currentPlan = subscriptionPlans.find(p => p.code === membershipType);
+    if (!currentPlan) return false;
+    
+    const features = JSON.parse(currentPlan.features || "[]");
+    return features.includes("whatsapp_bot");
+  } catch {
+    return false;
+  }
+}
+
+// Locked Feature Card Component
+function LockedFeatureCard({ title, description }: { title: string; description: string }) {
+  return (
+    <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+          <Lock className="h-5 w-5" />
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="p-4 bg-amber-100 dark:bg-amber-900 rounded-lg">
+          <div className="flex items-start gap-3">
+            <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">
+                Bu özellik planınızda mevcut değil
+              </p>
+              <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                WhatsApp entegrasyonunu kullanmak için planınızı yükseltin.
+              </p>
+              <a 
+                href="/subscription" 
+                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline mt-3"
+                data-testid="link-upgrade-plan-whatsapp"
+              >
+                <Crown className="h-4 w-4" />
+                Planı Yükselt
+              </a>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // Twilio Card Component
 function TwilioCard() {
   const { toast } = useToast();
@@ -1871,6 +1941,7 @@ function TwilioCard() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [showAuthToken, setShowAuthToken] = useState(false);
+  const hasWhatsappFeature = useHasWhatsappFeature();
 
   const { data: twilioSettings, isLoading, refetch } = useQuery<{
     twilioAccountSid: string;
@@ -1982,6 +2053,16 @@ function TwilioCard() {
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Show locked card if user doesn't have whatsapp_bot feature
+  if (!hasWhatsappFeature) {
+    return (
+      <LockedFeatureCard 
+        title="Twilio WhatsApp Entegrasyonu" 
+        description="WhatsApp üzerinden müşterilerinizle iletişim kurmak için Twilio hesabınızı bağlayın"
+      />
     );
   }
 
@@ -2235,6 +2316,7 @@ function MetaCloudCard() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [showAccessToken, setShowAccessToken] = useState(false);
+  const hasWhatsappFeature = useHasWhatsappFeature();
 
   const { data: metaSettings, isLoading, refetch } = useQuery<{
     metaPhoneNumberId: string;
@@ -2347,6 +2429,16 @@ function MetaCloudCard() {
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Show locked card if user doesn't have whatsapp_bot feature
+  if (!hasWhatsappFeature) {
+    return (
+      <LockedFeatureCard 
+        title="Meta Cloud API (Facebook WhatsApp)" 
+        description="Facebook'un resmi WhatsApp Business API'sini kullanarak müşterilerinizle iletişim kurun"
+      />
     );
   }
 
