@@ -89,15 +89,7 @@ export default function Settings() {
   const [newBlacklistReason, setNewBlacklistReason] = useState("");
     
   // Bot Access Settings
-  const [botAccessActivities, setBotAccessActivities] = useState(true);
-  const [botAccessPackageTours, setBotAccessPackageTours] = useState(true);
-  const [botAccessCapacity, setBotAccessCapacity] = useState(true);
-  const [botAccessFaq, setBotAccessFaq] = useState(true);
-  const [botAccessConfirmation, setBotAccessConfirmation] = useState(true);
-  const [botAccessTransfer, setBotAccessTransfer] = useState(true);
-  const [botAccessExtras, setBotAccessExtras] = useState(true);
-  const [botAccessAiFallback, setBotAccessAiFallback] = useState(false); // Default kapalı
-  const [botAccessAiFirstMode, setBotAccessAiFirstMode] = useState(false); // AI-First mode (N8N style)
+  // AI-First Mode is always enabled, no toggles needed
   const [customBotPrompt, setCustomBotPrompt] = useState(""); // Custom instructions for AI-First mode
   const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
   
@@ -309,15 +301,6 @@ export default function Settings() {
       try {
         const settings = JSON.parse(botAccessSettings.value);
         if (settings.enabled !== undefined) setBotEnabled(settings.enabled);
-        if (settings.activities !== undefined) setBotAccessActivities(settings.activities);
-        if (settings.packageTours !== undefined) setBotAccessPackageTours(settings.packageTours);
-        if (settings.capacity !== undefined) setBotAccessCapacity(settings.capacity);
-        if (settings.faq !== undefined) setBotAccessFaq(settings.faq);
-        if (settings.confirmation !== undefined) setBotAccessConfirmation(settings.confirmation);
-        if (settings.transfer !== undefined) setBotAccessTransfer(settings.transfer);
-        if (settings.extras !== undefined) setBotAccessExtras(settings.extras);
-        if (settings.aiFallbackEnabled !== undefined) setBotAccessAiFallback(settings.aiFallbackEnabled);
-        if (settings.aiFirstMode !== undefined) setBotAccessAiFirstMode(settings.aiFirstMode);
         if (settings.customBotPrompt !== undefined) setCustomBotPrompt(settings.customBotPrompt);
         setBotAccessSettingsLoaded(true);
       } catch {}
@@ -686,18 +669,18 @@ export default function Settings() {
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
-      // Build bot access settings object
+      // Build bot access settings object (AI-First Mode always enabled)
       const botAccessValue = JSON.stringify({
         enabled: botEnabled,
-        activities: botAccessActivities,
-        packageTours: botAccessPackageTours,
-        capacity: botAccessCapacity,
-        faq: botAccessFaq,
-        confirmation: botAccessConfirmation,
-        transfer: botAccessTransfer,
-        extras: botAccessExtras,
-        aiFallbackEnabled: botAccessAiFallback,
-        aiFirstMode: botAccessAiFirstMode,
+        activities: true,
+        packageTours: true,
+        capacity: true,
+        faq: true,
+        confirmation: true,
+        transfer: true,
+        extras: true,
+        aiFallbackEnabled: false,
+        aiFirstMode: true,
         customBotPrompt: customBotPrompt
       });
 
@@ -1327,72 +1310,29 @@ export default function Settings() {
 
                       <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                         <div className="space-y-1">
-                          <Label className="text-base font-medium">Bot Modu</Label>
+                          <div className="flex items-center gap-2">
+                            <Label className="text-base font-medium">Bot Talimatları</Label>
+                            <Badge className="text-xs bg-primary/20 text-primary border-primary/30">AI-First Mode</Badge>
+                          </div>
                           <p className="text-sm text-muted-foreground">
-                            WhatsApp botunun çalışma modunu seçin
+                            Bot her mesajda yapay zeka kullanarak doğal ve insani cevaplar üretir
                           </p>
                         </div>
                         
-                        <div className="space-y-3">
-                          {/* AI-First Mode Toggle */}
-                          <div className="flex items-center justify-between gap-4 py-3 bg-primary/5 rounded-lg px-4">
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2">
-                                <Label className="font-medium">AI-First Mode</Label>
-                                <Badge className="text-xs bg-primary/20 text-primary border-primary/30">Önerilen</Badge>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Doğal konuşma modu - Her mesajda AI kullanarak insani cevaplar üretir. SSS bilgilerini referans olarak kullanır.
-                              </p>
-                            </div>
-                            <Switch 
-                              checked={botAccessAiFirstMode} 
-                              onCheckedChange={(checked) => {
-                                setBotAccessAiFirstMode(checked);
-                                if (checked) setBotAccessAiFallback(false);
-                              }}
-                              data-testid="switch-bot-access-ai-first-mode"
-                            />
+                        <div className="py-3 px-4 bg-muted/30 space-y-3 rounded-lg">
+                          <div className="space-y-1">
+                            <Label className="text-sm font-medium">Özel Bot Talimatları</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Bot'a ek talimatlar verin. Örn: "Müşterilere efendim diye hitap et", "Grup indirimi %10 olduğunu söyle"
+                            </p>
                           </div>
-                          
-                          {/* Custom Bot Prompt (only visible when AI-First is enabled) */}
-                          {botAccessAiFirstMode && (
-                            <div className="py-3 px-4 bg-muted/30 space-y-3 rounded-lg">
-                              <div className="space-y-1">
-                                <Label className="text-sm font-medium">Özel Bot Talimatları</Label>
-                                <p className="text-xs text-muted-foreground">
-                                  Bot'a ek talimatlar verin. Örn: "Müşterilere efendim diye hitap et", "Grup indirimi %10 olduğunu söyle"
-                                </p>
-                              </div>
-                              <Textarea
-                                value={customBotPrompt}
-                                onChange={(e) => setCustomBotPrompt(e.target.value)}
-                                placeholder="Opsiyonel: Bot'a özel talimatlarınızı buraya yazın..."
-                                className="min-h-[80px] text-sm"
-                                data-testid="textarea-custom-bot-prompt"
-                              />
-                            </div>
-                          )}
-                          
-                          {/* AI Fallback (only visible when AI-First is disabled) */}
-                          {!botAccessAiFirstMode && (
-                            <div className="flex items-center justify-between gap-4 py-3 bg-muted/50 rounded-lg px-4">
-                              <div className="space-y-0.5">
-                                <div className="flex items-center gap-2">
-                                  <Label>AI Fallback (Şablon Modu)</Label>
-                                  <Badge variant="outline" className="text-xs">Gelişmiş</Badge>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                  Şablonlarla cevaplanamayan sorular için AI desteği. Sadece bilinmeyen sorularda devreye girer.
-                                </p>
-                              </div>
-                              <Switch 
-                                checked={botAccessAiFallback} 
-                                onCheckedChange={setBotAccessAiFallback}
-                                data-testid="switch-bot-access-ai-fallback"
-                              />
-                            </div>
-                          )}
+                          <Textarea
+                            value={customBotPrompt}
+                            onChange={(e) => setCustomBotPrompt(e.target.value)}
+                            placeholder="Opsiyonel: Bot'a özel talimatlarınızı buraya yazın..."
+                            className="min-h-[80px] text-sm"
+                            data-testid="textarea-custom-bot-prompt"
+                          />
                         </div>
                       </div>
 
