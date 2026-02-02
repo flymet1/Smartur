@@ -1329,8 +1329,13 @@ export default function Settings() {
                           <Textarea
                             value={customBotPrompt}
                             onChange={(e) => setCustomBotPrompt(e.target.value)}
-                            placeholder="Opsiyonel: Bot'a özel talimatlarınızı buraya yazın..."
-                            className="min-h-[80px] text-sm"
+                            placeholder={`Sen profesyonel ve samimi bir turizm danışmanısın.
+• Müşterilere nazik ve yardımsever ol
+• Fiyat sorarlarsa TL cinsinden söyle
+• Rezervasyon için aktivite sayfasındaki linki paylaş
+• Emin olmadığın bilgileri uydurmak yerine "Müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir." de
+• Cevapları kısa ve öz tut (WhatsApp için uygun)`}
+                            className="min-h-[120px] text-sm"
                             data-testid="textarea-custom-bot-prompt"
                           />
                         </div>
