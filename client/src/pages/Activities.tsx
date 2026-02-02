@@ -976,18 +976,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="reservationLinkEn">(İngilizce) Rezervasyon Linki</Label>
-                      <Input 
-                        id="reservationLinkEn"
-                        type="url"
-                        value={reservationLinkEn}
-                        onChange={(e) => setReservationLinkEn(e.target.value)}
-                        placeholder="https://example.com/reservation"
-                        data-testid="input-reservation-link-en"
-                      />
-                      <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği harici sayfa linkleri</p>
-                    </div>
+                    <p className="text-xs text-muted-foreground">Müşterilerin bu aktivite için rezervasyon yapabileceği harici sayfa linki</p>
                   </>
                 )}
 
