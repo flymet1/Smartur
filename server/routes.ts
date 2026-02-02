@@ -3171,6 +3171,11 @@ function buildCleanContext(
       categories: categories.length > 0 ? categories : undefined,
       itinerary: itinerary.length > 0 ? itinerary : undefined,
       description: a.description || undefined,
+      // Payment info
+      requiresDeposit: a.requiresDeposit || false,
+      depositType: a.depositType || 'percentage',
+      depositAmount: a.depositAmount || 0,
+      fullPaymentRequired: a.fullPaymentRequired || false,
       transferInfo: transferInfo || undefined,
       hotelTransfer: !!(a.hasFreeHotelTransfer || a.hotelTransfer),
       pickupMinutesBefore: a.arrivalMinutesBefore || a.pickupMinutesBefore || undefined,
@@ -3409,6 +3414,21 @@ function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, i
     // Description (brief)
     if (act.description && act.description.length < 200) {
       prompt += `\n  ${isEnglish ? 'Description' : 'Açıklama'}: ${act.description}`;
+    }
+    
+    // Payment/deposit info
+    if (act.fullPaymentRequired) {
+      prompt += `\n  ${isEnglish ? 'Payment' : 'Ödeme'}: ${isEnglish ? 'Full payment required at booking' : 'Rezervasyonda tam ödeme gerekli'}`;
+    } else if (act.requiresDeposit && act.depositAmount > 0) {
+      const price = parseInt(act.price?.replace(/\D/g, '') || '0');
+      if (act.depositType === 'percentage') {
+        const depositTl = Math.round((price * act.depositAmount) / 100);
+        const remaining = price - depositTl;
+        prompt += `\n  ${isEnglish ? 'Deposit' : 'Ön ödeme'}: ${depositTl} TL (%${act.depositAmount}), ${isEnglish ? 'remaining' : 'kalan'}: ${remaining} TL ${isEnglish ? 'on activity day' : 'aktivite günü'}`;
+      } else {
+        const remaining = price - act.depositAmount;
+        prompt += `\n  ${isEnglish ? 'Deposit' : 'Ön ödeme'}: ${act.depositAmount} TL, ${isEnglish ? 'remaining' : 'kalan'}: ${remaining} TL ${isEnglish ? 'on activity day' : 'aktivite günü'}`;
+      }
     }
     
     // Activity FAQs as reference
