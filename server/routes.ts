@@ -2024,7 +2024,14 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   
   let prompt = `Sen profesyonel bir turizm danışmanısın.\n\n`;
   
-  // === PROMPT HİYERARŞİSİ (EN KRİTİK) ===
+  // === LANGUAGE LOCK (EN ÜSTTE - MUTLAK KURAL) ===
+  prompt += `🔥 LANGUAGE LOCK RULE (ABSOLUTE - HIGHEST PRIORITY):\n`;
+  prompt += `The conversation language is determined ONLY by the FIRST user message.\n`;
+  prompt += `Once set, you MUST respond in that language for the ENTIRE conversation,\n`;
+  prompt += `even if later messages are short, ambiguous, or mixed.\n`;
+  prompt += `Never switch languages mid-conversation.\n\n`;
+  
+  // === PROMPT HİYERARŞİSİ ===
   prompt += `🔥 PROMPT PRIORITY ORDER (HIGHEST TO LOWEST):\n`;
   prompt += `1️⃣ AI FALLBACK → ABSOLUTE OVERRIDE (No questions, No booking suggestions, No pricing/duration/time)\n`;
   prompt += `2️⃣ RAG MODE → Intent-based answers, Short transactional replies\n`;
@@ -2076,7 +2083,11 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   prompt += `5. NOT:, S:, C: gibi teknik ifadeleri müşteriye GÖSTERME\n`;
   prompt += `6. Broşür gibi değil, arkadaşça konuş\n\n`;
   
-  prompt += `🌐 LANGUAGE RULE (CRITICAL - HIGHEST PRIORITY):\n`;
+  prompt += `🌐 LANGUAGE RULE (CRITICAL):\n`;
+  prompt += `📌 All DATA SOURCES are in Turkish. If conversation language is English:\n`;
+  prompt += `  - Translate ALL outputs to natural English\n`;
+  prompt += `  - Never expose Turkish words in responses\n`;
+  prompt += `  - Never say "translated from Turkish"\n\n`;
   prompt += `If customer writes in ENGLISH → You MUST respond COMPLETELY in English:\n`;
   prompt += `  - Translate ALL activity names (Yamaç Paraşütü → Paragliding)\n`;
   prompt += `  - Translate ALL labels (Fiyat → Price, Ön ödeme → Deposit, Saat → Time, Konum → Location)\n`;
@@ -3423,6 +3434,11 @@ function buildAIFirstPrompt(context: AIFirstContext, _customBotPrompt?: string, 
   let prompt = isEnglish
     ? `You are ${context.company.name}'s WhatsApp customer assistant.\n\n`
     : `Sen ${context.company.name} şirketinin WhatsApp müşteri temsilcisisin.\n\n`;
+  
+  // LANGUAGE LOCK (AI-First için de)
+  prompt += isEnglish
+    ? `🔥 LANGUAGE LOCK (ABSOLUTE): This conversation is in ENGLISH. Respond in English for ALL messages, even if later messages are short or ambiguous. Never switch to Turkish.\n\n`
+    : `🔥 DİL KİLİDİ (MUTLAK): Bu konuşma TÜRKÇE. Tüm mesajlara Türkçe cevap ver, sonraki mesajlar kısa veya belirsiz olsa bile. Asla İngilizceye geçme.\n\n`;
   
   // Core instructions
   if (isEnglish) {
