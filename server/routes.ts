@@ -2024,6 +2024,24 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   
   let prompt = `Sen profesyonel bir turizm danışmanısın.\n\n`;
   
+  // === PROMPT HİYERARŞİSİ (EN KRİTİK) ===
+  prompt += `🔥 PROMPT PRIORITY ORDER (HIGHEST TO LOWEST):\n`;
+  prompt += `1️⃣ AI FALLBACK → ABSOLUTE OVERRIDE (No questions, No booking suggestions, No pricing/duration/time)\n`;
+  prompt += `2️⃣ RAG MODE → Intent-based answers, Short transactional replies\n`;
+  prompt += `3️⃣ AI-FIRST MODE → JSON-based reasoning, Calculations and booking flow\n`;
+  prompt += `If rules conflict, ALWAYS follow the higher priority mode.\n\n`;
+  
+  // === PARA BİRİMİ KİLİDİ (EN BAŞTA) ===
+  const isEnglishConv = context.language === 'en' || context.lastMessageLang === 'en';
+  prompt += `⚠️ RAG MODE CURRENCY RULE:\n`;
+  if (isEnglishConv) {
+    prompt += `- English conversation → ONLY USD ($)\n`;
+    prompt += `- Never use TL in English answers\n\n`;
+  } else {
+    prompt += `- Turkish conversation → ONLY TL\n`;
+    prompt += `- Never use USD ($) in Turkish answers\n\n`;
+  }
+  
   // === ACTIVITY LOCK: Aktivite değişimi bildirimi ===
   if (activityChanged && relevantActivity) {
     prompt += `🔄 KONU DEĞİŞTİ! Müşteri artık "${relevantActivity.name}" hakkında konuşuyor.\n`;
@@ -2032,7 +2050,8 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   
   // === FEW-SHOT ÖRNEKLER (EN ÖNEMLİ - AI BUNLARI TAKLİT EDER) ===
   prompt += `📌 DOĞRU CEVAP ÖRNEKLERİ (Bunları taklit et!):\n`;
-  prompt += `⚠️ Bu örnekler SADECE RAG MODE içindir. AI FALLBACK modunda bu örnekler GEÇERLİ DEĞİLDİR.\n\n`;
+  prompt += `⚠️ Bu örnekler SADECE RAG MODE içindir.\n`;
+  prompt += `These examples do NOT apply to AI FALLBACK or AI-FIRST modes.\n\n`;
   prompt += `--- TÜRKÇE ÖRNEKLER ---\n`;
   prompt += `Kullanıcı: "merhaba"\n`;
   prompt += `Asistan: "Merhaba! Size nasıl yardımcı olabilirim?"\n\n`;
@@ -2064,15 +2083,6 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   prompt += `  - Translate ALL phrases (Başka sorunuz var mı? → Any other questions?)\n`;
   prompt += `  - Use English for EVERYTHING - no Turkish words allowed in English conversation\n`;
   prompt += `If customer writes in TURKISH → Respond in Turkish\n\n`;
-  
-  // Dil bazlı para birimi (AI-First ile tutarlı)
-  const isEnglishConversation = context.language === 'en' || context.lastMessageLang === 'en';
-  if (isEnglishConversation) {
-    prompt += `💰 CURRENCY: Show prices in USD ($). If activity has priceUsd, use it. Otherwise convert TL to USD.\n\n`;
-  } else {
-    prompt += `💰 PARA BİRİMİ: Fiyatları sadece TL olarak söyle, $ kullanma.\n\n`;
-  }
-
   
   // === PERSONA RULES (HIGHEST PRIORITY) - EN BAŞTA ===
   if (context.isPartner) {
@@ -2143,6 +2153,7 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
         // İlk mesaj istisnası - sadece ilk mesajda sormaya izin ver
         if (isFirstMessage) {
           prompt += `Bu İLK MESAJ olduğu için hangi aktivite hakkında bilgi istediğini sorabilirsin.\n`;
+          prompt += `⚠️ This clarification question is allowed ONLY ONCE and ONLY on the very first user message.\n`;
         } else {
           prompt += `⚠️ Bu TAKİP mesajı! Konuşma geçmişinden aktiviteyi anlamaya çalış, "hangi aktivite" diye SORMA.\n`;
         }
