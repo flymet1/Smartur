@@ -1558,9 +1558,13 @@ function generateTemplateResponse(ctx: TemplateContext): string {
     return "Bu bilgiyi paylaştım. İsterseniz rezervasyon linki gönderebilirim veya başka bir konuda yardımcı olabilirim.";
   }
   
-  // 1. SELAMLAMA
+  // 1. SELAMLAMA - Mevcut mesaj dilini kullan (state'i yok say)
   if (intent.type === 'greeting') {
-    return isEn 
+    // Selamlama için her zaman mevcut mesajın dilini kullan
+    const greetingLangIsEn = originalMessage 
+      ? /\b(hello|hi|hey|good morning|good evening)\b/i.test(originalMessage)
+      : isEn;
+    return greetingLangIsEn 
       ? "Hello! How can I help you?" 
       : "Merhaba! Size nasıl yardımcı olabilirim?";
   }
