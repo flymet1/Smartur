@@ -931,6 +931,20 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="freeCancellationHours">Ücretsiz İptal Süresi (Saat)</Label>
+                  <Input 
+                    id="freeCancellationHours"
+                    type="number"
+                    min="0"
+                    value={freeCancellationHours}
+                    onChange={(e) => setFreeCancellationHours(e.target.value)}
+                    placeholder="24"
+                    data-testid="input-free-cancellation-hours"
+                  />
+                  <p className="text-xs text-muted-foreground">Aktivite tarihinden kaç saat öncesine kadar ücretsiz iptal yapılabilir.</p>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="description">Açıklama</Label>
                   <Textarea 
                     id="description" 
@@ -1937,19 +1951,6 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                         <p className="text-xs text-muted-foreground">Sipariş onay mesajında {"{saglik_notlari}"} placeholder'ı ile ve bot yanıtlarında kullanılacaktır.</p>
                       </div>
 
-                      <div className="space-y-2 pt-2 border-t">
-                        <Label htmlFor="freeCancellationHours">Ücretsiz İptal Süresi (Saat)</Label>
-                        <Input 
-                          id="freeCancellationHours"
-                          type="number"
-                          min="0"
-                          value={freeCancellationHours}
-                          onChange={(e) => setFreeCancellationHours(e.target.value)}
-                          placeholder="24"
-                          data-testid="input-free-cancellation-hours"
-                        />
-                        <p className="text-xs text-muted-foreground">Aktivite tarihinden kaç saat öncesine kadar ücretsiz iptal yapılabilir. Bot bu bilgiyi kullanarak iptal taleplerini değerlendirecek.</p>
-                      </div>
                     </>
                   )}
                 </div>
