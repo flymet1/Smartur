@@ -2031,7 +2031,8 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   }
   
   // === FEW-SHOT ÖRNEKLER (EN ÖNEMLİ - AI BUNLARI TAKLİT EDER) ===
-  prompt += `📌 DOĞRU CEVAP ÖRNEKLERİ (Bunları taklit et!):\n\n`;
+  prompt += `📌 DOĞRU CEVAP ÖRNEKLERİ (Bunları taklit et!):\n`;
+  prompt += `⚠️ Bu örnekler SADECE RAG MODE içindir. AI FALLBACK modunda bu örnekler GEÇERLİ DEĞİLDİR.\n\n`;
   prompt += `--- TÜRKÇE ÖRNEKLER ---\n`;
   prompt += `Kullanıcı: "merhaba"\n`;
   prompt += `Asistan: "Merhaba! Size nasıl yardımcı olabilirim?"\n\n`;
@@ -2064,7 +2065,14 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   prompt += `  - Use English for EVERYTHING - no Turkish words allowed in English conversation\n`;
   prompt += `If customer writes in TURKISH → Respond in Turkish\n\n`;
   
-  prompt += `💰 PARA BİRİMİ: Fiyatları sadece TL olarak söyle, $ kullanma.\n\n`;
+  // Dil bazlı para birimi (AI-First ile tutarlı)
+  const isEnglishConversation = context.language === 'en' || context.lastMessageLang === 'en';
+  if (isEnglishConversation) {
+    prompt += `💰 CURRENCY: Show prices in USD ($). If activity has priceUsd, use it. Otherwise convert TL to USD.\n\n`;
+  } else {
+    prompt += `💰 PARA BİRİMİ: Fiyatları sadece TL olarak söyle, $ kullanma.\n\n`;
+  }
+
   
   // === PERSONA RULES (HIGHEST PRIORITY) - EN BAŞTA ===
   if (context.isPartner) {
@@ -2132,7 +2140,12 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
       } else if (safeActivities.length > 0) {
         prompt += `Müşteri bir aktivite hakkında soruyor ama hangi aktivite olduğu belirsiz.\n`;
         prompt += `Mevcut aktiviteler: ${safeActivities.map(a => a.name).join(', ')}\n`;
-        prompt += `Hangi aktivite hakkında bilgi istediğini sor.\n`;
+        // İlk mesaj istisnası - sadece ilk mesajda sormaya izin ver
+        if (isFirstMessage) {
+          prompt += `Bu İLK MESAJ olduğu için hangi aktivite hakkında bilgi istediğini sorabilirsin.\n`;
+        } else {
+          prompt += `⚠️ Bu TAKİP mesajı! Konuşma geçmişinden aktiviteyi anlamaya çalış, "hangi aktivite" diye SORMA.\n`;
+        }
       } else {
         prompt += `Aktivite bilgisi mevcut değil. Müşteriyi web sitesine yönlendir.\n`;
       }
