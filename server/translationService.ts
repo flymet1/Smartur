@@ -57,7 +57,7 @@ export async function translateText(text: string, targetLang: string): Promise<s
   
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [{
         role: 'user',
         content: `Translate the following text to ${targetLangName}. Return ONLY the translated text, no explanations or additional text. If the text contains HTML, preserve the HTML tags. If the text is already in ${targetLangName}, return it as is.

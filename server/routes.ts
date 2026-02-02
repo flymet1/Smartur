@@ -1474,7 +1474,7 @@ async function callAIFallback(
     const systemPrompt = buildAIFallbackPrompt(activity, activities, lang);
     
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: message }
@@ -2347,7 +2347,7 @@ async function generateAIResponse(history: any[], context: any, customPrompt?: s
         }
         
         const completion = await openai.chat.completions.create({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           messages,
           temperature: 0.7,
           max_tokens: 500
@@ -2789,7 +2789,7 @@ ${context.botRules || DEFAULT_BOT_RULES}
         }
 
         const completion = await openai.chat.completions.create({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini',
           messages,
           temperature: 0.7,
           max_tokens: 500
@@ -3488,7 +3488,7 @@ async function generateAIFirstResponse(
     messages.push({ role: 'user', content: userMessage });
     
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages,
       temperature: 0.7,
       max_tokens: 500
@@ -10176,7 +10176,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         : `Translate the following English text to Turkish. Only return the translation, nothing else:\n\n${text.trim()}`;
       
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
         max_tokens: 500
