@@ -3107,6 +3107,18 @@ function buildCleanContext(
       extras = extrasData.filter((e: any) => e.name).map((e: any) => ({ name: e.name, price: e.price || 0 }));
     } catch {}
     
+    // Parse whatToBring from JSON
+    let whatToBring: string[] = [];
+    try {
+      whatToBring = typeof a.whatToBring === 'string' ? JSON.parse(a.whatToBring) : (a.whatToBring || []);
+    } catch {}
+    
+    // Parse notAllowed from JSON
+    let notAllowed: string[] = [];
+    try {
+      notAllowed = typeof a.notAllowed === 'string' ? JSON.parse(a.notAllowed) : (a.notAllowed || []);
+    } catch {}
+    
     // Parse transfer zones
     let transferInfo = '';
     if (a.hasFreeHotelTransfer || a.hotelTransfer) {
@@ -3132,6 +3144,9 @@ function buildCleanContext(
       excludedItems: excludedItems.length > 0 ? excludedItems : undefined,
       highlights: highlights.length > 0 ? highlights : undefined,
       extras: extras.length > 0 ? extras : undefined,
+      whatToBring: whatToBring.length > 0 ? whatToBring : undefined,
+      notAllowed: notAllowed.length > 0 ? notAllowed : undefined,
+      importantNotes: a.importantNotes || undefined,
       transferInfo: transferInfo || undefined,
       hotelTransfer: !!(a.hasFreeHotelTransfer || a.hotelTransfer),
       pickupMinutesBefore: a.arrivalMinutesBefore || a.pickupMinutesBefore || undefined,
@@ -3329,6 +3344,21 @@ function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, i
     if (act.extras && act.extras.length > 0) {
       const extrasStr = act.extras.map(e => `${e.name} (+${e.price} TL)`).join(', ');
       prompt += `\n  ${isEnglish ? 'Extras' : 'Ekstralar'}: ${extrasStr}`;
+    }
+    
+    // What to bring
+    if (act.whatToBring && act.whatToBring.length > 0) {
+      prompt += `\n  ${isEnglish ? 'What to bring' : 'Getirmeniz gerekenler'}: ${act.whatToBring.join(', ')}`;
+    }
+    
+    // Not allowed
+    if (act.notAllowed && act.notAllowed.length > 0) {
+      prompt += `\n  ${isEnglish ? 'Not allowed' : 'İzin verilmeyenler'}: ${act.notAllowed.join(', ')}`;
+    }
+    
+    // Important notes
+    if (act.importantNotes) {
+      prompt += `\n  ${isEnglish ? 'Important' : 'Önemli'}: ${act.importantNotes}`;
     }
     
     // Activity FAQs as reference
