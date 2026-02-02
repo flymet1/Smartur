@@ -3297,140 +3297,132 @@ function buildCleanContext(
   };
 }
 
-// Build lightweight prompt for AI-First mode (GPT-4o)
-// Only provides activity list and data access instructions - not full details
-function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, isEnglish: boolean = false): string {
+// Build JSON-based prompt for AI-First mode (GPT-4o)
+function buildAIFirstPrompt(context: AIFirstContext, _customBotPrompt?: string, isEnglish: boolean = false): string {
   
+  // Build JSON data structure
+  const dataJson = {
+    company: {
+      name: context.company.name,
+      phone: context.company.phone || null,
+      email: context.company.email || null,
+      address: context.company.address || null,
+      paymentMethods: context.company.paymentMethods || ['Visa', 'MasterCard', 'Nakit'],
+      cancellationPolicy: context.company.cancellationPolicy || null
+    },
+    activities: context.activities.map(act => ({
+      name: isEnglish && act.nameEn ? act.nameEn : act.name,
+      price: isEnglish && act.priceUsd ? act.priceUsd : act.price,
+      priceNumeric: parseInt(act.price?.replace(/\D/g, '') || '0'),
+      duration: act.duration || null,
+      location: act.location || null,
+      meetingPoint: act.meetingPoint || null,
+      bookingLink: isEnglish && act.bookingLinkEn ? act.bookingLinkEn : act.bookingLink || null,
+      transferInfo: act.transferInfo || null,
+      includedItems: act.includedItems || [],
+      excludedItems: act.excludedItems || [],
+      minAge: act.minAge || null,
+      maxParticipants: act.maxParticipants || null,
+      extras: act.extras || [],
+      whatToBring: act.whatToBring || [],
+      notAllowed: act.notAllowed || [],
+      healthNotes: act.healthNotes || null,
+      deposit: act.requiresDeposit && act.depositAmount > 0 ? {
+        amount: act.depositType === 'percentage' 
+          ? Math.round((parseInt(act.price?.replace(/\D/g, '') || '0') * act.depositAmount) / 100)
+          : act.depositAmount,
+        percentage: act.depositType === 'percentage' ? act.depositAmount : null
+      } : null,
+      fullPaymentRequired: act.fullPaymentRequired || false,
+      faqs: act.faqs.map(f => ({
+        q: isEnglish && f.qEn ? f.qEn : f.q,
+        a: isEnglish && f.aEn ? f.aEn : f.a
+      }))
+    })),
+    packageTours: context.packageTours.map(pt => ({
+      name: isEnglish && pt.nameEn ? pt.nameEn : pt.name,
+      price: isEnglish && pt.priceUsd ? pt.priceUsd : pt.price,
+      days: pt.days,
+      bookingLink: pt.bookingLink || null
+    })),
+    generalFaqs: context.generalFaqs.map(faq => ({
+      q: isEnglish && faq.qEn ? faq.qEn : faq.q,
+      a: isEnglish && faq.aEn ? faq.aEn : faq.a
+    })),
+    customerReservation: context.userReservation?.exists ? {
+      activityName: context.userReservation.activityName,
+      date: context.userReservation.date,
+      time: context.userReservation.time,
+      status: context.userReservation.status,
+      trackingLink: context.userReservation.trackingLink || null
+    } : null
+  };
+
+  // Build prompt with instructions
   let prompt = isEnglish
     ? `You are ${context.company.name}'s WhatsApp customer assistant.\n\n`
     : `Sen ${context.company.name} şirketinin WhatsApp müşteri temsilcisisin.\n\n`;
   
-  // Core rules - minimal for GPT-4o
+  // Core instructions
   if (isEnglish) {
-    prompt += `RULES:
-• Be friendly, helpful, concise (max 3-4 sentences)
-• Answer ONLY about our activities - for hotels/restaurants say "We specialize in activities"
-• If unsure, say "Our customer representative will contact you shortly."
-• WhatsApp format: *bold* for key info, • for lists, max 1-2 emojis
+    prompt += `📋 INSTRUCTIONS:
 
+Data Usage: Only use information from the DATA SOURCES below. If info is missing, don't make it up - say "Our representative will contact you."
+
+Short & Clear: Keep answers to 3-4 sentences max. Don't dump brochure info - answer only what was asked.
+
+Smart Calculation: When person count is given (e.g., "2 people"), multiply the activity's priceNumeric by the count and calculate total deposit.
+
+Focused Info:
+- Location question → Give only meetingPoint and location
+- Price question → Give only price and deposit info
+- FAQ question → Look up the activity's faqs array
+
+Format: Bold important info (*Price*, *Time*, *Location*). Use bullet points (•). Max 1-2 emojis.
+
+📅 CURRENT STATUS:
+• Today: ${context.currentDate} (${context.currentDayName})
+• Tomorrow: ${context.tomorrowDate || 'N/A'}${context.upcomingHolidays && context.upcomingHolidays.length > 0 ? `\n• Holidays: ${context.upcomingHolidays.map(h => `${h.name} (${h.date})`).join(', ')}` : ''}
+
+🤖 CUSTOMER HANDLING:
+- Intent Analysis: Focus on keywords (price, location, booking, age limit, etc.)
+- Guide: After answering, ask "Would you like to make a reservation?" or "Any other questions?"
+- Link Sharing: For booking requests, share the activity's bookingLink
+- Contact: For support or special cases, give company.phone
+
+📂 DATA SOURCES (JSON):
+${JSON.stringify(dataJson, null, 2)}
 `;
   } else {
-    prompt += `KURALLAR:
-• Samimi, yardımsever, kısa ol (max 3-4 cümle)
-• SADECE aktivitelerimiz hakkında bilgi ver - otel/restoran için "Biz aktivite konusunda uzmanız" de
-• Emin değilsen "Müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir." de
-• WhatsApp formatı: *bold* önemli bilgiler, • liste için, max 1-2 emoji
+    prompt += `📋 TALİMATLAR:
 
+Veri Kullanımı: Sadece aşağıdaki VERİ KAYNAKLARI'ndaki bilgileri kullan. Bilgi eksikse uydurma, "Yetkilimiz size dönecek" de.
+
+Kısa ve Net: Cevapların 3-4 cümleyi geçmesin. Müşteriye "broşür" dökme, sadece sorduğu sorunun cevabını ver.
+
+Akıllı Hesaplama: Kişi sayısı belirtildiğinde (örn: 2 kişi), ilgili aktivitenin priceNumeric değerini kişi sayısıyla çarpıp toplam tutarı ve toplam ön ödeme miktarını hesaplayarak söyle.
+
+Odaklı Bilgi:
+- Konum sorulursa → Sadece meetingPoint ve location bilgisini ver
+- Fiyat sorulursa → Sadece price ve deposit bilgisini ver
+- SSS sorulursa → İlgili aktivitenin faqs dizisine bakarak cevap ver
+
+Format: Önemli bilgileri (*Fiyat*, *Saat*, *Konum*) bold yaz. Liste için madde işareti (•) kullan. Max 1-2 emoji.
+
+📅 GÜNCEL DURUM:
+• Bugün: ${context.currentDate} (${context.currentDayName})
+• Yarın: ${context.tomorrowDate || 'N/A'}${context.upcomingHolidays && context.upcomingHolidays.length > 0 ? `\n• Tatiller: ${context.upcomingHolidays.map(h => `${h.name} (${h.date})`).join(', ')}` : ''}
+
+🤖 MÜŞTERİ YÖNETİMİ:
+- Niyet Analizi: Müşterinin mesajındaki anahtar kelimeye (fiyat, konum, rezervasyon, yaş sınırı vb.) odaklan
+- Yönlendirme: Bilgi verdikten sonra "Rezervasyon yapmak ister misiniz?" veya "Başka bir sorunuz var mı?" sor
+- Link Paylaşımı: Rezervasyon isteği gelirse ilgili aktivitenin bookingLink bilgisini paylaş
+- İletişim: Destek veya özel durumlar için company.phone bilgisini ver
+
+📂 VERİ KAYNAKLARI (JSON):
+${JSON.stringify(dataJson, null, 2)}
 `;
   }
-  
-  // Add custom prompt if exists
-  if (customBotPrompt && customBotPrompt.trim()) {
-    prompt += `${isEnglish ? 'ADDITIONAL INSTRUCTIONS' : 'EK TALİMATLAR'}:\n${customBotPrompt}\n\n`;
-  }
-  
-  // Date reference
-  prompt += `${isEnglish ? 'TODAY' : 'BUGÜN'}: ${context.currentDate} (${context.currentDayName})\n`;
-  if (context.upcomingHolidays && context.upcomingHolidays.length > 0) {
-    prompt += `${isEnglish ? 'Upcoming holidays' : 'Yaklaşan tatiller'}: ${context.upcomingHolidays.map(h => `${h.name} (${h.date})`).join(', ')}\n`;
-  }
-  
-  // Activity catalog - ONLY names and prices (details are in DATA ACCESS section)
-  prompt += `\n${isEnglish ? 'ACTIVITY CATALOG' : 'AKTİVİTE KATALOĞU'}:\n`;
-  for (const act of context.activities) {
-    const name = isEnglish && act.nameEn ? act.nameEn : act.name;
-    const price = isEnglish && act.priceUsd ? act.priceUsd : act.price;
-    prompt += `• ${name}: ${price}\n`;
-  }
-  
-  // Package tours - only names and prices
-  if (context.packageTours.length > 0) {
-    prompt += `\n${isEnglish ? 'PACKAGE TOURS' : 'PAKET TURLAR'}:\n`;
-    for (const pt of context.packageTours) {
-      const name = isEnglish && pt.nameEn ? pt.nameEn : pt.name;
-      const price = isEnglish && pt.priceUsd ? pt.priceUsd : pt.price;
-      prompt += `• ${name}: ${price}, ${pt.days} ${isEnglish ? 'days' : 'gün'}\n`;
-    }
-  }
-  
-  // DATA ACCESS SECTION - Tell bot where to find details
-  prompt += `\n${isEnglish ? 'DATA ACCESS' : 'VERİ ERİŞİMİ'}:\n`;
-  prompt += isEnglish 
-    ? `Below is the DETAILED DATA for each activity. Use this to answer specific questions about duration, meeting points, what's included, FAQs, booking links, deposits, etc.\n\n`
-    : `Aşağıda her aktivite için DETAYLI VERİ bulunmaktadır. Süre, buluşma noktası, dahil olanlar, SSS, rezervasyon linki, ön ödeme gibi sorulara cevap vermek için bu verileri kullan.\n\n`;
-  
-  // Activity details as structured data
-  for (const act of context.activities) {
-    const name = isEnglish && act.nameEn ? act.nameEn : act.name;
-    prompt += `[${name}]\n`;
-    
-    // Core info
-    prompt += `  ${isEnglish ? 'Price' : 'Fiyat'}: ${isEnglish && act.priceUsd ? act.priceUsd : act.price}\n`;
-    if (act.duration) prompt += `  ${isEnglish ? 'Duration' : 'Süre'}: ${act.duration}\n`;
-    if (act.location) prompt += `  ${isEnglish ? 'Location' : 'Konum'}: ${act.location}\n`;
-    if (act.bookingLink) prompt += `  ${isEnglish ? 'Booking' : 'Rezervasyon'}: ${isEnglish && act.bookingLinkEn ? act.bookingLinkEn : act.bookingLink}\n`;
-    if (act.meetingPoint) prompt += `  ${isEnglish ? 'Meeting point' : 'Buluşma'}: ${act.meetingPoint}\n`;
-    if (act.transferInfo) prompt += `  Transfer: ${act.transferInfo}\n`;
-    if (act.includedItems?.length) prompt += `  ${isEnglish ? 'Included' : 'Dahil'}: ${act.includedItems.join(', ')}\n`;
-    if (act.excludedItems?.length) prompt += `  ${isEnglish ? 'Not included' : 'Dahil değil'}: ${act.excludedItems.join(', ')}\n`;
-    if (act.minAge) prompt += `  ${isEnglish ? 'Min age' : 'Min yaş'}: ${act.minAge}\n`;
-    if (act.maxParticipants) prompt += `  Max: ${act.maxParticipants} ${isEnglish ? 'pax' : 'kişi'}\n`;
-    if (act.extras?.length) prompt += `  ${isEnglish ? 'Extras' : 'Ekstralar'}: ${act.extras.map(e => `${e.name} (+${e.price} TL)`).join(', ')}\n`;
-    if (act.whatToBring?.length) prompt += `  ${isEnglish ? 'Bring' : 'Getirin'}: ${act.whatToBring.join(', ')}\n`;
-    if (act.notAllowed?.length) prompt += `  ${isEnglish ? 'Not allowed' : 'Yasak'}: ${act.notAllowed.join(', ')}\n`;
-    if (act.healthNotes) prompt += `  ${isEnglish ? 'Health' : 'Sağlık'}: ${act.healthNotes}\n`;
-    
-    // Deposit info
-    if (act.fullPaymentRequired) {
-      prompt += `  ${isEnglish ? 'Payment' : 'Ödeme'}: ${isEnglish ? 'Full payment at booking' : 'Tam ödeme gerekli'}\n`;
-    } else if (act.requiresDeposit && act.depositAmount > 0) {
-      const price = parseInt(act.price?.replace(/\D/g, '') || '0');
-      if (act.depositType === 'percentage') {
-        const depositTl = Math.round((price * act.depositAmount) / 100);
-        prompt += `  ${isEnglish ? 'Deposit' : 'Ön ödeme'}: ${depositTl} TL (%${act.depositAmount})\n`;
-      } else {
-        prompt += `  ${isEnglish ? 'Deposit' : 'Ön ödeme'}: ${act.depositAmount} TL\n`;
-      }
-    }
-    
-    // Activity FAQs
-    if (act.faqs.length > 0) {
-      prompt += `  SSS:\n`;
-      for (const f of act.faqs) {
-        const q = isEnglish && f.qEn ? f.qEn : f.q;
-        const a = isEnglish && f.aEn ? f.aEn : f.a;
-        prompt += `    Q: ${q}\n    A: ${a}\n`;
-      }
-    }
-    prompt += `\n`;
-  }
-  
-  // General FAQs
-  if (context.generalFaqs.length > 0) {
-    prompt += `${isEnglish ? 'GENERAL FAQ' : 'GENEL SSS'}:\n`;
-    for (const faq of context.generalFaqs) {
-      const q = isEnglish && faq.qEn ? faq.qEn : faq.q;
-      const a = isEnglish && faq.aEn ? faq.aEn : faq.a;
-      prompt += `Q: ${q}\nA: ${a}\n\n`;
-    }
-  }
-  
-  // User reservation context if exists
-  if (context.userReservation?.exists) {
-    prompt += `${isEnglish ? 'CUSTOMER RESERVATION' : 'MÜŞTERİ REZERVASYONU'}:\n`;
-    prompt += `• ${context.userReservation.activityName} - ${context.userReservation.date} ${context.userReservation.time}\n`;
-    prompt += `• ${isEnglish ? 'Status' : 'Durum'}: ${context.userReservation.status}\n`;
-    if (context.userReservation.trackingLink) {
-      prompt += `• ${isEnglish ? 'Track' : 'Takip'}: ${context.userReservation.trackingLink}\n`;
-    }
-    prompt += `\n`;
-  }
-  
-  // Company contact
-  prompt += `${isEnglish ? 'CONTACT' : 'İLETİŞİM'}:\n`;
-  if (context.company.phone) prompt += `• ${context.company.phone}\n`;
-  if (context.company.email) prompt += `• ${context.company.email}\n`;
-  if (context.company.address) prompt += `• ${context.company.address}\n`;
   
   return prompt;
 }

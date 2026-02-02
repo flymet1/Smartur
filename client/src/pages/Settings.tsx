@@ -90,7 +90,7 @@ export default function Settings() {
     
   // Bot Access Settings
   // AI-First Mode is always enabled, no toggles needed
-  const [customBotPrompt, setCustomBotPrompt] = useState(""); // Custom instructions for AI-First mode
+  // customBotPrompt removed - now using JSON-based prompt system
   const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
   
   // System Rules (RAG Prompt Rules)
@@ -301,7 +301,7 @@ export default function Settings() {
       try {
         const settings = JSON.parse(botAccessSettings.value);
         if (settings.enabled !== undefined) setBotEnabled(settings.enabled);
-        if (settings.customBotPrompt !== undefined) setCustomBotPrompt(settings.customBotPrompt);
+        // customBotPrompt removed from settings
         setBotAccessSettingsLoaded(true);
       } catch {}
     }
@@ -680,8 +680,7 @@ export default function Settings() {
         transfer: true,
         extras: true,
         aiFallbackEnabled: false,
-        aiFirstMode: true,
-        customBotPrompt: customBotPrompt
+        aiFirstMode: true
       });
 
       // Save all settings
@@ -1319,26 +1318,6 @@ export default function Settings() {
                           </p>
                         </div>
                         
-                        <div className="py-3 px-4 bg-muted/30 space-y-3 rounded-lg">
-                          <div className="space-y-1">
-                            <Label className="text-sm font-medium">Özel Bot Talimatları</Label>
-                            <p className="text-xs text-muted-foreground">
-                              Bot'a ek talimatlar verin. Örn: "Müşterilere efendim diye hitap et", "Grup indirimi %10 olduğunu söyle"
-                            </p>
-                          </div>
-                          <Textarea
-                            value={customBotPrompt}
-                            onChange={(e) => setCustomBotPrompt(e.target.value)}
-                            placeholder={`Sen profesyonel ve samimi bir turizm danışmanısın.
-• Müşterilere nazik ve yardımsever ol
-• Fiyat sorarlarsa TL cinsinden söyle
-• Rezervasyon için aktivite sayfasındaki linki paylaş
-• Emin olmadığın bilgileri uydurmak yerine "Müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir." de
-• Cevapları kısa ve öz tut (WhatsApp için uygun)`}
-                            className="min-h-[120px] text-sm"
-                            data-testid="textarea-custom-bot-prompt"
-                          />
-                        </div>
                       </div>
 
                       <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
