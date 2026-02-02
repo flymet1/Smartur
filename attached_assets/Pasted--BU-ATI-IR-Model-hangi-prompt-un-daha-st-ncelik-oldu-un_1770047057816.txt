@@ -1,0 +1,169 @@
+🔴 BU ÇATIŞIR.
+Model hangi prompt’un daha üst öncelik olduğunu karıştırır.
+
+✅ ÇÖZÜM (ÖNERİLEN):
+
+Kural hiyerarşisini netleştir:
+
+RAG → Her zaman TL
+
+AI-FIRST → Dil bazlı para birimi
+
+Bunu açıkça yaz:
+
+⚠️ PRIORITY RULE:
+- RAG MODE → Prices are ALWAYS in TL (regardless of language)
+- AI-FIRST MODE → Currency follows language (EN = USD, TR = TL)
+
+
+Ya da daha temiz çözüm:
+➡️ RAG’te USD’yi tamamen kapat, sadece AI-FIRST’te aç.
+
+2️⃣ FALLBACK vs RAG “TAKİP SORUSU” ÇATIŞMASI
+
+Fallback:
+
+- Never ask follow-up questions
+
+
+RAG / AI-First:
+
+After answering, ask "Rezervasyon yapmak ister misiniz?"
+
+
+Bu teknik olarak sorun değil AMA routing net olmalı.
+
+✅ ÇÖZÜM:
+
+Fallback çağrıldığında asla AI-First’e geçilmemeli.
+
+Kod tarafında şunu garanti et:
+
+if (fallbackTriggered) {
+  stopPipeline(); // no RAG, no AI-FIRST
+}
+
+
+Bunu yapmazsan bazen:
+
+Fallback cevap verir → sonra AI-First ek soru sorar
+gibi “çift kişilik” davranış olur.
+
+3️⃣ RAG ÖRNEKLERİNDE REZERVASYON TEKLİFİ VAR
+
+RAG Few-shot örneklerinde:
+
+"Rezervasyon yapmak ister misiniz?"
+
+
+Ama fallback’te bu yasak.
+
+Bu normal ama riskli bir öğrenme etkisi yaratır.
+
+✅ ÖNERİ:
+
+RAG örneklerinin başına net etiket ekle:
+
+⚠️ The following examples apply ONLY to RAG mode.
+⚠️ These rules do NOT apply to AI FALLBACK.
+
+
+Bu küçük satır bile modeli ciddi şekilde stabilize eder.
+
+⚠️ ORTA SEVİYE RİSKLER (İYİLEŞTİRME ÖNERİLERİ)
+4️⃣ “İndirim / Kampanya” Senaryosu (Senin sorduğun konu)
+
+Bu kısım doğru yönde, ama tek risk:
+AI kampanyayı uydurabilir.
+
+✅ GÜVENLİ MODEL (ÖNERİLEN):
+
+Kampanya için AI değil → kural tabanlı mini akış
+
+IF discountAsked AND campaignExists:
+  Ask activity
+ELSE IF discountAsked AND noCampaign:
+  "Şu an aktif bir kampanyamız yok."
+
+
+AI’ye sadece metni üretme işi ver, kararı değil.
+
+Bu senaryoda AI’nin rolü:
+
+“verilen kampanya bilgisini düzgün cümleye dökmek”
+
+5️⃣ RAG PROMPT ÇOK BÜYÜK (Token Drift Riski)
+
+1500 token’lık RAG prompt’ta:
+
+Few-shot
+
+Kurallar
+
+Partner
+
+Viewer
+
+Aktarma
+
+Format
+
+Uzun vadede şu olur:
+
+Model bazı kuralları “unutur”
+
+✅ İYİLEŞTİRME:
+
+RAG’i 2’ye böl (kod tarafında):
+
+RAG_CORE_RULES (değişmez)
+
+RAG_DYNAMIC_CONTEXT (intent + activity)
+
+Bu production botlarda çok kullanılan bir yöntem.
+
+6️⃣ “Asla hangi aktivite için sorma” Kuralı
+
+Bu kural doğru ama tek risk:
+
+İlk mesaj “fiyat ne” ise aktivite hiç belli olmayabilir.
+
+✅ EMNİYET KEMERİ:
+
+Sadece ilk mesajda istisna ekle:
+
+If no activity can be inferred from history AND this is the first user message:
+You may ask ONE clarification question.
+
+
+Aksi halde bot bazen yanlış aktivite üzerinden fiyat verir.
+
+7️⃣ AI-FIRST’te “Any other questions?” Riski
+
+Bazı WhatsApp botları için bu:
+
+Döngüye sokar
+
+Boş konuşma yaratır
+
+✅ ÖNERİ:
+
+Bu soruyu sadece pricing / booking stage’de sor.
+
+🧠 STRATEJİK SONUÇ
+
+❓ “Bu sistemde AI sadece SSS tam cevap yoksa mantıksal birleştirme yapacak mı?”
+
+Evet — ve bu şu an DOĞRU şekilde kurulmuş.
+
+Rol dağılımın net:
+
+❌ AI karar verici değil
+
+✅ AI ifade edici
+
+✅ Veriye dayalı
+
+✅ Kurallarla çevrili
+
+Bu, production WhatsApp botu için ideal yaklaşım.
