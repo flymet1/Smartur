@@ -8015,6 +8015,41 @@ Rezervasyon takip: {takip_linki}
       
       // SSS cevabı bulunduysa, AI çağırmadan direkt cevap ver
       if (sssResponse) {
+        // [DESTEK_TALEBI] etiketi kontrolü - otomatik destek talebi oluşturma
+        const supportTicketTag = '[DESTEK_TALEBI]';
+        const supportTicketTagEn = '[SUPPORT_TICKET]';
+        const hasSupportTicketTag = sssResponse.includes(supportTicketTag) || sssResponse.includes(supportTicketTagEn);
+        
+        if (hasSupportTicketTag) {
+          // Etiketi cevaptan temizle
+          const cleanResponse = sssResponse
+            .replace(supportTicketTag, '')
+            .replace(supportTicketTagEn, '')
+            .trim();
+          
+          // Otomatik destek talebi oluştur
+          try {
+            await storage.createCustomerRequest({
+              tenantId,
+              reservationId: null,
+              phone: From,
+              requestType: 'other',
+              requestDetails: `[SSS Otomatik Talep] Müşteri mesajı: "${Body}"`,
+              status: 'pending',
+              emailSent: false
+            });
+            console.log(`[SSS-DESTEK] Otomatik destek talebi oluşturuldu: ${From} - "${Body}"`);
+          } catch (err) {
+            console.error(`[SSS-DESTEK] Destek talebi oluşturma hatası:`, err);
+          }
+          
+          // Temizlenmiş cevabı gönder
+          await storage.addMessage({ phone: From, content: cleanResponse, role: "assistant", tenantId });
+          res.type('text/xml');
+          res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${cleanResponse}</Message></Response>`);
+          return;
+        }
+        
         await storage.addMessage({ phone: From, content: sssResponse, role: "assistant", tenantId });
         res.type('text/xml');
         res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${sssResponse}</Message></Response>`);
@@ -8416,6 +8451,41 @@ Rezervasyon takip: {takip_linki}
       
       // SSS cevabı bulunduysa, AI çağırmadan direkt cevap ver
       if (testSssResponse) {
+        // [DESTEK_TALEBI] etiketi kontrolü - otomatik destek talebi oluşturma
+        const testSupportTicketTag = '[DESTEK_TALEBI]';
+        const testSupportTicketTagEn = '[SUPPORT_TICKET]';
+        const testHasSupportTicketTag = testSssResponse.includes(testSupportTicketTag) || testSssResponse.includes(testSupportTicketTagEn);
+        
+        if (testHasSupportTicketTag && tenantId) {
+          // Etiketi cevaptan temizle
+          const testCleanResponse = testSssResponse
+            .replace(testSupportTicketTag, '')
+            .replace(testSupportTicketTagEn, '')
+            .trim();
+          
+          // Otomatik destek talebi oluştur
+          try {
+            await storage.createCustomerRequest({
+              tenantId,
+              reservationId: null,
+              phone: From,
+              requestType: 'other',
+              requestDetails: `[SSS Otomatik Talep] Müşteri mesajı: "${Body}"`,
+              status: 'pending',
+              emailSent: false
+            });
+            console.log(`[SSS-TEST-DESTEK] Otomatik destek talebi oluşturuldu: ${From} - "${Body}"`);
+          } catch (err) {
+            console.error(`[SSS-TEST-DESTEK] Destek talebi oluşturma hatası:`, err);
+          }
+          
+          // Temizlenmiş cevabı gönder
+          await storage.addMessage({ phone: From, content: testCleanResponse, role: "assistant", tenantId });
+          res.type('text/xml');
+          res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${testCleanResponse}</Message></Response>`);
+          return;
+        }
+        
         await storage.addMessage({ phone: From, content: testSssResponse, role: "assistant", tenantId });
         res.type('text/xml');
         res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${testSssResponse}</Message></Response>`);

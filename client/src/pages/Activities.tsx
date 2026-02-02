@@ -1133,10 +1133,22 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
 
               <TabsContent value="sss" className="space-y-4 mt-0">
                 <div className="space-y-4">
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <p className="text-sm text-muted-foreground">
                       Müşterilerin sık sorduğu soruları ve cevapları ekleyin. Bot bu bilgilere erişebilir ve WhatsApp'tan gelen sorulara otomatik cevap verebilir.
                     </p>
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-3" data-testid="text-faq-support-info">
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">Otomatik Destek Talebi Oluşturma</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
+                        Belirli sorularda otomatik destek talebi oluşturmak için cevabın sonuna <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">[DESTEK_TALEBI]</code> etiketi ekleyin.
+                      </p>
+                      <div className="text-xs text-amber-600 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/30 p-2 rounded">
+                        <p className="font-medium mb-1">Örnek:</p>
+                        <p><strong>Soru:</strong> Grup indirimi yapıyor musunuz?</p>
+                        <p><strong>Cevap:</strong> Rezervasyon ekibimiz en kısa sürede sizinle iletişime geçecektir. [DESTEK_TALEBI]</p>
+                        <p className="mt-1 text-amber-500 dark:text-amber-500">→ Bot cevabı gönderir, etiket gösterilmez ve otomatik destek talebi oluşturulur.</p>
+                      </div>
+                    </div>
                   </div>
                   <FaqEditor 
                     faq={faq} 
