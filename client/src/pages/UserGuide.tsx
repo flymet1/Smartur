@@ -79,7 +79,7 @@ const searchableContent = [
   { id: "finans", keywords: ["finans", "acenta", "ödeme", "sevk", "dispatch", "payout", "kdv", "fatura", "rapor", "hesaplasma"], title: "Finans" },
   { id: "partner-izleyici", keywords: ["partner", "izleyici", "viewer", "davet", "kod", "bağlantı", "paylaşım", "özel", "fiyat", "döviz", "usd", "eur", "try", "erişim", "aktivite"], title: "Partner ve İzleyici" },
   { id: "ayarlar", keywords: ["ayar", "güvenlik", "whatsapp", "entegrasyon", "sistem", "şifre", "logo", "prompt", "otomatik", "yanit", "kara", "liste", "tatil", "gmail", "güncelleme", "hata", "sablon", "toplu", "bildirim"], title: "Ayarlar" },
-  { id: "lisans", keywords: ["lisans", "üyelik", "plan", "trial", "başıc", "professional", "enterprise", "sure", "limit"], title: "Lisans" },
+  { id: "lisans", keywords: ["lisans", "üyelik", "plan", "trial", "starter", "başıc", "professional", "enterprise", "sure", "limit"], title: "Lisans" },
   { id: "sorun-giderme", keywords: ["sorun", "hata", "problem", "mesaj", "sipariş", "bot", "kapasite", "bildirim"], title: "Sorun Giderme" },
   { id: "güncellemeler", keywords: ["güncelleme", "yeni", "özellik", "iyılestirme", "değişiklik", "versiyon"], title: "Güncellemeler" },
 ];

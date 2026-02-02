@@ -310,6 +310,7 @@ function TenantManagementSection() {
     const planNames: Record<string, string> = {
       'trial': 'Deneme',
       'basic': 'Temel',
+      'starter': 'Starter',
       'professional': 'Profesyonel',
       'enterprise': 'Kurumsal'
     };
@@ -322,6 +323,7 @@ function TenantManagementSection() {
       case 'enterprise': return 'default';
       case 'professional': return 'default';
       case 'basic': return 'secondary';
+      case 'starter': return 'secondary';
       case 'trial': return 'outline';
       default: return 'secondary';
     }
@@ -689,6 +691,7 @@ function TenantManagementSection() {
                       <SelectContent>
                         <SelectItem value="trial">Deneme</SelectItem>
                         <SelectItem value="basic">Temel</SelectItem>
+                        <SelectItem value="starter">Starter</SelectItem>
                         <SelectItem value="professional">Profesyonel</SelectItem>
                         <SelectItem value="enterprise">Kurumsal</SelectItem>
                       </SelectContent>
@@ -6147,7 +6150,7 @@ export default function SuperAdmin() {
                   id="code"
                   value={planForm.code || ""}
                   onChange={(e) => setPlanForm({ ...planForm, code: e.target.value })}
-                  placeholder="başıc"
+                  placeholder="starter"
                   data-testid="input-plan-code"
                 />
               </div>
@@ -6157,7 +6160,7 @@ export default function SuperAdmin() {
                   id="name"
                   value={planForm.name || ""}
                   onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
-                  placeholder="Başıc"
+                  placeholder="Starter"
                   data-testid="input-plan-name"
                 />
               </div>
@@ -6254,6 +6257,38 @@ export default function SuperAdmin() {
                 <MessageSquare className="h-4 w-4" />
                 <span>WhatsApp: Tüm paketlerde 1 numara (sabit)</span>
               </div>
+            </div>
+
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md space-y-3" data-testid="cost-estimation-panel">
+              <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+                <DollarSign className="h-4 w-4" />
+                <span>Tahmini AI Maliyet Hesaplayıcı (GPT-4o)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Mesaj başına maliyet:</p>
+                  <p className="font-medium" data-testid="text-cost-per-message">~$0.003 (500 input + 150 output token)</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Aylık mesaj (30 gün):</p>
+                  <p className="font-medium" data-testid="text-monthly-message-count">{((planForm.maxDailyMessages || 0) * 30).toLocaleString()}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Aylık AI maliyeti:</p>
+                  <p className="font-medium text-orange-600 dark:text-orange-400" data-testid="text-monthly-cost-usd">
+                    ~${((planForm.maxDailyMessages || 0) * 30 * 0.003).toFixed(2)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">TL karşılığı (1$=35TL):</p>
+                  <p className="font-medium text-orange-600 dark:text-orange-400" data-testid="text-monthly-cost-tl">
+                    ~{((planForm.maxDailyMessages || 0) * 30 * 0.003 * 35).toFixed(0)} TL
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Not: SSS eşleştirmesi AI çağrısı yapmaz (ücretsiz). Gerçek maliyet kullanım oranına bağlıdır.
+              </p>
             </div>
 
             <div className="space-y-2">
