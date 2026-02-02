@@ -1417,9 +1417,9 @@ export default function Settings() {
                           <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                             <strong>İpucu:</strong> Aynı cevap için birden fazla soru varyasyonu eklemek isterseniz virgülle ayırın. Örn: "merhaba, iyi günler, günaydın, selam"
                           </p>
-                          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md p-2 mt-2" data-testid="text-general-faq-support-info">
-                            <p className="text-xs text-amber-700 dark:text-amber-300">
-                              <strong>Destek Talebi:</strong> Cevabın sonuna <code className="bg-amber-100 dark:bg-amber-900 px-1 rounded">[DESTEK_TALEBI]</code> eklerseniz, bu soru sorulduğunda otomatik destek talebi oluşturulur.
+                          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-2 mt-2" data-testid="text-general-faq-support-info">
+                            <p className="text-xs text-blue-700 dark:text-blue-300">
+                              <strong>Destek Talebi:</strong> Cevabın sonuna <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded">[DESTEK_TALEBI]</code> eklerseniz, bu soru sorulduğunda otomatik destek talebi oluşturulur.
                             </p>
                           </div>
                         </div>
