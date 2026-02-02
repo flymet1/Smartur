@@ -9,6 +9,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
 import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import multer from "multer";
@@ -446,7 +447,21 @@ const DEFAULT_BOT_RULES = `
     ✅ "Smartur panelinizden işlem yapabilirsiniz" de
 `;
 
-// Gemini AI Integration - supports both Replit integration and standalone API key
+// OpenAI Integration for AI-First WhatsApp Bot
+let openai: OpenAI | null = null;
+try {
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  if (openaiApiKey) {
+    openai = new OpenAI({ apiKey: openaiApiKey });
+    console.log("OpenAI Integration initialized successfully (GPT-4o)");
+  } else {
+    console.warn("OpenAI API key not available");
+  }
+} catch (err) {
+  console.warn("OpenAI initialization failed:", err);
+}
+
+// Gemini AI Integration - supports both Replit integration and standalone API key (fallback)
 let ai: GoogleGenAI | null = null;
 try {
   // Check for Replit AI Integration first, then fallback to standard GEMINI_API_KEY
@@ -463,7 +478,7 @@ try {
       };
     }
     ai = new GoogleGenAI(options);
-    console.log("Gemini AI Integration initialized successfully");
+    console.log("Gemini AI Integration initialized successfully (fallback)");
   } else {
     console.warn("Gemini API not available, falling back to mock responses");
   }
@@ -3523,8 +3538,12 @@ async function generateAIFirstResponse(
   context: AIFirstContext,
   customBotPrompt?: string
 ): Promise<string> {
-  if (!ai) {
-    console.error('[AI-FIRST] Gemini AI not initialized');
+  // Check for OpenAI first, then Gemini as fallback
+  const useOpenAI = !!openai;
+  const useGemini = !useOpenAI && !!ai;
+  
+  if (!useOpenAI && !useGemini) {
+    console.error('[AI-FIRST] No AI provider initialized');
     return context.activities.length > 0 
       ? `Merhaba! Aktivitelerimiz:\n${context.activities.map(a => `• ${a.name}: ${a.price}`).join('\n')}\n\nHangi aktivite hakkında bilgi almak istersiniz?`
       : 'Merhaba! Size nasıl yardımcı olabilirim?';
@@ -3536,30 +3555,61 @@ async function generateAIFirstResponse(
   // Build simple prompt
   const systemPrompt = buildAIFirstPrompt(context, customBotPrompt, isEnglish);
   
-  // Prepare conversation for Gemini
-  const contents = conversationHistory.map((msg) => ({
-    role: msg.role === 'user' ? 'user' : 'model',
-    parts: [{ text: msg.content }]
-  }));
-  
-  // Add current message
-  contents.push({
-    role: 'user',
-    parts: [{ text: userMessage }]
-  });
-  
   try {
-    console.log(`[AI-FIRST] Calling Gemini with ${contents.length} messages, language: ${isEnglish ? 'EN' : 'TR'}`);
+    let responseText = '';
     
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config: {
-        systemInstruction: systemPrompt
+    if (useOpenAI) {
+      // Use OpenAI GPT-4o
+      console.log(`[AI-FIRST] Calling OpenAI GPT-4o with ${conversationHistory.length + 1} messages, language: ${isEnglish ? 'EN' : 'TR'}`);
+      
+      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        { role: 'system', content: systemPrompt }
+      ];
+      
+      // Add conversation history
+      for (const msg of conversationHistory) {
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        });
       }
-    });
-    
-    const responseText = result.text?.trim() || '';
+      
+      // Add current message
+      messages.push({ role: 'user', content: userMessage });
+      
+      const completion = await openai!.chat.completions.create({
+        model: 'gpt-4o',
+        messages,
+        temperature: 0.7,
+        max_tokens: 500
+      });
+      
+      responseText = completion.choices[0]?.message?.content?.trim() || '';
+      
+    } else if (useGemini) {
+      // Fallback to Gemini
+      console.log(`[AI-FIRST] Calling Gemini (fallback) with ${conversationHistory.length + 1} messages, language: ${isEnglish ? 'EN' : 'TR'}`);
+      
+      const contents = conversationHistory.map((msg) => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }]
+      }));
+      
+      contents.push({
+        role: 'user',
+        parts: [{ text: userMessage }]
+      });
+      
+      const result = await ai!.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents,
+        config: {
+          systemInstruction: systemPrompt
+        }
+      });
+      
+      responseText = result.text?.trim() || '';
+    }
     
     if (responseText) {
       console.log(`[AI-FIRST] Response generated successfully (${responseText.length} chars)`);
@@ -3572,7 +3622,7 @@ async function generateAIFirstResponse(
       : 'Merhaba! Aktivitelerimiz hakkında size nasıl yardımcı olabilirim?';
       
   } catch (error) {
-    console.error('[AI-FIRST] Gemini error:', error);
+    console.error('[AI-FIRST] AI error:', error);
     
     // Fallback response
     const actList = context.activities.map(a => `• ${a.name}: ${a.price}`).join('\n');
