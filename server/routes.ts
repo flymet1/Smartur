@@ -2983,6 +2983,433 @@ ${context.botRules || DEFAULT_BOT_RULES}
   return `Merhaba! Size yardımcı olmak için buradayım.\n\nAktivitelerimiz:\n${activityDescriptions}\n\nHangi aktivite hakkında bilgi almak istersiniz?`;
 }
 
+// ============================================================
+// AI-FIRST MODE: N8N tarzı doğal konuşma sistemi
+// ============================================================
+
+interface AIFirstContext {
+  company: {
+    name: string;
+    phone?: string;
+    email?: string;
+    paymentMethods?: string[];
+    cancellationPolicy?: string;
+    workingHours?: string;
+  };
+  activities: Array<{
+    id: number;
+    name: string;
+    nameEn?: string;
+    price: string;
+    priceUsd?: string;
+    duration: string;
+    location?: string;
+    times: string[];
+    includedItems?: string[];
+    excludedItems?: string[];
+    highlights?: string[];
+    extras?: Array<{ name: string; price: number }>;
+    transferInfo?: string;
+    hotelTransfer: boolean;
+    pickupMinutesBefore?: number;
+    meetingPoint?: string;
+    bookingLink?: string;
+    bookingLinkEn?: string;
+    minAge?: number;
+    maxParticipants?: number;
+    difficulty?: string;
+    faqs: Array<{ q: string; a: string; qEn?: string; aEn?: string }>;
+  }>;
+  packageTours: Array<{
+    id: number;
+    name: string;
+    nameEn?: string;
+    price: string;
+    priceUsd?: string;
+    days: number;
+    bookingLink?: string;
+    faqs: Array<{ q: string; a: string }>;
+  }>;
+  generalFaqs: Array<{ q: string; a: string; qEn?: string; aEn?: string }>;
+  currentDate: string;
+  currentDayName: string;
+  userReservation?: {
+    exists: boolean;
+    activityName?: string;
+    date?: string;
+    time?: string;
+    status?: string;
+    trackingLink?: string;
+  };
+}
+
+// Build clean context JSON for AI-First mode (N8N style)
+function buildCleanContext(
+  activities: any[],
+  packageTours: any[],
+  generalFaq: string | null,
+  tenantSettings: any,
+  userReservation?: any
+): AIFirstContext {
+  const now = new Date();
+  const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+  
+  // Build clean activities array
+  const cleanActivities = (activities || []).filter((a: any) => a.active !== false).map((a: any) => {
+    // Parse FAQs
+    let faqs: Array<{ q: string; a: string; qEn?: string; aEn?: string }> = [];
+    try {
+      const faqData = typeof a.faq === 'string' ? JSON.parse(a.faq) : (a.faq || []);
+      faqs = faqData.map((f: any) => ({
+        q: f.question || '',
+        a: f.answer || '',
+        qEn: f.questionEn,
+        aEn: f.answerEn
+      })).filter((f: any) => f.q && f.a);
+    } catch {}
+    
+    // Parse times
+    let times: string[] = [];
+    try {
+      times = typeof a.defaultTimes === 'string' ? JSON.parse(a.defaultTimes) : (a.defaultTimes || []);
+    } catch {}
+    
+    // Parse includedItems from JSON (actual schema field)
+    let includedItems: string[] = [];
+    try {
+      includedItems = typeof a.includedItems === 'string' ? JSON.parse(a.includedItems) : (a.includedItems || []);
+    } catch {}
+    
+    // Parse excludedItems from JSON
+    let excludedItems: string[] = [];
+    try {
+      excludedItems = typeof a.excludedItems === 'string' ? JSON.parse(a.excludedItems) : (a.excludedItems || []);
+    } catch {}
+    
+    // Parse highlights from JSON
+    let highlights: string[] = [];
+    try {
+      highlights = typeof a.highlights === 'string' ? JSON.parse(a.highlights) : (a.highlights || []);
+    } catch {}
+    
+    // Parse extras from JSON
+    let extras: Array<{ name: string; price: number }> = [];
+    try {
+      const extrasData = typeof a.extras === 'string' ? JSON.parse(a.extras) : (a.extras || []);
+      extras = extrasData.filter((e: any) => e.name).map((e: any) => ({ name: e.name, price: e.price || 0 }));
+    } catch {}
+    
+    // Parse transfer zones
+    let transferInfo = '';
+    if (a.hasFreeHotelTransfer || a.hotelTransfer) {
+      transferInfo = 'Ücretsiz otel transferi dahil';
+      try {
+        const zones = typeof a.transferZones === 'string' ? JSON.parse(a.transferZones) : (a.transferZones || []);
+        if (zones.length > 0 && zones[0].zone) {
+          transferInfo += ` (Bölgeler: ${zones.map((z: any) => z.zone).join(', ')})`;
+        }
+      } catch {}
+    }
+    
+    return {
+      id: a.id,
+      name: a.name,
+      nameEn: a.nameEn || undefined,
+      price: `${a.price} TL`,
+      priceUsd: a.priceUsd ? `$${a.priceUsd}` : undefined,
+      duration: `${a.durationMinutes} dakika`,
+      location: a.region || a.location || undefined,
+      times,
+      includedItems: includedItems.length > 0 ? includedItems : undefined,
+      excludedItems: excludedItems.length > 0 ? excludedItems : undefined,
+      highlights: highlights.length > 0 ? highlights : undefined,
+      extras: extras.length > 0 ? extras : undefined,
+      transferInfo: transferInfo || undefined,
+      hotelTransfer: !!(a.hasFreeHotelTransfer || a.hotelTransfer),
+      pickupMinutesBefore: a.arrivalMinutesBefore || a.pickupMinutesBefore || undefined,
+      meetingPoint: a.meetingPoint || undefined,
+      bookingLink: a.reservationLink || undefined,
+      bookingLinkEn: a.reservationLinkEn || undefined,
+      minAge: a.minAge || undefined,
+      maxParticipants: a.maxParticipants || undefined,
+      difficulty: a.difficulty || undefined,
+      faqs
+    };
+  });
+  
+  // Build clean package tours array
+  const cleanPackageTours = (packageTours || []).filter((pt: any) => pt.active !== false).map((pt: any) => {
+    let faqs: Array<{ q: string; a: string }> = [];
+    try {
+      const faqData = typeof pt.faq === 'string' ? JSON.parse(pt.faq) : (pt.faq || []);
+      faqs = faqData.map((f: any) => ({
+        q: f.question || '',
+        a: f.answer || ''
+      })).filter((f: any) => f.q && f.a);
+    } catch {}
+    
+    return {
+      id: pt.id,
+      name: pt.name,
+      nameEn: pt.nameEn || undefined,
+      price: `${pt.price} TL`,
+      priceUsd: pt.priceUsd ? `$${pt.priceUsd}` : undefined,
+      days: pt.durationDays || 1,
+      bookingLink: pt.reservationLink || undefined,
+      faqs
+    };
+  });
+  
+  // Build general FAQs
+  let cleanGeneralFaqs: Array<{ q: string; a: string; qEn?: string; aEn?: string }> = [];
+  try {
+    const gfaq = typeof generalFaq === 'string' ? JSON.parse(generalFaq) : (generalFaq || []);
+    cleanGeneralFaqs = gfaq.map((f: any) => ({
+      q: f.question || '',
+      a: f.answer || '',
+      qEn: f.questionEn,
+      aEn: f.answerEn
+    })).filter((f: any) => f.q && f.a);
+  } catch {}
+  
+  // Build user reservation info if exists
+  let userResInfo: AIFirstContext['userReservation'] = undefined;
+  if (userReservation) {
+    userResInfo = {
+      exists: true,
+      activityName: userReservation.activityName,
+      date: userReservation.date,
+      time: userReservation.time,
+      status: userReservation.status === 'confirmed' ? 'Onaylı' : userReservation.status === 'pending' ? 'Beklemede' : userReservation.status,
+      trackingLink: userReservation.trackingLink
+    };
+  }
+  
+  return {
+    company: {
+      name: tenantSettings?.companyName || 'Şirket',
+      phone: tenantSettings?.phone,
+      email: tenantSettings?.email,
+      paymentMethods: ['Visa', 'MasterCard', 'American Express'],
+      cancellationPolicy: tenantSettings?.cancellationPolicyUrl,
+      workingHours: tenantSettings?.workingHours || '09:00-18:00'
+    },
+    activities: cleanActivities,
+    packageTours: cleanPackageTours,
+    generalFaqs: cleanGeneralFaqs,
+    currentDate: now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
+    currentDayName: dayNames[now.getDay()],
+    userReservation: userResInfo
+  };
+}
+
+// Build simple prompt for AI-First mode
+function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, isEnglish: boolean = false): string {
+  const lang = isEnglish ? 'EN' : 'TR';
+  
+  let prompt = isEnglish
+    ? `You are ${context.company.name}'s WhatsApp customer assistant.\n\n`
+    : `Sen ${context.company.name} şirketinin WhatsApp müşteri temsilcisisin.\n\n`;
+  
+  // Core rules - simple and clear
+  if (isEnglish) {
+    prompt += `RULES:
+1. Be friendly, helpful, and concise (max 3-4 sentences)
+2. Only provide info about our activities - for hotels/restaurants/transport say "We specialize in activities"
+3. If you don't know something, say "I can have our team call you for details"
+4. When asked for price, just give the price - no extra info
+5. For bookings, share the booking link directly
+6. Use WhatsApp formatting: *bold* for important words, • for lists
+7. Max 1-2 emojis per message
+8. Use the FAQ information as reference to answer questions naturally (don't copy-paste)
+`;
+  } else {
+    prompt += `KURALLAR:
+1. Samimi, yardımsever ve kısa ol (max 3-4 cümle)
+2. Sadece aktivitelerimiz hakkında bilgi ver - otel/restoran/ulaşım için "Biz aktivite konusunda uzmanız" de
+3. Bilmediğin bir şey sorulursa "Bu konuda yetkilimiz sizi arayabilir" de
+4. Fiyat sorulunca sadece fiyatı söyle - ekstra bilgi verme
+5. Rezervasyon istenince direkt linki paylaş
+6. WhatsApp formatı kullan: *bold* önemli kelimeler, • liste için
+7. Mesaj başına max 1-2 emoji
+8. SSS bilgilerini referans olarak kullan, doğal cevap üret (kopyala-yapıştır yapma)
+`;
+  }
+  
+  // Add custom prompt if exists
+  if (customBotPrompt && customBotPrompt.trim()) {
+    prompt += `\n${isEnglish ? 'ADDITIONAL INSTRUCTIONS' : 'EK TALİMATLAR'}:\n${customBotPrompt}\n`;
+  }
+  
+  // Add context as clean JSON
+  prompt += `\n${isEnglish ? 'CURRENT DATE' : 'BUGÜNÜN TARİHİ'}: ${context.currentDate} (${context.currentDayName})\n`;
+  
+  // Add activities in clean format with all details
+  prompt += `\n${isEnglish ? 'OUR ACTIVITIES' : 'AKTİVİTELERİMİZ'}:\n`;
+  for (const act of context.activities) {
+    const name = isEnglish && act.nameEn ? act.nameEn : act.name;
+    const price = isEnglish && act.priceUsd ? act.priceUsd : act.price;
+    prompt += `\n• ${name}: ${price}, ${act.duration}`;
+    if (act.location) prompt += `, ${act.location}`;
+    if (act.bookingLink) prompt += `\n  Link: ${isEnglish && act.bookingLinkEn ? act.bookingLinkEn : act.bookingLink}`;
+    
+    // Transfer info
+    if (act.transferInfo) {
+      prompt += `\n  ${isEnglish ? 'Transfer' : 'Transfer'}: ${act.transferInfo}`;
+    }
+    
+    // Included items
+    if (act.includedItems && act.includedItems.length > 0) {
+      prompt += `\n  ${isEnglish ? 'Included' : 'Dahil'}: ${act.includedItems.join(', ')}`;
+    }
+    
+    // Excluded items
+    if (act.excludedItems && act.excludedItems.length > 0) {
+      prompt += `\n  ${isEnglish ? 'Not included' : 'Dahil değil'}: ${act.excludedItems.join(', ')}`;
+    }
+    
+    // Meeting point and timing
+    if (act.meetingPoint) {
+      prompt += `\n  ${isEnglish ? 'Meeting point' : 'Buluşma noktası'}: ${act.meetingPoint}`;
+    }
+    if (act.pickupMinutesBefore) {
+      prompt += ` (${act.pickupMinutesBefore} ${isEnglish ? 'min before' : 'dk önce'})`;
+    }
+    
+    // Age/participant limits
+    if (act.minAge || act.maxParticipants) {
+      const limits = [];
+      if (act.minAge) limits.push(`${isEnglish ? 'Min age' : 'Min yaş'}: ${act.minAge}`);
+      if (act.maxParticipants) limits.push(`${isEnglish ? 'Max' : 'Max'}: ${act.maxParticipants} ${isEnglish ? 'pax' : 'kişi'}`);
+      prompt += `\n  ${limits.join(', ')}`;
+    }
+    
+    // Extras
+    if (act.extras && act.extras.length > 0) {
+      const extrasStr = act.extras.map(e => `${e.name} (+${e.price} TL)`).join(', ');
+      prompt += `\n  ${isEnglish ? 'Extras' : 'Ekstralar'}: ${extrasStr}`;
+    }
+    
+    // Activity FAQs as reference
+    if (act.faqs.length > 0) {
+      const faqInfo = act.faqs.slice(0, 3).map(f => {
+        const q = isEnglish && f.qEn ? f.qEn : f.q;
+        const a = isEnglish && f.aEn ? f.aEn : f.a;
+        return `${q}→${a}`;
+      }).join(' | ');
+      prompt += `\n  ${isEnglish ? 'Info' : 'Bilgi'}: ${faqInfo}`;
+    }
+  }
+  
+  // Add package tours if exist
+  if (context.packageTours.length > 0) {
+    prompt += `\n${isEnglish ? 'PACKAGE TOURS' : 'PAKET TURLAR'}:\n`;
+    for (const pt of context.packageTours) {
+      const name = isEnglish && pt.nameEn ? pt.nameEn : pt.name;
+      const price = isEnglish && pt.priceUsd ? pt.priceUsd : pt.price;
+      prompt += `• ${name}: ${price}, ${pt.days} ${isEnglish ? 'days' : 'gün'}`;
+      if (pt.bookingLink) prompt += ` - ${pt.bookingLink}`;
+      prompt += `\n`;
+    }
+  }
+  
+  // Add general FAQs as reference
+  if (context.generalFaqs.length > 0) {
+    prompt += `\n${isEnglish ? 'GENERAL INFO' : 'GENEL BİLGİLER'}:\n`;
+    for (const faq of context.generalFaqs.slice(0, 5)) {
+      const q = isEnglish && faq.qEn ? faq.qEn : faq.q;
+      const a = isEnglish && faq.aEn ? faq.aEn : faq.a;
+      prompt += `• ${q}: ${a}\n`;
+    }
+  }
+  
+  // Add user reservation context if exists
+  if (context.userReservation?.exists) {
+    prompt += `\n${isEnglish ? 'CUSTOMER HAS RESERVATION' : 'MÜŞTERİNİN REZERVASYONU VAR'}:\n`;
+    prompt += `• ${isEnglish ? 'Activity' : 'Aktivite'}: ${context.userReservation.activityName}\n`;
+    prompt += `• ${isEnglish ? 'Date' : 'Tarih'}: ${context.userReservation.date}\n`;
+    prompt += `• ${isEnglish ? 'Time' : 'Saat'}: ${context.userReservation.time}\n`;
+    prompt += `• ${isEnglish ? 'Status' : 'Durum'}: ${context.userReservation.status}\n`;
+    if (context.userReservation.trackingLink) {
+      prompt += `• ${isEnglish ? 'Tracking link' : 'Takip linki'}: ${context.userReservation.trackingLink}\n`;
+    }
+  }
+  
+  // Company contact
+  prompt += `\n${isEnglish ? 'COMPANY CONTACT' : 'ŞİRKET İLETİŞİM'}:\n`;
+  if (context.company.phone) prompt += `• ${isEnglish ? 'Phone' : 'Telefon'}: ${context.company.phone}\n`;
+  if (context.company.email) prompt += `• Email: ${context.company.email}\n`;
+  if (context.company.cancellationPolicy) prompt += `• ${isEnglish ? 'Cancellation policy' : 'İptal politikası'}: ${context.company.cancellationPolicy}\n`;
+  
+  return prompt;
+}
+
+// Generate AI-First response using Gemini
+async function generateAIFirstResponse(
+  userMessage: string,
+  conversationHistory: Array<{ role: string; content: string }>,
+  context: AIFirstContext,
+  customBotPrompt?: string
+): Promise<string> {
+  if (!ai) {
+    console.error('[AI-FIRST] Gemini AI not initialized');
+    return context.activities.length > 0 
+      ? `Merhaba! Aktivitelerimiz:\n${context.activities.map(a => `• ${a.name}: ${a.price}`).join('\n')}\n\nHangi aktivite hakkında bilgi almak istersiniz?`
+      : 'Merhaba! Size nasıl yardımcı olabilirim?';
+  }
+  
+  // Detect language
+  const isEnglish = /\b(hello|hi|price|booking|available|cancel|change|what|how|when|where|can|do|is|are|the|for|my|your|want|need|book)\b/i.test(userMessage);
+  
+  // Build simple prompt
+  const systemPrompt = buildAIFirstPrompt(context, customBotPrompt, isEnglish);
+  
+  // Prepare conversation for Gemini
+  const contents = conversationHistory.map((msg) => ({
+    role: msg.role === 'user' ? 'user' : 'model',
+    parts: [{ text: msg.content }]
+  }));
+  
+  // Add current message
+  contents.push({
+    role: 'user',
+    parts: [{ text: userMessage }]
+  });
+  
+  try {
+    console.log(`[AI-FIRST] Calling Gemini with ${contents.length} messages, language: ${isEnglish ? 'EN' : 'TR'}`);
+    
+    const result = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents,
+      config: {
+        systemInstruction: systemPrompt
+      }
+    });
+    
+    const responseText = result.text?.trim() || '';
+    
+    if (responseText) {
+      console.log(`[AI-FIRST] Response generated successfully (${responseText.length} chars)`);
+      return responseText;
+    }
+    
+    // Empty response fallback
+    return isEnglish 
+      ? 'Hello! How can I help you with our activities today?'
+      : 'Merhaba! Aktivitelerimiz hakkında size nasıl yardımcı olabilirim?';
+      
+  } catch (error) {
+    console.error('[AI-FIRST] Gemini error:', error);
+    
+    // Fallback response
+    const actList = context.activities.map(a => `• ${a.name}: ${a.price}`).join('\n');
+    return isEnglish
+      ? `Hello! Our activities:\n${actList}\n\nWhich activity would you like to know about?`
+      : `Merhaba! Aktivitelerimiz:\n${actList}\n\nHangi aktivite hakkında bilgi almak istersiniz?`;
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -7075,7 +7502,96 @@ Rezervasyon takip: {takip_linki}
         return;
       }
       
-      // === SSS ÖNCELİKLİ SİSTEM ===
+      // === AI-FIRST MODE (N8N tarzı doğal konuşma) ===
+      if (botAccess.aiFirstMode === true) {
+        console.log(`[AI-FIRST] AI-First mode active for tenant ${tenantId}`);
+        
+        // Check blacklist before AI-First processing
+        const blacklist = await storage.getBlacklist(tenantId);
+        const normalizedFrom = From.replace(/\D/g, '').slice(-10);
+        const isBlacklisted = blacklist.some(b => {
+          const normalizedBlacklist = b.phone.replace(/\D/g, '').slice(-10);
+          return normalizedFrom === normalizedBlacklist || From.includes(b.phone) || b.phone.includes(From);
+        });
+        
+        if (isBlacklisted) {
+          console.log(`[AI-FIRST] Blacklisted number: ${From}`);
+          await storage.addMessage({ phone: From, content: Body, role: "user", tenantId });
+          res.type('text/xml');
+          res.send(`<?xml version="1.0" encoding="UTF-8"?><Response></Response>`);
+          return;
+        }
+        
+        // Get tenant settings for company info
+        const tenantSettings = {
+          companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
+          phone: await storage.getSetting('phone', tenantId),
+          email: await storage.getSetting('email', tenantId),
+          cancellationPolicyUrl: await storage.getSetting('cancellationPolicyUrl', tenantId),
+          workingHours: await storage.getSetting('workingHours', tenantId)
+        };
+        
+        // Get custom bot prompt from botAccess JSON (stored together with aiFirstMode)
+        const customBotPrompt = botAccess.customBotPrompt || '';
+        
+        // Build clean context (N8N style)
+        const aiFirstContext = buildCleanContext(
+          activities,
+          packageTours,
+          generalFaq,
+          tenantSettings,
+          userReservation ? {
+            activityName: activities.find(a => a.id === userReservation.activityId)?.name || 'Aktivite',
+            date: userReservation.date,
+            time: userReservation.time,
+            status: userReservation.status,
+            trackingLink: `https://${req.headers.host}/tracking/${userReservation.trackingToken}`
+          } : undefined
+        );
+        
+        // Format conversation history for AI
+        const conversationHistory = history.map((msg: any) => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        
+        // Generate AI-First response
+        const aiFirstResponse = await generateAIFirstResponse(
+          Body,
+          conversationHistory,
+          aiFirstContext,
+          customBotPrompt || undefined
+        );
+        
+        // Save messages
+        await storage.addMessage({ phone: From, content: Body, role: "user", tenantId });
+        await storage.addMessage({ phone: From, content: aiFirstResponse, role: "assistant", tenantId });
+        
+        // Check for support request triggers in response
+        if (aiFirstResponse.includes('yetkilimiz') || aiFirstResponse.includes('arayalım') || 
+            aiFirstResponse.includes('team call') || aiFirstResponse.includes('representative')) {
+          // Create support request for follow-up
+          try {
+            await storage.createCustomerRequest({
+              phone: From,
+              reservationId: userReservation?.id,
+              type: 'support',
+              notes: `AI-First destek talebi: ${Body}`,
+              status: 'pending',
+              tenantId
+            });
+            console.log(`[AI-FIRST] Support request created for ${From}`);
+          } catch (err) {
+            console.error('[AI-FIRST] Failed to create support request:', err);
+          }
+        }
+        
+        res.type('text/xml');
+        res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${aiFirstResponse}</Message></Response>`);
+        return;
+      }
+      
+      // === SSS ÖNCELİKLİ SİSTEM (Template Mode) ===
       // 1. Aktivite SSS kontrol et (eğer botAccess.faq aktifse)
       // 2. Genel SSS kontrol et (eğer botAccess.faq aktifse)
       // 3. Hiçbiri eşleşmezse AI'a gönder

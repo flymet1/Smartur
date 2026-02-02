@@ -97,6 +97,8 @@ export default function Settings() {
   const [botAccessTransfer, setBotAccessTransfer] = useState(true);
   const [botAccessExtras, setBotAccessExtras] = useState(true);
   const [botAccessAiFallback, setBotAccessAiFallback] = useState(false); // Default kapalı
+  const [botAccessAiFirstMode, setBotAccessAiFirstMode] = useState(false); // AI-First mode (N8N style)
+  const [customBotPrompt, setCustomBotPrompt] = useState(""); // Custom instructions for AI-First mode
   const [botAccessSettingsLoaded, setBotAccessSettingsLoaded] = useState(false);
   
   // System Rules (RAG Prompt Rules)
@@ -319,6 +321,8 @@ export default function Settings() {
         if (settings.transfer !== undefined) setBotAccessTransfer(settings.transfer);
         if (settings.extras !== undefined) setBotAccessExtras(settings.extras);
         if (settings.aiFallbackEnabled !== undefined) setBotAccessAiFallback(settings.aiFallbackEnabled);
+        if (settings.aiFirstMode !== undefined) setBotAccessAiFirstMode(settings.aiFirstMode);
+        if (settings.customBotPrompt !== undefined) setCustomBotPrompt(settings.customBotPrompt);
         setBotAccessSettingsLoaded(true);
       } catch {}
     }
@@ -696,7 +700,9 @@ export default function Settings() {
         confirmation: botAccessConfirmation,
         transfer: botAccessTransfer,
         extras: botAccessExtras,
-        aiFallbackEnabled: botAccessAiFallback
+        aiFallbackEnabled: botAccessAiFallback,
+        aiFirstMode: botAccessAiFirstMode,
+        customBotPrompt: customBotPrompt
       });
 
       // Save all settings
@@ -1416,22 +1422,65 @@ export default function Settings() {
                             />
                           </div>
 
-                          <div className="flex items-center justify-between gap-4 py-2 bg-purple-50/50 dark:bg-purple-950/20 -mx-4 px-4 rounded-b-lg">
+                          {/* AI-First Mode Toggle */}
+                          <div className="flex items-center justify-between gap-4 py-3 bg-primary/5 -mx-4 px-4 border-t border-primary/20">
                             <div className="space-y-0.5">
                               <div className="flex items-center gap-2">
-                                <Label>AI Fallback (Gelişmiş)</Label>
-                                <Badge variant="outline" className="text-xs">Beta</Badge>
+                                <Label className="font-medium">AI-First Mode</Label>
+                                <Badge className="text-xs bg-primary/20 text-primary border-primary/30">Önerilen</Badge>
                               </div>
                               <p className="text-xs text-muted-foreground">
-                                SSS ve şablonlarla cevaplanamayan sorular için AI desteği. Sadece güvenli, kısa cevaplar üretir.
+                                Doğal konuşma modu - Her mesajda AI kullanarak insani cevaplar üretir. SSS bilgilerini referans olarak kullanır.
                               </p>
                             </div>
                             <Switch 
-                              checked={botAccessAiFallback} 
-                              onCheckedChange={setBotAccessAiFallback}
-                              data-testid="switch-bot-access-ai-fallback"
+                              checked={botAccessAiFirstMode} 
+                              onCheckedChange={(checked) => {
+                                setBotAccessAiFirstMode(checked);
+                                if (checked) setBotAccessAiFallback(false);
+                              }}
+                              data-testid="switch-bot-access-ai-first-mode"
                             />
                           </div>
+                          
+                          {/* Custom Bot Prompt (only visible when AI-First is enabled) */}
+                          {botAccessAiFirstMode && (
+                            <div className="py-3 -mx-4 px-4 bg-muted/30 space-y-3 rounded-b-lg">
+                              <div className="space-y-1">
+                                <Label className="text-sm font-medium">Özel Bot Talimatları</Label>
+                                <p className="text-xs text-muted-foreground">
+                                  Bot'a ek talimatlar verin. Örn: "Müşterilere efendim diye hitap et", "Grup indirimi %10 olduğunu söyle"
+                                </p>
+                              </div>
+                              <Textarea
+                                value={customBotPrompt}
+                                onChange={(e) => setCustomBotPrompt(e.target.value)}
+                                placeholder="Opsiyonel: Bot'a özel talimatlarınızı buraya yazın..."
+                                className="min-h-[80px] text-sm"
+                                data-testid="textarea-custom-bot-prompt"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* AI Fallback (only visible when AI-First is disabled) */}
+                          {!botAccessAiFirstMode && (
+                            <div className="flex items-center justify-between gap-4 py-2 bg-purple-50/50 dark:bg-purple-950/20 -mx-4 px-4 rounded-b-lg">
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-2">
+                                  <Label>AI Fallback (Şablon Modu)</Label>
+                                  <Badge variant="outline" className="text-xs">Gelişmiş</Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Şablonlarla cevaplanamayan sorular için AI desteği. Sadece bilinmeyen sorularda devreye girer.
+                                </p>
+                              </div>
+                              <Switch 
+                                checked={botAccessAiFallback} 
+                                onCheckedChange={setBotAccessAiFallback}
+                                data-testid="switch-bot-access-ai-fallback"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
 
