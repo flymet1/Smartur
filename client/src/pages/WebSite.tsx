@@ -39,7 +39,9 @@ import {
   Star,
   ChevronDown,
   Type,
-  Settings
+  Settings,
+  Lock,
+  Crown
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -178,6 +180,13 @@ interface PromoBox {
   buttonUrl: string;
 }
 
+interface SubscriptionPlan {
+  id: number;
+  code: string;
+  name: string;
+  features: string;
+}
+
 export default function WebSite() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("general");
@@ -186,6 +195,31 @@ export default function WebSite() {
   const { data: settings, isLoading } = useQuery<WebsiteSettings>({
     queryKey: ["/api/website-settings"],
   });
+
+  // Fetch subscription plans for feature check
+  const { data: subscriptionPlans } = useQuery<SubscriptionPlan[]>({
+    queryKey: ["/api/subscription-plans"],
+  });
+
+  // Check if user's plan has website_builder feature
+  const hasWebsiteFeature = (): boolean => {
+    try {
+      const userData = localStorage.getItem("userData");
+      if (!userData) return false;
+      const user = JSON.parse(userData);
+      const membershipType = user.membershipType;
+      
+      if (!subscriptionPlans || !membershipType) return false;
+      
+      const currentPlan = subscriptionPlans.find(p => p.code === membershipType);
+      if (!currentPlan) return false;
+      
+      const features = JSON.parse(currentPlan.features || "[]");
+      return features.includes("website_builder");
+    } catch {
+      return false;
+    }
+  };
 
   const [formData, setFormData] = useState<Partial<WebsiteSettings>>({});
   const [faqItems, setFaqItems] = useState<FaqItem[]>([]);
@@ -572,16 +606,52 @@ export default function WebSite() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="websiteDomain">Alan Adı (Domain)</Label>
-                      <Input
-                        id="websiteDomain"
-                        placeholder="ornek.com veya rezervasyon.ornek.com"
-                        value={getValue("websiteDomain")}
-                        onChange={(e) => updateField("websiteDomain", e.target.value)}
-                        data-testid="input-website-domain"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Alan adınızın DNS ayarlarından A kaydını sunucu IP adresine yönlendirin
-                      </p>
+                      {hasWebsiteFeature() ? (
+                        <>
+                          <Input
+                            id="websiteDomain"
+                            placeholder="ornek.com veya rezervasyon.ornek.com"
+                            value={getValue("websiteDomain")}
+                            onChange={(e) => updateField("websiteDomain", e.target.value)}
+                            data-testid="input-website-domain"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Alan adınızın DNS ayarlarından A kaydını sunucu IP adresine yönlendirin
+                          </p>
+                        </>
+                      ) : (
+                        <div className="relative">
+                          <Input
+                            id="websiteDomain"
+                            placeholder="ornek.com"
+                            value=""
+                            disabled
+                            className="opacity-50"
+                            data-testid="input-website-domain-locked"
+                          />
+                          <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                  Bu özellik planınızda mevcut değil
+                                </p>
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                  Kendi domaininizi bağlamak için planınızı yükseltin.
+                                </p>
+                                <a 
+                                  href="/subscription" 
+                                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-2"
+                                  data-testid="link-upgrade-plan"
+                                >
+                                  <Crown className="h-3 w-3" />
+                                  Planı Yükselt
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="websiteName">Site Adı</Label>
