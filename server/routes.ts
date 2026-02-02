@@ -2996,6 +2996,7 @@ interface AIFirstContext {
     name: string;
     phone?: string;
     email?: string;
+    address?: string;
     paymentMethods?: string[];
     cancellationPolicy?: string;
     workingHours?: string;
@@ -3265,6 +3266,7 @@ function buildCleanContext(
       name: tenantSettings?.companyName || 'Şirket',
       phone: tenantSettings?.phone,
       email: tenantSettings?.email,
+      address: tenantSettings?.address,
       paymentMethods: ['Visa', 'MasterCard', 'American Express'],
       cancellationPolicy: tenantSettings?.cancellationPolicyUrl,
       workingHours: tenantSettings?.workingHours || '09:00-18:00'
@@ -3299,6 +3301,20 @@ function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, i
 6. Use WhatsApp formatting: *bold* for important words, • for lists
 7. Max 1-2 emojis per message
 8. Use the FAQ information as reference to answer questions naturally (don't copy-paste)
+
+IMPORTANT - PRICE CALCULATIONS:
+• When customer asks "for X people" or "X kişi" → multiply the per-person price by X
+• Example: If activity is 6000 TL and customer asks "for 2 people" → answer "12000 TL total (6000 TL per person)"
+• Always show both total and per-person breakdown
+
+IMPORTANT - CONTEXT AWARENESS:
+• Remember the last activity discussed in conversation
+• If customer asks follow-up question like "how much for 2 people" or "where is it" → answer about the SAME activity
+• Don't repeat all activity info for every follow-up, just answer the specific question
+
+IMPORTANT - LOCATION/OFFICE QUESTIONS:
+• If asked "where is your office" / "ofisiniz nerede" → use company address from COMPANY INFO
+• If asked "where is the activity" / "aktivite nerede" → use activity location or meeting point
 `;
   } else {
     prompt += `KURALLAR:
@@ -3310,6 +3326,20 @@ function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, i
 6. WhatsApp formatı kullan: *bold* önemli kelimeler, • liste için
 7. Mesaj başına max 1-2 emoji
 8. SSS bilgilerini referans olarak kullan, doğal cevap üret (kopyala-yapıştır yapma)
+
+ÖNEMLİ - FİYAT HESAPLAMA:
+• Müşteri "X kişi için" veya "X kişi olursak" derse → kişi başı fiyatı X ile çarp
+• Örnek: Aktivite 6000 TL ve müşteri "2 kişi için" derse → "Toplam 12.000 TL (kişi başı 6.000 TL)" cevabı ver
+• Her zaman hem toplam hem kişi başı fiyat göster
+
+ÖNEMLİ - BAĞLAM TAKIBI:
+• Konuşmada son bahsedilen aktiviteyi hatırla
+• Müşteri "kaç kişi için ne kadar" veya "nerede yapılıyor" gibi devam sorusu sorarsa → AYNI aktivite hakkında cevap ver
+• Her devam sorusunda tüm aktivite bilgisini tekrarlama, sadece sorulan şeyi cevapla
+
+ÖNEMLİ - KONUM/OFİS SORULARI:
+• "Ofisiniz nerede" sorusu → ŞİRKET BİLGİSİ'ndeki adresi kullan
+• "Aktivite nerede yapılıyor" sorusu → aktivitenin location veya buluşma noktası bilgisini kullan
 `;
   }
   
@@ -3480,6 +3510,7 @@ function buildAIFirstPrompt(context: AIFirstContext, customBotPrompt?: string, i
   prompt += `\n${isEnglish ? 'COMPANY CONTACT' : 'ŞİRKET İLETİŞİM'}:\n`;
   if (context.company.phone) prompt += `• ${isEnglish ? 'Phone' : 'Telefon'}: ${context.company.phone}\n`;
   if (context.company.email) prompt += `• Email: ${context.company.email}\n`;
+  if (context.company.address) prompt += `• ${isEnglish ? 'Office address' : 'Ofis adresi'}: ${context.company.address}\n`;
   if (context.company.cancellationPolicy) prompt += `• ${isEnglish ? 'Cancellation policy' : 'İptal politikası'}: ${context.company.cancellationPolicy}\n`;
   
   return prompt;
