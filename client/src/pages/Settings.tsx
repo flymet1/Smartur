@@ -1327,99 +1327,15 @@ export default function Settings() {
 
                       <div className="space-y-4 bg-muted/50 p-4 rounded-lg border border-muted">
                         <div className="space-y-1">
-                          <Label className="text-base font-medium">Bot Erişim Ayarları</Label>
+                          <Label className="text-base font-medium">Bot Modu</Label>
                           <p className="text-sm text-muted-foreground">
-                            Bot'un hangi bilgilere erişebileceğini seçin. Kapatılan bilgiler bot'a gönderilmez.
+                            WhatsApp botunun çalışma modunu seçin
                           </p>
                         </div>
                         
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
-                            <div className="space-y-0.5">
-                              <Label>Aktivite Bilgileri</Label>
-                              <p className="text-xs text-muted-foreground">Aktivite açıklamalari, fiyatlar ve rezervasyon linkleri</p>
-                            </div>
-                            <Switch 
-                              checked={botAccessActivities} 
-                              onCheckedChange={setBotAccessActivities}
-                              data-testid="switch-bot-access-activities"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
-                            <div className="space-y-0.5">
-                              <Label>Paket Tur Bilgileri</Label>
-                              <p className="text-xs text-muted-foreground">Paket tur açıklamalari, fiyatlar ve rezervasyon linkleri</p>
-                            </div>
-                            <Switch 
-                              checked={botAccessPackageTours} 
-                              onCheckedChange={setBotAccessPackageTours}
-                              data-testid="switch-bot-access-package-tours"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
-                            <div className="space-y-0.5">
-                              <Label>Kapasite / Takvim</Label>
-                              <p className="text-xs text-muted-foreground">Müsaitlik ve kontenjan bilgileri</p>
-                            </div>
-                            <Switch 
-                              checked={botAccessCapacity} 
-                              onCheckedChange={setBotAccessCapacity}
-                              data-testid="switch-bot-access-capacity"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
-                            <div className="space-y-0.5">
-                              <Label>Sik Sorulan Sorular (SSS)</Label>
-                              <p className="text-xs text-muted-foreground">Aktivite ve paket turlar için tanımlı SSS'ler</p>
-                            </div>
-                            <Switch 
-                              checked={botAccessFaq} 
-                              onCheckedChange={setBotAccessFaq}
-                              data-testid="switch-bot-access-faq"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
-                            <div className="space-y-0.5">
-                              <Label>Onay Mesajları</Label>
-                              <p className="text-xs text-muted-foreground">Sipariş tamamlandıginda gönderilecek onay mesajları</p>
-                            </div>
-                            <Switch 
-                              checked={botAccessConfirmation} 
-                              onCheckedChange={setBotAccessConfirmation}
-                              data-testid="switch-bot-access-confirmation"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
-                            <div className="space-y-0.5">
-                              <Label>Transfer Bilgileri</Label>
-                              <p className="text-xs text-muted-foreground">Ücretsiz otel transferi bolgeleri</p>
-                            </div>
-                            <Switch 
-                              checked={botAccessTransfer} 
-                              onCheckedChange={setBotAccessTransfer}
-                              data-testid="switch-bot-access-transfer"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4 py-2 border-b border-muted">
-                            <div className="space-y-0.5">
-                              <Label>Ekstra Hizmetler</Label>
-                              <p className="text-xs text-muted-foreground">Aktivitelere eklenebilecek ekstra hizmetler ve fiyatlari</p>
-                            </div>
-                            <Switch 
-                              checked={botAccessExtras} 
-                              onCheckedChange={setBotAccessExtras}
-                              data-testid="switch-bot-access-extras"
-                            />
-                          </div>
-
                           {/* AI-First Mode Toggle */}
-                          <div className="flex items-center justify-between gap-4 py-3 bg-primary/5 -mx-4 px-4 border-t border-primary/20">
+                          <div className="flex items-center justify-between gap-4 py-3 bg-primary/5 rounded-lg px-4">
                             <div className="space-y-0.5">
                               <div className="flex items-center gap-2">
                                 <Label className="font-medium">AI-First Mode</Label>
@@ -1441,7 +1357,7 @@ export default function Settings() {
                           
                           {/* Custom Bot Prompt (only visible when AI-First is enabled) */}
                           {botAccessAiFirstMode && (
-                            <div className="py-3 -mx-4 px-4 bg-muted/30 space-y-3 rounded-b-lg">
+                            <div className="py-3 px-4 bg-muted/30 space-y-3 rounded-lg">
                               <div className="space-y-1">
                                 <Label className="text-sm font-medium">Özel Bot Talimatları</Label>
                                 <p className="text-xs text-muted-foreground">
@@ -1460,7 +1376,7 @@ export default function Settings() {
                           
                           {/* AI Fallback (only visible when AI-First is disabled) */}
                           {!botAccessAiFirstMode && (
-                            <div className="flex items-center justify-between gap-4 py-2 bg-purple-50/50 dark:bg-purple-950/20 -mx-4 px-4 rounded-b-lg">
+                            <div className="flex items-center justify-between gap-4 py-3 bg-muted/50 rounded-lg px-4">
                               <div className="space-y-0.5">
                                 <div className="flex items-center gap-2">
                                   <Label>AI Fallback (Şablon Modu)</Label>
