@@ -308,10 +308,6 @@ export default function Subscription() {
                         <span>{plan.maxReservationsPerMonth === 99999 ? "Sınırsız" : plan.maxReservationsPerMonth?.toLocaleString()} rezervasyon/ay</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4 text-primary" />
-                        <span>{plan.maxWhatsappNumbers} WhatsApp numarası</span>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-primary" />
                         <span>{plan.maxUsers} kullanıcı</span>
                       </div>
