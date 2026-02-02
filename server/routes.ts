@@ -3197,11 +3197,18 @@ function buildCleanContext(
       hotelTransfer: !!(a.hasFreeHotelTransfer || a.hotelTransfer),
       pickupMinutesBefore: a.arrivalMinutesBefore || a.pickupMinutesBefore || undefined,
       meetingPoint: a.meetingPoint || undefined,
+      meetingPointMapLink: a.meetingPointMapLink || undefined,
       bookingLink: a.reservationLink || undefined,
       bookingLinkEn: a.reservationLinkEn || undefined,
       minAge: a.minAge || undefined,
       maxParticipants: a.maxParticipants || undefined,
       difficulty: a.difficulty || undefined,
+      tourLanguages: (() => {
+        try {
+          return typeof a.tourLanguages === 'string' ? JSON.parse(a.tourLanguages) : (a.tourLanguages || []);
+        } catch { return []; }
+      })(),
+      agencyPhone: a.agencyPhone || undefined,
       faqs
     };
   });
