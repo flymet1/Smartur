@@ -2078,6 +2078,13 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   prompt += `🚨 SAFETY CHECK:\n`;
   prompt += `If deposit amount > activity price → This is likely a data error. DO NOT answer about deposit, say "Ön ödeme bilgisi için temsilcimize bağlanıyorum."\n\n`;
   
+  // === EXTRAS SAFETY RULE ===
+  prompt += `⚠️ EXTRAS RULE (CRITICAL):\n`;
+  prompt += `- NEVER say "ekstra ücreti yok" or "no extra fee" unless extras field EXPLICITLY states "no extras available"\n`;
+  prompt += `- If user asks about: kadın pilot, video, fotoğraf, gopro, kamera, sigorta → ALWAYS check extras field first\n`;
+  prompt += `- If extras data is missing/unclear for that option → Say: "Bu seçenek için ek ücret olabilir, kontrol ediyorum." and escalate\n`;
+  prompt += `- Only confirm "ekstra dahil" or "no extra fee" if the exact item is in includedItems or extras shows price=0\n\n`;
+  
   // === ACTIVITY LOCK: Aktivite değişimi bildirimi ===
   if (activityChanged && relevantActivity) {
     prompt += `🔄 KONU DEĞİŞTİ! Müşteri artık "${relevantActivity.name}" hakkında konuşuyor.\n`;
@@ -3483,6 +3490,12 @@ Currency: Activity prices in USD ($) for English conversations.
 ⚠️ CRITICAL EXCEPTION: Deposit/Prepayment is ALWAYS in TL - NEVER convert to USD.
 Example: "Price: $150, Deposit: 1500 TL" ✓ | "Price: $150, Deposit: $1500" ❌ WRONG
 SAFETY: If deposit > price, say "Please contact our representative for deposit info."
+
+⚠️ EXTRAS RULE (CRITICAL):
+- NEVER say "no extra fee" unless extras field EXPLICITLY confirms it
+- If user asks about: female pilot, video, photo, gopro, camera, insurance → CHECK extras field first
+- If extras data missing/unclear → Say: "This option may have an extra fee. Let me confirm for you."
+- Only confirm "included" or "no extra fee" if item is in includedItems or extras shows price=0
 
 Focused Info:
 - Location question → Give only meetingPoint and location

@@ -1,0 +1,143 @@
+1️⃣ Extras RAG’e HİÇ girmiyor (en olası)
+Tipik yapı hatası:
+
+Senin RAG / context’te şunlar var:
+
+Aktivite açıklaması ✅
+
+Fiyat ✅
+
+Deposit ✅
+
+Ama:
+
+extras alanı yok ya da
+
+Var ama farklı bir node / tool output’unda
+
+Ya da WhatsApp flow’a bağlanmamış
+
+👉 AI şu mantıkla çalışıyor:
+
+“Bana verilen bilgide ekstra yok → ekstra yok demeliyim”
+
+Ve sen ona şunu öğretmişsin:
+
+“Uydurma, sadece verilen bilgiyle konuş”
+
+➡️ AI doğru ama sistem yanlış
+
+🔎 Kontrol et
+
+RAG JSON / context içinde birebir şu tarz bir şey var mı?
+
+extras: [
+  {
+    name: "Female Pilot",
+    price: 300,
+    currency: "TRY",
+    optional: true
+  }
+]
+
+
+❌ Yoksa → bot doğal olarak “yoktur” der.
+
+2️⃣ Operational Priorities botu “aşırı temkinli” yapıyor
+
+Sen prompt’a şunu ekledin:
+
+Accuracy > Persuasion
+Never guess
+If unsure, say no / not available
+
+
+Bu çok doğru bir kural, ama yan etkisi şu:
+
+Eğer extra %100 net değilse
+bot “yoktur” demeyi seçer
+
+Yani bot şunu demiyor:
+
+“Kontrol ediyorum”
+“Opsiyonel olabilir”
+
+Direkt:
+
+“Yoktur”
+
+⚠️ Bu cümle TEHLİKELİ:
+If no explicit info exists → answer as not available
+
+
+Turizm botlarında bu yanlış.
+
+3️⃣ WhatsApp bot ile Web / n8n bot context’i FARKLI
+
+Çok sık görüyorum:
+
+Web chatbot → full RAG
+
+WhatsApp bot → kısaltılmış context
+
+Extras:
+
+ya web tarafında
+
+ya admin panelde
+
+ama WhatsApp flow’a inject edilmemiş
+
+➡️ Aynı soru:
+
+Web’de → doğru
+
+WhatsApp’ta → “yok”
+
+✅ NET ÇÖZÜMLER (Production-level)
+✅ ÇÖZÜM 1 — Extras için ZORUNLU RAG CONTRACT
+
+RAG’e şu blok zorunlu girsin:
+
+extras_policy: {
+  rule: "Extras may exist even if not included in base price",
+  response_rule: "Never say 'no extra fee' unless explicitly stated",
+  fallback: "Ask or escalate"
+}
+
+✅ ÇÖZÜM 2 — “Extra yoktur” demeyi YASAKLA
+
+AI-FIRST prompt’a EKLE:
+
+CRITICAL RULE:
+- NEVER say "There is no extra fee" unless the phrase
+  "No extras available" exists explicitly in context
+- If extras data is missing or unclear, say:
+  "This option may have an extra fee. Let me confirm for you."
+  and escalate if needed.
+
+
+Bu tek başına hatanın %70’ini bitirir.
+
+✅ ÇÖZÜM 3 — Kadın Pilot gibi keyword’ler için HARD MAP
+
+WhatsApp botlarda keyword mapping şart.
+
+Mini bir lookup tablosu:
+
+extra_keywords_map: {
+  "kadın pilot": "Female Pilot",
+  "bayan pilot": "Female Pilot",
+  "woman pilot": "Female Pilot"
+}
+
+
+Ve kural:
+
+If user asks about any mapped keyword,
+ALWAYS check extras before answering.
+
+✅ ÇÖZÜM 4 — Safety Check’e ekstra satır
+Before sending answer:
+- If user asked about an option (pilot, photo, video, transfer)
+  and extras info is incomplete → DO NOT say "no extra fee"
