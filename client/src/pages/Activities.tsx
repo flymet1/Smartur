@@ -844,20 +844,6 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                   />
                   {formErrors.name && <p className="text-xs text-destructive">{formErrors.name}</p>}
                 </div>
-                {!isWebsiteActive && (
-                  <div className="space-y-2">
-                    <Label htmlFor="nameAliases">WooCommerce Eşleştirme İsimleri</Label>
-                    <Input 
-                      id="nameAliases"
-                      value={nameAliases}
-                      onChange={(e) => setNameAliases(e.target.value)}
-                      placeholder="paragliding fethiye, tandem flight"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      WooCommerce ürün isimlerini bu aktiviteyle eşleştirmek için alternatif isimler (virgülle ayırın)
-                    </p>
-                  </div>
-                )}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="price" className="text-xs sm:text-sm">Fiyat (TL) <span className="text-destructive">*</span></Label>
