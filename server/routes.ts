@@ -2065,12 +2065,18 @@ Aktivite, fiyat, detay SÖYLEME. Sadece selamla.`;
   const isEnglishConv = context.language === 'en' || context.lastMessageLang === 'en';
   prompt += `⚠️ RAG MODE CURRENCY RULE:\n`;
   if (isEnglishConv) {
-    prompt += `- English conversation → ONLY USD ($)\n`;
-    prompt += `- Never use TL in English answers\n\n`;
+    prompt += `- English conversation → Activity prices in USD ($)\n`;
+    prompt += `- ⚠️ CRITICAL EXCEPTION: Deposit/Prepayment is ALWAYS in TL - NEVER convert to USD\n`;
+    prompt += `- Example: "Price: $150, Deposit: 1500 TL" ✓\n`;
+    prompt += `- Example: "Price: $150, Deposit: $1500" ❌ WRONG\n\n`;
   } else {
     prompt += `- Turkish conversation → ONLY TL\n`;
     prompt += `- Never use USD ($) in Turkish answers\n\n`;
   }
+  
+  // === SAFETY CHECK: Deposit > Price ===
+  prompt += `🚨 SAFETY CHECK:\n`;
+  prompt += `If deposit amount > activity price → This is likely a data error. DO NOT answer about deposit, say "Ön ödeme bilgisi için temsilcimize bağlanıyorum."\n\n`;
   
   // === ACTIVITY LOCK: Aktivite değişimi bildirimi ===
   if (activityChanged && relevantActivity) {
@@ -3473,7 +3479,10 @@ Short & Clear: Keep answers to 3-4 sentences max. Don't dump brochure info - ans
 
 Smart Calculation: When person count is given (e.g., "2 people"), ONLY use the priceNumeric field for math. Multiply priceNumeric by person count. Report result as "Total: [result] TL" or "Total: $[result]".
 
-Currency: Always show prices in USD ($) for English conversations. Use the price field directly which already contains USD amounts.
+Currency: Activity prices in USD ($) for English conversations.
+⚠️ CRITICAL EXCEPTION: Deposit/Prepayment is ALWAYS in TL - NEVER convert to USD.
+Example: "Price: $150, Deposit: 1500 TL" ✓ | "Price: $150, Deposit: $1500" ❌ WRONG
+SAFETY: If deposit > price, say "Please contact our representative for deposit info."
 
 Focused Info:
 - Location question → Give only meetingPoint and location

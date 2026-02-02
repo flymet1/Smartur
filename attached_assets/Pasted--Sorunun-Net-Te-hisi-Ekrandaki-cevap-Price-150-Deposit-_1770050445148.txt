@@ -1,0 +1,132 @@
+🔴 Sorunun Net Teşhisi
+
+Ekrandaki cevap:
+
+Price: $150
+Deposit: $1500 ❌
+
+Bu iki hata aynı kökten geliyor:
+
+1️⃣ Dil = İngilizce → AI-FIRST prompt devreye girmiş
+2️⃣ AI-FIRST prompt’ta şu kural var:
+
+English conversations → Always show prices in USD ($)
+
+Ama…
+
+🔥 Asıl Kritik HATA (kaçırılmaması gereken)
+Deposit (ön ödeme) alanı PARA BİRİMİNDEN BAĞIMSIZ olmalıydı
+
+Şu an sistemde:
+
+price → USD (OK)
+
+deposit → TL olmasına rağmen
+AI bunu USD gibi yorumlamış
+
+Sonuç:
+
+1500 TL → $1500 (yanlış ama AI açısından “mantıklı”)
+
+Bu AI hatası değil, veri sözleşmesi (data contract) hatasıdır.
+
+🧠 Bu mimaride neden oldu?
+
+Çünkü AI’ya sen şunu dedin:
+
+“English konuşmada her fiyat USD”
+
+Ama:
+
+Deposit’in hangi para biriminde olduğu açıkça söylenmedi
+
+AI-FIRST prompt’ta:
+
+deposit.amount → currency belirtilmemiş
+
+AI en üst kuralı uyguladı:
+
+English → USD
+
+✅ DOĞRU DAVRANIŞ NE OLMALI?
+
+Turizm botları için industry standard:
+
+Alan	Para Birimi
+Activity price	Dil bazlı (EN → USD, TR → TL)
+Deposit	❗ HER ZAMAN TL (veya explicit currency)
+Extra services	Aktivite para birimi
+Campaign discount	Yüzde / TL açık belirtilmeli
+🛠️ NET ÇÖZÜM (1 dakikalık fix)
+✅ Seçenek A – EN SAĞLAM YÖNTEM (Önerilir)
+1️⃣ JSON’a currency ekle
+deposit: {
+  amount: 1500,
+  currency: "TRY"
+}
+
+2️⃣ AI-FIRST prompt’a ŞU KURALI EKLE:
+
+ENGLISH + TURKISH ORTAK:
+
+CRITICAL RULE:
+- Deposit amounts ALWAYS use the currency specified in deposit.currency
+- NEVER convert deposit currency
+- If deposit.currency is TRY, show "TL" even in English conversations
+
+
+✅ Bu çözüm %100 güvenli
+
+⚠️ Seçenek B – Prompt-only (daha zayıf ama hızlı)
+
+AI-FIRST prompt’a ekle:
+
+IMPORTANT:
+Deposit (prepayment) is ALWAYS in TL.
+Never convert deposit to USD.
+Even in English replies, write deposit as "1500 TL".
+
+
+📌 Çalışır ama ileride biri USD deposit eklerse kırılır
+
+🔍 Ek bir mantık hatası daha var (bunu da düzelt)
+
+Ekranda:
+
+Price: $150
+Deposit: $1500
+
+Bu ticari olarak da mantıksız görünüyor.
+
+➡️ Safety Check’e 1 satır daha ekle:
+
+If deposit.amount > priceNumeric → DO NOT answer, escalate to human
+
+
+Bu seni:
+
+yanlış veri
+
+yanlış kampanya
+
+yanlış para birimi
+
+durumlarında otomatik korur.
+
+🧾 Sonuç – Net Cevap
+
+Evet, hata senin mimaride. Ama kötü bir hata değil.
+
+Bu:
+
+AI sapıtması ❌
+
+Model kalitesizliği ❌
+
+Prompt karmaşası ❌
+
+Değil.
+
+Bu sadece:
+
+Deposit para birimi açık tanımlanmamış
