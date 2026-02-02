@@ -7410,12 +7410,16 @@ export async function registerRoutes(
       
       // === GREETING SHORTCUT - AI çağırmadan hızlı cevap ===
       const msgLower = Body.toLowerCase().trim();
-      const pureGreetings = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'hey', 'hi', 'hello', 'mrb', 'slm'];
-      const isPureGreeting = pureGreetings.some(g => msgLower === g || msgLower === g + '!') && Body.length < 20;
+      const pureGreetingsTr = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'mrb', 'slm'];
+      const pureGreetingsEn = ['hey', 'hi', 'hello', 'good morning', 'good evening'];
+      const isPureGreetingTr = pureGreetingsTr.some(g => msgLower === g || msgLower === g + '!') && Body.length < 20;
+      const isPureGreetingEn = pureGreetingsEn.some(g => msgLower === g || msgLower === g + '!') && Body.length < 20;
       
-      if (isPureGreeting) {
+      if (isPureGreetingTr || isPureGreetingEn) {
         // Saf selamlama - AI çağırma, direkt cevap ver (token tasarrufu)
-        const greetingResponse = "Merhaba! Size nasıl yardımcı olabilirim? 😊";
+        const greetingResponse = isPureGreetingEn 
+          ? "Hello! How can I help you?"
+          : "Merhaba! Size nasıl yardımcı olabilirim?";
         await storage.addMessage({ phone: From, content: greetingResponse, role: "assistant", tenantId });
         res.type('text/xml');
         res.send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${greetingResponse}</Message></Response>`);
@@ -8661,12 +8665,16 @@ Rezervasyon takip: {takip_linki}
       
       // === GREETING SHORTCUT - AI çağırmadan hızlı cevap ===
       const msgLower = message.toLowerCase().trim();
-      const pureGreetings = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'hey', 'hi', 'hello', 'mrb', 'slm'];
-      const isPureGreeting = pureGreetings.some(g => msgLower === g || msgLower === g + '!') && message.length < 20;
+      const pureGreetingsTr = ['merhaba', 'selam', 'iyi günler', 'günaydın', 'iyi akşamlar', 'mrb', 'slm'];
+      const pureGreetingsEn = ['hey', 'hi', 'hello', 'good morning', 'good evening'];
+      const isPureGreetingTr = pureGreetingsTr.some(g => msgLower === g || msgLower === g + '!') && message.length < 20;
+      const isPureGreetingEn = pureGreetingsEn.some(g => msgLower === g || msgLower === g + '!') && message.length < 20;
       
-      if (isPureGreeting) {
+      if (isPureGreetingTr || isPureGreetingEn) {
         // Saf selamlama - AI çağırma, direkt cevap ver (token tasarrufu)
-        const greetingResponse = "Merhaba! Size nasıl yardımcı olabilirim? 😊";
+        const greetingResponse = isPureGreetingEn 
+          ? "Hello! How can I help you?"
+          : "Merhaba! Size nasıl yardımcı olabilirim?";
         return res.json({
           response: greetingResponse,
           history: [...history, { role: "assistant", content: greetingResponse }]
