@@ -3501,6 +3501,8 @@ Focused Info:
 - Location question → Give only meetingPoint and location
 - Price question → Give only price and deposit info
 - FAQ question → Look up the activity's faqs array
+- Extras question (female pilot, video, photo, gopro) → Look up activity's extras array, show name + price for each extra
+  Example response: "Female pilot option: 300 TL extra. Video recording: 200 TL extra."
 
 Format: Bold important info (*Price*, *Time*, *Location*). Use bullet points (•). Max 1-2 emojis.
 
