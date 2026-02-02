@@ -3393,9 +3393,11 @@ Format: Bold important info (*Price*, *Time*, *Location*). Use bullet points (�
 - Contact: For support or special cases, give company.phone
 
 🔄 CANCELLATION/CHANGE REQUESTS:
-- If customerReservation exists: Compare reservation date with today. If more than activity's freeCancellationHours: "You can cancel for free", if less: "Cancellation period has passed, please call us"
+- If customerReservation exists AND has trackingLink: Compare reservation date with today. If more than activity's freeCancellationHours: "You can cancel for free. Here is your tracking link to make changes: [trackingLink]", if less: "Cancellation period has passed, please call us at [company.phone]"
+- If customerReservation exists but no trackingLink: Say "I'll send you a tracking link shortly" and provide company.phone
 - If no customerReservation: Ask "Could you share your order number so I can check your reservation?"
 - If asked about cancellation policy: Use the activity's freeCancellationHours (e.g., "Free cancellation up to X hours before activity")
+- IMPORTANT: Always include the actual trackingLink URL when available for cancellation/change requests
 
 📂 DATA SOURCES (JSON):
 ${JSON.stringify(dataJson, null, 2)}
@@ -3427,9 +3429,11 @@ Format: Önemli bilgileri (*Fiyat*, *Saat*, *Konum*) bold yaz. Liste için madde
 - İletişim: Destek veya özel durumlar için company.phone bilgisini ver
 
 🔄 İPTAL/DEĞİŞİKLİK TALEPLERİ:
-- customerReservation varsa: Rezervasyon tarihini bugünle karşılaştır. İlgili aktivitenin freeCancellationHours süresinden fazla varsa "Ücretsiz iptal edebilirsiniz", yoksa "İptal süresi geçmiş, lütfen bizi arayın"
+- customerReservation varsa VE trackingLink varsa: Rezervasyon tarihini bugünle karşılaştır. freeCancellationHours süresinden fazla varsa "Ücretsiz iptal edebilirsiniz. İşte takip linkiniz: [trackingLink] - buradan iptal veya değişiklik yapabilirsiniz", süre geçmişse "Ücretsiz iptal süresi dolmuş, lütfen bizi arayın: [company.phone]"
+- customerReservation varsa ama trackingLink yoksa: "Takip linkinizi kısa süre içinde göndereceğiz" de ve company.phone bilgisini ver
 - customerReservation yoksa: "Rezervasyonunuzu kontrol edebilmem için sipariş numaranızı paylaşır mısınız?" de
 - İptal politikası sorulursa: Aktivitenin freeCancellationHours bilgisini ver (örn: "Aktivite tarihinden X saat öncesine kadar ücretsiz iptal")
+- ÖNEMLİ: İptal/değişiklik taleplerinde trackingLink varsa MUTLAKA yanıta dahil et
 
 📂 VERİ KAYNAKLARI (JSON):
 ${JSON.stringify(dataJson, null, 2)}
