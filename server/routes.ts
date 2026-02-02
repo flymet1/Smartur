@@ -8601,82 +8601,36 @@ Rezervasyon takip: {takip_linki}
       
       const upcomingCapacity = await getCapacityWithVirtualSlots(Array.from(upcomingDates), tenantId);
       
-      // Get bot settings (tenant-specific)
-      // NOT: botPrompt, botRules KALDIRILDI - şablon tabanlı sistem bunları kullanmıyor
-      const botAccessSetting = await storage.getSetting('botAccess', tenantId);
-      let botAccess: any = { enabled: true, activities: true, packageTours: true, capacity: true, faq: true, confirmation: true, transfer: true, extras: true, aiFallbackEnabled: false };
-      if (botAccessSetting) {
-        try { botAccess = { ...botAccess, ...JSON.parse(botAccessSetting) }; } catch {}
-      }
+      // === AI-FIRST MODE (Default) ===
+      // Template mode kaldırıldı, sadece AI-First kullanılıyor
+      
+      // Get tenant settings
+      const tenantSettings = await storage.getTenantSettings(tenantId);
       const generalFaq = await storage.getSetting('generalFaq', tenantId);
+      const allHolidays = await storage.getHolidays(tenantId);
       
-      // Get conversation state for follow-up questions in test mode (use 'test' as phone)
-      const testModeState = getConversationState('test', tenantId);
+      // Build clean context for AI (N8N style)
+      const aiFirstContext = buildCleanContext(
+        activities,
+        packageTours,
+        generalFaq,
+        tenantSettings,
+        undefined, // Test modda userReservation yok
+        allHolidays
+      );
       
-      // Intent ve aktivite tespiti (kural bazlı) - test mode
-      const testModeIntent = detectIntent(message, activities, packageTours, history, testModeState);
-      updateConversationState('test', tenantId, {
-        lastIntent: testModeIntent.type,
-        lastActivityId: testModeIntent.activityId || testModeState?.lastActivityId
-      });
-      
-      // Aktivite bul
-      let testModeMatchedActivity = null;
-      if (testModeIntent.activityId) {
-        testModeMatchedActivity = activities.find(a => a.id === testModeIntent.activityId);
-      }
-      
-      // Paket tur bul
-      let testModeMatchedPackageTour = null;
-      if (testModeIntent.type === 'package_tour') {
-        const tourMatch = findMatchingActivity(message, packageTours);
-        if (tourMatch) testModeMatchedPackageTour = tourMatch.activity;
-      }
-      
-      // Tenant ayarları
-      const testModeWebsiteUrl = await storage.getSetting('websiteUrl', tenantId);
-      
-      // ŞABLON CEVAP OLUŞTUR (test mode)
-      // Gelişmiş müsaitlik için tarih, kişi sayısı ve tatil parse et
-      const testParsedDates = parseDatesFromMessage(message);
-      const testRequestedPax = extractPersonCount(message);
-      const testHolidayDates = await findHolidayDatesFromMessage(message);
-      
-      const testModeTemplateResponse = generateTemplateResponse({
-        intent: testModeIntent,
-        activity: testModeMatchedActivity,
-        packageTour: testModeMatchedPackageTour,
-        activities: botAccess.activities ? activities : [],
-        packageTours: botAccess.packageTours ? packageTours : [],
-        capacityData: botAccess.capacity ? upcomingCapacity : [],
-        conversationState: testModeState,
-        trackingLink: '',
-        faqMatch: null,
-        tenantSettings: { websiteUrl: testModeWebsiteUrl || '', whatsappNumber: '' },
-        originalMessage: message, // İlk mesaj dil tespiti için
-        parsedDates: testParsedDates,
-        requestedPax: testRequestedPax,
-        holidayDates: testHolidayDates,
-        userReservation: null // Test modda rezervasyon bilgisi yok
-      });
-      
-      // AI FALLBACK (Test mode için de)
-      let testModeFinalResponse = testModeTemplateResponse;
-      
-      if (botAccess.aiFallbackEnabled && (testModeIntent.type === 'unknown' || testModeIntent.type === 'general')) {
-        console.log('[AI_FALLBACK] Test mode - trying AI...');
-        const lang = detectLanguage(message, testModeState);
-        const aiResponse = await callAIFallback(message, testModeMatchedActivity, activities, lang);
-        
-        if (aiResponse) {
-          testModeFinalResponse = aiResponse;
-        }
-      }
+      // Generate AI-First response
+      console.log(`[AI-FIRST] Bot test - generating AI response for tenant ${tenantId}`);
+      const aiResponse = await generateAIFirstResponse(
+        message,
+        history.filter((h: any) => h.role !== 'system'), // Filter system messages
+        aiFirstContext
+      );
       
       // Return JSON response (not XML)
       res.json({
-        response: testModeFinalResponse,
-        history: [...history, { role: "assistant", content: testModeFinalResponse }]
+        response: aiResponse,
+        history: [...history, { role: "assistant", content: aiResponse }]
       });
     } catch (error: any) {
       console.error("Bot test error:", error);
