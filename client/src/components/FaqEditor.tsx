@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, HelpCircle, Bot, Globe } from "lucide-react";
+import { Plus, Trash2, HelpCircle, Bot, Globe, Pencil, X, Check } from "lucide-react";
 
 export interface FaqItem {
   question: string;
@@ -35,18 +36,56 @@ export function stringifyFaq(faq: FaqItem[]): string {
 }
 
 export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProps) {
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editQuestion, setEditQuestion] = useState("");
+  const [editAnswer, setEditAnswer] = useState("");
+  const [editBotOnly, setEditBotOnly] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newQuestion, setNewQuestion] = useState("");
+  const [newAnswer, setNewAnswer] = useState("");
+  const [newBotOnly, setNewBotOnly] = useState(false);
+
   const addFaq = () => {
-    onChange([{ question: "", answer: "", botOnly: false }, ...faq]);
+    if (newQuestion.trim() && newAnswer.trim()) {
+      onChange([{ question: newQuestion.trim(), answer: newAnswer.trim(), botOnly: newBotOnly }, ...faq]);
+      setNewQuestion("");
+      setNewAnswer("");
+      setNewBotOnly(false);
+      setIsAdding(false);
+    }
   };
 
   const removeFaq = (index: number) => {
     onChange(faq.filter((_, i) => i !== index));
   };
 
-  const updateFaq = (index: number, field: keyof FaqItem, value: string | boolean) => {
-    const newFaq = [...faq];
-    newFaq[index] = { ...newFaq[index], [field]: value };
-    onChange(newFaq);
+  const startEdit = (index: number) => {
+    const item = faq[index];
+    setEditingIndex(index);
+    setEditQuestion(item.question);
+    setEditAnswer(item.answer);
+    setEditBotOnly(item.botOnly || false);
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
+    setEditQuestion("");
+    setEditAnswer("");
+    setEditBotOnly(false);
+  };
+
+  const saveEdit = () => {
+    if (editingIndex !== null && editQuestion.trim() && editAnswer.trim()) {
+      const newFaq = [...faq];
+      newFaq[editingIndex] = { 
+        ...newFaq[editingIndex], 
+        question: editQuestion.trim(), 
+        answer: editAnswer.trim(),
+        botOnly: editBotOnly
+      };
+      onChange(newFaq);
+      cancelEdit();
+    }
   };
 
   return (
@@ -59,70 +98,165 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
             <p className="text-xs text-muted-foreground">Bot bu bilgileri müşterilere cevap vermek için kullanır</p>
           </div>
         </div>
+      </div>
+
+      {/* Add New FAQ Form */}
+      {isAdding ? (
+        <div className="p-3 bg-muted/30 rounded-md border border-primary/30 space-y-2">
+          <Input
+            placeholder="Soru (Türkçe) - örn: Kilo sınırı var mı?"
+            value={newQuestion}
+            onChange={(e) => setNewQuestion(e.target.value)}
+            className="h-8 text-sm"
+            data-testid={`${testIdPrefix}-new-question`}
+            autoFocus
+          />
+          <Textarea
+            placeholder="Cevap (Türkçe)"
+            value={newAnswer}
+            onChange={(e) => setNewAnswer(e.target.value)}
+            className="min-h-[60px] text-sm resize-none"
+            rows={2}
+            data-testid={`${testIdPrefix}-new-answer`}
+          />
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="newBotOnly" className="text-xs text-muted-foreground">
+                Sadece Bot
+              </Label>
+              <Switch
+                id="newBotOnly"
+                checked={newBotOnly}
+                onCheckedChange={setNewBotOnly}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => { setIsAdding(false); setNewQuestion(""); setNewAnswer(""); setNewBotOnly(false); }}
+              >
+                <X className="w-4 h-4 mr-1" /> İptal
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={addFaq}
+                disabled={!newQuestion.trim() || !newAnswer.trim()}
+                data-testid={`${testIdPrefix}-save-new`}
+              >
+                <Check className="w-4 h-4 mr-1" /> Kaydet
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
         <Button
           type="button"
           size="sm"
-          variant="outline"
-          onClick={addFaq}
+          className="w-full"
+          onClick={() => setIsAdding(true)}
           data-testid={`${testIdPrefix}-add-button`}
         >
-          <Plus className="w-4 h-4 mr-1" /> Soru Ekle
+          <Plus className="w-4 h-4 mr-1" /> SSS Ekle
         </Button>
-      </div>
+      )}
 
+      {/* FAQ List */}
       {faq.length > 0 ? (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {faq.map((item, idx) => (
-            <div key={idx} className="p-3 bg-muted/30 rounded-md border border-muted space-y-2">
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Soru (Örn: Kilo sınırı var mı?)"
-                  value={item.question}
-                  onChange={(e) => updateFaq(idx, "question", e.target.value)}
-                  className="flex-1 h-8 text-sm"
-                  data-testid={`${testIdPrefix}-question-${idx}`}
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => removeFaq(idx)}
-                  className="text-destructive hover:text-destructive h-8 w-8"
-                  data-testid={`${testIdPrefix}-remove-${idx}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-              <Textarea
-                placeholder="Cevap (Örn: Evet, 110 kg üzeri için ek ücret uygulanır.)"
-                value={item.answer}
-                onChange={(e) => updateFaq(idx, "answer", e.target.value)}
-                className="min-h-[60px] text-sm resize-none"
-                data-testid={`${testIdPrefix}-answer-${idx}`}
-              />
-              <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center gap-1.5">
-                  {item.botOnly ? (
-                    <Bot className="w-3.5 h-3.5 text-orange-500" />
-                  ) : (
-                    <Globe className="w-3.5 h-3.5 text-green-500" />
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {item.botOnly ? "Sadece bot görür" : "Web sitede görünür"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Label htmlFor={`botOnly-${idx}`} className="text-xs text-muted-foreground">
-                    Sadece Bot
-                  </Label>
-                  <Switch
-                    id={`botOnly-${idx}`}
-                    checked={item.botOnly || false}
-                    onCheckedChange={(checked) => updateFaq(idx, "botOnly", checked)}
-                    data-testid={`${testIdPrefix}-botonly-${idx}`}
+            <div key={idx}>
+              {editingIndex === idx ? (
+                /* Edit Mode */
+                <div className="p-3 bg-muted/30 rounded-md border border-primary/30 space-y-2">
+                  <Input
+                    placeholder="Soru (Türkçe)"
+                    value={editQuestion}
+                    onChange={(e) => setEditQuestion(e.target.value)}
+                    className="h-8 text-sm"
+                    data-testid={`${testIdPrefix}-edit-question-${idx}`}
+                    autoFocus
                   />
+                  <Textarea
+                    placeholder="Cevap (Türkçe)"
+                    value={editAnswer}
+                    onChange={(e) => setEditAnswer(e.target.value)}
+                    className="min-h-[60px] text-sm resize-none"
+                    rows={2}
+                    data-testid={`${testIdPrefix}-edit-answer-${idx}`}
+                  />
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <Label htmlFor={`editBotOnly-${idx}`} className="text-xs text-muted-foreground">
+                        Sadece Bot
+                      </Label>
+                      <Switch
+                        id={`editBotOnly-${idx}`}
+                        checked={editBotOnly}
+                        onCheckedChange={setEditBotOnly}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={cancelEdit}
+                      >
+                        <X className="w-4 h-4 mr-1" /> İptal
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={saveEdit}
+                        disabled={!editQuestion.trim() || !editAnswer.trim()}
+                        data-testid={`${testIdPrefix}-save-edit-${idx}`}
+                      >
+                        <Check className="w-4 h-4 mr-1" /> Kaydet
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* Display Mode - Compact */
+                <div className="flex items-start justify-between py-2 px-3 hover:bg-muted/30 rounded-md group border-b border-muted last:border-b-0">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <div className="flex items-center gap-1.5">
+                      {item.botOnly ? (
+                        <Bot className="w-3 h-3 text-orange-500 flex-shrink-0" />
+                      ) : (
+                        <Globe className="w-3 h-3 text-green-500 flex-shrink-0" />
+                      )}
+                      <p className="text-sm font-medium truncate">{item.question}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.answer}</p>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => startEdit(idx)}
+                      className="h-7 w-7"
+                      data-testid={`${testIdPrefix}-edit-${idx}`}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeFaq(idx)}
+                      className="text-destructive hover:text-destructive h-7 w-7"
+                      data-testid={`${testIdPrefix}-remove-${idx}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
