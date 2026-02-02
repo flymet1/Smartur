@@ -367,6 +367,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [meetingPointMapLink, setMeetingPointMapLink] = useState(activity ? (activity as any).meetingPointMapLink || "" : "");
   const [arrivalMinutesBefore, setArrivalMinutesBefore] = useState(activity ? String((activity as any).arrivalMinutesBefore || "30") : "30");
   const [healthNotes, setHealthNotes] = useState(activity ? (activity as any).healthNotes || "" : "");
+  const [freeCancellationHours, setFreeCancellationHours] = useState(activity ? String((activity as any).freeCancellationHours || "24") : "24");
   const [confirmationMessageText, setConfirmationMessageText] = useState(DEFAULT_CONFIRMATION_TEMPLATE);
   const [useCustomConfirmation, setUseCustomConfirmation] = useState(activity ? (activity as any).useCustomConfirmation === true : false);
   const [reminderEnabled, setReminderEnabled] = useState(activity ? (activity as any).reminderEnabled === true : false);
@@ -720,6 +721,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       meetingPointMapLink: meetingPointMapLink || null,
       arrivalMinutesBefore: arrivalMinutesBefore ? Number(arrivalMinutesBefore) : 30,
       healthNotes: healthNotes || null,
+      freeCancellationHours: freeCancellationHours ? Number(freeCancellationHours) : 24,
       difficulty: difficulty || null,
       minAge: minAge ? Number(minAge) : null,
       tourLanguages: JSON.stringify(tourLanguagesArray),
@@ -1933,6 +1935,20 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                           data-testid="input-health-notes"
                         />
                         <p className="text-xs text-muted-foreground">Sipariş onay mesajında {"{saglik_notlari}"} placeholder'ı ile ve bot yanıtlarında kullanılacaktır.</p>
+                      </div>
+
+                      <div className="space-y-2 pt-2 border-t">
+                        <Label htmlFor="freeCancellationHours">Ücretsiz İptal Süresi (Saat)</Label>
+                        <Input 
+                          id="freeCancellationHours"
+                          type="number"
+                          min="0"
+                          value={freeCancellationHours}
+                          onChange={(e) => setFreeCancellationHours(e.target.value)}
+                          placeholder="24"
+                          data-testid="input-free-cancellation-hours"
+                        />
+                        <p className="text-xs text-muted-foreground">Aktivite tarihinden kaç saat öncesine kadar ücretsiz iptal yapılabilir. Bot bu bilgiyi kullanarak iptal taleplerini değerlendirecek.</p>
                       </div>
                     </>
                   )}

@@ -219,6 +219,7 @@ Alım Saati: {transfer_saat}
   meetingPointMapLink: text("meeting_point_map_link"), // Buluşma noktası harita linki
   arrivalMinutesBefore: integer("arrival_minutes_before").default(30), // Aktiviteden kaç dk önce gelmeli
   healthNotes: text("health_notes"), // Sağlık ve güvenlik notları
+  freeCancellationHours: integer("free_cancellation_hours").default(24), // Ücretsiz iptal süresi (saat)
   categories: text("categories").default("[]"), // JSON array: Kategoriler ["Su Sporları", "Macera", "Doğa"]
   highlights: text("highlights").default("[]"), // JSON array: Öne çıkan özellikler ["Profesyonel Rehber", "Ücretsiz Transfer"]
   minAge: integer("min_age"), // Minimum yaş
