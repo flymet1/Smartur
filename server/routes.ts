@@ -3558,6 +3558,12 @@ Format: Bold important info (*Price*, *Time*, *Location*). Use bullet points (�
 - If no customerReservation: Ask "Could you share your order number so I can check your reservation?"
 - CRITICAL: Never write "[trackingLink]" as text. Always paste the actual URL from the data.
 
+⚠️ CRITICAL DATA USAGE RULE:
+NEVER write variable names like "[company.phone]", "[company.email]", "[activity.price]" in your response.
+ALWAYS read the actual value from the JSON data below and write that value.
+Example: If JSON shows company.phone: "+90 555 123 4567", write "+90 555 123 4567" NOT "[company.phone]"
+If a field is null or empty, say "Bu bilgi şu an mevcut değil" instead of writing the variable name.
+
 📂 DATA SOURCES (JSON):
 ${JSON.stringify(dataJson, null, 2)}
 `;
@@ -3619,6 +3625,12 @@ Format: Önemli bilgileri (*Fiyat*, *Saat*, *Konum*) bold yaz. Liste için madde
 - customerReservation varsa ama trackingLink yoksa: "Takip linkinizi kısa süre içinde göndereceğiz" de ve company.phone bilgisini ver
 - customerReservation yoksa: "Rezervasyonunuzu kontrol edebilmem için sipariş numaranızı paylaşır mısınız?" de
 - KRİTİK: Asla "[trackingLink]" metnini yazma. Her zaman veriden gerçek URL'yi yapıştır.
+
+⚠️ KRİTİK VERİ KULLANIM KURALI:
+ASLA "[company.phone]", "[company.email]", "[activity.price]" gibi değişken adlarını cevabında yazma.
+HER ZAMAN aşağıdaki JSON verisinden gerçek değeri oku ve o değeri yaz.
+Örnek: JSON'da company.phone: "+90 555 123 4567" ise, "[company.phone]" DEĞİL "+90 555 123 4567" yaz.
+Eğer bir alan null veya boşsa, değişken adı yerine "Bu bilgi şu an mevcut değil" de.
 
 📂 VERİ KAYNAKLARI (JSON):
 ${JSON.stringify(dataJson, null, 2)}
