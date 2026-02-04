@@ -1,0 +1,138 @@
+{
+  "_comment": "Bu örnek JSON yapısıdır. Gerçek data tenant bazlı değişir.",
+  "_schema": "AI'ye gönderilen aktivite data yapısı",
+  
+  "activities": [
+    {
+      "name": "Aktivite Adı (TR)",
+      "nameEn": "Activity Name (EN) - İngilizce konuşmada kullanılır",
+      "price": "4500 TL",
+      "priceNumeric": 4500,
+      "priceUsd": "$150",
+      "duration": "30 dakika",
+      "location": "Fethiye/Ölüdeniz - Bölge bilgisi",
+      "meetingPoint": "Ölüdeniz Sahil - Buluşma noktası",
+      "meetingPointMapLink": "https://maps.google.com/... - Harita linki",
+      "bookingLink": "https://booking.com/... - Rezervasyon linki (TR)",
+      "bookingLinkEn": "https://booking.com/en/... - Rezervasyon linki (EN)",
+      "transferInfo": "Ölüdeniz, Ovacık, Fethiye Merkez'den ücretsiz - Transfer bilgisi",
+      "includedItems": [
+        "Pilot",
+        "Sigorta", 
+        "Video",
+        "Ulaşım"
+      ],
+      "excludedItems": [
+        "Öğle yemeği",
+        "Ekstra foto"
+      ],
+      "minAge": 10,
+      "maxParticipants": 50,
+      "extras": [
+        {
+          "name": "Kadın Pilot",
+          "nameEn": "Female Pilot",
+          "price": 300,
+          "priceUsd": 10
+        },
+        {
+          "name": "GoPro Video",
+          "nameEn": "GoPro Video",
+          "price": 200,
+          "priceUsd": 7
+        },
+        {
+          "name": "Fotoğraf Paketi",
+          "nameEn": "Photo Package", 
+          "price": 150,
+          "priceUsd": 5
+        }
+      ],
+      "whatToBring": [
+        "Spor ayakkabı",
+        "Güneş kremi",
+        "Şapka"
+      ],
+      "notAllowed": [
+        "Hamilelik",
+        "Kalp rahatsızlığı",
+        "Yükseklik korkusu"
+      ],
+      "healthNotes": "Sağlık sorunu olanlar doktor onayı almalı",
+      "freeCancellationHours": 24,
+      "deposit": {
+        "amount": 500,
+        "percentage": null
+      },
+      "fullPaymentRequired": false,
+      "faqs": [
+        {
+          "q": "Uçuş süresi ne kadar?",
+          "a": "25-30 dakika",
+          "qEn": "How long is the flight?",
+          "aEn": "25-30 minutes"
+        },
+        {
+          "q": "Yaş sınırı var mı?",
+          "a": "10 yaş ve üstü",
+          "qEn": "Is there an age limit?",
+          "aEn": "10 years and above"
+        },
+        {
+          "q": "Kilo sınırı var mı?",
+          "a": "Maksimum 100 kg",
+          "qEn": "Is there a weight limit?",
+          "aEn": "Maximum 100 kg"
+        }
+      ]
+    }
+  ],
+
+  "packageTours": [
+    {
+      "name": "Paket Tur Adı (TR)",
+      "nameEn": "Package Tour Name (EN)",
+      "price": "2500 TL",
+      "priceUsd": "$85",
+      "days": 3,
+      "bookingLink": "https://booking.com/paket"
+    }
+  ],
+
+  "generalFaqs": [
+    {
+      "q": "Ödeme yöntemleri nelerdir?",
+      "a": "Visa, MasterCard, Nakit kabul ediyoruz.",
+      "qEn": "What payment methods do you accept?",
+      "aEn": "We accept Visa, MasterCard, and Cash."
+    }
+  ],
+
+  "company": {
+    "name": "Şirket Adı",
+    "phone": "+90 555 123 4567",
+    "email": "info@sirket.com",
+    "address": "Şirket adresi",
+    "mapLink": "https://maps.google.com/office",
+    "paymentMethods": ["Visa", "MasterCard", "Nakit"],
+    "cancellationPolicy": "https://sirket.com/iptal-politikasi",
+    "workingHours": "09:00-18:00"
+  },
+
+  "customerReservation": {
+    "_comment": "Müşterinin mevcut rezervasyonu varsa dolar",
+    "activityName": "Yamaç Paraşütü",
+    "date": "2024-01-15",
+    "time": "10:00",
+    "status": "confirmed",
+    "trackingLink": "https://sirket.com/takip/ABC123"
+  },
+
+  "decisionContext": {
+    "_comment": "Backend tarafından hesaplanır, AI'ye gönderilir",
+    "mode": "SINGLE_ACTIVITY | ACTIVITY_SPECIFIED | ACTIVITY_UNSPECIFIED | GENERAL_INFO_ONLY",
+    "activityCount": 2,
+    "activitySpecified": false,
+    "specifiedActivityName": null
+  }
+}

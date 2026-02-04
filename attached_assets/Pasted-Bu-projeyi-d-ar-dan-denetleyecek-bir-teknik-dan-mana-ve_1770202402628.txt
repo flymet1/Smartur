@@ -1,0 +1,122 @@
+Bu projeyi dışarıdan denetleyecek bir teknik danışmana vereceğim.
+Amaç: WhatsApp AI bot mimarisini production-safe olarak test etmek ve hataları tespit etmek.
+
+LÜTFEN YENİ KOD YAZMA.
+LÜTFEN MEVCUT MANTIĞI DEĞİŞTİRME.
+SADECE VAR OLANLARI DOSYALAR HALİNDE ÇIKART.
+
+🎯 HAZIRLANMASI GEREKEN DOSYALAR
+1️⃣ orchestrator-overview.md
+
+Aşağıdakileri net ve açık şekilde yaz:
+
+WhatsApp webhook’tan mesaj geldikten sonra izlenen adımlar
+
+Activity context nasıl tespit ediliyor?
+
+Mode mantığı var mı? (SINGLE / SPECIFIC / MULTI gibi)
+
+Aktivite adı belirtilmezse sistem ne yapıyor?
+
+Intent tespiti kod mu, AI mı, hibrit mi?
+
+AI hangi durumda çağrılıyor?
+
+Kod değil, gerçek akış açıklaması istiyorum.
+
+2️⃣ orchestrator-code.js (veya .ts)
+
+Sadece ilgili kısımlar:
+
+activity detection
+
+mode belirleme
+
+intent routing
+
+prompt seçimi (RAG / AI-FIRST / FALLBACK)
+
+❗ Tam repo değil, kritik fonksiyonlar yeterli.
+
+3️⃣ final-ai-prompt.txt
+
+AI’ye gönderilen EN SON HALİ:
+
+system prompt
+
+developer prompt
+
+user message
+
+tüm eklenen guard / rules / mode bilgileri
+
+👉 console.log ile çıktısını alıyormuş gibi düşün.
+
+4️⃣ activities-data.json
+
+AI’ye gönderilen gerçek activity datası:
+
+Her aktivite için:
+
+id
+
+name / nameEn
+
+duration / durationMinutes
+
+region / location
+
+transferInfo
+
+extras (kadın pilot vb.)
+
+faqs
+
+❗ Mock yazma. Gerçekte ne gidiyorsa onu koy.
+
+5️⃣ intent-map.md
+
+Intent sistemi dokümantasyonu:
+
+Hangi intent’ler var
+
+Hangi kelimeler / regex’ler tetikliyor
+
+duration / region / transfer / extras nasıl yakalanıyor
+
+6️⃣ chat-logs.txt
+
+En az 5 gerçek konuşma örneği:
+
+Aktivite belirtilmeden sorulan sorular
+
+Botun yanlış / tutarsız cevap verdiği örnekler
+
+Süre, bölge, transfer gibi alanlar
+
+Format:
+
+User: ...
+Bot: ...
+
+7️⃣ known-issues.md
+
+Şu sorulara cevap ver:
+
+Botun şu an bilinen sorunları neler?
+
+Hangi alanlara erişemiyor? (konum, telefon, ekstralar)
+
+Bilinen edge-case’ler
+
+⚠️ ÖNEMLİ KURALLAR
+
+Yeni özellik ekleme
+
+Prompt optimize etmeye çalışma
+
+“Bence şöyle daha iyi olur” yazma
+
+Sadece mevcut sistemi olduğu gibi dışarıya analiz edilebilir hale getir.
+
+Çıktıyı yukarıdaki dosya isimleriyle ayrı ayrı üret.

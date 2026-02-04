@@ -1,0 +1,109 @@
+================================================================
+ÖRNEK KONUŞMA LOGLARI - Bilinen Sorunlar
+================================================================
+
+=== ÖRNEK 1: Aktivite Belirtilmeden Bölge Sorusu ===
+Context: 2 aktivite var (Yamaç Paraşütü, Tüplü Dalış)
+
+User: merhaba aktivite hangi bölgede yapılıyor
+Bot: Merhaba! Yamaç Paraşütü aktivitemiz **Fethiye/Ölüdeniz** bölgesinde yapılmaktadır. Başka bir sorunuz var mı?
+
+❌ SORUN: Bot sadece bir aktivite için cevap verdi
+✓ BEKLENEN: Her iki aktiviteyi de listelemeli + "Hangisi?" sormalıydı
+
+---
+
+=== ÖRNEK 2: Süre Sorusu - Çoklu Cevap ===
+Context: 2 aktivite var
+
+User: kaç dakika sürüyor
+Bot: Yamaç Paraşütü aktivitesinin süresi **30 dakika**dır. Tüplü Dalış aktivitesi de **30 dakika** sürmektedir. Başka bir sorunuz var mı?
+
+⚠️ TUTARSIZLIK: Bu sefer iki aktivite için cevap verdi
+✓ BEKLENEN: Tutarlı olarak her zaman çoklu cevap + clarification
+
+---
+
+=== ÖRNEK 3: Transfer Sorusu - Tek Cevap ===
+Context: 2 aktivite var
+
+User: otel transferi var mı
+Bot: Evet, Yamaç Paraşütü aktivitemizde **ücretsiz otel transferi** dahil. Transfer bölgeleri: Ölüdeniz, Ovacık ve Fethiye Merkez. Başka bir sorunuz var mı?
+
+❌ SORUN: Sadece bir aktivite için cevap verdi, diğerini atladı
+✓ BEKLENEN: Her iki aktivite için transfer bilgisi + "Hangisi?" sorusu
+
+---
+
+=== ÖRNEK 4: İletişim Bilgisi Sorgusu ===
+Context: Tenant ayarlarında websiteContactPhone dolu
+
+User: telefon numarası
+Bot: [company.phone] numarasından bize ulaşabilirsiniz.
+
+❌ SORUN (DÜZELTILDI): Bot değişken adını yazdı, gerçek değeri değil
+✓ MEVCUT DURUM: getTenant() kullanılarak düzeltildi
+
+---
+
+=== ÖRNEK 5: Aktivite Belirtilerek Soru ===
+Context: 2 aktivite var
+
+User: yamaç paraşütü fiyatı ne kadar
+Bot: Yamaç Paraşütü fiyatımız **4500 TL**'dir. Ön ödeme olarak 500 TL alınmaktadır, kalan tutar aktivite günü ödenir. Başka bir sorunuz var mı?
+
+✓ DOĞRU: Aktivite adı belirtildi, sadece o aktivite için cevap verdi
+
+---
+
+=== ÖRNEK 6: Takip Sorusu (Follow-up) ===
+Context: Önceki mesajda "yamaç paraşütü" geçti
+
+User: kaç dakika sürüyor
+Bot: Hangi aktivite için soruyorsunuz?
+
+❌ SORUN: Önceki context'ten aktiviteyi bilmeliydi
+✓ BEKLENEN: "Yamaç Paraşütü 30 dakika sürmektedir"
+
+---
+
+=== ÖRNEK 7: Genel Bilgi Sorusu ===
+Context: Tek aktivite var
+
+User: çalışma saatleriniz nedir
+Bot: Çalışma saatlerimiz 09:00-18:00 arasındadır. Başka bir sorunuz var mı?
+
+✓ DOĞRU: Aktivite context'i gerektirmeyen soru, doğru cevaplandı
+
+---
+
+=== ÖRNEK 8: Karşılaştırma Sorusu ===
+Context: 2 aktivite var
+
+User: hangisi daha iyi sizce
+Bot: Yamaç Paraşütü daha popüler bir seçenek...
+
+❌ SORUN: Subjektif yorum yaptı
+✓ BEKLENEN: "Aktivitelerin deneyimleri farklıdır. İsterseniz farklarını tarafsız açıklayabilirim."
+
+---
+
+=== ÖRNEK 9: Ekstra Soru - False Negative ===
+Context: Aktivitenin extras listesi boş
+
+User: kadın pilot var mı
+Bot: Evet, kadın pilot seçeneğimiz var.
+
+❌ SORUN: Extras listesinde yoktu ama "var" dedi
+✓ BEKLENEN: "Bu seçenek hakkında bilgi almak için yetkilimize danışmanızı öneririm."
+
+---
+
+=== ÖRNEK 10: Ofis Adresi vs Aktivite Lokasyonu ===
+Context: company.address ve activity.meetingPoint farklı
+
+User: neredesiniz
+Bot: Buluşma noktamız Ölüdeniz Sahil'dir.
+
+⚠️ BELİRSİZLİK: "neredesiniz" ofis mi aktivite mi belirsiz
+✓ BEKLENEN: Açıklama istenmeli veya her ikisi de verilmeli
