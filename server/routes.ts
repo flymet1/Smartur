@@ -3166,6 +3166,179 @@ interface AIFirstContext {
   };
 }
 
+// Activity Mode Types for deterministic decision making
+type ActivityMode = 'SINGLE_ACTIVITY' | 'ACTIVITY_SPECIFIED' | 'ACTIVITY_UNSPECIFIED' | 'GENERAL_INFO_ONLY';
+
+interface ActivityModeContext {
+  mode: ActivityMode;
+  activityCount: number;
+  activitySpecified: boolean;
+  specifiedActivityName?: string;
+}
+
+// Detect activity mode based on user message and available activities
+function detectActivityMode(
+  userMessage: string,
+  activities: Array<{ name: string; nameEn?: string }>,
+  conversationHistory?: Array<{ role: string; content: string }>
+): ActivityModeContext {
+  const activityCount = activities.length;
+  
+  // Normalize Turkish characters for matching
+  const normalize = (str: string) => str.toLowerCase()
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c');
+  
+  const messageLower = normalize(userMessage);
+  
+  // Check if user mentioned any activity name in CURRENT message
+  let specifiedActivityName: string | undefined;
+  for (const activity of activities) {
+    const nameLower = normalize(activity.name);
+    
+    // Check main name
+    if (messageLower.includes(nameLower)) {
+      specifiedActivityName = activity.name;
+      break;
+    }
+    
+    // Check English name if exists
+    if (activity.nameEn) {
+      const nameEnLower = activity.nameEn.toLowerCase();
+      if (messageLower.includes(nameEnLower)) {
+        specifiedActivityName = activity.name;
+        break;
+      }
+    }
+    
+    // Check common abbreviations/keywords
+    const keywords: Record<string, string[]> = {
+      'parasut': ['paragliding', 'yamac'],
+      'dalis': ['diving', 'scuba', 'tuplu'],
+      'safari': ['jeep', 'cip'],
+      'tekne': ['boat'],
+      'rafting': ['rafting'],
+      'quad': ['atv'],
+      'balon': ['balloon'],
+    };
+    
+    for (const [activityKeyword, variations] of Object.entries(keywords)) {
+      if (nameLower.includes(activityKeyword)) {
+        for (const variation of variations) {
+          if (messageLower.includes(variation)) {
+            specifiedActivityName = activity.name;
+            break;
+          }
+        }
+        if (specifiedActivityName) break;
+      }
+    }
+    if (specifiedActivityName) break;
+  }
+  
+  // If no activity in current message, check conversation history for context
+  // This handles follow-up questions like "kaç para?" after mentioning an activity
+  // IMPORTANT: Only scan USER messages, not assistant responses (which may list multiple activities)
+  if (!specifiedActivityName && conversationHistory && conversationHistory.length > 0) {
+    // Look at last 4 user messages for activity context
+    const userMessages = conversationHistory
+      .filter(msg => msg.role === 'user')
+      .slice(-4);
+    
+    // Count how many different activities were mentioned in recent user messages
+    const mentionedActivities = new Set<string>();
+    
+    for (const msg of userMessages.reverse()) {
+      const msgNormalized = normalize(msg.content);
+      for (const activity of activities) {
+        const nameLower = normalize(activity.name);
+        if (msgNormalized.includes(nameLower)) {
+          mentionedActivities.add(activity.name);
+        }
+        // Check English name
+        if (activity.nameEn && msgNormalized.includes(activity.nameEn.toLowerCase())) {
+          mentionedActivities.add(activity.name);
+        }
+      }
+    }
+    
+    // Only set specifiedActivityName if EXACTLY ONE activity was mentioned
+    // If multiple were mentioned, leave unspecified to force clarification
+    if (mentionedActivities.size === 1) {
+      specifiedActivityName = Array.from(mentionedActivities)[0];
+      console.log(`[MODE DETECTION] Found single activity "${specifiedActivityName}" in user's conversation history`);
+    } else if (mentionedActivities.size > 1) {
+      console.log(`[MODE DETECTION] Multiple activities mentioned in history: ${Array.from(mentionedActivities).join(', ')} - keeping UNSPECIFIED`);
+    }
+  }
+  
+  // General info keywords - STRICT list (only truly non-activity queries)
+  // These are questions that should NEVER require activity context
+  const strictGeneralInfoKeywords = [
+    'iletisim', 'telefon numara', 'email', 'eposta', 'mail', 
+    'ofis adres', 'sirket adres', 'calisma saat', 'acik saat', 'kapali saat',
+    'odeme yontem', 'kredi kart', 'nakit odeme',
+    'contact info', 'phone number', 'office address', 'working hours', 'payment method'
+  ];
+  
+  // Greeting keywords - handled separately
+  const greetingKeywords = ['merhaba', 'selam', 'gunaydin', 'iyi gunler', 'hello', 'hi', 'hey'];
+  
+  const isStrictGeneralInfo = strictGeneralInfoKeywords.some(kw => messageLower.includes(normalize(kw)));
+  const isGreeting = greetingKeywords.some(kw => messageLower.includes(normalize(kw)));
+  
+  // Activity-specific question indicators (requires activity context)
+  const activitySpecificKeywords = [
+    'fiyat', 'ucret', 'para', 'kac lira', 'kac tl', 'price', 'cost', 'how much',
+    'sure', 'dakika', 'saat', 'duration', 'how long',
+    'nerede', 'konum', 'bolge', 'location', 'where',
+    'transfer', 'otel', 'hotel',
+    'yas sinir', 'kilo', 'agirlik', 'age limit', 'weight',
+    'dahil', 'included', 'ekstra', 'extra',
+    'iptal', 'cancel', 'degisiklik', 'change',
+    'rezervasyon', 'booking', 'reservation'
+  ];
+  
+  const isActivitySpecificQuestion = activitySpecificKeywords.some(kw => messageLower.includes(normalize(kw)));
+  
+  // Determine mode with priority order
+  let mode: ActivityMode;
+  
+  // Priority 1: Strict general info (contact, payment, hours) - regardless of activity count
+  if (isStrictGeneralInfo && !isActivitySpecificQuestion) {
+    mode = 'GENERAL_INFO_ONLY';
+  }
+  // Priority 2: Greeting without activity question
+  else if (isGreeting && !isActivitySpecificQuestion && messageLower.length < 50) {
+    mode = 'GENERAL_INFO_ONLY';
+  }
+  // Priority 3: Activity specified (in current message or conversation history)
+  else if (specifiedActivityName) {
+    mode = 'ACTIVITY_SPECIFIED';
+  }
+  // Priority 4: Single activity - answer directly
+  else if (activityCount === 1) {
+    mode = 'SINGLE_ACTIVITY';
+  }
+  // Priority 5: Multiple activities, no specification - need clarification
+  else {
+    mode = 'ACTIVITY_UNSPECIFIED';
+  }
+  
+  console.log(`[MODE DETECTION] Message: "${userMessage.substring(0, 50)}..." → Mode: ${mode}, Activities: ${activityCount}, Specified: ${specifiedActivityName || 'none'}, IsActivityQ: ${isActivitySpecificQuestion}`);
+  
+  return {
+    mode,
+    activityCount,
+    activitySpecified: !!specifiedActivityName,
+    specifiedActivityName
+  };
+}
+
 // Build clean context JSON for AI-First mode (N8N style)
 function buildCleanContext(
   activities: any[],
@@ -3412,7 +3585,12 @@ function buildCleanContext(
 }
 
 // Build JSON-based prompt for AI-First mode (GPT-4o)
-function buildAIFirstPrompt(context: AIFirstContext, _customBotPrompt?: string, isEnglish: boolean = false): string {
+function buildAIFirstPrompt(
+  context: AIFirstContext, 
+  _customBotPrompt?: string, 
+  isEnglish: boolean = false,
+  modeContext?: ActivityModeContext
+): string {
   
   // Build JSON data structure
   const dataJson = {
@@ -3471,6 +3649,12 @@ function buildAIFirstPrompt(context: AIFirstContext, _customBotPrompt?: string, 
       time: context.userReservation.time,
       status: context.userReservation.status,
       trackingLink: context.userReservation.trackingLink || null
+    } : null,
+    decisionContext: modeContext ? {
+      mode: modeContext.mode,
+      activityCount: modeContext.activityCount,
+      activitySpecified: modeContext.activitySpecified,
+      specifiedActivityName: modeContext.specifiedActivityName || null
     } : null
   };
 
@@ -3483,6 +3667,59 @@ function buildAIFirstPrompt(context: AIFirstContext, _customBotPrompt?: string, 
   prompt += isEnglish
     ? `🔥 LANGUAGE LOCK (ABSOLUTE): This conversation is in ENGLISH. Respond in English for ALL messages, even if later messages are short or ambiguous. Never switch to Turkish.\n\n`
     : `🔥 DİL KİLİDİ (MUTLAK): Bu konuşma TÜRKÇE. Tüm mesajlara Türkçe cevap ver, sonraki mesajlar kısa veya belirsiz olsa bile. Asla İngilizceye geçme.\n\n`;
+  
+  // MODE-BASED DECISION RULES (Critical for consistent behavior)
+  if (modeContext) {
+    if (isEnglish) {
+      prompt += `🎯 ACTIVITY MODE RULES (MANDATORY - FOLLOW EXACTLY):
+
+CURRENT MODE: ${modeContext.mode}
+ACTIVITY COUNT: ${modeContext.activityCount}
+${modeContext.specifiedActivityName ? `SPECIFIED ACTIVITY: ${modeContext.specifiedActivityName}` : 'SPECIFIED ACTIVITY: None'}
+
+MODE BEHAVIOR RULES:
+${modeContext.mode === 'SINGLE_ACTIVITY' ? `• SINGLE_ACTIVITY: Only 1 activity exists. Answer directly without asking which activity.` : ''}
+${modeContext.mode === 'ACTIVITY_SPECIFIED' ? `• ACTIVITY_SPECIFIED: User mentioned "${modeContext.specifiedActivityName}". Answer ONLY for this activity.` : ''}
+${modeContext.mode === 'ACTIVITY_UNSPECIFIED' ? `• ACTIVITY_UNSPECIFIED: Multiple activities exist but user didn't specify one.
+  - For activity-specific questions (price, duration, location, transfer, age limit, extras, etc.):
+    → List ALL activities briefly with the requested info
+    → Ask "Which activity would you like more details about?"
+  - NEVER pick a default activity
+  - NEVER answer for just one activity when multiple exist` : ''}
+${modeContext.mode === 'GENERAL_INFO_ONLY' ? `• GENERAL_INFO_ONLY: User asked general info (greeting, contact, payment). Answer without activity context.` : ''}
+
+⛔ FORBIDDEN BEHAVIOR (NEVER DO THIS):
+- If mode is ACTIVITY_UNSPECIFIED, NEVER give details for just one activity
+- NEVER assume "the most popular" or "the default" activity
+- NEVER skip asking for clarification when multiple activities exist and user didn't specify
+
+`;
+    } else {
+      prompt += `🎯 AKTİVİTE MOD KURALLARI (ZORUNLU - AYNEN UYGULA):
+
+MEVCUT MOD: ${modeContext.mode}
+AKTİVİTE SAYISI: ${modeContext.activityCount}
+${modeContext.specifiedActivityName ? `BELİRTİLEN AKTİVİTE: ${modeContext.specifiedActivityName}` : 'BELİRTİLEN AKTİVİTE: Yok'}
+
+MOD DAVRANIŞ KURALLARI:
+${modeContext.mode === 'SINGLE_ACTIVITY' ? `• SINGLE_ACTIVITY: Sadece 1 aktivite var. Hangi aktivite diye sormadan direkt cevapla.` : ''}
+${modeContext.mode === 'ACTIVITY_SPECIFIED' ? `• ACTIVITY_SPECIFIED: Kullanıcı "${modeContext.specifiedActivityName}" aktivitesini belirtti. SADECE bu aktivite için cevap ver.` : ''}
+${modeContext.mode === 'ACTIVITY_UNSPECIFIED' ? `• ACTIVITY_UNSPECIFIED: Birden fazla aktivite var ama kullanıcı hangisini istediğini belirtmedi.
+  - Aktiviteye özel sorularda (fiyat, süre, bölge, transfer, yaş sınırı, ekstralar vb.):
+    → TÜM aktiviteleri kısaca listele ve istenen bilgiyi ver
+    → "Hangi aktivite hakkında detay almak istersiniz?" diye sor
+  - ASLA varsayılan bir aktivite seçme
+  - ASLA birden fazla aktivite varken tek aktivite için cevap verme` : ''}
+${modeContext.mode === 'GENERAL_INFO_ONLY' ? `• GENERAL_INFO_ONLY: Kullanıcı genel bilgi sordu (selamlama, iletişim, ödeme). Aktivite bağlamı olmadan cevapla.` : ''}
+
+⛔ YASAK DAVRANIŞLAR (ASLA YAPMA):
+- Mod ACTIVITY_UNSPECIFIED ise, ASLA tek aktivite için detay verme
+- ASLA "en popüler" veya "varsayılan" aktiviteyi seçme
+- Birden fazla aktivite varken ve kullanıcı belirtmemişken ASLA açıklama istemeden geçme
+
+`;
+    }
+  }
   
   // Core instructions
   if (isEnglish) {
@@ -3672,8 +3909,16 @@ async function generateAIFirstResponse(
     isEnglish = true;
   }
   
-  // Build simple prompt
-  const systemPrompt = buildAIFirstPrompt(context, customBotPrompt, isEnglish);
+  // Detect activity mode for deterministic decision making
+  // Pass conversation history to detect follow-up questions
+  const modeContext = detectActivityMode(
+    userMessage, 
+    context.activities.map(a => ({ name: a.name, nameEn: a.nameEn })),
+    conversationHistory
+  );
+  
+  // Build simple prompt with mode context
+  const systemPrompt = buildAIFirstPrompt(context, customBotPrompt, isEnglish, modeContext);
   
   try {
     console.log(`[AI-FIRST] Calling OpenAI GPT-4o with ${conversationHistory.length + 1} messages, language: ${isEnglish ? 'EN' : 'TR'}`);
