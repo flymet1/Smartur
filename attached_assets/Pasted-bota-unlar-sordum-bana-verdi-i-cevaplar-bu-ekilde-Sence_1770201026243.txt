@@ -1,0 +1,215 @@
+bota şunları sordum bana verdiği cevaplar bu şekilde? Sence mimari mi hatalı yoksa promt mu eksik bot burada nasıl davranmalıydı? neler değişmeli? müşteri aktivite adı belirtmediyse bot davranışını nasıl olmalı çünkü bir çok değişken var. Süre için sorduğum soruda her iki aktivite süresini verdi ama bölge için aynı şeyi yapmadı. otel transferi sorusuna ise yine sadece tek aktivite için cevap verdi
+
+merhaba aktivite hangi bölgede yapılıyor
+Merhaba! Yamaç Paraşütü aktivitemiz **Fethiye/Ölüdeniz** bölgesinde yapılmaktadır. Başka bir sorunuz var mı?
+
+kaç dakika sürüyor
+Yamaç Paraşütü aktivitesinin süresi **30 dakika**dır. Tüplü Dalış aktivitesi de **30 dakika** sürmektedir. Başka bir sorunuz var mı?
+
+otel transferi var mı
+Evet, Yamaç Paraşütü aktivitemizde **ücretsiz otel transferi** dahil. Transfer bölgeleri: Ölüdeniz, Ovacık ve Fethiye Merkez. Başka bir sorunuz var mı?
+
+Bu örnek çok değerli, çünkü sorun net biçimde görünüyor.
+Kısa cevapla başlayayım:
+
+❌ Bu bir “prompt eksiği” değil
+❌ Tek başına “mimari hatası” da değil
+✅ Karar katmanı (decision logic) eksik / tutarsız
+
+Şimdi bunu teknik olarak parçalayalım ve nasıl düzeltilmesi gerektiğini net kurallarla anlatalım.
+
+1️⃣ Botun verdiği cevaplarda ne yanlış?
+Soru 1
+
+Kullanıcı:
+
+merhaba aktivite hangi bölgede yapılıyor
+
+Bot:
+
+Yamaç Paraşütü … Fethiye/Ölüdeniz
+
+❌ Hata:
+Kullanıcı aktivite adı belirtmedi, ama bot tek aktivite seçti.
+
+📌 Bu “default activity bias” hatasıdır.
+
+Soru 2
+
+Kullanıcı:
+
+kaç dakika sürüyor
+
+Bot:
+
+Yamaç Paraşütü 30 dk, Tüplü Dalış 30 dk
+
+⚠️ Yarı doğru, yarı hatalı
+
+✔️ Birden fazla aktivite olduğunu fark etmiş
+❌ Ama:
+
+Neden sadece 2 aktivite?
+
+Diğerleri nerede?
+
+Aynı mantık neden bölge ve transfer sorusunda yok?
+
+➡️ Tutarsız karar verme
+
+Soru 3
+
+Kullanıcı:
+
+otel transferi var mı
+
+Bot:
+
+Yamaç Paraşütü için ücretsiz transfer var
+
+❌ Ciddi hata
+
+Çünkü:
+
+Kullanıcı aktivite belirtmedi
+
+Transfer bilgisi aktiviteye göre kritik şekilde değişir
+
+Bot yine tek aktiviteyi varsaydı
+
+2️⃣ Asıl problem nerede?
+🎯 Asıl sorun:
+
+Alan (field) bazlı karar kuralları yok
+
+Bot şu an şunu yapıyor:
+
+“Soru geldiyse → en alakalı görünen aktiviteyi seç → cevap ver”
+
+Bu chatbot için ölümcül bir davranıştır.
+
+3️⃣ Neden süre sorusunda “çoklu”, diğerlerinde “tekli” davrandı?
+
+Bu çok önemli 👇
+
+Sebep muhtemelen şu:
+
+Süre alanı:
+
+RAG içinde birden fazla dokümanda benzer anahtar kelimeyle eşleşti
+
+Model “multiple matches” algıladı
+
+Bölge / Transfer alanı:
+
+Yamaç Paraşütü içeriği daha güçlü / daha detaylı
+
+Model onu “en güvenli cevap” olarak seçti
+
+📌 Yani:
+
+Model bilinçli bir karar vermedi, sadece en güçlü sinyali izledi.
+
+Bu mimari açıdan kontrolsüzlük demektir.
+
+4️⃣ Doğru davranış nasıl olmalıydı? (Altın kural)
+🔑 ALTIN KURAL
+
+Aktivite belirtilmediyse ve sorulan alan aktiviteye göre değişiyorsa → tek cevap VERİLMEZ
+
+Bu:
+
+Süre
+
+Bölge
+
+Fiyat
+
+Transfer
+
+Uygunluk
+
+Yaş / kilo limiti
+
+için aynen geçerli
+
+5️⃣ İdeal bot davranışı (senin senaryona göre)
+Soru:
+
+“aktivite hangi bölgede yapılıyor?”
+
+✅ Doğru cevap:
+
+“Aktivitelere göre bölgeler değişmektedir. Örneğin:
+
+• Yamaç Paraşütü: Fethiye / Ölüdeniz
+• Tüplü Dalış: Fethiye Merkez çıkışlı
+• Jeep Safari: Saklıkent ve çevresi
+
+Hangi aktivite hakkında bilgi almak istiyorsunuz?”
+
+Soru:
+
+“otel transferi var mı?”
+
+✅ Doğru cevap:
+
+“Otel transferi durumu aktiviteye göre değişir.
+
+• Yamaç Paraşütü: Ölüdeniz, Ovacık ve Fethiye Merkez’den ücretsiz
+• Jeep Safari: Çoğu bölgede dahildir
+• Tüplü Dalış: Merkeze yakın oteller için dahildir
+
+Hangi aktivite için soruyorsunuz?”
+
+6️⃣ Bu prompt ile çözülür mü?
+
+❌ Hayır, tek başına çözülmez
+
+Prompt:
+
+Davranış tarzını belirler
+
+Tonu belirler
+
+Önceliği belirler
+
+Ama:
+
+“Tek mi cevap vereceğim, çoklu mu?”
+Bu bir iş kuralıdır, prompt kararı değil.
+
+7️⃣ Ne değişmeli? (Net checklist)
+✅ 1. FIELD-LEVEL DECISION RULE eklenmeli
+
+Her soru için önce şuna bakılmalı:
+
+IF activity not specified
+AND field varies across activities
+THEN
+  multi-activity summary
+  ask for clarification
+ELSE
+  answer directly
+
+✅ 2. Yasak davranış eklenmeli
+
+❌ Aktivite belirtilmediyse:
+
+Default aktivite seçme
+
+En popüler aktiviteye kaçma
+
+Tek aktivite adına konuşma
+
+Bu hard rule olmalı.
+
+✅ 3. Prompt’a net bir guard eklenmeli (AMA tek başına değil)
+
+Prompt’a şu tarz kesin uyarı eklenmeli:
+
+“Aktivite adı belirtilmeden, aktiviteye göre değişen alanlarda tek bir aktivite adına cevap verme.”
+
+Ama tekrar ediyorum:
+
+Bu tek başına yetmez, logic şart.
