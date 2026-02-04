@@ -3507,7 +3507,10 @@ SAFETY: If deposit > price, say "Please contact our representative for deposit i
 - Only confirm "included" or "no extra fee" if item is in includedItems or extras shows price=0
 
 Focused Info:
-- Location question → Give only meetingPoint and location
+- Activity location question → Give meetingPoint + meetingPointMapLink (map link)
+  Example: "Where is scuba diving?" → "Meeting point: [meetingPoint]. Map: [meetingPointMapLink]"
+- Office/company location question → Give company.address
+  Example: "Where is your office?" → Share the company.address field
 - Price question → Give only price and deposit info
 - FAQ question → Look up the activity's faqs array
 - Extras question (female pilot, video, photo, gopro) → Look up activity's extras array, show extra price AS ADDITION to base price
@@ -3571,7 +3574,10 @@ Akıllı Hesaplama: Kişi sayısı belirtildiğinde (örn: 2 kişi), SADECE pric
 Para Birimi: Türkçe konuşmalarda fiyatları her zaman TL olarak göster.
 
 Odaklı Bilgi:
-- Konum sorulursa → Sadece meetingPoint ve location bilgisini ver
+- Aktivite konumu sorulursa → meetingPoint + meetingPointMapLink (harita linki) ver
+  Örnek: "Tüplü dalış nerede?" → "Buluşma noktamız: [meetingPoint]. Harita: [meetingPointMapLink]"
+- Ofis/şirket konumu sorulursa → company.address bilgisini ver
+  Örnek: "Ofisiniz nerede?" → company.address alanındaki bilgiyi paylaş
 - Fiyat sorulursa → Sadece price ve deposit bilgisini ver
 - SSS sorulursa → İlgili aktivitenin faqs dizisine bakarak cevap ver
 
