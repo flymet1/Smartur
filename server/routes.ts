@@ -3169,11 +3169,14 @@ interface AIFirstContext {
 // Activity Mode Types for deterministic decision making
 type ActivityMode = 'SINGLE_ACTIVITY' | 'ACTIVITY_SPECIFIED' | 'ACTIVITY_UNSPECIFIED' | 'GENERAL_INFO_ONLY';
 
+type FieldRequested = 'price' | 'duration' | 'location' | 'transfer' | 'extras' | 'availability' | 'age_limit' | 'included' | 'faq' | 'booking' | 'cancellation' | 'general' | null;
+
 interface ActivityModeContext {
   mode: ActivityMode;
   activityCount: number;
   activitySpecified: boolean;
   specifiedActivityName?: string;
+  fieldRequested?: FieldRequested;
 }
 
 // Detect activity mode based on user message and available activities
@@ -3305,6 +3308,32 @@ function detectActivityMode(
   
   const isActivitySpecificQuestion = activitySpecificKeywords.some(kw => messageLower.includes(normalize(kw)));
   
+  // Detect which field is being requested (for deterministic responses)
+  let fieldRequested: FieldRequested = null;
+  const fieldPatterns: { field: FieldRequested; keywords: string[] }[] = [
+    { field: 'price', keywords: ['fiyat', 'ucret', 'para', 'kac lira', 'kac tl', 'price', 'cost', 'how much', 'ne kadar'] },
+    { field: 'duration', keywords: ['sure', 'dakika', 'saat', 'duration', 'how long', 'uzunluk'] },
+    { field: 'location', keywords: ['nerede', 'konum', 'bolge', 'location', 'where', 'nereden', 'harita'] },
+    { field: 'transfer', keywords: ['transfer', 'otel', 'hotel', 'alinir', 'servis', 'ulasim'] },
+    { field: 'extras', keywords: ['ekstra', 'extra', 'kadin pilot', 'bayan pilot', 'video', 'foto', 'gopro'] },
+    { field: 'availability', keywords: ['musait', 'uygun', 'bos', 'yer var', 'available', 'slot'] },
+    { field: 'age_limit', keywords: ['yas', 'sinir', 'kilo', 'agirlik', 'age', 'limit', 'weight'] },
+    { field: 'included', keywords: ['dahil', 'included', 'iceriyor', 'neleri kapsiyor'] },
+    { field: 'booking', keywords: ['rezervasyon', 'booking', 'kayit', 'nasil yaparim'] },
+    { field: 'cancellation', keywords: ['iptal', 'cancel', 'degisiklik', 'change', 'vazgec'] },
+    { field: 'faq', keywords: ['sss', 'sik sorulan', 'faq'] }
+  ];
+  
+  for (const pattern of fieldPatterns) {
+    if (pattern.keywords.some(kw => messageLower.includes(normalize(kw)))) {
+      fieldRequested = pattern.field;
+      break;
+    }
+  }
+  if (!fieldRequested && isActivitySpecificQuestion) {
+    fieldRequested = 'general';
+  }
+  
   // Determine mode with priority order
   let mode: ActivityMode;
   
@@ -3329,13 +3358,14 @@ function detectActivityMode(
     mode = 'ACTIVITY_UNSPECIFIED';
   }
   
-  console.log(`[MODE DETECTION] Message: "${userMessage.substring(0, 50)}..." → Mode: ${mode}, Activities: ${activityCount}, Specified: ${specifiedActivityName || 'none'}, IsActivityQ: ${isActivitySpecificQuestion}`);
+  console.log(`[MODE DETECTION] Message: "${userMessage.substring(0, 50)}..." → Mode: ${mode}, Activities: ${activityCount}, Specified: ${specifiedActivityName || 'none'}, Field: ${fieldRequested || 'none'}`);
   
   return {
     mode,
     activityCount,
     activitySpecified: !!specifiedActivityName,
-    specifiedActivityName
+    specifiedActivityName,
+    fieldRequested
   };
 }
 
@@ -3592,16 +3622,19 @@ function buildAIFirstPrompt(
   modeContext?: ActivityModeContext
 ): string {
   
-  // Build JSON data structure
+  // Pre-resolve null values to prevent placeholder output
+  const NO_INFO = isEnglish ? '[INFO_NOT_AVAILABLE]' : '[BU_BİLGİ_YOK]';
+  
+  // Build JSON data structure with pre-resolved nulls
   const dataJson = {
     company: {
-      name: context.company.name,
-      phone: context.company.phone || null,
-      email: context.company.email || null,
-      address: context.company.address || null,
-      mapLink: context.company.mapLink || null,
+      name: context.company.name || NO_INFO,
+      phone: context.company.phone || NO_INFO,
+      email: context.company.email || NO_INFO,
+      address: context.company.address || NO_INFO,
+      mapLink: context.company.mapLink || NO_INFO,
       paymentMethods: context.company.paymentMethods || ['Visa', 'MasterCard', 'Nakit'],
-      cancellationPolicy: context.company.cancellationPolicy || null
+      cancellationPolicy: context.company.cancellationPolicy || NO_INFO
     },
     activities: context.activities.map(act => ({
       name: isEnglish && act.nameEn ? act.nameEn : act.name,
@@ -3654,7 +3687,8 @@ function buildAIFirstPrompt(
       mode: modeContext.mode,
       activityCount: modeContext.activityCount,
       activitySpecified: modeContext.activitySpecified,
-      specifiedActivityName: modeContext.specifiedActivityName || null
+      specifiedActivityName: modeContext.specifiedActivityName || null,
+      fieldRequested: modeContext.fieldRequested || null
     } : null
   };
 
@@ -3676,6 +3710,7 @@ function buildAIFirstPrompt(
 CURRENT MODE: ${modeContext.mode}
 ACTIVITY COUNT: ${modeContext.activityCount}
 ${modeContext.specifiedActivityName ? `SPECIFIED ACTIVITY: ${modeContext.specifiedActivityName}` : 'SPECIFIED ACTIVITY: None'}
+FIELD REQUESTED: ${modeContext.fieldRequested || 'general'}
 
 MODE BEHAVIOR RULES:
 ${modeContext.mode === 'SINGLE_ACTIVITY' ? `• SINGLE_ACTIVITY: Only 1 activity exists. Answer directly without asking which activity.` : ''}
@@ -3700,6 +3735,7 @@ ${modeContext.mode === 'GENERAL_INFO_ONLY' ? `• GENERAL_INFO_ONLY: User asked 
 MEVCUT MOD: ${modeContext.mode}
 AKTİVİTE SAYISI: ${modeContext.activityCount}
 ${modeContext.specifiedActivityName ? `BELİRTİLEN AKTİVİTE: ${modeContext.specifiedActivityName}` : 'BELİRTİLEN AKTİVİTE: Yok'}
+SORULAN ALAN: ${modeContext.fieldRequested || 'genel'}
 
 MOD DAVRANIŞ KURALLARI:
 ${modeContext.mode === 'SINGLE_ACTIVITY' ? `• SINGLE_ACTIVITY: Sadece 1 aktivite var. Hangi aktivite diye sormadan direkt cevapla.` : ''}
