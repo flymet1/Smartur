@@ -3111,6 +3111,7 @@ interface AIFirstContext {
     phone?: string;
     email?: string;
     address?: string;
+    mapLink?: string;
     paymentMethods?: string[];
     cancellationPolicy?: string;
     workingHours?: string;
@@ -3394,6 +3395,7 @@ function buildCleanContext(
       phone: tenantSettings?.phone,
       email: tenantSettings?.email,
       address: tenantSettings?.address,
+      mapLink: tenantSettings?.mapLink,
       paymentMethods: ['Visa', 'MasterCard', 'American Express'],
       cancellationPolicy: tenantSettings?.cancellationPolicyUrl,
       workingHours: tenantSettings?.workingHours || '09:00-18:00'
@@ -3419,6 +3421,7 @@ function buildAIFirstPrompt(context: AIFirstContext, _customBotPrompt?: string, 
       phone: context.company.phone || null,
       email: context.company.email || null,
       address: context.company.address || null,
+      mapLink: context.company.mapLink || null,
       paymentMethods: context.company.paymentMethods || ['Visa', 'MasterCard', 'Nakit'],
       cancellationPolicy: context.company.cancellationPolicy || null
     },
@@ -3576,8 +3579,8 @@ Para Birimi: Türkçe konuşmalarda fiyatları her zaman TL olarak göster.
 Odaklı Bilgi:
 - Aktivite konumu sorulursa → meetingPoint + meetingPointMapLink (harita linki) ver
   Örnek: "Tüplü dalış nerede?" → "Buluşma noktamız: [meetingPoint]. Harita: [meetingPointMapLink]"
-- Ofis/şirket konumu sorulursa → company.address bilgisini ver
-  Örnek: "Ofisiniz nerede?" → company.address alanındaki bilgiyi paylaş
+- Ofis/şirket konumu sorulursa → company.address + company.mapLink bilgisini ver
+  Örnek: "Ofisiniz nerede?" → "Adresimiz: [company.address]. Yol tarifi: [company.mapLink]"
 - Fiyat sorulursa → Sadece price ve deposit bilgisini ver
 - SSS sorulursa → İlgili aktivitenin faqs dizisine bakarak cevap ver
 
@@ -7903,6 +7906,8 @@ Rezervasyon takip: {takip_linki}
           companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
           phone: await storage.getSetting('phone', tenantId),
           email: await storage.getSetting('email', tenantId),
+          address: await storage.getSetting('websiteContactAddress', tenantId),
+          mapLink: await storage.getSetting('websiteContactMapLink', tenantId),
           cancellationPolicyUrl: await storage.getSetting('cancellationPolicyUrl', tenantId),
           workingHours: await storage.getSetting('workingHours', tenantId)
         };
@@ -8852,7 +8857,8 @@ Rezervasyon takip: {takip_linki}
         companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
         phone: await storage.getSetting('phone', tenantId),
         email: await storage.getSetting('email', tenantId),
-        address: await storage.getSetting('address', tenantId),
+        address: await storage.getSetting('websiteContactAddress', tenantId),
+        mapLink: await storage.getSetting('websiteContactMapLink', tenantId),
         cancellationPolicyUrl: await storage.getSetting('cancellationPolicyUrl', tenantId),
         workingHours: await storage.getSetting('workingHours', tenantId)
       };
@@ -9671,6 +9677,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
           websiteContactEmail: tenants.websiteContactEmail,
           websiteContactPhone: tenants.websiteContactPhone,
           websiteContactAddress: tenants.websiteContactAddress,
+          websiteContactMapLink: tenants.websiteContactMapLink,
           websiteAboutPageTitle: tenants.websiteAboutPageTitle,
           websiteAboutPageContent: tenants.websiteAboutPageContent,
           websiteCancellationPageTitle: tenants.websiteCancellationPageTitle,
@@ -9707,6 +9714,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         websiteContactEmail,
         websiteContactPhone,
         websiteContactAddress,
+        websiteContactMapLink,
         websiteAboutPageTitle,
         websiteAboutPageContent,
         websiteCancellationPageTitle,
@@ -9884,6 +9892,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
           websiteContactEmail: tenants.websiteContactEmail,
           websiteContactPhone: tenants.websiteContactPhone,
           websiteContactAddress: tenants.websiteContactAddress,
+          websiteContactMapLink: tenants.websiteContactMapLink,
           websiteAboutPageTitle: tenants.websiteAboutPageTitle,
           websiteAboutPageContent: tenants.websiteAboutPageContent,
           websiteCancellationPageTitle: tenants.websiteCancellationPageTitle,
@@ -9976,6 +9985,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         websiteContactEmail,
         websiteContactPhone,
         websiteContactAddress,
+        websiteContactMapLink,
         websiteAboutPageTitle,
         websiteAboutPageContent,
         websiteCancellationPageTitle,
@@ -10051,6 +10061,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       if (websiteContactEmail !== undefined) updateData.websiteContactEmail = websiteContactEmail;
       if (websiteContactPhone !== undefined) updateData.websiteContactPhone = websiteContactPhone;
       if (websiteContactAddress !== undefined) updateData.websiteContactAddress = websiteContactAddress;
+      if (websiteContactMapLink !== undefined) updateData.websiteContactMapLink = websiteContactMapLink;
       if (websiteAboutPageTitle !== undefined) updateData.websiteAboutPageTitle = websiteAboutPageTitle;
       if (websiteAboutPageContent !== undefined) updateData.websiteAboutPageContent = websiteAboutPageContent;
       if (websiteCancellationPageTitle !== undefined) updateData.websiteCancellationPageTitle = websiteCancellationPageTitle;

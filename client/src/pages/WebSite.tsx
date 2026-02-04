@@ -41,7 +41,8 @@ import {
   Type,
   Settings,
   Lock,
-  Crown
+  Crown,
+  Navigation
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -73,6 +74,7 @@ interface WebsiteSettings {
   websiteContactEmail: string | null;
   websiteContactPhone: string | null;
   websiteContactAddress: string | null;
+  websiteContactMapLink: string | null;
   websiteAboutPageTitle: string | null;
   websiteAboutPageContent: string | null;
   websiteCancellationPageTitle: string | null;
@@ -984,6 +986,21 @@ export default function WebSite() {
                           rows={2}
                           data-testid="input-contact-address"
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="websiteContactMapLink" className="flex items-center gap-1">
+                          <Navigation className="h-4 w-4" /> Yol Tarifi Linki
+                        </Label>
+                        <Input
+                          id="websiteContactMapLink"
+                          placeholder="https://maps.google.com/... (Ofis konumu için Google Maps linki)"
+                          value={getValue("websiteContactMapLink")}
+                          onChange={(e) => updateField("websiteContactMapLink", e.target.value)}
+                          data-testid="input-contact-map-link"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Bot, ofis konumu sorulduğunda bu linki paylaşır.
+                        </p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="websiteContactPageContent">Ek Açıklama</Label>

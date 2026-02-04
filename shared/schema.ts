@@ -54,6 +54,7 @@ export const tenants = pgTable("tenants", {
   websiteContactEmail: text("website_contact_email"), // İletişim e-posta
   websiteContactPhone: text("website_contact_phone"), // İletişim telefon
   websiteContactAddress: text("website_contact_address"), // İletişim adres
+  websiteContactMapLink: text("website_contact_map_link"), // İletişim yol tarifi linki (Google Maps)
   websiteAboutPageTitle: text("website_about_page_title"), // Hakkımızda sayfa başlığı
   websiteAboutPageContent: text("website_about_page_content"), // Hakkımızda sayfa içeriği (HTML/Markdown)
   websiteCancellationPageTitle: text("website_cancellation_page_title"), // İptal/İade politikası başlığı
