@@ -7913,13 +7913,14 @@ Rezervasyon takip: {takip_linki}
           });
         }
         
-        // Get tenant settings for company info
+        // Get tenant settings for company info - read from tenants table
+        const tenantData = await storage.getTenant(tenantId);
         const tenantSettings = {
-          companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
-          phone: await storage.getSetting('websiteContactPhone', tenantId),
-          email: await storage.getSetting('websiteContactEmail', tenantId),
-          address: await storage.getSetting('websiteContactAddress', tenantId),
-          mapLink: await storage.getSetting('websiteContactMapLink', tenantId),
+          companyName: tenantData?.companyName || await storage.getSetting('companyName', tenantId) || 'Şirket',
+          phone: tenantData?.websiteContactPhone || null,
+          email: tenantData?.websiteContactEmail || null,
+          address: tenantData?.websiteContactAddress || null,
+          mapLink: tenantData?.websiteContactMapLink || null,
           cancellationPolicyUrl: await storage.getSetting('cancellationPolicyUrl', tenantId),
           workingHours: await storage.getSetting('workingHours', tenantId)
         };
@@ -8864,13 +8865,14 @@ Rezervasyon takip: {takip_linki}
       // === AI-FIRST MODE (Default) ===
       // Template mode kaldırıldı, sadece AI-First kullanılıyor
       
-      // Get tenant settings
+      // Get tenant settings - read from tenants table
+      const tenantData = await storage.getTenant(tenantId);
       const tenantSettings = {
-        companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
-        phone: await storage.getSetting('websiteContactPhone', tenantId),
-        email: await storage.getSetting('websiteContactEmail', tenantId),
-        address: await storage.getSetting('websiteContactAddress', tenantId),
-        mapLink: await storage.getSetting('websiteContactMapLink', tenantId),
+        companyName: tenantData?.companyName || await storage.getSetting('companyName', tenantId) || 'Şirket',
+        phone: tenantData?.websiteContactPhone || null,
+        email: tenantData?.websiteContactEmail || null,
+        address: tenantData?.websiteContactAddress || null,
+        mapLink: tenantData?.websiteContactMapLink || null,
         cancellationPolicyUrl: await storage.getSetting('cancellationPolicyUrl', tenantId),
         workingHours: await storage.getSetting('workingHours', tenantId)
       };
