@@ -1,0 +1,205 @@
+bot şu bilgilere erişemiyor sence sebebi nedir? projeye en uygun bu bilgileri ekleme şekli nasıl olmalı
+Aktivite sayfasındaki konum bilgilerine bot erişemiyor. ve şöyle hatalar var
+Web sitesindeki iletişim bilgilerine bot ulaşamıyor.
+Destek ekibine nasıl ulaşabilirim sorusuna cevap veremiyor. 
+Her verdiği bilgiden sonra rezervasyon yapmak ister misiniz? Şeklinde soru soruyor bunu yapmasına gerek yok. 
+Aktivite ile bilgi almak istediğimde sadece bir kaç cümlelik bilgi veriyor. Tüm aktivite bilgilerini vermeme sebebi 2-3 cümle ile sınırlama yaptığımız için olabilir mi? Başka bir sebebi mi olabilir?
+
+Bu soruların tamamı tek bir kök probleme işaret ediyor. Net konuşayım:
+
+❌ Model zayıf değil
+❌ Prompt “çalışmıyor” değil
+✅ Botun eriştiği bilgi katmanı eksik + bazı kurallar yanlış yerde
+
+Aşağıda tek tek teşhis → neden → projene en uygun çözüm şeklinde gidiyorum.
+
+1️⃣ Aktivite sayfasındaki konum bilgilerine erişemiyor
+🔍 Gerçek neden
+
+Botun RAG context’inde büyük ihtimalle:
+
+Aktivite açıklaması var
+
+Ama sayfa içindeki Konum / Pickup / Buluşma Noktası bölümü YOK
+
+Çok sık yapılan hata:
+
+Sayfanın sadece “hero + açıklama” kısmı embed ediliyor
+
+Alt sekmeler (konum, harita, iletişim, detaylar) ayrı DOM node olduğu için RAG’e girmiyor
+
+➡️ Bot için o bilgi hiç yok
+
+✅ Doğru ekleme şekli (önerilen)
+
+Aktivite başına tek parça, normalize edilmiş veri:
+
+activity: {
+  name: "Paragliding",
+  location: {
+    meeting_point: "Babadağ Teleferik Alt İstasyonu",
+    pickup_available: true,
+    pickup_note: "Otelden transfer opsiyonel"
+  }
+}
+
+
+❗ Harita linki yerine metinsel konum ver
+AI Google Map iframe okuyamaz
+
+2️⃣ Web sitesindeki iletişim bilgilerine ulaşamıyor
+🔍 Gerçek neden
+
+İletişim bilgileri genelde:
+
+Footer’da
+
+Header’da
+
+Ayrı “İletişim” sayfasında
+
+Ama:
+
+RAG sadece aktivite içeriklerini biliyor
+
+Global site bilgileri context’e hiç eklenmemiş
+
+➡️ Kullanıcı soruyor:
+
+“Destek ekibine nasıl ulaşırım?”
+
+AI düşünüyor:
+
+“Bana böyle bir bilgi verilmedi → cevap yok”
+
+✅ Doğru mimari çözüm (çok kritik)
+
+GLOBAL CONTEXT eklemelisin:
+
+global_site_info: {
+  support: {
+    phone: "+90 xxx xxx xx xx",
+    whatsapp: true,
+    email: "info@...",
+    working_hours: "09:00–19:00"
+  }
+}
+
+
+Ve prompt’ta:
+
+Global site info is always available
+even if the user is asking about an activity
+
+3️⃣ “Destek ekibine nasıl ulaşırım?” sorusuna cevap veremiyor
+
+Bu, 2. maddenin doğal sonucu.
+
+Ama ek bir hata daha var:
+
+⚠️ Escalation Guard çok sert çalışıyor olabilir
+
+Şu tarz bir kural varsa:
+
+If request is not related to an activity → escalate
+
+
+AI:
+
+Cevap üretmek yerine
+
+Sessiz kalır / konuyu kaçırır
+
+✅ Çözüm
+
+Escalation kuralını şu hale getir:
+
+Escalate ONLY if:
+- Complaint
+- Refund
+- Safety incident
+NOT for contact or info requests
+
+4️⃣ Her cevaptan sonra
+
+“Rezervasyon yapmak ister misiniz?” diye sorması
+
+🔍 Gerçek neden
+
+Bu %100 hard prompt davranışı.
+
+Prompt’ta büyük ihtimalle buna benzer bir şey var:
+
+Always end with a booking CTA
+or ask if the user wants to make a reservation
+
+
+Bu satış botu refleksi, destek botu için yanlış.
+
+✅ Doğru yaklaşım (Production-grade)
+
+CTA’yı koşullu yap:
+
+ONLY ask about booking if:
+- User asks about price
+- User asks about availability
+- User explicitly shows intent (how to book, can I reserve)
+
+
+Diğer tüm durumlarda:
+
+❌ CTA yok
+
+5️⃣ Aktivite hakkında sadece 2–3 cümle bilgi veriyor
+🔥 Burada senin sezgin DOĞRU
+
+Evet, büyük ihtimalle 2–3 cümle sınırı yüzünden
+Ama tek sebep bu değil.
+
+Olası nedenler (önem sırasıyla)
+1️⃣ Cümle sınırı
+
+Prompt’ta varsa:
+
+Keep responses concise
+Prefer 2-3 sentences
+
+
+AI her durumda buna uyar.
+
+2️⃣ RAG chunk’lar küçük
+
+Eğer:
+
+Aktivite açıklaması 5–6 farklı chunk’a bölünmüşse
+
+Bot sadece ilk chunk’ı çekiyorsa
+
+AI’nin elinde tam metin yoktur.
+
+3️⃣ “Do not overwhelm the user” kuralı
+
+Şu tarz bir şey varsa:
+
+Avoid long explanations unless asked
+
+
+AI:
+
+Kullanıcı “anlat” demedikçe
+
+kısa cevap verir
+
+✅ En doğru çözüm (senin projene uygun)
+
+İki katmanlı cevap modeli:
+
+IF user asks:
+- "Paragliding nedir?" → kısa özet
+- "Paragliding hakkında bilgi ver" → FULL activity info
+
+
+Ve prompt’a ekle:
+
+If user explicitly asks for information,
+provide FULL activity details unless they say "briefly"
