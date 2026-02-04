@@ -8104,8 +8104,8 @@ Rezervasyon takip: {takip_linki}
             if (convState.lastUnansweredQuestion) {
               try {
                 await storage.createUnansweredQuestion({
-                  question: convState.lastUnansweredQuestion,
-                  phone: From,
+                  customerQuestion: convState.lastUnansweredQuestion,
+                  customerPhone: From,
                   tenantId,
                   status: 'pending'
                 });
@@ -8281,9 +8281,47 @@ Rezervasyon takip: {takip_linki}
           'contact you shortly'
         ];
         
+        // Uncertain response triggers - silently log for learning (no escalation prompt)
+        const uncertainResponseTriggers = [
+          'bu bilgi şu an mevcut değil',
+          'bu bilgi mevcut değil',
+          'bilgi bulunmamaktadır',
+          'bilgi sistemimizde yok',
+          'bilgiye sahip değilim',
+          'bu konuda bilgim yok',
+          'destek ekibimizle iletişime geçmenizi öneririz',
+          'destek ekibiyle iletişime geçin',
+          'this information is not available',
+          'i don\'t have this information',
+          'please contact our support'
+        ];
+        
+        const responseLowerCheck = aiFirstResponse.toLowerCase();
+        
         const needsEscalationConfirm = escalationTriggers.some(trigger => 
-          aiFirstResponse.toLowerCase().includes(trigger.toLowerCase())
+          responseLowerCheck.includes(trigger.toLowerCase())
         );
+        
+        // Check for uncertain response (log for learning, but don't interrupt conversation)
+        const isUncertainResponse = uncertainResponseTriggers.some(trigger =>
+          responseLowerCheck.includes(trigger.toLowerCase())
+        );
+        
+        // Log uncertain responses for learning (silent - conversation continues normally)
+        if (isUncertainResponse && !needsEscalationConfirm) {
+          console.log(`[AI-FIRST] Uncertain response detected, logging for learning: "${Body}"`);
+          try {
+            await storage.createUnansweredQuestion({
+              customerQuestion: Body,
+              customerPhone: From,
+              tenantId,
+              status: 'pending',
+              botResponse: aiFirstResponse.substring(0, 500) // Save partial AI response for context
+            });
+          } catch (err) {
+            console.error('[AI-FIRST] Failed to save uncertain question:', err);
+          }
+        }
         
         if (needsEscalationConfirm) {
           // Ask for escalation confirmation instead of directly sending AI response
@@ -8298,10 +8336,11 @@ Rezervasyon takip: {takip_linki}
           // Save the unanswered question immediately for learning (regardless of user choice)
           try {
             await storage.createUnansweredQuestion({
-              question: Body,
-              phone: From,
+              customerQuestion: Body,
+              customerPhone: From,
               tenantId,
-              status: 'pending'
+              status: 'pending',
+              botResponse: aiFirstResponse.substring(0, 500)
             });
           } catch (err) {
             console.error('[AI-FIRST] Failed to save unanswered question:', err);
@@ -9209,9 +9248,45 @@ Rezervasyon takip: {takip_linki}
         'transfer you to a representative'
       ];
       
+      // Uncertain response triggers - silently log for learning
+      const uncertainResponseTriggers = [
+        'bu bilgi şu an mevcut değil',
+        'bu bilgi mevcut değil',
+        'bilgi bulunmamaktadır',
+        'bilgi sistemimizde yok',
+        'bilgiye sahip değilim',
+        'bu konuda bilgim yok',
+        'destek ekibimizle iletişime geçmenizi öneririz',
+        'destek ekibiyle iletişime geçin',
+        'this information is not available',
+        'i don\'t have this information',
+        'please contact our support'
+      ];
+      
       const needsEscalationConfirm = escalationTriggers.some(trigger => 
         responseLower.includes(trigger.toLowerCase())
       );
+      
+      // Check for uncertain response (log for learning)
+      const isUncertainResponse = uncertainResponseTriggers.some(trigger =>
+        responseLower.includes(trigger.toLowerCase())
+      );
+      
+      // Log uncertain responses for learning (silent - conversation continues normally)
+      if (isUncertainResponse && !needsEscalationConfirm) {
+        console.log(`[BOT-TEST] Uncertain response detected, logging for learning: "${message}"`);
+        try {
+          await storage.createUnansweredQuestion({
+            customerQuestion: message,
+            customerPhone: testPhone,
+            tenantId,
+            status: 'pending',
+            botResponse: aiResponse.substring(0, 500)
+          });
+        } catch (err) {
+          console.error('[BOT-TEST] Failed to save uncertain question:', err);
+        }
+      }
       
       if (needsEscalationConfirm) {
         console.log(`[BOT-TEST] AI response triggers escalation confirmation`);
@@ -9220,13 +9295,27 @@ Rezervasyon takip: {takip_linki}
           lastUnansweredQuestion: message,
           lastIntent: 'escalation_pending'
         });
+        
+        // Also save for learning
+        try {
+          await storage.createUnansweredQuestion({
+            customerQuestion: message,
+            customerPhone: testPhone,
+            tenantId,
+            status: 'pending',
+            botResponse: aiResponse.substring(0, 500)
+          });
+        } catch (err) {
+          console.error('[BOT-TEST] Failed to save unanswered question:', err);
+        }
       }
       
       // Return JSON response (not XML)
       res.json({
         response: aiResponse,
         history: [...history, { role: "assistant", content: aiResponse }],
-        awaitingEscalation: needsEscalationConfirm
+        awaitingEscalation: needsEscalationConfirm,
+        uncertainResponse: isUncertainResponse
       });
     } catch (error: any) {
       console.error("Bot test error:", error);

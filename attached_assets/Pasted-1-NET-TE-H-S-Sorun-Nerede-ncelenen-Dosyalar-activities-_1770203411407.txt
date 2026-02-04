@@ -1,0 +1,248 @@
+1️⃣ NET TEŞHİS — Sorun Nerede?
+İncelenen Dosyalar
+
+activities-data.json
+
+final-ai-prompt.txt
+
+orchestrator-code.ts
+
+intent-map.md
+
+known-issues.md
+
+chat-logs.txt
+
+🎯 Ana Sorun (Özet)
+
+Prompt iyi ama yalnız bırakılmış.
+Orchestrator doğru sinyali vermiyor.
+Bu yüzden bot:
+
+Bazen tek aktivite gibi davranıyor
+
+Bazen çoklu cevap veriyor
+
+Bazen placeholder ([company.phone]) basıyor
+
+Bazen tüm aktivite verisini değil özetini veriyor
+
+Her mesajın sonuna gereksiz CTA ekliyor
+
+Bu bir “model hatası” değil → orchestrasyon boşluğu.
+
+2️⃣ KRİTİK BULGULAR (Dosya Bazlı)
+❌ 1. activities-data.json
+
+Problem:
+
+Alanlar var ama zorunlu / opsiyonel ayrımı yok
+
+“extra”, “transfer”, “region” gibi alanların yokluk durumu tanımlı değil
+
+📌 Sonuç:
+
+GPT yokluğu “yoktur” diye uydurabiliyor
+(Kadın pilot ekstra sorunu buradan geliyor)
+
+❌ 2. final-ai-prompt.txt
+
+Problem:
+
+Kurallar doğru ama:
+
+“Aktivite belirtilmediyse nasıl davranılacağı” net değil
+
+“Tüm aktiviteleri listele / sorma eşiği” tanımsız
+
+“CTA ne zaman sorulur” açık değil
+
+📌 Sonuç:
+
+Aynı soru → farklı cevap davranışları
+
+❌ 3. orchestrator-code.ts
+
+EN KRİTİK NOKTA
+
+Şu an:
+
+Aktivite tespit ediliyor gibi
+
+Ama GPT’ye karar verdiriliyor
+
+Eksik olan:
+
+mode: "SINGLE" | "MULTI" | "SPECIFIC"
+fieldRequested: "duration" | "region" | "transfer" | ...
+activitySpecified: boolean
+
+
+📌 Sonuç:
+
+GPT bazen “yardımcı olayım” diye yanlış varsayım yapıyor
+
+❌ 4. Placeholder Problemi
+
+[company.phone], [company.email] gibi alanlar:
+
+Prompt’ta “asla placeholder basma” kuralı yok
+
+Orchestrator bu alanları pre-resolve etmiyor
+
+📌 Bu yüzden:
+
+Size yardımcı olmak için telefon numaramız: [company.phone]
+
+❌ 5. Sürekli “Rezervasyon ister misiniz?”
+
+Problem:
+CTA davranışı:
+
+Global kural
+
+Intent’e bağlı değil
+
+📌 WhatsApp için yanlış:
+
+Bilgi isteyen kullanıcıyı yorar
+
+Spam hissi yaratır
+
+3️⃣ DOĞRU MİMARİ KARAR (SEN DOĞRU YOLDASIN)
+
+❓“Her aktivitenin çok farklı alanları var — bu yaklaşım yeterli mi?”
+
+✅ CEVAP:
+
+EVET. Ama 1 seviye daha netleştirerek.
+
+🎯 Doğru yaklaşım:
+
+Field-Agnostic Mode Control
+
+Yani:
+
+Süre / Bölge / Transfer / Ekstralar fark etmez
+
+Hepsi aynı kurala tabi olur
+
+4️⃣ OLMASI GEREKEN NİHAİ AKIŞ (PRODUCTION-SAFE)
+🧠 Orchestrator (Kod) SORUMLULUĞU
+
+Sadece şunları belirler:
+
+{
+  "activityCount": 5,
+  "activitySpecified": false,
+  "mode": "MULTI",
+  "fieldRequested": "duration"
+}
+
+
+❗ GPT ASLA karar vermez
+
+🤖 GPT (Prompt) SORUMLULUĞU
+
+Sadece:
+
+Mode’a uyar
+
+Field’ı okur
+
+Uydurmaz
+
+Eksikse sorar
+
+Placeholder basmaz
+
+5️⃣ BOT NASIL DAVRANMALI? (Senaryolara Net Cevap)
+Kullanıcı:
+
+“Aktivite hangi bölgede?”
+
+mode = MULTI + activitySpecified=false
+
+✔️ BOT:
+
+“Hangi aktivite için bilgi almak istiyorsunuz? Örn: Yamaç Paraşütü, Tüplü Dalış…”
+
+❌ BOT ASLA:
+
+Varsayılan aktivite seçmez
+
+Tek aktivite cevaplamaz
+
+Kullanıcı:
+
+“Kaç dakika sürüyor?”
+
+✔️ Doğru davranış:
+
+Aktivite belirtilmediyse → sor
+
+Belirtilmişse → tek cevap
+
+⛔ Karışık cevap YASAK
+
+6️⃣ REPLIT ASSISTANT’A VERECEĞİN TEK PROMPT (🔥 FINAL)
+
+Aşağıdaki metni aynen Replit Assistant’a ver:
+
+🔥 REPLIT ASSISTANT PROMPT
+Bu projede AI karar verici OLMAYACAK.
+
+Aşağıdaki görevleri eksiksiz uygula:
+
+1. ORCHESTRATOR GÜNCELLEMESİ
+- Her kullanıcı mesajı için şu alanları üret:
+  - activityCount (number)
+  - activitySpecified (boolean)
+  - fieldRequested (string | null)
+  - mode: "SINGLE" | "SPECIFIC" | "MULTI"
+
+- KARARLAR KOD TARAFINDA VERİLECEK
+- GPT bu kararlara UYACAK, ASLA kendi varsayımını yapmayacak
+
+2. GPT PROMPT GÜNCELLEMESİ
+Aşağıdaki kuralları EKLE:
+
+- Aktivite belirtilmemişse ASLA varsayılan aktivite seçme
+- Birden fazla aktivite varsa ve activitySpecified=false ise:
+  → Kullanıcıdan netleştirme iste
+- GPT ASLA placeholder basamaz ([company.phone] vb)
+  → Veri yoksa: "Bu bilgi için destek ekibimiz yardımcı olur" de
+- CTA ("Rezervasyon ister misiniz?") sadece:
+  - fiyat
+  - müsaitlik
+  - ödeme
+  sorularından SONRA sorulacak
+
+3. AKTİVİTE VERİ MODELİ
+- activities-data.json için:
+  - Her alanın:
+    - required / optional
+    - not_applicable durumu açıkça tanımlansın
+- "Ekstra yok" = açık boolean / boş array
+- GPT yokluk uydurmayacak
+
+4. YASAK DAVRANIŞLAR
+- Varsayılan aktivite seçmek
+- Eksik bilgi uydurmak
+- Her cevabın sonuna CTA eklemek
+- Mode dışına çıkmak
+
+5. TEST
+Aşağıdaki senaryoları test et:
+- Aktivite belirtilmeden süre sorusu
+- Aktivite belirtilmeden bölge sorusu
+- Telefon numarası sorusu
+- Ekstra sorusu (kadın pilot gibi)
+- Çoklu aktivite varken tek cevap verilmesi (YASAK)
+
+Amaç:
+- Deterministik
+- Tutarlı
+- Production-safe WhatsApp bot
+
+Bu mimariye %100 sadık kal.
