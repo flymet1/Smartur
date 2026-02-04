@@ -1,0 +1,111 @@
+1️⃣ Prompt’a uyarı eklemek NEYİ çözer?
+✅ Çözdüğü şeyler
+
+[company.phone] gibi çıplak placeholder çıkmasını engeller
+
+AI’nın uydurma veri üretmesini önler
+
+“Bu bilgiye şu an erişemiyorum” gibi kontrollü fallback üretir
+
+Yani:
+
+Semptomu düzeltir
+
+❌ Çözmediği şey
+
+Telefon numarasının gerçekten cevapta çıkmasını
+
+Aktivite konumu, iletişim bilgisi, destek hattı gibi gerçek veriye erişimi
+
+Yani:
+
+Kök nedeni çözmez
+
+2️⃣ Sorunun kök nedeni neydi?
+
+Şu an senin durumda:
+
+Bot doğru key’i kullanıyor
+ama o key’in karşılığı context’te yok
+
+Prompt’a uyarı eklemek:
+
+“Bu alan boşsa böyle davran” der
+
+Ama boş alanı doldurmaz
+
+Bu yüzden:
+
+📌 Veri yoksa → cevap yok
+
+📌 Prompt bunu sadece daha “kibar” söyler
+
+3️⃣ Peki prompt uyarısı NEDEN yine de gerekli?
+
+Çünkü production botta şunlar olmak zorunda:
+
+🛡️ 1. Veri eksikliği güvenliği
+
+CMS yanlış kaydedildi
+
+RAG güncellenmedi
+
+Tenant bilgisi eksik geldi
+
+➡️ Bot çökmemeli, rezil cevap vermemeli
+
+🧠 2. AI hallucination koruması
+
+Uyarı yoksa model şunu yapabilir:
+
+“Türkiye numarası genelde +90’dır, ben bir şey uydurayım”
+
+Senin botun bunu yapmıyor
+ve bu çok doğru bir davranış 👍
+
+4️⃣ Doğru Prompt Uyarısı Nasıl Olmalı? (Net Şablon)
+
+❌ Yanlış:
+
+If you don’t know, say you don’t know.
+
+
+✅ Doğru (production-safe):
+
+If a response template includes variables (e.g. company.phone, activity.location)
+and the value is missing or undefined:
+
+- NEVER show placeholders like [company.phone]
+- NEVER guess or fabricate data
+- Respond with a short, polite fallback
+- Offer an alternative action (e.g. ask to connect to support)
+
+
+Bu uyarı:
+
+SSS sistemini bozmaz
+
+RAG’i override etmez
+
+Sadece fail-safe olur
+
+5️⃣ Asıl çözüm ne olmalı? (Bunu yapmadan olmaz)
+✔️ Gerçek çözüm = DATA + PROMPT birlikte
+1. Global Company Context (zorunlu)
+company_info: {
+  phone: "+90 5XX XXX XX XX",
+  whatsapp: "+90 5XX XXX XX XX",
+  address: "Fethiye / Ölüdeniz",
+  support_text: "WhatsApp üzerinden 7/24 destek alabilirsiniz"
+}
+
+2. Prompt uyarısı (koruma)
+3. Template mapping (company_info.phone)
+
+👉 Üçü birlikte olursa:
+
+Placeholder çıkmaz
+
+Gerçek bilgi gelir
+
+AI saçmalamaz

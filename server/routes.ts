@@ -7916,8 +7916,8 @@ Rezervasyon takip: {takip_linki}
         // Get tenant settings for company info
         const tenantSettings = {
           companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
-          phone: await storage.getSetting('phone', tenantId),
-          email: await storage.getSetting('email', tenantId),
+          phone: await storage.getSetting('websiteContactPhone', tenantId),
+          email: await storage.getSetting('websiteContactEmail', tenantId),
           address: await storage.getSetting('websiteContactAddress', tenantId),
           mapLink: await storage.getSetting('websiteContactMapLink', tenantId),
           cancellationPolicyUrl: await storage.getSetting('cancellationPolicyUrl', tenantId),
@@ -8867,8 +8867,8 @@ Rezervasyon takip: {takip_linki}
       // Get tenant settings
       const tenantSettings = {
         companyName: await storage.getSetting('companyName', tenantId) || 'Şirket',
-        phone: await storage.getSetting('phone', tenantId),
-        email: await storage.getSetting('email', tenantId),
+        phone: await storage.getSetting('websiteContactPhone', tenantId),
+        email: await storage.getSetting('websiteContactEmail', tenantId),
         address: await storage.getSetting('websiteContactAddress', tenantId),
         mapLink: await storage.getSetting('websiteContactMapLink', tenantId),
         cancellationPolicyUrl: await storage.getSetting('cancellationPolicyUrl', tenantId),
