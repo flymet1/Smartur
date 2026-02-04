@@ -3167,7 +3167,7 @@ interface AIFirstContext {
 }
 
 // Activity Mode Types for deterministic decision making
-type ActivityMode = 'SINGLE_ACTIVITY' | 'ACTIVITY_SPECIFIED' | 'ACTIVITY_UNSPECIFIED' | 'GENERAL_INFO_ONLY';
+type ActivityMode = 'SINGLE_ACTIVITY' | 'ACTIVITY_SPECIFIED' | 'ACTIVITY_UNSPECIFIED' | 'GENERAL_INFO_ONLY' | 'AMBIGUOUS_FAQ';
 
 type FieldRequested = 'price' | 'duration' | 'location' | 'transfer' | 'extras' | 'availability' | 'age_limit' | 'included' | 'faq' | 'booking' | 'cancellation' | 'general' | null;
 
@@ -3177,12 +3177,13 @@ interface ActivityModeContext {
   activitySpecified: boolean;
   specifiedActivityName?: string;
   fieldRequested?: FieldRequested;
+  matchingFaqCount?: number;
 }
 
 // Detect activity mode based on user message and available activities
 function detectActivityMode(
   userMessage: string,
-  activities: Array<{ name: string; nameEn?: string }>,
+  activities: Array<{ name: string; nameEn?: string; faq?: string | any[] }>,
   conversationHistory?: Array<{ role: string; content: string }>
 ): ActivityModeContext {
   const activityCount = activities.length;
@@ -3334,6 +3335,48 @@ function detectActivityMode(
     fieldRequested = 'general';
   }
   
+  // Check if message matches FAQs across multiple activities (AMBIGUOUS_FAQ detection)
+  // Only check for FAQ-type questions (not price, duration, location which are already handled)
+  let matchingFaqCount = 0;
+  const isFaqTypeQuestion = !['price', 'duration', 'location', 'transfer', 'extras', 'availability', 'age_limit', 'included', 'booking', 'cancellation'].includes(fieldRequested || '');
+  
+  // Stopwords to filter out common words
+  const stopwords = ['nasil', 'nedir', 'ne', 'mi', 'mu', 'bir', 'bu', 'su', 'da', 'de', 'var', 'yok', 
+    'icin', 'ile', 'gibi', 'kadar', 'how', 'what', 'is', 'are', 'the', 'a', 'an', 'to', 'for', 'in'];
+  
+  if (!specifiedActivityName && activityCount > 1 && isFaqTypeQuestion && messageLower.length > 10) {
+    for (const activity of activities) {
+      try {
+        const faqs = typeof activity.faq === 'string' 
+          ? JSON.parse(activity.faq || '[]') 
+          : (activity.faq || []);
+        
+        // Check if any FAQ question matches the user message
+        for (const faq of faqs) {
+          const faqQuestion = normalize(faq.question || faq.q || '');
+          const faqQuestionEn = normalize(faq.questionEn || faq.qEn || '');
+          
+          // Filter out stopwords and short words
+          const messageWords = messageLower.split(/\s+/).filter(w => w.length > 3 && !stopwords.includes(w));
+          const faqWords = faqQuestion.split(/\s+/).filter(w => w.length > 3 && !stopwords.includes(w));
+          const faqWordsEn = faqQuestionEn.split(/\s+/).filter(w => w.length > 3 && !stopwords.includes(w));
+          
+          // Exact or stem match count
+          const matchCount = messageWords.filter(w => 
+            faqWords.some(fw => fw === w || (fw.length > 4 && w.length > 4 && (fw.includes(w) || w.includes(fw)))) ||
+            faqWordsEn.some(fw => fw === w || (fw.length > 4 && w.length > 4 && (fw.includes(w) || w.includes(fw))))
+          ).length;
+          
+          // Require 3+ meaningful word matches for FAQ match (stricter)
+          if (matchCount >= 3 || (messageWords.length <= 3 && matchCount >= 2)) {
+            matchingFaqCount++;
+            break; // Count each activity only once
+          }
+        }
+      } catch {}
+    }
+  }
+  
   // Determine mode with priority order
   let mode: ActivityMode;
   
@@ -3353,19 +3396,24 @@ function detectActivityMode(
   else if (activityCount === 1) {
     mode = 'SINGLE_ACTIVITY';
   }
-  // Priority 5: Multiple activities, no specification - need clarification
+  // Priority 5: FAQ matches multiple activities - ask which one (CRITICAL)
+  else if (matchingFaqCount > 1) {
+    mode = 'AMBIGUOUS_FAQ';
+  }
+  // Priority 6: Multiple activities, no specification - need clarification
   else {
     mode = 'ACTIVITY_UNSPECIFIED';
   }
   
-  console.log(`[MODE DETECTION] Message: "${userMessage.substring(0, 50)}..." → Mode: ${mode}, Activities: ${activityCount}, Specified: ${specifiedActivityName || 'none'}, Field: ${fieldRequested || 'none'}`);
+  console.log(`[MODE DETECTION] Message: "${userMessage.substring(0, 50)}..." → Mode: ${mode}, Activities: ${activityCount}, Specified: ${specifiedActivityName || 'none'}, Field: ${fieldRequested || 'none'}, FAQMatch: ${matchingFaqCount}`);
   
   return {
     mode,
     activityCount,
     activitySpecified: !!specifiedActivityName,
     specifiedActivityName,
-    fieldRequested
+    fieldRequested,
+    matchingFaqCount
   };
 }
 
@@ -3721,10 +3769,16 @@ ${modeContext.mode === 'ACTIVITY_UNSPECIFIED' ? `• ACTIVITY_UNSPECIFIED: Multi
     → Ask "Which activity would you like more details about?"
   - NEVER pick a default activity
   - NEVER answer for just one activity when multiple exist` : ''}
+${modeContext.mode === 'AMBIGUOUS_FAQ' ? `• AMBIGUOUS_FAQ: User's question matched FAQs from multiple activities.
+  ⛔ NEVER list answers from multiple activities!
+  ⛔ NEVER explain each one separately!
+  ✅ ONLY say: "This information varies by activity. Which activity would you like to know about?"
+  - ${modeContext.matchingFaqCount || 0} activities matched` : ''}
 ${modeContext.mode === 'GENERAL_INFO_ONLY' ? `• GENERAL_INFO_ONLY: User asked general info (greeting, contact, payment). Answer without activity context.` : ''}
 
 ⛔ FORBIDDEN BEHAVIOR (NEVER DO THIS):
-- If mode is ACTIVITY_UNSPECIFIED, NEVER give details for just one activity
+- If mode is ACTIVITY_UNSPECIFIED or AMBIGUOUS_FAQ, NEVER give details for just one activity
+- If mode is AMBIGUOUS_FAQ, NEVER list multiple activity answers - just ask which activity
 - NEVER assume "the most popular" or "the default" activity
 - NEVER skip asking for clarification when multiple activities exist and user didn't specify
 
@@ -3746,10 +3800,16 @@ ${modeContext.mode === 'ACTIVITY_UNSPECIFIED' ? `• ACTIVITY_UNSPECIFIED: Birde
     → "Hangi aktivite hakkında detay almak istersiniz?" diye sor
   - ASLA varsayılan bir aktivite seçme
   - ASLA birden fazla aktivite varken tek aktivite için cevap verme` : ''}
+${modeContext.mode === 'AMBIGUOUS_FAQ' ? `• AMBIGUOUS_FAQ: Kullanıcının sorusu birden fazla aktivitenin SSS'inde eşleşti.
+  ⛔ ASLA birden fazla aktivitenin cevabını listeleme!
+  ⛔ ASLA hepsini tek tek anlatma!
+  ✅ SADECE şunu söyle: "Bu bilgi aktiviteye göre değişiyor. Hangi aktivite için öğrenmek istiyorsunuz?"
+  - ${modeContext.matchingFaqCount || 0} aktivitede eşleşme bulundu` : ''}
 ${modeContext.mode === 'GENERAL_INFO_ONLY' ? `• GENERAL_INFO_ONLY: Kullanıcı genel bilgi sordu (selamlama, iletişim, ödeme). Aktivite bağlamı olmadan cevapla.` : ''}
 
 ⛔ YASAK DAVRANIŞLAR (ASLA YAPMA):
-- Mod ACTIVITY_UNSPECIFIED ise, ASLA tek aktivite için detay verme
+- Mod ACTIVITY_UNSPECIFIED veya AMBIGUOUS_FAQ ise, ASLA tek aktivite için detay verme
+- Mod AMBIGUOUS_FAQ ise, ASLA birden fazla aktivitenin cevabını listeleme - sadece hangi aktivite diye sor
 - ASLA "en popüler" veya "varsayılan" aktiviteyi seçme
 - Birden fazla aktivite varken ve kullanıcı belirtmemişken ASLA açıklama istemeden geçme
 

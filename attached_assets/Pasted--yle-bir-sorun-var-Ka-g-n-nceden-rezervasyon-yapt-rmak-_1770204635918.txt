@@ -1,0 +1,125 @@
+şöyle bir sorun var
+
+Kaç gün önceden rezervasyon yaptırmak gerekiyor gibi her aktivite için değişebilecek olan sss ekledim iki aktivite sss ine de bota bu soruyu sorduğumda iki aktivite içinde bilgiyi verdi ama bu 10 aktivitede aynı durum olması durumunda 10 tane farklı aktivite bilgisi mi verecek müşteriye? ne yapmamız gerekiyor?
+
+Bu çok kritik ve doğru bir tespit.
+Şu an yakaladığın şey, WhatsApp botlarının production’da en sık patladığı noktalardan biri.
+
+Kısa cevap:
+❌ Hayır, 10 aktivite varsa 10 cevabı art arda vermemeli.
+Bu davranış kesinlikle engellenmeli.
+
+Aşağıda neden oluyor, neden yanlış, ve net çözümü adım adım anlatıyorum.
+
+Sorun Neden Oluyor?
+
+Senin mevcut mimaride şu zincir çalışıyor:
+
+Kullanıcı:
+
+“Kaç gün önceden rezervasyon yaptırmak gerekiyor”
+
+Sistem:
+
+activitySpecified = false
+
+fieldRequested = reservation_notice / advance_booking
+
+matchingFAQs = 2 aktivitede eşleşti
+
+Ambiguity guard yok veya yumuşak
+
+AI şunu yapıyor:
+
+“Madem hepsiyle ilgili, hepsini söyleyeyim”
+
+Bu AI açısından “yardımcı”,
+ama ürün açısından “felaket”.
+
+Bu Davranış Neden Yanlış?
+❌ Kullanıcı deneyimi
+
+5–10 aktivite → 5–10 paragraf
+
+WhatsApp’ta okunmaz
+
+Müşteri kaçıyor
+
+❌ Ticari risk
+
+Farklı aktivitelerde farklı şartlar
+
+Yanlış karar → iptal / şikâyet
+
+❌ Kontrol kaybı
+
+“Bot bazen uzun, bazen kısa”
+
+Güven erozyonu
+
+🔑 ALTIN KURAL (Production Rule)
+
+Bir cevap = en fazla 1 aktivite
+
+İstisna yok.
+AI “birleştirmeye” çalışmaz.
+Kararı kod verir, AI sadece uygular.
+
+ÇÖZÜM – NET VE TEMİZ (Önerilen)
+1️⃣ Backend’de Kesin Karar Kuralı (ZORUNLU)
+if (!activitySpecified && matchingActivities.length > 1) {
+  mode = "AMBIGUOUS_FAQ";
+}
+
+
+Bu noktada AI’ye cevap verme yetkisi VERME.
+
+2️⃣ AMBIGUOUS_FAQ Modu – Tek Soru Şablonu
+
+Bot ŞUNU YAPMALI (ve sadece bunu):
+
+“Bu bilgi aktiviteye göre değişiyor.
+Hangi aktivite için öğrenmek istiyorsunuz?”
+
+❌ Listeleme yok
+❌ Tahmin yok
+❌ Hepsini anlatma yok
+
+3️⃣ Prompt’a NET YASAK EKLE (Çok Önemli)
+
+RAG / AI-first prompt’a şunu bold ve büyük harfle ekle:
+
+CRITICAL RULE:
+If a question matches multiple activities AND the user did not specify an activity,
+YOU MUST NOT list multiple activities or multiple answers.
+You must ask which activity.
+
+
+Bu kural tek başına yeterli değil,
+ama backend guard ile birlikte %99 güvenli.
+
+Alternatif (Sadece Genel SSS Olan Sorular İçin)
+
+Eğer bu soru:
+
+“Kaç gün önceden rezervasyon yapılmalı”
+
+tüm aktiviteler için gerçekten aynıysa,
+o zaman:
+
+✅ General FAQ’ya taşı
+❌ Aktivite FAQ’sunda tekrar etme
+
+Bu durumda:
+
+matchingActivities = 0
+
+generalFaq = 1
+
+Direkt cevap verilir
+
+Ama dikkat:
+
+“Benzer” ≠ “Aynı”
+
+En ufak fark varsa → aktivite bazlı kalmalı.
