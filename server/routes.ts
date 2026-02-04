@@ -9049,7 +9049,7 @@ Rezervasyon takip: {takip_linki}
   });
 
   // === Bot Test Endpoint (Panel Test Tool) ===
-  // This endpoint is for testing the bot from the admin panel without creating support requests
+  // This endpoint is for testing the bot from the admin panel
   app.post("/api/bot-test", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
@@ -9067,6 +9067,61 @@ Rezervasyon takip: {takip_linki}
       // Build history from conversation (don't use database for test)
       const history = conversationHistory || [];
       history.push({ role: "user", content: message });
+      
+      // === ESCALATION CONFIRMATION CHECK ===
+      // Check if previous message asked about escalation and user is responding
+      const convState = getConversationState(testPhone, tenantId);
+      if (convState.awaitingEscalation) {
+        const msgLower = message.toLowerCase().trim();
+        const yesKeywords = ['evet', 'tamam', 'olur', 'lütfen', 'yes', 'ok', 'please', 'isterim', 'istiyorum', 'aktarın', 'bağlayın'];
+        const noKeywords = ['hayır', 'yok', 'istemem', 'istemiyorum', 'gerek yok', 'no', 'thanks', 'teşekkürler', 'sağol'];
+        
+        const wantsEscalation = yesKeywords.some(kw => msgLower.includes(kw));
+        const refusesEscalation = noKeywords.some(kw => msgLower.includes(kw));
+        
+        if (wantsEscalation) {
+          console.log(`[BOT-TEST] User confirmed escalation: ${testPhone}`);
+          
+          // Create support request
+          await storage.createSupportRequest({ 
+            phone: testPhone, 
+            status: 'open', 
+            tenantId,
+            description: convState.lastUnansweredQuestion || message
+          });
+          
+          // Reset escalation state
+          updateConversationState(testPhone, tenantId, { 
+            awaitingEscalation: false, 
+            lastUnansweredQuestion: null 
+          });
+          
+          const escalationConfirmResponse = "Talebinizi destek ekibimize ilettim. En kısa sürede size dönüş yapılacaktır. Teşekkürler! 🙏";
+          return res.json({
+            response: escalationConfirmResponse,
+            history: [...history, { role: "assistant", content: escalationConfirmResponse }],
+            supportRequestCreated: true
+          });
+        } else if (refusesEscalation) {
+          console.log(`[BOT-TEST] User refused escalation: ${testPhone}`);
+          updateConversationState(testPhone, tenantId, { 
+            awaitingEscalation: false, 
+            lastUnansweredQuestion: null 
+          });
+          
+          const refuseResponse = "Tamam, başka bir konuda yardımcı olabilir miyim?";
+          return res.json({
+            response: refuseResponse,
+            history: [...history, { role: "assistant", content: refuseResponse }]
+          });
+        }
+        
+        // If neither yes nor no, reset escalation and continue
+        updateConversationState(testPhone, tenantId, { 
+          awaitingEscalation: false, 
+          lastUnansweredQuestion: null 
+        });
+      }
       
       // === GREETING SHORTCUT - AI çağırmadan hızlı cevap ===
       const msgLower = message.toLowerCase().trim();
@@ -9142,10 +9197,36 @@ Rezervasyon takip: {takip_linki}
         aiFirstContext
       );
       
+      // Check if AI response contains escalation trigger phrases
+      const responseLower = aiResponse.toLowerCase();
+      const escalationTriggers = [
+        'müşteri temsilcisine aktarmamı ister misiniz',
+        'müşteri temsilcimize bağlayabilir miyim',
+        'yetkiliye aktarmamı ister misiniz',
+        'destek ekibine yönlendirebilirim',
+        'would you like me to transfer',
+        'shall i connect you',
+        'transfer you to a representative'
+      ];
+      
+      const needsEscalationConfirm = escalationTriggers.some(trigger => 
+        responseLower.includes(trigger.toLowerCase())
+      );
+      
+      if (needsEscalationConfirm) {
+        console.log(`[BOT-TEST] AI response triggers escalation confirmation`);
+        updateConversationState(testPhone, tenantId, {
+          awaitingEscalation: true,
+          lastUnansweredQuestion: message,
+          lastIntent: 'escalation_pending'
+        });
+      }
+      
       // Return JSON response (not XML)
       res.json({
         response: aiResponse,
-        history: [...history, { role: "assistant", content: aiResponse }]
+        history: [...history, { role: "assistant", content: aiResponse }],
+        awaitingEscalation: needsEscalationConfirm
       });
     } catch (error: any) {
       console.error("Bot test error:", error);
