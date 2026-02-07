@@ -106,6 +106,24 @@ export default function Reservations() {
   const [agencyNotifyReservation, setAgencyNotifyReservation] = useState<Reservation | null>(null);
   const [selectedAgencyForNotify, setSelectedAgencyForNotify] = useState<string>("");
   const [agencyNotifyMessage, setAgencyNotifyMessage] = useState<string>("");
+  
+  const [partnerDispatchOpen, setPartnerDispatchOpen] = useState(false);
+  const [partnerDispatchReservation, setPartnerDispatchReservation] = useState<Reservation | null>(null);
+  const [selectedPartnerTenantId, setSelectedPartnerTenantId] = useState<string>("");
+  const [partnerDispatchSelectedSlot, setPartnerDispatchSelectedSlot] = useState<{
+    activityId: number;
+    activityName: string;
+    partnerTenantId: number;
+    partnerTenantName: string;
+    date: string;
+    time: string;
+    availableSlots: number;
+    partnerUnitPrice: number | null;
+    partnerCurrency: string;
+  } | null>(null);
+  const [partnerDispatchGuests, setPartnerDispatchGuests] = useState(1);
+  const [partnerDispatchNotes, setPartnerDispatchNotes] = useState("");
+  
   const { toast } = useToast();
 
   const generateMoveCustomerMessage = (customerName: string, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => {
@@ -148,6 +166,66 @@ export default function Reservations() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+    },
+  });
+
+  const partnerAvailStartDate = useMemo(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  }, []);
+  const partnerAvailEndDate = useMemo(() => {
+    const now = new Date();
+    const twoWeeksLater = new Date(now);
+    twoWeeksLater.setDate(now.getDate() + 14);
+    return twoWeeksLater.toISOString().split('T')[0];
+  }, []);
+
+  const { data: partnerAvailability, isLoading: partnerAvailLoading } = useQuery<{
+    partnerTenantId: number;
+    partnerTenantName: string;
+    activities: {
+      id: number;
+      name: string;
+      description: string | null;
+      price: number;
+      priceUsd: number;
+      durationMinutes: number;
+      color: string;
+      defaultTimes: string;
+      partnerUnitPrice: number | null;
+      partnerCurrency: string;
+      capacities: { date: string; time: string; totalSlots: number; bookedSlots: number; availableSlots: number }[];
+    }[];
+  }[]>({
+    queryKey: [`/api/partner-shared-availability?startDate=${partnerAvailStartDate}&endDate=${partnerAvailEndDate}`],
+    enabled: partnerDispatchOpen,
+  });
+
+  const partnerDispatchMutation = useMutation({
+    mutationFn: async (data: {
+      activityId: number;
+      date: string;
+      time: string;
+      customerName: string;
+      customerPhone: string;
+      guests: number;
+      notes: string;
+      sourceReservationId: number;
+    }) => {
+      return apiRequest('POST', '/api/partner-reservation-requests', data);
+    },
+    onSuccess: () => {
+      toast({ title: "Basarili", description: "Partner acentaya rezervasyon talebi gonderildi" });
+      setPartnerDispatchOpen(false);
+      setPartnerDispatchReservation(null);
+      setSelectedPartnerTenantId("");
+      setPartnerDispatchSelectedSlot(null);
+      setPartnerDispatchGuests(1);
+      setPartnerDispatchNotes("");
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Hata", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1839,17 +1917,12 @@ export default function Reservations() {
               setBulkWhatsAppOpen(true);
             }}
             onAddDispatch={(reservation) => {
-              const activity = activities?.find(a => a.id === reservation.activityId);
-              const params = new URLSearchParams({
-                openDispatch: 'true',
-                customerName: reservation.customerName || '',
-                customerPhone: reservation.customerPhone || '',
-                activityId: reservation.activityId?.toString() || '',
-                activityName: activity?.name || '',
-                dispatchDate: reservation.date || '',
-                guestCount: reservation.quantity?.toString() || ''
-              });
-              setLocation(`/finance?${params.toString()}`);
+              setPartnerDispatchReservation(reservation);
+              setSelectedPartnerTenantId("");
+              setPartnerDispatchSelectedSlot(null);
+              setPartnerDispatchGuests(reservation.quantity || 1);
+              setPartnerDispatchNotes("");
+              setPartnerDispatchOpen(true);
             }}
             onNotifyAgency={(reservation) => {
               setAgencyNotifyReservation(reservation);
@@ -2072,6 +2145,314 @@ export default function Reservations() {
         </Dialog>
 
         {/* Agency Notify Dialog */}
+        {/* Partner Acentaya Gönder Dialog */}
+        <Dialog open={partnerDispatchOpen} onOpenChange={(open) => {
+          setPartnerDispatchOpen(open);
+          if (!open) {
+            setPartnerDispatchReservation(null);
+            setSelectedPartnerTenantId("");
+            setPartnerDispatchSelectedSlot(null);
+            setPartnerDispatchGuests(1);
+            setPartnerDispatchNotes("");
+          }
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Handshake className="h-5 w-5 text-blue-600" />
+                Partner Acentaya Gonder
+              </DialogTitle>
+              <DialogDescription>
+                Partner acentanin musaitligini gorup rezervasyon gonderin
+              </DialogDescription>
+            </DialogHeader>
+
+            {partnerDispatchReservation && (
+              <div className="space-y-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{partnerDispatchReservation.customerName}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{partnerDispatchReservation.customerPhone}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{format(new Date(partnerDispatchReservation.date), 'd MMM yyyy', { locale: tr })}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{partnerDispatchReservation.quantity} kisi</span>
+                      </div>
+                      <Badge variant="outline">
+                        {activities?.find(a => a.id === partnerDispatchReservation.activityId)?.name || ''}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-2">
+                  <Label>Partner Acenta Secin</Label>
+                  <Select value={selectedPartnerTenantId} onValueChange={(v) => {
+                    setSelectedPartnerTenantId(v);
+                    setPartnerDispatchSelectedSlot(null);
+                  }}>
+                    <SelectTrigger data-testid="select-partner-dispatch">
+                      <SelectValue placeholder="Partner acenta secin..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(partnerAvailability || []).map((partner) => (
+                        <SelectItem key={partner.partnerTenantId} value={partner.partnerTenantId.toString()}>
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            {partner.partnerTenantName}
+                            <Badge variant="secondary" className="text-xs ml-1">
+                              {partner.activities.length} aktivite
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {partnerAvailLoading && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <span>Partner musaitlikleri yukleniyor...</span>
+                    </div>
+                  </div>
+                )}
+
+                {!partnerAvailLoading && partnerAvailability && partnerAvailability.length === 0 && (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <Building className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-muted-foreground">Bagli partner acenta bulunamadi</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {selectedPartnerTenantId && (() => {
+                  const selectedPartner = partnerAvailability?.find(p => p.partnerTenantId === parseInt(selectedPartnerTenantId));
+                  if (!selectedPartner) return null;
+
+                  return (
+                    <div className="space-y-4">
+                      <Separator />
+                      <div className="flex items-center gap-2">
+                        <Building className="h-5 w-5 text-primary" />
+                        <h3 className="font-medium text-lg">{selectedPartner.partnerTenantName} - Musaitlik Tablosu</h3>
+                      </div>
+
+                      {selectedPartner.activities.length === 0 ? (
+                        <Card>
+                          <CardContent className="py-8 text-center">
+                            <p className="text-muted-foreground">Bu acentanin paylasilan aktivitesi yok</p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <div className="space-y-4">
+                          {selectedPartner.activities.map((activity) => {
+                            const grouped: Record<string, typeof activity.capacities> = {};
+                            activity.capacities.forEach(cap => {
+                              if (!grouped[cap.date]) grouped[cap.date] = [];
+                              grouped[cap.date].push(cap);
+                            });
+                            const dates = Object.keys(grouped).sort();
+
+                            return (
+                              <Card key={activity.id} className="overflow-visible">
+                                <CardContent className="p-4">
+                                  <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: activity.color === 'blue' ? '#3b82f6' :
+                                          activity.color === 'green' ? '#22c55e' :
+                                          activity.color === 'purple' ? '#a855f7' :
+                                          activity.color === 'orange' ? '#f97316' :
+                                          activity.color === 'pink' ? '#ec4899' :
+                                          activity.color === 'cyan' ? '#06b6d4' :
+                                          activity.color === 'red' ? '#ef4444' :
+                                          activity.color === 'yellow' ? '#eab308' : '#3b82f6'
+                                        }}
+                                      />
+                                      <h4 className="font-medium">{activity.name}</h4>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      {activity.partnerUnitPrice ? (
+                                        <Badge variant="default" className="bg-green-600 text-xs">
+                                          {activity.partnerCurrency === 'USD' ? '$' : activity.partnerCurrency === 'EUR' ? '\u20AC' : ''}
+                                          {activity.partnerUnitPrice.toLocaleString('tr-TR')}
+                                          {activity.partnerCurrency === 'TRY' ? ' TL' : ` ${activity.partnerCurrency}`}
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="secondary" className="text-xs">
+                                          {activity.price.toLocaleString('tr-TR')} TL
+                                        </Badge>
+                                      )}
+                                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {activity.durationMinutes} dk
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {dates.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground italic">Kapasite bilgisi yok</p>
+                                  ) : (
+                                    <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-2">
+                                      {dates.map(date => {
+                                        const caps = grouped[date];
+                                        return (
+                                          <div key={date} className="border rounded-md p-2 text-center" data-testid={`dispatch-capacity-${date}`}>
+                                            <p className="text-xs font-medium mb-1">
+                                              {format(new Date(date), 'EEE d MMM', { locale: tr })}
+                                            </p>
+                                            <div className="space-y-1">
+                                              {caps.map((cap, idx) => {
+                                                const isSelected = partnerDispatchSelectedSlot?.activityId === activity.id
+                                                  && partnerDispatchSelectedSlot?.date === cap.date
+                                                  && partnerDispatchSelectedSlot?.time === cap.time;
+                                                const availRatio = cap.totalSlots > 0 ? cap.availableSlots / cap.totalSlots : 0;
+                                                const colorClass = cap.availableSlots === 0
+                                                  ? 'bg-red-500/20 text-red-700 dark:text-red-400'
+                                                  : availRatio > 0.5
+                                                    ? 'bg-green-500/20 text-green-700 dark:text-green-400'
+                                                    : availRatio > 0.2
+                                                      ? 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400'
+                                                      : 'bg-orange-500/20 text-orange-700 dark:text-orange-400';
+
+                                                return (
+                                                  <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                      if (cap.availableSlots > 0) {
+                                                        setPartnerDispatchSelectedSlot({
+                                                          activityId: activity.id,
+                                                          activityName: activity.name,
+                                                          partnerTenantId: selectedPartner.partnerTenantId,
+                                                          partnerTenantName: selectedPartner.partnerTenantName,
+                                                          date: cap.date,
+                                                          time: cap.time,
+                                                          availableSlots: cap.availableSlots,
+                                                          partnerUnitPrice: activity.partnerUnitPrice,
+                                                          partnerCurrency: activity.partnerCurrency,
+                                                        });
+                                                      }
+                                                    }}
+                                                    disabled={cap.availableSlots === 0}
+                                                    className={`w-full text-xs px-2 py-1 rounded transition-all ${colorClass} ${
+                                                      isSelected ? 'ring-2 ring-primary' : ''
+                                                    } ${cap.availableSlots > 0 ? 'cursor-pointer hover:ring-2 hover:ring-primary/50' : 'cursor-not-allowed opacity-60'}`}
+                                                    data-testid={`dispatch-slot-${cap.date}-${cap.time}`}
+                                                  >
+                                                    <span className="font-medium">{cap.time}</span>
+                                                    <div className="flex items-center justify-center gap-1">
+                                                      <Users className="w-3 h-3" />
+                                                      {cap.availableSlots}/{cap.totalSlots}
+                                                    </div>
+                                                  </button>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {partnerDispatchSelectedSlot && (
+                        <>
+                          <Separator />
+                          <Card className="border-primary/30">
+                            <CardContent className="p-4 space-y-4">
+                              <h4 className="font-medium flex items-center gap-2">
+                                <CalendarCheck className="h-4 w-4 text-primary" />
+                                Secilen Slot
+                              </h4>
+                              <div className="flex items-center gap-4 flex-wrap text-sm">
+                                <Badge variant="outline">{partnerDispatchSelectedSlot.activityName}</Badge>
+                                <span>{format(new Date(partnerDispatchSelectedSlot.date), 'd MMM yyyy', { locale: tr })}</span>
+                                <span className="font-medium">{partnerDispatchSelectedSlot.time}</span>
+                                <span className="text-green-600">{partnerDispatchSelectedSlot.availableSlots} musait</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label>Kisi Sayisi</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    max={partnerDispatchSelectedSlot.availableSlots}
+                                    value={partnerDispatchGuests}
+                                    onChange={(e) => setPartnerDispatchGuests(parseInt(e.target.value) || 1)}
+                                    data-testid="input-dispatch-guests"
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Not (opsiyonel)</Label>
+                                  <Input
+                                    value={partnerDispatchNotes}
+                                    onChange={(e) => setPartnerDispatchNotes(e.target.value)}
+                                    placeholder="Eklemek istediginiz not..."
+                                    data-testid="input-dispatch-notes"
+                                  />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setPartnerDispatchOpen(false)} data-testid="button-cancel-partner-dispatch">
+                    Iptal
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!partnerDispatchSelectedSlot || !partnerDispatchReservation) return;
+                      partnerDispatchMutation.mutate({
+                        activityId: partnerDispatchSelectedSlot.activityId,
+                        date: partnerDispatchSelectedSlot.date,
+                        time: partnerDispatchSelectedSlot.time,
+                        customerName: partnerDispatchReservation.customerName,
+                        customerPhone: partnerDispatchReservation.customerPhone,
+                        guests: partnerDispatchGuests,
+                        notes: partnerDispatchNotes,
+                        sourceReservationId: partnerDispatchReservation.id,
+                      });
+                    }}
+                    disabled={!partnerDispatchSelectedSlot || partnerDispatchMutation.isPending}
+                    data-testid="button-submit-partner-dispatch"
+                  >
+                    {partnerDispatchMutation.isPending ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    Talebi Gonder
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={agencyNotifyOpen} onOpenChange={setAgencyNotifyOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
