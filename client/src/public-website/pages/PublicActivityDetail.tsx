@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { 
@@ -14,8 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,8 +25,6 @@ import { SEO, FAQSchema } from "../components/shared/SEO";
 import type { PublicActivity, AvailabilitySlot, PublicWebsiteData } from "../types";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
-import { format } from "date-fns";
-import { tr as trLocale, enUS } from "date-fns/locale";
 
 interface SelectedExtra {
   name: string;
@@ -101,6 +97,10 @@ export default function PublicActivityDetail() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
   
   // Reservation states
   const [reservationStep, setReservationStep] = useState<"selection" | "participants" | "contact" | "success">("selection");
@@ -124,6 +124,60 @@ export default function PublicActivityDetail() {
     queryKey: [getApiUrl(`/api/website/activities/${activityId}?lang=${language}`)],
     enabled: activityId > 0,
   });
+
+  const getEffectivePrice = (dateStr: string): number => {
+    if (!activity) return 0;
+    if (!activity.seasonalPricingEnabled || !activity.seasonalPrices) return activity.price;
+    const month = new Date(dateStr).getMonth() + 1;
+    const seasonalPrice = activity.seasonalPrices[String(month)];
+    return seasonalPrice && seasonalPrice > 0 ? seasonalPrice : activity.price;
+  };
+
+  const isCurrentOrPastMonth = (year: number, month: number) => {
+    const now = new Date();
+    return year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth());
+  };
+
+  const isPrevMonthDisabled = isCurrentOrPastMonth(calendarMonth.year, calendarMonth.month);
+
+  const calendarDays = useMemo(() => {
+    const { year, month } = calendarMonth;
+    const lastDay = new Date(year, month + 1, 0);
+    const firstDayOfWeek = new Date(year, month, 1).getDay();
+    const startDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+    const days: Array<{ date: Date; dateStr: string; isCurrentMonth: boolean; isPast: boolean }> = [];
+    
+    for (let i = 0; i < startDayOfWeek; i++) {
+      const d = new Date(year, month, -(startDayOfWeek - 1 - i));
+      const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      days.push({ date: d, dateStr: ds, isCurrentMonth: false, isPast: true });
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      days.push({ date, dateStr, isCurrentMonth: true, isPast: date < today });
+    }
+    
+    const remaining = 7 - (days.length % 7);
+    if (remaining < 7) {
+      for (let i = 1; i <= remaining; i++) {
+        const d = new Date(year, month + 1, i);
+        const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        days.push({ date: d, dateStr: ds, isCurrentMonth: false, isPast: true });
+      }
+    }
+    
+    return days;
+  }, [calendarMonth]);
+
+  const monthNames = language === "en" 
+    ? ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    : ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  const dayNames = language === "en" ? ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] : ["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pz"];
 
   const { data: allActivities } = useQuery<PublicActivity[]>({
     queryKey: [getApiUrl(`/api/website/activities?lang=${language}`)],
@@ -1041,40 +1095,93 @@ export default function PublicActivityDetail() {
                         <>
                           <div className="space-y-3">
                             <Label>{language === "en" ? "Select Date" : "Tarih Seçin"}</Label>
-                            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                              <PopoverTrigger asChild>
+                            <div className="border rounded-lg p-3" data-testid="input-date">
+                              <div className="flex items-center justify-between mb-2">
                                 <Button
-                                  variant="outline"
-                                  className="w-full justify-start text-left font-normal"
-                                  data-testid="input-date"
-                                >
-                                  <Calendar className="h-4 w-4 mr-2" />
-                                  {reservationData.date 
-                                    ? format(new Date(reservationData.date), "dd MMMM yyyy", { locale: language === "tr" ? trLocale : enUS })
-                                    : (language === "en" ? "Select Date" : "Tarih Seçin")
-                                  }
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <CalendarComponent
-                                  mode="single"
-                                  selected={reservationData.date ? new Date(reservationData.date) : undefined}
-                                  onSelect={(date) => {
-                                    if (date) {
-                                      setReservationData((prev) => ({ 
-                                        ...prev, 
-                                        date: format(date, "yyyy-MM-dd"), 
-                                        time: "" 
-                                      }));
-                                      setCalendarOpen(false);
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    if (!isPrevMonthDisabled) {
+                                      setCalendarMonth(prev => {
+                                        const m = prev.month - 1;
+                                        return m < 0 ? { year: prev.year - 1, month: 11 } : { ...prev, month: m };
+                                      });
                                     }
                                   }}
-                                  locale={language === "tr" ? trLocale : enUS}
-                                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
+                                  disabled={isPrevMonthDisabled}
+                                  data-testid="button-prev-month"
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <span className="text-sm font-medium">{monthNames[calendarMonth.month]} {calendarMonth.year}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setCalendarMonth(prev => {
+                                    const m = prev.month + 1;
+                                    return m > 11 ? { year: prev.year + 1, month: 0 } : { ...prev, month: m };
+                                  })}
+                                  data-testid="button-next-month"
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-7 gap-0.5 mb-1">
+                                {dayNames.map(d => (
+                                  <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-1">{d}</div>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-7 gap-0.5">
+                                {calendarDays.map((day, idx) => {
+                                  const isSelected = reservationData.date === day.dateStr;
+                                  const isDisabled = !day.isCurrentMonth || day.isPast;
+                                  const dayPrice = !isDisabled && activity ? getEffectivePrice(day.dateStr) : null;
+                                  const hasDifferentPrice = dayPrice !== null && activity?.seasonalPricingEnabled && dayPrice !== activity.price;
+                                  
+                                  return (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      disabled={isDisabled}
+                                      onClick={() => {
+                                        setReservationData(prev => ({ ...prev, date: day.dateStr, time: "" }));
+                                      }}
+                                      className={`relative flex flex-col items-center justify-center rounded-md text-sm transition-colors min-h-[44px] ${
+                                        isSelected
+                                          ? "bg-primary text-primary-foreground"
+                                          : isDisabled
+                                          ? "text-muted-foreground/30 cursor-not-allowed"
+                                          : "hover:bg-muted cursor-pointer"
+                                      }`}
+                                      data-testid={`calendar-day-${day.dateStr}`}
+                                    >
+                                      <span className="text-xs leading-none">{day.date.getDate()}</span>
+                                      {dayPrice !== null && day.isCurrentMonth && !day.isPast && (
+                                        <span className={`text-[9px] leading-none mt-0.5 font-medium ${
+                                          isSelected 
+                                            ? "text-primary-foreground/90" 
+                                            : hasDifferentPrice 
+                                            ? "text-primary font-bold" 
+                                            : "text-green-600 dark:text-green-400"
+                                        }`}>
+                                          {dayPrice}₺
+                                        </span>
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              {reservationData.date && (
+                                <div className="mt-2 pt-2 border-t flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">
+                                    {new Date(reservationData.date + 'T00:00:00').toLocaleDateString(language === 'en' ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                  </span>
+                                  <span className="font-medium text-green-600 dark:text-green-400" data-testid="text-selected-price">
+                                    {getEffectivePrice(reservationData.date)} ₺ / {language === "en" ? "person" : "kişi"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {reservationData.date && (
