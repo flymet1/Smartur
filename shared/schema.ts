@@ -241,6 +241,10 @@ Alım Saati: {transfer_saat}
   whatToBringEn: text("what_to_bring_en").default("[]"), // JSON array: What to bring (English)
   notAllowed: text("not_allowed").default("[]"), // JSON array: İzin verilmeyenler ["Drone", "Evcil hayvan"]
   notAllowedEn: text("not_allowed_en").default("[]"), // JSON array: Not allowed (English)
+  // === DÖNEMSEL FİYATLANDIRMA ===
+  seasonalPricingEnabled: boolean("seasonal_pricing_enabled").default(false),
+  seasonalPrices: text("seasonal_prices").default("{}"), // JSON object: {"1": 500, "2": 500, ...} month (1-12) -> price in TL
+  seasonalPricesUsd: text("seasonal_prices_usd").default("{}"), // JSON object: {"1": 50, "2": 50, ...} month (1-12) -> price in USD
   // === AKTİVİTE YORUM KARTLARI ===
   reviewCards: text("review_cards").default("[]"), // JSON array: [{platform, rating, reviewCount, url}]
   reviewCardsEnabled: boolean("review_cards_enabled").default(false), // Aktivite detayda gösterilsin mi?
