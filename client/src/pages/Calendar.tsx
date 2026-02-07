@@ -555,7 +555,7 @@ function BulkCapacityDialog({ activities }: { activities: any[] }) {
   const [selectedActivity, setSelectedActivity] = useState<string>("");
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(addDays(new Date(), 7), 'yyyy-MM-dd'));
-  const [time, setTime] = useState("");
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [totalSlots, setTotalSlots] = useState("10");
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
   
@@ -612,8 +612,8 @@ function BulkCapacityDialog({ activities }: { activities: any[] }) {
     },
   });
   
-  const handleSubmit = () => {
-    if (!selectedActivity || !time) return;
+  const handleSubmit = async () => {
+    if (!selectedActivity || selectedTimes.length === 0) return;
     
     const dates: string[] = [];
     const start = new Date(startDate);
@@ -626,12 +626,14 @@ function BulkCapacityDialog({ activities }: { activities: any[] }) {
       }
     }
     
-    bulkMutation.mutate({
-      activityId: Number(selectedActivity),
-      dates,
-      time,
-      totalSlots: Number(totalSlots) || defaultCapacity,
-    });
+    for (const t of selectedTimes) {
+      bulkMutation.mutate({
+        activityId: Number(selectedActivity),
+        dates,
+        time: t,
+        totalSlots: Number(totalSlots) || defaultCapacity,
+      });
+    }
   };
   
   const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
@@ -652,7 +654,7 @@ function BulkCapacityDialog({ activities }: { activities: any[] }) {
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Aktivite</Label>
-            <Select value={selectedActivity} onValueChange={setSelectedActivity}>
+            <Select value={selectedActivity} onValueChange={(val) => { setSelectedActivity(val); setSelectedTimes([]); }}>
               <SelectTrigger data-testid="select-bulk-activity">
                 <SelectValue placeholder="Aktivite seçin" />
               </SelectTrigger>
@@ -707,17 +709,41 @@ function BulkCapacityDialog({ activities }: { activities: any[] }) {
           </div>
           
           <div className="space-y-2">
-            <Label>Saat</Label>
-            <Select value={time} onValueChange={setTime} disabled={!selectedActivity}>
-              <SelectTrigger data-testid="select-bulk-time">
-                <SelectValue placeholder={selectedActivity ? "Saat seçin" : "Önce aktivite seçin"} />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {timeOptions.map((t: string) => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Saatler</Label>
+            {!selectedActivity ? (
+              <p className="text-sm text-muted-foreground">Önce aktivite seçin</p>
+            ) : (
+              <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium pb-1 border-b mb-1">
+                  <Checkbox
+                    checked={selectedTimes.length === timeOptions.length && timeOptions.length > 0}
+                    onCheckedChange={(checked) => {
+                      setSelectedTimes(checked ? [...timeOptions] : []);
+                    }}
+                    data-testid="checkbox-bulk-all-times"
+                  />
+                  Tüm Saatler
+                </label>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {timeOptions.map((t: string) => (
+                    <label key={t} className="flex items-center gap-1.5 text-sm">
+                      <Checkbox
+                        checked={selectedTimes.includes(t)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedTimes(prev => [...prev, t]);
+                          } else {
+                            setSelectedTimes(prev => prev.filter(s => s !== t));
+                          }
+                        }}
+                        data-testid={`checkbox-bulk-time-${t}`}
+                      />
+                      {t}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="space-y-2">
@@ -735,7 +761,7 @@ function BulkCapacityDialog({ activities }: { activities: any[] }) {
           <Button variant="outline" onClick={() => setOpen(false)}>İptal</Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={!selectedActivity || !time || bulkMutation.isPending}
+            disabled={!selectedActivity || selectedTimes.length === 0 || bulkMutation.isPending}
             data-testid="button-submit-bulk"
           >
             {bulkMutation.isPending ? "Ekleniyor..." : "Ekle"}
