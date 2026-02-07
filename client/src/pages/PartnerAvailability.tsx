@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet, Trash2, AlertCircle, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { Clock, Users, Building2, ChevronLeft, ChevronRight, RefreshCw, Plus, Check, X, Loader2, Calendar, Send, TrendingUp, Activity as ActivityIcon, CalendarCheck, Download, FileText, CreditCard, Wallet, Trash2, AlertCircle, ArrowUpRight, ArrowDownLeft, Search } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -129,6 +129,23 @@ interface PartnerTransaction {
   currentTenantId: number;
 }
 
+interface ActiveReservation {
+  id: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  date: string;
+  time: string;
+  quantity: number;
+  status: string;
+  activityId: number | null;
+  activityName: string;
+  orderNumber: string | null;
+  hotelName: string | null;
+  notes: string | null;
+  source: string | null;
+}
+
 export default function PartnerAvailability() {
   const today = new Date();
   const [startDate, setStartDate] = useState(() => {
@@ -158,6 +175,10 @@ export default function PartnerAvailability() {
   const [paymentCollectionType, setPaymentCollectionType] = useState<string>("receiver_full");
   const [amountCollectedBySender, setAmountCollectedBySender] = useState<number>(0);
   const [paymentNotes, setPaymentNotes] = useState("");
+  
+  const [reservationSearch, setReservationSearch] = useState("");
+  const [selectedReservation, setSelectedReservation] = useState<ActiveReservation | null>(null);
+  const [showReservationResults, setShowReservationResults] = useState(false);
   
   const [processDialogOpen, setProcessDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ReservationRequest | null>(null);
@@ -267,6 +288,7 @@ export default function PartnerAvailability() {
     mutationFn: async (data: { 
       activityId: number; date: string; time: string; customerName: string; customerPhone: string; guests: number; notes: string;
       paymentCollectionType: string; amountCollectedBySender: number; paymentCurrency: string; paymentNotes: string;
+      sourceReservationId: number;
     }) => {
       const res = await apiRequest('POST', '/api/partner-reservation-requests', data);
       return res.json();
@@ -377,6 +399,12 @@ export default function PartnerAvailability() {
     });
   };
   
+  const reservationSearchParam = reservationSearch.length >= 2 ? reservationSearch : '';
+  const { data: activeReservations = [], isLoading: reservationsSearchLoading } = useQuery<ActiveReservation[]>({
+    queryKey: [`/api/reservations/active-for-partner${reservationSearchParam ? `?q=${encodeURIComponent(reservationSearchParam)}` : ''}`],
+    enabled: requestDialogOpen,
+  });
+
   const resetForm = () => {
     setCustomerName("");
     setCustomerPhone("");
@@ -386,6 +414,28 @@ export default function PartnerAvailability() {
     setPaymentCollectionType("receiver_full");
     setAmountCollectedBySender(0);
     setPaymentNotes("");
+    setReservationSearch("");
+    setSelectedReservation(null);
+    setShowReservationResults(false);
+  };
+
+  const selectReservation = (reservation: ActiveReservation) => {
+    setSelectedReservation(reservation);
+    setCustomerName(reservation.customerName);
+    setCustomerPhone(reservation.customerPhone);
+    setGuests(reservation.quantity);
+    setNotes(reservation.notes || "");
+    setReservationSearch("");
+    setShowReservationResults(false);
+  };
+
+  const clearSelectedReservation = () => {
+    setSelectedReservation(null);
+    setCustomerName("");
+    setCustomerPhone("");
+    setGuests(1);
+    setNotes("");
+    setReservationSearch("");
   };
   
   const openRequestDialog = (slot: RequestDialogData) => {
@@ -395,6 +445,10 @@ export default function PartnerAvailability() {
   
   const handleSubmitRequest = () => {
     if (!selectedSlot) return;
+    if (!selectedReservation) {
+      toast({ title: "Hata", description: "Lutfen mevcut bir rezervasyon secin", variant: "destructive" });
+      return;
+    }
     if (!customerName.trim() || !customerPhone.trim()) {
       toast({ title: "Hata", description: "Musteri adi ve telefonu zorunludur", variant: "destructive" });
       return;
@@ -415,7 +469,8 @@ export default function PartnerAvailability() {
       paymentCollectionType,
       amountCollectedBySender: paymentCollectionType === 'sender_partial' ? amountCollectedBySender : 0,
       paymentCurrency: selectedSlot.partnerCurrency || 'TRY',
-      paymentNotes: paymentNotes.trim()
+      paymentNotes: paymentNotes.trim(),
+      sourceReservationId: selectedReservation.id,
     });
   };
 
@@ -1417,58 +1472,129 @@ export default function PartnerAvailability() {
             </DialogHeader>
             
             <div className="space-y-4 py-4 px-1 overflow-y-auto flex-1">
-              <div className="space-y-2">
-                <Label htmlFor="customerName">Musteri Adi *</Label>
-                <Input
-                  id="customerName"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Ornegin: Ahmet Yilmaz"
-                  autoComplete="off"
-                  data-testid="input-customer-name"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="customerPhone">Telefon *</Label>
-                <Input
-                  id="customerPhone"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="Ornegin: 5551234567"
-                  autoComplete="off"
-                  data-testid="input-customer-phone"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="guests">Kisi Sayisi *</Label>
-                <Input
-                  id="guests"
-                  type="number"
-                  min={1}
-                  max={selectedSlot?.availableSlots || 10}
-                  value={guests}
-                  onChange={(e) => setGuests(parseInt(e.target.value) || 1)}
-                  data-testid="input-guests"
-                />
-                {selectedSlot && (
-                  <p className="text-xs text-muted-foreground">Maksimum: {selectedSlot.availableSlots} kisi</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notlar (Opsiyonel)</Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Ozel istekler, transfer bilgisi vb."
-                  className="resize-none"
-                  rows={3}
-                  data-testid="input-notes"
-                />
-              </div>
+              {!selectedReservation ? (
+                <div className="space-y-3">
+                  <Label className="flex items-center gap-2">
+                    <Search className="w-4 h-4" />
+                    Rezervasyon Sec *
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Musteri gondermek icin once mevcut bir rezervasyon secmelisiniz. Isim, telefon veya rezervasyon numarasi ile arayabilirsiniz.
+                  </p>
+                  <div className="relative">
+                    <Input
+                      value={reservationSearch}
+                      onChange={(e) => {
+                        setReservationSearch(e.target.value);
+                        setShowReservationResults(true);
+                      }}
+                      onFocus={() => setShowReservationResults(true)}
+                      placeholder="Isim, telefon veya rez. no ile arayın..."
+                      autoComplete="off"
+                      data-testid="input-reservation-search"
+                    />
+                    {reservationsSearchLoading && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  
+                  {showReservationResults && (
+                    <div className="max-h-60 overflow-y-auto border rounded-md">
+                      {activeReservations.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          {reservationSearch.length >= 2 
+                            ? "Sonuc bulunamadi. Farkli bir arama deneyin." 
+                            : "Aktif rezervasyonlariniz yukleniyor..."}
+                        </div>
+                      ) : (
+                        activeReservations.map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => selectReservation(r)}
+                            className="w-full text-left p-3 border-b last:border-b-0 hover-elevate transition-colors"
+                            data-testid={`reservation-option-${r.id}`}
+                          >
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="font-medium text-sm">{r.customerName}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                #{r.orderNumber || r.id}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                              <span>{r.customerPhone}</span>
+                              <span>|</span>
+                              <span>{r.activityName}</span>
+                              <span>|</span>
+                              <span>{format(new Date(r.date), 'd MMM', { locale: tr })} {r.time}</span>
+                              <span>|</span>
+                              <span>{r.quantity} kisi</span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <Label className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-green-600" />
+                      Secilen Rezervasyon
+                    </Label>
+                    <Button variant="ghost" size="sm" onClick={clearSelectedReservation} data-testid="button-clear-reservation">
+                      <X className="w-4 h-4 mr-1" /> Degistir
+                    </Button>
+                  </div>
+                  
+                  <Card>
+                    <CardContent className="p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="font-medium">{selectedReservation.customerName}</span>
+                        <Badge variant="secondary">#{selectedReservation.orderNumber || selectedReservation.id}</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                        <div>Telefon: {selectedReservation.customerPhone}</div>
+                        <div>Aktivite: {selectedReservation.activityName}</div>
+                        <div>Tarih: {format(new Date(selectedReservation.date), 'd MMM yyyy', { locale: tr })}</div>
+                        <div>Saat: {selectedReservation.time}</div>
+                        <div>Kisi: {selectedReservation.quantity}</div>
+                        {selectedReservation.hotelName && <div>Otel: {selectedReservation.hotelName}</div>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="guests">Kisi Sayisi *</Label>
+                    <Input
+                      id="guests"
+                      type="number"
+                      min={1}
+                      max={selectedSlot?.availableSlots || 10}
+                      value={guests}
+                      onChange={(e) => setGuests(parseInt(e.target.value) || 1)}
+                      data-testid="input-guests"
+                    />
+                    {selectedSlot && (
+                      <p className="text-xs text-muted-foreground">Maksimum: {selectedSlot.availableSlots} kisi</p>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notlar (Opsiyonel)</Label>
+                    <Textarea
+                      id="notes"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Ozel istekler, transfer bilgisi vb."
+                      className="resize-none"
+                      rows={3}
+                      data-testid="input-notes"
+                    />
+                  </div>
+                </div>
+              )}
               
               <Separator className="my-4" />
               
@@ -1548,7 +1674,7 @@ export default function PartnerAvailability() {
               </Button>
               <Button 
                 onClick={handleSubmitRequest} 
-                disabled={createRequestMutation.isPending}
+                disabled={createRequestMutation.isPending || !selectedReservation}
                 data-testid="button-submit-request"
               >
                 {createRequestMutation.isPending ? "Gonderiliyor..." : "Talep Gonder"}

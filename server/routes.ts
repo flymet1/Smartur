@@ -4890,6 +4890,66 @@ export async function registerRoutes(
     }
   });
 
+  // Search active reservations for partner reservation selection
+  app.get("/api/reservations/active-for-partner", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
+    const query = (req.query.q as string) || '';
+    const tenantId = req.session?.tenantId;
+    
+    if (!tenantId) {
+      return res.status(401).json({ error: "Oturum bulunamadi" });
+    }
+    
+    try {
+      const allReservations = await storage.getReservations(tenantId);
+      const today = new Date().toISOString().split('T')[0];
+      
+      const activeReservations = allReservations
+        .filter(r => 
+          r.status !== 'cancelled' &&
+          r.date >= today
+        );
+      
+      let filtered = activeReservations;
+      if (query.length >= 2) {
+        const searchLower = query.toLowerCase();
+        filtered = activeReservations.filter(r =>
+          r.customerName?.toLowerCase().includes(searchLower) ||
+          r.customerPhone?.includes(query) ||
+          r.orderNumber?.toLowerCase().includes(searchLower) ||
+          r.id.toString() === query
+        );
+      }
+      
+      const tenantActivities = await storage.getActivities(tenantId);
+      const activityMap = new Map(tenantActivities.map(a => [a.id, a.name]));
+      
+      const result = filtered
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 20)
+        .map(r => ({
+          id: r.id,
+          customerName: r.customerName,
+          customerPhone: r.customerPhone,
+          customerEmail: r.customerEmail,
+          date: r.date,
+          time: r.time,
+          quantity: r.quantity,
+          status: r.status,
+          activityId: r.activityId,
+          activityName: activityMap.get(r.activityId!) || 'Bilinmiyor',
+          orderNumber: r.orderNumber,
+          hotelName: r.hotelName,
+          notes: r.notes,
+          source: r.source,
+        }));
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Active reservation search error:', error);
+      res.json([]);
+    }
+  });
+
   // Occupancy rate for a specific date
   app.get("/api/occupancy", async (req, res) => {
     const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
@@ -6583,10 +6643,27 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       
-      const { activityId, date, time, customerName, customerPhone, guests, notes, paymentCollectionType, amountCollectedBySender, paymentCurrency, paymentNotes } = req.body;
+      const { activityId, date, time, customerName, customerPhone, guests, notes, paymentCollectionType, amountCollectedBySender, paymentCurrency, paymentNotes, sourceReservationId } = req.body;
       
       if (!activityId || !date || !time || !customerName || !customerPhone) {
         return res.status(400).json({ error: "Eksik parametreler" });
+      }
+      
+      // Validate that sourceReservationId refers to an active reservation in the requester's tenant
+      if (!sourceReservationId) {
+        return res.status(400).json({ error: "Mevcut bir rezervasyon secmelisiniz" });
+      }
+      
+      const sourceReservations = await storage.getReservations(requesterTenantId);
+      const todayStr = new Date().toISOString().split('T')[0];
+      const sourceReservation = sourceReservations.find(r => 
+        r.id === sourceReservationId && 
+        r.status !== 'cancelled' && 
+        r.date >= todayStr
+      );
+      
+      if (!sourceReservation) {
+        return res.status(400).json({ error: "Secilen rezervasyon bulunamadi, iptal edilmis veya tarihi gecmis" });
       }
       
       // Find the activity and its owner tenant
