@@ -484,7 +484,7 @@ export default function Finance() {
 
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
-  const [financeTab, setFinanceTab] = useState<'dispatches' | 'payouts' | 'rates' | 'partner-customers' | 'agencies'>('dispatches');
+  const [financeTab, setFinanceTab] = useState<'dispatches' | 'payouts' | 'rates' | 'partner-customers' | 'agencies' | 'user-reports'>('dispatches');
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
   const [payoutSortOrder, setPayoutSortOrder] = useState<'createdNewest' | 'createdOldest' | 'amountHigh' | 'amountLow'>('createdNewest');
   const [rateSortOrder, setRateSortOrder] = useState<'createdNewest' | 'createdOldest' | 'priceHigh' | 'priceLow'>('createdNewest');
@@ -698,6 +698,42 @@ export default function Finance() {
       return res.json();
     }
   });
+
+  // User Reports: Fetch reservations and app users
+  interface AppUser {
+    id: number;
+    name: string;
+    email: string;
+    username: string;
+    phone?: string;
+    isActive?: boolean;
+  }
+  interface ReservationItem {
+    id: number;
+    activityId: number | null;
+    customerName: string;
+    customerPhone: string;
+    date: string;
+    time: string;
+    quantity: number;
+    priceTl: number | null;
+    priceUsd: number | null;
+    currency: string | null;
+    status: string | null;
+    source: string | null;
+    createdByUserId: number | null;
+    createdAt: string | null;
+    orderNumber: string | null;
+  }
+  const { data: allReservations = [] } = useQuery<ReservationItem[]>({
+    queryKey: ['/api/reservations'],
+    enabled: financeTab === 'user-reports',
+  });
+  const { data: appUsers = [] } = useQuery<AppUser[]>({
+    queryKey: ['/api/app-users'],
+    enabled: financeTab === 'user-reports',
+  });
+  const [userReportSelectedUser, setUserReportSelectedUser] = useState<string | null>(null);
 
   // Partner Mutabakat hesaplamaları
   const handlePartnerDateRangeChange = (range: 'week' | 'month' | 'custom') => {
@@ -1434,7 +1470,7 @@ export default function Finance() {
 
         {/* Navigation Menu - Settings style */}
         <div className="border-b bg-background mb-6">
-          <div className="grid grid-cols-5 gap-1 pb-2 xl:flex xl:items-center">
+          <div className="grid grid-cols-3 gap-1 pb-2 md:grid-cols-6 xl:flex xl:items-center">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -1514,6 +1550,21 @@ export default function Finance() {
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Acentalar</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={financeTab === 'user-reports' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFinanceTab('user-reports')}
+                  data-testid="tab-user-reports"
+                  className="w-full xl:w-auto justify-center"
+                >
+                  <Users className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Kullanıcı Raporları</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Kullanıcı Raporları</TooltipContent>
+            </Tooltip>
           </div>
           {/* Mobile: Show current tab name */}
           <div className="xl:hidden text-sm font-medium text-muted-foreground pt-1">
@@ -1522,6 +1573,7 @@ export default function Finance() {
             {financeTab === 'rates' && 'Fiyat Tablosu'}
             {financeTab === 'partner-customers' && 'Partner Acentalar'}
             {financeTab === 'agencies' && 'Acentalar'}
+            {financeTab === 'user-reports' && 'Kullanıcı Raporları'}
           </div>
         </div>
 
@@ -3091,6 +3143,265 @@ export default function Finance() {
                 </p>
               </div>
             )}
+          </div>
+          )}
+
+          {financeTab === 'user-reports' && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">Kullanıcı Raporları</h3>
+                <Badge variant="outline">{appUsers.length} kullanıcı</Badge>
+              </div>
+            </div>
+
+            {(() => {
+              const dateFilteredReservations = allReservations.filter(r => {
+                if (r.date < startDate || r.date > endDate) return false;
+                return true;
+              });
+
+              const userMap = new Map<number, AppUser>();
+              appUsers.forEach(u => userMap.set(u.id, u));
+
+              const userStats = new Map<string, {
+                userKey: string;
+                userName: string;
+                totalReservations: number;
+                confirmedReservations: number;
+                cancelledReservations: number;
+                pendingReservations: number;
+                totalGuests: number;
+                totalRevenueTl: number;
+                totalRevenueUsd: number;
+                reservations: ReservationItem[];
+              }>();
+
+              dateFilteredReservations.forEach(r => {
+                const uid = r.createdByUserId;
+                const userKey = uid ? String(uid) : 'system';
+                if (!userStats.has(userKey)) {
+                  const user = uid ? userMap.get(uid) : null;
+                  userStats.set(userKey, {
+                    userKey,
+                    userName: user ? user.name : (uid ? `Kullanıcı #${uid}` : 'Sistem / Otomatik'),
+                    totalReservations: 0,
+                    confirmedReservations: 0,
+                    cancelledReservations: 0,
+                    pendingReservations: 0,
+                    totalGuests: 0,
+                    totalRevenueTl: 0,
+                    totalRevenueUsd: 0,
+                    reservations: [],
+                  });
+                }
+                const stat = userStats.get(userKey)!;
+                stat.totalReservations++;
+                stat.totalGuests += r.quantity || 0;
+                if (r.status === 'confirmed') stat.confirmedReservations++;
+                else if (r.status === 'cancelled') stat.cancelledReservations++;
+                else stat.pendingReservations++;
+                if (r.currency === 'USD') {
+                  stat.totalRevenueUsd += (r.priceUsd || 0) * (r.quantity || 0);
+                } else {
+                  stat.totalRevenueTl += (r.priceTl || 0) * (r.quantity || 0);
+                }
+                stat.reservations.push(r);
+              });
+
+              const sortedStats = Array.from(userStats.values()).sort((a, b) => b.totalReservations - a.totalReservations);
+
+              const totalAllReservations = dateFilteredReservations.length;
+              const totalAllGuests = dateFilteredReservations.reduce((s, r) => s + (r.quantity || 0), 0);
+              const totalAllRevenueTl = sortedStats.reduce((s, u) => s + u.totalRevenueTl, 0);
+              const totalAllRevenueUsd = sortedStats.reduce((s, u) => s + u.totalRevenueUsd, 0);
+
+              const selectedUserData = userReportSelectedUser
+                ? userStats.get(userReportSelectedUser) || null
+                : null;
+
+              return (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                        <CardTitle className="text-sm font-medium">Toplam Rezervasyon</CardTitle>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold" data-testid="text-user-report-total-res">{totalAllReservations}</div>
+                        <p className="text-xs text-muted-foreground">Seçilen dönemde</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                        <CardTitle className="text-sm font-medium">Toplam Misafir</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold" data-testid="text-user-report-total-guests">{totalAllGuests}</div>
+                        <p className="text-xs text-muted-foreground">Kişi sayısı</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                        <CardTitle className="text-sm font-medium">Toplam Gelir (TL)</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold" data-testid="text-user-report-total-tl">{formatMoney(totalAllRevenueTl)}</div>
+                        <p className="text-xs text-muted-foreground">TRY cinsinden</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+                        <CardTitle className="text-sm font-medium">Toplam Gelir (USD)</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold" data-testid="text-user-report-total-usd">${totalAllRevenueUsd.toLocaleString('tr-TR')}</div>
+                        <p className="text-xs text-muted-foreground">USD cinsinden</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Kullanıcı Bazlı Özet</CardTitle>
+                      <CardDescription>Her kullanıcının oluşturduğu rezervasyonlar ve gelir bilgileri</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-2 px-3 font-medium">Kullanıcı</th>
+                              <th className="text-center py-2 px-3 font-medium">Rezervasyon</th>
+                              <th className="text-center py-2 px-3 font-medium">Misafir</th>
+                              <th className="text-center py-2 px-3 font-medium">Onaylanan</th>
+                              <th className="text-center py-2 px-3 font-medium">Bekleyen</th>
+                              <th className="text-center py-2 px-3 font-medium">İptal</th>
+                              <th className="text-right py-2 px-3 font-medium">Gelir (TL)</th>
+                              <th className="text-right py-2 px-3 font-medium">Gelir (USD)</th>
+                              <th className="text-center py-2 px-3 font-medium">Detay</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sortedStats.map((stat) => (
+                              <tr key={stat.userKey} className="border-b last:border-0">
+                                <td className="py-2 px-3 font-medium" data-testid={`text-user-name-${stat.userKey}`}>{stat.userName}</td>
+                                <td className="text-center py-2 px-3">{stat.totalReservations}</td>
+                                <td className="text-center py-2 px-3">{stat.totalGuests}</td>
+                                <td className="text-center py-2 px-3">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300">{stat.confirmedReservations}</Badge>
+                                </td>
+                                <td className="text-center py-2 px-3">
+                                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300">{stat.pendingReservations}</Badge>
+                                </td>
+                                <td className="text-center py-2 px-3">
+                                  <Badge variant="outline" className="bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300">{stat.cancelledReservations}</Badge>
+                                </td>
+                                <td className="text-right py-2 px-3">{formatMoney(stat.totalRevenueTl)}</td>
+                                <td className="text-right py-2 px-3">${stat.totalRevenueUsd.toLocaleString('tr-TR')}</td>
+                                <td className="text-center py-2 px-3">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setUserReportSelectedUser(
+                                      userReportSelectedUser === stat.userKey ? null : stat.userKey
+                                    )}
+                                    data-testid={`button-user-detail-${stat.userKey}`}
+                                  >
+                                    {userReportSelectedUser === stat.userKey ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                            {sortedStats.length === 0 && (
+                              <tr>
+                                <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                                  Seçilen dönemde rezervasyon bulunamadı.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {selectedUserData && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <CardTitle className="text-base">{selectedUserData.userName} - Rezervasyon Detayları</CardTitle>
+                            <CardDescription>{selectedUserData.totalReservations} rezervasyon</CardDescription>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={() => setUserReportSelectedUser(null)} data-testid="button-close-user-detail">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b">
+                                <th className="text-left py-2 px-3 font-medium">Tarih</th>
+                                <th className="text-left py-2 px-3 font-medium">Saat</th>
+                                <th className="text-left py-2 px-3 font-medium">Müşteri</th>
+                                <th className="text-left py-2 px-3 font-medium">Aktivite</th>
+                                <th className="text-center py-2 px-3 font-medium">Kişi</th>
+                                <th className="text-center py-2 px-3 font-medium">Durum</th>
+                                <th className="text-center py-2 px-3 font-medium">Kaynak</th>
+                                <th className="text-right py-2 px-3 font-medium">Tutar</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedUserData.reservations
+                                .sort((a, b) => b.date.localeCompare(a.date))
+                                .map((r) => {
+                                  const act = activities.find(a => a.id === r.activityId);
+                                  return (
+                                    <tr key={r.id} className="border-b last:border-0" data-testid={`row-user-res-${r.id}`}>
+                                      <td className="py-2 px-3">{formatDateShortTR(r.date)}</td>
+                                      <td className="py-2 px-3">{r.time}</td>
+                                      <td className="py-2 px-3">{r.customerName}</td>
+                                      <td className="py-2 px-3">{act?.name || '-'}</td>
+                                      <td className="text-center py-2 px-3">{r.quantity}</td>
+                                      <td className="text-center py-2 px-3">
+                                        <Badge variant="outline" className={
+                                          r.status === 'confirmed' ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300' :
+                                          r.status === 'cancelled' ? 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300' :
+                                          'bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300'
+                                        }>
+                                          {r.status === 'confirmed' ? 'Onaylı' : r.status === 'cancelled' ? 'İptal' : 'Bekliyor'}
+                                        </Badge>
+                                      </td>
+                                      <td className="text-center py-2 px-3">
+                                        <Badge variant="secondary">
+                                          {r.source === 'manual' ? 'Manuel' : r.source === 'whatsapp' ? 'WhatsApp' : r.source === 'web' ? 'Web' : r.source || '-'}
+                                        </Badge>
+                                      </td>
+                                      <td className="text-right py-2 px-3">
+                                        {r.currency === 'USD' 
+                                          ? `$${((r.priceUsd || 0) * (r.quantity || 0)).toLocaleString('tr-TR')}`
+                                          : formatMoney((r.priceTl || 0) * (r.quantity || 0))
+                                        }
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              );
+            })()}
           </div>
           )}
         </div>
