@@ -1965,11 +1965,19 @@ function useHasWhatsappFeature(): boolean {
     const userData = localStorage.getItem("userData");
     if (!userData) return false;
     const user = JSON.parse(userData);
-    const membershipType = user.membershipType;
     
-    if (!subscriptionPlans || !membershipType) return false;
+    let effectivePlan = user.membershipType;
+    const tenantStr = localStorage.getItem("tenantData");
+    if (tenantStr) {
+      try {
+        const tenant = JSON.parse(tenantStr);
+        if (tenant.planCode) effectivePlan = tenant.planCode;
+      } catch {}
+    }
     
-    const currentPlan = subscriptionPlans.find(p => p.code === membershipType);
+    if (!subscriptionPlans || !effectivePlan) return false;
+    
+    const currentPlan = subscriptionPlans.find(p => p.code === effectivePlan);
     if (!currentPlan) return false;
     
     const features = JSON.parse(currentPlan.features || "[]");

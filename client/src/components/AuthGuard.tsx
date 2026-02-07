@@ -46,6 +46,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
             if (data.roles) {
               localStorage.setItem("userRoles", JSON.stringify(data.roles));
             }
+            if (data.tenant) {
+              localStorage.setItem("tenantData", JSON.stringify(data.tenant));
+            }
             setIsAuthenticated(true);
           } else {
             localStorage.removeItem("userToken");

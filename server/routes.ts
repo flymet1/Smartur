@@ -14119,6 +14119,9 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       }
       
       const updated = await storage.updateTenant(id, { planCode });
+      
+      await storage.syncTenantUsersMembershipType(id, planCode);
+      
       res.json(updated);
     } catch (err) {
       console.error("Plan güncelleme hatası:", err);
@@ -14549,7 +14552,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
           name: adminName || name + " Admin",
           phone: contactPhone || null,
           companyName: name,
-          membershipType: durationDays <= 14 ? 'trial' : 'professional',
+          membershipType: planCode || (durationDays <= 14 ? 'trial' : 'professional'),
           membershipStartDate: new Date(),
           membershipEndDate,
           planId: null,
@@ -16762,6 +16765,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
               primaryColor: tenant.primaryColor,
               accentColor: tenant.accentColor,
               logoUrl: tenant.logoUrl,
+              planCode: tenant.planCode,
             } : null,
           });
         });
@@ -16787,6 +16791,12 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
 
       const permissions = await storage.getUserPermissions(user.id);
       const roles = await storage.getUserRoles(user.id);
+      
+      let tenant = null;
+      if (user.tenantId) {
+        tenant = await storage.getTenant(user.tenantId);
+      }
+      
       const { passwordHash: _, ...safeUser } = user;
 
       res.json({
@@ -16794,6 +16804,12 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         user: safeUser,
         permissions: permissions.map(p => p.key),
         roles: roles.map(r => r.roleId),
+        tenant: tenant ? {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+          planCode: tenant.planCode,
+        } : null,
       });
     } catch (err) {
       console.error("Session check error:", err);
@@ -16838,6 +16854,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
           primaryColor: tenant.primaryColor,
           accentColor: tenant.accentColor,
           logoUrl: tenant.logoUrl,
+          planCode: tenant.planCode,
         } : null,
       });
     } catch (err) {

@@ -88,9 +88,17 @@ interface UserData {
   membershipEndDate?: string | null;
 }
 
+interface TenantData {
+  id: number;
+  name: string;
+  slug: string;
+  planCode?: string | null;
+}
+
 export function Sidebar() {
   const [location, setLocation] = useLocation();
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+  const [tenantData, setTenantData] = useState<TenantData | null>(null);
   const { permissions, hasPermission, hasAnyPermission } = usePermissions();
 
   // Check if user is a "viewer" (İzleyici) - only has capacity.view and no other main permissions
@@ -130,6 +138,17 @@ export function Sidebar() {
         }
       } else {
         setCurrentUser(null);
+      }
+      
+      const tenant = localStorage.getItem('tenantData');
+      if (tenant) {
+        try {
+          setTenantData(JSON.parse(tenant));
+        } catch {
+          setTenantData(null);
+        }
+      } else {
+        setTenantData(null);
       }
     };
     
@@ -334,14 +353,27 @@ export function Sidebar() {
     return "Smartur";
   })();
 
+  const getPlanDisplayName = (code: string | null | undefined): string => {
+    const planNames: Record<string, string> = {
+      trial: 'Deneme',
+      basic: 'Temel',
+      professional: 'Profesyonel',
+      enterprise: 'Kurumsal',
+    };
+    return code ? planNames[code] || code : 'Deneme';
+  };
+
   // License status helper
   const getLicenseStatusInfo = () => {
     // If user is logged in, check their membership
     if (currentUser) {
+      const effectivePlan = tenantData?.planCode || currentUser.membershipType || 'trial';
+      const planName = getPlanDisplayName(effectivePlan);
+      
       // Unlimited membership (membershipEndDate is null)
       if (!currentUser.membershipEndDate) {
         return { 
-          text: 'Aktif / Süresiz', 
+          text: `${planName} / Süresiz`, 
           color: 'text-accent-foreground', 
           bgColor: 'bg-accent',
           isActive: true,
@@ -355,12 +387,12 @@ export function Sidebar() {
       const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysRemaining <= 0) {
-        return { text: 'Yenileme Gerekli', color: 'text-red-600', bgColor: 'bg-red-500', isActive: false, isLoading: false };
+        return { text: `${planName} / Yenileme Gerekli`, color: 'text-red-600', bgColor: 'bg-red-500', isActive: false, isLoading: false };
       }
       
       if (daysRemaining <= 7) {
         return { 
-          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          text: `${planName} / ${daysRemaining} Gun`, 
           color: 'text-red-600', 
           bgColor: 'bg-red-500',
           isActive: true,
@@ -368,7 +400,7 @@ export function Sidebar() {
         };
       } else if (daysRemaining <= 14) {
         return { 
-          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          text: `${planName} / ${daysRemaining} Gun`, 
           color: 'text-amber-600', 
           bgColor: 'bg-amber-500',
           isActive: true,
@@ -376,7 +408,7 @@ export function Sidebar() {
         };
       } else {
         return { 
-          text: `Aktif / ${daysRemaining} Gun Kaldi`, 
+          text: `${planName} / ${daysRemaining} Gun`, 
           color: 'text-accent-foreground', 
           bgColor: 'bg-accent',
           isActive: true,

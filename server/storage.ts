@@ -392,6 +392,9 @@ export interface IStorage {
   deleteRequestMessageTemplate(id: number): Promise<void>;
   seedDefaultRequestMessageTemplates(): Promise<void>;
 
+  // Tenant-User membership sync
+  syncTenantUsersMembershipType(tenantId: number, planCode: string): Promise<void>;
+
   // Subscription Plans
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined>;
@@ -2575,6 +2578,15 @@ Sky Fethiye`,
   // Subscription Plans
   async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     return await db.select().from(subscriptionPlans).orderBy(subscriptionPlans.sortOrder);
+  }
+
+  async syncTenantUsersMembershipType(tenantId: number, planCode: string): Promise<void> {
+    await db.update(appUsers)
+      .set({ membershipType: planCode })
+      .where(and(
+        eq(appUsers.tenantId, tenantId),
+        eq(appUsers.isActive, true)
+      ));
   }
 
   async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {
