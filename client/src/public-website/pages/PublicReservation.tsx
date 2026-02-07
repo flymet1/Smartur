@@ -471,8 +471,8 @@ export default function PublicReservation() {
                         {calendarDays.map((day, idx) => {
                           const isSelected = formData.date === day.dateStr;
                           const isDisabled = !day.isCurrentMonth || day.isPast;
-                          const dayPrice = !isDisabled && activity.seasonalPricingEnabled ? getEffectivePrice(day.dateStr) : null;
-                          const hasDifferentPrice = dayPrice !== null && dayPrice !== activity.price;
+                          const dayPrice = !isDisabled ? getEffectivePrice(day.dateStr) : null;
+                          const hasDifferentPrice = dayPrice !== null && activity.seasonalPricingEnabled && dayPrice !== activity.price;
                           
                           return (
                             <button
