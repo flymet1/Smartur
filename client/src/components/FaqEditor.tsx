@@ -5,6 +5,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, HelpCircle, Bot, Globe, Pencil, X, Check } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export interface FaqItem {
   question: string;
@@ -244,16 +255,36 @@ export function FaqEditor({ faq, onChange, testIdPrefix = "faq" }: FaqEditorProp
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => removeFaq(idx)}
-                      className="text-destructive hover:text-destructive h-7 w-7"
-                      data-testid={`${testIdPrefix}-remove-${idx}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive h-7 w-7"
+                          data-testid={`${testIdPrefix}-remove-${idx}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>SSS Silinsin mi?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            "{item.question}" sorusu silinecek. Bu islem geri alinamaz.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Vazgec</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => removeFaq(idx)}
+                            data-testid={`${testIdPrefix}-confirm-remove-${idx}`}
+                          >
+                            Sil
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               )}
