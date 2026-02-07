@@ -378,7 +378,7 @@ export function registerPublicApiRoutes(app: Express) {
           imageUrl: activities.imageUrl,
         })
         .from(activities)
-        .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true)));
+        .where(and(eq(activities.tenantId, tenantId), eq(activities.active, true), eq(activities.hideFromWebsite, false)));
 
       const result = activityList.map((a) => ({
         ...a,
@@ -419,7 +419,7 @@ export function registerPublicApiRoutes(app: Express) {
           imageUrl: activities.imageUrl,
         })
         .from(activities)
-        .where(and(eq(activities.tenantId, tenantId), eq(activities.id, activityId), eq(activities.active, true)))
+        .where(and(eq(activities.tenantId, tenantId), eq(activities.id, activityId), eq(activities.active, true), eq(activities.hideFromWebsite, false)))
         .limit(1);
 
       if (!activity) {
@@ -474,13 +474,23 @@ export function registerPublicApiRoutes(app: Express) {
         { date: string; times: { time: string; available: number; total: number }[] }
       > = {};
 
+      const closedActivityIds = new Set<number>();
+      if (activityId) {
+        const [act] = await db.select({ id: activities.id, availabilityClosed: activities.availabilityClosed }).from(activities).where(eq(activities.id, parseInt(activityId as string))).limit(1);
+        if (act?.availabilityClosed) closedActivityIds.add(act.id);
+      } else {
+        const acts = await db.select({ id: activities.id, availabilityClosed: activities.availabilityClosed }).from(activities).where(eq(activities.tenantId, tenantId));
+        acts.forEach(a => { if (a.availabilityClosed) closedActivityIds.add(a.id); });
+      }
+
       slots.forEach((slot) => {
         if (!availabilityMap[slot.date]) {
           availabilityMap[slot.date] = { date: slot.date, times: [] };
         }
+        const isClosed = closedActivityIds.has(slot.activityId);
         availabilityMap[slot.date].times.push({
           time: slot.time,
-          available: (slot.totalSlots || 0) - (slot.bookedSlots || 0),
+          available: isClosed ? 0 : (slot.totalSlots || 0) - (slot.bookedSlots || 0),
           total: slot.totalSlots || 0,
         });
       });
@@ -505,6 +515,10 @@ export function registerPublicApiRoutes(app: Express) {
 
       if (!activity) {
         return res.status(404).json({ error: "Aktivite bulunamadı" });
+      }
+
+      if (activity.availabilityClosed) {
+        return res.status(400).json({ error: "Bu aktivite icin musaitlik kapatilmistir", code: "AVAILABILITY_CLOSED" });
       }
 
       const [slot] = await db

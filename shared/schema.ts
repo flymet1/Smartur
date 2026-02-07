@@ -207,6 +207,8 @@ Alım Saati: {transfer_saat}
   botPrompt: text("bot_prompt"), // Aktiviteye özel bot talimatları (örn: "Bu aktivite için 5 yaş altı çocuk kabul edilmez")
   // Partner Paylaşımı
   sharedWithPartners: boolean("shared_with_partners").default(false), // Bu aktivite partner acentalarla paylaşılsın mı?
+  hideFromWebsite: boolean("hide_from_website").default(false), // Web sitesinde gizle
+  availabilityClosed: boolean("availability_closed").default(false), // Tüm müsaitliği kapat (tüm saatler dolu görünsün)
   // Web sitesi görselleri
   imageUrl: text("image_url"), // Aktivite ana görseli URL'si
   galleryImages: text("gallery_images").default("[]"), // JSON array of image URLs

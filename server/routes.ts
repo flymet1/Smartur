@@ -835,6 +835,7 @@ async function getCapacityWithVirtualSlots(dates: string[], tenantId?: number): 
   const allReservations = await storage.getReservations(tenantId);
   const allActivities = await storage.getActivities(tenantId);
   const activeActivities = allActivities.filter(a => a.active);
+  const closedActivityIds = new Set(allActivities.filter(a => (a as any).availabilityClosed === true).map(a => a.id));
   
   const result: Array<{
     activityId: number;
@@ -870,12 +871,13 @@ async function getCapacityWithVirtualSlots(dates: string[], tenantId?: number): 
     for (const cap of dbCapacity) {
       const slotKey = `${cap.activityId}-${cap.time}`;
       const bookedFromReservations = reservationCounts[slotKey] || 0;
+      const isClosed = closedActivityIds.has(cap.activityId);
       result.push({
         activityId: cap.activityId,
         date: cap.date,
         time: cap.time,
         totalSlots: cap.totalSlots,
-        bookedSlots: bookedFromReservations, // Use actual reservation count instead of stored value
+        bookedSlots: isClosed ? cap.totalSlots : bookedFromReservations,
         isVirtual: false
       });
     }
@@ -890,12 +892,14 @@ async function getCapacityWithVirtualSlots(dates: string[], tenantId?: number): 
               const slotKey = `${activity.id}-${time}`;
               if (!existingSlots.has(slotKey)) {
                 const bookedCount = reservationCounts[slotKey] || 0;
+                const isClosed = closedActivityIds.has(activity.id);
+                const totalCap = activity.defaultCapacity || 10;
                 result.push({
                   activityId: activity.id,
                   date: dateStr,
                   time: time,
-                  totalSlots: activity.defaultCapacity || 10,
-                  bookedSlots: bookedCount,
+                  totalSlots: totalCap,
+                  bookedSlots: isClosed ? totalCap : bookedCount,
                   isVirtual: true
                 });
               }
