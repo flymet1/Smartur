@@ -12948,6 +12948,88 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
     }
   });
 
+  app.patch("/api/finance/dispatches-with-items/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, notes, items, guestCount: simpleGuestCount, unitPayoutTl: simpleUnitPayout, currency: simpleCurrency } = req.body;
+      
+      const itemsArray = items || [];
+      
+      await storage.deleteDispatchItemsByDispatchId(id);
+      
+      if (itemsArray.length > 0) {
+        let totalGuestCount = 0;
+        let totalPayoutTl = 0;
+        let totalPayoutUsd = 0;
+        
+        for (const item of itemsArray) {
+          const itemTotal = (item.quantity || 1) * (item.unitAmount || 0);
+          if (item.currency === 'USD') {
+            totalPayoutUsd += itemTotal;
+          } else {
+            totalPayoutTl += itemTotal;
+          }
+          if (item.itemType === 'base' || item.itemType === 'observer') {
+            totalGuestCount += item.quantity || 1;
+          }
+        }
+        
+        const mainCurrency = totalPayoutTl > 0 ? 'TRY' : 'USD';
+        const mainTotal = mainCurrency === 'TRY' ? totalPayoutTl : totalPayoutUsd;
+        
+        const dispatch = await storage.updateSupplierDispatch(id, {
+          agencyId,
+          activityId,
+          dispatchDate,
+          dispatchTime,
+          customerName,
+          guestCount: totalGuestCount,
+          unitPayoutTl: totalGuestCount > 0 ? Math.round(mainTotal / totalGuestCount) : 0,
+          totalPayoutTl: mainTotal,
+          currency: mainCurrency,
+          notes
+        });
+        
+        const createdItems = [];
+        for (const item of itemsArray) {
+          const itemTotal = (item.quantity || 1) * (item.unitAmount || 0);
+          const createdItem = await storage.createDispatchItem({
+            dispatchId: id,
+            itemType: item.itemType || 'base',
+            label: item.label,
+            quantity: item.quantity || 1,
+            unitAmount: item.unitAmount || 0,
+            totalAmount: itemTotal,
+            currency: item.currency || 'TRY',
+            notes: item.notes
+          });
+          createdItems.push(createdItem);
+        }
+        
+        res.json({ dispatch, items: createdItems });
+      } else {
+        const gc = simpleGuestCount || 0;
+        const up = simpleUnitPayout || 0;
+        const dispatch = await storage.updateSupplierDispatch(id, {
+          agencyId,
+          activityId,
+          dispatchDate,
+          dispatchTime,
+          customerName,
+          guestCount: gc,
+          unitPayoutTl: up,
+          totalPayoutTl: gc * up,
+          currency: simpleCurrency || 'TRY',
+          notes
+        });
+        res.json({ dispatch, items: [] });
+      }
+    } catch (err) {
+      console.error('Dispatch with items update error:', err);
+      res.status(400).json({ error: "Gönderim ve kalemler güncellenemedi" });
+    }
+  });
+
   // Tüm dispatch'lerin itemlarını toplu getir
   app.post("/api/finance/dispatch-items/batch", async (req, res) => {
     try {

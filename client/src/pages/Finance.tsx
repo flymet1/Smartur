@@ -370,6 +370,7 @@ export default function Finance() {
   
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
+  const [editingDispatchId, setEditingDispatchId] = useState<number | null>(null);
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
   const [agencyDialogOpen, setAgencyDialogOpen] = useState(false);
   const [agencyForm, setAgencyForm] = useState({ name: '', contactInfo: '', defaultPayoutPerGuest: 0, notes: '' });
@@ -1037,10 +1038,86 @@ export default function Finance() {
     setDispatchAmountCollected(0);
     setDispatchPaymentNotes('');
     setUseLineItems(false);
+    setEditingDispatchId(null);
     setCustomerSuggestions([]);
     setShowCustomerSuggestions(false);
-    // Reset the flag so another dispatch can be opened from reservations
     processedDispatchParams.current = false;
+  };
+
+  const updateDispatchMutation = useMutation({
+    mutationFn: async (data: { id: number; simple: boolean; payload: Record<string, unknown> }) => {
+      return apiRequest('PATCH', `/api/finance/dispatches-with-items/${data.id}`, data.payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ predicate: (query) => 
+        typeof query.queryKey[0] === 'string' && (query.queryKey[0].includes('/api/finance/dispatches/summary') || query.queryKey[0].includes('/api/finance/dispatches/') && query.queryKey[0].includes('/items'))
+      });
+      setDispatchDialogOpen(false);
+      resetDispatchForm();
+      toast({ title: "Gönderim güncellendi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Gönderim güncellenemedi", variant: "destructive" });
+    }
+  });
+
+  const openEditDispatch = async (dispatch: SupplierDispatch) => {
+    const notesRaw = dispatch.notes || '';
+    const lines = notesRaw.split('\n');
+    const pmLine = lines.find(l => l.startsWith('__PAYMENT__:'));
+    const userNotes = lines.filter(l => !l.startsWith('__PAYMENT__:') && !l.startsWith('[Odeme:')).join('\n').trim();
+
+    let paymentType = 'receiver_full';
+    let amountCollected = 0;
+    let paymentNotes = '';
+    if (pmLine) {
+      try {
+        const pm = JSON.parse(pmLine.substring('__PAYMENT__:'.length));
+        paymentType = pm.paymentCollectionType || 'receiver_full';
+        amountCollected = pm.amountCollectedBySender || 0;
+        paymentNotes = pm.paymentNotes || '';
+      } catch {}
+    }
+
+    let existingItems: DispatchItemForm[] = [];
+    let hasLineItems = false;
+    try {
+      const resp = await fetch(`/api/finance/dispatches/${dispatch.id}/items`);
+      if (resp.ok) {
+        const itemsData = await resp.json();
+        if (itemsData && itemsData.length > 0) {
+          hasLineItems = true;
+          existingItems = itemsData.map((item: any) => ({
+            itemType: item.itemType || 'extra',
+            label: item.label || '',
+            quantity: item.quantity || 1,
+            unitAmount: item.unitAmount || 0,
+            currency: item.currency === 'USD' ? 'USD' : 'TRY'
+          }));
+        }
+      }
+    } catch {}
+
+    setEditingDispatchId(dispatch.id);
+    setDispatchForm({
+      agencyId: dispatch.agencyId,
+      activityId: dispatch.activityId || 0,
+      dispatchDate: dispatch.dispatchDate,
+      dispatchTime: dispatch.dispatchTime || '10:00',
+      customerName: dispatch.customerName || '',
+      customerPhone: '',
+      notes: userNotes,
+      items: hasLineItems ? existingItems : [{ ...defaultDispatchItem }]
+    });
+    setSimpleGuestCount(dispatch.guestCount || 1);
+    setSimpleUnitPayout(dispatch.unitPayoutTl || 0);
+    setSimpleCurrency(dispatch.currency === 'USD' ? 'USD' : 'TRY');
+    setDispatchPaymentType(paymentType);
+    setDispatchAmountCollected(amountCollected);
+    setDispatchPaymentNotes(paymentNotes);
+    setUseLineItems(hasLineItems);
+    setDispatchDialogOpen(true);
   };
 
   const deleteDispatchMutation = useMutation({
@@ -1208,39 +1285,79 @@ export default function Finance() {
       `__PAYMENT__:${JSON.stringify(paymentMeta)}`
     ].filter(Boolean).join('\n');
     
-    if (useLineItems) {
-      const validItems = dispatchForm.items.filter(item => item.label && item.quantity > 0);
-      if (validItems.length === 0) {
-        toast({ title: "Hata", description: "En az bir kalem ekleyin", variant: "destructive" });
-        return;
+    if (editingDispatchId) {
+      if (useLineItems) {
+        const validItems = dispatchForm.items.filter(item => item.label && item.quantity > 0);
+        if (validItems.length === 0) {
+          toast({ title: "Hata", description: "En az bir kalem ekleyin", variant: "destructive" });
+          return;
+        }
+        updateDispatchMutation.mutate({
+          id: editingDispatchId,
+          simple: false,
+          payload: {
+            agencyId: dispatchForm.agencyId,
+            activityId: dispatchForm.activityId || null,
+            dispatchDate: dispatchForm.dispatchDate,
+            dispatchTime: dispatchForm.dispatchTime,
+            customerName: dispatchForm.customerName || null,
+            notes: notesWithPayment,
+            items: validItems
+          }
+        });
+      } else {
+        updateDispatchMutation.mutate({
+          id: editingDispatchId,
+          simple: false,
+          payload: {
+            agencyId: dispatchForm.agencyId,
+            activityId: dispatchForm.activityId || null,
+            dispatchDate: dispatchForm.dispatchDate,
+            dispatchTime: dispatchForm.dispatchTime,
+            customerName: dispatchForm.customerName || null,
+            guestCount: simpleGuestCount,
+            unitPayoutTl: simpleUnitPayout,
+            currency: simpleCurrency,
+            notes: notesWithPayment,
+            items: []
+          }
+        });
       }
-      createDispatchMutation.mutate({
-        simple: false,
-        payload: {
-          agencyId: dispatchForm.agencyId,
-          activityId: dispatchForm.activityId || null,
-          dispatchDate: dispatchForm.dispatchDate,
-          dispatchTime: dispatchForm.dispatchTime,
-          customerName: dispatchForm.customerName || null,
-          notes: notesWithPayment,
-          items: validItems
-        }
-      });
     } else {
-      createDispatchMutation.mutate({
-        simple: true,
-        payload: {
-          agencyId: dispatchForm.agencyId,
-          activityId: dispatchForm.activityId || null,
-          dispatchDate: dispatchForm.dispatchDate,
-          dispatchTime: dispatchForm.dispatchTime,
-          customerName: dispatchForm.customerName || null,
-          guestCount: simpleGuestCount,
-          unitPayoutTl: simpleUnitPayout,
-          currency: simpleCurrency,
-          notes: notesWithPayment
+      if (useLineItems) {
+        const validItems = dispatchForm.items.filter(item => item.label && item.quantity > 0);
+        if (validItems.length === 0) {
+          toast({ title: "Hata", description: "En az bir kalem ekleyin", variant: "destructive" });
+          return;
         }
-      });
+        createDispatchMutation.mutate({
+          simple: false,
+          payload: {
+            agencyId: dispatchForm.agencyId,
+            activityId: dispatchForm.activityId || null,
+            dispatchDate: dispatchForm.dispatchDate,
+            dispatchTime: dispatchForm.dispatchTime,
+            customerName: dispatchForm.customerName || null,
+            notes: notesWithPayment,
+            items: validItems
+          }
+        });
+      } else {
+        createDispatchMutation.mutate({
+          simple: true,
+          payload: {
+            agencyId: dispatchForm.agencyId,
+            activityId: dispatchForm.activityId || null,
+            dispatchDate: dispatchForm.dispatchDate,
+            dispatchTime: dispatchForm.dispatchTime,
+            customerName: dispatchForm.customerName || null,
+            guestCount: simpleGuestCount,
+            unitPayoutTl: simpleUnitPayout,
+            currency: simpleCurrency,
+            notes: notesWithPayment
+          }
+        });
+      }
     }
   };
 
@@ -1744,6 +1861,14 @@ export default function Finance() {
                                 );
                               } catch { return null; }
                             })()}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDispatch(dispatch)}
+                              data-testid={`button-edit-dispatch-${dispatch.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -3133,8 +3258,8 @@ export default function Finance() {
         }}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Gönderim Kaydı Ekle</DialogTitle>
-              <DialogDescription>Tedarikçi firmaya gönderilen misafirleri kaydedin</DialogDescription>
+              <DialogTitle>{editingDispatchId ? 'Gönderim Düzenle' : 'Gönderim Kaydı Ekle'}</DialogTitle>
+              <DialogDescription>{editingDispatchId ? 'Gönderim kaydını güncelleyin' : 'Tedarikçi firmaya gönderilen misafirleri kaydedin'}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -3645,10 +3770,10 @@ export default function Finance() {
               <Button variant="outline" onClick={() => { setDispatchDialogOpen(false); resetDispatchForm(); }} data-testid="button-cancel-dispatch">İptal</Button>
               <Button 
                 onClick={handleDispatchSubmit}
-                disabled={createDispatchMutation.isPending}
+                disabled={createDispatchMutation.isPending || updateDispatchMutation.isPending}
                 data-testid="button-save-dispatch"
               >
-                Kaydet
+                {editingDispatchId ? 'Güncelle' : 'Kaydet'}
               </Button>
             </DialogFooter>
           </DialogContent>
