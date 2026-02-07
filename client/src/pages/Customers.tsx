@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -128,7 +129,9 @@ export default function Customers() {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="flex min-h-screen bg-muted/20">
+      <Sidebar />
+      <main className="flex-1 xl:ml-64 p-4 pt-16 xl:pt-20 xl:px-8 xl:pb-8 pb-24 space-y-4 max-w-7xl mx-auto">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold" data-testid="text-page-title">Musteriler</h1>
         <Badge variant="secondary" data-testid="text-customer-count">{stats.total} musteri</Badge>
@@ -342,6 +345,7 @@ export default function Customers() {
           )}
         </DialogContent>
       </Dialog>
+      </main>
     </div>
   );
 }
