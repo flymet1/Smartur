@@ -431,6 +431,37 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     return [];
   });
   
+  // Dönemsel Fiyatlandırma
+  const [seasonalPricingEnabled, setSeasonalPricingEnabled] = useState(
+    activity ? (activity as any).seasonalPricingEnabled === true : false
+  );
+  const [seasonalPrices, setSeasonalPrices] = useState<Record<string, string>>(() => {
+    if (activity && (activity as any).seasonalPrices) {
+      try {
+        const parsed = JSON.parse((activity as any).seasonalPrices);
+        const result: Record<string, string> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          if (v !== null && v !== undefined && v !== 0) result[k] = String(v);
+        }
+        return result;
+      } catch { return {}; }
+    }
+    return {};
+  });
+  const [seasonalPricesUsd, setSeasonalPricesUsd] = useState<Record<string, string>>(() => {
+    if (activity && (activity as any).seasonalPricesUsd) {
+      try {
+        const parsed = JSON.parse((activity as any).seasonalPricesUsd);
+        const result: Record<string, string> = {};
+        for (const [k, v] of Object.entries(parsed)) {
+          if (v !== null && v !== undefined && v !== 0) result[k] = String(v);
+        }
+        return result;
+      } catch { return {}; }
+    }
+    return {};
+  });
+  
   // FAQ state
   const [faq, setFaq] = useState<FaqItem[]>(() => parseFaq((activity as any)?.faq));
   
@@ -645,6 +676,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setNotificationMessage("Yeni Rezervasyon:\nMüşteri: {isim}\nTelefon: {telefonunuz}\nEposta: {emailiniz}\nTarih: {tarih}\nSaat: {saat}\nAktivite: {aktivite}\nKişi Sayısı: {kişiSayısı}");
     setNameAliases("");
     setPriceUsd("");
+    setSeasonalPricingEnabled(false);
+    setSeasonalPrices({});
+    setSeasonalPricesUsd({});
     setColor("blue");
     setReservationLink("");
     setReservationLinkEn("");
@@ -819,6 +853,18 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       depositType: depositType,
       depositAmount: Number(depositAmount) || 0,
       fullPaymentRequired: fullPaymentRequired,
+      // Dönemsel Fiyatlandırma
+      seasonalPricingEnabled: seasonalPricingEnabled,
+      seasonalPrices: JSON.stringify(
+        Object.fromEntries(
+          Object.entries(seasonalPrices).filter(([, v]) => v && Number(v) > 0).map(([k, v]) => [k, Number(v)])
+        )
+      ),
+      seasonalPricesUsd: JSON.stringify(
+        Object.fromEntries(
+          Object.entries(seasonalPricesUsd).filter(([, v]) => v && Number(v) > 0).map(([k, v]) => [k, Number(v)])
+        )
+      ),
     };
 
     try {
@@ -952,6 +998,62 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                     />
                     {formErrors.durationMinutes && <p className="text-xs text-destructive">{formErrors.durationMinutes}</p>}
                   </div>
+                </div>
+
+                <div className="space-y-3 border rounded-md p-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs sm:text-sm font-medium">Dönemsel Fiyatlandırma</Label>
+                    <Switch
+                      checked={seasonalPricingEnabled}
+                      onCheckedChange={setSeasonalPricingEnabled}
+                      data-testid="switch-seasonal-pricing"
+                    />
+                  </div>
+                  {seasonalPricingEnabled && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">Belirli aylarda farklı fiyat uygulayın. Bos bırakılan aylarda varsayılan fiyat geçerli olur.</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {[
+                          { key: "1", label: "Ocak" },
+                          { key: "2", label: "Şubat" },
+                          { key: "3", label: "Mart" },
+                          { key: "4", label: "Nisan" },
+                          { key: "5", label: "Mayıs" },
+                          { key: "6", label: "Haziran" },
+                          { key: "7", label: "Temmuz" },
+                          { key: "8", label: "Ağustos" },
+                          { key: "9", label: "Eylül" },
+                          { key: "10", label: "Ekim" },
+                          { key: "11", label: "Kasım" },
+                          { key: "12", label: "Aralık" },
+                        ].map((month) => (
+                          <div key={month.key} className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">{month.label}</Label>
+                            <div className="flex gap-1">
+                              <Input
+                                type="number"
+                                placeholder={price || "TL"}
+                                value={seasonalPrices[month.key] || ""}
+                                onChange={(e) => setSeasonalPrices(prev => ({ ...prev, [month.key]: e.target.value }))}
+                                className="text-xs"
+                                data-testid={`input-seasonal-price-${month.key}`}
+                              />
+                              {priceUsd && (
+                                <Input
+                                  type="number"
+                                  placeholder="$"
+                                  value={seasonalPricesUsd[month.key] || ""}
+                                  onChange={(e) => setSeasonalPricesUsd(prev => ({ ...prev, [month.key]: e.target.value }))}
+                                  className="text-xs w-16"
+                                  data-testid={`input-seasonal-price-usd-${month.key}`}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

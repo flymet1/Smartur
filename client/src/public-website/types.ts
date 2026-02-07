@@ -40,6 +40,10 @@ export interface PublicActivity {
   fullPaymentRequired: boolean;
   // Tur programı
   itinerary: Array<{ time: string; title: string; description: string }>;
+  // Dönemsel Fiyatlandırma
+  seasonalPricingEnabled: boolean;
+  seasonalPrices: Record<string, number>;
+  seasonalPricesUsd: Record<string, number>;
 }
 
 export interface WebsiteTemplateSettings {

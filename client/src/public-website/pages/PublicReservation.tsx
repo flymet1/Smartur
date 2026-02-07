@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
-import { ChevronLeft, Calendar, Clock, Users, CheckCircle, Loader2, Plus, Minus, Package, CreditCard } from "lucide-react";
+import { ChevronLeft, Calendar, Clock, Users, CheckCircle, Loader2, Plus, Minus, Package, CreditCard, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -154,6 +154,63 @@ export default function PublicReservation() {
     return today.toISOString().split("T")[0];
   };
 
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+
+  const getEffectivePrice = (dateStr: string): number => {
+    if (!activity) return 0;
+    if (!activity.seasonalPricingEnabled || !activity.seasonalPrices) return activity.price;
+    const month = new Date(dateStr).getMonth() + 1;
+    const seasonalPrice = activity.seasonalPrices[String(month)];
+    return seasonalPrice && seasonalPrice > 0 ? seasonalPrice : activity.price;
+  };
+
+  const isCurrentOrPastMonth = (year: number, month: number) => {
+    const now = new Date();
+    return year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth());
+  };
+
+  const isPrevMonthDisabled = isCurrentOrPastMonth(calendarMonth.year, calendarMonth.month);
+
+  const calendarDays = useMemo(() => {
+    const { year, month } = calendarMonth;
+    const lastDay = new Date(year, month + 1, 0);
+    const firstDayOfWeek = new Date(year, month, 1).getDay();
+    const startDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+    const days: Array<{ date: Date; dateStr: string; isCurrentMonth: boolean; isPast: boolean }> = [];
+    
+    for (let i = 0; i < startDayOfWeek; i++) {
+      const d = new Date(year, month, -(startDayOfWeek - 1 - i));
+      const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      days.push({ date: d, dateStr: ds, isCurrentMonth: false, isPast: true });
+    }
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      days.push({ date, dateStr, isCurrentMonth: true, isPast: date < today });
+    }
+    
+    const remaining = 7 - (days.length % 7);
+    if (remaining < 7) {
+      for (let i = 1; i <= remaining; i++) {
+        const d = new Date(year, month + 1, i);
+        const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        days.push({ date: d, dateStr: ds, isCurrentMonth: false, isPast: true });
+      }
+    }
+    
+    return days;
+  }, [calendarMonth]);
+
+  const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  const dayNames = ["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pz"];
+
   const toggleExtra = (extra: { name: string; priceTl: number; priceUsd: number }) => {
     setSelectedExtras((prev) => {
       const existing = prev.find((e) => e.name === extra.name);
@@ -285,7 +342,8 @@ export default function PublicReservation() {
     );
   }
 
-  const basePrice = activity.price * formData.quantity;
+  const effectivePrice = formData.date ? getEffectivePrice(formData.date) : activity.price;
+  const basePrice = effectivePrice * formData.quantity;
   const extrasTotal = calculateExtrasTotal();
   const totalPrice = basePrice + extrasTotal;
 
@@ -318,8 +376,11 @@ export default function PublicReservation() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-lg">{activity.price} ₺</p>
+                      <p className="font-bold text-lg">{effectivePrice} ₺</p>
                       <p className="text-sm text-muted-foreground">kişi başı</p>
+                      {activity.seasonalPricingEnabled && effectivePrice !== activity.price && (
+                        <p className="text-[10px] text-muted-foreground line-through">{activity.price} ₺</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -359,39 +420,123 @@ export default function PublicReservation() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="date">Tarih *</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        min={getMinDate()}
-                        value={formData.date}
-                        onChange={(e) => updateField("date", e.target.value)}
-                        required
-                        data-testid="input-date"
-                      />
+                  <div className="grid gap-2">
+                    <Label className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Tarih Seçin *
+                    </Label>
+                    <div className="border rounded-md p-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled={isPrevMonthDisabled}
+                          onClick={() => setCalendarMonth(prev => {
+                            const newMonth = prev.month - 1;
+                            return newMonth < 0
+                              ? { year: prev.year - 1, month: 11 }
+                              : { year: prev.year, month: newMonth };
+                          })}
+                          data-testid="button-calendar-prev"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium">
+                          {monthNames[calendarMonth.month]} {calendarMonth.year}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setCalendarMonth(prev => {
+                            const newMonth = prev.month + 1;
+                            return newMonth > 11
+                              ? { year: prev.year + 1, month: 0 }
+                              : { year: prev.year, month: newMonth };
+                          })}
+                          data-testid="button-calendar-next"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-7 gap-0.5 mb-1">
+                        {dayNames.map(day => (
+                          <div key={day} className="text-center text-[10px] font-medium text-muted-foreground py-1">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-0.5">
+                        {calendarDays.map((day, idx) => {
+                          const isSelected = formData.date === day.dateStr;
+                          const isDisabled = !day.isCurrentMonth || day.isPast;
+                          const dayPrice = !isDisabled && activity.seasonalPricingEnabled ? getEffectivePrice(day.dateStr) : null;
+                          const hasDifferentPrice = dayPrice !== null && dayPrice !== activity.price;
+                          
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              disabled={isDisabled}
+                              onClick={() => {
+                                updateField("date", day.dateStr);
+                                updateField("time", "");
+                              }}
+                              className={`relative flex flex-col items-center justify-center rounded-md text-sm transition-colors min-h-[40px] ${
+                                isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : isDisabled
+                                  ? "text-muted-foreground/30 cursor-not-allowed"
+                                  : "hover:bg-muted cursor-pointer"
+                              }`}
+                              data-testid={`calendar-day-${day.dateStr}`}
+                            >
+                              <span className="text-xs leading-none">{day.date.getDate()}</span>
+                              {dayPrice !== null && day.isCurrentMonth && !day.isPast && (
+                                <span className={`text-[8px] leading-none mt-0.5 ${
+                                  isSelected 
+                                    ? "text-primary-foreground/80" 
+                                    : hasDifferentPrice 
+                                    ? "text-primary font-semibold" 
+                                    : "text-muted-foreground"
+                                }`}>
+                                  {dayPrice}₺
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {formData.date && (
+                        <div className="mt-2 pt-2 border-t flex items-center justify-between text-sm" data-testid="text-selected-date">
+                          <span className="text-muted-foreground">
+                            {new Date(formData.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </span>
+                          <span className="font-medium" data-testid="text-selected-price">{getEffectivePrice(formData.date)} ₺ / kisi</span>
+                        </div>
+                      )}
                     </div>
+                  </div>
 
-                    <div className="grid gap-2">
-                      <Label htmlFor="time">Saat *</Label>
-                      <Select
-                        value={formData.time}
-                        onValueChange={(value) => updateField("time", value)}
-                        disabled={!formData.date}
-                      >
-                        <SelectTrigger data-testid="select-time">
-                          <SelectValue placeholder="Saat seçin" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getAvailableTimes().map((time) => (
-                            <SelectItem key={time} value={time}>
-                              {time}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="time">Saat *</Label>
+                    <Select
+                      value={formData.time}
+                      onValueChange={(value) => updateField("time", value)}
+                      disabled={!formData.date}
+                    >
+                      <SelectTrigger data-testid="select-time">
+                        <SelectValue placeholder="Saat seçin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAvailableTimes().map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="grid gap-2">
