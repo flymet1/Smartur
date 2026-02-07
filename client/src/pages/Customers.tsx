@@ -1,0 +1,347 @@
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Search, Users, Phone, Mail, Ticket, TrendingUp, Calendar, ArrowUpDown } from "lucide-react";
+import { format } from "date-fns";
+import { tr } from "date-fns/locale";
+
+type Customer = {
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  totalReservations: number;
+  confirmedReservations: number;
+  cancelledReservations: number;
+  pendingReservations: number;
+  totalSpentTl: number;
+  totalSpentUsd: number;
+  totalGuests: number;
+  firstReservationDate: string;
+  lastReservationDate: string;
+  activities: string[];
+  lastActivityName: string | null;
+};
+
+type SortField = "customerName" | "totalReservations" | "totalSpentTl" | "lastReservationDate" | "totalGuests";
+type SortDir = "asc" | "desc";
+
+export default function Customers() {
+  const [search, setSearch] = useState("");
+  const [sortField, setSortField] = useState<SortField>("lastReservationDate");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  const { data: customers = [], isLoading } = useQuery<Customer[]>({
+    queryKey: ["/api/customers"],
+  });
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
+
+  const filtered = useMemo(() => {
+    let result = customers;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(c =>
+        c.customerName.toLowerCase().includes(q) ||
+        c.customerPhone.includes(q) ||
+        (c.customerEmail && c.customerEmail.toLowerCase().includes(q)) ||
+        c.activities.some(a => a.toLowerCase().includes(q))
+      );
+    }
+
+    result = [...result].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "customerName":
+          cmp = a.customerName.localeCompare(b.customerName, "tr");
+          break;
+        case "totalReservations":
+          cmp = a.totalReservations - b.totalReservations;
+          break;
+        case "totalSpentTl":
+          cmp = a.totalSpentTl - b.totalSpentTl;
+          break;
+        case "lastReservationDate":
+          cmp = a.lastReservationDate.localeCompare(b.lastReservationDate);
+          break;
+        case "totalGuests":
+          cmp = a.totalGuests - b.totalGuests;
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return result;
+  }, [customers, search, sortField, sortDir]);
+
+  const stats = useMemo(() => {
+    return {
+      total: customers.length,
+      totalReservations: customers.reduce((s, c) => s + c.totalReservations, 0),
+      totalRevenueTl: customers.reduce((s, c) => s + c.totalSpentTl, 0),
+      repeatCustomers: customers.filter(c => c.totalReservations > 1).length,
+    };
+  }, [customers]);
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return format(new Date(dateStr + "T00:00:00"), "dd MMM yyyy", { locale: tr });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <span
+      className="flex items-center gap-1 cursor-pointer select-none font-medium"
+      onClick={() => toggleSort(field)}
+      data-testid={`sort-${field}`}
+    >
+      {children}
+      <ArrowUpDown className="h-3 w-3 opacity-50" />
+    </span>
+  );
+
+  return (
+    <div className="p-4 md:p-6 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold" data-testid="text-page-title">Musteriler</h1>
+        <Badge variant="secondary" data-testid="text-customer-count">{stats.total} musteri</Badge>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Users className="h-4 w-4" />
+              <span>Toplam Musteri</span>
+            </div>
+            <p className="text-2xl font-bold mt-1" data-testid="text-stat-total">{stats.total}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Ticket className="h-4 w-4" />
+              <span>Toplam Rezervasyon</span>
+            </div>
+            <p className="text-2xl font-bold mt-1" data-testid="text-stat-reservations">{stats.totalReservations}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <TrendingUp className="h-4 w-4" />
+              <span>Toplam Gelir (TL)</span>
+            </div>
+            <p className="text-2xl font-bold mt-1" data-testid="text-stat-revenue">{stats.totalRevenueTl.toLocaleString("tr-TR")} TL</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Users className="h-4 w-4" />
+              <span>Tekrar Eden</span>
+            </div>
+            <p className="text-2xl font-bold mt-1" data-testid="text-stat-repeat">{stats.repeatCustomers}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Musteri ara (isim, telefon, e-posta)..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+          data-testid="input-search-customers"
+        />
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-8 text-center text-muted-foreground">Yukleniyor...</div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              {search ? "Arama kriterlerine uygun musteri bulunamadi." : "Henuz musteri kaydi yok. Rezervasyon olusturdukca musteriler burada gorunecek."}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead><SortButton field="customerName">Musteri</SortButton></TableHead>
+                    <TableHead>Telefon</TableHead>
+                    <TableHead>E-posta</TableHead>
+                    <TableHead className="text-center"><SortButton field="totalReservations">Rez. Sayisi</SortButton></TableHead>
+                    <TableHead className="text-center"><SortButton field="totalGuests">Kisi</SortButton></TableHead>
+                    <TableHead className="text-right"><SortButton field="totalSpentTl">Toplam (TL)</SortButton></TableHead>
+                    <TableHead><SortButton field="lastReservationDate">Son Rezervasyon</SortButton></TableHead>
+                    <TableHead>Aktiviteler</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((c) => (
+                    <TableRow
+                      key={c.customerPhone}
+                      className="cursor-pointer hover-elevate"
+                      onClick={() => setSelectedCustomer(c)}
+                      data-testid={`row-customer-${c.customerPhone}`}
+                    >
+                      <TableCell className="font-medium">{c.customerName}</TableCell>
+                      <TableCell>
+                        <span className="flex items-center gap-1 text-sm">
+                          <Phone className="h-3 w-3" />
+                          {c.customerPhone}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {c.customerEmail ? (
+                          <span className="flex items-center gap-1 text-sm">
+                            <Mail className="h-3 w-3" />
+                            {c.customerEmail}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={c.totalReservations > 1 ? "default" : "secondary"}>
+                          {c.totalReservations}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">{c.totalGuests}</TableCell>
+                      <TableCell className="text-right font-medium">{c.totalSpentTl.toLocaleString("tr-TR")}</TableCell>
+                      <TableCell className="text-sm">{formatDate(c.lastReservationDate)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1 max-w-[200px]">
+                          {c.activities.slice(0, 2).map((a) => (
+                            <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
+                          ))}
+                          {c.activities.length > 2 && (
+                            <Badge variant="outline" className="text-xs">+{c.activities.length - 2}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle data-testid="text-customer-detail-name">{selectedCustomer?.customerName}</DialogTitle>
+          </DialogHeader>
+          {selectedCustomer && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>{selectedCustomer.customerPhone}</span>
+                </div>
+                {selectedCustomer.customerEmail && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span>{selectedCustomer.customerEmail}</span>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Toplam Rezervasyon</p>
+                  <p className="text-lg font-bold" data-testid="text-detail-total-rez">{selectedCustomer.totalReservations}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Toplam Kisi</p>
+                  <p className="text-lg font-bold">{selectedCustomer.totalGuests}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Onaylanan</p>
+                  <p className="text-lg font-bold text-green-600">{selectedCustomer.confirmedReservations}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Iptal</p>
+                  <p className="text-lg font-bold text-red-600">{selectedCustomer.cancelledReservations}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Bekleyen</p>
+                  <p className="text-lg font-bold text-yellow-600">{selectedCustomer.pendingReservations}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Toplam (TL)</p>
+                  <p className="text-lg font-bold">{selectedCustomer.totalSpentTl.toLocaleString("tr-TR")} TL</p>
+                </div>
+              </div>
+
+              {selectedCustomer.totalSpentUsd > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Toplam (USD)</p>
+                  <p className="text-lg font-bold">${selectedCustomer.totalSpentUsd.toLocaleString("en-US")}</p>
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span>Ilk: {formatDate(selectedCustomer.firstReservationDate)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span>Son: {formatDate(selectedCustomer.lastReservationDate)}</span>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Katildigi Aktiviteler</p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedCustomer.activities.map((a) => (
+                    <Badge key={a} variant="outline">{a}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

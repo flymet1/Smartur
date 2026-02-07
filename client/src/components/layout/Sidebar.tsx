@@ -55,6 +55,7 @@ interface NavItem {
 const allNavItems: NavItem[] = [
   { href: "/dashboard", label: "Anasayfa", icon: Home },
   { href: "/", label: "Rezervasyonlar", icon: Ticket, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
+  { href: "/customers", label: "Musteriler", icon: Users, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },
   { href: "/calendar", label: "Kapasite", icon: Calendar, requiredPermission: PERMISSION_KEYS.CALENDAR_VIEW },
   { href: "/musaitlik", label: "Musaitlik", icon: Eye, requiredPermission: PERMISSION_KEYS.CAPACITY_VIEW, viewerOnly: true },
   { href: "/viewer-stats", label: "Izleyiciler", icon: Eye, requiredPermission: PERMISSION_KEYS.RESERVATIONS_VIEW },

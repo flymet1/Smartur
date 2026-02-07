@@ -4764,6 +4764,83 @@ export async function registerRoutes(
     res.json(enrichedItems);
   });
 
+  app.get("/api/customers", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const allReservations = await storage.getReservations(tenantId);
+      const activities = await storage.getActivities(tenantId);
+      const activityMap = new Map(activities.map(a => [a.id, a.name]));
+
+      const customerMap = new Map<string, {
+        customerName: string;
+        customerPhone: string;
+        customerEmail: string | null;
+        totalReservations: number;
+        confirmedReservations: number;
+        cancelledReservations: number;
+        pendingReservations: number;
+        totalSpentTl: number;
+        totalSpentUsd: number;
+        totalGuests: number;
+        firstReservationDate: string;
+        lastReservationDate: string;
+        activities: string[];
+        lastActivityName: string | null;
+      }>();
+
+      for (const r of allReservations) {
+        const key = r.customerPhone;
+        const actName = activityMap.get(r.activityId!) || "";
+
+        if (!customerMap.has(key)) {
+          customerMap.set(key, {
+            customerName: r.customerName,
+            customerPhone: r.customerPhone,
+            customerEmail: r.customerEmail || null,
+            totalReservations: 0,
+            confirmedReservations: 0,
+            cancelledReservations: 0,
+            pendingReservations: 0,
+            totalSpentTl: 0,
+            totalSpentUsd: 0,
+            totalGuests: 0,
+            firstReservationDate: r.date,
+            lastReservationDate: r.date,
+            activities: [],
+            lastActivityName: null,
+          });
+        }
+
+        const c = customerMap.get(key)!;
+        c.customerName = r.customerName || c.customerName;
+        if (r.customerEmail) c.customerEmail = r.customerEmail;
+        c.totalReservations++;
+        if (r.status === "confirmed") c.confirmedReservations++;
+        else if (r.status === "cancelled") c.cancelledReservations++;
+        else c.pendingReservations++;
+        c.totalSpentTl += (r.priceTl || 0) * (r.quantity || 1);
+        c.totalSpentUsd += (r.priceUsd || 0) * (r.quantity || 1);
+        c.totalGuests += r.quantity || 1;
+        if (r.date < c.firstReservationDate) c.firstReservationDate = r.date;
+        if (r.date > c.lastReservationDate) {
+          c.lastReservationDate = r.date;
+          c.lastActivityName = actName;
+        }
+        if (actName && !c.activities.includes(actName)) {
+          c.activities.push(actName);
+        }
+      }
+
+      const customers = Array.from(customerMap.values()).sort((a, b) =>
+        b.lastReservationDate.localeCompare(a.lastReservationDate)
+      );
+
+      res.json(customers);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post(api.reservations.create.path, requirePermission(PERMISSIONS.RESERVATIONS_CREATE), async (req, res) => {
     const tenantId = req.session?.tenantId;
     // License check for write operations (tenant-aware)
