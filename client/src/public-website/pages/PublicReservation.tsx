@@ -483,7 +483,7 @@ export default function PublicReservation() {
                                 updateField("date", day.dateStr);
                                 updateField("time", "");
                               }}
-                              className={`relative flex flex-col items-center justify-center rounded-md text-sm transition-colors min-h-[40px] ${
+                              className={`relative flex flex-col items-center justify-center rounded-md text-sm transition-colors min-h-[44px] ${
                                 isSelected
                                   ? "bg-primary text-primary-foreground"
                                   : isDisabled
@@ -494,12 +494,12 @@ export default function PublicReservation() {
                             >
                               <span className="text-xs leading-none">{day.date.getDate()}</span>
                               {dayPrice !== null && day.isCurrentMonth && !day.isPast && (
-                                <span className={`text-[8px] leading-none mt-0.5 ${
+                                <span className={`text-[9px] leading-none mt-0.5 font-medium ${
                                   isSelected 
-                                    ? "text-primary-foreground/80" 
+                                    ? "text-primary-foreground/90" 
                                     : hasDifferentPrice 
-                                    ? "text-primary font-semibold" 
-                                    : "text-muted-foreground"
+                                    ? "text-primary font-bold" 
+                                    : "text-green-600 dark:text-green-400"
                                 }`}>
                                   {dayPrice}₺
                                 </span>
