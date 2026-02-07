@@ -70,6 +70,8 @@ import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRa
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -460,6 +462,9 @@ export default function Finance() {
   const [simpleGuestCount, setSimpleGuestCount] = useState(1);
   const [simpleUnitPayout, setSimpleUnitPayout] = useState(0);
   const [simpleCurrency, setSimpleCurrency] = useState<'TRY' | 'USD'>('TRY');
+  const [dispatchPaymentType, setDispatchPaymentType] = useState<string>("receiver_full");
+  const [dispatchAmountCollected, setDispatchAmountCollected] = useState<number>(0);
+  const [dispatchPaymentNotes, setDispatchPaymentNotes] = useState("");
   const [rateForm, setRateForm] = useState({
     agencyId: 0,
     activityId: 0,
@@ -1028,6 +1033,9 @@ export default function Finance() {
     setSimpleGuestCount(1);
     setSimpleUnitPayout(0);
     setSimpleCurrency('TRY');
+    setDispatchPaymentType('receiver_full');
+    setDispatchAmountCollected(0);
+    setDispatchPaymentNotes('');
     setUseLineItems(false);
     setCustomerSuggestions([]);
     setShowCustomerSuggestions(false);
@@ -1158,8 +1166,49 @@ export default function Finance() {
       return;
     }
     
+    let dispatchCurrLabel = 'TL';
+    let dispatchTotal = 0;
     if (useLineItems) {
-      // Detaylı mod - items API
+      let tl = 0, usd = 0;
+      dispatchForm.items.forEach(item => {
+        if (item.currency === 'USD') usd += item.quantity * item.unitAmount;
+        else tl += item.quantity * item.unitAmount;
+      });
+      dispatchCurrLabel = tl > 0 ? 'TL' : 'USD';
+      dispatchTotal = tl > 0 ? tl : usd;
+    } else {
+      dispatchCurrLabel = simpleCurrency === 'USD' ? 'USD' : 'TL';
+      dispatchTotal = simpleGuestCount * simpleUnitPayout;
+    }
+    
+    if (dispatchPaymentType === 'sender_partial') {
+      if (dispatchAmountCollected <= 0) {
+        toast({ title: "Hata", description: "Kismi odeme tutarini girin", variant: "destructive" });
+        return;
+      }
+      if (dispatchTotal > 0 && dispatchAmountCollected > dispatchTotal) {
+        toast({ title: "Hata", description: "Alinan tutar toplam tutari asamaz", variant: "destructive" });
+        return;
+      }
+    }
+    
+    const paymentMeta = {
+      paymentCollectionType: dispatchPaymentType,
+      amountCollectedBySender: dispatchPaymentType === 'sender_partial' ? dispatchAmountCollected : 0,
+      paymentCurrency: dispatchCurrLabel,
+      paymentNotes: dispatchPaymentNotes.trim()
+    };
+    const paymentLabel = dispatchPaymentType === 'receiver_full' ? 'Tamamini Tedarikci Alacak' 
+      : dispatchPaymentType === 'sender_full' ? 'Tamamini Biz Aldik' 
+      : `Kismi Odeme: ${dispatchAmountCollected} ${dispatchCurrLabel} aldik`;
+    const notesWithPayment = [
+      dispatchForm.notes,
+      `[Odeme: ${paymentLabel}]`,
+      dispatchPaymentNotes ? `[Odeme Notu: ${dispatchPaymentNotes}]` : '',
+      `__PAYMENT__:${JSON.stringify(paymentMeta)}`
+    ].filter(Boolean).join('\n');
+    
+    if (useLineItems) {
       const validItems = dispatchForm.items.filter(item => item.label && item.quantity > 0);
       if (validItems.length === 0) {
         toast({ title: "Hata", description: "En az bir kalem ekleyin", variant: "destructive" });
@@ -1173,12 +1222,11 @@ export default function Finance() {
           dispatchDate: dispatchForm.dispatchDate,
           dispatchTime: dispatchForm.dispatchTime,
           customerName: dispatchForm.customerName || null,
-          notes: dispatchForm.notes,
+          notes: notesWithPayment,
           items: validItems
         }
       });
     } else {
-      // Basit mod - eski API
       createDispatchMutation.mutate({
         simple: true,
         payload: {
@@ -1190,7 +1238,7 @@ export default function Finance() {
           guestCount: simpleGuestCount,
           unitPayoutTl: simpleUnitPayout,
           currency: simpleCurrency,
-          notes: dispatchForm.notes
+          notes: notesWithPayment
         }
       });
     }
@@ -1679,6 +1727,23 @@ export default function Finance() {
                                   : formatMoney(dispatch.totalPayoutTl || 0)}
                               </span>
                             </div>
+                            {(() => {
+                              if (!dispatch.notes) return null;
+                              const lines = dispatch.notes.split('\n');
+                              const pmLine = lines.find(l => l.startsWith('__PAYMENT__:'));
+                              if (!pmLine) return null;
+                              try {
+                                const pm = JSON.parse(pmLine.substring('__PAYMENT__:'.length));
+                                return (
+                                  <Badge variant="outline" className="text-xs">
+                                    <Wallet className="h-3 w-3 mr-1" />
+                                    {pm.paymentCollectionType === 'receiver_full' ? 'Tedarikci alacak' :
+                                     pm.paymentCollectionType === 'sender_full' ? 'Biz aldik' :
+                                     `Kismi: ${pm.amountCollectedBySender} ${pm.paymentCurrency || 'TL'}`}
+                                  </Badge>
+                                );
+                              } catch { return null; }
+                            })()}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -3408,6 +3473,95 @@ export default function Finance() {
                 />
               </div>
 
+              <Separator />
+
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4" />
+                  Odeme Tahsilat Bilgisi
+                </Label>
+                <RadioGroup
+                  value={dispatchPaymentType}
+                  onValueChange={setDispatchPaymentType}
+                  className="space-y-2"
+                  data-testid="radio-dispatch-payment-type"
+                >
+                  <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                    <RadioGroupItem value="receiver_full" id="dispatch_receiver_full" data-testid="radio-dispatch-receiver-full" />
+                    <Label htmlFor="dispatch_receiver_full" className="flex-1 cursor-pointer">
+                      <span className="font-medium">Tamamini Tedarikci Alacak</span>
+                      <p className="text-xs text-muted-foreground">Musteri odemeyi tedarikci firmaya yapacak</p>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                    <RadioGroupItem value="sender_full" id="dispatch_sender_full" data-testid="radio-dispatch-sender-full" />
+                    <Label htmlFor="dispatch_sender_full" className="flex-1 cursor-pointer">
+                      <span className="font-medium">Tamamini Biz Aldik</span>
+                      <p className="text-xs text-muted-foreground">Musteri tum odemeyi bize yapti</p>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                    <RadioGroupItem value="sender_partial" id="dispatch_sender_partial" data-testid="radio-dispatch-sender-partial" />
+                    <Label htmlFor="dispatch_sender_partial" className="flex-1 cursor-pointer">
+                      <span className="font-medium">Kismi Odeme Aldik</span>
+                      <p className="text-xs text-muted-foreground">Musteriden bir miktar aldik, kalani tedarikci alacak</p>
+                    </Label>
+                  </div>
+                </RadioGroup>
+                
+                {dispatchPaymentType === 'sender_partial' && (() => {
+                  let partialTotal = 0;
+                  let partialCurrencyLabel = 'TL';
+                  if (useLineItems) {
+                    let tl = 0, usd = 0;
+                    dispatchForm.items.forEach(item => {
+                      const t = item.quantity * item.unitAmount;
+                      if (item.currency === 'USD') usd += t; else tl += t;
+                    });
+                    partialTotal = tl > 0 ? tl : usd;
+                    partialCurrencyLabel = tl > 0 ? 'TL' : 'USD';
+                  } else {
+                    partialTotal = simpleGuestCount * simpleUnitPayout;
+                    partialCurrencyLabel = simpleCurrency === 'USD' ? 'USD' : 'TL';
+                  }
+                  return (
+                    <div className="space-y-2 pl-6 border-l-2 border-primary/30">
+                      <Label>Aldigimiz Tutar ({partialCurrencyLabel})</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={partialTotal > 0 ? partialTotal : undefined}
+                        value={dispatchAmountCollected}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setDispatchAmountCollected(partialTotal > 0 ? Math.min(val, partialTotal) : val);
+                        }}
+                        placeholder="Ornegin: 500"
+                        data-testid="input-dispatch-amount-collected"
+                      />
+                      {partialTotal > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Toplam: {partialTotal.toLocaleString('tr-TR')} {partialCurrencyLabel}
+                          {dispatchAmountCollected > 0 && (
+                            <> | Kalan: {(partialTotal - dispatchAmountCollected).toLocaleString('tr-TR')} {partialCurrencyLabel}</>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+                
+                <div className="space-y-2">
+                  <Label>Odeme Notu (Opsiyonel)</Label>
+                  <Input
+                    value={dispatchPaymentNotes}
+                    onChange={(e) => setDispatchPaymentNotes(e.target.value)}
+                    placeholder="Ornegin: Nakit odendi, Havale yapildi vb."
+                    data-testid="input-dispatch-payment-notes"
+                  />
+                </div>
+              </div>
+
               {/* Toplam Özeti */}
               {(() => {
                 let totalTl = 0;
@@ -3436,10 +3590,13 @@ export default function Finance() {
                   }
                 }
                 
+                const totalAmount = totalTl > 0 ? totalTl : totalUsd;
+                const currencyLabel = totalTl > 0 ? 'TL' : 'USD';
+                
                 return (totalTl > 0 || totalUsd > 0) ? (
                   <div className="p-3 bg-muted rounded-lg space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span>Misafir Sayısı:</span>
+                      <span>Misafir Sayisi:</span>
                       <span className="font-medium">{guestCount}</span>
                     </div>
                     {totalTl > 0 && (
@@ -3453,6 +3610,32 @@ export default function Finance() {
                         <span>Toplam (USD):</span>
                         <span className="font-bold text-green-600">${totalUsd.toLocaleString('en-US')}</span>
                       </div>
+                    )}
+                    <Separator className="my-1" />
+                    <div className="flex justify-between text-sm">
+                      <span>Odeme Durumu:</span>
+                      <span className="font-medium">
+                        {dispatchPaymentType === 'receiver_full' ? 'Tedarikci alacak' : 
+                         dispatchPaymentType === 'sender_full' ? 'Biz aldik' : 'Kismi odeme'}
+                      </span>
+                    </div>
+                    {dispatchPaymentType === 'sender_full' && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>Alinan:</span>
+                        <span className="font-bold">{totalTl > 0 ? formatMoney(totalTl) : `$${totalUsd.toLocaleString('en-US')}`}</span>
+                      </div>
+                    )}
+                    {dispatchPaymentType === 'sender_partial' && dispatchAmountCollected > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Alinan:</span>
+                          <span className="font-bold">{dispatchAmountCollected.toLocaleString('tr-TR')} {currencyLabel}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-orange-600">
+                          <span>Kalan (Tedarikci alacak):</span>
+                          <span className="font-bold">{(totalAmount - dispatchAmountCollected).toLocaleString('tr-TR')} {currencyLabel}</span>
+                        </div>
+                      </>
                     )}
                   </div>
                 ) : null;
