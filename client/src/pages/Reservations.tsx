@@ -77,7 +77,7 @@ export default function Reservations() {
     if (urlView === "list" || urlView === "calendar") {
       return urlView;
     }
-    return "calendar";
+    return "list";
   });
   const [calendarView, setCalendarView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(new Date());
