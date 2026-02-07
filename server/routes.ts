@@ -20,22 +20,13 @@ import { logError, logWarn, logInfo, attachLogsToSupportRequest, getSupportReque
 import { sendTenantEmail } from "./email";
 import { registerPublicApiRoutes } from "./publicApi";
 
-// Multer configuration for image uploads
+// Multer configuration for image uploads (memory storage - base64 in DB)
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const multerStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${uniqueSuffix}${ext}`);
-  }
-});
+const memoryStorage = multer.memoryStorage();
 
 const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedTypes = ['image/png', 'image/webp'];
@@ -48,14 +39,14 @@ const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.
 
 // Small images (logo, favicon): max 100KB
 const uploadSmall = multer({
-  storage: multerStorage,
+  storage: memoryStorage,
   fileFilter,
   limits: { fileSize: 100 * 1024 } // 100KB
 });
 
 // Large images (hero, activity): max 200KB
 const uploadLarge = multer({
-  storage: multerStorage,
+  storage: memoryStorage,
   fileFilter,
   limits: { fileSize: 200 * 1024 } // 200KB
 });
@@ -4074,10 +4065,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  // Serve uploaded files statically
+  // Serve uploaded files statically (backward compatibility for old file-based uploads)
   app.use('/uploads', express.static(uploadDir));
   
   // Image upload endpoint - small images (logo, favicon) - max 100KB
+  // Returns base64 data URI so images are stored in DB, not filesystem
   app.post('/api/upload/small', (req, res, next) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
@@ -4087,11 +4079,13 @@ export async function registerRoutes(
     if (!req.file) {
       return res.status(400).json({ error: "Görsel yüklenemedi" });
     }
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ url: imageUrl, filename: req.file.filename });
+    const base64 = req.file.buffer.toString('base64');
+    const dataUri = `data:${req.file.mimetype};base64,${base64}`;
+    res.json({ url: dataUri, filename: req.file.originalname });
   });
   
   // Image upload endpoint - large images (hero, activity) - max 200KB
+  // Returns base64 data URI so images are stored in DB, not filesystem
   app.post('/api/upload/large', (req, res, next) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
@@ -4101,8 +4095,9 @@ export async function registerRoutes(
     if (!req.file) {
       return res.status(400).json({ error: "Görsel yüklenemedi" });
     }
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ url: imageUrl, filename: req.file.filename });
+    const base64 = req.file.buffer.toString('base64');
+    const dataUri = `data:${req.file.mimetype};base64,${base64}`;
+    res.json({ url: dataUri, filename: req.file.originalname });
   });
   
   // Multer error handler
