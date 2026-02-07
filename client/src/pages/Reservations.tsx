@@ -1489,7 +1489,7 @@ export default function Reservations() {
                           <SelectItem value="all">Tümü</SelectItem>
                           <SelectItem value="manual">Manuel</SelectItem>
                           <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                          <SelectItem value="web">WooCommerce</SelectItem>
+                          <SelectItem value="web">Web Sitesi</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1667,7 +1667,7 @@ export default function Reservations() {
                           <SelectItem value="all">Tümü</SelectItem>
                           <SelectItem value="manual">Manuel</SelectItem>
                           <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                          <SelectItem value="web">WooCommerce</SelectItem>
+                          <SelectItem value="web">Web Sitesi</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
