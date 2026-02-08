@@ -34,9 +34,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { Search, Users, Phone, Mail, Ticket, TrendingUp, Calendar, ArrowUpDown, Filter, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, Users, Phone, Mail, Ticket, TrendingUp, Calendar, ArrowUpDown, Filter, X, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
+import { useLocation } from "wouter";
 
 type Customer = {
   customerName: string;
@@ -61,6 +62,7 @@ type SortField = "customerName" | "totalReservations" | "totalSpentTl" | "lastRe
 type SortDir = "asc" | "desc";
 
 export default function Customers() {
+  const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("lastReservationDate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -510,6 +512,18 @@ export default function Customers() {
                                 ))}
                               </div>
                             </div>
+
+                            <Separator />
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setLocation(`/reservations?view=list&customer=${encodeURIComponent(c.customerPhone)}`)}
+                              data-testid={`button-view-reservations-${c.customerPhone}`}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              Rezervasyonlari Gor
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

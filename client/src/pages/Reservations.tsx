@@ -74,8 +74,9 @@ export default function Reservations() {
   const urlParams = new URLSearchParams(searchParams);
   const urlDate = urlParams.get("date");
   const urlView = urlParams.get("view");
+  const urlCustomer = urlParams.get("customer");
   
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(urlCustomer || "");
   const [viewMode, setViewMode] = useState<"calendar" | "list">(() => {
     if (urlView === "list" || urlView === "calendar") {
       return urlView;
