@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, ilike, or } from "drizzle-orm";
 import { tenants, activities, capacity, reservations, customerRequests, blogPosts, homepageSections, smarturSettings, packageTours } from "@shared/schema";
 import { desc } from "drizzle-orm";
 import crypto from "crypto";
@@ -1536,6 +1536,79 @@ export function registerPublicApiRoutes(app: Express) {
       });
     } catch (err) {
       console.error("Website track error:", err);
+      res.status(500).json({ error: "Sunucu hatası" });
+    }
+  });
+
+  app.get("/api/website/track/search", domainMiddleware, async (req, res) => {
+    try {
+      const tenantId = req.websiteTenant!.id;
+      const query = (req.query.q as string || "").trim();
+
+      if (!query || query.length < 2) {
+        return res.status(400).json({ error: "En az 2 karakter girin" });
+      }
+
+      const results = await db
+        .select({
+          id: reservations.id,
+          customerName: reservations.customerName,
+          date: reservations.date,
+          time: reservations.time,
+          quantity: reservations.quantity,
+          status: reservations.status,
+          priceTl: reservations.priceTl,
+          priceUsd: reservations.priceUsd,
+          currency: reservations.currency,
+          paymentStatus: reservations.paymentStatus,
+          hotelName: reservations.hotelName,
+          hasTransfer: reservations.hasTransfer,
+          activityId: reservations.activityId,
+          orderNumber: reservations.orderNumber,
+          trackingToken: reservations.trackingToken,
+        })
+        .from(reservations)
+        .where(and(
+          eq(reservations.tenantId, tenantId),
+          or(
+            ilike(reservations.orderNumber, `%${query}%`),
+            ilike(reservations.customerName, `%${query}%`)
+          )
+        ))
+        .limit(10);
+
+      const enriched = await Promise.all(results.map(async (r) => {
+        let activityName = "Bilinmeyen Aktivite";
+        if (r.activityId) {
+          const [activity] = await db
+            .select({ name: activities.name })
+            .from(activities)
+            .where(and(eq(activities.id, r.activityId), eq(activities.tenantId, tenantId)))
+            .limit(1);
+          if (activity) activityName = activity.name;
+        }
+        return {
+          id: r.id,
+          customerName: r.customerName,
+          date: r.date,
+          time: r.time,
+          quantity: r.quantity,
+          status: r.status,
+          priceTl: r.priceTl,
+          priceUsd: r.priceUsd,
+          currency: r.currency,
+          paymentStatus: r.paymentStatus,
+          hotelName: r.hotelName,
+          hasTransfer: r.hasTransfer,
+          activityName,
+          orderNumber: r.orderNumber,
+          trackingToken: r.trackingToken,
+        };
+      }));
+
+      res.json(enriched);
+    } catch (err) {
+      console.error("Website track search error:", err);
       res.status(500).json({ error: "Sunucu hatası" });
     }
   });
