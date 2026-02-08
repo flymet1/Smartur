@@ -865,19 +865,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async generateOrderNumber(tenantId?: number): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `SM-${dateStr}-`;
-    const result = await db
-      .select({ maxOrder: sql<string>`MAX(${reservations.orderNumber})` })
-      .from(reservations)
-      .where(like(reservations.orderNumber, `${prefix}%`));
-    let nextNum = 1;
-    if (result.length > 0 && result[0].maxOrder) {
-      const lastNum = parseInt(result[0].maxOrder.replace(prefix, ''), 10);
-      if (!isNaN(lastNum)) nextNum = lastNum + 1;
+    const conditions = [sql`${reservations.orderNumber} ~ '^[0-9]+$'`];
+    if (tenantId) {
+      conditions.push(eq(reservations.tenantId, tenantId));
     }
-    return `${prefix}${String(nextNum).padStart(3, '0')}`;
+    const result = await db
+      .select({ maxOrder: sql<number>`COALESCE(MAX(CAST(${reservations.orderNumber} AS INTEGER)), 4999)` })
+      .from(reservations)
+      .where(and(...conditions));
+    const nextNum = (result[0]?.maxOrder ?? 4999) + 1;
+    return String(nextNum);
   }
 
   async createReservation(item: InsertReservation): Promise<Reservation> {
