@@ -13494,19 +13494,17 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
   app.post("/api/finance/dispatches", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
-      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, guestCount, unitPayoutTl, currency, notes } = req.body;
+      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, guestCount, unitPayoutTl, currency, notes,
+        paymentCollectionType, amountCollectedBySender, paymentNotes, reservationId, salePriceTl, advancePaymentTl } = req.body;
       
       if (!agencyId || !dispatchDate) {
         return res.status(400).json({ error: "agencyId ve dispatchDate zorunlu" });
       }
       
-      // Manuel override: Form'dan gelen fiyat varsa (>0) onu kullan
-      // Aksi halde rate veya agency default'u kullan
       let finalUnitPayoutTl = unitPayoutTl;
       let finalCurrency = currency || 'TRY';
       let rateId: number | null = null;
       
-      // Sadece fiyat belirtilmemişse rate/agency'den al
       if (!unitPayoutTl || unitPayoutTl === 0) {
         const activeRate = await storage.getActiveRateForDispatch(agencyId, activityId || null, dispatchDate);
         if (activeRate) {
@@ -13521,6 +13519,22 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       
       const totalPayoutTl = (guestCount || 0) * finalUnitPayoutTl;
       
+      const collectionType = paymentCollectionType || 'receiver_full';
+      let computedBalanceOwed = 0;
+      let collectedAmount = amountCollectedBySender || 0;
+      
+      if (collectionType === 'sender_partial' && totalPayoutTl > 0) {
+        collectedAmount = Math.min(collectedAmount, totalPayoutTl);
+      }
+      
+      if (collectionType === 'sender_full') {
+        computedBalanceOwed = totalPayoutTl;
+      } else if (collectionType === 'sender_partial') {
+        computedBalanceOwed = collectedAmount;
+      } else {
+        computedBalanceOwed = 0;
+      }
+      
       const dispatch = await storage.createSupplierDispatch({
         tenantId,
         agencyId,
@@ -13533,7 +13547,14 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         totalPayoutTl,
         currency: finalCurrency,
         rateId,
-        notes
+        notes,
+        paymentCollectionType: collectionType,
+        amountCollectedBySender: collectedAmount,
+        balanceOwed: computedBalanceOwed,
+        paymentNotes: paymentNotes || null,
+        reservationId: reservationId || null,
+        salePriceTl: salePriceTl || 0,
+        advancePaymentTl: advancePaymentTl || 0,
       });
       res.json(dispatch);
     } catch (err) {
@@ -13545,14 +13566,31 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
   app.patch("/api/finance/dispatches/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { guestCount, unitPayoutTl, ...rest } = req.body;
+      const { guestCount, unitPayoutTl, paymentCollectionType, amountCollectedBySender, ...rest } = req.body;
       const totalPayoutTl = (guestCount || 0) * (unitPayoutTl || 0);
+      
+      let computedBalanceOwed = 0;
+      const collectionType = paymentCollectionType || 'receiver_full';
+      let collectedAmount = amountCollectedBySender || 0;
+      
+      if (collectionType === 'sender_partial' && totalPayoutTl > 0) {
+        collectedAmount = Math.min(collectedAmount, totalPayoutTl);
+      }
+      
+      if (collectionType === 'sender_full') {
+        computedBalanceOwed = totalPayoutTl;
+      } else if (collectionType === 'sender_partial') {
+        computedBalanceOwed = collectedAmount;
+      }
       
       const dispatch = await storage.updateSupplierDispatch(id, {
         ...rest,
         guestCount,
         unitPayoutTl,
-        totalPayoutTl
+        totalPayoutTl,
+        paymentCollectionType: collectionType,
+        amountCollectedBySender: collectedAmount,
+        balanceOwed: computedBalanceOwed,
       });
       res.json(dispatch);
     } catch (err) {

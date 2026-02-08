@@ -748,6 +748,10 @@ export default function Finance() {
     manualExpense: number;
     incomeByCategory: Record<string, number>;
     expenseByCategory: Record<string, number>;
+    dispatchPayoutTotal?: number;
+    dispatchCollectedTotal?: number;
+    dispatchBalanceOwed?: number;
+    dispatchProfit?: number;
   }
   const currentMonth = `${startDate.slice(0, 7)}`;
   const { data: financeEntries = [] } = useQuery<any[]>({
@@ -1182,18 +1186,25 @@ export default function Finance() {
   const openEditDispatch = async (dispatch: SupplierDispatch) => {
     const notesRaw = dispatch.notes || '';
     const lines = notesRaw.split('\n');
-    const pmLine = lines.find(l => l.startsWith('__PAYMENT__:'));
     const userNotes = lines.filter(l => !l.startsWith('__PAYMENT__:') && !l.startsWith('[Odeme:')).join('\n').trim();
 
-    let paymentType = 'receiver_full';
-    let amountCollected = 0;
-    let paymentNotes = '';
-    if (pmLine) {
+    const dbPaymentType = (dispatch as any).paymentCollectionType;
+    const dbAmountCollected = (dispatch as any).amountCollectedBySender;
+    const dbPaymentNotes = (dispatch as any).paymentNotes;
+    
+    let paymentType = dbPaymentType || 'receiver_full';
+    let amountCollected = dbAmountCollected || 0;
+    let paymentNotesVal = dbPaymentNotes || '';
+    
+    const pmLine = lines.find(l => l.startsWith('__PAYMENT__:'));
+    if (pmLine && (!dbPaymentType || dbPaymentType === 'receiver_full')) {
       try {
         const pm = JSON.parse(pmLine.substring('__PAYMENT__:'.length));
-        paymentType = pm.paymentCollectionType || 'receiver_full';
-        amountCollected = pm.amountCollectedBySender || 0;
-        paymentNotes = pm.paymentNotes || '';
+        if (pm.paymentCollectionType && pm.paymentCollectionType !== 'receiver_full') {
+          paymentType = pm.paymentCollectionType;
+          amountCollected = pm.amountCollectedBySender || 0;
+          paymentNotesVal = pm.paymentNotes || '';
+        }
       } catch {}
     }
 
@@ -1232,7 +1243,7 @@ export default function Finance() {
     setSimpleCurrency(dispatch.currency === 'USD' ? 'USD' : 'TRY');
     setDispatchPaymentType(paymentType);
     setDispatchAmountCollectedStr(amountCollected ? String(amountCollected) : "");
-    setDispatchPaymentNotes(paymentNotes);
+    setDispatchPaymentNotes(paymentNotesVal);
     setUseLineItems(hasLineItems);
     setDispatchDialogOpen(true);
   };
@@ -1386,21 +1397,13 @@ export default function Finance() {
       }
     }
     
-    const paymentMeta = {
+    const paymentFields = {
       paymentCollectionType: dispatchPaymentType,
       amountCollectedBySender: dispatchPaymentType === 'sender_partial' ? dispatchAmountCollected : 0,
-      paymentCurrency: dispatchCurrLabel,
       paymentNotes: dispatchPaymentNotes.trim()
     };
-    const paymentLabel = dispatchPaymentType === 'receiver_full' ? 'Tamamini Tedarikci Alacak' 
-      : dispatchPaymentType === 'sender_full' ? 'Tamamini Biz Aldik' 
-      : `Kismi Odeme: ${dispatchAmountCollected} ${dispatchCurrLabel} aldik`;
-    const notesWithPayment = [
-      dispatchForm.notes,
-      `[Odeme: ${paymentLabel}]`,
-      dispatchPaymentNotes ? `[Odeme Notu: ${dispatchPaymentNotes}]` : '',
-      `__PAYMENT__:${JSON.stringify(paymentMeta)}`
-    ].filter(Boolean).join('\n');
+    
+    const cleanNotes = dispatchForm.notes || '';
     
     if (editingDispatchId) {
       if (useLineItems) {
@@ -1418,7 +1421,8 @@ export default function Finance() {
             dispatchDate: dispatchForm.dispatchDate,
             dispatchTime: dispatchForm.dispatchTime,
             customerName: dispatchForm.customerName || null,
-            notes: notesWithPayment,
+            notes: cleanNotes,
+            ...paymentFields,
             items: validItems
           }
         });
@@ -1435,7 +1439,8 @@ export default function Finance() {
             guestCount: simpleGuestCount,
             unitPayoutTl: simpleUnitPayout,
             currency: simpleCurrency,
-            notes: notesWithPayment,
+            notes: cleanNotes,
+            ...paymentFields,
             items: []
           }
         });
@@ -1455,7 +1460,8 @@ export default function Finance() {
             dispatchDate: dispatchForm.dispatchDate,
             dispatchTime: dispatchForm.dispatchTime,
             customerName: dispatchForm.customerName || null,
-            notes: notesWithPayment,
+            notes: cleanNotes,
+            ...paymentFields,
             items: validItems
           }
         });
@@ -1471,7 +1477,8 @@ export default function Finance() {
             guestCount: simpleGuestCount,
             unitPayoutTl: simpleUnitPayout,
             currency: simpleCurrency,
-            notes: notesWithPayment
+            notes: cleanNotes,
+            ...paymentFields
           }
         });
       }
@@ -1994,21 +2001,37 @@ export default function Finance() {
                               </span>
                             </div>
                             {(() => {
-                              if (!dispatch.notes) return null;
-                              const lines = dispatch.notes.split('\n');
-                              const pmLine = lines.find(l => l.startsWith('__PAYMENT__:'));
-                              if (!pmLine) return null;
-                              try {
-                                const pm = JSON.parse(pmLine.substring('__PAYMENT__:'.length));
-                                return (
-                                  <Badge variant="outline" className="text-xs">
-                                    <Wallet className="h-3 w-3 mr-1" />
-                                    {pm.paymentCollectionType === 'receiver_full' ? 'Tedarikci alacak' :
-                                     pm.paymentCollectionType === 'sender_full' ? 'Biz aldik' :
-                                     `Kismi: ${pm.amountCollectedBySender} ${pm.paymentCurrency || 'TL'}`}
-                                  </Badge>
-                                );
-                              } catch { return null; }
+                              let pct = (dispatch as any).paymentCollectionType;
+                              let collected = (dispatch as any).amountCollectedBySender || 0;
+                              let cur = dispatch.currency || 'TRY';
+                              
+                              if (!pct || pct === 'receiver_full') {
+                                if (dispatch.notes) {
+                                  const dLines = dispatch.notes.split('\n');
+                                  const pmL = dLines.find((l: string) => l.startsWith('__PAYMENT__:'));
+                                  if (pmL) {
+                                    try {
+                                      const pm = JSON.parse(pmL.substring('__PAYMENT__:'.length));
+                                      if (pm.paymentCollectionType && pm.paymentCollectionType !== 'receiver_full') {
+                                        pct = pm.paymentCollectionType;
+                                        collected = pm.amountCollectedBySender || 0;
+                                        cur = pm.paymentCurrency || cur;
+                                      }
+                                    } catch {}
+                                  }
+                                }
+                              }
+                              
+                              if (!pct || pct === 'receiver_full') return null;
+                              
+                              return (
+                                <Badge variant="outline" className="text-xs">
+                                  <Wallet className="h-3 w-3 mr-1" />
+                                  {pct === 'sender_full' ? 'Biz aldik' :
+                                   pct === 'sender_partial' ? `Kismi: ${collected.toLocaleString('tr-TR')} ${cur}` :
+                                   'Tedarikci alacak'}
+                                </Badge>
+                              );
                             })()}
                             <Button
                               variant="ghost"
@@ -3580,6 +3603,9 @@ export default function Finance() {
                     <p className="text-2xl font-bold text-red-600" data-testid="text-total-expense">{formatMoney(financeSummary.totalExpense)}</p>
                     <div className="mt-2 text-xs text-muted-foreground space-y-1">
                       <div className="flex justify-between"><span>Acenta Ödemeleri</span><span>{formatMoney(financeSummary.agencyPayoutTotal)}</span></div>
+                      {(financeSummary.dispatchPayoutTotal || 0) > 0 && (
+                        <div className="flex justify-between"><span>Tedarikci Gönderim</span><span>{formatMoney(financeSummary.dispatchPayoutTotal || 0)}</span></div>
+                      )}
                       <div className="flex justify-between"><span>Manuel Gider</span><span>{formatMoney(financeSummary.manualExpense)}</span></div>
                     </div>
                   </CardContent>
@@ -3593,6 +3619,12 @@ export default function Finance() {
                     <p className={`text-2xl font-bold ${financeSummary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid="text-net-profit">
                       {formatMoney(financeSummary.netProfit)}
                     </p>
+                    {((financeSummary.dispatchCollectedTotal || 0) > 0 || (financeSummary.dispatchBalanceOwed || 0) > 0) && (
+                      <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                        <div className="flex justify-between"><span>Tahsil Edilen</span><span className="text-green-600">{formatMoney(financeSummary.dispatchCollectedTotal || 0)}</span></div>
+                        <div className="flex justify-between"><span>Bakiye (Borç)</span><span className="text-orange-600">{formatMoney(financeSummary.dispatchBalanceOwed || 0)}</span></div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

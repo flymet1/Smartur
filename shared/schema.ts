@@ -581,6 +581,13 @@ export const supplierDispatches = pgTable("supplier_dispatches", {
   rateId: integer("rate_id"), // Hangi tarife kullanıldı
   payoutId: integer("payout_id").references(() => agencyPayouts.id), // Hangi ödemeye bağlı (null = ödenmemiş)
   notes: text("notes"),
+  paymentCollectionType: text("payment_collection_type").default("receiver_full"), // sender_full, sender_partial, receiver_full
+  amountCollectedBySender: integer("amount_collected_by_sender").default(0), // Bizim tahsil ettiğimiz tutar
+  balanceOwed: integer("balance_owed").default(0), // Pozitif: biz acentaya borçluyuz, Negatif: acenta bize borçlu
+  paymentNotes: text("payment_notes"), // Ödeme ile ilgili not
+  reservationId: integer("reservation_id"), // Bağlı rezervasyon ID'si
+  salePriceTl: integer("sale_price_tl").default(0), // Müşteriye satış fiyatı (kar hesabı için)
+  advancePaymentTl: integer("advance_payment_tl").default(0), // Alınan ön ödeme
   createdAt: timestamp("created_at").defaultNow(),
 });
 

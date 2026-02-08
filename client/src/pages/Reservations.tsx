@@ -141,6 +141,10 @@ export default function Reservations() {
   const agencyDispatchUnitPayout = agencyDispatchUnitPayoutStr === "" ? 0 : Number(agencyDispatchUnitPayoutStr) || 0;
   const [agencyDispatchCurrency, setAgencyDispatchCurrency] = useState<string>("TRY");
   const [agencyDispatchNotes, setAgencyDispatchNotes] = useState("");
+  const [agencyDispatchPaymentType, setAgencyDispatchPaymentType] = useState<string>("receiver_full");
+  const [agencyDispatchAmountCollectedStr, setAgencyDispatchAmountCollectedStr] = useState<string>("");
+  const agencyDispatchAmountCollected = agencyDispatchAmountCollectedStr === "" ? 0 : Number(agencyDispatchAmountCollectedStr) || 0;
+  const [agencyDispatchPaymentNotes, setAgencyDispatchPaymentNotes] = useState("");
   
   const { toast } = useToast();
 
@@ -291,6 +295,12 @@ export default function Reservations() {
       unitPayoutTl: number;
       currency: string;
       notes: string;
+      paymentCollectionType: string;
+      amountCollectedBySender: number;
+      paymentNotes: string;
+      reservationId: number | null;
+      salePriceTl: number;
+      advancePaymentTl: number;
     }) => {
       return apiRequest('POST', '/api/finance/dispatches', data);
     },
@@ -307,6 +317,9 @@ export default function Reservations() {
       setAgencyDispatchUnitPayoutStr("");
       setAgencyDispatchCurrency("TRY");
       setAgencyDispatchNotes("");
+      setAgencyDispatchPaymentType("receiver_full");
+      setAgencyDispatchAmountCollectedStr("");
+      setAgencyDispatchPaymentNotes("");
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
     },
@@ -2897,6 +2910,152 @@ export default function Reservations() {
                               data-testid="input-agency-dispatch-notes"
                             />
                           </div>
+
+                          <Separator />
+
+                          <div className="space-y-3">
+                            <Label className="flex items-center gap-2">
+                              <Wallet className="w-4 h-4" />
+                              Odeme Tahsilat Bilgisi
+                            </Label>
+                            <RadioGroup
+                              value={agencyDispatchPaymentType}
+                              onValueChange={setAgencyDispatchPaymentType}
+                              className="space-y-2"
+                              data-testid="radio-agency-dispatch-payment-type"
+                            >
+                              <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                                <RadioGroupItem value="receiver_full" id="agency_dispatch_receiver_full" data-testid="radio-agency-dispatch-receiver-full" />
+                                <Label htmlFor="agency_dispatch_receiver_full" className="flex-1 cursor-pointer">
+                                  <span className="font-medium">Kalan Tum Odeme Acentaya Yapilacak</span>
+                                  <p className="text-xs text-muted-foreground">Musteri kalan odemeyi acentaya yapacak</p>
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                                <RadioGroupItem value="sender_full" id="agency_dispatch_sender_full" data-testid="radio-agency-dispatch-sender-full" />
+                                <Label htmlFor="agency_dispatch_sender_full" className="flex-1 cursor-pointer">
+                                  <span className="font-medium">Tamamini Biz Aldik</span>
+                                  <p className="text-xs text-muted-foreground">Musteri tum odemeyi bize yapti, acentaya biz odeyecegiz</p>
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                                <RadioGroupItem value="sender_partial" id="agency_dispatch_sender_partial" data-testid="radio-agency-dispatch-sender-partial" />
+                                <Label htmlFor="agency_dispatch_sender_partial" className="flex-1 cursor-pointer">
+                                  <span className="font-medium">Kismi Odeme Aldik</span>
+                                  <p className="text-xs text-muted-foreground">Musteriden bir miktar aldik, kalani acenta alacak</p>
+                                </Label>
+                              </div>
+                            </RadioGroup>
+
+                            {agencyDispatchPaymentType === 'sender_partial' && (() => {
+                              const totalAmount = agencyDispatchGuests * agencyDispatchUnitPayout;
+                              return (
+                                <div className="space-y-2 pl-6 border-l-2 border-primary/30">
+                                  <Label>Aldigimiz Tutar ({agencyDispatchCurrency})</Label>
+                                  <Input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min={0}
+                                    max={totalAmount > 0 ? totalAmount : undefined}
+                                    value={agencyDispatchAmountCollectedStr}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const num = val === "" ? 0 : Number(val) || 0;
+                                      if (totalAmount > 0 && num > totalAmount) {
+                                        setAgencyDispatchAmountCollectedStr(String(totalAmount));
+                                      } else {
+                                        setAgencyDispatchAmountCollectedStr(val);
+                                      }
+                                    }}
+                                    placeholder="Tutar girin"
+                                    data-testid="input-agency-dispatch-amount-collected"
+                                  />
+                                  {totalAmount > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Toplam: {totalAmount.toLocaleString('tr-TR')} {agencyDispatchCurrency}
+                                      {agencyDispatchAmountCollected > 0 && (
+                                        <> | Kalan: {(totalAmount - agencyDispatchAmountCollected).toLocaleString('tr-TR')} {agencyDispatchCurrency}</>
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+
+                            <div className="space-y-2">
+                              <Label>Odeme Notu (Opsiyonel)</Label>
+                              <Input
+                                value={agencyDispatchPaymentNotes}
+                                onChange={(e) => setAgencyDispatchPaymentNotes(e.target.value)}
+                                placeholder="Ornegin: Nakit odendi, Havale yapildi vb."
+                                data-testid="input-agency-dispatch-payment-notes"
+                              />
+                            </div>
+                          </div>
+
+                          {(() => {
+                            const totalAmount = agencyDispatchGuests * agencyDispatchUnitPayout;
+                            const reservationPrice = partnerDispatchReservation ? 
+                              (partnerDispatchReservation.salePriceTl || (partnerDispatchReservation.priceTl || 0) * (partnerDispatchReservation.quantity || 1)) : 0;
+                            const advancePayment = partnerDispatchReservation?.advancePaymentTl || 0;
+                            const profit = reservationPrice > 0 && totalAmount > 0 ? reservationPrice - totalAmount : 0;
+                            
+                            return totalAmount > 0 ? (
+                              <div className="p-3 bg-muted rounded-lg space-y-1">
+                                {reservationPrice > 0 && (
+                                  <div className="flex justify-between text-sm">
+                                    <span>Satis Fiyati:</span>
+                                    <span className="font-medium">{reservationPrice.toLocaleString('tr-TR')} TL</span>
+                                  </div>
+                                )}
+                                {advancePayment > 0 && (
+                                  <div className="flex justify-between text-sm">
+                                    <span>On Odeme (Alinan):</span>
+                                    <span className="font-medium text-green-600">{advancePayment.toLocaleString('tr-TR')} TL</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between text-sm">
+                                  <span>Acenta Maliyeti:</span>
+                                  <span className="font-bold text-orange-600">{totalAmount.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                </div>
+                                <Separator className="my-1" />
+                                <div className="flex justify-between text-sm">
+                                  <span>Odeme Durumu:</span>
+                                  <span className="font-medium">
+                                    {agencyDispatchPaymentType === 'receiver_full' ? 'Acenta alacak' : 
+                                     agencyDispatchPaymentType === 'sender_full' ? 'Biz aldik' : 'Kismi odeme'}
+                                  </span>
+                                </div>
+                                {agencyDispatchPaymentType === 'sender_full' && (
+                                  <div className="flex justify-between text-sm text-green-600">
+                                    <span>Alinan:</span>
+                                    <span className="font-bold">{totalAmount.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                  </div>
+                                )}
+                                {agencyDispatchPaymentType === 'sender_partial' && agencyDispatchAmountCollected > 0 && (
+                                  <>
+                                    <div className="flex justify-between text-sm text-green-600">
+                                      <span>Alinan:</span>
+                                      <span className="font-bold">{agencyDispatchAmountCollected.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-orange-600">
+                                      <span>Kalan (Acenta alacak):</span>
+                                      <span className="font-bold">{(totalAmount - agencyDispatchAmountCollected).toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                    </div>
+                                  </>
+                                )}
+                                {profit > 0 && (
+                                  <>
+                                    <Separator className="my-1" />
+                                    <div className="flex justify-between text-sm text-green-700 font-semibold">
+                                      <span>Tahmini Kar:</span>
+                                      <span>{profit.toLocaleString('tr-TR')} TL</span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            ) : null;
+                          })()}
                         </>
                       )}
                     </div>
@@ -2908,6 +3067,17 @@ export default function Reservations() {
                       <Button
                         onClick={() => {
                           if (!selectedAgencyDispatchId || !partnerDispatchReservation || !agencyDispatchDate) return;
+                          const totalAmount = agencyDispatchGuests * agencyDispatchUnitPayout;
+                          if (agencyDispatchPaymentType === 'sender_partial' && agencyDispatchAmountCollected <= 0) {
+                            toast({ title: "Hata", description: "Kismi odeme tutarini girin", variant: "destructive" });
+                            return;
+                          }
+                          if (agencyDispatchPaymentType === 'sender_partial' && totalAmount > 0 && agencyDispatchAmountCollected > totalAmount) {
+                            toast({ title: "Hata", description: "Alinan tutar toplam tutari asamaz", variant: "destructive" });
+                            return;
+                          }
+                          const reservationPrice = partnerDispatchReservation ? 
+                            (partnerDispatchReservation.salePriceTl || (partnerDispatchReservation.priceTl || 0) * (partnerDispatchReservation.quantity || 1)) : 0;
                           agencyDispatchMutation.mutate({
                             agencyId: parseInt(selectedAgencyDispatchId),
                             activityId: agencyDispatchActivityId ? parseInt(agencyDispatchActivityId) : null,
@@ -2918,6 +3088,12 @@ export default function Reservations() {
                             unitPayoutTl: agencyDispatchUnitPayout,
                             currency: agencyDispatchCurrency,
                             notes: agencyDispatchNotes.trim(),
+                            paymentCollectionType: agencyDispatchPaymentType,
+                            amountCollectedBySender: agencyDispatchPaymentType === 'sender_partial' ? agencyDispatchAmountCollected : 0,
+                            paymentNotes: agencyDispatchPaymentNotes.trim(),
+                            reservationId: partnerDispatchReservation.id,
+                            salePriceTl: reservationPrice,
+                            advancePaymentTl: partnerDispatchReservation.advancePaymentTl || 0,
                           });
                         }}
                         disabled={!selectedAgencyDispatchId || !agencyDispatchDate || agencyDispatchMutation.isPending}

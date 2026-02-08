@@ -2687,6 +2687,19 @@ Sky Fethiye`,
     );
     const agencyPayoutTotal = payoutRows.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
 
+    const dispatchRows = await db.select().from(supplierDispatches).where(
+      and(
+        eq(supplierDispatches.tenantId, tenantId),
+        gte(supplierDispatches.dispatchDate, startDate),
+        lte(supplierDispatches.dispatchDate, endDate)
+      )
+    );
+    const dispatchPayoutTotal = dispatchRows.reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0);
+    const dispatchCollectedTotal = dispatchRows.reduce((sum, d) => sum + (d.amountCollectedBySender || 0), 0);
+    const dispatchBalanceOwed = dispatchRows.reduce((sum, d) => sum + (d.balanceOwed || 0), 0);
+    const dispatchSalesTotal = dispatchRows.reduce((sum, d) => sum + (d.salePriceTl || 0), 0);
+    const dispatchProfit = dispatchSalesTotal > 0 ? dispatchSalesTotal - dispatchPayoutTotal : 0;
+
     const totalIncome = reservationIncome + manualIncome;
     const totalExpense = manualExpense + agencyPayoutTotal;
     const netProfit = totalIncome - totalExpense;
@@ -2702,6 +2715,12 @@ Sky Fethiye`,
       totalIncome,
       totalExpense,
       netProfit,
+      dispatchPayoutTotal,
+      dispatchCollectedTotal,
+      dispatchBalanceOwed,
+      dispatchSalesTotal,
+      dispatchProfit,
+      dispatchCount: dispatchRows.length,
       entries,
       incomeByCategory: this.groupByCategory(entries.filter(e => e.type === 'income')),
       expenseByCategory: this.groupByCategory(entries.filter(e => e.type === 'expense')),
