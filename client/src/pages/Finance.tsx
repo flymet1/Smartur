@@ -468,6 +468,8 @@ export default function Finance() {
   const [dispatchAmountCollectedStr, setDispatchAmountCollectedStr] = useState("");
   const dispatchAmountCollected = dispatchAmountCollectedStr === "" ? 0 : Number(dispatchAmountCollectedStr) || 0;
   const [dispatchPaymentNotes, setDispatchPaymentNotes] = useState("");
+  const [dispatchSalePriceTlStr, setDispatchSalePriceTlStr] = useState("");
+  const dispatchSalePriceTl = dispatchSalePriceTlStr === "" ? 0 : Number(dispatchSalePriceTlStr) || 0;
   const [rateForm, setRateForm] = useState({
     agencyId: 0,
     activityId: 0,
@@ -752,6 +754,8 @@ export default function Finance() {
     dispatchCollectedTotal?: number;
     dispatchBalanceOwed?: number;
     dispatchProfit?: number;
+    activityProfitMap?: Record<string, { income: number; payout: number; profit: number }>;
+    agencyBalanceMap?: Record<string, { totalPayout: number; collected: number; balanceOwed: number; dispatchCount: number }>;
   }
   const currentMonth = `${startDate.slice(0, 7)}`;
   const { data: financeEntries = [] } = useQuery<any[]>({
@@ -1158,6 +1162,7 @@ export default function Finance() {
     setDispatchPaymentType('receiver_full');
     setDispatchAmountCollectedStr("");
     setDispatchPaymentNotes('');
+    setDispatchSalePriceTlStr("");
     setUseLineItems(false);
     setEditingDispatchId(null);
     setCustomerSuggestions([]);
@@ -1244,6 +1249,7 @@ export default function Finance() {
     setDispatchPaymentType(paymentType);
     setDispatchAmountCollectedStr(amountCollected ? String(amountCollected) : "");
     setDispatchPaymentNotes(paymentNotesVal);
+    setDispatchSalePriceTlStr((dispatch as any).salePriceTl ? String((dispatch as any).salePriceTl) : "");
     setUseLineItems(hasLineItems);
     setDispatchDialogOpen(true);
   };
@@ -1400,7 +1406,8 @@ export default function Finance() {
     const paymentFields = {
       paymentCollectionType: dispatchPaymentType,
       amountCollectedBySender: dispatchPaymentType === 'sender_partial' ? dispatchAmountCollected : 0,
-      paymentNotes: dispatchPaymentNotes.trim()
+      paymentNotes: dispatchPaymentNotes.trim(),
+      salePriceTl: dispatchSalePriceTl || 0,
     };
     
     const cleanNotes = dispatchForm.notes || '';
@@ -2000,6 +2007,17 @@ export default function Finance() {
                                   : formatMoney(dispatch.totalPayoutTl || 0)}
                               </span>
                             </div>
+                            {(dispatch as any).salePriceTl > 0 && (
+                              <div>
+                                <span className="text-muted-foreground">Satis:</span>
+                                <span className="ml-1 font-medium">{formatMoney((dispatch as any).salePriceTl)}</span>
+                                <span className="ml-1 text-xs">
+                                  (Kar: <span className={((dispatch as any).salePriceTl - (dispatch.totalPayoutTl || 0)) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                    {formatMoney((dispatch as any).salePriceTl - (dispatch.totalPayoutTl || 0))}
+                                  </span>)
+                                </span>
+                              </div>
+                            )}
                             {(() => {
                               let pct = (dispatch as any).paymentCollectionType;
                               let collected = (dispatch as any).amountCollectedBySender || 0;
@@ -3606,6 +3624,9 @@ export default function Finance() {
                       {(financeSummary.dispatchPayoutTotal || 0) > 0 && (
                         <div className="flex justify-between"><span>Tedarikci Gönderim</span><span>{formatMoney(financeSummary.dispatchPayoutTotal || 0)}</span></div>
                       )}
+                      {((financeSummary as any).partnerPayoutTotal || 0) > 0 && (
+                        <div className="flex justify-between"><span>Partner Gönderim</span><span>{formatMoney((financeSummary as any).partnerPayoutTotal || 0)}</span></div>
+                      )}
                       <div className="flex justify-between"><span>Manuel Gider</span><span>{formatMoney(financeSummary.manualExpense)}</span></div>
                     </div>
                   </CardContent>
@@ -3663,6 +3684,70 @@ export default function Finance() {
                   </Card>
                 )}
               </div>
+            )}
+
+            {financeSummary?.activityProfitMap && Object.keys(financeSummary.activityProfitMap).length > 0 && (
+              <Card>
+                <CardContent className="pt-4 pb-4">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-blue-500" />
+                    Aktivite Bazli Kar/Zarar
+                  </h4>
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground pb-1 border-b">
+                      <span>Aktivite</span>
+                      <span className="text-right">Gelir</span>
+                      <span className="text-right">Gider</span>
+                      <span className="text-right">Kar</span>
+                    </div>
+                    {Object.entries(financeSummary.activityProfitMap)
+                      .sort((a, b) => b[1].profit - a[1].profit)
+                      .map(([actName, data]) => (
+                      <div key={actName} className="grid grid-cols-4 gap-2 text-sm py-1" data-testid={`row-activity-profit-${actName}`}>
+                        <span className="text-muted-foreground truncate">{actName}</span>
+                        <span className="text-right text-green-600">{formatMoney(data.income)}</span>
+                        <span className="text-right text-red-600">{formatMoney(data.payout)}</span>
+                        <span className={`text-right font-medium ${data.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatMoney(data.profit)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {financeSummary?.agencyBalanceMap && Object.keys(financeSummary.agencyBalanceMap).length > 0 && (
+              <Card>
+                <CardContent className="pt-4 pb-4">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-orange-500" />
+                    Acenta Bazli Borc/Alacak
+                  </h4>
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-5 gap-2 text-xs font-medium text-muted-foreground pb-1 border-b">
+                      <span>Acenta</span>
+                      <span className="text-right">Gonderim</span>
+                      <span className="text-right">Toplam</span>
+                      <span className="text-right">Tahsil</span>
+                      <span className="text-right">Bakiye</span>
+                    </div>
+                    {Object.entries(financeSummary.agencyBalanceMap)
+                      .sort((a, b) => b[1].balanceOwed - a[1].balanceOwed)
+                      .map(([agName, data]) => (
+                      <div key={agName} className="grid grid-cols-5 gap-2 text-sm py-1" data-testid={`row-agency-balance-${agName}`}>
+                        <span className="text-muted-foreground truncate">{agName}</span>
+                        <span className="text-right">{data.dispatchCount}</span>
+                        <span className="text-right">{formatMoney(data.totalPayout)}</span>
+                        <span className="text-right text-green-600">{formatMoney(data.collected)}</span>
+                        <span className={`text-right font-medium ${data.balanceOwed > 0 ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                          {formatMoney(data.balanceOwed)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             <Card>
@@ -4352,6 +4437,23 @@ export default function Finance() {
                   placeholder="Ek bilgiler..."
                   data-testid="input-dispatch-notes"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Musteriye Satis Fiyati (TL)</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Ornegin 2000"
+                  value={dispatchSalePriceTlStr}
+                  onChange={(e) => setDispatchSalePriceTlStr(e.target.value.replace(/[^0-9.]/g, ''))}
+                  data-testid="input-dispatch-sale-price"
+                />
+                {dispatchSalePriceTl > 0 && simpleGuestCount > 0 && simpleUnitPayout > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Kar: {(dispatchSalePriceTl - (simpleGuestCount * simpleUnitPayout)).toLocaleString('tr-TR')} TL
+                  </p>
+                )}
               </div>
 
               <Separator />

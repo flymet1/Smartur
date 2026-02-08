@@ -2698,11 +2698,83 @@ Sky Fethiye`,
     const dispatchCollectedTotal = dispatchRows.reduce((sum, d) => sum + (d.amountCollectedBySender || 0), 0);
     const dispatchBalanceOwed = dispatchRows.reduce((sum, d) => sum + (d.balanceOwed || 0), 0);
     const dispatchSalesTotal = dispatchRows.reduce((sum, d) => sum + (d.salePriceTl || 0), 0);
+    const dispatchSalesUnlinked = dispatchRows.filter(d => !d.reservationId).reduce((sum, d) => sum + (d.salePriceTl || 0), 0);
     const dispatchProfit = dispatchSalesTotal > 0 ? dispatchSalesTotal - dispatchPayoutTotal : 0;
 
-    const totalIncome = reservationIncome + manualIncome;
-    const totalExpense = manualExpense + agencyPayoutTotal;
+    const partnerTxRows = await db.select().from(partnerTransactions).where(
+      and(
+        eq(partnerTransactions.senderTenantId, tenantId),
+        gte(partnerTransactions.reservationDate, startDate),
+        lte(partnerTransactions.reservationDate, endDate)
+      )
+    );
+    const activePartnerTx = partnerTxRows.filter(t => t.status !== 'cancelled');
+    const partnerPayoutTotal = activePartnerTx.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
+    const partnerCollectedTotal = activePartnerTx.reduce((sum, t) => sum + (t.amountCollectedBySender || 0), 0);
+    const partnerBalanceOwed = activePartnerTx.reduce((sum, t) => sum + (t.balanceOwed || 0), 0);
+
+    const totalIncome = reservationIncome + manualIncome + dispatchSalesUnlinked;
+    const totalExpense = manualExpense + agencyPayoutTotal + dispatchPayoutTotal + partnerPayoutTotal;
     const netProfit = totalIncome - totalExpense;
+
+    const activityList = await db.select().from(activities).where(eq(activities.tenantId, tenantId));
+    const activityMap: Record<number, string> = {};
+    activityList.forEach(a => { activityMap[a.id] = a.name; });
+
+    const activityProfitMap: Record<string, { income: number; payout: number; profit: number }> = {};
+    
+    activeReservations.forEach(r => {
+      const actName = r.activityId ? (activityMap[r.activityId] || `Aktivite #${r.activityId}`) : 'Diger';
+      if (!activityProfitMap[actName]) activityProfitMap[actName] = { income: 0, payout: 0, profit: 0 };
+      const inc = (r.salePriceTl && r.salePriceTl > 0) ? r.salePriceTl : ((r.priceTl || 0) * (r.quantity || 1));
+      activityProfitMap[actName].income += inc;
+    });
+
+    dispatchRows.forEach(d => {
+      const actName = d.activityId ? (activityMap[d.activityId] || `Aktivite #${d.activityId}`) : 'Diger';
+      if (!activityProfitMap[actName]) activityProfitMap[actName] = { income: 0, payout: 0, profit: 0 };
+      activityProfitMap[actName].payout += (d.totalPayoutTl || 0);
+      if (d.salePriceTl && d.salePriceTl > 0 && !d.reservationId) {
+        activityProfitMap[actName].income += d.salePriceTl;
+      }
+    });
+
+    activePartnerTx.forEach(t => {
+      const actName = t.activityId ? (activityMap[t.activityId] || `Aktivite #${t.activityId}`) : 'Diger';
+      if (!activityProfitMap[actName]) activityProfitMap[actName] = { income: 0, payout: 0, profit: 0 };
+      activityProfitMap[actName].payout += (t.totalPrice || 0);
+    });
+    
+    Object.keys(activityProfitMap).forEach(k => {
+      activityProfitMap[k].profit = activityProfitMap[k].income - activityProfitMap[k].payout;
+    });
+
+    const agencyList = await db.select().from(agencies).where(eq(agencies.tenantId, tenantId));
+    const agencyMap: Record<number, string> = {};
+    agencyList.forEach(a => { agencyMap[a.id] = a.name; });
+
+    const tenantList = await db.select().from(tenants);
+    const tenantMap: Record<number, string> = {};
+    tenantList.forEach(t => { tenantMap[t.id] = t.companyName || `Tenant #${t.id}`; });
+
+    const agencyBalanceMap: Record<string, { totalPayout: number; collected: number; balanceOwed: number; dispatchCount: number }> = {};
+    dispatchRows.forEach(d => {
+      const agName = d.agencyId ? (agencyMap[d.agencyId] || `Acenta #${d.agencyId}`) : 'Bilinmiyor';
+      if (!agencyBalanceMap[agName]) agencyBalanceMap[agName] = { totalPayout: 0, collected: 0, balanceOwed: 0, dispatchCount: 0 };
+      agencyBalanceMap[agName].totalPayout += (d.totalPayoutTl || 0);
+      agencyBalanceMap[agName].collected += (d.amountCollectedBySender || 0);
+      agencyBalanceMap[agName].balanceOwed += (d.balanceOwed || 0);
+      agencyBalanceMap[agName].dispatchCount += 1;
+    });
+
+    activePartnerTx.forEach(t => {
+      const partnerName = `Partner: ${tenantMap[t.receiverTenantId] || `#${t.receiverTenantId}`}`;
+      if (!agencyBalanceMap[partnerName]) agencyBalanceMap[partnerName] = { totalPayout: 0, collected: 0, balanceOwed: 0, dispatchCount: 0 };
+      agencyBalanceMap[partnerName].totalPayout += (t.totalPrice || 0);
+      agencyBalanceMap[partnerName].collected += (t.amountCollectedBySender || 0);
+      agencyBalanceMap[partnerName].balanceOwed += (t.balanceOwed || 0);
+      agencyBalanceMap[partnerName].dispatchCount += 1;
+    });
 
     return {
       month,
@@ -2721,9 +2793,14 @@ Sky Fethiye`,
       dispatchSalesTotal,
       dispatchProfit,
       dispatchCount: dispatchRows.length,
+      partnerPayoutTotal,
+      partnerCollectedTotal,
+      partnerBalanceOwed,
       entries,
       incomeByCategory: this.groupByCategory(entries.filter(e => e.type === 'income')),
       expenseByCategory: this.groupByCategory(entries.filter(e => e.type === 'expense')),
+      activityProfitMap,
+      agencyBalanceMap,
     };
   }
 
