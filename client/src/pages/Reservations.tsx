@@ -4982,7 +4982,7 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
                 </SelectTrigger>
                 <SelectContent>
                   {activities?.map(a => (
-                    <SelectItem key={a.id} value={String(a.id)}>{a.name} - {(a.price || 0).toLocaleString('tr-TR')} TL</SelectItem>
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
