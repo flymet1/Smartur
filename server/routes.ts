@@ -4,7 +4,7 @@ import express from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { sql, eq, and } from "drizzle-orm";
-import { supplierDispatches, reservations, userRoles, roles, tenants, homepageSections, smarturSettings } from "@shared/schema";
+import { supplierDispatches, reservations, userRoles, roles, tenants, homepageSections, smarturSettings, uploadedImages } from "@shared/schema";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema, insertFinanceEntrySchema } from "@shared/schema";
@@ -4107,6 +4107,33 @@ export async function registerRoutes(
   
   // Serve uploaded files statically (backward compatibility for old file-based uploads)
   app.use('/uploads', express.static(uploadDir));
+
+  // Serve images from database with short URLs (no auth required - public images)
+  app.get('/api/images/:id', async (req, res) => {
+    try {
+      const imageId = req.params.id.replace(/\.webp$/, '');
+      const [image] = await db
+        .select({ data: uploadedImages.data, mimetype: uploadedImages.mimetype })
+        .from(uploadedImages)
+        .where(eq(uploadedImages.id, imageId))
+        .limit(1);
+
+      if (!image) {
+        return res.status(404).json({ error: "Görsel bulunamadı" });
+      }
+
+      const buffer = Buffer.from(image.data, 'base64');
+      res.set({
+        'Content-Type': image.mimetype,
+        'Content-Length': buffer.length.toString(),
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      });
+      res.send(buffer);
+    } catch (error: any) {
+      console.error('[Image Serve Error]', error.message);
+      res.status(500).json({ error: "Görsel yüklenirken hata oluştu" });
+    }
+  });
   
   app.post('/api/upload/small', (req, res, next) => {
     if (!req.session?.userId) {
@@ -4121,11 +4148,21 @@ export async function registerRoutes(
       console.log(`[Upload Small] File: ${req.file.originalname}, Type: ${req.file.mimetype}, Size: ${Math.round(req.file.size / 1024)}KB`);
       const { buffer: processed, mimetype } = await processImage(req.file.buffer, 'small');
       const base64 = processed.toString('base64');
-      const dataUri = `data:${mimetype};base64,${base64}`;
+      const imageId = crypto.randomBytes(8).toString('hex');
+      const tenantId = req.session?.tenantId || null;
       const originalKB = Math.round(req.file.size / 1024);
       const compressedKB = Math.round(processed.length / 1024);
-      console.log(`[Upload Small] Compressed: ${originalKB}KB -> ${compressedKB}KB`);
-      res.json({ url: dataUri, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
+      await db.insert(uploadedImages).values({
+        id: imageId,
+        tenantId,
+        data: base64,
+        mimetype,
+        sizeKb: compressedKB,
+        originalName: req.file.originalname,
+      });
+      const fileUrl = `/api/images/${imageId}.webp`;
+      console.log(`[Upload Small] Compressed: ${originalKB}KB -> ${compressedKB}KB, id: ${imageId}`);
+      res.json({ url: fileUrl, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
     } catch (error: any) {
       console.error(`[Upload Small Error]`, error.message);
       res.status(500).json({ error: "Görsel işlenirken hata oluştu: " + (error.message || "Bilinmeyen hata") });
@@ -4145,11 +4182,21 @@ export async function registerRoutes(
       console.log(`[Upload Large] File: ${req.file.originalname}, Type: ${req.file.mimetype}, Size: ${Math.round(req.file.size / 1024)}KB`);
       const { buffer: processed, mimetype } = await processImage(req.file.buffer, 'large');
       const base64 = processed.toString('base64');
-      const dataUri = `data:${mimetype};base64,${base64}`;
+      const imageId = crypto.randomBytes(8).toString('hex');
+      const tenantId = req.session?.tenantId || null;
       const originalKB = Math.round(req.file.size / 1024);
       const compressedKB = Math.round(processed.length / 1024);
-      console.log(`[Upload Large] Compressed: ${originalKB}KB -> ${compressedKB}KB`);
-      res.json({ url: dataUri, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
+      await db.insert(uploadedImages).values({
+        id: imageId,
+        tenantId,
+        data: base64,
+        mimetype,
+        sizeKb: compressedKB,
+        originalName: req.file.originalname,
+      });
+      const fileUrl = `/api/images/${imageId}.webp`;
+      console.log(`[Upload Large] Compressed: ${originalKB}KB -> ${compressedKB}KB, id: ${imageId}`);
+      res.json({ url: fileUrl, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
     } catch (error: any) {
       console.error(`[Upload Large Error]`, error.message);
       res.status(500).json({ error: "Görsel işlenirken hata oluştu: " + (error.message || "Bilinmeyen hata") });

@@ -1613,3 +1613,18 @@ export const smarturSettings = pgTable("smartur_settings", {
 export const insertSmartutSettingSchema = createInsertSchema(smarturSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export type SmartutSetting = typeof smarturSettings.$inferSelect;
 export type InsertSmartutSetting = z.infer<typeof insertSmartutSettingSchema>;
+
+// === GÖRSEL DEPOLAMA ===
+export const uploadedImages = pgTable("uploaded_images", {
+  id: text("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
+  data: text("data").notNull(),
+  mimetype: text("mimetype").notNull().default("image/webp"),
+  sizeKb: integer("size_kb"),
+  originalName: text("original_name"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUploadedImageSchema = createInsertSchema(uploadedImages).omit({ createdAt: true });
+export type UploadedImage = typeof uploadedImages.$inferSelect;
+export type InsertUploadedImage = z.infer<typeof insertUploadedImageSchema>;
