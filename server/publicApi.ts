@@ -1231,7 +1231,8 @@ export function registerPublicApiRoutes(app: Express) {
           requiresDeposit: activities.requiresDeposit,
           depositType: activities.depositType,
           depositAmount: activities.depositAmount,
-          fullPaymentRequired: activities.fullPaymentRequired
+          fullPaymentRequired: activities.fullPaymentRequired,
+          paymentNote: activities.paymentNote
         })
         .from(activities)
         .where(and(eq(activities.id, input.activityId), eq(activities.tenantId, tenantId), eq(activities.active, true)))

@@ -669,6 +669,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [fullPaymentRequired, setFullPaymentRequired] = useState(
     activity ? (activity as any).fullPaymentRequired === true : false
   );
+  const [paymentNote, setPaymentNote] = useState(
+    activity ? ((activity as any).paymentNote || "") : ""
+  );
   
   // Form validation errors
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -724,6 +727,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setDepositType("percentage");
     setDepositAmount("0");
     setFullPaymentRequired(false);
+    setPaymentNote("");
   };
   
   const handleOpenChange = (newOpen: boolean) => {
@@ -878,6 +882,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       depositType: depositType,
       depositAmount: Number(depositAmount) || 0,
       fullPaymentRequired: fullPaymentRequired,
+      paymentNote: paymentNote || null,
       // Dönemsel Fiyatlandırma
       seasonalPricingEnabled: seasonalPricingEnabled,
       seasonalPrices: JSON.stringify(
@@ -1784,6 +1789,25 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       Ödeme ayarı yapılmadı. Müşteriler ödeme yapmadan rezervasyon yapabilir.
                     </p>
                   )}
+
+                  <div className="space-y-2 pt-3 border-t">
+                    <Label htmlFor="paymentNote">Ödeme Notu</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Rezervasyon formunda ödeme bilgilerinin altında görünecek özel not
+                    </p>
+                    <Input
+                      id="paymentNote"
+                      value={paymentNote}
+                      onChange={(e) => setPaymentNote(e.target.value)}
+                      placeholder="Örn: Kredi kartı ile ödemelerde %5 komisyon uygulanır"
+                      data-testid="input-payment-note"
+                    />
+                    {paymentNote && (
+                      <p className="text-amber-600 dark:text-amber-400 text-[10px] mt-1">
+                        Önizleme: {paymentNote}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Ücretsiz Otel Transferi */}

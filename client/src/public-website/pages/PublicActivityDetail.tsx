@@ -1626,9 +1626,9 @@ export default function PublicActivityDetail() {
                                 <p className="text-orange-600 dark:text-orange-400 text-[10px]">
                                   {language === "en" ? "Full payment required at booking" : "Rezervasyonda tam ödeme gereklidir"}
                                 </p>
-                                {websiteData?.reservationPaymentNote && (
+                                {(activity as any)?.paymentNote && (
                                   <p className="text-amber-600 dark:text-amber-400 text-[10px] mt-1">
-                                    {websiteData.reservationPaymentNote}
+                                    {(activity as any).paymentNote}
                                   </p>
                                 )}
                               </div>
@@ -1657,18 +1657,18 @@ export default function PublicActivityDetail() {
                                 <p className="text-blue-600 dark:text-blue-400 text-[10px]">
                                   {language === "en" ? "Pay remaining on activity day" : "Kalan tutar aktivite günü ödenir"}
                                 </p>
-                                {websiteData?.reservationPaymentNote && (
+                                {(activity as any)?.paymentNote && (
                                   <p className="text-amber-600 dark:text-amber-400 text-[10px] mt-1">
-                                    {websiteData.reservationPaymentNote}
+                                    {(activity as any).paymentNote}
                                   </p>
                                 )}
                               </div>
                             )}
                           </div>
 
-                          {!activity?.fullPaymentRequired && !activity?.requiresDeposit && websiteData?.reservationPaymentNote && (
+                          {!activity?.fullPaymentRequired && !activity?.requiresDeposit && (activity as any)?.paymentNote && (
                             <p className="text-amber-600 dark:text-amber-400 text-[10px] mt-1">
-                              {websiteData.reservationPaymentNote}
+                              {(activity as any).paymentNote}
                             </p>
                           )}
 
