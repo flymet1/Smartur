@@ -4120,12 +4120,19 @@ export async function registerRoutes(
       }
       console.log(`[Upload Small] File: ${req.file.originalname}, Type: ${req.file.mimetype}, Size: ${Math.round(req.file.size / 1024)}KB`);
       const { buffer: processed, mimetype } = await processImage(req.file.buffer, 'small');
-      const base64 = processed.toString('base64');
-      const dataUri = `data:${mimetype};base64,${base64}`;
+      const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.webp`;
+      const filePath = path.join(uploadDir, filename);
+      try {
+        await fs.promises.writeFile(filePath, processed);
+      } catch (fsErr: any) {
+        console.error(`[Upload Small] File write error:`, fsErr.message);
+        return res.status(500).json({ error: "Görsel dosyası kaydedilemedi" });
+      }
+      const fileUrl = `/uploads/${filename}`;
       const originalKB = Math.round(req.file.size / 1024);
       const compressedKB = Math.round(processed.length / 1024);
-      console.log(`[Upload Small] Compressed: ${originalKB}KB -> ${compressedKB}KB`);
-      res.json({ url: dataUri, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
+      console.log(`[Upload Small] Compressed: ${originalKB}KB -> ${compressedKB}KB, saved: ${fileUrl}`);
+      res.json({ url: fileUrl, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
     } catch (error: any) {
       console.error(`[Upload Small Error]`, error.message);
       res.status(500).json({ error: "Görsel işlenirken hata oluştu: " + (error.message || "Bilinmeyen hata") });
@@ -4144,12 +4151,19 @@ export async function registerRoutes(
       }
       console.log(`[Upload Large] File: ${req.file.originalname}, Type: ${req.file.mimetype}, Size: ${Math.round(req.file.size / 1024)}KB`);
       const { buffer: processed, mimetype } = await processImage(req.file.buffer, 'large');
-      const base64 = processed.toString('base64');
-      const dataUri = `data:${mimetype};base64,${base64}`;
+      const filename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.webp`;
+      const filePath = path.join(uploadDir, filename);
+      try {
+        await fs.promises.writeFile(filePath, processed);
+      } catch (fsErr: any) {
+        console.error(`[Upload Large] File write error:`, fsErr.message);
+        return res.status(500).json({ error: "Görsel dosyası kaydedilemedi" });
+      }
+      const fileUrl = `/uploads/${filename}`;
       const originalKB = Math.round(req.file.size / 1024);
       const compressedKB = Math.round(processed.length / 1024);
-      console.log(`[Upload Large] Compressed: ${originalKB}KB -> ${compressedKB}KB`);
-      res.json({ url: dataUri, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
+      console.log(`[Upload Large] Compressed: ${originalKB}KB -> ${compressedKB}KB, saved: ${fileUrl}`);
+      res.json({ url: fileUrl, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
     } catch (error: any) {
       console.error(`[Upload Large Error]`, error.message);
       res.status(500).json({ error: "Görsel işlenirken hata oluştu: " + (error.message || "Bilinmeyen hata") });
