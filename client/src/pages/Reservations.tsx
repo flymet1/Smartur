@@ -1586,7 +1586,7 @@ export default function Reservations() {
               </div>
               {/* Status Filter */}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-auto min-w-[80px] xl:min-w-[120px]">
+                <SelectTrigger className={`w-auto min-w-[80px] xl:min-w-[120px] ${statusFilter === 'pending' ? 'border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-600' : statusFilter === 'confirmed' ? 'border-green-500 bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 dark:border-green-600' : statusFilter === 'cancelled' ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 dark:border-red-600' : ''}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
