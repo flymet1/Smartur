@@ -5583,6 +5583,28 @@ export async function registerRoutes(
         if (!Array.isArray(parsedExtras)) parsedExtras = [];
       } catch { parsedExtras = []; }
 
+      let pickupTime: string | null = null;
+      let pickupMinutesBefore: number | null = null;
+      if (reservation.hasTransfer && reservation.transferZone && reservation.time && reservation.activityId) {
+        try {
+          const activity = await storage.getActivity(reservation.activityId);
+          if (activity && activity.transferZones) {
+            const zones = typeof activity.transferZones === 'string' ? JSON.parse(activity.transferZones) : (activity.transferZones || []);
+            const zoneData = zones.find((z: any) =>
+              (typeof z === 'object' && z.zone === reservation.transferZone) || z === reservation.transferZone
+            );
+            if (zoneData) {
+              const minsBefore = typeof zoneData === 'object' ? (zoneData.minutesBefore || 30) : 30;
+              pickupMinutesBefore = minsBefore;
+              const [h, m] = reservation.time.split(':').map(Number);
+              let total = h * 60 + m - minsBefore;
+              if (total < 0) total += 24 * 60;
+              pickupTime = `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+            }
+          }
+        } catch {}
+      }
+
       res.json({
         customerName: reservation.customerName,
         activityName,
@@ -5607,6 +5629,8 @@ export async function registerRoutes(
         hotelName: reservation.hotelName || null,
         hasTransfer: reservation.hasTransfer || false,
         transferZone: reservation.transferZone || null,
+        pickupTime: pickupTime,
+        pickupMinutesBefore: pickupMinutesBefore,
         selectedExtras: parsedExtras,
         notes: reservation.notes || null,
       });

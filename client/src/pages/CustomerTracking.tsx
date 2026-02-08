@@ -47,6 +47,8 @@ interface TrackingData {
   hotelName: string | null;
   hasTransfer: boolean;
   transferZone: string | null;
+  pickupTime: string | null;
+  pickupMinutesBefore: number | null;
   selectedExtras: SelectedExtra[];
   notes: string | null;
 }
@@ -423,6 +425,21 @@ export default function CustomerTracking() {
                       {t(lang, 'Otel transferi dahil', 'Hotel transfer included')}
                       {reservation.transferZone && ` (${reservation.transferZone})`}
                     </p>
+                    {reservation.pickupTime && (
+                      <div className="mt-1.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2" data-testid="text-pickup-info">
+                        <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                          {t(lang, 'Alınma Saati', 'Pickup Time')}: {reservation.pickupTime}
+                        </p>
+                        {reservation.pickupMinutesBefore && (
+                          <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-0.5">
+                            {t(lang, 
+                              `Tur saatinden ${reservation.pickupMinutesBefore} dk önce otelinizden alınacaksınız`, 
+                              `You will be picked up from your hotel ${reservation.pickupMinutesBefore} min before the tour`
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
