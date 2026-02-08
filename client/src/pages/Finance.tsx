@@ -1598,7 +1598,7 @@ export default function Finance() {
                   ) : (
                     <Handshake className="h-4 w-4 xl:mr-2" />
                   )}
-                  <span className="hidden xl:inline">Partner Acentalar</span>
+                  <span className={`hidden xl:inline ${financeTab !== 'partner-customers' ? 'bg-gradient-to-r from-cyan-500 via-teal-400 to-yellow-400 bg-clip-text text-transparent font-semibold' : ''}`}>Partner Acentalar</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Partner Acentalar</TooltipContent>

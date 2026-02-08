@@ -56,6 +56,9 @@ export default function Reservations() {
   const { data: agencies = [] } = useQuery<Agency[]>({
     queryKey: ['/api/finance/agencies']
   });
+  const { data: appUsers = [] } = useQuery<{ id: number; username: string; fullName: string }[]>({
+    queryKey: ['/api/app-users']
+  });
   const { data: holidays = [] } = useQuery<Holiday[]>({
     queryKey: ['/api/holidays']
   });
@@ -397,6 +400,7 @@ export default function Reservations() {
   const [agencyFilter, setAgencyFilter] = useState<string>("all");
   const [priceMinFilter, setPriceMinFilter] = useState<string>("");
   const [priceMaxFilter, setPriceMaxFilter] = useState<string>("");
+  const [userFilter, setUserFilter] = useState<string>("all");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Saved filter profiles
@@ -408,7 +412,7 @@ export default function Reservations() {
   const saveCurrentFilter = (name: string) => {
     const newFilter = {
       name,
-      filters: { statusFilter, activityFilter, sourceFilter, agencyFilter, priceMinFilter, priceMaxFilter, packageTourFilter }
+      filters: { statusFilter, activityFilter, sourceFilter, agencyFilter, priceMinFilter, priceMaxFilter, packageTourFilter, userFilter }
     };
     const updated = [...savedFilters.filter(f => f.name !== name), newFilter];
     setSavedFilters(updated);
@@ -424,6 +428,7 @@ export default function Reservations() {
     setPriceMinFilter(filter.filters.priceMinFilter || "");
     setPriceMaxFilter(filter.filters.priceMaxFilter || "");
     setPackageTourFilter(filter.filters.packageTourFilter || "all");
+    setUserFilter(filter.filters.userFilter || "all");
     toast({ title: "Yüklendi", description: `"${filter.name}" filtresi uygulandı.` });
   };
 
@@ -663,6 +668,7 @@ export default function Reservations() {
       const matchesActivity = activityFilter === "all" || String(r.activityId) === activityFilter;
       const matchesSource = sourceFilter === "all" || r.source === sourceFilter;
       const matchesAgency = agencyFilter === "all" || String(r.agencyId) === agencyFilter;
+      const matchesUser = userFilter === "all" || String(r.createdByUserId) === userFilter;
       const matchesPrice = (() => {
         if (!priceMinFilter && !priceMaxFilter) return true;
         const price = r.priceTl || 0;
@@ -681,7 +687,7 @@ export default function Reservations() {
         }
         return !dateFilter || r.date === dateFilter;
       })();
-      return matchesSearch && matchesStatus && matchesActivity && matchesDate && matchesSource && matchesAgency && matchesPrice;
+      return matchesSearch && matchesStatus && matchesActivity && matchesDate && matchesSource && matchesAgency && matchesUser && matchesPrice;
     })
     .sort((a, b) => {
       const getActivityName = (id: number | null) => activities?.find(act => act.id === id)?.name || '';
@@ -1400,7 +1406,7 @@ export default function Reservations() {
               <Sheet>
                 <SheetTrigger asChild>
                   <Button 
-                    variant={statusFilter !== 'all' || activityFilter !== 'all' || sourceFilter !== 'all' || agencyFilter !== 'all' || packageTourFilter !== 'all' ? "default" : "outline"}
+                    variant={statusFilter !== 'all' || activityFilter !== 'all' || sourceFilter !== 'all' || agencyFilter !== 'all' || packageTourFilter !== 'all' || userFilter !== 'all' ? "default" : "outline"}
                     size="icon"
                     className="flex-shrink-0"
                   >
@@ -1509,6 +1515,22 @@ export default function Reservations() {
                         </Select>
                       </div>
                     )}
+                    {appUsers.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Kullanıcı</Label>
+                        <Select value={userFilter} onValueChange={setUserFilter}>
+                          <SelectTrigger className="w-full h-12" data-testid="select-user-filter-mobile">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tüm Kullanıcılar</SelectItem>
+                            {appUsers.map(u => (
+                              <SelectItem key={u.id} value={String(u.id)}>{u.fullName || u.username}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Fiyat Aralığı (TL)</Label>
                       <div className="flex gap-2">
@@ -1537,6 +1559,7 @@ export default function Reservations() {
                         setPackageTourFilter("all");
                         setSourceFilter("all");
                         setAgencyFilter("all");
+                        setUserFilter("all");
                         setPriceMinFilter("");
                         setPriceMaxFilter("");
                       }}
@@ -1647,7 +1670,7 @@ export default function Reservations() {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button 
-                    variant={showAdvancedFilters || sourceFilter !== 'all' || agencyFilter !== 'all' || priceMinFilter || priceMaxFilter ? "default" : "outline"} 
+                    variant={showAdvancedFilters || sourceFilter !== 'all' || agencyFilter !== 'all' || userFilter !== 'all' || priceMinFilter || priceMaxFilter ? "default" : "outline"} 
                     size="sm"
                   >
                     <Filter className="h-4 w-4 xl:mr-1" />
@@ -1685,6 +1708,22 @@ export default function Reservations() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {appUsers.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-xs">Kullanıcı</Label>
+                        <Select value={userFilter} onValueChange={setUserFilter}>
+                          <SelectTrigger className="h-8" data-testid="select-user-filter-desktop">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tüm Kullanıcılar</SelectItem>
+                            {appUsers.map(u => (
+                              <SelectItem key={u.id} value={String(u.id)}>{u.fullName || u.username}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label className="text-xs">Fiyat Aralığı (TL)</Label>
                       <div className="flex gap-2">
@@ -1764,6 +1803,7 @@ export default function Reservations() {
                       onClick={() => {
                         setSourceFilter("all");
                         setAgencyFilter("all");
+                        setUserFilter("all");
                         setPriceMinFilter("");
                         setPriceMaxFilter("");
                       }}
