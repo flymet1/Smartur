@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useState, useMemo, useEffect } from "react";
 import { 
   Table, 
   TableBody, 
@@ -10,10 +10,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -24,8 +28,32 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface ReservationMetadata {
+  participants?: Array<{ firstName: string; lastName: string; birthDate: string }>;
+  extras?: Array<{ name: string; quantity: number; priceTl: number }>;
+  totalPrice?: number;
+  depositRequired?: number;
+  remainingPayment?: number;
+  paymentType?: string;
+}
+
+function parseReservationMetadata(notes: string | null | undefined): ReservationMetadata | null {
+  if (!notes) return null;
+  const match = notes.match(/__METADATA__:(.*)/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+}
+
+function getNotesWithoutMetadata(notes: string | null | undefined): string {
+  if (!notes) return "";
+  return notes.replace(/__METADATA__:.*$/, "").trim();
+}
 
 interface ReservationTableProps {
   reservations: Reservation[];
@@ -36,6 +64,7 @@ interface ReservationTableProps {
   onWhatsAppNotify?: (reservation: Reservation) => void;
   onAddDispatch?: (reservation: Reservation) => void;
   onNotifyAgency?: (reservation: Reservation) => void;
+  onMoveSuccess?: (reservation: Reservation, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => void;
 }
 
 export function ReservationTable({ 
@@ -46,10 +75,15 @@ export function ReservationTable({
   onSelectAll,
   onWhatsAppNotify,
   onAddDispatch,
-  onNotifyAgency
+  onNotifyAgency,
+  onMoveSuccess
 }: ReservationTableProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
   const hasSelection = selectedIds !== undefined && onToggleSelection !== undefined;
   
   const { data: activities = [] } = useQuery<Activity[]>({
@@ -123,6 +157,36 @@ export function ReservationTable({
       toast({ title: "Hata", description: "Takip linki oluşturulamadı.", variant: "destructive" });
     },
   });
+
+  const dateUpdateMutation = useMutation({
+    mutationFn: async ({ id, date, time }: { id: number; date: string; time: string }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}`, { date, time });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      toast({ title: "Başarılı", description: "Tarih ve saat güncellendi." });
+      setIsEditing(false);
+      const res = reservations.find(r => r.id === variables.id);
+      if (res && onMoveSuccess && (variables.date !== res.date || variables.time !== res.time)) {
+        onMoveSuccess(res, res.date, variables.date, res.time, variables.time);
+      }
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Güncelleme başarısız.", variant: "destructive" });
+    },
+  });
+
+  const toggleExpand = (res: Reservation) => {
+    if (expandedId === res.id) {
+      setExpandedId(null);
+      setIsEditing(false);
+    } else {
+      setExpandedId(res.id);
+      setEditDate(res.date);
+      setEditTime(res.time);
+      setIsEditing(false);
+    }
+  };
 
   const copyExistingLink = async (token: string, id: number) => {
     const trackingUrl = `${window.location.origin}/takip/${token}`;
@@ -219,6 +283,352 @@ export function ReservationTable({
     }
   };
 
+  const renderExpandedDetail = (res: Reservation) => {
+    const activity = activities.find(a => a.id === res.activityId);
+    const metadata = parseReservationMetadata(res.notes);
+    const cleanNotes = getNotesWithoutMetadata(res.notes);
+    const statusConfig: Record<string, { label: string; className: string }> = {
+      confirmed: { label: "Onaylı", className: "bg-green-100 text-green-700" },
+      pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700" },
+      cancelled: { label: "İptal", className: "bg-red-100 text-red-700" },
+    };
+    const status = statusConfig[res.status || 'pending'] || { label: res.status, className: "" };
+    const availableTimes = activity ? (() => {
+      try { return JSON.parse((activity as any).defaultTimes || "[]"); } catch { return []; }
+    })() : [];
+
+    const handleSave = () => {
+      if (!editDate || !editTime) {
+        toast({ title: "Hata", description: "Tarih ve saat seçiniz.", variant: "destructive" });
+        return;
+      }
+      dateUpdateMutation.mutate({ id: res.id, date: editDate, time: editTime });
+    };
+
+    const handleCancelEdit = () => {
+      setEditDate(res.date);
+      setEditTime(res.time);
+      setIsEditing(false);
+    };
+
+    return (
+      <div className="p-4 space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <Label className="text-muted-foreground text-xs">Müşteri</Label>
+            <div className="font-medium" data-testid="text-customer-name">{res.customerName}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Telefon</Label>
+            <div 
+              className="font-medium text-primary hover:underline cursor-pointer flex items-center gap-1" 
+              data-testid="text-customer-phone"
+              onClick={() => { window.location.href = `/messages?phone=${encodeURIComponent(res.customerPhone)}`; }}
+            >
+              <MessageCircle className="h-3 w-3" />
+              {res.customerPhone}
+            </div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">E-posta</Label>
+            <div className="font-medium" data-testid="text-customer-email">{res.customerEmail || "-"}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Kişi Sayısı</Label>
+            <div className="font-medium" data-testid="text-quantity">{res.quantity} kişi</div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <Label className="text-muted-foreground text-xs">Aktivite</Label>
+            <div className="font-medium" data-testid="text-activity">{activity?.name || "Bilinmiyor"}</div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Kaynak</Label>
+            <div className="font-medium">
+              {res.source === 'manual' ? 'Manuel' : 
+               res.source === 'woocommerce' ? 'WooCommerce' : 
+               res.source === 'partner' ? (() => {
+                 const partnerMatch = (res as any).notes?.match(/\[Partner:\s*([^\]]+)\]/);
+                 return partnerMatch ? `Partner: ${partnerMatch[1]}` : 'Partner Acenta';
+               })() : 
+               res.source}
+            </div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Odeme Durumu</Label>
+            <Badge 
+              variant={
+                (res as any).paymentStatus === 'paid' ? 'default' : 
+                (res as any).paymentStatus === 'partial' ? 'secondary' : 
+                'outline'
+              }
+              className={
+                (res as any).paymentStatus === 'paid' ? 'bg-green-600 text-white' : 
+                (res as any).paymentStatus === 'partial' ? 'bg-yellow-500 text-white' : 
+                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+              }
+              data-testid="badge-payment-status"
+            >
+              {(res as any).paymentStatus === 'paid' ? 'Odendi' : 
+               (res as any).paymentStatus === 'partial' ? 'Kismi' : 
+               'Odenmedi'}
+            </Badge>
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Durum</Label>
+            <Badge className={status.className}>{status.label}</Badge>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <Label className="text-muted-foreground text-xs flex items-center gap-1">
+              Tarih
+              {!isEditing && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-4 w-4 p-0 ml-1"
+                  onClick={() => setIsEditing(true)}
+                  data-testid="button-edit-datetime"
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
+            </Label>
+            {isEditing ? (
+              <Input 
+                type="date" 
+                value={editDate} 
+                onChange={(e) => setEditDate(e.target.value)}
+                className="h-8 text-sm"
+                data-testid="input-edit-date"
+              />
+            ) : (
+              <div className="font-medium" data-testid="text-date">{res.date}</div>
+            )}
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Saat</Label>
+            {isEditing ? (
+              availableTimes.length > 0 ? (
+                <Select value={editTime} onValueChange={setEditTime}>
+                  <SelectTrigger className="h-8 text-sm" data-testid="select-edit-time">
+                    <SelectValue placeholder="Saat seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTimes.map((t: string) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input 
+                  type="time" 
+                  value={editTime} 
+                  onChange={(e) => setEditTime(e.target.value)}
+                  className="h-8 text-sm"
+                  data-testid="input-edit-time"
+                />
+              )
+            ) : (
+              <div className="font-medium" data-testid="text-time">{res.time}</div>
+            )}
+          </div>
+          {(res.priceTl ?? 0) > 0 && (
+            <div>
+              <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
+              <div className="font-medium">{(res.priceTl ?? 0).toLocaleString('tr-TR')} ₺</div>
+            </div>
+          )}
+          {(res.priceUsd ?? 0) > 0 && (
+            <div>
+              <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
+              <div className="font-medium">${res.priceUsd ?? 0}</div>
+            </div>
+          )}
+        </div>
+
+        {isEditing && (
+          <div className="flex items-center gap-2">
+            <Button 
+              size="sm" 
+              onClick={handleSave}
+              disabled={dateUpdateMutation.isPending}
+              data-testid="button-save-datetime"
+            >
+              <Save className="h-4 w-4 mr-1" />
+              Kaydet
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleCancelEdit}
+              disabled={dateUpdateMutation.isPending}
+              data-testid="button-cancel-edit"
+            >
+              Vazgeç
+            </Button>
+          </div>
+        )}
+
+        {res.orderNumber && (
+          <>
+            <Separator />
+            <div>
+              <Label className="text-muted-foreground text-xs">Sipariş No</Label>
+              <div className="font-medium">{res.orderNumber}</div>
+            </div>
+          </>
+        )}
+
+        {(res.hotelName || res.hasTransfer) && (
+          <>
+            <Separator />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {res.hotelName && (
+                <div>
+                  <Label className="text-muted-foreground text-xs">Otel</Label>
+                  <div className="font-medium">{res.hotelName}</div>
+                </div>
+              )}
+              {res.hasTransfer && (
+                <div>
+                  <Label className="text-muted-foreground text-xs">Transfer Bölgesi</Label>
+                  <div className="font-medium">{(res as any).transferZone || "Belirtilmedi"}</div>
+                </div>
+              )}
+            </div>
+            {res.hasTransfer && (
+              <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                <Check className="h-3 w-3" />
+                Otel transferi talep edildi
+              </div>
+            )}
+          </>
+        )}
+
+        {metadata?.extras && metadata.extras.length > 0 && (
+          <>
+            <Separator />
+            <div>
+              <Label className="text-muted-foreground text-xs">Ekstralar</Label>
+              <div className="space-y-1 mt-1">
+                {metadata.extras.map((extra, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span>{extra.name} x{extra.quantity}</span>
+                    <span className="font-medium">{(extra.priceTl * extra.quantity).toLocaleString('tr-TR')} ₺</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {metadata && (metadata.totalPrice || metadata.depositRequired || metadata.remainingPayment) && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-xs">Ödeme Bilgileri</Label>
+              {metadata.totalPrice && (
+                <div className="flex justify-between text-sm">
+                  <span>Toplam Tutar</span>
+                  <span className="font-bold text-primary">{metadata.totalPrice.toLocaleString('tr-TR')} ₺</span>
+                </div>
+              )}
+              {metadata.depositRequired !== undefined && metadata.depositRequired > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Ön Ödeme (Kapora)</span>
+                  <span className="font-medium text-amber-600">{metadata.depositRequired.toLocaleString('tr-TR')} ₺</span>
+                </div>
+              )}
+              {metadata.remainingPayment !== undefined && metadata.remainingPayment > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Kalan Ödeme</span>
+                  <span className="font-medium">{metadata.remainingPayment.toLocaleString('tr-TR')} ₺</span>
+                </div>
+              )}
+              {metadata.paymentType && (
+                <div className="text-xs text-muted-foreground">
+                  {metadata.paymentType === 'full' ? 'Tam ödeme gerekli' : 
+                   metadata.paymentType === 'deposit' ? 'Ön ödeme gerekli, kalan aktivite günü alınacak' : 
+                   'Ödeme aktivite günü alınacak'}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {metadata?.participants && metadata.participants.length > 0 && (
+          <>
+            <Separator />
+            <div>
+              <Label className="text-muted-foreground text-xs">Katılımcılar ({metadata.participants.length} kişi)</Label>
+              <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
+                {metadata.participants.map((p, idx) => (
+                  <div key={idx} className="flex justify-between text-sm bg-muted/50 px-2 py-1 rounded-md">
+                    <span>{p.firstName} {p.lastName}</span>
+                    <span className="text-muted-foreground text-xs">{p.birthDate}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {cleanNotes && (
+          <>
+            <Separator />
+            <div>
+              <Label className="text-muted-foreground text-xs">Notlar</Label>
+              <div className="font-medium text-sm whitespace-pre-wrap">{cleanNotes}</div>
+            </div>
+          </>
+        )}
+
+        {res.source === 'manual' && (res as any).createdByUserName && (
+          <>
+            <Separator />
+            <div>
+              <Label className="text-muted-foreground text-xs">Oluşturan Kullanıcı</Label>
+              <div className="font-medium flex items-center gap-2" data-testid="text-created-by-user">
+                <User className="h-4 w-4 text-muted-foreground" />
+                {(res as any).createdByUserName}
+              </div>
+            </div>
+          </>
+        )}
+
+        {res.trackingToken && (
+          <>
+            <Separator />
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  const link = `${window.location.origin}/takip/${res.trackingToken}`;
+                  navigator.clipboard.writeText(link);
+                  toast({ title: "Kopyalandı", description: "Takip linki panoya kopyalandı." });
+                }}
+                data-testid="button-copy-tracking"
+              >
+                <Copy className="h-4 w-4 mr-1" />
+                Takip Linki Kopyala
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const groupedReservations = useMemo(() => {
     const packageGroups = new Map<string, Reservation[]>();
     const standaloneReservations: Reservation[] = [];
@@ -273,8 +683,7 @@ export function ReservationTable({
             {group.reservations.map((res) => (
               <div 
                 key={res.id}
-                className={`rounded-lg border p-3 space-y-2 hover-elevate ${onReservationSelect ? 'cursor-pointer' : ''} ${group.type === 'group' ? 'border-purple-200 dark:border-purple-800 ml-2' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5 border-primary' : 'bg-card'}`}
-                onClick={() => onReservationSelect?.(res)}
+                className={`rounded-lg border p-3 space-y-2 ${group.type === 'group' ? 'border-purple-200 dark:border-purple-800 ml-2' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5 border-primary' : 'bg-card'}`}
               >
                 {/* Header Row: Name, Status, Actions */}
                 <div className="flex items-start justify-between gap-2">
@@ -440,6 +849,27 @@ export function ReservationTable({
                     )}
                   </div>
                 )}
+
+                <div className="pt-1 border-t">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-center gap-1 text-xs text-muted-foreground"
+                    onClick={() => toggleExpand(res)}
+                    data-testid={`button-expand-mobile-${res.id}`}
+                  >
+                    {expandedId === res.id ? (
+                      <><ChevronDown className="h-3 w-3" /> Detayları Gizle</>
+                    ) : (
+                      <><ChevronRight className="h-3 w-3" /> Detayları Göster</>
+                    )}
+                  </Button>
+                  {expandedId === res.id && (
+                    <div className="mt-2 border-t pt-2">
+                      {renderExpandedDetail(res)}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </Fragment>
@@ -474,7 +904,7 @@ export function ReservationTable({
             <TableHead>Kaynak</TableHead>
             <TableHead>Durum</TableHead>
             <TableHead className="text-right">Tutar</TableHead>
-            <TableHead className="w-12"></TableHead>
+            <TableHead className="w-20"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -505,13 +935,12 @@ export function ReservationTable({
                   </TableRow>
                 )}
                 {group.reservations.map((res) => (
+                  <Fragment key={res.id}>
                   <TableRow 
-                    key={res.id} 
-                    className={`hover:bg-muted/50 ${onReservationSelect ? 'cursor-pointer' : ''} ${group.type === 'group' ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5' : ''}`}
-                    onClick={() => onReservationSelect?.(res)}
+                    className={`hover:bg-muted/50 ${group.type === 'group' ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5' : ''}`}
                   >
                     {hasSelection && (
-                      <TableCell onClick={(e) => e.stopPropagation()}>
+                      <TableCell>
                         <Checkbox 
                           checked={selectedIds.has(res.id)}
                           onCheckedChange={() => onToggleSelection(res.id)}
@@ -528,14 +957,13 @@ export function ReservationTable({
                         <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <div>
                           <div className="font-medium">{res.customerName}</div>
                           <div 
                             className="text-xs text-primary hover:underline cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            onClick={() => {
                               window.location.href = `/messages?phone=${encodeURIComponent(res.customerPhone)}`;
                             }}
                           >
@@ -595,110 +1023,128 @@ export function ReservationTable({
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
+                    <TableCell>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
                     <TableCell className="text-right font-medium">
                       {res.priceTl ? `₺${res.priceTl.toLocaleString('tr-TR')}` : ''}
                       {res.priceTl && res.priceUsd ? ' / ' : ''}
                       {res.priceUsd ? `$${res.priceUsd}` : ''}
                       {!res.priceTl && !res.priceUsd ? '-' : ''}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {res.status !== 'confirmed' && (
-                            <DropdownMenuItem 
-                              onClick={() => statusMutation.mutate({ id: res.id, status: 'confirmed' })}
-                              data-testid={`action-confirm-${res.id}`}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                              Onayla
-                            </DropdownMenuItem>
-                          )}
-                          {res.status !== 'cancelled' && (
-                            <DropdownMenuItem 
-                              onClick={() => statusMutation.mutate({ id: res.id, status: 'cancelled' })}
-                              data-testid={`action-cancel-${res.id}`}
-                            >
-                              <XCircle className="h-4 w-4 mr-2 text-red-600" />
-                              İptal Et
-                            </DropdownMenuItem>
-                          )}
-                          {onWhatsAppNotify && (
-                            <DropdownMenuItem 
-                              onClick={() => onWhatsAppNotify(res)}
-                              data-testid={`action-whatsapp-${res.id}`}
-                            >
-                              <Send className="h-4 w-4 mr-2 text-green-600" />
-                              Müşteriye Whatsapp Bildirimi
-                            </DropdownMenuItem>
-                          )}
-                          {onAddDispatch && (
-                            <DropdownMenuItem 
-                              onClick={() => onAddDispatch(res)}
-                              data-testid={`action-dispatch-${res.id}`}
-                            >
-                              <ArrowRightLeft className="h-4 w-4 mr-2 text-blue-600" />
-                              Partner Acentaya Gönder
-                            </DropdownMenuItem>
-                          )}
-                          {onNotifyAgency && (
-                            <DropdownMenuItem 
-                              onClick={() => onNotifyAgency(res)}
-                              data-testid={`action-notify-agency-${res.id}`}
-                            >
-                              <Phone className="h-4 w-4 mr-2 text-green-600" />
-                              Acentaya Whatsapp Bildirimi
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          {res.trackingToken ? (
-                            <>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" data-testid={`button-actions-${res.id}`}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {res.status !== 'confirmed' && (
                               <DropdownMenuItem 
-                                onClick={() => copyExistingLink(res.trackingToken!, res.id)}
-                                data-testid={`copy-tracking-${res.id}`}
+                                onClick={() => statusMutation.mutate({ id: res.id, status: 'confirmed' })}
+                                data-testid={`action-confirm-${res.id}`}
                               >
-                                {copiedId === res.id ? (
-                                  <>
-                                    <Check className="h-4 w-4 mr-2 text-green-600" />
-                                    Kopyalandı
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="h-4 w-4 mr-2" />
-                                    Takip Linkini Kopyala
-                                  </>
-                                )}
+                                <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                                Onayla
                               </DropdownMenuItem>
+                            )}
+                            {res.status !== 'cancelled' && (
                               <DropdownMenuItem 
-                                onClick={() => {
-                                  const trackingUrl = `${window.location.origin}/takip/${res.trackingToken}`;
-                                  window.open(trackingUrl, '_blank');
-                                }}
-                                data-testid={`open-tracking-${res.id}`}
+                                onClick={() => statusMutation.mutate({ id: res.id, status: 'cancelled' })}
+                                data-testid={`action-cancel-${res.id}`}
+                              >
+                                <XCircle className="h-4 w-4 mr-2 text-red-600" />
+                                İptal Et
+                              </DropdownMenuItem>
+                            )}
+                            {onWhatsAppNotify && (
+                              <DropdownMenuItem 
+                                onClick={() => onWhatsAppNotify(res)}
+                                data-testid={`action-whatsapp-${res.id}`}
+                              >
+                                <Send className="h-4 w-4 mr-2 text-green-600" />
+                                Müşteriye Whatsapp Bildirimi
+                              </DropdownMenuItem>
+                            )}
+                            {onAddDispatch && (
+                              <DropdownMenuItem 
+                                onClick={() => onAddDispatch(res)}
+                                data-testid={`action-dispatch-${res.id}`}
+                              >
+                                <ArrowRightLeft className="h-4 w-4 mr-2 text-blue-600" />
+                                Partner Acentaya Gönder
+                              </DropdownMenuItem>
+                            )}
+                            {onNotifyAgency && (
+                              <DropdownMenuItem 
+                                onClick={() => onNotifyAgency(res)}
+                                data-testid={`action-notify-agency-${res.id}`}
+                              >
+                                <Phone className="h-4 w-4 mr-2 text-green-600" />
+                                Acentaya Whatsapp Bildirimi
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            {res.trackingToken ? (
+                              <>
+                                <DropdownMenuItem 
+                                  onClick={() => copyExistingLink(res.trackingToken!, res.id)}
+                                  data-testid={`copy-tracking-${res.id}`}
+                                >
+                                  {copiedId === res.id ? (
+                                    <>
+                                      <Check className="h-4 w-4 mr-2 text-green-600" />
+                                      Kopyalandı
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Takip Linkini Kopyala
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    const trackingUrl = `${window.location.origin}/takip/${res.trackingToken}`;
+                                    window.open(trackingUrl, '_blank');
+                                  }}
+                                  data-testid={`open-tracking-${res.id}`}
+                                >
+                                  <Link2 className="h-4 w-4 mr-2" />
+                                  Takip Sayfasını Aç
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <DropdownMenuItem 
+                                onClick={() => trackingMutation.mutate(res.id)}
+                                disabled={trackingMutation.isPending}
+                                data-testid={`generate-tracking-${res.id}`}
                               >
                                 <Link2 className="h-4 w-4 mr-2" />
-                                Takip Sayfasını Aç
+                                Takip Linki Oluştur
                               </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <DropdownMenuItem 
-                              onClick={() => trackingMutation.mutate(res.id)}
-                              disabled={trackingMutation.isPending}
-                              data-testid={`generate-tracking-${res.id}`}
-                            >
-                              <Link2 className="h-4 w-4 mr-2" />
-                              Takip Linki Oluştur
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => toggleExpand(res)}
+                          data-testid={`button-expand-${res.id}`}
+                        >
+                          {expandedId === res.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
+                  {expandedId === res.id && (
+                    <TableRow>
+                      <TableCell colSpan={hasSelection ? 11 : 10} className="bg-muted/30 p-0">
+                        {renderExpandedDetail(res)}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  </Fragment>
                 ))}
               </Fragment>
             ))

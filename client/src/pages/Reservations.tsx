@@ -95,7 +95,6 @@ export default function Reservations() {
   });
   const [selectedDateForNew, setSelectedDateForNew] = useState<string>("");
   const [newReservationOpen, setNewReservationOpen] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [showNewReservations, setShowNewReservations] = useState(false);
   const [bulkWhatsAppOpen, setBulkWhatsAppOpen] = useState(false);
   const [bulkWhatsAppMessage, setBulkWhatsAppMessage] = useState("");
@@ -846,12 +845,6 @@ export default function Reservations() {
                 defaultDate={selectedDateForNew}
               />
             </div>
-            <ReservationDetailDialog
-              reservation={selectedReservation}
-              activities={activities || []}
-              onClose={() => setSelectedReservation(null)}
-              onMoveSuccess={openMoveNotification}
-            />
 
             {/* Customer History Dialog */}
             <Dialog open={!!customerHistoryPhone} onOpenChange={() => setCustomerHistoryPhone(null)}>
@@ -1925,7 +1918,6 @@ export default function Reservations() {
         ) : viewMode === "list" ? (
           <ReservationTable 
             reservations={filteredReservations} 
-            onReservationSelect={setSelectedReservation}
             selectedIds={selectedIds}
             onToggleSelection={toggleSelection}
             onSelectAll={selectAll}
@@ -1985,7 +1977,7 @@ export default function Reservations() {
               onGoToToday={goToToday}
               onDateClick={handleAddReservationForDate}
               onDateSelect={setCurrentDate}
-              onReservationSelect={setSelectedReservation}
+              onReservationSelect={() => {}}
               statusFilter={statusFilter}
               activityFilter={activityFilter}
               onActivityFilterChange={setActivityFilter}
