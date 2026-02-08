@@ -25,6 +25,7 @@ import { SEO, FAQSchema } from "../components/shared/SEO";
 import type { PublicActivity, AvailabilitySlot, PublicWebsiteData } from "../types";
 import { getApiUrl } from "../utils";
 import { useLanguage } from "../i18n/LanguageContext";
+import { ActivityCard } from "../components/ActivityCard";
 
 interface SelectedExtra {
   name: string;
@@ -1725,41 +1726,7 @@ export default function PublicActivityDetail() {
             </div>
             <div className="grid md:grid-cols-3 gap-6">
               {relatedActivities.map((related) => (
-                <Link key={related.id} href={getLocalizedPath(`/aktivite/${related.id}`)}>
-                  <Card className="overflow-hidden hover-elevate cursor-pointer h-full border-0 shadow-md hover:shadow-xl">
-                    <div className="aspect-video relative overflow-hidden">
-                      <img
-                        src={related.imageUrl || "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80"}
-                        alt={related.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="font-semibold text-white">{related.name}</h3>
-                      </div>
-                    </div>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {formatDuration(related.durationMinutes)}
-                        </div>
-                        <div className="font-bold text-primary">
-                          {(related as any).discountPrice ? (
-                            <>
-                              {(related as any).discountPrice.toLocaleString()} TL
-                              <span className="text-xs text-muted-foreground line-through ml-1 font-normal">
-                                {related.price.toLocaleString()} TL
-                              </span>
-                            </>
-                          ) : (
-                            <>{related.price.toLocaleString()} TL</>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <ActivityCard key={related.id} activity={related} />
               ))}
             </div>
           </div>
