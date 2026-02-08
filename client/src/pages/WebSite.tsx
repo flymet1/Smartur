@@ -2321,6 +2321,15 @@ function ImageGalleryTab() {
                       alt={img.originalName || "Görsel"}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (!target.dataset.retried) {
+                          target.dataset.retried = "1";
+                          setTimeout(() => {
+                            target.src = `/api/images/${img.id}.webp?t=${Date.now()}`;
+                          }, 500);
+                        }
+                      }}
                     />
                   </div>
                   <div className="p-2 space-y-1">

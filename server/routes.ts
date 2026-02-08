@@ -4119,6 +4119,7 @@ export async function registerRoutes(
         .limit(1);
 
       if (!image) {
+        res.set({ 'Cache-Control': 'no-store' });
         return res.status(404).json({ error: "Görsel bulunamadı" });
       }
 
@@ -4126,11 +4127,13 @@ export async function registerRoutes(
       res.set({
         'Content-Type': image.mimetype,
         'Content-Length': buffer.length.toString(),
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=86400',
+        'ETag': `"${imageId}"`,
       });
       res.send(buffer);
     } catch (error: any) {
       console.error('[Image Serve Error]', error.message);
+      res.set({ 'Cache-Control': 'no-store' });
       res.status(500).json({ error: "Görsel yüklenirken hata oluştu" });
     }
   });
