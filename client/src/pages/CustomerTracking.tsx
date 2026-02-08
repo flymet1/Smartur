@@ -8,10 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send, CalendarClock, ShieldCheck, Phone, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
+import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send, CalendarClock, ShieldCheck, Phone, ChevronLeft, ChevronRight, TrendingUp, CreditCard, Hotel, Car, Package, FileText, Info } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+interface SelectedExtra {
+  name: string;
+  priceTl: number;
+}
 
 interface TrackingData {
   customerName: string;
@@ -32,6 +37,13 @@ interface TrackingData {
   cancellationPolicy: string | null;
   meetingPoint: string | null;
   arrivalMinutesBefore: number | null;
+  advancePaymentTl: number;
+  paymentStatus: string;
+  hotelName: string | null;
+  hasTransfer: boolean;
+  transferZone: string | null;
+  selectedExtras: SelectedExtra[];
+  notes: string | null;
 }
 
 interface TimeSlot {
@@ -76,6 +88,7 @@ export default function CustomerTracking() {
   const [requestDetails, setRequestDetails] = useState("");
   const [requestSent, setRequestSent] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+  const [showCancellationPolicy, setShowCancellationPolicy] = useState(false);
 
   const { data: reservation, isLoading, error } = useQuery<TrackingData>({
     queryKey: ['/api/track', token],
@@ -355,14 +368,106 @@ export default function CustomerTracking() {
                   <p className="font-medium" data-testid="text-quantity">{reservation.quantity} Kişi</p>
                 </div>
               </div>
+
+              {reservation.meetingPoint && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Buluşma Noktası</p>
+                    <p className="font-medium text-sm" data-testid="text-meeting-point">{reservation.meetingPoint}</p>
+                    {reservation.arrivalMinutesBefore && (
+                      <p className="text-xs text-muted-foreground">{reservation.arrivalMinutesBefore} dk önce geliniz</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {reservation.hotelName && (
+                <div className="flex items-start gap-3">
+                  <Hotel className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Otel</p>
+                    <p className="font-medium text-sm" data-testid="text-hotel-name">{reservation.hotelName}</p>
+                  </div>
+                </div>
+              )}
+
+              {reservation.hasTransfer && (
+                <div className="flex items-start gap-3">
+                  <Car className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Transfer</p>
+                    <p className="font-medium text-sm" data-testid="text-transfer-info">
+                      Otel transferi dahil
+                      {reservation.transferZone && ` (${reservation.transferZone})`}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="border-t pt-4">
+            {reservation.selectedExtras.length > 0 && (
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Package className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm font-medium text-muted-foreground">Ekstra Hizmetler</p>
+                </div>
+                <div className="space-y-2">
+                  {reservation.selectedExtras.map((extra, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm" data-testid={`extra-item-${idx}`}>
+                      <span>{extra.name}</span>
+                      <span className="font-medium">{extra.priceTl.toLocaleString('tr-TR')} TL</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Toplam Tutar</span>
                 <span className="text-xl font-semibold" data-testid="text-price">
                   {formatPrice(reservation.priceTl, reservation.priceUsd, reservation.currency)}
                 </span>
+              </div>
+
+              {reservation.advancePaymentTl > 0 && (
+                <>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5" />
+                      Ön Ödeme
+                    </span>
+                    <span className="font-medium text-green-600 dark:text-green-400" data-testid="text-advance-payment">
+                      {reservation.advancePaymentTl.toLocaleString('tr-TR')} TL
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Kalan Ödeme</span>
+                    <span className="font-semibold" data-testid="text-remaining-payment">
+                      {Math.max(0, (reservation.priceTl || 0) - (reservation.advancePaymentTl || 0)).toLocaleString('tr-TR')} TL
+                    </span>
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Ödeme Durumu</span>
+                <Badge
+                  className={
+                    reservation.paymentStatus === 'paid'
+                      ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                      : reservation.paymentStatus === 'partial'
+                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                      : 'bg-muted text-muted-foreground'
+                  }
+                  data-testid="text-payment-status"
+                >
+                  {reservation.paymentStatus === 'paid' ? 'Ödendi' 
+                    : reservation.paymentStatus === 'partial' ? 'Kısmi Ödeme' 
+                    : reservation.paymentStatus === 'failed' ? 'Başarısız'
+                    : 'Ödenmedi'}
+                </Badge>
               </div>
             </div>
 
@@ -795,34 +900,6 @@ export default function CustomerTracking() {
           </Card>
         )}
 
-        <Card data-testid="card-cancellation-policy">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5" />
-              İptal ve İade Politikası
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {reservation.cancellationPolicy ? (
-              <div className="text-sm text-muted-foreground whitespace-pre-line" data-testid="text-cancellation-policy">
-                {reservation.cancellationPolicy}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p>
-                  Aktivite başlangıcına <span className="font-medium text-foreground">{reservation.freeCancellationHours} saat</span> ve daha fazla süre varken ücretsiz iptal yapılabilir.
-                </p>
-                <p>
-                  Bu süre içinde yapılan iptallerde ödeme tamamen iade edilir. Süre geçtikten sonra iptal talebi kabul edilmez.
-                </p>
-                <p>
-                  Tarih değişikliği talepleri, mevcut tarihten en fazla 7 gün öncesine veya sonrasına yapılabilir ve onay gerektirir.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {reservation.whatsappNumber && (
           <Card data-testid="card-whatsapp-support">
             <CardContent className="pt-6">
@@ -847,11 +924,40 @@ export default function CustomerTracking() {
           </Card>
         )}
 
-        {reservation.companyName && (
-          <p className="text-xs text-center text-muted-foreground pb-4" data-testid="text-company-name">
-            {reservation.companyName}
-          </p>
-        )}
+        <div className="text-center space-y-2 pb-4">
+          {reservation.companyName && (
+            <p className="text-xs text-muted-foreground" data-testid="text-company-name">
+              {reservation.companyName}
+            </p>
+          )}
+          <button
+            onClick={() => setShowCancellationPolicy(!showCancellationPolicy)}
+            className="text-xs text-muted-foreground underline underline-offset-2"
+            data-testid="link-cancellation-policy"
+          >
+            <ShieldCheck className="w-3 h-3 inline-block mr-1" />
+            İptal ve İade Politikası
+          </button>
+          {showCancellationPolicy && (
+            <div className="text-left bg-muted/30 border border-border rounded-md p-4 mt-2 text-xs text-muted-foreground space-y-2" data-testid="text-cancellation-policy">
+              {reservation.cancellationPolicy ? (
+                <div className="whitespace-pre-line">{reservation.cancellationPolicy}</div>
+              ) : (
+                <>
+                  <p>
+                    Aktivite başlangıcına <span className="font-medium text-foreground">{reservation.freeCancellationHours} saat</span> ve daha fazla süre varken ücretsiz iptal yapılabilir.
+                  </p>
+                  <p>
+                    Bu süre içinde yapılan iptallerde ödeme tamamen iade edilir. Süre geçtikten sonra iptal talebi kabul edilmez.
+                  </p>
+                  <p>
+                    Tarih değişikliği talepleri, mevcut tarihten en fazla 7 gün öncesine veya sonrasına yapılabilir ve onay gerektirir.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

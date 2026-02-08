@@ -5576,6 +5576,13 @@ export async function registerRoutes(
         }
       }
 
+      let parsedExtras: Array<{name: string; priceTl: number}> = [];
+      try {
+        const ext = reservation.selectedExtras;
+        parsedExtras = typeof ext === 'string' ? JSON.parse(ext) : (ext || []);
+        if (!Array.isArray(parsedExtras)) parsedExtras = [];
+      } catch { parsedExtras = []; }
+
       res.json({
         customerName: reservation.customerName,
         activityName,
@@ -5595,6 +5602,13 @@ export async function registerRoutes(
         cancellationPolicy: cancellationPolicy || null,
         meetingPoint: meetingPoint || null,
         arrivalMinutesBefore: arrivalMinutesBefore || null,
+        advancePaymentTl: reservation.advancePaymentTl || 0,
+        paymentStatus: reservation.paymentStatus || 'unpaid',
+        hotelName: reservation.hotelName || null,
+        hasTransfer: reservation.hasTransfer || false,
+        transferZone: reservation.transferZone || null,
+        selectedExtras: parsedExtras,
+        notes: reservation.notes || null,
       });
     } catch (error) {
       console.error("Track reservation error:", error);
