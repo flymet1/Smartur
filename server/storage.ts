@@ -293,6 +293,7 @@ export interface IStorage {
   getSupplierDispatches(agencyId?: number, tenantId?: number | null): Promise<SupplierDispatch[]>;
   createSupplierDispatch(dispatch: InsertSupplierDispatch): Promise<SupplierDispatch>;
   updateSupplierDispatch(id: number, dispatch: Partial<InsertSupplierDispatch>): Promise<SupplierDispatch>;
+  linkDispatchesToPayout(payoutId: number, dispatchIds: number[], tenantId: number): Promise<void>;
   deleteSupplierDispatch(id: number): Promise<void>;
   
   // Finance - Supplier Dispatch Items (Alt Kalemler)
@@ -1713,6 +1714,14 @@ export class DatabaseStorage implements IStorage {
   async updateSupplierDispatch(id: number, dispatch: Partial<InsertSupplierDispatch>): Promise<SupplierDispatch> {
     const [updated] = await db.update(supplierDispatches).set(dispatch).where(eq(supplierDispatches.id, id)).returning();
     return updated;
+  }
+
+  async linkDispatchesToPayout(payoutId: number, dispatchIds: number[], tenantId: number): Promise<void> {
+    for (const dispatchId of dispatchIds) {
+      await db.update(supplierDispatches)
+        .set({ payoutId } as any)
+        .where(and(eq(supplierDispatches.id, dispatchId), eq(supplierDispatches.tenantId, tenantId)));
+    }
   }
 
   async deleteSupplierDispatch(id: number): Promise<void> {

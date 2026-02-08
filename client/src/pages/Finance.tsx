@@ -8,6 +8,7 @@ import { usePermissions, PERMISSION_KEYS } from "@/hooks/use-permissions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -388,6 +389,29 @@ export default function Finance() {
     notes: '',
     status: 'paid'
   });
+  const [selectedPayoutDispatchIds, setSelectedPayoutDispatchIds] = useState<Set<number>>(new Set());
+
+  type UnpaidDispatch = {
+    id: number;
+    customerName: string | null;
+    dispatchDate: string;
+    guestCount: number;
+    totalPayoutTl: number;
+    currency: string;
+    activityId: number | null;
+    reservationId: number | null;
+    agencyId: number;
+  };
+  const { data: unpaidDispatches = [] } = useQuery<UnpaidDispatch[]>({
+    queryKey: ['/api/finance/dispatches/unpaid', payoutForm.agencyId],
+    queryFn: async () => {
+      if (!payoutForm.agencyId) return [];
+      const res = await fetch(`/api/finance/dispatches/unpaid?agencyId=${payoutForm.agencyId}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: payoutForm.agencyId > 0,
+  });
   // Dispatch item type
   type DispatchItemForm = {
     itemType: 'base' | 'observer' | 'extra';
@@ -410,49 +434,30 @@ export default function Finance() {
   });
   const [useLineItems, setUseLineItems] = useState(false);
   
-  // Customer autocomplete state
-  type CustomerSuggestion = {
+  type ReservationForDispatch = {
     id: number;
     customerName: string;
     customerPhone: string | null;
     date: string;
     time: string;
+    quantity: number;
     activityId: number | null;
+    activityName: string;
+    agencyId: number | null;
+    salePriceTl: number;
+    priceTl: number;
+    currency: string;
+    status: string;
+    hasDispatch: boolean;
+    orderNumber: string | null;
   };
-  const [customerSuggestions, setCustomerSuggestions] = useState<CustomerSuggestion[]>([]);
-  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
-  const [searchingCustomers, setSearchingCustomers] = useState(false);
-  
-  // Debounced customer search
-  const searchCustomers = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setCustomerSuggestions([]);
-      setShowCustomerSuggestions(false);
-      return;
-    }
-    
-    setSearchingCustomers(true);
-    try {
-      const response = await fetch(`/api/reservations/search?q=${encodeURIComponent(query)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setCustomerSuggestions(data);
-        setShowCustomerSuggestions(data.length > 0);
-      }
-    } catch (error) {
-      console.error('Customer search error:', error);
-    } finally {
-      setSearchingCustomers(false);
-    }
-  }, []);
-  
-  // Debounce effect for customer name input
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      searchCustomers(dispatchForm.customerName);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [dispatchForm.customerName, searchCustomers]);
+  const [selectedReservationId, setSelectedReservationId] = useState<number | null>(null);
+  const [reservationSearchQuery, setReservationSearchQuery] = useState('');
+  const [showReservationDropdown, setShowReservationDropdown] = useState(false);
+
+  const { data: reservationsForDispatch = [] } = useQuery<ReservationForDispatch[]>({
+    queryKey: ['/api/reservations/for-dispatch'],
+  });
   
   // Handle query params for opening dispatch dialog from Reservations page
   const searchParams = useSearch();
@@ -1044,12 +1049,18 @@ export default function Finance() {
 
   // Mutations
   const createPayoutMutation = useMutation({
-    mutationFn: async (data: typeof payoutForm) => apiRequest('POST', '/api/finance/payouts', data),
+    mutationFn: async (data: typeof payoutForm & { selectedDispatchIds?: number[] }) => {
+      const res = await apiRequest('POST', '/api/finance/payouts', data);
+      return await res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/partner-payments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches/summary'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches/unpaid'] });
       setPayoutDialogOpen(false);
+      setSelectedPayoutDispatchIds(new Set());
       setPayoutForm({
         agencyId: 0,
         periodStart: startDate,
@@ -1133,6 +1144,7 @@ export default function Finance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations/for-dispatch'] });
       queryClient.invalidateQueries({ predicate: (query) => 
         typeof query.queryKey[0] === 'string' && query.queryKey[0].includes('/api/finance/dispatches/summary')
       });
@@ -1165,8 +1177,9 @@ export default function Finance() {
     setDispatchSalePriceTlStr("");
     setUseLineItems(false);
     setEditingDispatchId(null);
-    setCustomerSuggestions([]);
-    setShowCustomerSuggestions(false);
+    setSelectedReservationId(null);
+    setReservationSearchQuery('');
+    setShowReservationDropdown(false);
     processedDispatchParams.current = false;
   };
 
@@ -1176,6 +1189,7 @@ export default function Finance() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations/for-dispatch'] });
       queryClient.invalidateQueries({ predicate: (query) => 
         typeof query.queryKey[0] === 'string' && (query.queryKey[0].includes('/api/finance/dispatches/summary') || query.queryKey[0].includes('/api/finance/dispatches/') && query.queryKey[0].includes('/items'))
       });
@@ -1251,6 +1265,7 @@ export default function Finance() {
     setDispatchPaymentNotes(paymentNotesVal);
     setDispatchSalePriceTlStr((dispatch as any).salePriceTl ? String((dispatch as any).salePriceTl) : "");
     setUseLineItems(hasLineItems);
+    setSelectedReservationId((dispatch as any).reservationId || null);
     setDispatchDialogOpen(true);
   };
 
@@ -1258,6 +1273,7 @@ export default function Finance() {
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/dispatches/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations/for-dispatch'] });
       queryClient.invalidateQueries({ predicate: (query) => 
         typeof query.queryKey[0] === 'string' && query.queryKey[0].includes('/api/finance/dispatches/summary')
       });
@@ -1367,13 +1383,18 @@ export default function Finance() {
     createPayoutMutation.mutate({
       ...payoutForm,
       vatAmountTl: vatAmount,
-      totalAmountTl: totalAmount
+      totalAmountTl: totalAmount,
+      selectedDispatchIds: Array.from(selectedPayoutDispatchIds),
     } as any);
   };
 
   const handleDispatchSubmit = () => {
     if (!dispatchForm.agencyId) {
       toast({ title: "Hata", description: "Tedarikçi seçin", variant: "destructive" });
+      return;
+    }
+    if (!editingDispatchId && !selectedReservationId) {
+      toast({ title: "Hata", description: "Lütfen bir rezervasyon seçin", variant: "destructive" });
       return;
     }
     
@@ -1467,6 +1488,7 @@ export default function Finance() {
             dispatchDate: dispatchForm.dispatchDate,
             dispatchTime: dispatchForm.dispatchTime,
             customerName: dispatchForm.customerName || null,
+            reservationId: selectedReservationId,
             notes: cleanNotes,
             ...paymentFields,
             items: validItems
@@ -1481,6 +1503,7 @@ export default function Finance() {
             dispatchDate: dispatchForm.dispatchDate,
             dispatchTime: dispatchForm.dispatchTime,
             customerName: dispatchForm.customerName || null,
+            reservationId: selectedReservationId,
             guestCount: simpleGuestCount,
             unitPayoutTl: simpleUnitPayout,
             currency: simpleCurrency,
@@ -1504,7 +1527,6 @@ export default function Finance() {
     }
   };
 
-  // Effect to handle query params for opening dispatch dialog from Reservations page
   useEffect(() => {
     if (processedDispatchParams.current) return;
     
@@ -1517,6 +1539,7 @@ export default function Finance() {
       const activityId = parseInt(params.get('activityId') || '0') || 0;
       const dispatchDate = params.get('dispatchDate') || new Date().toISOString().split('T')[0];
       const guestCount = parseInt(params.get('guestCount') || '1') || 1;
+      const reservationId = parseInt(params.get('reservationId') || '0') || null;
       
       setDispatchForm(f => ({
         ...f,
@@ -1524,17 +1547,17 @@ export default function Finance() {
         customerPhone,
         activityId,
         dispatchDate,
-        // Update first item's quantity for line-item mode, keeping the rest of the structure
         items: f.items.length > 0 
           ? [{ ...f.items[0], quantity: guestCount }, ...f.items.slice(1)]
           : [{ ...defaultDispatchItem, quantity: guestCount }]
       }));
       setSimpleGuestCount(guestCount);
-      // Don't force useLineItems - respect the agency's rate-driven mode
+      if (reservationId) {
+        setSelectedReservationId(reservationId);
+      }
       setFinanceTab('dispatches');
       setDispatchDialogOpen(true);
       
-      // Clear query params from URL
       setLocation('/finance', { replace: true });
     }
   }, [searchParams, setLocation]);
@@ -1889,8 +1912,6 @@ export default function Finance() {
                 setSimpleUnitPayoutStr("");
                 setSimpleCurrency('TRY');
                 setUseLineItems(false);
-                setCustomerSuggestions([]);
-                setShowCustomerSuggestions(false);
                 setDispatchDialogOpen(true);
               }} data-testid="button-add-dispatch">
                 <Plus className="h-4 w-4 mr-2" />
@@ -1977,6 +1998,11 @@ export default function Finance() {
                                 {supplier?.name || 'Bilinmeyen Acenta'}
                                 {dispatch.customerName && (
                                   <span className="text-muted-foreground font-normal">| {dispatch.customerName}</span>
+                                )}
+                                {(dispatch as any).payoutId ? (
+                                  <Badge variant="default" className="text-[10px] px-1.5 py-0" data-testid={`badge-dispatch-paid-${dispatch.id}`}>Ödendi</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-orange-600 border-orange-300" data-testid={`badge-dispatch-unpaid-${dispatch.id}`}>Ödenmedi</Badge>
                                 )}
                               </div>
                               <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -4069,6 +4095,66 @@ export default function Finance() {
                   data-testid="input-payout-notes"
                 />
               </div>
+              {payoutForm.agencyId > 0 && unpaidDispatches.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Bu Ödemeye Dahil Gönderimler</Label>
+                  <div className="border rounded-md max-h-48 overflow-y-auto">
+                    <div className="p-2 border-b bg-muted/50 flex items-center gap-2">
+                      <Checkbox
+                        checked={selectedPayoutDispatchIds.size === unpaidDispatches.length && unpaidDispatches.length > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedPayoutDispatchIds(new Set(unpaidDispatches.map(d => d.id)));
+                            const total = unpaidDispatches.reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0);
+                            const guests = unpaidDispatches.reduce((sum, d) => sum + (d.guestCount || 0), 0);
+                            setPayoutForm(f => ({ ...f, baseAmountTl: total, guestCount: guests }));
+                          } else {
+                            setSelectedPayoutDispatchIds(new Set());
+                          }
+                        }}
+                        data-testid="checkbox-select-all-dispatches"
+                      />
+                      <span className="text-xs text-muted-foreground">Tümünü Seç ({unpaidDispatches.length} ödenmemiş gönderim)</span>
+                    </div>
+                    {unpaidDispatches.map(d => (
+                      <div key={d.id} className="flex items-center gap-2 p-2 border-b last:border-b-0 hover-elevate">
+                        <Checkbox
+                          checked={selectedPayoutDispatchIds.has(d.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedPayoutDispatchIds(prev => {
+                              const next = new Set(prev);
+                              if (checked) next.add(d.id); else next.delete(d.id);
+                              const selectedDispatches = unpaidDispatches.filter(ud => next.has(ud.id));
+                              const total = selectedDispatches.reduce((sum, ud) => sum + (ud.totalPayoutTl || 0), 0);
+                              const guests = selectedDispatches.reduce((sum, ud) => sum + (ud.guestCount || 0), 0);
+                              setPayoutForm(f => ({ ...f, baseAmountTl: total, guestCount: guests }));
+                              return next;
+                            });
+                          }}
+                          data-testid={`checkbox-dispatch-${d.id}`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{d.customerName || 'Bilinmiyor'}</div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{d.dispatchDate}</span>
+                            <span>{d.guestCount} kişi</span>
+                          </div>
+                        </div>
+                        <div className="text-sm font-medium text-right">
+                          {formatMoney(d.totalPayoutTl || 0)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedPayoutDispatchIds.size > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      {selectedPayoutDispatchIds.size} gönderim seçildi - Toplam: {formatMoney(
+                        unpaidDispatches.filter(d => selectedPayoutDispatchIds.has(d.id)).reduce((sum, d) => sum + (d.totalPayoutTl || 0), 0)
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               {payoutForm.baseAmountTl > 0 && (
                 <div className="p-3 bg-muted rounded-lg">
                   <div className="flex justify-between text-sm">
@@ -4079,7 +4165,7 @@ export default function Finance() {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setPayoutDialogOpen(false)} data-testid="button-cancel-payout">İptal</Button>
+              <Button variant="outline" onClick={() => { setPayoutDialogOpen(false); setSelectedPayoutDispatchIds(new Set()); }} data-testid="button-cancel-payout">İptal</Button>
               <Button 
                 onClick={handlePayoutSubmit}
                 disabled={createPayoutMutation.isPending}
@@ -4173,72 +4259,140 @@ export default function Finance() {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              {!editingDispatchId && (
                 <div className="relative">
-                  <Label>Müşteri Adı Soyadı</Label>
+                  <Label>Rezervasyon Seç</Label>
                   <Input 
-                    value={dispatchForm.customerName}
+                    value={selectedReservationId 
+                      ? (() => {
+                          const r = reservationsForDispatch.find(r => r.id === selectedReservationId);
+                          return r ? `${r.customerName} - ${r.activityName || 'Aktivite'} (${r.date}, ${r.quantity} kişi)` : `Rezervasyon #${selectedReservationId}`;
+                        })()
+                      : reservationSearchQuery
+                    }
                     onChange={e => {
-                      setDispatchForm(f => ({ ...f, customerName: e.target.value }));
-                    }}
-                    onFocus={() => {
-                      if (customerSuggestions.length > 0) {
-                        setShowCustomerSuggestions(true);
+                      if (selectedReservationId) {
+                        setSelectedReservationId(null);
+                        setDispatchForm(f => ({ ...f, customerName: '', customerPhone: '', activityId: 0, dispatchDate: new Date().toISOString().split('T')[0] }));
+                        setSimpleGuestCount(1);
+                        setDispatchSalePriceTlStr("");
                       }
+                      setReservationSearchQuery(e.target.value);
+                      setShowReservationDropdown(true);
                     }}
-                    onBlur={() => {
-                      setTimeout(() => setShowCustomerSuggestions(false), 200);
-                    }}
-                    placeholder="Örn: Ahmet Yılmaz"
-                    data-testid="input-dispatch-customer-name"
+                    onFocus={() => setShowReservationDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowReservationDropdown(false), 200)}
+                    placeholder="Müşteri adı veya telefon ile arayın..."
+                    data-testid="input-dispatch-reservation-search"
                   />
-                  {showCustomerSuggestions && customerSuggestions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                      {customerSuggestions.map((suggestion) => (
-                        <div
-                          key={suggestion.id}
-                          className="p-2 hover:bg-muted cursor-pointer border-b last:border-b-0"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setDispatchForm(f => ({
-                              ...f,
-                              customerName: suggestion.customerName,
-                              customerPhone: suggestion.customerPhone || ''
-                            }));
-                            setShowCustomerSuggestions(false);
-                          }}
-                          data-testid={`suggestion-customer-${suggestion.id}`}
-                        >
-                          <div className="font-medium text-sm">{suggestion.customerName}</div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {suggestion.customerPhone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {suggestion.customerPhone}
-                              </span>
-                            )}
-                            <span>{suggestion.date}</span>
+                  {selectedReservationId && (
+                    <button
+                      type="button"
+                      className="absolute right-2 top-8 text-muted-foreground"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setSelectedReservationId(null);
+                        setReservationSearchQuery('');
+                        setDispatchForm(f => ({ ...f, customerName: '', customerPhone: '', activityId: 0, dispatchDate: new Date().toISOString().split('T')[0] }));
+                        setSimpleGuestCount(1);
+                        setDispatchSalePriceTlStr("");
+                      }}
+                      data-testid="button-clear-reservation"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                  {showReservationDropdown && !selectedReservationId && (
+                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {(() => {
+                        const searchLower = reservationSearchQuery.toLowerCase();
+                        const filtered = reservationsForDispatch
+                          .filter(r => {
+                            if (searchLower.length >= 2) {
+                              return r.customerName?.toLowerCase().includes(searchLower) ||
+                                r.customerPhone?.includes(reservationSearchQuery) ||
+                                r.orderNumber?.includes(reservationSearchQuery);
+                            }
+                            return !r.hasDispatch;
+                          })
+                          .slice(0, 20);
+                        
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="p-3 text-sm text-muted-foreground text-center">
+                              {reservationSearchQuery.length >= 2 ? 'Eşleşen rezervasyon bulunamadı' : 'Gönderimi olmayan rezervasyon yok'}
+                            </div>
+                          );
+                        }
+                        
+                        return filtered.map(r => (
+                          <div
+                            key={r.id}
+                            className={`p-2 cursor-pointer border-b last:border-b-0 hover-elevate ${r.hasDispatch ? 'opacity-50' : ''}`}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setSelectedReservationId(r.id);
+                              setReservationSearchQuery('');
+                              setShowReservationDropdown(false);
+                              setDispatchForm(f => ({
+                                ...f,
+                                customerName: r.customerName,
+                                customerPhone: r.customerPhone || '',
+                                activityId: r.activityId || 0,
+                                dispatchDate: r.date,
+                                dispatchTime: r.time || '10:00',
+                              }));
+                              setSimpleGuestCount(r.quantity || 1);
+                              const salePrice = r.salePriceTl > 0 ? r.salePriceTl : (r.priceTl * (r.quantity || 1));
+                              setDispatchSalePriceTlStr(salePrice > 0 ? String(salePrice) : "");
+                            }}
+                            data-testid={`suggestion-reservation-${r.id}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="font-medium text-sm">{r.customerName}</div>
+                              <div className="flex items-center gap-1">
+                                {r.hasDispatch && <Badge variant="outline" className="text-xs">Gönderildi</Badge>}
+                                <Badge variant="secondary" className="text-xs">{r.quantity} kişi</Badge>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                              {r.activityName && <span>{r.activityName}</span>}
+                              <span>{r.date}</span>
+                              {r.orderNumber && <span>#{r.orderNumber}</span>}
+                              {r.customerPhone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {r.customerPhone}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {searchingCustomers && (
-                    <div className="absolute right-2 top-8">
-                      <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>
-                <div>
-                  <Label>Müşteri Telefon</Label>
-                  <Input 
-                    value={dispatchForm.customerPhone}
-                    onChange={e => setDispatchForm(f => ({ ...f, customerPhone: e.target.value }))}
-                    placeholder="Örn: +90 555 123 4567"
-                    data-testid="input-dispatch-customer-phone"
-                  />
+              )}
+              {editingDispatchId && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Müşteri Adı</Label>
+                    <Input 
+                      value={dispatchForm.customerName}
+                      onChange={e => setDispatchForm(f => ({ ...f, customerName: e.target.value }))}
+                      data-testid="input-dispatch-customer-name"
+                    />
+                  </div>
+                  <div>
+                    <Label>Müşteri Telefon</Label>
+                    <Input 
+                      value={dispatchForm.customerPhone}
+                      onChange={e => setDispatchForm(f => ({ ...f, customerPhone: e.target.value }))}
+                      data-testid="input-dispatch-customer-phone"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Tarih</Label>

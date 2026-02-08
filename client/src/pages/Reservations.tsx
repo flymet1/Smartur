@@ -322,6 +322,7 @@ export default function Reservations() {
       setAgencyDispatchPaymentNotes("");
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations/for-dispatch'] });
     },
     onError: (error: Error) => {
       toast({ title: "Hata", description: error.message, variant: "destructive" });

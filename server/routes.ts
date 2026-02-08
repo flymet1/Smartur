@@ -5159,6 +5159,47 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/reservations/for-dispatch", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
+    const tenantId = req.session?.tenantId;
+    if (!tenantId) return res.json([]);
+    
+    try {
+      const allReservations = await storage.getReservations(tenantId);
+      const allDispatches = await storage.getSupplierDispatches(undefined, tenantId);
+      const dispatchedReservationIds = new Set(allDispatches.filter(d => d.reservationId).map(d => d.reservationId));
+      
+      const allActivities = await storage.getActivities(tenantId);
+      const activityMap: Record<number, string> = {};
+      allActivities.forEach(a => { activityMap[a.id] = a.name; });
+      
+      const available = allReservations
+        .filter(r => r.status !== 'cancelled')
+        .map(r => ({
+          id: r.id,
+          customerName: r.customerName,
+          customerPhone: r.customerPhone,
+          date: r.date,
+          time: r.time,
+          quantity: r.quantity,
+          activityId: r.activityId,
+          activityName: r.activityId ? (activityMap[r.activityId] || '') : '',
+          agencyId: r.agencyId,
+          salePriceTl: r.salePriceTl || 0,
+          priceTl: r.priceTl || 0,
+          currency: r.currency || 'TRY',
+          status: r.status,
+          hasDispatch: dispatchedReservationIds.has(r.id),
+          orderNumber: r.orderNumber || null,
+        }))
+        .sort((a, b) => b.date.localeCompare(a.date));
+      
+      res.json(available);
+    } catch (error) {
+      console.error('Reservations for dispatch error:', error);
+      res.json([]);
+    }
+  });
+
   // Search active reservations for partner reservation selection
   app.get("/api/reservations/active-for-partner", requirePermission(PERMISSIONS.RESERVATIONS_VIEW), async (req, res) => {
     const query = (req.query.q as string) || '';
@@ -13442,7 +13483,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         return res.status(401).json({ error: "Oturum bulunamadı" });
       }
       
-      const { agencyId, periodStart, periodEnd, description, guestCount, baseAmountTl, vatRatePct, method, reference, notes } = req.body;
+      const { agencyId, periodStart, periodEnd, description, guestCount, baseAmountTl, vatRatePct, method, reference, notes, selectedDispatchIds } = req.body;
       
       const vatAmount = Math.round(baseAmountTl * (vatRatePct / 100));
       const totalAmount = baseAmountTl + vatAmount;
@@ -13463,10 +13504,41 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         notes,
         status: 'paid'
       });
+      
+      if (selectedDispatchIds && Array.isArray(selectedDispatchIds) && selectedDispatchIds.length > 0) {
+        try {
+          await storage.linkDispatchesToPayout(payout.id, selectedDispatchIds, tenantId);
+        } catch (linkErr) {
+          console.error('Dispatch linking error:', linkErr);
+        }
+      }
+      
       res.json(payout);
     } catch (err) {
       console.error('Payout error:', err);
       res.status(400).json({ error: "Ödeme kaydedilemedi" });
+    }
+  });
+
+  app.patch("/api/finance/payouts/:id/link-dispatches", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    const tenantId = req.session?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
+    
+    const payoutId = parseInt(req.params.id);
+    const { dispatchIds } = req.body as { dispatchIds: number[] };
+    
+    if (!dispatchIds || !Array.isArray(dispatchIds)) {
+      return res.status(400).json({ error: "dispatchIds array required" });
+    }
+    
+    try {
+      for (const dispatchId of dispatchIds) {
+        await storage.updateSupplierDispatch(dispatchId, { payoutId });
+      }
+      res.json({ success: true, linked: dispatchIds.length });
+    } catch (error) {
+      console.error('Link dispatches to payout error:', error);
+      res.status(500).json({ error: "Failed to link dispatches" });
     }
   });
 
@@ -13476,6 +13548,36 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       res.json({ success: true });
     } catch (err) {
       res.status(400).json({ error: "Ödeme silinemedi" });
+    }
+  });
+
+  app.get("/api/finance/dispatches/unpaid", requirePermission(PERMISSIONS.FINANCE_VIEW), async (req, res) => {
+    const tenantId = req.session?.tenantId;
+    if (!tenantId) return res.json([]);
+    
+    try {
+      const agencyIdStr = req.query.agencyId as string;
+      const agencyId = agencyIdStr ? parseInt(agencyIdStr) : null;
+      const allDispatches = await storage.getSupplierDispatches(undefined, tenantId);
+      
+      const unpaid = allDispatches
+        .filter(d => !d.payoutId && (!agencyId || d.agencyId === agencyId))
+        .map(d => ({
+          id: d.id,
+          customerName: d.customerName,
+          dispatchDate: d.dispatchDate,
+          guestCount: d.guestCount,
+          totalPayoutTl: d.totalPayoutTl,
+          currency: d.currency,
+          activityId: d.activityId,
+          reservationId: d.reservationId,
+          agencyId: d.agencyId,
+        }));
+      
+      res.json(unpaid);
+    } catch (error) {
+      console.error('Unpaid dispatches error:', error);
+      res.json([]);
     }
   });
 

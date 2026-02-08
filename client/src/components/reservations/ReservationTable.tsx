@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2, Clock } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2, Clock, AlertTriangle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -118,21 +118,25 @@ export function ReservationTable({
     queryKey: ['/api/package-tours']
   });
 
-  // Fetch dispatches to check which reservations have dispatches
-  const { data: dispatches = [] } = useQuery<{ id: number; customerName: string | null; dispatchDate: string; activityId: number | null }[]>({
+  const { data: dispatches = [] } = useQuery<{ id: number; customerName: string | null; dispatchDate: string; activityId: number | null; reservationId?: number | null }[]>({
     queryKey: ['/api/finance/dispatches']
   });
 
-  // Create a lookup set for reservations that have dispatches (by activityId + date, and optionally customerName)
+  const dispatchedReservationIds = useMemo(() => {
+    const ids = new Set<number>();
+    dispatches.forEach(d => {
+      if (d.reservationId) ids.add(d.reservationId);
+    });
+    return ids;
+  }, [dispatches]);
+
   const dispatchLookup = useMemo(() => {
     const lookup = new Set<string>();
     dispatches.forEach(d => {
       if (d.dispatchDate) {
-        // Primary key: activityId + date
         if (d.activityId) {
           lookup.add(`activity-${d.activityId}-${d.dispatchDate}`);
         }
-        // Secondary key: customerName + date (if available)
         if (d.customerName) {
           lookup.add(`customer-${d.customerName.toLowerCase().trim()}-${d.dispatchDate}`);
         }
@@ -142,7 +146,7 @@ export function ReservationTable({
   }, [dispatches]);
 
   const hasDispatch = (res: Reservation) => {
-    // Check by activityId + date first, then by customerName + date
+    if (dispatchedReservationIds.has(res.id)) return true;
     const activityKey = `activity-${res.activityId}-${res.date}`;
     const customerKey = `customer-${res.customerName.toLowerCase().trim()}-${res.date}`;
     return dispatchLookup.has(activityKey) || dispatchLookup.has(customerKey);
@@ -1034,6 +1038,25 @@ export function ReservationTable({
                   <div className="flex flex-col items-end gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       {getStatusBadge(res.status || 'pending', res.id)}
+                      {hasDispatch(res) ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="h-6 w-6 flex items-center justify-center">
+                              <ArrowRightLeft className="h-3.5 w-3.5 text-blue-600" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>Gönderim mevcut</TooltipContent>
+                        </Tooltip>
+                      ) : res.status !== 'cancelled' ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="h-6 w-6 flex items-center justify-center">
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>Gönderim kaydı yok</TooltipContent>
+                        </Tooltip>
+                      ) : null}
                       {renderDispatchButton(res)}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1277,7 +1300,7 @@ export function ReservationTable({
                             {res.customerPhone}
                           </div>
                         </div>
-                        {hasDispatch(res) && (
+                        {hasDispatch(res) ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="h-6 w-6 flex items-center justify-center">
@@ -1286,7 +1309,16 @@ export function ReservationTable({
                             </TooltipTrigger>
                             <TooltipContent>Gönderim mevcut</TooltipContent>
                           </Tooltip>
-                        )}
+                        ) : res.status !== 'cancelled' ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="h-6 w-6 flex items-center justify-center">
+                                <AlertTriangle className="h-4 w-4 text-amber-500" data-testid={`icon-no-dispatch-${res.id}`} />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>Gönderim kaydı yok</TooltipContent>
+                          </Tooltip>
+                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell>
