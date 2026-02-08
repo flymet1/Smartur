@@ -5515,6 +5515,15 @@ export async function registerRoutes(
         }
       }
       
+      // Get freeCancellationHours from activity
+      let freeCancellationHours = 24;
+      if (reservation.activityId) {
+        const activityForCancel = await storage.getActivity(reservation.activityId);
+        if (activityForCancel && activityForCancel.freeCancellationHours !== null && activityForCancel.freeCancellationHours !== undefined) {
+          freeCancellationHours = activityForCancel.freeCancellationHours;
+        }
+      }
+
       // Return only necessary information (no sensitive data)
       // Note: priceTl and priceUsd are stored as integers in the database
       res.json({
@@ -5528,7 +5537,8 @@ export async function registerRoutes(
         priceUsd: reservation.priceUsd || 0,
         currency: reservation.currency || 'TRY',
         orderNumber: reservation.orderNumber,
-        defaultTimes
+        defaultTimes,
+        freeCancellationHours
       });
     } catch (error) {
       console.error("Track reservation error:", error);
@@ -5576,7 +5586,7 @@ export async function registerRoutes(
   // Create customer request (public - via tracking token)
   app.post("/api/customer-requests", async (req, res) => {
     try {
-      const { token, requestType, requestDetails, preferredTime } = req.body;
+      const { token, requestType, requestDetails, preferredTime, preferredDate } = req.body;
       
       if (!token || !requestType) {
         return res.status(400).json({ error: "Token ve talep tipi gerekli" });
@@ -5587,6 +5597,33 @@ export async function registerRoutes(
       if (!reservation) {
         return res.status(404).json({ error: "Geçersiz veya süresi dolmus takip linki" });
       }
+
+      // Cancellation deadline check
+      if (requestType === 'cancellation') {
+        let freeCancellationHours = 24;
+        if (reservation.activityId) {
+          const activity = await storage.getActivity(reservation.activityId);
+          if (activity && activity.freeCancellationHours !== null && activity.freeCancellationHours !== undefined) {
+            freeCancellationHours = activity.freeCancellationHours;
+          }
+        }
+        const reservationDateTime = new Date(`${reservation.date}T${reservation.time || '00:00'}:00`);
+        const now = new Date();
+        const hoursRemaining = (reservationDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (hoursRemaining < freeCancellationHours) {
+          return res.status(400).json({ error: `Aktivite saatine ${freeCancellationHours} saatten az kaldığı için iptal yapılamaz.` });
+        }
+      }
+
+      // Date change validation: max +/- 7 days from original date
+      if (requestType === 'date_change' && preferredDate) {
+        const originalDate = new Date(reservation.date);
+        const newDate = new Date(preferredDate);
+        const diffDays = Math.abs((newDate.getTime() - originalDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 7) {
+          return res.status(400).json({ error: "Tarih değişikliği en fazla 7 gün öncesine veya sonrasına yapılabilir." });
+        }
+      }
       
       // Create the request
       const customerRequest = await storage.createCustomerRequest({
@@ -5595,6 +5632,7 @@ export async function registerRoutes(
         requestType,
         requestDetails: requestDetails || null,
         preferredTime: preferredTime || null,
+        preferredDate: preferredDate || null,
         customerName: reservation.customerName,
         customerPhone: reservation.customerPhone,
         customerEmail: reservation.customerEmail || null,
@@ -5616,6 +5654,7 @@ export async function registerRoutes(
         
         if (tenantNotificationEmail) {
           const requestTypeText = requestType === 'time_change' ? 'Saat Değişikliği' : 
+                                  requestType === 'date_change' ? 'Tarih Değişikliği' :
                                   requestType === 'cancellation' ? 'İptal Talebi' : 'Diğer Talep';
           
           const emailHtml = `

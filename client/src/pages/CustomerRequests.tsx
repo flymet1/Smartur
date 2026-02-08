@@ -36,6 +36,7 @@ interface CustomerRequest {
   requestType: string;
   requestDetails: string | null;
   preferredTime: string | null;
+  preferredDate: string | null;
   customerName: string;
   customerPhone: string | null;
   customerEmail: string | null;
@@ -114,6 +115,10 @@ export default function CustomerRequests() {
       if (request.requestType === 'time_change' && request.preferredTime) {
         message += `Yeni saatiniz: ${request.preferredTime}\n\n`;
       }
+      if (request.requestType === 'date_change' && request.preferredDate) {
+        const dateStr = new Date(request.preferredDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+        message += `Yeni tarihiniz: ${dateStr}\n\n`;
+      }
       if (request.requestType === 'cancellation') {
         message += `Rezervasyonunuz basariyla iptal edilmiştir.\n\n`;
       }
@@ -129,10 +134,12 @@ export default function CustomerRequests() {
 
   const applyTemplateVariables = (template: string, request: CustomerRequest) => {
     const requestTypeText = getRequestTypeText(request.requestType);
+    const dateStr = request.preferredDate ? new Date(request.preferredDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
     return template
       .replace(/{müşteri_adi}/g, request.customerName)
       .replace(/{talep_turu}/g, requestTypeText)
       .replace(/{yeni_saat}/g, request.preferredTime || '')
+      .replace(/{yeni_tarih}/g, dateStr)
       .replace(/{red_sebebi}/g, request.adminNotes || 'Belirtilmedi');
   };
 
@@ -213,6 +220,10 @@ export default function CustomerRequests() {
       if (request.requestType === 'time_change' && request.preferredTime) {
         message += `Yeni Saat: ${request.preferredTime}\n`;
       }
+      if (request.requestType === 'date_change' && request.preferredDate) {
+        const dateStr = new Date(request.preferredDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+        message += `Yeni Tarih: ${dateStr}\n`;
+      }
     } else if (request.status === 'rejected') {
       message += `Durum: Reddedildi\n`;
     } else {
@@ -270,6 +281,7 @@ export default function CustomerRequests() {
   const getRequestTypeText = (type: string) => {
     switch (type) {
       case 'time_change': return 'Saat Değişikliği';
+      case 'date_change': return 'Tarih Değişikliği';
       case 'cancellation': return 'İptal Talebi';
       case 'other': return 'Diğer Talep';
       default: return type;
@@ -373,6 +385,13 @@ export default function CustomerRequests() {
                         <div className="text-sm bg-blue-50 dark:bg-blue-950/30 p-3 rounded border border-blue-200 dark:border-blue-800">
                           <span className="text-muted-foreground">Tercih edilen saat:</span>{' '}
                           <span className="font-medium">{request.preferredTime}</span>
+                        </div>
+                      )}
+                      
+                      {request.requestType === 'date_change' && request.preferredDate && (
+                        <div className="text-sm bg-blue-50 dark:bg-blue-950/30 p-3 rounded border border-blue-200 dark:border-blue-800">
+                          <span className="text-muted-foreground">Tercih edilen tarih:</span>{' '}
+                          <span className="font-medium">{new Date(request.preferredDate).toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                         </div>
                       )}
                       

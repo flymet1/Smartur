@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send } from "lucide-react";
-import { useState } from "react";
+import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send, CalendarClock } from "lucide-react";
+import { useState, useMemo } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,9 +24,10 @@ interface TrackingData {
   currency: string;
   orderNumber: string | null;
   defaultTimes: string[];
+  freeCancellationHours: number;
 }
 
-type RequestType = 'time_change' | 'cancellation' | 'other' | null;
+type RequestType = 'time_change' | 'date_change' | 'cancellation' | 'other' | null;
 
 export default function CustomerTracking() {
   const params = useParams<{ token: string }>();
@@ -35,6 +37,7 @@ export default function CustomerTracking() {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestType, setRequestType] = useState<RequestType>(null);
   const [preferredTime, setPreferredTime] = useState("");
+  const [preferredDate, setPreferredDate] = useState("");
   const [requestDetails, setRequestDetails] = useState("");
   const [requestSent, setRequestSent] = useState(false);
 
@@ -43,12 +46,51 @@ export default function CustomerTracking() {
     enabled: !!token,
   });
 
+  const cancellationAllowed = useMemo(() => {
+    if (!reservation) return true;
+    const reservationDateTime = new Date(`${reservation.date}T${reservation.time || '00:00'}:00`);
+    const now = new Date();
+    const hoursRemaining = (reservationDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursRemaining >= (reservation.freeCancellationHours || 24);
+  }, [reservation]);
+
+  const hoursUntilActivity = useMemo(() => {
+    if (!reservation) return 0;
+    const reservationDateTime = new Date(`${reservation.date}T${reservation.time || '00:00'}:00`);
+    const now = new Date();
+    return Math.max(0, Math.floor((reservationDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)));
+  }, [reservation]);
+
+  const dateRange = useMemo(() => {
+    if (!reservation) return { min: '', max: '' };
+    const formatLocalDate = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const parts = reservation.date.split('-').map(Number);
+    const original = new Date(parts[0], parts[1] - 1, parts[2]);
+    const minDate = new Date(original);
+    minDate.setDate(minDate.getDate() - 7);
+    const maxDate = new Date(original);
+    maxDate.setDate(maxDate.getDate() + 7);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const effectiveMin = minDate < today ? today : minDate;
+    return {
+      min: formatLocalDate(effectiveMin),
+      max: formatLocalDate(maxDate)
+    };
+  }, [reservation]);
+
   const submitRequestMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/customer-requests', {
         token,
         requestType,
         preferredTime: requestType === 'time_change' ? preferredTime : undefined,
+        preferredDate: requestType === 'date_change' ? preferredDate : undefined,
         requestDetails: requestDetails || undefined,
       });
       return response.json();
@@ -61,10 +103,10 @@ export default function CustomerTracking() {
         description: "Talebiniz başarıyla iletildi. En kısa sürede size döneceğiz.",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Hata",
-        description: "Talep gönderilemedi. Lütfen tekrar deneyin.",
+        description: error.message || "Talep gönderilemedi. Lütfen tekrar deneyin.",
         variant: "destructive",
       });
     },
@@ -119,12 +161,20 @@ export default function CustomerTracking() {
     setRequestType(type);
     setShowRequestForm(true);
     setPreferredTime("");
+    setPreferredDate("");
     setRequestDetails("");
   };
 
   const handleSubmitRequest = () => {
     if (!requestType) return;
     submitRequestMutation.mutate();
+  };
+
+  const isSubmitDisabled = () => {
+    if (submitRequestMutation.isPending) return true;
+    if (requestType === 'time_change' && !preferredTime) return true;
+    if (requestType === 'date_change' && !preferredDate) return true;
+    return false;
   };
 
   if (isLoading) {
@@ -259,7 +309,6 @@ export default function CustomerTracking() {
           </CardContent>
         </Card>
 
-        {/* Request Actions */}
         {reservation.status !== 'cancelled' && !requestSent && (
           <Card>
             <CardHeader className="pb-3">
@@ -273,20 +322,40 @@ export default function CustomerTracking() {
             </CardHeader>
             <CardContent className="space-y-4">
               {!showRequestForm ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
                     className="flex items-center gap-2 h-auto py-3"
                     onClick={() => handleRequestClick('time_change')}
                     data-testid="button-time-change"
                   >
-                    <Edit3 className="w-4 h-4" />
+                    <Clock className="w-4 h-4" />
                     <span className="text-sm">Saat Değiştir</span>
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex items-center gap-2 h-auto py-3 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950"
-                    onClick={() => handleRequestClick('cancellation')}
+                    className="flex items-center gap-2 h-auto py-3"
+                    onClick={() => handleRequestClick('date_change')}
+                    data-testid="button-date-change"
+                  >
+                    <CalendarClock className="w-4 h-4" />
+                    <span className="text-sm">Tarih Değiştir</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 h-auto py-3 text-red-600 border-red-200 dark:text-red-400 dark:border-red-800"
+                    onClick={() => {
+                      if (!cancellationAllowed) {
+                        toast({
+                          title: "İptal Yapılamaz",
+                          description: `Aktivite saatine ${reservation.freeCancellationHours} saatten az kaldığı için iptal yapılamaz. (Kalan: ${hoursUntilActivity} saat)`,
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      handleRequestClick('cancellation');
+                    }}
+                    disabled={!cancellationAllowed}
                     data-testid="button-cancellation"
                   >
                     <Ban className="w-4 h-4" />
@@ -299,7 +368,7 @@ export default function CustomerTracking() {
                     data-testid="button-other-request"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span className="text-sm">Diger Talep</span>
+                    <span className="text-sm">Diğer Talep</span>
                   </Button>
                 </div>
               ) : (
@@ -307,8 +376,14 @@ export default function CustomerTracking() {
                   <div className="flex items-center gap-2 text-sm font-medium">
                     {requestType === 'time_change' && (
                       <>
-                        <Edit3 className="w-4 h-4 text-primary" />
-                        Saat Degisikligi Talebi
+                        <Clock className="w-4 h-4 text-primary" />
+                        Saat Değişikliği Talebi
+                      </>
+                    )}
+                    {requestType === 'date_change' && (
+                      <>
+                        <CalendarClock className="w-4 h-4 text-primary" />
+                        Tarih Değişikliği Talebi
                       </>
                     )}
                     {requestType === 'cancellation' && (
@@ -320,14 +395,14 @@ export default function CustomerTracking() {
                     {requestType === 'other' && (
                       <>
                         <MessageSquare className="w-4 h-4 text-primary" />
-                        Diger Talep
+                        Diğer Talep
                       </>
                     )}
                   </div>
 
                   {requestType === 'time_change' && (
                     <div className="space-y-2">
-                      <Label>Tercih Ettiginiz Saat</Label>
+                      <Label>Tercih Ettiğiniz Saat</Label>
                       <Select value={preferredTime} onValueChange={setPreferredTime}>
                         <SelectTrigger data-testid="select-preferred-time">
                           <SelectValue placeholder="Saat seçin" />
@@ -350,6 +425,28 @@ export default function CustomerTracking() {
                           )}
                         </SelectContent>
                       </Select>
+                    </div>
+                  )}
+
+                  {requestType === 'date_change' && (
+                    <div className="space-y-2">
+                      <Label>Tercih Ettiğiniz Tarih</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Mevcut tarihten en fazla 7 gün öncesine veya sonrasına değiştirebilirsiniz.
+                      </p>
+                      <Input
+                        type="date"
+                        value={preferredDate}
+                        onChange={(e) => setPreferredDate(e.target.value)}
+                        min={dateRange.min}
+                        max={dateRange.max}
+                        data-testid="input-preferred-date"
+                      />
+                      {preferredDate && (
+                        <p className="text-sm text-muted-foreground">
+                          Seçilen tarih: {formatDate(preferredDate)}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -377,11 +474,11 @@ export default function CustomerTracking() {
                       className="flex-1"
                       data-testid="button-cancel-request"
                     >
-                      Vazgec
+                      Vazgeç
                     </Button>
                     <Button
                       onClick={handleSubmitRequest}
-                      disabled={submitRequestMutation.isPending || (requestType === 'time_change' && !preferredTime)}
+                      disabled={isSubmitDisabled()}
                       className="flex-1"
                       data-testid="button-submit-request"
                     >
@@ -395,18 +492,25 @@ export default function CustomerTracking() {
                   </div>
                 </div>
               )}
+
+              {!cancellationAllowed && !showRequestForm && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
+                  <p className="text-amber-800 dark:text-amber-300 text-xs">
+                    Aktivite saatine {reservation.freeCancellationHours} saatten az kaldığı için iptal yapılamaz. (Kalan: {hoursUntilActivity} saat)
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
 
-        {/* Request Sent Confirmation */}
         {requestSent && (
           <Card className="border-green-200 dark:border-green-800">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 text-green-700 dark:text-green-400">
                 <CheckCircle className="w-6 h-6 shrink-0" />
                 <div>
-                  <p className="font-medium">Talebiniz Alindi</p>
+                  <p className="font-medium">Talebiniz Alındı</p>
                   <p className="text-sm text-muted-foreground">
                     En kısa sürede size döneceğiz. Teşekkür ederiz.
                   </p>
