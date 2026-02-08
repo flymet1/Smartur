@@ -9,9 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send, CalendarClock, ShieldCheck, Phone, ChevronLeft, ChevronRight, TrendingUp, CreditCard, Hotel, Car, Package, FileText, Info } from "lucide-react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+type Lang = 'tr' | 'en';
+function t(lang: Lang, tr: string, en: string): string;
+function t<T>(lang: Lang, tr: T, en: T): T;
+function t(lang: Lang, tr: any, en: any) { return lang === 'tr' ? tr : en; }
 
 interface SelectedExtra {
   name: string;
@@ -89,6 +94,8 @@ export default function CustomerTracking() {
   const [requestSent, setRequestSent] = useState(false);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [showCancellationPolicy, setShowCancellationPolicy] = useState(false);
+  const [lang, setLang] = useState<Lang>('tr');
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   const { data: reservation, isLoading, error } = useQuery<TrackingData>({
     queryKey: ['/api/track', token],
@@ -173,7 +180,7 @@ export default function CustomerTracking() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('tr-TR', {
+    return date.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -194,21 +201,21 @@ export default function CustomerTracking() {
         return (
           <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 gap-1" data-testid="badge-status-confirmed">
             <CheckCircle className="w-3 h-3" />
-            Onaylandı
+            {t(lang, 'Onaylandı', 'Confirmed')}
           </Badge>
         );
       case 'pending':
         return (
           <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300 gap-1" data-testid="badge-status-pending">
             <AlertCircle className="w-3 h-3" />
-            Beklemede
+            {t(lang, 'Beklemede', 'Pending')}
           </Badge>
         );
       case 'cancelled':
         return (
           <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 gap-1" data-testid="badge-status-cancelled">
             <XCircle className="w-3 h-3" />
-            İptal Edildi
+            {t(lang, 'İptal Edildi', 'Cancelled')}
           </Badge>
         );
       default:
@@ -222,6 +229,11 @@ export default function CustomerTracking() {
     setPreferredTime("");
     setPreferredDate("");
     setRequestDetails("");
+    if ((type === 'date_change' || type === 'time_change') && calendarRef.current) {
+      setTimeout(() => {
+        calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
   };
 
   const handleSubmitRequest = () => {
@@ -308,6 +320,17 @@ export default function CustomerTracking() {
   return (
     <div className="min-h-screen bg-muted/20 flex items-center justify-center p-4">
       <div className="w-full max-w-lg space-y-4">
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLang(lang === 'tr' ? 'en' : 'tr')}
+            className="text-xs gap-1.5"
+            data-testid="button-lang-toggle"
+          >
+            {lang === 'tr' ? 'EN' : 'TR'}
+          </Button>
+        </div>
         <Card data-testid="card-reservation-tracking">
           <CardHeader className="text-center border-b pb-6">
             <div className="mx-auto mb-4">
@@ -326,14 +349,14 @@ export default function CustomerTracking() {
               )}
             </div>
             <CardTitle className="text-2xl" data-testid="text-customer-name">
-              Merhaba, {reservation.customerName}
+              {t(lang, 'Merhaba', 'Hello')}, {reservation.customerName}
             </CardTitle>
-            <p className="text-muted-foreground mt-2">Rezervasyon Detayları</p>
+            <p className="text-muted-foreground mt-2">{t(lang, 'Rezervasyon Detayları', 'Reservation Details')}</p>
           </CardHeader>
           
           <CardContent className="pt-6 space-y-6">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Durum</span>
+              <span className="text-muted-foreground">{t(lang, 'Durum', 'Status')}</span>
               {getStatusBadge(reservation.status)}
             </div>
 
@@ -343,7 +366,7 @@ export default function CustomerTracking() {
                 <div>
                   <p className="font-medium" data-testid="text-activity-name">{reservation.activityName}</p>
                   {reservation.orderNumber && (
-                    <p className="text-sm text-muted-foreground">Sipariş No: {reservation.orderNumber}</p>
+                    <p className="text-sm text-muted-foreground">{t(lang, 'Sipariş No', 'Order No')}: {reservation.orderNumber}</p>
                   )}
                 </div>
               </div>
@@ -365,7 +388,7 @@ export default function CustomerTracking() {
               <div className="flex items-center gap-3">
                 <Users className="w-5 h-5 text-primary shrink-0" />
                 <div>
-                  <p className="font-medium" data-testid="text-quantity">{reservation.quantity} Kişi</p>
+                  <p className="font-medium" data-testid="text-quantity">{reservation.quantity} {t(lang, 'Kişi', 'Guests')}</p>
                 </div>
               </div>
 
@@ -373,10 +396,10 @@ export default function CustomerTracking() {
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Buluşma Noktası</p>
+                    <p className="text-sm text-muted-foreground">{t(lang, 'Buluşma Noktası', 'Meeting Point')}</p>
                     <p className="font-medium text-sm" data-testid="text-meeting-point">{reservation.meetingPoint}</p>
                     {reservation.arrivalMinutesBefore && (
-                      <p className="text-xs text-muted-foreground">{reservation.arrivalMinutesBefore} dk önce geliniz</p>
+                      <p className="text-xs text-muted-foreground">{t(lang, `${reservation.arrivalMinutesBefore} dk önce geliniz`, `Please arrive ${reservation.arrivalMinutesBefore} min early`)}</p>
                     )}
                   </div>
                 </div>
@@ -386,7 +409,7 @@ export default function CustomerTracking() {
                 <div className="flex items-start gap-3">
                   <Hotel className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Otel</p>
+                    <p className="text-sm text-muted-foreground">{t(lang, 'Otel', 'Hotel')}</p>
                     <p className="font-medium text-sm" data-testid="text-hotel-name">{reservation.hotelName}</p>
                   </div>
                 </div>
@@ -396,9 +419,9 @@ export default function CustomerTracking() {
                 <div className="flex items-start gap-3">
                   <Car className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Transfer</p>
+                    <p className="text-sm text-muted-foreground">{t(lang, 'Transfer', 'Transfer')}</p>
                     <p className="font-medium text-sm" data-testid="text-transfer-info">
-                      Otel transferi dahil
+                      {t(lang, 'Otel transferi dahil', 'Hotel transfer included')}
                       {reservation.transferZone && ` (${reservation.transferZone})`}
                     </p>
                   </div>
@@ -410,7 +433,7 @@ export default function CustomerTracking() {
               <div className="border-t pt-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Package className="w-4 h-4 text-muted-foreground" />
-                  <p className="text-sm font-medium text-muted-foreground">Ekstra Hizmetler</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t(lang, 'Ekstra Hizmetler', 'Extra Services')}</p>
                 </div>
                 <div className="space-y-2">
                   {reservation.selectedExtras.map((extra, idx) => (
@@ -425,7 +448,7 @@ export default function CustomerTracking() {
 
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Toplam Tutar</span>
+                <span className="text-muted-foreground">{t(lang, 'Toplam Tutar', 'Total Amount')}</span>
                 <span className="text-xl font-semibold" data-testid="text-price">
                   {formatPrice(reservation.priceTl, reservation.priceUsd, reservation.currency)}
                 </span>
@@ -436,14 +459,14 @@ export default function CustomerTracking() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground flex items-center gap-1.5">
                       <CreditCard className="w-3.5 h-3.5" />
-                      Ön Ödeme
+                      {t(lang, 'Ön Ödeme', 'Advance Payment')}
                     </span>
                     <span className="font-medium text-green-600 dark:text-green-400" data-testid="text-advance-payment">
                       {reservation.advancePaymentTl.toLocaleString('tr-TR')} TL
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Kalan Ödeme</span>
+                    <span className="text-muted-foreground">{t(lang, 'Kalan Ödeme', 'Remaining')}</span>
                     <span className="font-semibold" data-testid="text-remaining-payment">
                       {Math.max(0, (reservation.priceTl || 0) - (reservation.advancePaymentTl || 0)).toLocaleString('tr-TR')} TL
                     </span>
@@ -452,7 +475,7 @@ export default function CustomerTracking() {
               )}
 
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Ödeme Durumu</span>
+                <span className="text-muted-foreground">{t(lang, 'Ödeme Durumu', 'Payment Status')}</span>
                 <Badge
                   className={
                     reservation.paymentStatus === 'paid'
@@ -463,10 +486,10 @@ export default function CustomerTracking() {
                   }
                   data-testid="text-payment-status"
                 >
-                  {reservation.paymentStatus === 'paid' ? 'Ödendi' 
-                    : reservation.paymentStatus === 'partial' ? 'Kısmi Ödeme' 
-                    : reservation.paymentStatus === 'failed' ? 'Başarısız'
-                    : 'Ödenmedi'}
+                  {reservation.paymentStatus === 'paid' ? t(lang, 'Ödendi', 'Paid') 
+                    : reservation.paymentStatus === 'partial' ? t(lang, 'Kısmi Ödeme', 'Partial') 
+                    : reservation.paymentStatus === 'failed' ? t(lang, 'Başarısız', 'Failed')
+                    : t(lang, 'Ödenmedi', 'Unpaid')}
                 </Badge>
               </div>
             </div>
@@ -482,7 +505,7 @@ export default function CustomerTracking() {
             {reservation.status === 'confirmed' && !reservation.confirmationMessage && (
               <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
                 <p className="text-green-800 dark:text-green-300 text-sm">
-                  Rezervasyonunuz onaylandı! Belirtilen tarih ve saatte sizi bekliyoruz.
+                  {t(lang, 'Rezervasyonunuz onaylandı! Belirtilen tarih ve saatte sizi bekliyoruz.', 'Your reservation is confirmed! We look forward to seeing you at the scheduled date and time.')}
                 </p>
               </div>
             )}
@@ -490,7 +513,7 @@ export default function CustomerTracking() {
             {reservation.status === 'pending' && (
               <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-center">
                 <p className="text-amber-800 dark:text-amber-300 text-sm">
-                  Rezervasyonunuz beklemede. En kısa sürede size döneceğiz.
+                  {t(lang, 'Rezervasyonunuz beklemede. En kısa sürede size döneceğiz.', 'Your reservation is pending. We will get back to you shortly.')}
                 </p>
               </div>
             )}
@@ -498,7 +521,7 @@ export default function CustomerTracking() {
             {reservation.status === 'cancelled' && (
               <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
                 <p className="text-red-800 dark:text-red-300 text-sm">
-                  Rezervasyonunuz iptal edilmiştir. Sorularınız için bizimle iletişime geçebilirsiniz.
+                  {t(lang, 'Rezervasyonunuz iptal edilmiştir. Sorularınız için bizimle iletişime geçebilirsiniz.', 'Your reservation has been cancelled. Please contact us if you have any questions.')}
                 </p>
               </div>
             )}
@@ -506,19 +529,21 @@ export default function CustomerTracking() {
         </Card>
 
         {availability && availability.days.length > 0 && reservation.status !== 'cancelled' && (
-          <Card data-testid="card-availability-calendar">
+          <Card data-testid="card-availability-calendar" ref={calendarRef}>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <CalendarDays className="w-5 h-5" />
-                Müsait Tarih ve Saatler
+                {t(lang, 'Müsait Tarih ve Saatler', 'Available Dates & Times')}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                {availability.seasonalPricingEnabled ? 'Fiyatlar tarihe göre değişkenlik gösterebilir.' : 'Müsait tarih ve saatleri görüntüleyin.'}
+                {availability.seasonalPricingEnabled 
+                  ? t(lang, 'Fiyatlar tarihe göre değişkenlik gösterebilir.', 'Prices may vary depending on the date.') 
+                  : t(lang, 'Müsait tarih ve saatleri görüntüleyin.', 'View available dates and times.')}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-7 gap-1 text-center" data-testid="calendar-grid">
-                {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => (
+                {(lang === 'tr' ? ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']).map(day => (
                   <div key={day} className="text-xs font-medium text-muted-foreground py-1">{day}</div>
                 ))}
                 {(() => {
@@ -571,10 +596,10 @@ export default function CustomerTracking() {
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs">
                               <div className="space-y-1">
-                                <p className="font-medium">{new Date(day.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', weekday: 'short' })}</p>
-                                <p>{currency === 'USD' ? `$${day.priceUsd}` : `${day.priceTl.toLocaleString('tr-TR')} TL`} / kişi</p>
-                                <p>{isClosed ? 'Dolu' : `${day.totalAvailable} kişilik yer mevcut`}</p>
-                                {isReservationDay && <p className="text-blue-400">Mevcut rezervasyon tarihiniz</p>}
+                                <p className="font-medium">{new Date(day.date + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short', weekday: 'short' })}</p>
+                                <p>{currency === 'USD' ? `$${day.priceUsd}` : `${day.priceTl.toLocaleString('tr-TR')} TL`} / {t(lang, 'kişi', 'person')}</p>
+                                <p>{isClosed ? t(lang, 'Dolu', 'Full') : t(lang, `${day.totalAvailable} kişilik yer mevcut`, `${day.totalAvailable} spots available`)}</p>
+                                {isReservationDay && <p className="text-blue-400">{t(lang, 'Mevcut rezervasyon tarihiniz', 'Your current reservation date')}</p>}
                               </div>
                             </TooltipContent>
                           </Tooltip>
@@ -588,19 +613,19 @@ export default function CustomerTracking() {
               <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span>Müsait</span>
+                  <span>{t(lang, 'Müsait', 'Available')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span>Dolmak Üzere</span>
+                  <span>{t(lang, 'Dolmak Üzere', 'Almost Full')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
-                  <span>Dolu</span>
+                  <span>{t(lang, 'Dolu', 'Full')}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span>Rezervasyonunuz</span>
+                  <span>{t(lang, 'Rezervasyonunuz', 'Your Booking')}</span>
                 </div>
               </div>
 
@@ -608,17 +633,17 @@ export default function CustomerTracking() {
                 <div className="border-t pt-4 space-y-3" data-testid="selected-day-details">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">
-                      {new Date(selectedDayData.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}
+                      {new Date(selectedDayData.date + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'long', weekday: 'long' })}
                     </p>
                     <Badge className={getOccupancyColor(selectedDayData.occupancy, selectedDayData.closed)}>
-                      {selectedDayData.closed ? 'Kapalı' : `${selectedDayData.totalAvailable} yer`}
+                      {selectedDayData.closed ? t(lang, 'Kapalı', 'Closed') : `${selectedDayData.totalAvailable} ${t(lang, 'yer', 'spots')}`}
                     </Badge>
                   </div>
 
                   {availability.seasonalPricingEnabled && (
                     <div className="flex items-center gap-2 text-sm">
                       <TrendingUp className="w-4 h-4 text-primary" />
-                      <span className="text-muted-foreground">Kişi başı:</span>
+                      <span className="text-muted-foreground">{t(lang, 'Kişi başı:', 'Per person:')}:</span>
                       <span className="font-semibold">
                         {availability.currency === 'USD' 
                           ? `$${selectedDayData.priceUsd}` 
@@ -635,7 +660,7 @@ export default function CustomerTracking() {
                   )}
 
                   <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground font-medium">Müsait Saatler</p>
+                    <p className="text-xs text-muted-foreground font-medium">{t(lang, 'Müsait Saatler', 'Available Times')}</p>
                     <div className="grid grid-cols-3 gap-2">
                       {selectedDayData.timeSlots.map((slot) => {
                         const isFull = slot.availableSlots <= 0;
@@ -654,7 +679,7 @@ export default function CustomerTracking() {
                           >
                             <span className="font-semibold text-sm">{slot.time}</span>
                             <span className={`text-[10px] ${isFull ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
-                              {isFull ? 'Dolu' : `${slot.availableSlots} yer`}
+                              {isFull ? t(lang, 'Dolu', 'Full') : `${slot.availableSlots} ${t(lang, 'yer', 'spots')}`}
                             </span>
                           </button>
                         );
@@ -665,10 +690,10 @@ export default function CustomerTracking() {
                   {preferredDate === selectedDayData.date && preferredTime && (
                     <div className="bg-primary/5 border border-primary/20 rounded-md p-3 text-sm">
                       <p className="font-medium text-primary">
-                        Seçiminiz: {new Date(preferredDate + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - {preferredTime}
+                        {t(lang, 'Seçiminiz', 'Your Selection')}: {new Date(preferredDate + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'long' })} - {preferredTime}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Tarih/saat değişikliği için aşağıdan talep oluşturabilirsiniz.
+                        {t(lang, 'Tarih/saat değişikliği için aşağıdan talep oluşturabilirsiniz.', 'You can submit a change request below.')}
                       </p>
                     </div>
                   )}
@@ -683,10 +708,10 @@ export default function CustomerTracking() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <MessageSquare className="w-5 h-5" />
-                Talep Oluştur
+                {t(lang, 'Talep Oluştur', 'Submit a Request')}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Rezervasyonunuzla ilgili değişiklik veya iptal talebi oluşturabilirsiniz.
+                {t(lang, 'Rezervasyonunuzla ilgili değişiklik veya iptal talebi oluşturabilirsiniz.', 'You can request changes or cancellation for your reservation.')}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -699,7 +724,7 @@ export default function CustomerTracking() {
                     data-testid="button-time-change"
                   >
                     <Clock className="w-4 h-4" />
-                    <span className="text-sm">Saat Değiştir</span>
+                    <span className="text-sm">{t(lang, 'Saat Değiştir', 'Change Time')}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -708,7 +733,7 @@ export default function CustomerTracking() {
                     data-testid="button-date-change"
                   >
                     <CalendarClock className="w-4 h-4" />
-                    <span className="text-sm">Tarih Değiştir</span>
+                    <span className="text-sm">{t(lang, 'Tarih Değiştir', 'Change Date')}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -716,8 +741,10 @@ export default function CustomerTracking() {
                     onClick={() => {
                       if (!cancellationAllowed) {
                         toast({
-                          title: "İptal Yapılamaz",
-                          description: `Aktivite saatine ${reservation.freeCancellationHours} saatten az kaldığı için iptal yapılamaz. (Kalan: ${hoursUntilActivity} saat)`,
+                          title: t(lang, "İptal Yapılamaz", "Cannot Cancel"),
+                          description: t(lang, 
+                            `Aktivite saatine ${reservation.freeCancellationHours} saatten az kaldığı için iptal yapılamaz. (Kalan: ${hoursUntilActivity} saat)`,
+                            `Cancellation is not allowed as less than ${reservation.freeCancellationHours} hours remain. (Remaining: ${hoursUntilActivity} hours)`),
                           variant: "destructive",
                         });
                         return;
@@ -728,7 +755,7 @@ export default function CustomerTracking() {
                     data-testid="button-cancellation"
                   >
                     <Ban className="w-4 h-4" />
-                    <span className="text-sm">İptal Et</span>
+                    <span className="text-sm">{t(lang, 'İptal Et', 'Cancel')}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -737,7 +764,7 @@ export default function CustomerTracking() {
                     data-testid="button-other-request"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span className="text-sm">Diğer Talep</span>
+                    <span className="text-sm">{t(lang, 'Diğer Talep', 'Other Request')}</span>
                   </Button>
                 </div>
               ) : (
@@ -746,35 +773,35 @@ export default function CustomerTracking() {
                     {requestType === 'time_change' && (
                       <>
                         <Clock className="w-4 h-4 text-primary" />
-                        Saat Değişikliği Talebi
+                        {t(lang, 'Saat Değişikliği Talebi', 'Time Change Request')}
                       </>
                     )}
                     {requestType === 'date_change' && (
                       <>
                         <CalendarClock className="w-4 h-4 text-primary" />
-                        Tarih Değişikliği Talebi
+                        {t(lang, 'Tarih Değişikliği Talebi', 'Date Change Request')}
                       </>
                     )}
                     {requestType === 'cancellation' && (
                       <>
                         <Ban className="w-4 h-4 text-red-500" />
-                        İptal Talebi
+                        {t(lang, 'İptal Talebi', 'Cancellation Request')}
                       </>
                     )}
                     {requestType === 'other' && (
                       <>
                         <MessageSquare className="w-4 h-4 text-primary" />
-                        Diğer Talep
+                        {t(lang, 'Diğer Talep', 'Other Request')}
                       </>
                     )}
                   </div>
 
                   {requestType === 'time_change' && (
                     <div className="space-y-2">
-                      <Label>Tercih Ettiğiniz Saat</Label>
+                      <Label>{t(lang, 'Tercih Ettiğiniz Saat', 'Preferred Time')}</Label>
                       <Select value={preferredTime} onValueChange={setPreferredTime}>
                         <SelectTrigger data-testid="select-preferred-time">
-                          <SelectValue placeholder="Saat seçin" />
+                          <SelectValue placeholder={t(lang, 'Saat seçin', 'Select time')} />
                         </SelectTrigger>
                         <SelectContent>
                           {reservation?.defaultTimes && reservation.defaultTimes.length > 0 ? (
@@ -799,7 +826,7 @@ export default function CustomerTracking() {
 
                   {requestType === 'date_change' && (
                     <div className="space-y-2">
-                      <Label>Tercih Ettiğiniz Tarih</Label>
+                      <Label>{t(lang, 'Tercih Ettiğiniz Tarih', 'Preferred Date')}</Label>
                       {preferredDate ? (
                         <div className="bg-primary/5 border border-primary/20 rounded-md p-3">
                           <p className="text-sm font-medium">
@@ -807,38 +834,35 @@ export default function CustomerTracking() {
                             {preferredTime && ` - ${preferredTime}`}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Yukarıdaki takvimden farklı bir tarih seçebilirsiniz.
+                            {t(lang, 'Yukarıdaki takvimden farklı bir tarih seçebilirsiniz.', 'You can select a different date from the calendar above.')}
                           </p>
                         </div>
                       ) : (
-                        <div className="bg-muted/30 border border-dashed border-border rounded-md p-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                          className="w-full bg-muted/30 border border-dashed border-border rounded-md p-3 text-center"
+                        >
                           <CalendarDays className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
                           <p className="text-xs text-muted-foreground">
-                            Yukarıdaki takvimden bir tarih ve saat seçin.
+                            {t(lang, 'Yukarıdaki takvimden bir tarih ve saat seçin.', 'Select a date and time from the calendar above.')}
                           </p>
-                        </div>
+                        </button>
                       )}
-                      <Input
-                        type="date"
-                        value={preferredDate}
-                        onChange={(e) => setPreferredDate(e.target.value)}
-                        min={dateRange.min}
-                        max={dateRange.max}
-                        className="text-xs"
-                        data-testid="input-preferred-date"
-                      />
                     </div>
                   )}
 
                   <div className="space-y-2">
                     <Label>
-                      {requestType === 'cancellation' ? 'İptal Sebebi (Opsiyonel)' : 'Ek Açıklama (Opsiyonel)'}
+                      {requestType === 'cancellation' 
+                        ? t(lang, 'İptal Sebebi (Opsiyonel)', 'Cancellation Reason (Optional)') 
+                        : t(lang, 'Ek Açıklama (Opsiyonel)', 'Additional Notes (Optional)')}
                     </Label>
                     <Textarea
                       placeholder={
                         requestType === 'cancellation' 
-                          ? "İptal sebebinizi yazabilirsiniz..." 
-                          : "Talebinizle ilgili ek bilgi..."
+                          ? t(lang, 'İptal sebebinizi yazabilirsiniz...', 'You can write your cancellation reason...') 
+                          : t(lang, 'Talebinizle ilgili ek bilgi...', 'Additional details about your request...')
                       }
                       value={requestDetails}
                       onChange={(e) => setRequestDetails(e.target.value)}
@@ -854,7 +878,7 @@ export default function CustomerTracking() {
                       className="flex-1"
                       data-testid="button-cancel-request"
                     >
-                      Vazgeç
+                      {t(lang, 'Vazgeç', 'Cancel')}
                     </Button>
                     <Button
                       onClick={handleSubmitRequest}
@@ -867,7 +891,7 @@ export default function CustomerTracking() {
                       ) : (
                         <Send className="w-4 h-4 mr-2" />
                       )}
-                      Gönder
+                      {t(lang, 'Gönder', 'Submit')}
                     </Button>
                   </div>
                 </div>
@@ -876,7 +900,9 @@ export default function CustomerTracking() {
               {!cancellationAllowed && !showRequestForm && (
                 <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
                   <p className="text-amber-800 dark:text-amber-300 text-xs">
-                    Aktivite saatine {reservation.freeCancellationHours} saatten az kaldığı için iptal yapılamaz. (Kalan: {hoursUntilActivity} saat)
+                    {t(lang, 
+                      `Aktivite saatine ${reservation.freeCancellationHours} saatten az kaldığı için iptal yapılamaz. (Kalan: ${hoursUntilActivity} saat)`,
+                      `Cancellation is not allowed as less than ${reservation.freeCancellationHours} hours remain. (Remaining: ${hoursUntilActivity} hours)`)}
                   </p>
                 </div>
               )}
@@ -890,9 +916,9 @@ export default function CustomerTracking() {
               <div className="flex items-center gap-3 text-green-700 dark:text-green-400">
                 <CheckCircle className="w-6 h-6 shrink-0" />
                 <div>
-                  <p className="font-medium">Talebiniz Alındı</p>
+                  <p className="font-medium">{t(lang, 'Talebiniz Alındı', 'Request Received')}</p>
                   <p className="text-sm text-muted-foreground">
-                    En kısa sürede size döneceğiz. Teşekkür ederiz.
+                    {t(lang, 'En kısa sürede size döneceğiz. Teşekkür ederiz.', 'We will get back to you shortly. Thank you.')}
                   </p>
                 </div>
               </div>
@@ -914,11 +940,11 @@ export default function CustomerTracking() {
                   rel="noopener noreferrer"
                 >
                   <Phone className="w-5 h-5" />
-                  WhatsApp Destek Hattı
+                  {t(lang, 'WhatsApp Destek Hattı', 'WhatsApp Support')}
                 </a>
               </Button>
               <p className="text-xs text-center text-muted-foreground mt-3">
-                Sorularınız için bize WhatsApp üzerinden ulaşabilirsiniz.
+                {t(lang, 'Sorularınız için bize WhatsApp üzerinden ulaşabilirsiniz.', 'Contact us on WhatsApp for any questions.')}
               </p>
             </CardContent>
           </Card>
@@ -936,7 +962,7 @@ export default function CustomerTracking() {
             data-testid="link-cancellation-policy"
           >
             <ShieldCheck className="w-3 h-3 inline-block mr-1" />
-            İptal ve İade Politikası
+            {t(lang, 'İptal ve İade Politikası', 'Cancellation & Refund Policy')}
           </button>
           {showCancellationPolicy && (
             <div className="text-left bg-muted/30 border border-border rounded-md p-4 mt-2 text-xs text-muted-foreground space-y-2" data-testid="text-cancellation-policy">
@@ -945,13 +971,22 @@ export default function CustomerTracking() {
               ) : (
                 <>
                   <p>
-                    Aktivite başlangıcına <span className="font-medium text-foreground">{reservation.freeCancellationHours} saat</span> ve daha fazla süre varken ücretsiz iptal yapılabilir.
+                    {t(lang, 
+                      <>Aktivite başlangıcına <span className="font-medium text-foreground">{reservation.freeCancellationHours} saat</span> ve daha fazla süre varken ücretsiz iptal yapılabilir.</>,
+                      <>Free cancellation is available up to <span className="font-medium text-foreground">{reservation.freeCancellationHours} hours</span> before the activity starts.</>
+                    )}
                   </p>
                   <p>
-                    Bu süre içinde yapılan iptallerde ödeme tamamen iade edilir. Süre geçtikten sonra iptal talebi kabul edilmez.
+                    {t(lang, 
+                      'Bu süre içinde yapılan iptallerde ödeme tamamen iade edilir. Süre geçtikten sonra iptal talebi kabul edilmez.',
+                      'Cancellations made within this period are fully refunded. Cancellation requests are not accepted after the deadline.'
+                    )}
                   </p>
                   <p>
-                    Tarih değişikliği talepleri, mevcut tarihten en fazla 7 gün öncesine veya sonrasına yapılabilir ve onay gerektirir.
+                    {t(lang,
+                      'Tarih değişikliği talepleri, mevcut tarihten en fazla 7 gün öncesine veya sonrasına yapılabilir ve onay gerektirir.',
+                      'Date change requests can be made up to 7 days before or after the current date and require approval.'
+                    )}
                   </p>
                 </>
               )}
