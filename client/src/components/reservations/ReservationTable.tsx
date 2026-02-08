@@ -84,6 +84,11 @@ export function ReservationTable({
   const [isEditing, setIsEditing] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
+  const [editPriceTl, setEditPriceTl] = useState("");
+  const [editPriceUsd, setEditPriceUsd] = useState("");
+  const [editAdvancePayment, setEditAdvancePayment] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
   const hasSelection = selectedIds !== undefined && onToggleSelection !== undefined;
   
   const { data: activities = [] } = useQuery<Activity[]>({
@@ -158,21 +163,22 @@ export function ReservationTable({
     },
   });
 
-  const dateUpdateMutation = useMutation({
-    mutationFn: async ({ id, date, time }: { id: number; date: string; time: string }) => {
-      return apiRequest('PATCH', `/api/reservations/${id}`, { date, time });
+  const reservationUpdateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number; notes?: string }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}`, data);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
-      toast({ title: "Başarılı", description: "Tarih ve saat güncellendi." });
+      toast({ title: "Basarili", description: "Rezervasyon guncellendi." });
       setIsEditing(false);
+      setIsEditingNotes(false);
       const res = reservations.find(r => r.id === variables.id);
-      if (res && onMoveSuccess && (variables.date !== res.date || variables.time !== res.time)) {
+      if (res && onMoveSuccess && variables.date && variables.time && (variables.date !== res.date || variables.time !== res.time)) {
         onMoveSuccess(res, res.date, variables.date, res.time, variables.time);
       }
     },
     onError: () => {
-      toast({ title: "Hata", description: "Güncelleme başarısız.", variant: "destructive" });
+      toast({ title: "Hata", description: "Guncelleme basarisiz.", variant: "destructive" });
     },
   });
 
@@ -180,11 +186,18 @@ export function ReservationTable({
     if (expandedId === res.id) {
       setExpandedId(null);
       setIsEditing(false);
+      setIsEditingNotes(false);
     } else {
       setExpandedId(res.id);
       setEditDate(res.date);
       setEditTime(res.time);
+      setEditPriceTl(String(res.priceTl || 0));
+      setEditPriceUsd(String(res.priceUsd || 0));
+      setEditAdvancePayment(String((res as any).advancePaymentTl || 0));
+      const cleanNotes = getNotesWithoutMetadata(res.notes);
+      setEditNotes(cleanNotes || "");
       setIsEditing(false);
+      setIsEditingNotes(false);
     }
   };
 
@@ -297,18 +310,42 @@ export function ReservationTable({
       try { return JSON.parse((activity as any).defaultTimes || "[]"); } catch { return []; }
     })() : [];
 
-    const handleSave = () => {
+    const handleSaveDatetime = () => {
       if (!editDate || !editTime) {
         toast({ title: "Hata", description: "Tarih ve saat seçiniz.", variant: "destructive" });
         return;
       }
-      dateUpdateMutation.mutate({ id: res.id, date: editDate, time: editTime });
+      const updates: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number } = { id: res.id, date: editDate, time: editTime };
+      const newPriceTl = parseFloat(editPriceTl);
+      const newPriceUsd = parseFloat(editPriceUsd);
+      const newAdvance = parseFloat(editAdvancePayment);
+      if (!isNaN(newPriceTl)) { updates.priceTl = newPriceTl; updates.salePriceTl = newPriceTl; }
+      if (!isNaN(newPriceUsd)) updates.priceUsd = newPriceUsd;
+      if (!isNaN(newAdvance)) updates.advancePaymentTl = newAdvance;
+      reservationUpdateMutation.mutate(updates);
+    };
+
+    const handleSaveNotes = () => {
+      const metadataStr = res.notes ? (() => {
+        const match = res.notes.match(/__METADATA__:.*$/);
+        return match ? match[0] : "";
+      })() : "";
+      const fullNotes = editNotes ? (metadataStr ? `${editNotes}\n${metadataStr}` : editNotes) : metadataStr || "";
+      reservationUpdateMutation.mutate({ id: res.id, notes: fullNotes });
     };
 
     const handleCancelEdit = () => {
       setEditDate(res.date);
       setEditTime(res.time);
+      setEditPriceTl(String(res.priceTl || 0));
+      setEditPriceUsd(String(res.priceUsd || 0));
+      setEditAdvancePayment(String((res as any).advancePaymentTl || 0));
       setIsEditing(false);
+    };
+
+    const handleCancelNotesEdit = () => {
+      setEditNotes(cleanNotes || "");
+      setIsEditingNotes(false);
     };
 
     return (
@@ -441,26 +478,80 @@ export function ReservationTable({
               <div className="font-medium" data-testid="text-time">{res.time}</div>
             )}
           </div>
-          {(res.priceTl ?? 0) > 0 && (
-            <div>
-              <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
-              <div className="font-medium">{(res.priceTl ?? 0).toLocaleString('tr-TR')} ₺</div>
-            </div>
-          )}
-          {(res.priceUsd ?? 0) > 0 && (
-            <div>
-              <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
-              <div className="font-medium">${res.priceUsd ?? 0}</div>
-            </div>
-          )}
+          <div>
+            <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
+            {isEditing ? (
+              <Input 
+                type="number" 
+                value={editPriceTl} 
+                onChange={(e) => setEditPriceTl(e.target.value)}
+                className="h-8 text-sm"
+                data-testid="input-edit-price-tl"
+              />
+            ) : (
+              <div className="font-medium" data-testid="text-price-tl">
+                {(res.priceTl ?? 0) > 0 ? `${(res.priceTl ?? 0).toLocaleString('tr-TR')} ₺` : '-'}
+              </div>
+            )}
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
+            {isEditing ? (
+              <Input 
+                type="number" 
+                value={editPriceUsd} 
+                onChange={(e) => setEditPriceUsd(e.target.value)}
+                className="h-8 text-sm"
+                data-testid="input-edit-price-usd"
+              />
+            ) : (
+              <div className="font-medium" data-testid="text-price-usd">
+                {(res.priceUsd ?? 0) > 0 ? `$${res.priceUsd}` : '-'}
+              </div>
+            )}
+          </div>
         </div>
+
+        {isEditing && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">On Odeme (Kapora) ₺</Label>
+              <Input 
+                type="number" 
+                value={editAdvancePayment} 
+                onChange={(e) => setEditAdvancePayment(e.target.value)}
+                className="h-8 text-sm"
+                data-testid="input-edit-advance-payment"
+              />
+            </div>
+          </div>
+        )}
+
+        {!isEditing && (res as any).advancePaymentTl > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">On Odeme (Kapora)</Label>
+              <div className="font-medium text-amber-600" data-testid="text-advance-payment">
+                {((res as any).advancePaymentTl || 0).toLocaleString('tr-TR')} ₺
+              </div>
+            </div>
+            {((res as any).salePriceTl ?? res.priceTl ?? 0) > 0 && (
+              <div>
+                <Label className="text-muted-foreground text-xs">Kalan Odeme</Label>
+                <div className="font-medium" data-testid="text-remaining-payment">
+                  {(((res as any).salePriceTl ?? res.priceTl ?? 0) - ((res as any).advancePaymentTl || 0)).toLocaleString('tr-TR')} ₺
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {isEditing && (
           <div className="flex items-center gap-2">
             <Button 
               size="sm" 
-              onClick={handleSave}
-              disabled={dateUpdateMutation.isPending}
+              onClick={handleSaveDatetime}
+              disabled={reservationUpdateMutation.isPending}
               data-testid="button-save-datetime"
             >
               <Save className="h-4 w-4 mr-1" />
@@ -470,10 +561,10 @@ export function ReservationTable({
               variant="outline" 
               size="sm" 
               onClick={handleCancelEdit}
-              disabled={dateUpdateMutation.isPending}
+              disabled={reservationUpdateMutation.isPending}
               data-testid="button-cancel-edit"
             >
-              Vazgeç
+              Vazgec
             </Button>
           </div>
         )}
@@ -582,15 +673,58 @@ export function ReservationTable({
           </>
         )}
 
-        {cleanNotes && (
-          <>
-            <Separator />
-            <div>
-              <Label className="text-muted-foreground text-xs">Notlar</Label>
-              <div className="font-medium text-sm whitespace-pre-wrap">{cleanNotes}</div>
+        <Separator />
+        <div>
+          <Label className="text-muted-foreground text-xs flex items-center gap-1">
+            Notlar
+            {!isEditingNotes && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-4 w-4 p-0 ml-1"
+                onClick={() => setIsEditingNotes(true)}
+                data-testid="button-edit-notes"
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+            )}
+          </Label>
+          {isEditingNotes ? (
+            <div className="space-y-2">
+              <textarea 
+                value={editNotes} 
+                onChange={(e) => setEditNotes(e.target.value)}
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="Not ekleyin..."
+                data-testid="textarea-edit-notes"
+              />
+              <div className="flex items-center gap-2">
+                <Button 
+                  size="sm" 
+                  onClick={handleSaveNotes}
+                  disabled={reservationUpdateMutation.isPending}
+                  data-testid="button-save-notes"
+                >
+                  <Save className="h-4 w-4 mr-1" />
+                  Kaydet
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCancelNotesEdit}
+                  disabled={reservationUpdateMutation.isPending}
+                  data-testid="button-cancel-notes"
+                >
+                  Vazgec
+                </Button>
+              </div>
             </div>
-          </>
-        )}
+          ) : (
+            <div className="font-medium text-sm whitespace-pre-wrap" data-testid="text-notes">
+              {cleanNotes || <span className="text-muted-foreground italic">Not yok - kalem ikonuna tiklayarak ekleyebilirsiniz</span>}
+            </div>
+          )}
+        </div>
 
         {res.source === 'manual' && (res as any).createdByUserName && (
           <>

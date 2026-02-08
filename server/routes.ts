@@ -5316,7 +5316,7 @@ export async function registerRoutes(
   // General reservation update (date, time, etc.)
   app.patch("/api/reservations/:id", requirePermission(PERMISSIONS.RESERVATIONS_EDIT), async (req, res) => {
     const id = parseInt(req.params.id);
-    const { date, time } = req.body;
+    const { date, time, priceTl, priceUsd, salePriceTl, advancePaymentTl, notes } = req.body;
     
     try {
       const tenantId = req.session?.tenantId;
@@ -5326,9 +5326,14 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Rezervasyon bulunamadı" });
       }
       
-      const updates: { date?: string; time?: string } = {};
-      if (date) updates.date = date;
-      if (time) updates.time = time;
+      const updates: Record<string, any> = {};
+      if (date !== undefined) updates.date = date;
+      if (time !== undefined) updates.time = time;
+      if (priceTl !== undefined) updates.priceTl = Number(priceTl);
+      if (priceUsd !== undefined) updates.priceUsd = Number(priceUsd);
+      if (salePriceTl !== undefined) updates.salePriceTl = Number(salePriceTl);
+      if (advancePaymentTl !== undefined) updates.advancePaymentTl = Number(advancePaymentTl);
+      if (notes !== undefined) updates.notes = notes;
       
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ error: "Güncellenecek alan belirtilmedi" });
