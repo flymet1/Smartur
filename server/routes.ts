@@ -10235,6 +10235,62 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
     }
   });
 
+  app.post("/api/send-change-notification-email", async (req, res) => {
+    try {
+      const { email, customerName, message, subject } = req.body;
+      const tenantId = req.session?.tenantId;
+
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+
+      if (!email || !customerName || !message) {
+        return res.status(400).json({ error: "Eksik bilgi: e-posta, isim ve mesaj gerekli" });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Geçersiz e-posta adresi" });
+      }
+
+      const tenant = await storage.getTenant(tenantId);
+      const tenantName = tenant?.name || "Smartur";
+
+      const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <h2 style="color: #333; margin: 0 0 10px 0;">${tenantName}</h2>
+            <p style="color: #666; margin: 0;">Rezervasyon Güncelleme Bildirimi</p>
+          </div>
+          <div style="padding: 20px; line-height: 1.6;">
+            ${message.split('\n').map((line: string) => `<p style="margin: 4px 0; color: #333;">${line}</p>`).join('')}
+          </div>
+          <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 20px;">
+            <p style="color: #999; font-size: 12px; margin: 0;">Bu e-posta ${tenantName} tarafından gönderilmiştir.</p>
+          </div>
+        </div>
+      `;
+
+      const emailResult = await sendTenantEmail(tenantId, {
+        to: email,
+        subject: subject || `Rezervasyon Güncelleme - ${tenantName}`,
+        html: htmlContent,
+        text: message,
+      });
+
+      if (!emailResult.success) {
+        await logError('email', 'Değişiklik bildirim e-postası gönderilemedi', { email, error: emailResult.error });
+        return res.status(500).json({ error: emailResult.error || "E-posta gönderilemedi" });
+      }
+
+      await logInfo('email', `Rezervasyon değişiklik bildirimi gönderildi: ${customerName} (${email})`);
+      res.json({ success: true, message: "E-posta bildirimi gönderildi" });
+    } catch (error) {
+      await logError('email', 'Değişiklik bildirim e-postası hatası', { error: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "E-posta gönderilemedi" });
+    }
+  });
+
   // === Send Custom WhatsApp Message (for customer requests) ===
   app.post("/api/send-whatsapp-custom-message", async (req, res) => {
     try {

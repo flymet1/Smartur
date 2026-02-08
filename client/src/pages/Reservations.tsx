@@ -906,16 +906,29 @@ export default function Reservations() {
                     <p className="text-sm text-muted-foreground">
                       Rezervasyon başarıyla güncellendi. Müşteriye bildirim göndermek ister misiniz?
                     </p>
-                    
+
                     <Card className="p-4 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
                       <div className="space-y-3">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
                             <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="font-medium">{moveNotification.reservation.customerName}</p>
-                            <p className="text-sm text-muted-foreground">{moveNotification.reservation.customerPhone}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {moveNotification.reservation.customerPhone && (
+                                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {moveNotification.reservation.customerPhone}
+                                </span>
+                              )}
+                              {moveNotification.reservation.customerEmail && (
+                                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  {moveNotification.reservation.customerEmail}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <Textarea
@@ -924,29 +937,71 @@ export default function Reservations() {
                           rows={4}
                           className="text-sm"
                           placeholder="Müşteriye gönderilecek mesaj..."
+                          data-testid="textarea-move-notification-message"
                         />
-                        <Button
-                          size="sm"
-                          className="w-full"
-                          onClick={async () => {
-                            try {
-                              await fetch('/api/whatsapp/send', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  to: moveNotification.reservation.customerPhone,
-                                  message: moveCustomerMsg
-                                })
-                              });
-                              toast({ title: "Gönderildi", description: "Müşteriye bildirim gönderildi." });
-                            } catch {
-                              toast({ title: "Hata", description: "Mesaj gönderilemedi.", variant: "destructive" });
-                            }
-                          }}
-                        >
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Müşteriye Gönder
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            disabled={!moveNotification.reservation.customerPhone}
+                            data-testid="button-send-whatsapp-notification"
+                            onClick={async () => {
+                              try {
+                                const resp = await fetch('/api/send-whatsapp-custom-message', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    phone: moveNotification.reservation.customerPhone,
+                                    message: moveCustomerMsg
+                                  })
+                                });
+                                if (!resp.ok) {
+                                  const err = await resp.json();
+                                  throw new Error(err.error || "Gönderilemedi");
+                                }
+                                toast({ title: "WhatsApp Gönderildi", description: "Müşteriye WhatsApp bildirimi gönderildi." });
+                              } catch (err: any) {
+                                toast({ title: "Hata", description: err.message || "WhatsApp mesajı gönderilemedi.", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            WhatsApp
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1"
+                            disabled={!moveNotification.reservation.customerEmail}
+                            data-testid="button-send-email-notification"
+                            onClick={async () => {
+                              try {
+                                const resp = await fetch('/api/send-change-notification-email', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    email: moveNotification.reservation.customerEmail,
+                                    customerName: moveNotification.reservation.customerName,
+                                    message: moveCustomerMsg
+                                  })
+                                });
+                                if (!resp.ok) {
+                                  const err = await resp.json();
+                                  throw new Error(err.error || "Gönderilemedi");
+                                }
+                                toast({ title: "E-posta Gönderildi", description: "Müşteriye e-posta bildirimi gönderildi." });
+                              } catch (err: any) {
+                                toast({ title: "Hata", description: err.message || "E-posta gönderilemedi.", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            E-posta
+                          </Button>
+                        </div>
+                        {!moveNotification.reservation.customerPhone && !moveNotification.reservation.customerEmail && (
+                          <p className="text-xs text-destructive">Müşterinin telefon veya e-posta bilgisi bulunmuyor.</p>
+                        )}
                       </div>
                     </Card>
 
@@ -977,12 +1032,14 @@ export default function Reservations() {
                             rows={3}
                             className="text-sm"
                             placeholder="Acentaya gönderilecek mesaj..."
+                            data-testid="textarea-agency-notification-message"
                           />
                           <Button
                             size="sm"
                             variant="outline"
                             className="w-full"
                             disabled={!moveAgencyId}
+                            data-testid="button-send-agency-notification"
                             onClick={async () => {
                               const agency = agencies.find(a => a.id === Number(moveAgencyId));
                               if (!agency?.contactInfo) {
@@ -990,17 +1047,21 @@ export default function Reservations() {
                                 return;
                               }
                               try {
-                                await fetch('/api/whatsapp/send', {
+                                const resp = await fetch('/api/send-whatsapp-custom-message', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
-                                    to: agency.contactInfo,
+                                    phone: agency.contactInfo,
                                     message: moveAgencyMsg
                                   })
                                 });
+                                if (!resp.ok) {
+                                  const err = await resp.json();
+                                  throw new Error(err.error || "Gönderilemedi");
+                                }
                                 toast({ title: "Gönderildi", description: "Acentaya bildirim gönderildi." });
-                              } catch {
-                                toast({ title: "Hata", description: "Mesaj gönderilemedi.", variant: "destructive" });
+                              } catch (err: any) {
+                                toast({ title: "Hata", description: err.message || "Mesaj gönderilemedi.", variant: "destructive" });
                               }
                             }}
                           >
@@ -1012,7 +1073,7 @@ export default function Reservations() {
                     )}
 
                     <div className="flex justify-end">
-                      <Button variant="outline" onClick={() => setMoveNotification(null)}>
+                      <Button variant="outline" onClick={() => setMoveNotification(null)} data-testid="button-close-notification">
                         Kapat
                       </Button>
                     </div>
