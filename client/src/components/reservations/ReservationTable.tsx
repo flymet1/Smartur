@@ -353,7 +353,11 @@ export function ReservationTable({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <Label className="text-muted-foreground text-xs">Müşteri</Label>
-            <div className="font-medium" data-testid="text-customer-name">{res.customerName}</div>
+            <div 
+              className="font-medium text-primary hover:underline cursor-pointer" 
+              data-testid="text-customer-name"
+              onClick={() => { window.location.href = `/customers?phone=${encodeURIComponent(res.customerPhone)}`; }}
+            >{res.customerName}</div>
           </div>
           <div>
             <Label className="text-muted-foreground text-xs">Telefon</Label>
@@ -880,7 +884,11 @@ export function ReservationTable({
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate" data-testid={`text-customer-name-mobile-${res.id}`}>{res.customerName}</div>
+                      <div 
+                        className="font-medium truncate text-primary hover:underline cursor-pointer" 
+                        data-testid={`text-customer-name-mobile-${res.id}`}
+                        onClick={(e) => { e.stopPropagation(); window.location.href = `/customers?phone=${encodeURIComponent(res.customerPhone)}`; }}
+                      >{res.customerName}</div>
                       <div 
                         className="text-xs text-muted-foreground"
                         onClick={(e) => {
@@ -1108,7 +1116,10 @@ export function ReservationTable({
                           {getPackageTourName(group.reservations[0].packageTourId)}
                         </span>
                         <span className="text-muted-foreground">-</span>
-                        <span className="font-medium">{group.reservations[0].customerName}</span>
+                        <span 
+                          className="font-medium text-primary hover:underline cursor-pointer"
+                          onClick={(e) => { e.stopPropagation(); window.location.href = `/customers?phone=${encodeURIComponent(group.reservations[0].customerPhone)}`; }}
+                        >{group.reservations[0].customerName}</span>
                         <Badge variant="secondary" className="text-xs">
                           {group.reservations.length} aktivite
                         </Badge>
@@ -1142,7 +1153,10 @@ export function ReservationTable({
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div>
-                          <div className="font-medium">{res.customerName}</div>
+                          <div 
+                            className="font-medium text-primary hover:underline cursor-pointer"
+                            onClick={() => { window.location.href = `/customers?phone=${encodeURIComponent(res.customerPhone)}`; }}
+                          >{res.customerName}</div>
                           <div 
                             className="text-xs text-primary hover:underline cursor-pointer"
                             onClick={() => {

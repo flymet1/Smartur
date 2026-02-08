@@ -63,10 +63,12 @@ type SortDir = "asc" | "desc";
 
 export default function Customers() {
   const [, setLocation] = useLocation();
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlPhone = urlParams.get("phone");
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("lastReservationDate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [expandedPhone, setExpandedPhone] = useState<string | null>(null);
+  const [expandedPhone, setExpandedPhone] = useState<string | null>(urlPhone);
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [minReservations, setMinReservations] = useState<string>("");
   const [minSpent, setMinSpent] = useState<string>("");
