@@ -282,41 +282,56 @@ export function ReservationTable({
     );
   };
 
-  const getDispatchStatusBadges = (reservationId: number) => {
+  const getActiveDispatch = (reservationId: number) => {
     if (!partnerDispatchStatuses) return null;
     const dispatches = partnerDispatchStatuses.filter(d => d.sourceReservationId === reservationId);
-    if (dispatches.length === 0) return null;
+    const active = dispatches.find(d => d.status === 'pending' || d.status === 'approved' || d.status === 'converted');
+    return active || null;
+  };
+
+  const renderDispatchButton = (res: Reservation) => {
+    if (!onAddDispatch) return null;
+    const activeDispatch = getActiveDispatch(res.id);
+
+    if (activeDispatch) {
+      const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
+        pending: { color: "text-amber-500", icon: <Handshake className="h-4 w-4" />, label: "Beklemede" },
+        approved: { color: "text-emerald-600", icon: <CheckCircle className="h-4 w-4" />, label: "Onaylandı" },
+        converted: { color: "text-emerald-600", icon: <CheckCircle className="h-4 w-4" />, label: "Onaylandı" },
+      };
+      const config = statusConfig[activeDispatch.status || 'pending'] || statusConfig.pending;
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className={config.color}
+              onClick={(e) => { e.stopPropagation(); onAddDispatch(res); }}
+              data-testid={`button-dispatch-status-${res.id}`}
+            >
+              {config.icon}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">
+            <span className="font-medium">{activeDispatch.partnerTenantName}</span>
+            {' - '}{config.label}
+            <br />
+            {activeDispatch.date} {activeDispatch.time} - {activeDispatch.guests} kişi
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
 
     return (
-      <div className="flex flex-wrap gap-0.5 mt-0.5">
-        {dispatches.map((d) => {
-          const statusConfig: Record<string, { color: string; icon: any }> = {
-            pending: { color: "text-amber-500", icon: <Handshake className="h-2.5 w-2.5" /> },
-            approved: { color: "text-emerald-600", icon: <CheckCircle className="h-2.5 w-2.5" /> },
-            rejected: { color: "text-red-500", icon: <XCircle className="h-2.5 w-2.5" /> },
-            converted: { color: "text-emerald-600", icon: <CheckCircle className="h-2.5 w-2.5" /> },
-          };
-          const config = statusConfig[d.status || 'pending'] || statusConfig.pending;
-          return (
-            <Tooltip key={d.reservationRequestId}>
-              <TooltipTrigger asChild>
-                <span
-                  className={`inline-flex items-center ${config.color}`}
-                  data-testid={`dispatch-status-${d.reservationRequestId}`}
-                >
-                  {config.icon}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                <span className="font-medium">{d.partnerTenantName}</span>
-                {' - '}{d.status === 'pending' ? 'Beklemede' : d.status === 'rejected' ? 'Reddedildi' : 'Onaylandı'}
-                <br />
-                {d.date} {d.time} - {d.guests} kişi
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={(e) => { e.stopPropagation(); onAddDispatch(res); }}
+        data-testid={`button-dispatch-${res.id}`}
+      >
+        <Share2 className="h-4 w-4 text-muted-foreground" />
+      </Button>
     );
   };
 
@@ -959,16 +974,7 @@ export function ReservationTable({
                   <div className="flex flex-col items-end gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       {getStatusBadge(res.status || 'pending', res.id)}
-                      {onAddDispatch && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={(e) => { e.stopPropagation(); onAddDispatch(res); }}
-                          data-testid={`button-dispatch-mobile-${res.id}`}
-                        >
-                          <Share2 className="h-4 w-4 text-blue-600" />
-                        </Button>
-                      )}
+                      {renderDispatchButton(res)}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" data-testid={`button-actions-mobile-${res.id}`}>
@@ -1055,7 +1061,6 @@ export function ReservationTable({
                       </DropdownMenuContent>
                     </DropdownMenu>
                     </div>
-                    {getDispatchStatusBadges(res.id)}
                   </div>
                 </div>
 
@@ -1267,7 +1272,6 @@ export function ReservationTable({
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       {getStatusBadge(res.status || 'pending', res.id)}
-                      {getDispatchStatusBadges(res.id)}
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {res.priceTl ? `₺${res.priceTl.toLocaleString('tr-TR')}` : ''}
@@ -1362,16 +1366,7 @@ export function ReservationTable({
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        {onAddDispatch && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={(e) => { e.stopPropagation(); onAddDispatch(res); }}
-                            data-testid={`button-dispatch-${res.id}`}
-                          >
-                            <Share2 className="h-4 w-4 text-blue-600" />
-                          </Button>
-                        )}
+                        {renderDispatchButton(res)}
                       </div>
                     </TableCell>
                   </TableRow>
