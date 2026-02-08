@@ -5602,6 +5602,184 @@ export async function registerRoutes(
     }
   });
 
+  // Public availability endpoint for tracking page calendar
+  app.get("/api/track/:token/availability", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token || token.length < 10) {
+        return res.status(400).json({ error: "Geçersiz takip kodu" });
+      }
+      
+      const reservation = await storage.getReservationByTrackingToken(token);
+      if (!reservation || !reservation.activityId) {
+        return res.status(404).json({ error: "Rezervasyon bulunamadı" });
+      }
+
+      const activity = await storage.getActivity(reservation.activityId);
+      if (!activity) {
+        return res.status(404).json({ error: "Aktivite bulunamadı" });
+      }
+
+      // Calculate ±7 day range from reservation date
+      const parts = reservation.date.split('-').map(Number);
+      const originalDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const minDate = new Date(originalDate);
+      minDate.setDate(minDate.getDate() - 7);
+      const maxDate = new Date(originalDate);
+      maxDate.setDate(maxDate.getDate() + 7);
+      
+      const effectiveMin = minDate < today ? today : minDate;
+      
+      const formatLocalDate = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+      
+      const startStr = formatLocalDate(effectiveMin);
+      const endStr = formatLocalDate(maxDate);
+
+      // Get capacity slots for this activity in date range
+      const capacitySlots = await storage.getCapacityRange(
+        reservation.tenantId!, reservation.activityId, startStr, endStr
+      );
+
+      // Get reservations for this tenant to calculate booked counts
+      const allReservations = await storage.getReservations(reservation.tenantId!);
+      
+      // Parse activity defaults
+      let defaultTimes: string[] = [];
+      try {
+        const t = activity.defaultTimes;
+        defaultTimes = typeof t === 'string' ? JSON.parse(t) : (t || []);
+      } catch { defaultTimes = []; }
+      
+      const defaultCapacity = activity.defaultCapacity || 10;
+      
+      // Parse seasonal pricing
+      let seasonalPrices: Record<string, number> = {};
+      let seasonalPricesUsd: Record<string, number> = {};
+      const seasonalEnabled = activity.seasonalPricingEnabled || false;
+      
+      if (seasonalEnabled) {
+        try {
+          seasonalPrices = typeof activity.seasonalPrices === 'string' 
+            ? JSON.parse(activity.seasonalPrices) : (activity.seasonalPrices || {});
+        } catch { seasonalPrices = {}; }
+        try {
+          seasonalPricesUsd = typeof activity.seasonalPricesUsd === 'string' 
+            ? JSON.parse(activity.seasonalPricesUsd) : (activity.seasonalPricesUsd || {});
+        } catch { seasonalPricesUsd = {}; }
+      }
+      
+      // Build availability data for each date in range
+      const availabilityDays: any[] = [];
+      const currentDate = new Date(effectiveMin);
+      
+      while (currentDate <= maxDate) {
+        const dateStr = formatLocalDate(currentDate);
+        const month = currentDate.getMonth() + 1;
+        
+        // Calculate price for this date
+        let priceTl = activity.discountPrice || activity.price || 0;
+        let priceUsd = activity.priceUsd || 0;
+        
+        if (seasonalEnabled) {
+          const monthKey = String(month);
+          if (seasonalPrices[monthKey] && seasonalPrices[monthKey] > 0) {
+            priceTl = seasonalPrices[monthKey];
+          }
+          if (seasonalPricesUsd[monthKey] && seasonalPricesUsd[monthKey] > 0) {
+            priceUsd = seasonalPricesUsd[monthKey];
+          }
+        }
+        
+        // Get reservations for this date & activity
+        const dateReservations = allReservations.filter(r => 
+          r.date === dateStr && 
+          r.activityId === reservation.activityId && 
+          r.status !== 'cancelled'
+        );
+        
+        // Build reservation counts by time
+        const reservationCounts: Record<string, number> = {};
+        for (const r of dateReservations) {
+          if (r.time) {
+            reservationCounts[r.time] = (reservationCounts[r.time] || 0) + r.quantity;
+          }
+        }
+        
+        // Get capacity slots for this date
+        const dateCapacity = capacitySlots.filter(s => s.date === dateStr);
+        const existingSlotTimes = new Set(dateCapacity.map(s => s.time));
+        
+        // Build time slots (real + virtual)
+        const timeSlots: any[] = [];
+        
+        // Add real capacity slots
+        for (const slot of dateCapacity) {
+          const booked = slot.bookedSlots + (reservationCounts[slot.time] || 0) - slot.bookedSlots;
+          timeSlots.push({
+            time: slot.time,
+            totalSlots: slot.totalSlots,
+            bookedSlots: slot.bookedSlots,
+            availableSlots: Math.max(0, slot.totalSlots - slot.bookedSlots),
+          });
+        }
+        
+        // Add virtual slots from defaults
+        for (const time of defaultTimes) {
+          if (!existingSlotTimes.has(time)) {
+            const booked = reservationCounts[time] || 0;
+            timeSlots.push({
+              time,
+              totalSlots: defaultCapacity,
+              bookedSlots: booked,
+              availableSlots: Math.max(0, defaultCapacity - booked),
+            });
+          }
+        }
+        
+        timeSlots.sort((a: any, b: any) => a.time.localeCompare(b.time));
+        
+        const totalAvailable = timeSlots.reduce((sum: number, s: any) => sum + s.availableSlots, 0);
+        const totalCapacity = timeSlots.reduce((sum: number, s: any) => sum + s.totalSlots, 0);
+        const occupancy = totalCapacity > 0 ? Math.round((1 - totalAvailable / totalCapacity) * 100) : 0;
+        
+        availabilityDays.push({
+          date: dateStr,
+          priceTl,
+          priceUsd,
+          occupancy,
+          totalAvailable,
+          totalCapacity,
+          isReservationDate: dateStr === reservation.date,
+          timeSlots,
+          closed: activity.availabilityClosed || false,
+        });
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      res.json({
+        activityName: activity.name,
+        currency: reservation.currency || 'TRY',
+        basePrice: activity.discountPrice || activity.price || 0,
+        basePriceUsd: activity.priceUsd || 0,
+        seasonalPricingEnabled: seasonalEnabled,
+        days: availabilityDays,
+      });
+    } catch (error) {
+      console.error("Track availability error:", error);
+      res.status(500).json({ error: "Müsaitlik bilgileri alınamadı" });
+    }
+  });
+
   // Generate tracking token for a reservation (admin only)
   app.post("/api/reservations/:id/generate-tracking", async (req, res) => {
     try {

@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send, CalendarClock, ShieldCheck, Phone } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send, CalendarClock, ShieldCheck, Phone, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,6 +34,34 @@ interface TrackingData {
   arrivalMinutesBefore: number | null;
 }
 
+interface TimeSlot {
+  time: string;
+  totalSlots: number;
+  bookedSlots: number;
+  availableSlots: number;
+}
+
+interface AvailabilityDay {
+  date: string;
+  priceTl: number;
+  priceUsd: number;
+  occupancy: number;
+  totalAvailable: number;
+  totalCapacity: number;
+  isReservationDate: boolean;
+  timeSlots: TimeSlot[];
+  closed: boolean;
+}
+
+interface AvailabilityData {
+  activityName: string;
+  currency: string;
+  basePrice: number;
+  basePriceUsd: number;
+  seasonalPricingEnabled: boolean;
+  days: AvailabilityDay[];
+}
+
 type RequestType = 'time_change' | 'date_change' | 'cancellation' | 'other' | null;
 
 export default function CustomerTracking() {
@@ -46,10 +75,21 @@ export default function CustomerTracking() {
   const [preferredDate, setPreferredDate] = useState("");
   const [requestDetails, setRequestDetails] = useState("");
   const [requestSent, setRequestSent] = useState(false);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
 
   const { data: reservation, isLoading, error } = useQuery<TrackingData>({
     queryKey: ['/api/track', token],
     enabled: !!token,
+  });
+
+  const { data: availability } = useQuery<AvailabilityData>({
+    queryKey: ['/api/track', token, 'availability'],
+    queryFn: async () => {
+      const res = await fetch(`/api/track/${token}/availability`);
+      if (!res.ok) throw new Error('Müsaitlik yüklenemedi');
+      return res.json();
+    },
+    enabled: !!token && !!reservation && reservation.status !== 'cancelled',
   });
 
   const cancellationAllowed = useMemo(() => {
@@ -182,6 +222,43 @@ export default function CustomerTracking() {
     if (requestType === 'date_change' && !preferredDate) return true;
     return false;
   };
+
+  const selectedDayData = useMemo(() => {
+    if (!availability || !selectedCalendarDate) return null;
+    return availability.days.find(d => d.date === selectedCalendarDate) || null;
+  }, [availability, selectedCalendarDate]);
+
+  const getOccupancyColor = useCallback((occupancy: number, closed: boolean) => {
+    if (closed) return 'bg-muted text-muted-foreground';
+    if (occupancy >= 100) return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300';
+    if (occupancy >= 80) return 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300';
+    if (occupancy >= 50) return 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300';
+    return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300';
+  }, []);
+
+  const getOccupancyDot = useCallback((occupancy: number, closed: boolean) => {
+    if (closed) return 'bg-muted-foreground';
+    if (occupancy >= 100) return 'bg-red-500';
+    if (occupancy >= 80) return 'bg-orange-500';
+    if (occupancy >= 50) return 'bg-amber-500';
+    return 'bg-green-500';
+  }, []);
+
+  const formatPriceShort = useCallback((priceTl: number, priceUsd: number, currency: string) => {
+    if (currency === 'USD' && priceUsd > 0) return `$${priceUsd}`;
+    if (priceTl >= 1000) return `${(priceTl / 1000).toFixed(priceTl % 1000 === 0 ? 0 : 1)}K`;
+    return `${priceTl}`;
+  }, []);
+
+  const handleCalendarDateSelect = useCallback((dateStr: string) => {
+    setSelectedCalendarDate(dateStr);
+    setPreferredDate(dateStr);
+    setPreferredTime("");
+  }, []);
+
+  const handleCalendarTimeSelect = useCallback((time: string) => {
+    setPreferredTime(time);
+  }, []);
 
   if (isLoading) {
     return (
@@ -323,6 +400,179 @@ export default function CustomerTracking() {
           </CardContent>
         </Card>
 
+        {availability && availability.days.length > 0 && reservation.status !== 'cancelled' && (
+          <Card data-testid="card-availability-calendar">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CalendarDays className="w-5 h-5" />
+                Müsait Tarih ve Saatler
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {availability.seasonalPricingEnabled ? 'Fiyatlar tarihe göre değişkenlik gösterebilir.' : 'Müsait tarih ve saatleri görüntüleyin.'}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-7 gap-1 text-center" data-testid="calendar-grid">
+                {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(day => (
+                  <div key={day} className="text-xs font-medium text-muted-foreground py-1">{day}</div>
+                ))}
+                {(() => {
+                  if (!availability.days.length) return null;
+                  const firstDate = new Date(availability.days[0].date + 'T00:00:00');
+                  let dayOfWeek = firstDate.getDay();
+                  dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                  const padding = Array(dayOfWeek).fill(null);
+                  
+                  return (
+                    <>
+                      {padding.map((_, i) => (
+                        <div key={`pad-${i}`} className="aspect-square" />
+                      ))}
+                      {availability.days.map((day) => {
+                        const isSelected = selectedCalendarDate === day.date;
+                        const isReservationDay = day.isReservationDate;
+                        const isClosed = day.closed || day.occupancy >= 100;
+                        const currency = availability.currency;
+                        const dateParts = day.date.split('-');
+                        const dayNum = parseInt(dateParts[2]);
+                        
+                        return (
+                          <Tooltip key={day.date}>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => !isClosed && handleCalendarDateSelect(day.date)}
+                                disabled={isClosed}
+                                className={`
+                                  relative flex flex-col items-center justify-center rounded-md p-1 min-h-[52px] transition-all text-xs
+                                  ${isSelected ? 'ring-2 ring-primary bg-primary/10' : ''}
+                                  ${isReservationDay && !isSelected ? 'ring-1 ring-blue-400 dark:ring-blue-600' : ''}
+                                  ${isClosed ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover-elevate'}
+                                  ${!isSelected && !isClosed ? getOccupancyColor(day.occupancy, day.closed) : ''}
+                                `}
+                                data-testid={`calendar-day-${day.date}`}
+                              >
+                                <span className={`font-semibold text-sm leading-none ${isSelected ? 'text-primary' : ''}`}>
+                                  {dayNum}
+                                </span>
+                                <span className={`text-[10px] leading-tight mt-0.5 ${isSelected ? 'text-primary' : ''}`}>
+                                  {formatPriceShort(day.priceTl, day.priceUsd, currency)}
+                                  {currency === 'TRY' ? '' : ''}
+                                </span>
+                                <div className={`w-1.5 h-1.5 rounded-full mt-0.5 ${getOccupancyDot(day.occupancy, isClosed)}`} />
+                                {isReservationDay && (
+                                  <div className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              <div className="space-y-1">
+                                <p className="font-medium">{new Date(day.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', weekday: 'short' })}</p>
+                                <p>{currency === 'USD' ? `$${day.priceUsd}` : `${day.priceTl.toLocaleString('tr-TR')} TL`} / kişi</p>
+                                <p>{isClosed ? 'Dolu' : `${day.totalAvailable} kişilik yer mevcut`}</p>
+                                {isReservationDay && <p className="text-blue-400">Mevcut rezervasyon tarihiniz</p>}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span>Müsait</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span>Dolmak Üzere</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span>Dolu</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span>Rezervasyonunuz</span>
+                </div>
+              </div>
+
+              {selectedDayData && (
+                <div className="border-t pt-4 space-y-3" data-testid="selected-day-details">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">
+                      {new Date(selectedDayData.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}
+                    </p>
+                    <Badge className={getOccupancyColor(selectedDayData.occupancy, selectedDayData.closed)}>
+                      {selectedDayData.closed ? 'Kapalı' : `${selectedDayData.totalAvailable} yer`}
+                    </Badge>
+                  </div>
+
+                  {availability.seasonalPricingEnabled && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <TrendingUp className="w-4 h-4 text-primary" />
+                      <span className="text-muted-foreground">Kişi başı:</span>
+                      <span className="font-semibold">
+                        {availability.currency === 'USD' 
+                          ? `$${selectedDayData.priceUsd}` 
+                          : `${selectedDayData.priceTl.toLocaleString('tr-TR')} TL`}
+                      </span>
+                      {selectedDayData.priceTl !== availability.basePrice && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          {availability.currency === 'USD' 
+                            ? `$${availability.basePriceUsd}` 
+                            : `${availability.basePrice.toLocaleString('tr-TR')} TL`}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Müsait Saatler</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {selectedDayData.timeSlots.map((slot) => {
+                        const isFull = slot.availableSlots <= 0;
+                        const isSelectedTime = preferredTime === slot.time && preferredDate === selectedDayData.date;
+                        return (
+                          <button
+                            key={slot.time}
+                            onClick={() => !isFull && handleCalendarTimeSelect(slot.time)}
+                            disabled={isFull}
+                            className={`
+                              flex flex-col items-center rounded-md p-2 text-xs border transition-all
+                              ${isSelectedTime ? 'border-primary bg-primary/10 ring-1 ring-primary' : 'border-border'}
+                              ${isFull ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover-elevate'}
+                            `}
+                            data-testid={`timeslot-${slot.time}`}
+                          >
+                            <span className="font-semibold text-sm">{slot.time}</span>
+                            <span className={`text-[10px] ${isFull ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
+                              {isFull ? 'Dolu' : `${slot.availableSlots} yer`}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {preferredDate === selectedDayData.date && preferredTime && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-md p-3 text-sm">
+                      <p className="font-medium text-primary">
+                        Seçiminiz: {new Date(preferredDate + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - {preferredTime}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Tarih/saat değişikliği için aşağıdan talep oluşturabilirsiniz.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {reservation.status !== 'cancelled' && !requestSent && (
           <Card>
             <CardHeader className="pb-3">
@@ -445,22 +695,33 @@ export default function CustomerTracking() {
                   {requestType === 'date_change' && (
                     <div className="space-y-2">
                       <Label>Tercih Ettiğiniz Tarih</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Mevcut tarihten en fazla 7 gün öncesine veya sonrasına değiştirebilirsiniz.
-                      </p>
+                      {preferredDate ? (
+                        <div className="bg-primary/5 border border-primary/20 rounded-md p-3">
+                          <p className="text-sm font-medium">
+                            {formatDate(preferredDate)}
+                            {preferredTime && ` - ${preferredTime}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Yukarıdaki takvimden farklı bir tarih seçebilirsiniz.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-muted/30 border border-dashed border-border rounded-md p-3 text-center">
+                          <CalendarDays className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+                          <p className="text-xs text-muted-foreground">
+                            Yukarıdaki takvimden bir tarih ve saat seçin.
+                          </p>
+                        </div>
+                      )}
                       <Input
                         type="date"
                         value={preferredDate}
                         onChange={(e) => setPreferredDate(e.target.value)}
                         min={dateRange.min}
                         max={dateRange.max}
+                        className="text-xs"
                         data-testid="input-preferred-date"
                       />
-                      {preferredDate && (
-                        <p className="text-sm text-muted-foreground">
-                          Seçilen tarih: {formatDate(preferredDate)}
-                        </p>
-                      )}
                     </div>
                   )}
 
