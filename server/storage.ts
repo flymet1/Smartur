@@ -864,7 +864,38 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(reservations).orderBy(desc(reservations.date));
   }
 
+  private async generateOrderNumber(tenantId?: number): Promise<string> {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const prefix = `SM-${dateStr}-`;
+    const result = await db
+      .select({ maxOrder: sql<string>`MAX(${reservations.orderNumber})` })
+      .from(reservations)
+      .where(like(reservations.orderNumber, `${prefix}%`));
+    let nextNum = 1;
+    if (result.length > 0 && result[0].maxOrder) {
+      const lastNum = parseInt(result[0].maxOrder.replace(prefix, ''), 10);
+      if (!isNaN(lastNum)) nextNum = lastNum + 1;
+    }
+    return `${prefix}${String(nextNum).padStart(3, '0')}`;
+  }
+
   async createReservation(item: InsertReservation): Promise<Reservation> {
+    if (!item.orderNumber) {
+      item = { ...item, orderNumber: await this.generateOrderNumber(item.tenantId ?? undefined) };
+    }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const [res] = await db.insert(reservations).values(item).returning();
+        return res;
+      } catch (err: any) {
+        if (err?.code === '23505' && err?.constraint?.includes('order_number') && attempt < 2) {
+          item = { ...item, orderNumber: await this.generateOrderNumber(item.tenantId ?? undefined) };
+          continue;
+        }
+        throw err;
+      }
+    }
     const [res] = await db.insert(reservations).values(item).returning();
     return res;
   }
