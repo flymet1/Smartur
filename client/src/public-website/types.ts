@@ -203,6 +203,8 @@ export interface PublicWebsiteData {
   websitePromoBannerPriceTextEn: string | null;
   // Package Tours
   hasPackageTours: boolean;
+  // Reservation Payment Note
+  reservationPaymentNote: string | null;
 }
 
 export interface AvailabilitySlot {

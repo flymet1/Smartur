@@ -888,6 +888,8 @@ export function registerPublicApiRoutes(app: Express) {
       
       const hasPackageTours = packageTourCount.length > 0;
 
+      const reservationPaymentNote = await storage.getSetting('reservationPaymentNote', tenantId);
+
       let responseData: any = {
         ...tenant,
         websiteSocialLinks: socialLinks,
@@ -898,6 +900,7 @@ export function registerPublicApiRoutes(app: Express) {
         websitePromoBoxes: promoBoxes,
         faqItems,
         hasPackageTours,
+        reservationPaymentNote: reservationPaymentNote || null,
       };
 
       const lang = req.query.lang as string;

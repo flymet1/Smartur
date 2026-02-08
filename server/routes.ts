@@ -10350,6 +10350,27 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       res.status(400).json({ error: "Ayar kaydedilemedi" });
     }
   });
+
+  app.get("/api/settings/reservationPaymentNote", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const value = await storage.getSetting('reservationPaymentNote', tenantId);
+      res.json({ key: 'reservationPaymentNote', value });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar alınamadı" });
+    }
+  });
+  
+  app.post("/api/settings/reservationPaymentNote", requirePermission(PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const { value } = req.body;
+      await storage.setSetting('reservationPaymentNote', value, tenantId);
+      res.json({ success: true, message: "Rezervasyon ödeme notu kaydedildi" });
+    } catch (err) {
+      res.status(400).json({ error: "Ayar kaydedilemedi" });
+    }
+  });
   
   // Tenant-specific notification email setting
   app.get("/api/settings/tenantNotificationEmail", requirePermission(PERMISSIONS.SETTINGS_VIEW, PERMISSIONS.SETTINGS_MANAGE), async (req, res) => {

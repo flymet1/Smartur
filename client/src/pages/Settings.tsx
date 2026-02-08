@@ -84,6 +84,8 @@ export default function Settings() {
   const [paymentTestMode, setPaymentTestMode] = useState(true);
   const [isSavingPayment, setIsSavingPayment] = useState(false);
   const [paymentConfigured, setPaymentConfigured] = useState(false);
+  const [reservationPaymentNote, setReservationPaymentNote] = useState("");
+  const [isSavingPaymentNote, setIsSavingPaymentNote] = useState(false);
   const [isRefreshingQR, setIsRefreshingQR] = useState(false);
   const [newBlacklistPhone, setNewBlacklistPhone] = useState("");
   const [newBlacklistReason, setNewBlacklistReason] = useState("");
@@ -570,6 +572,41 @@ export default function Settings() {
       toast({ title: "Hata", description: "Ödeme ayarları kaydedilemedi.", variant: "destructive" });
     } finally {
       setIsSavingPayment(false);
+    }
+  };
+
+  const { data: paymentNoteSetting } = useQuery<{ value: string | null }>({
+    queryKey: ['/api/settings', 'reservationPaymentNote'],
+    queryFn: async () => {
+      const res = await fetch('/api/settings/reservationPaymentNote');
+      return res.json();
+    }
+  });
+  
+  useEffect(() => {
+    if (paymentNoteSetting?.value) {
+      setReservationPaymentNote(paymentNoteSetting.value);
+    }
+  }, [paymentNoteSetting]);
+
+  const handleSavePaymentNote = async () => {
+    setIsSavingPaymentNote(true);
+    try {
+      const res = await fetch('/api/settings/reservationPaymentNote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: reservationPaymentNote })
+      });
+      if (res.ok) {
+        toast({ title: "Kaydedildi", description: "Ödeme notu güncellendi." });
+        queryClient.invalidateQueries({ queryKey: ['/api/settings', 'reservationPaymentNote'] });
+      } else {
+        toast({ title: "Hata", description: "Ödeme notu kaydedilemedi.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Hata", description: "Ödeme notu kaydedilemedi.", variant: "destructive" });
+    } finally {
+      setIsSavingPaymentNote(false);
     }
   };
 
@@ -1868,6 +1905,59 @@ export default function Settings() {
                     )}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Rezervasyon Ödeme Notu
+                </CardTitle>
+                <CardDescription>
+                  Rezervasyon formunda ödeme bilgisinin altında küçük yazıyla görünecek ek not. 
+                  Kredi kartı fark bilgisi, nakit indirim bilgisi vb. yazabilirsiniz.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reservationPaymentNote">Ödeme Notu</Label>
+                  <Textarea
+                    id="reservationPaymentNote"
+                    value={reservationPaymentNote}
+                    onChange={(e) => setReservationPaymentNote(e.target.value)}
+                    placeholder="Örn: Kredi kartı ile ödemelerde %5 fiyat farkı uygulanır."
+                    className="resize-none text-sm"
+                    rows={3}
+                    data-testid="textarea-reservation-payment-note"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Bu not, web sitenizdeki rezervasyon formunda "Kalan tutar aktivite günü ödenir" yazısının altında küçük yazıyla görünecektir.
+                  </p>
+                </div>
+                {reservationPaymentNote && (
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Önizleme:</p>
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400">{reservationPaymentNote}</p>
+                  </div>
+                )}
+                <Button
+                  onClick={handleSavePaymentNote}
+                  disabled={isSavingPaymentNote}
+                  data-testid="button-save-payment-note"
+                >
+                  {isSavingPaymentNote ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Kaydediliyor...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Kaydet
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
