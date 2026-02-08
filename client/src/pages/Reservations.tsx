@@ -3,7 +3,7 @@ import { useReservations, useCreateReservation } from "@/hooks/use-reservations"
 import { ReservationTable } from "@/components/reservations/ReservationTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown, Pencil, Save, Handshake } from "lucide-react";
+import { Search, Plus, Calendar, List, Download, FileSpreadsheet, FileText, Package, X, MessageSquare, Bus, ChevronLeft, ChevronRight, Users, ChevronDown, CalendarDays, Info, Filter, MoreVertical, Link as LinkIcon, Copy, ExternalLink, Bell, Clock, Check, TrendingUp, TrendingDown, DollarSign, Banknote, CalendarCheck, UserCheck, XCircle, Trash2, Send, Star, StickyNote, History, Menu, Phone, Mail, CheckCircle, User, Building, MessageCircle, ArrowUpDown, Pencil, Save, Handshake, Wallet } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 type CalendarView = "day" | "week" | "month";
 
@@ -126,6 +127,9 @@ export default function Reservations() {
   } | null>(null);
   const [partnerDispatchGuests, setPartnerDispatchGuests] = useState(1);
   const [partnerDispatchNotes, setPartnerDispatchNotes] = useState("");
+  const [partnerDispatchPaymentType, setPartnerDispatchPaymentType] = useState<string>("receiver_full");
+  const [partnerDispatchAmountCollected, setPartnerDispatchAmountCollected] = useState<number>(0);
+  const [partnerDispatchPaymentNotes, setPartnerDispatchPaymentNotes] = useState("");
   
   const { toast } = useToast();
 
@@ -214,6 +218,10 @@ export default function Reservations() {
       guests: number;
       notes: string;
       sourceReservationId: number;
+      paymentCollectionType: string;
+      amountCollectedBySender: number;
+      paymentCurrency: string;
+      paymentNotes: string;
     }) => {
       return apiRequest('POST', '/api/partner-reservation-requests', data);
     },
@@ -225,6 +233,9 @@ export default function Reservations() {
       setPartnerDispatchSelectedSlot(null);
       setPartnerDispatchGuests(1);
       setPartnerDispatchNotes("");
+      setPartnerDispatchPaymentType("receiver_full");
+      setPartnerDispatchAmountCollected(0);
+      setPartnerDispatchPaymentNotes("");
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
     },
     onError: (error: Error) => {
@@ -2248,6 +2259,9 @@ export default function Reservations() {
             setPartnerDispatchSelectedSlot(null);
             setPartnerDispatchGuests(1);
             setPartnerDispatchNotes("");
+            setPartnerDispatchPaymentType("receiver_full");
+            setPartnerDispatchAmountCollected(0);
+            setPartnerDispatchPaymentNotes("");
           }
         }}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -2507,6 +2521,76 @@ export default function Reservations() {
                               </div>
                             </CardContent>
                           </Card>
+
+                          <Separator />
+                          <div className="space-y-3">
+                            <Label className="flex items-center gap-2">
+                              <Wallet className="w-4 h-4" />
+                              Odeme Tahsilat Bilgisi
+                            </Label>
+                            <RadioGroup
+                              value={partnerDispatchPaymentType}
+                              onValueChange={setPartnerDispatchPaymentType}
+                              className="space-y-2"
+                              data-testid="radio-dispatch-payment-type"
+                            >
+                              <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                                <RadioGroupItem value="receiver_full" id="dispatch_receiver_full" data-testid="radio-dispatch-receiver-full" />
+                                <Label htmlFor="dispatch_receiver_full" className="flex-1 cursor-pointer">
+                                  <span className="font-medium">Tamamini Partner Alacak</span>
+                                  <p className="text-xs text-muted-foreground">Musteri odemeyi partner acentaya yapacak</p>
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                                <RadioGroupItem value="sender_full" id="dispatch_sender_full" data-testid="radio-dispatch-sender-full" />
+                                <Label htmlFor="dispatch_sender_full" className="flex-1 cursor-pointer">
+                                  <span className="font-medium">Tamamini Biz Aldik</span>
+                                  <p className="text-xs text-muted-foreground">Musteri tum odemeyi bize yapti</p>
+                                </Label>
+                              </div>
+                              <div className="flex items-center space-x-2 p-2 rounded-md border hover:bg-accent/50 transition-colors">
+                                <RadioGroupItem value="sender_partial" id="dispatch_sender_partial" data-testid="radio-dispatch-sender-partial" />
+                                <Label htmlFor="dispatch_sender_partial" className="flex-1 cursor-pointer">
+                                  <span className="font-medium">Kismi Odeme Aldik</span>
+                                  <p className="text-xs text-muted-foreground">Musteriden bir miktar aldik, kalani partner alacak</p>
+                                </Label>
+                              </div>
+                            </RadioGroup>
+
+                            {partnerDispatchPaymentType === 'sender_partial' && (
+                              <div className="space-y-2 pl-6 border-l-2 border-primary/30">
+                                <Label htmlFor="dispatchAmountCollected">Aldigimiz Tutar ({partnerDispatchSelectedSlot.partnerCurrency || 'TRY'})</Label>
+                                <Input
+                                  id="dispatchAmountCollected"
+                                  type="number"
+                                  min={0}
+                                  value={partnerDispatchAmountCollected}
+                                  onChange={(e) => setPartnerDispatchAmountCollected(parseInt(e.target.value) || 0)}
+                                  placeholder="Ornegin: 500"
+                                  data-testid="input-dispatch-amount-collected"
+                                />
+                                {partnerDispatchSelectedSlot.partnerUnitPrice && partnerDispatchGuests > 0 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Toplam: {(partnerDispatchSelectedSlot.partnerUnitPrice * partnerDispatchGuests).toLocaleString('tr-TR')} {partnerDispatchSelectedSlot.partnerCurrency}
+                                    {partnerDispatchAmountCollected > 0 && (
+                                      <> | Kalan: {((partnerDispatchSelectedSlot.partnerUnitPrice * partnerDispatchGuests) - partnerDispatchAmountCollected).toLocaleString('tr-TR')} {partnerDispatchSelectedSlot.partnerCurrency}</>
+                                    )}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="space-y-2">
+                              <Label htmlFor="dispatchPaymentNotes">Odeme Notu (Opsiyonel)</Label>
+                              <Input
+                                id="dispatchPaymentNotes"
+                                value={partnerDispatchPaymentNotes}
+                                onChange={(e) => setPartnerDispatchPaymentNotes(e.target.value)}
+                                placeholder="Ornegin: Nakit odendi, Havale yapildi vb."
+                                data-testid="input-dispatch-payment-notes"
+                              />
+                            </div>
+                          </div>
                         </>
                       )}
                     </div>
@@ -2529,6 +2613,10 @@ export default function Reservations() {
                         guests: partnerDispatchGuests,
                         notes: partnerDispatchNotes,
                         sourceReservationId: partnerDispatchReservation.id,
+                        paymentCollectionType: partnerDispatchPaymentType,
+                        amountCollectedBySender: partnerDispatchPaymentType === 'sender_partial' ? partnerDispatchAmountCollected : 0,
+                        paymentCurrency: partnerDispatchSelectedSlot.partnerCurrency || 'TRY',
+                        paymentNotes: partnerDispatchPaymentNotes.trim(),
                       });
                     }}
                     disabled={!partnerDispatchSelectedSlot || partnerDispatchMutation.isPending}
