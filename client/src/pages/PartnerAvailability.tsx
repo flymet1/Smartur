@@ -217,7 +217,8 @@ export default function PartnerAvailability() {
   });
   
   const pendingOutgoingRequests = outgoingRequests.filter(r => r.status === 'pending');
-  const approvedOutgoingRequests = outgoingRequests.filter(r => r.status === 'approved' || r.status === 'converted');
+  const approvedOutgoingRequests = outgoingRequests.filter(r => (r.status === 'approved' || r.status === 'converted') && r.cancellationStatus !== 'pending');
+  const cancellationPendingOutgoingRequests = outgoingRequests.filter(r => (r.status === 'approved' || r.status === 'converted') && r.cancellationStatus === 'pending');
   const cancelledOutgoingRequests = outgoingRequests.filter(r => r.status === 'cancelled' || r.status === 'rejected' || r.status === 'deleted');
   
   // Partner işlemleri (financial transactions)
@@ -378,16 +379,18 @@ export default function PartnerAvailability() {
     }
   });
 
-  const deleteOutgoingRequestMutation = useMutation({
+  const cancelOutgoingRequestMutation = useMutation({
     mutationFn: async (requestId: number) => {
-      return apiRequest('DELETE', `/api/my-reservation-requests/${requestId}`);
+      const res = await apiRequest('DELETE', `/api/partner-dispatch/${requestId}`);
+      return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/my-reservation-requests'] });
-      toast({ title: "Basarili", description: "Talep silindi." });
+      queryClient.invalidateQueries({ queryKey: ['/api/reservation-requests'] });
+      toast({ title: "Basarili", description: data?.message || "İşlem tamamlandı." });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Talep silinemedi.", variant: "destructive" });
+      toast({ title: "Hata", description: "İptal işlemi başarısız.", variant: "destructive" });
     }
   });
 
@@ -1324,9 +1327,79 @@ export default function PartnerAvailability() {
                         <span>{request.guests} kisi</span>
                       </div>
                     </div>
-                    <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
-                      Onay Bekliyor
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">
+                        Onay Bekliyor
+                      </Badge>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            data-testid={`button-cancel-pending-outgoing-${request.id}`}
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            İptal Et
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Talebi İptal Et</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              "{request.customerName}" için olan bekleyen talebi iptal etmek istediğinizden emin misiniz?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => cancelOutgoingRequestMutation.mutate(request.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              İptal Et
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* İptal Onayı Bekleyen Giden Talepler */}
+        {cancellationPendingOutgoingRequests.length > 0 && (
+          <Card className="mt-6 border-2 border-orange-200 dark:border-orange-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-orange-500" />
+                İptal Onayı Bekleyen Giden Talepler ({cancellationPendingOutgoingRequests.length})
+              </CardTitle>
+              <CardDescription>Partner acentadan iptal onayı beklenen talepler</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {cancellationPendingOutgoingRequests.map(request => (
+                <div key={request.id} className="border rounded-lg p-4 bg-orange-50/50 dark:bg-orange-950/20">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{request.customerName}</p>
+                        <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 border-purple-300">
+                          Giden: {request.ownerTenantName || 'Partner'}
+                        </Badge>
+                        <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-300">
+                          İptal Onayı Bekleniyor
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="outline">{request.activityName || getActivityName(request.activityId)}</Badge>
+                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                        <span>{request.time}</span>
+                        <span>{request.guests} kisi</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1378,26 +1451,26 @@ export default function PartnerAvailability() {
                           <Button 
                             size="sm" 
                             variant="destructive"
-                            data-testid={`button-delete-outgoing-request-${request.id}`}
+                            data-testid={`button-cancel-outgoing-request-${request.id}`}
                           >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Sil
+                            <X className="w-4 h-4 mr-1" />
+                            İptal Talebi Gönder
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Talebi Sil</AlertDialogTitle>
+                            <AlertDialogTitle>İptal Talebi Gönder</AlertDialogTitle>
                             <AlertDialogDescription>
-                              "{request.customerName}" için olan talebi silmek istediginizden emin misiniz? Bu islem geri alinamaz.
+                              "{request.customerName}" için olan onaylanmış talebi iptal etmek istediğinizden emin misiniz? Partner acentanın bu iptali onaylaması gerekecektir.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Vazgec</AlertDialogCancel>
+                            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => deleteOutgoingRequestMutation.mutate(request.id)}
+                              onClick={() => cancelOutgoingRequestMutation.mutate(request.id)}
                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
-                              Sil
+                              İptal Talebi Gönder
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
