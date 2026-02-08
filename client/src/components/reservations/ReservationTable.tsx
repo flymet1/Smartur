@@ -452,7 +452,14 @@ export function ReservationTable({
             )}
           </div>
           <div>
-            <Label className="text-muted-foreground text-xs">Saat</Label>
+            <Label className="text-muted-foreground text-xs flex items-center gap-1">
+              Saat
+              {!isEditing && (
+                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1" onClick={() => setIsEditing(true)} data-testid="button-edit-time">
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
+            </Label>
             {isEditing ? (
               availableTimes.length > 0 ? (
                 <Select value={editTime} onValueChange={setEditTime}>
@@ -479,7 +486,14 @@ export function ReservationTable({
             )}
           </div>
           <div>
-            <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
+            <Label className="text-muted-foreground text-xs flex items-center gap-1">
+              Fiyat (TL)
+              {!isEditing && (
+                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1" onClick={() => setIsEditing(true)} data-testid="button-edit-price-tl">
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
+            </Label>
             {isEditing ? (
               <Input 
                 type="number" 
@@ -495,7 +509,14 @@ export function ReservationTable({
             )}
           </div>
           <div>
-            <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
+            <Label className="text-muted-foreground text-xs flex items-center gap-1">
+              Fiyat (USD)
+              {!isEditing && (
+                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1" onClick={() => setIsEditing(true)} data-testid="button-edit-price-usd">
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
+            </Label>
             {isEditing ? (
               <Input 
                 type="number" 
@@ -530,7 +551,12 @@ export function ReservationTable({
         {!isEditing && (res as any).advancePaymentTl > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <Label className="text-muted-foreground text-xs">On Odeme (Kapora)</Label>
+              <Label className="text-muted-foreground text-xs flex items-center gap-1">
+                On Odeme (Kapora)
+                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1" onClick={() => setIsEditing(true)} data-testid="button-edit-advance">
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              </Label>
               <div className="font-medium text-amber-600" data-testid="text-advance-payment">
                 {((res as any).advancePaymentTl || 0).toLocaleString('tr-TR')} ₺
               </div>
