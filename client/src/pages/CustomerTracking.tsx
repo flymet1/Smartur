@@ -79,7 +79,7 @@ interface AvailabilityData {
   days: AvailabilityDay[];
 }
 
-type RequestType = 'time_change' | 'date_change' | 'cancellation' | 'other' | null;
+type RequestType = 'date_time_change' | 'cancellation' | 'other' | null;
 
 export default function CustomerTracking() {
   const params = useParams<{ token: string }>();
@@ -154,9 +154,9 @@ export default function CustomerTracking() {
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/customer-requests', {
         token,
-        requestType,
-        preferredTime: requestType === 'time_change' ? preferredTime : undefined,
-        preferredDate: requestType === 'date_change' ? preferredDate : undefined,
+        requestType: requestType === 'date_time_change' ? 'date_change' : requestType,
+        preferredTime: requestType === 'date_time_change' ? preferredTime : undefined,
+        preferredDate: requestType === 'date_time_change' ? preferredDate : undefined,
         requestDetails: requestDetails || undefined,
       });
       return response.json();
@@ -165,14 +165,14 @@ export default function CustomerTracking() {
       setRequestSent(true);
       setShowRequestForm(false);
       toast({
-        title: "Talep Gönderildi",
-        description: "Talebiniz başarıyla iletildi. En kısa sürede size döneceğiz.",
+        title: t(lang, "Talep Gönderildi", "Request Sent"),
+        description: t(lang, "Talebiniz başarıyla iletildi. En kısa sürede size döneceğiz.", "Your request has been submitted. We will get back to you shortly."),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Hata",
-        description: error.message || "Talep gönderilemedi. Lütfen tekrar deneyin.",
+        title: t(lang, "Hata", "Error"),
+        description: error.message || t(lang, "Talep gönderilemedi. Lütfen tekrar deneyin.", "Request could not be sent. Please try again."),
         variant: "destructive",
       });
     },
@@ -229,7 +229,7 @@ export default function CustomerTracking() {
     setPreferredTime("");
     setPreferredDate("");
     setRequestDetails("");
-    if ((type === 'date_change' || type === 'time_change') && calendarRef.current) {
+    if (type === 'date_time_change' && calendarRef.current) {
       setTimeout(() => {
         calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
@@ -243,8 +243,7 @@ export default function CustomerTracking() {
 
   const isSubmitDisabled = () => {
     if (submitRequestMutation.isPending) return true;
-    if (requestType === 'time_change' && !preferredTime) return true;
-    if (requestType === 'date_change' && !preferredDate) return true;
+    if (requestType === 'date_time_change' && (!preferredDate || !preferredTime)) return true;
     return false;
   };
 
@@ -446,51 +445,57 @@ export default function CustomerTracking() {
               </div>
             )}
 
-            <div className="border-t pt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t(lang, 'Toplam Tutar', 'Total Amount')}</span>
-                <span className="text-xl font-semibold" data-testid="text-price">
-                  {formatPrice(reservation.priceTl, reservation.priceUsd, reservation.currency)}
-                </span>
-              </div>
+            <div className="border-t pt-4">
+              <div className="bg-muted/30 rounded-md p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{t(lang, 'Toplam Fiyat', 'Total Price')}</span>
+                  <span className="text-lg font-semibold" data-testid="text-price">
+                    {formatPrice(reservation.priceTl, reservation.priceUsd, reservation.currency)}
+                  </span>
+                </div>
 
-              {reservation.advancePaymentTl > 0 && (
-                <>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-1.5">
-                      <CreditCard className="w-3.5 h-3.5" />
-                      {t(lang, 'Ön Ödeme', 'Advance Payment')}
-                    </span>
-                    <span className="font-medium text-green-600 dark:text-green-400" data-testid="text-advance-payment">
-                      {reservation.advancePaymentTl.toLocaleString('tr-TR')} TL
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{t(lang, 'Kalan Ödeme', 'Remaining')}</span>
-                    <span className="font-semibold" data-testid="text-remaining-payment">
-                      {Math.max(0, (reservation.priceTl || 0) - (reservation.advancePaymentTl || 0)).toLocaleString('tr-TR')} TL
-                    </span>
-                  </div>
-                </>
-              )}
+                {reservation.advancePaymentTl > 0 && (
+                  <>
+                    <div className="border-t border-border/50" />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5" />
+                        {t(lang, 'Ön Ödeme Yapıldı', 'Advance Paid')}
+                      </span>
+                      <span className="font-medium text-green-600 dark:text-green-400" data-testid="text-advance-payment">
+                        {reservation.advancePaymentTl.toLocaleString('tr-TR')} TL
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{t(lang, 'Kalan', 'Remaining')}</span>
+                      <span className="text-lg font-bold text-primary" data-testid="text-remaining-payment">
+                        {Math.max(0, (reservation.priceTl || 0) - (reservation.advancePaymentTl || 0)).toLocaleString('tr-TR')} TL
+                      </span>
+                    </div>
+                  </>
+                )}
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{t(lang, 'Ödeme Durumu', 'Payment Status')}</span>
-                <Badge
-                  className={
-                    reservation.paymentStatus === 'paid'
-                      ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-                      : reservation.paymentStatus === 'partial'
-                      ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-                      : 'bg-muted text-muted-foreground'
-                  }
-                  data-testid="text-payment-status"
-                >
-                  {reservation.paymentStatus === 'paid' ? t(lang, 'Ödendi', 'Paid') 
-                    : reservation.paymentStatus === 'partial' ? t(lang, 'Kısmi Ödeme', 'Partial') 
-                    : reservation.paymentStatus === 'failed' ? t(lang, 'Başarısız', 'Failed')
-                    : t(lang, 'Ödenmedi', 'Unpaid')}
-                </Badge>
+                <div className="border-t border-border/50" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{t(lang, 'Ödeme Durumu', 'Payment Status')}</span>
+                  <Badge
+                    className={
+                      reservation.paymentStatus === 'paid'
+                        ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                        : reservation.paymentStatus === 'partial'
+                        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                        : reservation.paymentStatus === 'failed'
+                        ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
+                        : 'bg-muted text-muted-foreground'
+                    }
+                    data-testid="text-payment-status"
+                  >
+                    {reservation.paymentStatus === 'paid' ? t(lang, 'Ödendi', 'Paid') 
+                      : reservation.paymentStatus === 'partial' ? t(lang, 'Kısmi Ödeme', 'Partial')
+                      : reservation.paymentStatus === 'failed' ? t(lang, 'Başarısız', 'Failed')
+                      : t(lang, 'Ödenmedi', 'Unpaid')}
+                  </Badge>
+                </div>
               </div>
             </div>
 
@@ -687,16 +692,6 @@ export default function CustomerTracking() {
                     </div>
                   </div>
 
-                  {preferredDate === selectedDayData.date && preferredTime && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-md p-3 text-sm">
-                      <p className="font-medium text-primary">
-                        {t(lang, 'Seçiminiz', 'Your Selection')}: {new Date(preferredDate + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'long' })} - {preferredTime}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {t(lang, 'Tarih/saat değişikliği için aşağıdan talep oluşturabilirsiniz.', 'You can submit a change request below.')}
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
             </CardContent>
@@ -716,25 +711,17 @@ export default function CustomerTracking() {
             </CardHeader>
             <CardContent className="space-y-4">
               {!showRequestForm ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
                   <Button
                     variant="outline"
-                    className="flex items-center gap-2 h-auto py-3"
-                    onClick={() => handleRequestClick('time_change')}
-                    data-testid="button-time-change"
-                  >
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm">{t(lang, 'Saat Değiştir', 'Change Time')}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center gap-2 h-auto py-3"
-                    onClick={() => handleRequestClick('date_change')}
-                    data-testid="button-date-change"
+                    className="w-full flex items-center gap-2 h-auto py-3"
+                    onClick={() => handleRequestClick('date_time_change')}
+                    data-testid="button-date-time-change"
                   >
                     <CalendarClock className="w-4 h-4" />
-                    <span className="text-sm">{t(lang, 'Tarih Değiştir', 'Change Date')}</span>
+                    <span className="text-sm">{t(lang, 'Tarih / Saat Değiştir', 'Change Date / Time')}</span>
                   </Button>
+                  <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
                     className="flex items-center gap-2 h-auto py-3 text-red-600 border-red-200 dark:text-red-400 dark:border-red-800"
@@ -766,20 +753,15 @@ export default function CustomerTracking() {
                     <MessageSquare className="w-4 h-4" />
                     <span className="text-sm">{t(lang, 'Diğer Talep', 'Other Request')}</span>
                   </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                    {requestType === 'time_change' && (
-                      <>
-                        <Clock className="w-4 h-4 text-primary" />
-                        {t(lang, 'Saat Değişikliği Talebi', 'Time Change Request')}
-                      </>
-                    )}
-                    {requestType === 'date_change' && (
+                    {requestType === 'date_time_change' && (
                       <>
                         <CalendarClock className="w-4 h-4 text-primary" />
-                        {t(lang, 'Tarih Değişikliği Talebi', 'Date Change Request')}
+                        {t(lang, 'Tarih / Saat Değişikliği Talebi', 'Date / Time Change Request')}
                       </>
                     )}
                     {requestType === 'cancellation' && (
@@ -796,59 +778,98 @@ export default function CustomerTracking() {
                     )}
                   </div>
 
-                  {requestType === 'time_change' && (
-                    <div className="space-y-2">
-                      <Label>{t(lang, 'Tercih Ettiğiniz Saat', 'Preferred Time')}</Label>
-                      <Select value={preferredTime} onValueChange={setPreferredTime}>
-                        <SelectTrigger data-testid="select-preferred-time">
-                          <SelectValue placeholder={t(lang, 'Saat seçin', 'Select time')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {reservation?.defaultTimes && reservation.defaultTimes.length > 0 ? (
-                            reservation.defaultTimes.map((time) => (
-                              <SelectItem key={time} value={time}>{time}</SelectItem>
-                            ))
-                          ) : (
-                            <>
-                              <SelectItem value="09:00">09:00</SelectItem>
-                              <SelectItem value="10:00">10:00</SelectItem>
-                              <SelectItem value="11:00">11:00</SelectItem>
-                              <SelectItem value="12:00">12:00</SelectItem>
-                              <SelectItem value="14:00">14:00</SelectItem>
-                              <SelectItem value="15:00">15:00</SelectItem>
-                              <SelectItem value="16:00">16:00</SelectItem>
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {requestType === 'date_change' && (
-                    <div className="space-y-2">
-                      <Label>{t(lang, 'Tercih Ettiğiniz Tarih', 'Preferred Date')}</Label>
-                      {preferredDate ? (
-                        <div className="bg-primary/5 border border-primary/20 rounded-md p-3">
-                          <p className="text-sm font-medium">
-                            {formatDate(preferredDate)}
-                            {preferredTime && ` - ${preferredTime}`}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {t(lang, 'Yukarıdaki takvimden farklı bir tarih seçebilirsiniz.', 'You can select a different date from the calendar above.')}
-                          </p>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                          className="w-full bg-muted/30 border border-dashed border-border rounded-md p-3 text-center"
-                        >
-                          <CalendarDays className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
-                          <p className="text-xs text-muted-foreground">
-                            {t(lang, 'Yukarıdaki takvimden bir tarih ve saat seçin.', 'Select a date and time from the calendar above.')}
-                          </p>
-                        </button>
-                      )}
+                  {requestType === 'date_time_change' && (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                          {t(lang, 'Tarih Seçin', 'Select Date')}
+                        </Label>
+                        {preferredDate ? (
+                          <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              <span className="text-sm font-medium">{formatDate(preferredDate)}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                              className="text-xs text-primary underline underline-offset-2"
+                            >
+                              {t(lang, 'Değiştir', 'Change')}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => calendarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                            className="w-full bg-muted/30 border border-dashed border-border rounded-md p-3 text-center"
+                          >
+                            <CalendarDays className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+                            <p className="text-xs text-muted-foreground">
+                              {t(lang, 'Yukarıdaki takvimden bir tarih seçin', 'Select a date from the calendar above')}
+                            </p>
+                          </button>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <span className={`flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${preferredDate ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>2</span>
+                          {t(lang, 'Saat Seçin', 'Select Time')}
+                        </Label>
+                        {preferredTime ? (
+                          <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              <span className="text-sm font-medium">{preferredTime}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPreferredTime("");
+                                if (availability && calendarRef.current) {
+                                  calendarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                              }}
+                              className="text-xs text-primary underline underline-offset-2"
+                            >
+                              {t(lang, 'Değiştir', 'Change')}
+                            </button>
+                          </div>
+                        ) : !availability || !availability.days.length ? (
+                          <Select value={preferredTime} onValueChange={setPreferredTime}>
+                            <SelectTrigger data-testid="select-preferred-time-fallback">
+                              <SelectValue placeholder={t(lang, 'Saat seçin', 'Select time')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {reservation?.defaultTimes && reservation.defaultTimes.length > 0 ? (
+                                reservation.defaultTimes.map((time) => (
+                                  <SelectItem key={time} value={time}>{time}</SelectItem>
+                                ))
+                              ) : (
+                                <>
+                                  <SelectItem value="09:00">09:00</SelectItem>
+                                  <SelectItem value="10:00">10:00</SelectItem>
+                                  <SelectItem value="11:00">11:00</SelectItem>
+                                  <SelectItem value="12:00">12:00</SelectItem>
+                                  <SelectItem value="14:00">14:00</SelectItem>
+                                  <SelectItem value="15:00">15:00</SelectItem>
+                                  <SelectItem value="16:00">16:00</SelectItem>
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className={`bg-muted/30 border border-dashed border-border rounded-md p-3 text-center ${!preferredDate ? 'opacity-50' : ''}`}>
+                            <Clock className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+                            <p className="text-xs text-muted-foreground">
+                              {preferredDate 
+                                ? t(lang, 'Takvimden bir saat dilimi seçin', 'Select a time slot from the calendar')
+                                : t(lang, 'Önce tarih seçmeniz gerekiyor', 'Please select a date first')}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
