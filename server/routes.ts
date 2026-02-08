@@ -7022,6 +7022,57 @@ export async function registerRoutes(
     }
   });
 
+  // Get partner dispatch statuses for sender's reservations
+  app.get("/api/partner-dispatch-statuses", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+
+      // Get all reservation requests where this tenant is the sender
+      const partnerships = await storage.getTenantPartnerships(tenantId);
+      const activePartnerships = partnerships.filter(p => p.status === 'active');
+
+      const tenants = await storage.getTenants();
+      const tenantMap = new Map(tenants.map(t => [t.id, t]));
+
+      let allDispatches: any[] = [];
+
+      for (const partnership of activePartnerships) {
+        const otherTenantId = partnership.requesterTenantId === tenantId
+          ? partnership.partnerTenantId
+          : partnership.requesterTenantId;
+
+        const partnerRequests = await storage.getReservationRequests(otherTenantId);
+        const myDispatches = partnerRequests.filter(r => r.senderTenantId === tenantId && r.sourceReservationId);
+        
+        for (const d of myDispatches) {
+          const partnerTenant = tenantMap.get(otherTenantId);
+          allDispatches.push({
+            reservationRequestId: d.id,
+            sourceReservationId: d.sourceReservationId,
+            status: d.status,
+            partnerTenantName: partnerTenant?.name || 'Partner',
+            activityId: d.activityId,
+            date: d.date,
+            time: d.time,
+            customerName: d.customerName,
+            guests: d.guests,
+            processNotes: d.processNotes,
+            createdAt: d.createdAt,
+          });
+        }
+      }
+
+      res.json(allDispatches);
+    } catch (error) {
+      console.error("Get partner dispatch statuses error:", error);
+      res.status(500).json({ error: "Gonderim durumlari alinamadi" });
+    }
+  });
+
   // Get activity partner shares for an activity
   app.get("/api/activities/:id/partner-shares", requirePermission(PERMISSIONS.ACTIVITIES_VIEW), async (req, res) => {
     try {

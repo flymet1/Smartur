@@ -55,6 +55,20 @@ function getNotesWithoutMetadata(notes: string | null | undefined): string {
   return notes.replace(/__METADATA__:.*$/, "").trim();
 }
 
+interface PartnerDispatchStatus {
+  reservationRequestId: number;
+  sourceReservationId: number;
+  status: string;
+  partnerTenantName: string;
+  activityId: number;
+  date: string;
+  time: string;
+  customerName: string;
+  guests: number;
+  processNotes: string | null;
+  createdAt: string;
+}
+
 interface ReservationTableProps {
   reservations: Reservation[];
   onReservationSelect?: (reservation: Reservation) => void;
@@ -65,6 +79,7 @@ interface ReservationTableProps {
   onAddDispatch?: (reservation: Reservation) => void;
   onNotifyAgency?: (reservation: Reservation) => void;
   onMoveSuccess?: (reservation: Reservation, oldDate: string, newDate: string, oldTime?: string, newTime?: string) => void;
+  partnerDispatchStatuses?: PartnerDispatchStatus[];
 }
 
 export function ReservationTable({ 
@@ -76,7 +91,8 @@ export function ReservationTable({
   onWhatsAppNotify,
   onAddDispatch,
   onNotifyAgency,
-  onMoveSuccess
+  onMoveSuccess,
+  partnerDispatchStatuses
 }: ReservationTableProps) {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -263,6 +279,37 @@ export function ReservationTable({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+    );
+  };
+
+  const getDispatchStatusBadges = (reservationId: number) => {
+    if (!partnerDispatchStatuses) return null;
+    const dispatches = partnerDispatchStatuses.filter(d => d.sourceReservationId === reservationId);
+    if (dispatches.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap gap-1 mt-1">
+        {dispatches.map((d) => {
+          const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
+            pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Handshake className="h-3 w-3 mr-1" /> },
+            approved: { label: "Onaylandi", className: "bg-green-100 text-green-700 border-green-200", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
+            rejected: { label: "Reddedildi", className: "bg-red-100 text-red-700 border-red-200", icon: <XCircle className="h-3 w-3 mr-1" /> },
+            converted: { label: "Onaylandi", className: "bg-green-100 text-green-700 border-green-200", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
+          };
+          const config = statusConfig[d.status || 'pending'] || statusConfig.pending;
+          return (
+            <span
+              key={d.reservationRequestId}
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${config.className}`}
+              title={`${d.partnerTenantName} - ${d.date} ${d.time} - ${d.guests} kisi${d.processNotes ? ` - ${d.processNotes}` : ''}`}
+              data-testid={`dispatch-status-${d.reservationRequestId}`}
+            >
+              {config.icon}
+              {d.partnerTenantName}: {config.label}
+            </span>
+          );
+        })}
+      </div>
     );
   };
 
@@ -901,11 +948,12 @@ export function ReservationTable({
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {getStatusBadge(res.status || 'pending', res.id)}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" data-testid={`button-actions-mobile-${res.id}`}>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-1">
+                      {getStatusBadge(res.status || 'pending', res.id)}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" data-testid={`button-actions-mobile-${res.id}`}>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -997,6 +1045,8 @@ export function ReservationTable({
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    </div>
+                    {getDispatchStatusBadges(res.id)}
                   </div>
                 </div>
 
@@ -1219,7 +1269,10 @@ export function ReservationTable({
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>{getStatusBadge(res.status || 'pending', res.id)}</TableCell>
+                    <TableCell>
+                      {getStatusBadge(res.status || 'pending', res.id)}
+                      {getDispatchStatusBadges(res.id)}
+                    </TableCell>
                     <TableCell className="text-right font-medium">
                       {res.priceTl ? `₺${res.priceTl.toLocaleString('tr-TR')}` : ''}
                       {res.priceTl && res.priceUsd ? ' / ' : ''}

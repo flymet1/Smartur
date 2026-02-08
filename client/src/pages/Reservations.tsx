@@ -217,6 +217,22 @@ export default function Reservations() {
     enabled: partnerDispatchOpen,
   });
 
+  const { data: partnerDispatchStatuses } = useQuery<{
+    reservationRequestId: number;
+    sourceReservationId: number;
+    status: string;
+    partnerTenantName: string;
+    activityId: number;
+    date: string;
+    time: string;
+    customerName: string;
+    guests: number;
+    processNotes: string | null;
+    createdAt: string;
+  }[]>({
+    queryKey: ['/api/partner-dispatch-statuses'],
+  });
+
   const partnerDispatchMutation = useMutation({
     mutationFn: async (data: {
       activityId: number;
@@ -255,6 +271,7 @@ export default function Reservations() {
       setAgencyDispatchCurrency("TRY");
       setAgencyDispatchNotes("");
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-dispatch-statuses'] });
     },
     onError: (error: Error) => {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
@@ -2096,6 +2113,7 @@ export default function Reservations() {
               setSelectedAgencyForNotify("");
               setAgencyNotifyOpen(true);
             }}
+            partnerDispatchStatuses={partnerDispatchStatuses}
           />
         ) : (
           <>
