@@ -6780,13 +6780,11 @@ export async function registerRoutes(
         );
         
         var sharedActivities: any[];
-        if (sharesForThisPartnership.length === 0) {
-          // Fall back to sharedWithPartners flag for backward compatibility
-          sharedActivities = allActivities.filter((a: any) => a.sharedWithPartners === true && a.active !== false);
-        } else {
-          // Use granular activity shares
+        if (sharesForThisPartnership.length > 0) {
           const sharedActivityIds = new Set(sharesForThisPartnership.map(s => s.activityId));
           sharedActivities = allActivities.filter((a: any) => sharedActivityIds.has(a.id) && a.active !== false);
+        } else {
+          sharedActivities = [];
         }
         
         if (sharedActivities.length === 0) {
@@ -6969,11 +6967,7 @@ export async function registerRoutes(
       
       let isActivityShared = false;
       if (sharesForThisActivity.length > 0) {
-        // Granular sharing is in use for this activity - check if our partnership is included
         isActivityShared = sharesForThisActivity.some(s => s.partnershipId === activePartnership.id);
-      } else {
-        // No granular shares exist for this activity - fall back to legacy sharedWithPartners flag
-        isActivityShared = activity.sharedWithPartners === true;
       }
       
       if (!isActivityShared) {
