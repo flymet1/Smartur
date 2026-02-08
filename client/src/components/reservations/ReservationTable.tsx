@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -916,7 +916,8 @@ export function ReservationTable({
             {group.reservations.map((res) => (
               <div 
                 key={res.id}
-                className={`rounded-lg border p-3 space-y-2 ${group.type === 'group' ? 'border-purple-200 dark:border-purple-800 ml-2' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5 border-primary' : 'bg-card'}`}
+                className={`rounded-lg border p-3 space-y-2 cursor-pointer ${group.type === 'group' ? 'border-purple-200 dark:border-purple-800 ml-2' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5 border-primary' : 'bg-card'} ${expandedId === res.id ? 'ring-1 ring-primary/30' : ''}`}
+                onClick={() => toggleExpand(res)}
               >
                 {/* Header Row: Name, Status, Actions */}
                 <div className="flex items-start justify-between gap-2">
@@ -951,6 +952,16 @@ export function ReservationTable({
                   <div className="flex flex-col items-end gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-1">
                       {getStatusBadge(res.status || 'pending', res.id)}
+                      {onAddDispatch && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={(e) => { e.stopPropagation(); onAddDispatch(res); }}
+                          data-testid={`button-dispatch-mobile-${res.id}`}
+                        >
+                          <Share2 className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" data-testid={`button-actions-mobile-${res.id}`}>
@@ -983,15 +994,6 @@ export function ReservationTable({
                           >
                             <Send className="h-4 w-4 mr-2 text-green-600" />
                             Müşteriye WhatsApp Bildirimi
-                          </DropdownMenuItem>
-                        )}
-                        {onAddDispatch && (
-                          <DropdownMenuItem 
-                            onClick={() => onAddDispatch(res)}
-                            data-testid={`action-dispatch-mobile-${res.id}`}
-                          >
-                            <ArrowRightLeft className="h-4 w-4 mr-2 text-blue-600" />
-                            Acentaya Gönder
                           </DropdownMenuItem>
                         )}
                         {onNotifyAgency && (
@@ -1090,26 +1092,11 @@ export function ReservationTable({
                   </div>
                 )}
 
-                <div className="pt-1 border-t">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full justify-center gap-1 text-xs text-muted-foreground"
-                    onClick={() => toggleExpand(res)}
-                    data-testid={`button-expand-mobile-${res.id}`}
-                  >
-                    {expandedId === res.id ? (
-                      <><ChevronDown className="h-3 w-3" /> Detayları Gizle</>
-                    ) : (
-                      <><ChevronRight className="h-3 w-3" /> Detayları Göster</>
-                    )}
-                  </Button>
-                  {expandedId === res.id && (
-                    <div className="mt-2 border-t pt-2">
-                      {renderExpandedDetail(res)}
-                    </div>
-                  )}
-                </div>
+                {expandedId === res.id && (
+                  <div className="pt-2 border-t" onClick={(e) => e.stopPropagation()}>
+                    {renderExpandedDetail(res)}
+                  </div>
+                )}
               </div>
             ))}
           </Fragment>
@@ -1180,10 +1167,11 @@ export function ReservationTable({
                 {group.reservations.map((res) => (
                   <Fragment key={res.id}>
                   <TableRow 
-                    className={`hover:bg-muted/50 ${group.type === 'group' ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5' : ''}`}
+                    className={`hover:bg-muted/50 cursor-pointer ${group.type === 'group' ? 'bg-purple-50/50 dark:bg-purple-900/10' : ''} ${selectedIds?.has(res.id) ? 'bg-primary/5' : ''} ${expandedId === res.id ? 'bg-muted/30' : ''}`}
+                    onClick={() => toggleExpand(res)}
                   >
                     {hasSelection && (
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Checkbox 
                           checked={selectedIds.has(res.id)}
                           onCheckedChange={() => onToggleSelection(res.id)}
@@ -1205,11 +1193,12 @@ export function ReservationTable({
                         <div>
                           <div 
                             className="font-medium text-primary hover:underline cursor-pointer"
-                            onClick={() => { window.location.href = `/customers?phone=${encodeURIComponent(res.customerPhone)}`; }}
+                            onClick={(e) => { e.stopPropagation(); window.location.href = `/customers?phone=${encodeURIComponent(res.customerPhone)}`; }}
                           >{res.customerName}</div>
                           <div 
                             className="text-xs text-primary hover:underline cursor-pointer"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               window.location.href = `/messages?phone=${encodeURIComponent(res.customerPhone)}`;
                             }}
                           >
@@ -1269,7 +1258,7 @@ export function ReservationTable({
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       {getStatusBadge(res.status || 'pending', res.id)}
                       {getDispatchStatusBadges(res.id)}
                     </TableCell>
@@ -1279,7 +1268,7 @@ export function ReservationTable({
                       {res.priceUsd ? `$${res.priceUsd}` : ''}
                       {!res.priceTl && !res.priceUsd ? '-' : ''}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -1313,15 +1302,6 @@ export function ReservationTable({
                               >
                                 <Send className="h-4 w-4 mr-2 text-green-600" />
                                 Müşteriye Whatsapp Bildirimi
-                              </DropdownMenuItem>
-                            )}
-                            {onAddDispatch && (
-                              <DropdownMenuItem 
-                                onClick={() => onAddDispatch(res)}
-                                data-testid={`action-dispatch-${res.id}`}
-                              >
-                                <ArrowRightLeft className="h-4 w-4 mr-2 text-blue-600" />
-                                Acentaya Gönder
                               </DropdownMenuItem>
                             )}
                             {onNotifyAgency && (
@@ -1375,19 +1355,21 @@ export function ReservationTable({
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => toggleExpand(res)}
-                          data-testid={`button-expand-${res.id}`}
-                        >
-                          {expandedId === res.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </Button>
+                        {onAddDispatch && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={(e) => { e.stopPropagation(); onAddDispatch(res); }}
+                            data-testid={`button-dispatch-${res.id}`}
+                          >
+                            <Share2 className="h-4 w-4 text-blue-600" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
                   {expandedId === res.id && (
-                    <TableRow>
+                    <TableRow onClick={(e) => e.stopPropagation()}>
                       <TableCell colSpan={hasSelection ? 11 : 10} className="bg-muted/30 p-0">
                         {renderExpandedDetail(res)}
                       </TableCell>
