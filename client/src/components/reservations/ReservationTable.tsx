@@ -210,9 +210,9 @@ export function ReservationTable({
       setExpandedId(res.id);
       setEditDate(res.date);
       setEditTime(res.time);
-      setEditPriceTl(String(res.priceTl || 0));
-      setEditPriceUsd(String(res.priceUsd || 0));
-      setEditAdvancePayment(String((res as any).advancePaymentTl || 0));
+      setEditPriceTl(res.priceTl ? String(res.priceTl) : "");
+      setEditPriceUsd(res.priceUsd ? String(res.priceUsd) : "");
+      setEditAdvancePayment((res as any).advancePaymentTl ? String((res as any).advancePaymentTl) : "");
       const cleanNotes = getNotesWithoutMetadata(res.notes);
       setEditNotes(cleanNotes || "");
       setIsEditing(false);
@@ -463,9 +463,9 @@ export function ReservationTable({
     const handleCancelEdit = () => {
       setEditDate(res.date);
       setEditTime(res.time);
-      setEditPriceTl(String(res.priceTl || 0));
-      setEditPriceUsd(String(res.priceUsd || 0));
-      setEditAdvancePayment(String((res as any).advancePaymentTl || 0));
+      setEditPriceTl(res.priceTl ? String(res.priceTl) : "");
+      setEditPriceUsd(res.priceUsd ? String(res.priceUsd) : "");
+      setEditAdvancePayment((res as any).advancePaymentTl ? String((res as any).advancePaymentTl) : "");
       setIsEditing(false);
     };
 
@@ -630,6 +630,7 @@ export function ReservationTable({
                 value={editPriceTl} 
                 onChange={(e) => setEditPriceTl(e.target.value)}
                 className="h-8 text-sm"
+                placeholder="Tutar girin"
                 data-testid="input-edit-price-tl"
               />
             ) : (
@@ -653,6 +654,7 @@ export function ReservationTable({
                 value={editPriceUsd} 
                 onChange={(e) => setEditPriceUsd(e.target.value)}
                 className="h-8 text-sm"
+                placeholder="Tutar girin"
                 data-testid="input-edit-price-usd"
               />
             ) : (
@@ -672,6 +674,7 @@ export function ReservationTable({
                 value={editAdvancePayment} 
                 onChange={(e) => setEditAdvancePayment(e.target.value)}
                 className="h-8 text-sm"
+                placeholder="Tutar girin"
                 data-testid="input-edit-advance-payment"
               />
             </div>
