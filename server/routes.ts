@@ -16594,7 +16594,8 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
 
   app.get("/api/app-users", async (req, res) => {
     try {
-      const users = await storage.getAppUsers();
+      const tenantId = req.session?.tenantId;
+      const users = tenantId ? await storage.getAppUsersByTenant(tenantId) : await storage.getAppUsers();
       res.json(users);
     } catch (err) {
       console.error("Kullanıcı listesi hatası:", err);

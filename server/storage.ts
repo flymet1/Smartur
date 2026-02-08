@@ -528,6 +528,7 @@ export interface IStorage {
 
   // App Users (Application Users - Login with username/password)
   getAppUsers(): Promise<AppUser[]>;
+  getAppUsersByTenant(tenantId: number): Promise<AppUser[]>;
   getAppUser(id: number): Promise<AppUser | undefined>;
   getUsersByIds(ids: number[]): Promise<AppUser[]>;
   getAppUserByUsername(username: string): Promise<AppUser | undefined>;
@@ -3571,6 +3572,10 @@ Sky Fethiye`,
 
   async getAppUsers(): Promise<AppUser[]> {
     return db.select().from(appUsers).orderBy(desc(appUsers.createdAt));
+  }
+
+  async getAppUsersByTenant(tenantId: number): Promise<AppUser[]> {
+    return db.select().from(appUsers).where(eq(appUsers.tenantId, tenantId)).orderBy(desc(appUsers.createdAt));
   }
 
   async getAppUser(id: number): Promise<AppUser | undefined> {
