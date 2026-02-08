@@ -605,56 +605,79 @@ export function ReservationTable({
           </>
         )}
 
-        {metadata?.extras && metadata.extras.length > 0 && (
-          <>
-            <Separator />
-            <div>
-              <Label className="text-muted-foreground text-xs">Ekstralar</Label>
-              <div className="space-y-1 mt-1">
-                {metadata.extras.map((extra, idx) => (
-                  <div key={idx} className="flex justify-between text-sm">
-                    <span>{extra.name} x{extra.quantity}</span>
-                    <span className="font-medium">{(extra.priceTl * extra.quantity).toLocaleString('tr-TR')} ₺</span>
-                  </div>
-                ))}
+        {(() => {
+          let dbExtras: Array<{ name: string; quantity?: number; priceTl: number }> = [];
+          try {
+            const parsed = JSON.parse((res as any).selectedExtras || "[]");
+            if (Array.isArray(parsed) && parsed.length > 0) dbExtras = parsed;
+          } catch {}
+          const metaExtras = metadata?.extras || [];
+          const extras = dbExtras.length > 0 ? dbExtras : metaExtras;
+          if (extras.length === 0) return null;
+          return (
+            <>
+              <Separator />
+              <div>
+                <Label className="text-muted-foreground text-xs">Ekstralar</Label>
+                <div className="space-y-1 mt-1">
+                  {extras.map((extra, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span>{extra.name}{(extra.quantity ?? 1) > 1 ? ` x${extra.quantity}` : ''}</span>
+                      <span className="font-medium">{(extra.priceTl * (extra.quantity ?? 1)).toLocaleString('tr-TR')} ₺</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          );
+        })()}
 
-        {metadata && (metadata.totalPrice || metadata.depositRequired || metadata.remainingPayment) && (
-          <>
-            <Separator />
-            <div className="space-y-2">
-              <Label className="text-muted-foreground text-xs">Ödeme Bilgileri</Label>
-              {metadata.totalPrice && (
-                <div className="flex justify-between text-sm">
-                  <span>Toplam Tutar</span>
-                  <span className="font-bold text-primary">{metadata.totalPrice.toLocaleString('tr-TR')} ₺</span>
-                </div>
-              )}
-              {metadata.depositRequired !== undefined && metadata.depositRequired > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span>Ön Ödeme (Kapora)</span>
-                  <span className="font-medium text-amber-600">{metadata.depositRequired.toLocaleString('tr-TR')} ₺</span>
-                </div>
-              )}
-              {metadata.remainingPayment !== undefined && metadata.remainingPayment > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span>Kalan Ödeme</span>
-                  <span className="font-medium">{metadata.remainingPayment.toLocaleString('tr-TR')} ₺</span>
-                </div>
-              )}
-              {metadata.paymentType && (
-                <div className="text-xs text-muted-foreground">
-                  {metadata.paymentType === 'full' ? 'Tam ödeme gerekli' : 
-                   metadata.paymentType === 'deposit' ? 'Ön ödeme gerekli, kalan aktivite günü alınacak' : 
-                   'Ödeme aktivite günü alınacak'}
-                </div>
-              )}
-            </div>
-          </>
-        )}
+        {(() => {
+          const salePrice = (res as any).salePriceTl ?? res.priceTl ?? 0;
+          const advance = (res as any).advancePaymentTl ?? 0;
+          const remaining = salePrice - advance;
+          const metaDeposit = metadata?.depositRequired ?? 0;
+          const metaRemaining = metadata?.remainingPayment ?? 0;
+          const metaTotal = metadata?.totalPrice ?? 0;
+          const depositToShow = advance > 0 ? advance : metaDeposit;
+          const remainingToShow = advance > 0 ? remaining : metaRemaining;
+          const totalToShow = salePrice > 0 ? salePrice : metaTotal;
+          const hasPaymentInfo = totalToShow > 0 || depositToShow > 0 || remainingToShow > 0;
+          if (!hasPaymentInfo) return null;
+          return (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-muted-foreground text-xs">Odeme Bilgileri</Label>
+                {totalToShow > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>Toplam Tutar</span>
+                    <span className="font-bold text-primary" data-testid="text-total-price">{totalToShow.toLocaleString('tr-TR')} ₺</span>
+                  </div>
+                )}
+                {depositToShow > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>On Odeme (Kapora)</span>
+                    <span className="font-medium text-amber-600" data-testid="text-deposit-info">{depositToShow.toLocaleString('tr-TR')} ₺</span>
+                  </div>
+                )}
+                {remainingToShow > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>Kalan Odeme</span>
+                    <span className="font-medium" data-testid="text-remaining-info">{remainingToShow.toLocaleString('tr-TR')} ₺</span>
+                  </div>
+                )}
+                {metadata?.paymentType && (
+                  <div className="text-xs text-muted-foreground">
+                    {metadata.paymentType === 'full' ? 'Tam odeme gerekli' : 
+                     metadata.paymentType === 'deposit' ? 'On odeme gerekli, kalan aktivite gunu alinacak' : 
+                     'Odeme aktivite gunu alinacak'}
+                  </div>
+                )}
+              </div>
+            </>
+          );
+        })()}
 
         {metadata?.participants && metadata.participants.length > 0 && (
           <>
