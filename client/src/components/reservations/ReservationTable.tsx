@@ -659,17 +659,16 @@ export function ReservationTable({
         })()}
 
         {(() => {
-          const salePrice = (res as any).salePriceTl ?? res.priceTl ?? 0;
-          const advance = (res as any).advancePaymentTl ?? 0;
-          const remaining = salePrice - advance;
+          const salePrice = (res as any).salePriceTl || res.priceTl || 0;
+          const advance = (res as any).advancePaymentTl || 0;
+          const remaining = salePrice > 0 ? salePrice - advance : 0;
+          const metaTotal = metadata?.totalPrice ?? 0;
           const metaDeposit = metadata?.depositRequired ?? 0;
           const metaRemaining = metadata?.remainingPayment ?? 0;
-          const metaTotal = metadata?.totalPrice ?? 0;
-          const depositToShow = advance > 0 ? advance : metaDeposit;
-          const remainingToShow = advance > 0 ? remaining : metaRemaining;
           const totalToShow = salePrice > 0 ? salePrice : metaTotal;
-          const hasPaymentInfo = totalToShow > 0 || depositToShow > 0 || remainingToShow > 0;
-          if (!hasPaymentInfo) return null;
+          const depositToShow = advance > 0 ? advance : metaDeposit;
+          const remainingToShow = remaining > 0 ? remaining : metaRemaining;
+          if (totalToShow <= 0 && depositToShow <= 0) return null;
           return (
             <>
               <Separator />
@@ -681,18 +680,18 @@ export function ReservationTable({
                     <span className="font-bold text-primary" data-testid="text-total-price">{totalToShow.toLocaleString('tr-TR')} ₺</span>
                   </div>
                 )}
-                {depositToShow > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>On Odeme (Kapora)</span>
-                    <span className="font-medium text-amber-600" data-testid="text-deposit-info">{depositToShow.toLocaleString('tr-TR')} ₺</span>
-                  </div>
-                )}
-                {remainingToShow > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Kalan Odeme</span>
-                    <span className="font-medium" data-testid="text-remaining-info">{remainingToShow.toLocaleString('tr-TR')} ₺</span>
-                  </div>
-                )}
+                <div className="flex justify-between text-sm">
+                  <span>On Odeme (Kapora)</span>
+                  <span className="font-medium text-amber-600" data-testid="text-deposit-info">
+                    {depositToShow > 0 ? `${depositToShow.toLocaleString('tr-TR')} ₺` : '0 ₺'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Kalan Odeme</span>
+                  <span className={`font-medium ${remainingToShow > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} data-testid="text-remaining-info">
+                    {remainingToShow > 0 ? `${remainingToShow.toLocaleString('tr-TR')} ₺` : '0 ₺'}
+                  </span>
+                </div>
                 {metadata?.paymentType && (
                   <div className="text-xs text-muted-foreground">
                     {metadata.paymentType === 'full' ? 'Tam odeme gerekli' : 
