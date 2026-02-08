@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2 } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2, Clock } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -67,6 +67,9 @@ interface PartnerDispatchStatus {
   guests: number;
   processNotes: string | null;
   createdAt: string;
+  cancellationStatus?: string | null;
+  cancellationRequestedAt?: string | null;
+  cancellationRejectionReason?: string | null;
 }
 
 interface ReservationTableProps {
@@ -291,14 +294,15 @@ export function ReservationTable({
 
   const cancelDispatchMutation = useMutation({
     mutationFn: async (requestId: number) => {
-      await apiRequest("DELETE", `/api/partner-dispatch/${requestId}`);
+      const res = await apiRequest("DELETE", `/api/partner-dispatch/${requestId}`);
+      return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/partner-dispatch-statuses'] });
-      toast({ title: "Gönderim iptal edildi" });
+      toast({ title: data?.message || "İşlem başarılı" });
     },
     onError: () => {
-      toast({ title: "Hata", description: "Gönderim iptal edilemedi", variant: "destructive" });
+      toast({ title: "Hata", description: "İşlem gerçekleştirilemedi", variant: "destructive" });
     },
   });
 
@@ -307,69 +311,72 @@ export function ReservationTable({
     const activeDispatch = getActiveDispatch(res.id);
 
     if (activeDispatch) {
-      const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
-        pending: { color: "text-amber-500", icon: <Handshake className="h-4 w-4" />, label: "Beklemede" },
-        approved: { color: "text-emerald-600", icon: <CheckCircle className="h-4 w-4" />, label: "Onaylandı" },
-        converted: { color: "text-emerald-600", icon: <CheckCircle className="h-4 w-4" />, label: "Onaylandı" },
-      };
-      const config = statusConfig[activeDispatch.status || 'pending'] || statusConfig.pending;
+      const hasCancellationPending = activeDispatch.cancellationStatus === 'pending';
+      const hasCancellationRejected = activeDispatch.cancellationStatus === 'rejected';
 
-      const canCancel = activeDispatch.status === 'pending' || activeDispatch.status === 'approved';
+      let statusLabel = '';
+      let statusColor = '';
+      let statusIcon = null;
 
-      if (canCancel) {
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className={config.color}
-                onClick={(e) => e.stopPropagation()}
-                data-testid={`button-dispatch-status-${res.id}`}
-              >
-                {config.icon}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-              <div className="px-3 py-2 text-xs text-muted-foreground border-b">
-                <span className="font-medium text-foreground">{activeDispatch.partnerTenantName}</span>
-                {' - '}{config.label}
-                <br />
-                {activeDispatch.date} {activeDispatch.time} - {activeDispatch.guests} kişi
-              </div>
+      if (hasCancellationPending) {
+        statusLabel = 'İptal Onayı Bekleniyor';
+        statusColor = 'text-orange-500';
+        statusIcon = <Clock className="h-4 w-4" />;
+      } else if (activeDispatch.status === 'pending') {
+        statusLabel = 'Beklemede';
+        statusColor = 'text-amber-500';
+        statusIcon = <Handshake className="h-4 w-4" />;
+      } else if (activeDispatch.status === 'approved' || activeDispatch.status === 'converted') {
+        statusLabel = 'Onaylandı';
+        statusColor = 'text-emerald-600';
+        statusIcon = <CheckCircle className="h-4 w-4" />;
+      }
+
+      const canCancel = !hasCancellationPending && (activeDispatch.status === 'pending' || activeDispatch.status === 'approved' || activeDispatch.status === 'converted');
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className={statusColor}
+              onClick={(e) => e.stopPropagation()}
+              data-testid={`button-dispatch-status-${res.id}`}
+            >
+              {statusIcon}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <div className="px-3 py-2 text-xs text-muted-foreground border-b">
+              <span className="font-medium text-foreground">{activeDispatch.partnerTenantName}</span>
+              {' - '}{statusLabel}
+              <br />
+              {activeDispatch.date} {activeDispatch.time} - {activeDispatch.guests} kişi
+              {hasCancellationRejected && (
+                <>
+                  <br />
+                  <span className="text-red-500">İptal reddedildi: {activeDispatch.cancellationRejectionReason}</span>
+                </>
+              )}
+            </div>
+            {canCancel && (
               <DropdownMenuItem
                 onClick={() => cancelDispatchMutation.mutate(activeDispatch.reservationRequestId)}
                 disabled={cancelDispatchMutation.isPending}
                 data-testid={`action-cancel-dispatch-${res.id}`}
               >
                 <XCircle className="h-4 w-4 mr-2 text-red-500" />
-                Gönderimi İptal Et
+                {activeDispatch.status === 'pending' ? 'Gönderimi İptal Et' : 'İptal Talebi Gönder'}
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      }
-
-      return (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className={config.color}
-              onClick={(e) => e.stopPropagation()}
-              data-testid={`button-dispatch-status-${res.id}`}
-            >
-              {config.icon}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
-            <span className="font-medium">{activeDispatch.partnerTenantName}</span>
-            {' - '}{config.label}
-            <br />
-            {activeDispatch.date} {activeDispatch.time} - {activeDispatch.guests} kişi
-          </TooltipContent>
-        </Tooltip>
+            )}
+            {hasCancellationPending && (
+              <div className="px-3 py-2 text-xs text-orange-500">
+                Partner onayı bekleniyor...
+              </div>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       );
     }
 

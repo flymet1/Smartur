@@ -95,6 +95,11 @@ interface ReservationRequest {
   createdAt: string | null;
   requesterName?: string;
   requesterType?: 'viewer' | 'partner' | 'unknown';
+  cancellationStatus?: string | null;
+  cancellationRequestedAt?: string | null;
+  cancellationRequestedByTenantId?: number | null;
+  cancellationRejectionReason?: string | null;
+  senderTenantId?: number | null;
 }
 
 interface OutgoingRequest extends ReservationRequest {
@@ -235,6 +240,7 @@ export default function PartnerAvailability() {
   const pendingPartnerRequests = partnerRequests.filter(r => r.status === 'pending');
   const convertedPartnerRequests = partnerRequests.filter(r => r.status === 'converted');
   const cancelledPartnerRequests = partnerRequests.filter(r => r.status === 'cancelled' || r.status === 'rejected' || r.status === 'deleted');
+  const cancellationPendingRequests = partnerRequests.filter(r => r.cancellationStatus === 'pending' && (r.status === 'approved' || r.status === 'converted'));
   
   // Filter partner data based on selected partner
   const filteredPartnerData = (partnerData || []).filter(partner => 
@@ -283,6 +289,34 @@ export default function PartnerAvailability() {
     setNotifyingSenderId(request.id);
     notifyPartnerMutation.mutate({ phone: request.customerPhone, message });
   };
+
+  const approveCancellationMutation = useMutation({
+    mutationFn: async (requestId: number) => {
+      return apiRequest('POST', `/api/partner-dispatch/${requestId}/approve-cancellation`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservation-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-dispatch-statuses'] });
+      toast({ title: "İptal talebi onaylandı" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "İptal talebi onaylanamadı", variant: "destructive" });
+    },
+  });
+
+  const rejectCancellationMutation = useMutation({
+    mutationFn: async ({ requestId, reason }: { requestId: number; reason: string }) => {
+      return apiRequest('POST', `/api/partner-dispatch/${requestId}/reject-cancellation`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/reservation-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-dispatch-statuses'] });
+      toast({ title: "İptal talebi reddedildi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "İptal talebi reddedilemedi", variant: "destructive" });
+    },
+  });
   
   const createRequestMutation = useMutation({
     mutationFn: async (data: { 
@@ -1163,6 +1197,64 @@ export default function PartnerAvailability() {
           </Card>
         )}
 
+
+        {/* İptal Talepleri - Partner acentadan gelen iptal onay bekleyen talepler */}
+        {cancellationPendingRequests.length > 0 && (
+          <Card className="mt-6 border-2 border-orange-200 dark:border-orange-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-orange-500" />
+                İptal Talepleri ({cancellationPendingRequests.length})
+              </CardTitle>
+              <CardDescription>Partner acentanın iptal etmek istediği gönderimler - onayınız bekleniyor</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {cancellationPendingRequests.map(request => (
+                <div key={request.id} className="border rounded-lg p-4 bg-orange-50/50 dark:bg-orange-950/20">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{request.customerName}</p>
+                        <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border-orange-300">
+                          İptal Talebi: {request.requesterName || getPartnerNameFromNotes(request.notes)}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{request.customerPhone}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <Badge variant="outline">{getActivityName(request.activityId)}</Badge>
+                        <span>{format(new Date(request.date), "d MMM yyyy", { locale: tr })}</span>
+                        <span>{request.time}</span>
+                        <span>{request.guests} kişi</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => rejectCancellationMutation.mutate({ requestId: request.id, reason: 'Reddedildi' })}
+                        disabled={rejectCancellationMutation.isPending}
+                        data-testid={`button-reject-cancellation-${request.id}`}
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Reddet
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={() => approveCancellationMutation.mutate(request.id)}
+                        disabled={approveCancellationMutation.isPending}
+                        data-testid={`button-approve-cancellation-${request.id}`}
+                      >
+                        <Check className="w-4 h-4 mr-1" />
+                        İptali Onayla
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Onaylanan (Dönüştürülen) Gelen Talepler */}
         {convertedPartnerRequests.length > 0 && (

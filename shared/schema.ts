@@ -1279,6 +1279,10 @@ export const reservationRequests = pgTable("reservation_requests", {
   amountCollectedBySender: integer("amount_collected_by_sender").default(0), // Amount collected by sending agency
   paymentCurrency: text("payment_currency").default("TRY"), // Currency for payment
   paymentNotes: text("payment_notes"), // Notes about payment arrangement
+  cancellationRequestedAt: timestamp("cancellation_requested_at"),
+  cancellationRequestedByTenantId: integer("cancellation_requested_by_tenant_id"),
+  cancellationStatus: text("cancellation_status"), // null, pending, approved, rejected
+  cancellationRejectionReason: text("cancellation_rejection_reason"),
 });
 
 // === APP USER SCHEMAS & TYPES ===

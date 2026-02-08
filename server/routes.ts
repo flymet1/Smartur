@@ -7062,6 +7062,9 @@ export async function registerRoutes(
             guests: d.guests,
             processNotes: d.processNotes,
             createdAt: d.createdAt,
+            cancellationStatus: d.cancellationStatus,
+            cancellationRequestedAt: d.cancellationRequestedAt,
+            cancellationRejectionReason: d.cancellationRejectionReason,
           });
         }
       }
@@ -7091,21 +7094,113 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Bu gonderimi iptal etme yetkiniz yok" });
       }
 
-      if (request.status !== 'pending' && request.status !== 'approved') {
-        return res.status(400).json({ error: "Sadece beklemede veya onaylanmis gonderimler iptal edilebilir" });
+      if (request.status === 'pending') {
+        await storage.updateReservationRequest(requestId, {
+          status: 'cancelled',
+          processedBy: userId,
+          processedAt: new Date(),
+          processNotes: 'Gonderici tarafindan iptal edildi'
+        });
+        return res.json({ success: true, message: "Gonderim iptal edildi" });
+      }
+
+      if (request.status === 'approved' || request.status === 'converted') {
+        if (request.cancellationStatus === 'pending') {
+          return res.status(400).json({ error: "Bu gonderim icin zaten bir iptal talebi bekliyor" });
+        }
+        await storage.updateReservationRequest(requestId, {
+          cancellationStatus: 'pending',
+          cancellationRequestedAt: new Date(),
+          cancellationRequestedByTenantId: tenantId,
+          cancellationRejectionReason: null
+        });
+        return res.json({ success: true, message: "Iptal talebi olusturuldu, partner onayı bekleniyor" });
+      }
+
+      return res.status(400).json({ error: "Bu durumdaki gonderim iptal edilemez" });
+    } catch (error) {
+      console.error("Cancel partner dispatch error:", error);
+      res.status(500).json({ error: "Gonderim iptal edilemedi" });
+    }
+  });
+
+  app.post("/api/partner-dispatch/:requestId/approve-cancellation", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+
+      const requestId = parseInt(req.params.requestId);
+      const request = await storage.getReservationRequest(requestId);
+      if (!request) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+
+      if (request.tenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu talebi onaylama yetkiniz yok" });
+      }
+
+      if (request.cancellationRequestedByTenantId === tenantId) {
+        return res.status(400).json({ error: "Kendi iptal talebinizi onaylayamazsiniz" });
+      }
+
+      if (request.cancellationStatus !== 'pending') {
+        return res.status(400).json({ error: "Bekleyen bir iptal talebi yok" });
       }
 
       await storage.updateReservationRequest(requestId, {
         status: 'cancelled',
+        cancellationStatus: 'approved',
         processedBy: userId,
         processedAt: new Date(),
-        processNotes: 'Gonderici tarafindan iptal edildi'
+        processNotes: 'Partner tarafindan iptal onaylandi'
       });
 
-      res.json({ success: true, message: "Gonderim iptal edildi" });
+      res.json({ success: true, message: "Iptal talebi onaylandi" });
     } catch (error) {
-      console.error("Cancel partner dispatch error:", error);
-      res.status(500).json({ error: "Gonderim iptal edilemedi" });
+      console.error("Approve cancellation error:", error);
+      res.status(500).json({ error: "Iptal talebi onaylanamadi" });
+    }
+  });
+
+  app.post("/api/partner-dispatch/:requestId/reject-cancellation", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+
+      const requestId = parseInt(req.params.requestId);
+      const { reason } = req.body;
+      const request = await storage.getReservationRequest(requestId);
+      if (!request) {
+        return res.status(404).json({ error: "Talep bulunamadi" });
+      }
+
+      if (request.tenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu talebi reddetme yetkiniz yok" });
+      }
+
+      if (request.cancellationRequestedByTenantId === tenantId) {
+        return res.status(400).json({ error: "Kendi iptal talebinizi reddedemezsiniz" });
+      }
+
+      if (request.cancellationStatus !== 'pending') {
+        return res.status(400).json({ error: "Bekleyen bir iptal talebi yok" });
+      }
+
+      await storage.updateReservationRequest(requestId, {
+        cancellationStatus: 'rejected',
+        cancellationRejectionReason: reason || 'Sebep belirtilmedi'
+      });
+
+      res.json({ success: true, message: "Iptal talebi reddedildi" });
+    } catch (error) {
+      console.error("Reject cancellation error:", error);
+      res.status(500).json({ error: "Iptal talebi reddedilemedi" });
     }
   });
 
