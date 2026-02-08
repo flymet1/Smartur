@@ -1,6 +1,7 @@
 import { Switch, Route, Router, Redirect } from "wouter";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import PublicHome from "./pages/PublicHome";
 import PublicActivities from "./pages/PublicActivities";
@@ -249,7 +250,9 @@ export function PublicWebsiteApp() {
   return (
     <HelmetProvider>
       <QueryClientProvider client={publicQueryClient}>
-        <PublicWebsiteRouter />
+        <TooltipProvider>
+          <PublicWebsiteRouter />
+        </TooltipProvider>
       </QueryClientProvider>
     </HelmetProvider>
   );
