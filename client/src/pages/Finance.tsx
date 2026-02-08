@@ -461,10 +461,12 @@ export default function Finance() {
   
   // Basit mod için geri uyumluluk
   const [simpleGuestCount, setSimpleGuestCount] = useState(1);
-  const [simpleUnitPayout, setSimpleUnitPayout] = useState(0);
+  const [simpleUnitPayoutStr, setSimpleUnitPayoutStr] = useState("");
+  const simpleUnitPayout = simpleUnitPayoutStr === "" ? 0 : Number(simpleUnitPayoutStr) || 0;
   const [simpleCurrency, setSimpleCurrency] = useState<'TRY' | 'USD'>('TRY');
   const [dispatchPaymentType, setDispatchPaymentType] = useState<string>("receiver_full");
-  const [dispatchAmountCollected, setDispatchAmountCollected] = useState<number>(0);
+  const [dispatchAmountCollectedStr, setDispatchAmountCollectedStr] = useState("");
+  const dispatchAmountCollected = dispatchAmountCollectedStr === "" ? 0 : Number(dispatchAmountCollectedStr) || 0;
   const [dispatchPaymentNotes, setDispatchPaymentNotes] = useState("");
   const [rateForm, setRateForm] = useState({
     agencyId: 0,
@@ -771,7 +773,8 @@ export default function Finance() {
   const [financeEntryType, setFinanceEntryType] = useState<'income' | 'expense'>('income');
   const [financeEntryCategory, setFinanceEntryCategory] = useState('');
   const [financeEntryDescription, setFinanceEntryDescription] = useState('');
-  const [financeEntryAmount, setFinanceEntryAmount] = useState(0);
+  const [financeEntryAmountStr, setFinanceEntryAmountStr] = useState("");
+  const financeEntryAmount = financeEntryAmountStr === "" ? 0 : Number(financeEntryAmountStr) || 0;
   const [financeEntryDate, setFinanceEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [financeEntryActivityId, setFinanceEntryActivityId] = useState<number | null>(null);
   const [incomeExpenseFilterUser, setIncomeExpenseFilterUser] = useState<string>('all');
@@ -794,7 +797,7 @@ export default function Finance() {
       setFinanceEntryDialogOpen(false);
       setFinanceEntryCategory('');
       setFinanceEntryDescription('');
-      setFinanceEntryAmount(0);
+      setFinanceEntryAmountStr("");
       setFinanceEntryDate(new Date().toISOString().split('T')[0]);
       setFinanceEntryActivityId(null);
       toast({ title: 'Başarılı', description: 'Kayıt eklendi.' });
@@ -1146,10 +1149,10 @@ export default function Finance() {
       items: [{ ...defaultDispatchItem }]
     });
     setSimpleGuestCount(1);
-    setSimpleUnitPayout(0);
+    setSimpleUnitPayoutStr("");
     setSimpleCurrency('TRY');
     setDispatchPaymentType('receiver_full');
-    setDispatchAmountCollected(0);
+    setDispatchAmountCollectedStr("");
     setDispatchPaymentNotes('');
     setUseLineItems(false);
     setEditingDispatchId(null);
@@ -1225,10 +1228,10 @@ export default function Finance() {
       items: hasLineItems ? existingItems : [{ ...defaultDispatchItem }]
     });
     setSimpleGuestCount(dispatch.guestCount || 1);
-    setSimpleUnitPayout(dispatch.unitPayoutTl || 0);
+    setSimpleUnitPayoutStr(dispatch.unitPayoutTl ? String(dispatch.unitPayoutTl) : "");
     setSimpleCurrency(dispatch.currency === 'USD' ? 'USD' : 'TRY');
     setDispatchPaymentType(paymentType);
-    setDispatchAmountCollected(amountCollected);
+    setDispatchAmountCollectedStr(amountCollected ? String(amountCollected) : "");
     setDispatchPaymentNotes(paymentNotes);
     setUseLineItems(hasLineItems);
     setDispatchDialogOpen(true);
@@ -1869,7 +1872,7 @@ export default function Finance() {
                   items: [{ ...defaultDispatchItem }]
                 });
                 setSimpleGuestCount(1);
-                setSimpleUnitPayout(0);
+                setSimpleUnitPayoutStr("");
                 setSimpleCurrency('TRY');
                 setUseLineItems(false);
                 setCustomerSuggestions([]);
@@ -3759,9 +3762,9 @@ export default function Finance() {
                 <Label>Tutar (TL)</Label>
                 <Input
                   type="number"
-                  value={financeEntryAmount || ''}
-                  onChange={e => setFinanceEntryAmount(Number(e.target.value))}
-                  placeholder="0"
+                  value={financeEntryAmountStr}
+                  onChange={e => setFinanceEntryAmountStr(e.target.value)}
+                  placeholder="Tutar girin"
                   data-testid="input-finance-entry-amount"
                 />
               </div>
@@ -4000,10 +4003,10 @@ export default function Finance() {
                       );
                       if (matchingRate) {
                         const price = matchingRate.currency === 'USD' ? (matchingRate.unitPayoutUsd || 0) : matchingRate.unitPayoutTl;
-                        setSimpleUnitPayout(price);
+                        setSimpleUnitPayoutStr(price ? String(price) : "");
                         setSimpleCurrency(matchingRate.currency as 'TRY' | 'USD');
                       } else if (supplier) {
-                        setSimpleUnitPayout(supplier.defaultPayoutPerGuest || 0);
+                        setSimpleUnitPayoutStr(supplier.defaultPayoutPerGuest ? String(supplier.defaultPayoutPerGuest) : "");
                       }
                     }}
                   >
@@ -4036,7 +4039,7 @@ export default function Finance() {
                         );
                         if (matchingRate) {
                           const price = matchingRate.currency === 'USD' ? (matchingRate.unitPayoutUsd || 0) : matchingRate.unitPayoutTl;
-                          setSimpleUnitPayout(price);
+                          setSimpleUnitPayoutStr(price ? String(price) : "");
                           setSimpleCurrency(matchingRate.currency as 'TRY' | 'USD');
                         }
                       }
@@ -4180,8 +4183,9 @@ export default function Finance() {
                     <Label>Kişi Başı</Label>
                     <Input 
                       type="number"
-                      value={simpleUnitPayout}
-                      onChange={e => setSimpleUnitPayout(parseInt(e.target.value) || 0)}
+                      value={simpleUnitPayoutStr}
+                      onChange={e => setSimpleUnitPayoutStr(e.target.value)}
+                      placeholder="Tutar girin"
                       data-testid="input-dispatch-unit"
                     />
                   </div>
@@ -4376,10 +4380,15 @@ export default function Finance() {
                         type="number"
                         min={0}
                         max={partialTotal > 0 ? partialTotal : undefined}
-                        value={dispatchAmountCollected}
+                        value={dispatchAmountCollectedStr}
                         onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          setDispatchAmountCollected(partialTotal > 0 ? Math.min(val, partialTotal) : val);
+                          const val = e.target.value;
+                          const num = val === "" ? 0 : Number(val) || 0;
+                          if (partialTotal > 0 && num > partialTotal) {
+                            setDispatchAmountCollectedStr(String(partialTotal));
+                          } else {
+                            setDispatchAmountCollectedStr(val);
+                          }
                         }}
                         placeholder="Ornegin: 500"
                         data-testid="input-dispatch-amount-collected"
@@ -4526,7 +4535,7 @@ export default function Finance() {
               <div>
                 <Label>Aktivite (Opsiyonel - boş birakilirsa genel fiyat)</Label>
                 <Select 
-                  value={rateForm.activityId ? String(rateForm.activityId) : "0"} 
+                  value={rateForm.activityId ? String(rateForm.activityId) : ""} 
                   onValueChange={v => setRateForm(f => ({ ...f, activityId: parseInt(v) || 0 }))}
                 >
                   <SelectTrigger data-testid="select-rate-activity">
@@ -4580,15 +4589,16 @@ export default function Finance() {
                 <Input 
                   type="number"
                   min="0"
-                  value={rateForm.currency === 'TRY' ? rateForm.unitPayoutTl : rateForm.unitPayoutUsd}
+                  value={rateForm.currency === 'TRY' ? (rateForm.unitPayoutTl || '') : (rateForm.unitPayoutUsd || '')}
                   onChange={e => {
-                    const val = parseInt(e.target.value) || 0;
+                    const val = e.target.value === "" ? 0 : Number(e.target.value) || 0;
                     if (rateForm.currency === 'TRY') {
                       setRateForm(f => ({ ...f, unitPayoutTl: val }));
                     } else {
                       setRateForm(f => ({ ...f, unitPayoutUsd: val }));
                     }
                   }}
+                  placeholder="Tutar girin"
                   data-testid="input-rate-amount"
                 />
               </div>

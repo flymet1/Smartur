@@ -178,7 +178,8 @@ export default function PartnerAvailability() {
   const [guests, setGuests] = useState(1);
   const [notes, setNotes] = useState("");
   const [paymentCollectionType, setPaymentCollectionType] = useState<string>("receiver_full");
-  const [amountCollectedBySender, setAmountCollectedBySender] = useState<number>(0);
+  const [amountCollectedBySenderStr, setAmountCollectedBySenderStr] = useState("");
+  const amountCollectedBySender = amountCollectedBySenderStr === "" ? 0 : Number(amountCollectedBySenderStr) || 0;
   const [paymentNotes, setPaymentNotes] = useState("");
   
   const [reservationSearch, setReservationSearch] = useState("");
@@ -449,7 +450,7 @@ export default function PartnerAvailability() {
     setNotes("");
     setSelectedSlot(null);
     setPaymentCollectionType("receiver_full");
-    setAmountCollectedBySender(0);
+    setAmountCollectedBySenderStr("");
     setPaymentNotes("");
     setReservationSearch("");
     setSelectedReservation(null);
@@ -1804,8 +1805,8 @@ export default function PartnerAvailability() {
                       id="amountCollected"
                       type="number"
                       min={0}
-                      value={amountCollectedBySender}
-                      onChange={(e) => setAmountCollectedBySender(parseInt(e.target.value) || 0)}
+                      value={amountCollectedBySenderStr}
+                      onChange={(e) => setAmountCollectedBySenderStr(e.target.value)}
                       placeholder="Ornegin: 500"
                       data-testid="input-amount-collected"
                     />

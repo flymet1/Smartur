@@ -664,7 +664,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     activity ? ((activity as any).depositType || "percentage") : "percentage"
   );
   const [depositAmount, setDepositAmount] = useState(
-    activity ? String((activity as any).depositAmount || 0) : "0"
+    activity ? ((activity as any).depositAmount ? String((activity as any).depositAmount) : "") : ""
   );
   const [fullPaymentRequired, setFullPaymentRequired] = useState(
     activity ? (activity as any).fullPaymentRequired === true : false
@@ -725,7 +725,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setGalleryImages([]);
     setRequiresDeposit(false);
     setDepositType("percentage");
-    setDepositAmount("0");
+    setDepositAmount("");
     setFullPaymentRequired(false);
     setPaymentNote("");
   };
@@ -1705,7 +1705,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       onCheckedChange={(checked) => {
                         setRequiresDeposit(checked);
                         if (!checked) {
-                          setDepositAmount("0");
+                          setDepositAmount("");
                         }
                       }}
                       data-testid="switch-requires-deposit"
@@ -1777,7 +1777,7 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                         setFullPaymentRequired(checked);
                         if (checked) {
                           setRequiresDeposit(false);
-                          setDepositAmount("0");
+                          setDepositAmount("");
                         }
                       }}
                       data-testid="switch-full-payment-required"

@@ -6329,8 +6329,9 @@ export default function SuperAdmin() {
                 <Input
                   id="yearlyPriceTl"
                   type="number"
-                  value={planForm.yearlyPriceTl || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, yearlyPriceTl: Number(e.target.value) })}
+                  value={planForm.yearlyPriceTl || ''}
+                  onChange={(e) => setPlanForm({ ...planForm, yearlyPriceTl: Number(e.target.value) || 0 })}
+                  placeholder="Tutar girin"
                   data-testid="input-plan-yearly-price-tl"
                 />
                 <p className="text-xs text-muted-foreground">= {formatPrice(planForm.yearlyPriceTl)} TL/yıl</p>
@@ -6340,8 +6341,9 @@ export default function SuperAdmin() {
                 <Input
                   id="yearlyPriceUsd"
                   type="number"
-                  value={planForm.yearlyPriceUsd || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, yearlyPriceUsd: Number(e.target.value) })}
+                  value={planForm.yearlyPriceUsd || ''}
+                  onChange={(e) => setPlanForm({ ...planForm, yearlyPriceUsd: Number(e.target.value) || 0 })}
+                  placeholder="Tutar girin"
                   data-testid="input-plan-yearly-price-usd"
                 />
                 <p className="text-xs text-muted-foreground">= ${formatPrice(planForm.yearlyPriceUsd)}/yıl</p>
@@ -6354,8 +6356,9 @@ export default function SuperAdmin() {
                 <Input
                   id="maxActivities"
                   type="number"
-                  value={planForm.maxActivities || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, maxActivities: Number(e.target.value) })}
+                  value={planForm.maxActivities || ''}
+                  onChange={(e) => setPlanForm({ ...planForm, maxActivities: Number(e.target.value) || 0 })}
+                  placeholder="Sayı girin"
                   data-testid="input-plan-max-activities"
                 />
                 <p className="text-xs text-muted-foreground">Oluşturulabilecek aktivite sayısı</p>
@@ -6365,8 +6368,9 @@ export default function SuperAdmin() {
                 <Input
                   id="maxUsers"
                   type="number"
-                  value={planForm.maxUsers || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, maxUsers: Number(e.target.value) })}
+                  value={planForm.maxUsers || ''}
+                  onChange={(e) => setPlanForm({ ...planForm, maxUsers: Number(e.target.value) || 0 })}
+                  placeholder="Sayı girin"
                   data-testid="input-plan-max-users"
                 />
                 <p className="text-xs text-muted-foreground">Eklenebilecek kullanıcı sayısı</p>
@@ -6379,8 +6383,9 @@ export default function SuperAdmin() {
                 <Input
                   id="maxDailyMessages"
                   type="number"
-                  value={planForm.maxDailyMessages || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, maxDailyMessages: Number(e.target.value) })}
+                  value={planForm.maxDailyMessages || ''}
+                  onChange={(e) => setPlanForm({ ...planForm, maxDailyMessages: Number(e.target.value) || 0 })}
+                  placeholder="Sayı girin"
                   data-testid="input-plan-max-daily-messages"
                 />
                 <p className="text-xs text-muted-foreground">Günlük WhatsApp mesaj sayısı</p>
@@ -6390,8 +6395,9 @@ export default function SuperAdmin() {
                 <Input
                   id="maxDailyReservations"
                   type="number"
-                  value={planForm.maxDailyReservations || 0}
-                  onChange={(e) => setPlanForm({ ...planForm, maxDailyReservations: Number(e.target.value) })}
+                  value={planForm.maxDailyReservations || ''}
+                  onChange={(e) => setPlanForm({ ...planForm, maxDailyReservations: Number(e.target.value) || 0 })}
+                  placeholder="Sayı girin"
                   data-testid="input-plan-max-daily-reservations"
                 />
                 <p className="text-xs text-muted-foreground">Günlük oluşturulabilecek rezervasyon</p>
