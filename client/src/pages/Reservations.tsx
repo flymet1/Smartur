@@ -4917,22 +4917,16 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Otel Adı (İsteğe bağlı)</Label>
-              <Input 
-                value={hotelName}
-                onChange={(e) => setHotelName(e.target.value)}
-                placeholder="örn: Liberty Hotels Lykia" 
-                data-testid="input-hotel-name" 
-              />
-            </div>
             <div className="flex items-center space-x-3 mt-7">
               <Checkbox
                 id="hasTransfer"
                 checked={hasTransfer}
                 onCheckedChange={(checked) => {
                   setHasTransfer(checked === true);
-                  if (!checked) setTransferZone("");
+                  if (!checked) {
+                    setTransferZone("");
+                    setHotelName("");
+                  }
                 }}
                 data-testid="checkbox-has-transfer"
               />
@@ -4940,6 +4934,16 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
                 <Bus className="h-4 w-4 text-blue-600" />
                 Otel Transferi İstedi
               </Label>
+            </div>
+            <div className="space-y-2">
+              <Label className={!hasTransfer ? "text-muted-foreground" : ""}>Otel Adı</Label>
+              <Input 
+                value={hotelName}
+                onChange={(e) => setHotelName(e.target.value)}
+                placeholder="örn: Liberty Hotels Lykia" 
+                data-testid="input-hotel-name"
+                disabled={!hasTransfer}
+              />
             </div>
           </div>
 
