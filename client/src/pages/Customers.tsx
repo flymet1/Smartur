@@ -22,12 +22,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -40,7 +34,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { Search, Users, Phone, Mail, Ticket, TrendingUp, Calendar, ArrowUpDown, Filter, X } from "lucide-react";
+import { Search, Users, Phone, Mail, Ticket, TrendingUp, Calendar, ArrowUpDown, Filter, X, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -70,7 +64,7 @@ export default function Customers() {
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("lastReservationDate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [expandedPhone, setExpandedPhone] = useState<string | null>(null);
   const [activityFilter, setActivityFilter] = useState<string>("all");
   const [minReservations, setMinReservations] = useState<string>("");
   const [minSpent, setMinSpent] = useState<string>("");
@@ -377,14 +371,17 @@ export default function Customers() {
                     <TableHead><SortButton field="lastReservationDate">Aktivite Tarihi</SortButton></TableHead>
                     <TableHead>Oluşturma Tarihi</TableHead>
                     <TableHead>Aktiviteler</TableHead>
+                    <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((c) => (
+                  {filtered.map((c) => {
+                    const isExpanded = expandedPhone === c.customerPhone;
+                    return (
+                    <>
                     <TableRow
                       key={c.customerPhone}
-                      className="cursor-pointer hover-elevate"
-                      onClick={() => setSelectedCustomer(c)}
+                      className="hover-elevate"
                       data-testid={`row-customer-${c.customerPhone}`}
                     >
                       <TableCell className="font-medium">{c.customerName}</TableCell>
@@ -423,8 +420,103 @@ export default function Customers() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setExpandedPhone(isExpanded ? null : c.customerPhone)}
+                          data-testid={`button-expand-${c.customerPhone}`}
+                        >
+                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  ))}
+                    {isExpanded && (
+                      <TableRow key={`${c.customerPhone}-detail`}>
+                        <TableCell colSpan={10} className="bg-muted/30 p-0">
+                          <div className="p-4 space-y-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Toplam Rezervasyon</p>
+                                <p className="text-lg font-bold" data-testid="text-detail-total-rez">{c.totalReservations}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Toplam Kisi</p>
+                                <p className="text-lg font-bold">{c.totalGuests}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Onaylanan</p>
+                                <p className="text-lg font-bold text-green-600">{c.confirmedReservations}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Iptal</p>
+                                <p className="text-lg font-bold text-red-600">{c.cancelledReservations}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Bekleyen</p>
+                                <p className="text-lg font-bold text-yellow-600">{c.pendingReservations}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Toplam (TL)</p>
+                                <p className="text-lg font-bold">{c.totalSpentTl.toLocaleString("tr-TR")} TL</p>
+                              </div>
+                            </div>
+
+                            {c.totalSpentUsd > 0 && (
+                              <div>
+                                <p className="text-xs text-muted-foreground">Toplam (USD)</p>
+                                <p className="text-lg font-bold">${c.totalSpentUsd.toLocaleString("en-US")}</p>
+                              </div>
+                            )}
+
+                            <Separator />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Aktivite Tarihi</p>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span>Ilk: {formatDate(c.firstReservationDate)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span>Son: {formatDate(c.lastReservationDate)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground mb-1">Oluşturma Tarihi</p>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span>Ilk: {formatDate(c.firstCreatedDate)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span>Son: {formatDate(c.lastCreatedDate)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <Separator />
+
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-2">Katildigi Aktiviteler</p>
+                              <div className="flex flex-wrap gap-1">
+                                {c.activities.map((a) => (
+                                  <Badge key={a} variant="outline">{a}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -432,107 +524,6 @@ export default function Customers() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle data-testid="text-customer-detail-name">{selectedCustomer?.customerName}</DialogTitle>
-          </DialogHeader>
-          {selectedCustomer && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedCustomer.customerPhone}</span>
-                </div>
-                {selectedCustomer.customerEmail && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedCustomer.customerEmail}</span>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Toplam Rezervasyon</p>
-                  <p className="text-lg font-bold" data-testid="text-detail-total-rez">{selectedCustomer.totalReservations}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Toplam Kisi</p>
-                  <p className="text-lg font-bold">{selectedCustomer.totalGuests}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Onaylanan</p>
-                  <p className="text-lg font-bold text-green-600">{selectedCustomer.confirmedReservations}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Iptal</p>
-                  <p className="text-lg font-bold text-red-600">{selectedCustomer.cancelledReservations}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Bekleyen</p>
-                  <p className="text-lg font-bold text-yellow-600">{selectedCustomer.pendingReservations}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Toplam (TL)</p>
-                  <p className="text-lg font-bold">{selectedCustomer.totalSpentTl.toLocaleString("tr-TR")} TL</p>
-                </div>
-              </div>
-
-              {selectedCustomer.totalSpentUsd > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Toplam (USD)</p>
-                  <p className="text-lg font-bold">${selectedCustomer.totalSpentUsd.toLocaleString("en-US")}</p>
-                </div>
-              )}
-
-              <Separator />
-
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Aktivite Tarihi</p>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Ilk: {formatDate(selectedCustomer.firstReservationDate)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Son: {formatDate(selectedCustomer.lastReservationDate)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Oluşturma Tarihi</p>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Ilk: {formatDate(selectedCustomer.firstCreatedDate)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Son: {formatDate(selectedCustomer.lastCreatedDate)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Katildigi Aktiviteler</p>
-                <div className="flex flex-wrap gap-1">
-                  {selectedCustomer.activities.map((a) => (
-                    <Badge key={a} variant="outline">{a}</Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
       </main>
     </div>
   );
