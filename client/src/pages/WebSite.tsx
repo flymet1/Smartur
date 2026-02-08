@@ -42,7 +42,12 @@ import {
   Settings,
   Lock,
   Crown,
-  Navigation
+  Navigation,
+  Images,
+  Copy,
+  Download,
+  Calendar as CalendarIcon,
+  HardDrive
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -574,7 +579,7 @@ export default function WebSite() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="general" className="gap-1" data-testid="tab-general">
                 <Home className="h-4 w-4" />
                 <span className="hidden sm:inline">Genel</span>
@@ -590,6 +595,10 @@ export default function WebSite() {
               <TabsTrigger value="footer" className="gap-1" data-testid="tab-footer">
                 <LayoutPanelTop className="h-4 w-4" />
                 <span className="hidden sm:inline">Footer</span>
+              </TabsTrigger>
+              <TabsTrigger value="gallery" className="gap-1" data-testid="tab-gallery">
+                <Images className="h-4 w-4" />
+                <span className="hidden sm:inline">Galeri</span>
               </TabsTrigger>
             </TabsList>
 
@@ -2254,9 +2263,183 @@ export default function WebSite() {
               </Card>
             </TabsContent>
 
+            <TabsContent value="gallery" className="mt-6 space-y-6">
+              <ImageGalleryTab />
+            </TabsContent>
+
           </Tabs>
         </div>
       </main>
     </div>
+  );
+}
+
+interface UploadedImageItem {
+  id: string;
+  mimetype: string;
+  sizeKb: number | null;
+  originalName: string | null;
+  createdAt: string | null;
+}
+
+function ImageGalleryTab() {
+  const { toast } = useToast();
+
+  const { data: images, isLoading } = useQuery<UploadedImageItem[]>({
+    queryKey: ["/api/uploaded-images"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/uploaded-images/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/uploaded-images"] });
+      toast({ title: "Silindi", description: "Görsel başarıyla silindi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Görsel silinemedi.", variant: "destructive" });
+    },
+  });
+
+  const copyUrl = (id: string) => {
+    const url = `${window.location.origin}/api/images/${id}.webp`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Kopyalandı", description: "Görsel URL'si panoya kopyalandı." });
+  };
+
+  const totalSizeKb = images?.reduce((sum, img) => sum + (img.sizeKb || 0), 0) || 0;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-square rounded-md" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex flex-row items-center justify-between gap-2 flex-wrap">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Images className="h-5 w-5" />
+                Görsel Galerisi
+              </CardTitle>
+              <CardDescription>
+                Sisteme yüklediğiniz tüm görselleri buradan yönetebilirsiniz
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="gap-1">
+                <Image className="h-3 w-3" />
+                {images?.length || 0} görsel
+              </Badge>
+              <Badge variant="secondary" className="gap-1">
+                <HardDrive className="h-3 w-3" />
+                {totalSizeKb < 1024
+                  ? `${totalSizeKb} KB`
+                  : `${(totalSizeKb / 1024).toFixed(1)} MB`}
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!images || images.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Images className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">Henüz görsel yüklenmemiş</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Aktivite, ayarlar veya web sitesi bölümlerinden görsel yüklediğinizde burada görünecektir.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {images.map((img) => (
+                <div
+                  key={img.id}
+                  className="group relative rounded-md border overflow-visible"
+                  data-testid={`gallery-image-${img.id}`}
+                >
+                  <div className="aspect-square overflow-hidden rounded-t-md bg-muted">
+                    <img
+                      src={`/api/images/${img.id}.webp`}
+                      alt={img.originalName || "Görsel"}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-2 space-y-1">
+                    <p className="text-xs font-medium truncate" title={img.originalName || undefined}>
+                      {img.originalName || "Adsız"}
+                    </p>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        {img.sizeKb ? `${img.sizeKb} KB` : "—"}
+                      </span>
+                      {img.createdAt && (
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(img.createdAt).toLocaleDateString("tr-TR")}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 pt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 h-7 text-xs"
+                        onClick={() => copyUrl(img.id)}
+                        data-testid={`button-copy-url-${img.id}`}
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        URL
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-7 w-7"
+                        asChild
+                      >
+                        <a
+                          href={`/api/images/${img.id}.webp`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-testid={`button-view-${img.id}`}
+                        >
+                          <Eye className="h-3 w-3" />
+                        </a>
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        className="h-7 w-7"
+                        onClick={() => {
+                          if (confirm("Bu görseli silmek istediğinize emin misiniz?")) {
+                            deleteMutation.mutate(img.id);
+                          }
+                        }}
+                        disabled={deleteMutation.isPending}
+                        data-testid={`button-delete-${img.id}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 }

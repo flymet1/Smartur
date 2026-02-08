@@ -3,7 +3,7 @@ import type { Server } from "http";
 import express from "express";
 import { storage } from "./storage";
 import { db } from "./db";
-import { sql, eq, and } from "drizzle-orm";
+import { sql, eq, and, desc } from "drizzle-orm";
 import { supplierDispatches, reservations, userRoles, roles, tenants, homepageSections, smarturSettings, uploadedImages } from "@shared/schema";
 import { api } from "@shared/routes";
 import { z } from "zod";
@@ -4203,6 +4203,56 @@ export async function registerRoutes(
     }
   });
   
+  app.get('/api/uploaded-images', async (req, res) => {
+    if (!req.session?.userId || !req.session?.tenantId) {
+      return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+    }
+    try {
+      const images = await db
+        .select({
+          id: uploadedImages.id,
+          mimetype: uploadedImages.mimetype,
+          sizeKb: uploadedImages.sizeKb,
+          originalName: uploadedImages.originalName,
+          createdAt: uploadedImages.createdAt,
+        })
+        .from(uploadedImages)
+        .where(eq(uploadedImages.tenantId, req.session.tenantId))
+        .orderBy(desc(uploadedImages.createdAt));
+      res.json(images);
+    } catch (error: any) {
+      console.error('[Uploaded Images List Error]', error.message);
+      res.status(500).json({ error: "Görseller yüklenirken hata oluştu" });
+    }
+  });
+
+  app.delete('/api/uploaded-images/:id', async (req, res) => {
+    if (!req.session?.userId || !req.session?.tenantId) {
+      return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+    }
+    try {
+      const imageId = req.params.id;
+      const [image] = await db
+        .select({ id: uploadedImages.id, tenantId: uploadedImages.tenantId })
+        .from(uploadedImages)
+        .where(eq(uploadedImages.id, imageId))
+        .limit(1);
+
+      if (!image) {
+        return res.status(404).json({ error: "Görsel bulunamadı" });
+      }
+      if (image.tenantId !== req.session.tenantId) {
+        return res.status(403).json({ error: "Bu görseli silme yetkiniz yok" });
+      }
+
+      await db.delete(uploadedImages).where(eq(uploadedImages.id, imageId));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Image Delete Error]', error.message);
+      res.status(500).json({ error: "Görsel silinirken hata oluştu" });
+    }
+  });
+
   app.use((err: any, req: any, res: any, next: any) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
