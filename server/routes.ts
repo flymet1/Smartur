@@ -5494,38 +5494,88 @@ export async function registerRoutes(
       // Get activity details
       let activityName = "Bilinmeyen Aktivite";
       let defaultTimes: string[] = [];
+      let confirmationMessage = '';
+      let freeCancellationHours = 24;
+      let meetingPoint = '';
+      let arrivalMinutesBefore = 0;
+      
       if (reservation.activityId) {
         const activity = await storage.getActivity(reservation.activityId);
         if (activity) {
           activityName = activity.name;
-          // Parse defaultTimes from JSON string if needed
           try {
             const times = activity.defaultTimes;
             defaultTimes = typeof times === 'string' ? JSON.parse(times) : (times || []);
           } catch {
             defaultTimes = [];
           }
+          if (activity.freeCancellationHours !== null && activity.freeCancellationHours !== undefined) {
+            freeCancellationHours = activity.freeCancellationHours;
+          }
+          meetingPoint = activity.meetingPoint || '';
+          arrivalMinutesBefore = activity.arrivalMinutesBefore || 0;
+          
+          if (activity.confirmationMessage) {
+            const dateFormatted = reservation.date 
+              ? new Date(reservation.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+              : '';
+            let whatToBring: string[] = [];
+            try {
+              const wb = activity.whatToBring;
+              whatToBring = typeof wb === 'string' ? JSON.parse(wb) : (wb || []);
+            } catch { whatToBring = []; }
+            
+            confirmationMessage = activity.confirmationMessage
+              .replace(/\{isim\}/gi, reservation.customerName || '')
+              .replace(/\{aktivite\}/gi, activityName)
+              .replace(/\{tarih\}/gi, dateFormatted)
+              .replace(/\{saat\}/gi, reservation.time || '')
+              .replace(/\{kisi\}/gi, String(reservation.quantity || ''))
+              .replace(/\{kisi_sayisi\}/gi, String(reservation.quantity || ''))
+              .replace(/\{yetiskin\}/gi, String(reservation.quantity || ''))
+              .replace(/\{cocuk\}/gi, '0')
+              .replace(/\{toplam\}/gi, `${(reservation.priceTl || 0).toLocaleString('tr-TR')} TL`)
+              .replace(/\{odenen\}/gi, `${(reservation.advancePaymentTl || 0).toLocaleString('tr-TR')} TL`)
+              .replace(/\{kalan\}/gi, `${((reservation.priceTl || 0) - (reservation.advancePaymentTl || 0)).toLocaleString('tr-TR')} TL`)
+              .replace(/\{otel\}/gi, reservation.hotelName || '-')
+              .replace(/\{bolge\}/gi, reservation.transferZone || '-')
+              .replace(/\{transfer_saat\}/gi, reservation.time || '-')
+              .replace(/\{bulusma_noktasi\}/gi, meetingPoint || '-')
+              .replace(/\{varis_suresi\}/gi, String(arrivalMinutesBefore || 30))
+              .replace(/\{getirin\}/gi, whatToBring.length > 0 ? whatToBring.join(', ') : '-')
+              .replace(/\{saglik_notlari\}/gi, activity.healthNotes || '-')
+              .replace(/\{takip_linki\}/gi, '');
+          }
         }
       } else if (reservation.packageTourId) {
         const packageTour = await storage.getPackageTour(reservation.packageTourId);
         if (packageTour) {
           activityName = packageTour.name + " (Paket Tur)";
-          // Package tours don't have defaultTimes, leave as empty array
           defaultTimes = [];
-        }
-      }
-      
-      // Get freeCancellationHours from activity
-      let freeCancellationHours = 24;
-      if (reservation.activityId) {
-        const activityForCancel = await storage.getActivity(reservation.activityId);
-        if (activityForCancel && activityForCancel.freeCancellationHours !== null && activityForCancel.freeCancellationHours !== undefined) {
-          freeCancellationHours = activityForCancel.freeCancellationHours;
+          if (packageTour.confirmationMessage) {
+            const dateFormatted = reservation.date 
+              ? new Date(reservation.date + 'T00:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+              : '';
+            confirmationMessage = packageTour.confirmationMessage
+              .replace(/\{isim\}/gi, reservation.customerName || '')
+              .replace(/\{tarih\}/gi, dateFormatted);
+          }
         }
       }
 
-      // Return only necessary information (no sensitive data)
-      // Note: priceTl and priceUsd are stored as integers in the database
+      // Get tenant info for WhatsApp support and company name
+      let whatsappNumber = '';
+      let companyName = '';
+      let cancellationPolicy = '';
+      if (reservation.tenantId) {
+        const tenant = await storage.getTenant(reservation.tenantId);
+        if (tenant) {
+          whatsappNumber = tenant.websiteWhatsappNumber || '';
+          companyName = tenant.name || '';
+          cancellationPolicy = tenant.websiteCancellationPageContent || '';
+        }
+      }
+
       res.json({
         customerName: reservation.customerName,
         activityName,
@@ -5538,7 +5588,13 @@ export async function registerRoutes(
         currency: reservation.currency || 'TRY',
         orderNumber: reservation.orderNumber,
         defaultTimes,
-        freeCancellationHours
+        freeCancellationHours,
+        confirmationMessage: confirmationMessage || null,
+        whatsappNumber: whatsappNumber || null,
+        companyName: companyName || null,
+        cancellationPolicy: cancellationPolicy || null,
+        meetingPoint: meetingPoint || null,
+        arrivalMinutesBefore: arrivalMinutesBefore || null,
       });
     } catch (error) {
       console.error("Track reservation error:", error);

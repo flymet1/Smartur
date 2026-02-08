@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send, CalendarClock } from "lucide-react";
+import { CalendarDays, Clock, Users, MapPin, CheckCircle, AlertCircle, XCircle, Loader2, Edit3, Ban, MessageSquare, Send, CalendarClock, ShieldCheck, Phone } from "lucide-react";
 import { useState, useMemo } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,12 @@ interface TrackingData {
   orderNumber: string | null;
   defaultTimes: string[];
   freeCancellationHours: number;
+  confirmationMessage: string | null;
+  whatsappNumber: string | null;
+  companyName: string | null;
+  cancellationPolicy: string | null;
+  meetingPoint: string | null;
+  arrivalMinutesBefore: number | null;
 }
 
 type RequestType = 'time_change' | 'date_change' | 'cancellation' | 'other' | null;
@@ -283,7 +289,15 @@ export default function CustomerTracking() {
               </div>
             </div>
 
-            {reservation.status === 'confirmed' && (
+            {reservation.status === 'confirmed' && reservation.confirmationMessage && (
+              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4" data-testid="text-confirmation-message">
+                <p className="text-green-800 dark:text-green-300 text-sm whitespace-pre-line">
+                  {reservation.confirmationMessage}
+                </p>
+              </div>
+            )}
+
+            {reservation.status === 'confirmed' && !reservation.confirmationMessage && (
               <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
                 <p className="text-green-800 dark:text-green-300 text-sm">
                   Rezervasyonunuz onaylandı! Belirtilen tarih ve saatte sizi bekliyoruz.
@@ -518,6 +532,64 @@ export default function CustomerTracking() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        <Card data-testid="card-cancellation-policy">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5" />
+              İptal ve İade Politikası
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {reservation.cancellationPolicy ? (
+              <div className="text-sm text-muted-foreground whitespace-pre-line" data-testid="text-cancellation-policy">
+                {reservation.cancellationPolicy}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>
+                  Aktivite başlangıcına <span className="font-medium text-foreground">{reservation.freeCancellationHours} saat</span> ve daha fazla süre varken ücretsiz iptal yapılabilir.
+                </p>
+                <p>
+                  Bu süre içinde yapılan iptallerde ödeme tamamen iade edilir. Süre geçtikten sonra iptal talebi kabul edilmez.
+                </p>
+                <p>
+                  Tarih değişikliği talepleri, mevcut tarihten en fazla 7 gün öncesine veya sonrasına yapılabilir ve onay gerektirir.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {reservation.whatsappNumber && (
+          <Card data-testid="card-whatsapp-support">
+            <CardContent className="pt-6">
+              <Button
+                asChild
+                className="w-full bg-green-600 dark:bg-green-700 text-white gap-2"
+                data-testid="link-whatsapp-support"
+              >
+                <a
+                  href={`https://wa.me/${reservation.whatsappNumber.replace(/[^0-9]/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Phone className="w-5 h-5" />
+                  WhatsApp Destek Hattı
+                </a>
+              </Button>
+              <p className="text-xs text-center text-muted-foreground mt-3">
+                Sorularınız için bize WhatsApp üzerinden ulaşabilirsiniz.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {reservation.companyName && (
+          <p className="text-xs text-center text-muted-foreground pb-4" data-testid="text-company-name">
+            {reservation.companyName}
+          </p>
         )}
       </div>
     </div>
