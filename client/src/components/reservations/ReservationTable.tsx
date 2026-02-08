@@ -289,6 +289,19 @@ export function ReservationTable({
     return active || null;
   };
 
+  const cancelDispatchMutation = useMutation({
+    mutationFn: async (requestId: number) => {
+      await apiRequest("DELETE", `/api/partner-dispatch/${requestId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-dispatch-statuses'] });
+      toast({ title: "Gönderim iptal edildi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Gönderim iptal edilemedi", variant: "destructive" });
+    },
+  });
+
   const renderDispatchButton = (res: Reservation) => {
     if (!onAddDispatch) return null;
     const activeDispatch = getActiveDispatch(res.id);
@@ -300,6 +313,41 @@ export function ReservationTable({
         converted: { color: "text-emerald-600", icon: <CheckCircle className="h-4 w-4" />, label: "Onaylandı" },
       };
       const config = statusConfig[activeDispatch.status || 'pending'] || statusConfig.pending;
+
+      if (activeDispatch.status === 'pending') {
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className={config.color}
+                onClick={(e) => e.stopPropagation()}
+                data-testid={`button-dispatch-status-${res.id}`}
+              >
+                {config.icon}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b">
+                <span className="font-medium text-foreground">{activeDispatch.partnerTenantName}</span>
+                {' - '}{config.label}
+                <br />
+                {activeDispatch.date} {activeDispatch.time} - {activeDispatch.guests} kişi
+              </div>
+              <DropdownMenuItem
+                onClick={() => cancelDispatchMutation.mutate(activeDispatch.reservationRequestId)}
+                disabled={cancelDispatchMutation.isPending}
+                data-testid={`action-cancel-dispatch-${res.id}`}
+              >
+                <XCircle className="h-4 w-4 mr-2 text-red-500" />
+                Gönderimi İptal Et
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      }
+
       return (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -307,7 +355,7 @@ export function ReservationTable({
               variant="ghost" 
               size="icon"
               className={config.color}
-              onClick={(e) => { e.stopPropagation(); onAddDispatch(res); }}
+              onClick={(e) => e.stopPropagation()}
               data-testid={`button-dispatch-status-${res.id}`}
             >
               {config.icon}

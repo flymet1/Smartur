@@ -7073,6 +7073,42 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/partner-dispatch/:requestId", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      const userId = req.session?.userId;
+      if (!tenantId || !userId) {
+        return res.status(401).json({ error: "Oturum bulunamadi" });
+      }
+
+      const requestId = parseInt(req.params.requestId);
+      const request = await storage.getReservationRequest(requestId);
+      if (!request) {
+        return res.status(404).json({ error: "Gonderim bulunamadi" });
+      }
+
+      if (request.senderTenantId !== tenantId) {
+        return res.status(403).json({ error: "Bu gonderimi iptal etme yetkiniz yok" });
+      }
+
+      if (request.status !== 'pending') {
+        return res.status(400).json({ error: "Sadece beklemede olan gonderimler iptal edilebilir" });
+      }
+
+      await storage.updateReservationRequest(requestId, {
+        status: 'cancelled',
+        processedBy: userId,
+        processedAt: new Date(),
+        processNotes: 'Gonderici tarafindan iptal edildi'
+      });
+
+      res.json({ success: true, message: "Gonderim iptal edildi" });
+    } catch (error) {
+      console.error("Cancel partner dispatch error:", error);
+      res.status(500).json({ error: "Gonderim iptal edilemedi" });
+    }
+  });
+
   // Get activity partner shares for an activity
   app.get("/api/activities/:id/partner-shares", requirePermission(PERMISSIONS.ACTIVITIES_VIEW), async (req, res) => {
     try {
