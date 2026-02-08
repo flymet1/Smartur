@@ -129,14 +129,16 @@ export default function Reservations() {
   const [partnerDispatchGuests, setPartnerDispatchGuests] = useState(1);
   const [partnerDispatchNotes, setPartnerDispatchNotes] = useState("");
   const [partnerDispatchPaymentType, setPartnerDispatchPaymentType] = useState<string>("receiver_full");
-  const [partnerDispatchAmountCollected, setPartnerDispatchAmountCollected] = useState<number>(0);
+  const [partnerDispatchAmountCollectedStr, setPartnerDispatchAmountCollectedStr] = useState<string>("");
+  const partnerDispatchAmountCollected = partnerDispatchAmountCollectedStr === "" ? 0 : Number(partnerDispatchAmountCollectedStr) || 0;
   const [partnerDispatchPaymentNotes, setPartnerDispatchPaymentNotes] = useState("");
   const [selectedAgencyDispatchId, setSelectedAgencyDispatchId] = useState<string>("");
   const [agencyDispatchDate, setAgencyDispatchDate] = useState<string>("");
   const [agencyDispatchTime, setAgencyDispatchTime] = useState<string>("");
   const [agencyDispatchActivityId, setAgencyDispatchActivityId] = useState<string>("");
   const [agencyDispatchGuests, setAgencyDispatchGuests] = useState(1);
-  const [agencyDispatchUnitPayout, setAgencyDispatchUnitPayout] = useState<number>(0);
+  const [agencyDispatchUnitPayoutStr, setAgencyDispatchUnitPayoutStr] = useState<string>("");
+  const agencyDispatchUnitPayout = agencyDispatchUnitPayoutStr === "" ? 0 : Number(agencyDispatchUnitPayoutStr) || 0;
   const [agencyDispatchCurrency, setAgencyDispatchCurrency] = useState<string>("TRY");
   const [agencyDispatchNotes, setAgencyDispatchNotes] = useState("");
   
@@ -260,14 +262,14 @@ export default function Reservations() {
       setPartnerDispatchGuests(1);
       setPartnerDispatchNotes("");
       setPartnerDispatchPaymentType("receiver_full");
-      setPartnerDispatchAmountCollected(0);
+      setPartnerDispatchAmountCollectedStr("");
       setPartnerDispatchPaymentNotes("");
       setSelectedAgencyDispatchId("");
       setAgencyDispatchDate("");
       setAgencyDispatchTime("");
       setAgencyDispatchActivityId("");
       setAgencyDispatchGuests(1);
-      setAgencyDispatchUnitPayout(0);
+      setAgencyDispatchUnitPayoutStr("");
       setAgencyDispatchCurrency("TRY");
       setAgencyDispatchNotes("");
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
@@ -302,7 +304,7 @@ export default function Reservations() {
       setAgencyDispatchTime("");
       setAgencyDispatchActivityId("");
       setAgencyDispatchGuests(1);
-      setAgencyDispatchUnitPayout(0);
+      setAgencyDispatchUnitPayoutStr("");
       setAgencyDispatchCurrency("TRY");
       setAgencyDispatchNotes("");
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
@@ -2103,7 +2105,7 @@ export default function Reservations() {
               setAgencyDispatchTime(reservation.time || "");
               setAgencyDispatchActivityId(reservation.activityId ? String(reservation.activityId) : "");
               setAgencyDispatchGuests(reservation.quantity || 1);
-              setAgencyDispatchUnitPayout(0);
+              setAgencyDispatchUnitPayoutStr("");
               setAgencyDispatchCurrency("TRY");
               setAgencyDispatchNotes("");
               setPartnerDispatchOpen(true);
@@ -2341,14 +2343,14 @@ export default function Reservations() {
             setPartnerDispatchGuests(1);
             setPartnerDispatchNotes("");
             setPartnerDispatchPaymentType("receiver_full");
-            setPartnerDispatchAmountCollected(0);
+            setPartnerDispatchAmountCollectedStr("");
             setPartnerDispatchPaymentNotes("");
             setSelectedAgencyDispatchId("");
             setAgencyDispatchDate("");
             setAgencyDispatchTime("");
             setAgencyDispatchActivityId("");
             setAgencyDispatchGuests(1);
-            setAgencyDispatchUnitPayout(0);
+            setAgencyDispatchUnitPayoutStr("");
             setAgencyDispatchCurrency("TRY");
             setAgencyDispatchNotes("");
           }
@@ -2696,10 +2698,11 @@ export default function Reservations() {
                                 <Input
                                   id="dispatchAmountCollected"
                                   type="number"
+                                  inputMode="numeric"
                                   min={0}
-                                  value={partnerDispatchAmountCollected}
-                                  onChange={(e) => setPartnerDispatchAmountCollected(parseInt(e.target.value) || 0)}
-                                  placeholder="Ornegin: 500"
+                                  value={partnerDispatchAmountCollectedStr}
+                                  onChange={(e) => setPartnerDispatchAmountCollectedStr(e.target.value)}
+                                  placeholder="Tutar girin"
                                   data-testid="input-dispatch-amount-collected"
                                 />
                                 {partnerDispatchSelectedSlot.partnerUnitPrice && partnerDispatchGuests > 0 && (
@@ -2856,10 +2859,11 @@ export default function Reservations() {
                               <Label>Kisi Basi Odeme</Label>
                               <Input
                                 type="number"
+                                inputMode="numeric"
                                 min={0}
-                                value={agencyDispatchUnitPayout}
-                                onChange={(e) => setAgencyDispatchUnitPayout(parseInt(e.target.value) || 0)}
-                                placeholder="0"
+                                value={agencyDispatchUnitPayoutStr}
+                                onChange={(e) => setAgencyDispatchUnitPayoutStr(e.target.value)}
+                                placeholder="Tutar girin"
                                 data-testid="input-agency-dispatch-unit-payout"
                               />
                             </div>
@@ -4815,60 +4819,65 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
                   </Badge>
                 </div>
               </div>
-              <div>
-                <Label className="text-muted-foreground text-xs flex items-center gap-1">
-                  Tarih
-                  {!isEditing && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-4 w-4 p-0 ml-1"
-                      onClick={() => setIsEditing(true)}
-                      data-testid="button-edit-datetime"
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                  )}
-                </Label>
-                {isEditing ? (
-                  <Input 
-                    type="date" 
-                    value={editDate} 
-                    onChange={(e) => setEditDate(e.target.value)}
-                    className="h-8 text-sm"
-                    data-testid="input-edit-date"
-                  />
-                ) : (
-                  <div className="font-medium" data-testid="text-date">{reservation.date}</div>
-                )}
-              </div>
-              <div>
-                <Label className="text-muted-foreground text-xs">Saat</Label>
-                {isEditing ? (
-                  availableTimes.length > 0 ? (
-                    <Select value={editTime} onValueChange={setEditTime}>
-                      <SelectTrigger className="h-8 text-sm" data-testid="select-edit-time">
-                        <SelectValue placeholder="Saat seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableTimes.map((t: string) => (
-                          <SelectItem key={t} value={t}>{t}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
+              {!isEditing ? (
+                <>
+                  <div>
+                    <Label className="text-muted-foreground text-xs flex items-center gap-1">
+                      Tarih
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-4 w-4 p-0 ml-1"
+                        onClick={() => setIsEditing(true)}
+                        data-testid="button-edit-datetime"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </Label>
+                    <div className="font-medium" data-testid="text-date">{reservation.date}</div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">Saat</Label>
+                    <div className="font-medium" data-testid="text-time">{reservation.time}</div>
+                  </div>
+                </>
+              ) : (
+                <div className="col-span-2 space-y-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs">Tarih</Label>
                     <Input 
-                      type="time" 
-                      value={editTime} 
-                      onChange={(e) => setEditTime(e.target.value)}
+                      type="date" 
+                      value={editDate} 
+                      onChange={(e) => setEditDate(e.target.value)}
                       className="h-8 text-sm"
-                      data-testid="input-edit-time"
+                      data-testid="input-edit-date"
                     />
-                  )
-                ) : (
-                  <div className="font-medium" data-testid="text-time">{reservation.time}</div>
-                )}
-              </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-xs">Saat</Label>
+                    {availableTimes.length > 0 ? (
+                      <Select value={editTime} onValueChange={setEditTime}>
+                        <SelectTrigger className="h-8 text-sm" data-testid="select-edit-time">
+                          <SelectValue placeholder="Saat seçin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableTimes.map((t: string) => (
+                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input 
+                        type="time" 
+                        value={editTime} 
+                        onChange={(e) => setEditTime(e.target.value)}
+                        className="h-8 text-sm"
+                        data-testid="input-edit-time"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             
             {isEditing && (
@@ -5063,8 +5072,10 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
   const [hasTransfer, setHasTransfer] = useState(false);
   const [transferZone, setTransferZone] = useState("");
   const [confirmationNote, setConfirmationNote] = useState("");
-  const [salePriceTl, setSalePriceTl] = useState<number>(0);
-  const [advancePaymentTl, setAdvancePaymentTl] = useState<number>(0);
+  const [salePriceTlStr, setSalePriceTlStr] = useState<string>("");
+  const [advancePaymentTlStr, setAdvancePaymentTlStr] = useState<string>("");
+  const salePriceTl = salePriceTlStr === "" ? 0 : Number(salePriceTlStr) || 0;
+  const advancePaymentTl = advancePaymentTlStr === "" ? 0 : Number(advancePaymentTlStr) || 0;
   const { data: activities } = useActivities();
   const createMutation = useCreateReservation();
   const { toast } = useToast();
@@ -5264,8 +5275,8 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
       setTransferZone("");
       setConfirmationNote("");
       setHasTransfer(false);
-      setSalePriceTl(0);
-      setAdvancePaymentTl(0);
+      setSalePriceTlStr("");
+      setAdvancePaymentTlStr("");
     } catch (err) {
       const licenseErr = parseLicenseError(err);
       if (licenseErr.isLicenseError) {
@@ -5418,7 +5429,7 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
                   setSelectedActivityId(val);
                   const act = activities?.find(a => String(a.id) === val);
                   if (act) {
-                    setSalePriceTl(act.price || 0);
+                    setSalePriceTlStr(act.price ? String(act.price) : "");
                   }
                 }}
               >
@@ -5549,10 +5560,11 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
               <Label>Satış Fiyatı (TL)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="0"
-                value={salePriceTl || ""}
-                onChange={(e) => setSalePriceTl(Number(e.target.value) || 0)}
-                placeholder="0"
+                value={salePriceTlStr}
+                onChange={(e) => setSalePriceTlStr(e.target.value)}
+                placeholder="Fiyat girin"
                 data-testid="input-sale-price"
               />
             </div>
@@ -5560,11 +5572,12 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
               <Label>Ön Ödeme (TL)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min="0"
                 max={salePriceTl || undefined}
-                value={advancePaymentTl || ""}
-                onChange={(e) => setAdvancePaymentTl(Number(e.target.value) || 0)}
-                placeholder="0"
+                value={advancePaymentTlStr}
+                onChange={(e) => setAdvancePaymentTlStr(e.target.value)}
+                placeholder="Tutar girin"
                 data-testid="input-advance-payment"
               />
               {salePriceTl > 0 && advancePaymentTl > 0 && (
