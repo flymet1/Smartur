@@ -288,25 +288,32 @@ export function ReservationTable({
     if (dispatches.length === 0) return null;
 
     return (
-      <div className="flex flex-wrap gap-1 mt-1">
+      <div className="flex flex-wrap gap-0.5 mt-0.5">
         {dispatches.map((d) => {
-          const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
-            pending: { label: "Beklemede", className: "bg-yellow-100 text-yellow-700 border-yellow-200", icon: <Handshake className="h-3 w-3 mr-1" /> },
-            approved: { label: "Onaylandi", className: "bg-green-100 text-green-700 border-green-200", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
-            rejected: { label: "Reddedildi", className: "bg-red-100 text-red-700 border-red-200", icon: <XCircle className="h-3 w-3 mr-1" /> },
-            converted: { label: "Onaylandi", className: "bg-green-100 text-green-700 border-green-200", icon: <CheckCircle className="h-3 w-3 mr-1" /> },
+          const statusConfig: Record<string, { color: string; icon: any }> = {
+            pending: { color: "text-amber-500", icon: <Handshake className="h-2.5 w-2.5" /> },
+            approved: { color: "text-emerald-600", icon: <CheckCircle className="h-2.5 w-2.5" /> },
+            rejected: { color: "text-red-500", icon: <XCircle className="h-2.5 w-2.5" /> },
+            converted: { color: "text-emerald-600", icon: <CheckCircle className="h-2.5 w-2.5" /> },
           };
           const config = statusConfig[d.status || 'pending'] || statusConfig.pending;
           return (
-            <span
-              key={d.reservationRequestId}
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${config.className}`}
-              title={`${d.partnerTenantName} - ${d.date} ${d.time} - ${d.guests} kisi${d.processNotes ? ` - ${d.processNotes}` : ''}`}
-              data-testid={`dispatch-status-${d.reservationRequestId}`}
-            >
-              {config.icon}
-              {d.partnerTenantName}: {config.label}
-            </span>
+            <Tooltip key={d.reservationRequestId}>
+              <TooltipTrigger asChild>
+                <span
+                  className={`inline-flex items-center ${config.color}`}
+                  data-testid={`dispatch-status-${d.reservationRequestId}`}
+                >
+                  {config.icon}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                <span className="font-medium">{d.partnerTenantName}</span>
+                {' - '}{d.status === 'pending' ? 'Beklemede' : d.status === 'rejected' ? 'Reddedildi' : 'Onaylandı'}
+                <br />
+                {d.date} {d.time} - {d.guests} kişi
+              </TooltipContent>
+            </Tooltip>
           );
         })}
       </div>
