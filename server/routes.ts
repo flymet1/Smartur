@@ -15023,7 +15023,13 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
 
   app.patch("/api/tenants/:id", async (req, res) => {
     try {
-      const tenant = await storage.updateTenant(Number(req.params.id), req.body);
+      const tenantId = Number(req.params.id);
+      const tenant = await storage.updateTenant(tenantId, req.body);
+      
+      if (req.body.planCode) {
+        await storage.syncTenantUsersMembershipType(tenantId, req.body.planCode);
+      }
+      
       res.json(tenant);
     } catch (err) {
       console.error("Tenant güncelleme hatası:", err);
