@@ -5,7 +5,7 @@ import {
   Clock, MapPin, Users, Check, X, ChevronLeft, Calendar, Info, 
   Star, Globe, Shield, Camera, Share2, Heart, AlertCircle,
   Mountain, Zap, Award, Phone, MessageCircle, ChevronRight,
-  Plus, Minus, Loader2, CheckCircle, Package, User, Backpack, Ban, Tag
+  Plus, Minus, Loader2, CheckCircle, Package, User, Backpack, Ban, Tag, Banknote
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -943,6 +943,37 @@ export default function PublicActivityDetail() {
                   <div className="flex items-start gap-2">
                     <Tag className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-red-700 dark:text-red-300 font-medium">{activity.discountNote}</p>
+                  </div>
+                </div>
+              )}
+              {activity.cashDiscountValue && activity.cashDiscountValue > 0 && (
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md p-3" data-testid="text-cash-discount-info">
+                  <div className="flex items-start gap-2">
+                    <Banknote className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm text-green-700 dark:text-green-300 font-medium">
+                        {activity.cashDiscountNote || (
+                          language === "en"
+                            ? `${activity.cashDiscountValue}${activity.cashDiscountType === "percent" ? "%" : " TL"} discount for cash payment`
+                            : `Nakit ödemede ${activity.cashDiscountValue}${activity.cashDiscountType === "percent" ? "%" : " TL"} indirim`
+                        )}
+                      </p>
+                      {activity.cashDiscountType === "percent" ? (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                          {language === "en"
+                            ? `Save ${activity.cashDiscountValue}% when you pay in cash`
+                            : `Kalan ödemenizi nakit yaparak %${activity.cashDiscountValue} tasarruf edin`
+                          }
+                        </p>
+                      ) : (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                          {language === "en"
+                            ? `Save ${activity.cashDiscountValue} TL per person when you pay in cash`
+                            : `Kalan ödemenizi nakit yaparak kişi başı ${activity.cashDiscountValue} TL tasarruf edin`
+                          }
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

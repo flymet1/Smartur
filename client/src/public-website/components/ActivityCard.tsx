@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Clock, MapPin, Users, Check, Globe, Tag } from "lucide-react";
+import { Clock, MapPin, Users, Check, Globe, Tag, Banknote } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { PublicActivity } from "../types";
@@ -181,6 +181,19 @@ export function ActivityCard({ activity, variant = "default" }: ActivityCardProp
               </Badge>
             )}
           </div>
+
+          {activity.cashDiscountValue && activity.cashDiscountValue > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 rounded-md px-2 py-1.5">
+              <Banknote className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="font-medium">
+                {activity.cashDiscountNote || (
+                  language === "en" 
+                    ? `${activity.cashDiscountValue}${activity.cashDiscountType === "percent" ? "%" : " TL"} cash discount`
+                    : `Nakit ödemede ${activity.cashDiscountValue}${activity.cashDiscountType === "percent" ? "%" : " TL"} indirim`
+                )}
+              </span>
+            </div>
+          )}
 
         </div>
       </CardContent>

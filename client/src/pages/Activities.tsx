@@ -294,6 +294,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const [discountPrice, setDiscountPrice] = useState((activity as any)?.discountPrice?.toString() || "");
   const [discountPriceUsd, setDiscountPriceUsd] = useState((activity as any)?.discountPriceUsd?.toString() || "");
   const [discountNote, setDiscountNote] = useState((activity as any)?.discountNote || "");
+  const [cashDiscountType, setCashDiscountType] = useState<"percent" | "fixed">((activity as any)?.cashDiscountType || "percent");
+  const [cashDiscountValue, setCashDiscountValue] = useState((activity as any)?.cashDiscountValue?.toString() || "");
+  const [cashDiscountNote, setCashDiscountNote] = useState((activity as any)?.cashDiscountNote || "");
   const [durationMinutes, setDurationMinutes] = useState(activity?.durationMinutes?.toString() || "");
   const [description, setDescription] = useState(activity?.description || "");
   
@@ -677,6 +680,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
     setDiscountPrice("");
     setDiscountPriceUsd("");
     setDiscountNote("");
+    setCashDiscountType("percent");
+    setCashDiscountValue("");
+    setCashDiscountNote("");
     setDurationMinutes("");
     setDescription("");
     setFrequency("1");
@@ -814,6 +820,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       discountPrice: discountPrice ? Number(discountPrice) : null,
       discountPriceUsd: discountPriceUsd ? Number(discountPriceUsd) : null,
       discountNote: discountNote || null,
+      cashDiscountType: cashDiscountValue ? cashDiscountType : null,
+      cashDiscountValue: cashDiscountValue ? Number(cashDiscountValue) : null,
+      cashDiscountNote: cashDiscountNote || null,
       durationMinutes: Number(durationMinutes),
       dailyFrequency: Number(frequency),
       defaultTimes: JSON.stringify(times),
@@ -1048,8 +1057,50 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       id="discountNote" 
                       value={discountNote}
                       onChange={(e) => setDiscountNote(e.target.value)}
-                      placeholder="Örn: %5 nakit ödeme indirimi - Ofiste nakit ödeme yapanlara geçerlidir"
+                      placeholder="Örn: Erken rezervasyon indirimi"
                       data-testid="input-discount-note"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3 border rounded-md p-3">
+                  <h4 className="text-sm font-medium">Nakit Ödeme İndirimi</h4>
+                  <p className="text-xs text-muted-foreground">Müşterileri nakit ödemeye teşvik etmek için bilgi amaçlı gösterilir. Rezervasyon fiyatına yansımaz.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="cashDiscountType" className="text-xs sm:text-sm">İndirim Tipi</Label>
+                      <Select value={cashDiscountType} onValueChange={(v) => setCashDiscountType(v as "percent" | "fixed")}>
+                        <SelectTrigger data-testid="select-cash-discount-type">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percent">Yüzde (%)</SelectItem>
+                          <SelectItem value="fixed">Sabit Tutar (TL)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cashDiscountValue" className="text-xs sm:text-sm">
+                        İndirim Değeri {cashDiscountType === "percent" ? "(%)" : "(TL)"}
+                      </Label>
+                      <Input 
+                        id="cashDiscountValue" 
+                        type="number" 
+                        value={cashDiscountValue}
+                        onChange={(e) => setCashDiscountValue(e.target.value)}
+                        placeholder={cashDiscountType === "percent" ? "Örn: 10" : "Örn: 50"}
+                        data-testid="input-cash-discount-value"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cashDiscountNote" className="text-xs sm:text-sm">Nakit İndirim Açıklaması</Label>
+                    <Input 
+                      id="cashDiscountNote" 
+                      value={cashDiscountNote}
+                      onChange={(e) => setCashDiscountNote(e.target.value)}
+                      placeholder="Örn: Nakit ödemede kişi başı %10 indirim uygulanır"
+                      data-testid="input-cash-discount-note"
                     />
                   </div>
                 </div>

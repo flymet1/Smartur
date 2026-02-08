@@ -7,6 +7,9 @@ export interface PublicActivity {
   discountPrice: number | null;
   discountPriceUsd: number | null;
   discountNote: string | null;
+  cashDiscountType: string | null;
+  cashDiscountValue: number | null;
+  cashDiscountNote: string | null;
   durationMinutes: number;
   defaultTimes: string[];
   hasFreeHotelTransfer: boolean;
