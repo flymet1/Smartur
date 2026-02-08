@@ -29,28 +29,27 @@ export function ImageUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const maxSize = size === "small" ? 100 : 200;
   const endpoint = size === "small" ? "/api/upload/small" : "/api/upload/large";
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const allowedTypes = ["image/png", "image/webp"];
+    const allowedTypes = ["image/png", "image/webp", "image/jpeg", "image/jpg"];
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: "Hata",
-        description: "Sadece PNG ve WebP formatları kabul edilir",
+        description: "Sadece PNG, WebP ve JPEG formatları kabul edilir",
         variant: "destructive",
       });
       return;
     }
 
     const fileSizeKB = file.size / 1024;
-    if (fileSizeKB > maxSize) {
+    if (fileSizeKB > 10240) {
       toast({
         title: "Hata",
-        description: `Dosya boyutu çok büyük. Maksimum ${maxSize}KB olmalı. (Mevcut: ${Math.round(fileSizeKB)}KB)`,
+        description: `Dosya boyutu çok büyük. Maksimum 10MB olmalı. (Mevcut: ${Math.round(fileSizeKB)}KB)`,
         variant: "destructive",
       });
       return;
@@ -74,9 +73,12 @@ export function ImageUpload({
 
       const data = await response.json();
       onChange(data.url);
+      const compressionInfo = data.originalSize && data.compressedSize
+        ? ` (${data.originalSize}KB → ${data.compressedSize}KB)`
+        : "";
       toast({
         title: "Başarılı",
-        description: "Görsel yüklendi",
+        description: `Görsel yüklendi${compressionInfo}`,
       });
     } catch (error: any) {
       toast({
@@ -104,7 +106,7 @@ export function ImageUpload({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".png,.webp,image/png,image/webp"
+          accept=".png,.webp,.jpg,.jpeg,image/png,image/webp,image/jpeg"
           onChange={handleFileSelect}
           className="hidden"
           disabled={disabled || isUploading}
@@ -167,7 +169,7 @@ export function ImageUpload({
       <p className="text-xs text-muted-foreground">
         <span className="font-medium text-primary">
           {recommendedSize && `Önerilen boyut: ${recommendedSize} | `}
-          Max {maxSize}KB | Sadece PNG, WebP
+          PNG, WebP, JPEG | Otomatik sıkıştırma ve boyutlandırma
         </span>
       </p>
       

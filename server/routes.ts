@@ -13,6 +13,7 @@ import OpenAI from "openai";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import multer from "multer";
+import sharp from "sharp";
 import path from "path";
 import fs from "fs";
 import { encrypt, decrypt } from "./encryption";
@@ -29,27 +30,66 @@ if (!fs.existsSync(uploadDir)) {
 const memoryStorage = multer.memoryStorage();
 
 const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedTypes = ['image/png', 'image/webp'];
+  const allowedTypes = ['image/png', 'image/webp', 'image/jpeg', 'image/jpg'];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Sadece PNG ve WebP formatları kabul edilir'));
+    cb(new Error('Sadece PNG, WebP ve JPEG formatları kabul edilir'));
   }
 };
 
-// Small images (logo, favicon): max 100KB
-const uploadSmall = multer({
+const uploadImage = multer({
   storage: memoryStorage,
   fileFilter,
-  limits: { fileSize: 100 * 1024 } // 100KB
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-// Large images (hero, activity): max 200KB
-const uploadLarge = multer({
-  storage: memoryStorage,
-  fileFilter,
-  limits: { fileSize: 200 * 1024 } // 200KB
-});
+const IMAGE_DIMENSIONS: Record<string, { width: number; height: number }> = {
+  small: { width: 256, height: 256 },
+  large: { width: 1200, height: 800 },
+};
+
+const TARGET_SIZE_KB: Record<string, number> = {
+  small: 100,
+  large: 200,
+};
+
+async function processImage(buffer: Buffer, sizeType: 'small' | 'large'): Promise<{ buffer: Buffer; mimetype: string }> {
+  const dims = IMAGE_DIMENSIONS[sizeType];
+  const targetBytes = TARGET_SIZE_KB[sizeType] * 1024;
+
+  let currentWidth = dims.width;
+  let currentHeight = dims.height;
+  let quality = 85;
+
+  let result = await sharp(buffer)
+    .resize(currentWidth, currentHeight, { fit: 'cover', position: 'centre' })
+    .webp({ quality })
+    .toBuffer();
+
+  while (result.length > targetBytes && quality >= 20) {
+    quality -= 10;
+    result = await sharp(buffer)
+      .resize(currentWidth, currentHeight, { fit: 'cover', position: 'centre' })
+      .webp({ quality })
+      .toBuffer();
+  }
+
+  while (result.length > targetBytes && currentWidth > 100) {
+    currentWidth = Math.round(currentWidth * 0.8);
+    currentHeight = Math.round(currentHeight * 0.8);
+    result = await sharp(buffer)
+      .resize(currentWidth, currentHeight, { fit: 'cover', position: 'centre' })
+      .webp({ quality: Math.max(quality, 30) })
+      .toBuffer();
+  }
+
+  if (result.length > targetBytes) {
+    throw new Error(`Görsel hedef boyuta (${TARGET_SIZE_KB[sizeType]}KB) küçültülemedi. Lütfen daha küçük bir görsel deneyin.`);
+  }
+
+  return { buffer: result, mimetype: 'image/webp' };
+}
 
 // Module-level exchange rate cache (persists between requests)
 let exchangeRateCache: { rates: any; lastUpdated: Date | null } = { rates: null, lastUpdated: null };
@@ -4068,36 +4108,46 @@ export async function registerRoutes(
   // Serve uploaded files statically (backward compatibility for old file-based uploads)
   app.use('/uploads', express.static(uploadDir));
   
-  // Image upload endpoint - small images (logo, favicon) - max 100KB
-  // Returns base64 data URI so images are stored in DB, not filesystem
   app.post('/api/upload/small', (req, res, next) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
     }
     next();
-  }, uploadSmall.single('image'), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "Görsel yüklenemedi" });
+  }, uploadImage.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Görsel yüklenemedi" });
+      }
+      const { buffer: processed, mimetype } = await processImage(req.file.buffer, 'small');
+      const base64 = processed.toString('base64');
+      const dataUri = `data:${mimetype};base64,${base64}`;
+      const originalKB = Math.round(req.file.size / 1024);
+      const compressedKB = Math.round(processed.length / 1024);
+      res.json({ url: dataUri, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
+    } catch (error: any) {
+      res.status(500).json({ error: "Görsel işlenirken hata oluştu: " + (error.message || "Bilinmeyen hata") });
     }
-    const base64 = req.file.buffer.toString('base64');
-    const dataUri = `data:${req.file.mimetype};base64,${base64}`;
-    res.json({ url: dataUri, filename: req.file.originalname });
   });
   
-  // Image upload endpoint - large images (hero, activity) - max 200KB
-  // Returns base64 data URI so images are stored in DB, not filesystem
   app.post('/api/upload/large', (req, res, next) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
     }
     next();
-  }, uploadLarge.single('image'), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "Görsel yüklenemedi" });
+  }, uploadImage.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Görsel yüklenemedi" });
+      }
+      const { buffer: processed, mimetype } = await processImage(req.file.buffer, 'large');
+      const base64 = processed.toString('base64');
+      const dataUri = `data:${mimetype};base64,${base64}`;
+      const originalKB = Math.round(req.file.size / 1024);
+      const compressedKB = Math.round(processed.length / 1024);
+      res.json({ url: dataUri, filename: req.file.originalname, originalSize: originalKB, compressedSize: compressedKB });
+    } catch (error: any) {
+      res.status(500).json({ error: "Görsel işlenirken hata oluştu: " + (error.message || "Bilinmeyen hata") });
     }
-    const base64 = req.file.buffer.toString('base64');
-    const dataUri = `data:${req.file.mimetype};base64,${base64}`;
-    res.json({ url: dataUri, filename: req.file.originalname });
   });
   
   // Multer error handler
