@@ -36,6 +36,8 @@ type Customer = {
   totalGuests: number;
   firstReservationDate: string;
   lastReservationDate: string;
+  firstCreatedDate: string;
+  lastCreatedDate: string;
   activities: string[];
   lastActivityName: string | null;
 };
@@ -206,7 +208,8 @@ export default function Customers() {
                     <TableHead className="text-center"><SortButton field="totalReservations">Rez. Sayisi</SortButton></TableHead>
                     <TableHead className="text-center"><SortButton field="totalGuests">Kisi</SortButton></TableHead>
                     <TableHead className="text-right"><SortButton field="totalSpentTl">Toplam (TL)</SortButton></TableHead>
-                    <TableHead><SortButton field="lastReservationDate">Son Rezervasyon</SortButton></TableHead>
+                    <TableHead><SortButton field="lastReservationDate">Aktivite Tarihi</SortButton></TableHead>
+                    <TableHead>Oluşturma Tarihi</TableHead>
                     <TableHead>Aktiviteler</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -243,6 +246,7 @@ export default function Customers() {
                       <TableCell className="text-center">{c.totalGuests}</TableCell>
                       <TableCell className="text-right font-medium">{c.totalSpentTl.toLocaleString("tr-TR")}</TableCell>
                       <TableCell className="text-sm">{formatDate(c.lastReservationDate)}</TableCell>
+                      <TableCell className="text-sm">{formatDate(c.lastCreatedDate)}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1 max-w-[200px]">
                           {c.activities.slice(0, 2).map((a) => (
@@ -320,14 +324,32 @@ export default function Customers() {
 
               <Separator />
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>Ilk: {formatDate(selectedCustomer.firstReservationDate)}</span>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Aktivite Tarihi</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Ilk: {formatDate(selectedCustomer.firstReservationDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Son: {formatDate(selectedCustomer.lastReservationDate)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>Son: {formatDate(selectedCustomer.lastReservationDate)}</span>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Oluşturma Tarihi</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Ilk: {formatDate(selectedCustomer.firstCreatedDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Son: {formatDate(selectedCustomer.lastCreatedDate)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

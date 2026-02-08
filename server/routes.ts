@@ -4783,6 +4783,8 @@ export async function registerRoutes(
         totalGuests: number;
         firstReservationDate: string;
         lastReservationDate: string;
+        firstCreatedDate: string;
+        lastCreatedDate: string;
         activities: string[];
         lastActivityName: string | null;
       }>();
@@ -4790,6 +4792,7 @@ export async function registerRoutes(
       for (const r of allReservations) {
         const key = r.customerPhone;
         const actName = activityMap.get(r.activityId!) || "";
+        const createdDate = r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : r.date;
 
         if (!customerMap.has(key)) {
           customerMap.set(key, {
@@ -4805,6 +4808,8 @@ export async function registerRoutes(
             totalGuests: 0,
             firstReservationDate: r.date,
             lastReservationDate: r.date,
+            firstCreatedDate: createdDate,
+            lastCreatedDate: createdDate,
             activities: [],
             lastActivityName: null,
           });
@@ -4825,6 +4830,8 @@ export async function registerRoutes(
           c.lastReservationDate = r.date;
           c.lastActivityName = actName;
         }
+        if (createdDate < c.firstCreatedDate) c.firstCreatedDate = createdDate;
+        if (createdDate > c.lastCreatedDate) c.lastCreatedDate = createdDate;
         if (actName && !c.activities.includes(actName)) {
           c.activities.push(actName);
         }
