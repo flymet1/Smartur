@@ -1247,21 +1247,12 @@ export default function WebSite() {
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <Label>Etiket (TR)</Label>
+                                    <Label>Etiket</Label>
                                     <Input
                                       placeholder="Aktiviteler"
                                       value={stat.label}
                                       onChange={(e) => updateHeroStat(index, "label", e.target.value)}
                                       data-testid={`input-hero-stat-label-${index}`}
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label>Etiket (EN)</Label>
-                                    <Input
-                                      placeholder="Activities"
-                                      value={stat.labelEn}
-                                      onChange={(e) => updateHeroStat(index, "labelEn", e.target.value)}
-                                      data-testid={`input-hero-stat-label-en-${index}`}
                                     />
                                   </div>
                                   <div className="flex items-end">
@@ -1353,21 +1344,12 @@ export default function WebSite() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="space-y-2">
-                            <Label>Bölüm Başlığı (TR)</Label>
+                            <Label>Bölüm Başlığı</Label>
                             <Input
                               placeholder="Öne Çıkan Teklifler"
                               value={getValue("websiteHeroSliderTitle")}
                               onChange={(e) => updateField("websiteHeroSliderTitle", e.target.value)}
                               data-testid="input-hero-slider-title"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Bölüm Başlığı (EN)</Label>
-                            <Input
-                              placeholder="Featured Offers"
-                              value={getValue("websiteHeroSliderTitleEn")}
-                              onChange={(e) => updateField("websiteHeroSliderTitleEn", e.target.value)}
-                              data-testid="input-hero-slider-title-en"
                             />
                           </div>
                         </div>
@@ -1442,7 +1424,7 @@ export default function WebSite() {
                                       </div>
                                     </div>
                                     <div className="space-y-2">
-                                      <Label className="text-xs">Başlık (TR)</Label>
+                                      <Label className="text-xs">Başlık</Label>
                                       <Input
                                         placeholder="Özel Teklif"
                                         value={slide.title}
@@ -1450,17 +1432,8 @@ export default function WebSite() {
                                         data-testid={`input-slide-title-${index}`}
                                       />
                                     </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Başlık (EN)</Label>
-                                      <Input
-                                        placeholder="Special Offer"
-                                        value={slide.titleEn}
-                                        onChange={(e) => updateHeroSlide(index, "titleEn", e.target.value)}
-                                        data-testid={`input-slide-title-en-${index}`}
-                                      />
-                                    </div>
                                     <div className="space-y-2 md:col-span-2">
-                                      <Label className="text-xs">İçerik (TR)</Label>
+                                      <Label className="text-xs">İçerik</Label>
                                       <Textarea
                                         placeholder="Açıklama metni..."
                                         value={slide.content}
@@ -1469,32 +1442,13 @@ export default function WebSite() {
                                         data-testid={`input-slide-content-${index}`}
                                       />
                                     </div>
-                                    <div className="space-y-2 md:col-span-2">
-                                      <Label className="text-xs">İçerik (EN)</Label>
-                                      <Textarea
-                                        placeholder="Description text..."
-                                        value={slide.contentEn}
-                                        onChange={(e) => updateHeroSlide(index, "contentEn", e.target.value)}
-                                        rows={2}
-                                        data-testid={`input-slide-content-en-${index}`}
-                                      />
-                                    </div>
                                     <div className="space-y-2">
-                                      <Label className="text-xs">Buton Metni (TR)</Label>
+                                      <Label className="text-xs">Buton Metni</Label>
                                       <Input
                                         placeholder="Şimdi Rezerve Et"
                                         value={slide.buttonText}
                                         onChange={(e) => updateHeroSlide(index, "buttonText", e.target.value)}
                                         data-testid={`input-slide-button-${index}`}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Buton Metni (EN)</Label>
-                                      <Input
-                                        placeholder="Book Now"
-                                        value={slide.buttonTextEn}
-                                        onChange={(e) => updateHeroSlide(index, "buttonTextEn", e.target.value)}
-                                        data-testid={`input-slide-button-en-${index}`}
                                       />
                                     </div>
                                     <div className="space-y-2 md:col-span-2">
@@ -1507,21 +1461,12 @@ export default function WebSite() {
                                       />
                                     </div>
                                     <div className="space-y-2">
-                                      <Label className="text-xs">Etiket/Badge (TR) - Opsiyonel</Label>
+                                      <Label className="text-xs">Etiket/Badge - Opsiyonel</Label>
                                       <Input
                                         placeholder="Son Gün 31 Ocak"
                                         value={slide.badge || ""}
                                         onChange={(e) => updateHeroSlide(index, "badge", e.target.value)}
                                         data-testid={`input-slide-badge-${index}`}
-                                      />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label className="text-xs">Etiket/Badge (EN) - Opsiyonel</Label>
-                                      <Input
-                                        placeholder="Last Day Jan 31"
-                                        value={slide.badgeEn || ""}
-                                        onChange={(e) => updateHeroSlide(index, "badgeEn", e.target.value)}
-                                        data-testid={`input-slide-badge-en-${index}`}
                                       />
                                     </div>
                                     <div className="space-y-2 md:col-span-2">
