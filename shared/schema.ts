@@ -1272,6 +1272,8 @@ export const reservationRequests = pgTable("reservation_requests", {
   processNotes: text("process_notes"),
   reservationId: integer("reservation_id").references(() => reservations.id),
   createdAt: timestamp("created_at").defaultNow(),
+  sourceReservationId: integer("source_reservation_id"),
+  senderTenantId: integer("sender_tenant_id"),
   // Payment allocation fields
   paymentCollectionType: text("payment_collection_type").default("receiver_full"), // sender_full, sender_partial, receiver_full
   amountCollectedBySender: integer("amount_collected_by_sender").default(0), // Amount collected by sending agency
