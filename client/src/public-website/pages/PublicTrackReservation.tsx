@@ -2,9 +2,9 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import {
-  Search, Calendar as CalendarIcon, Clock, Users, CheckCircle, XCircle, AlertCircle,
-  Loader2, Hash, User, ArrowRight, CalendarDays, CalendarClock, Ban, MessageSquare,
-  Send, TrendingUp, MapPin, Hotel, Car, CreditCard, Package, Phone, ShieldCheck, Info
+  Search, Clock, Users, CheckCircle, XCircle, AlertCircle,
+  Loader2, Hash, CalendarDays, CalendarClock, Ban, MessageSquare,
+  Send, TrendingUp, MapPin, Hotel, Car, CreditCard, Package, Phone, ShieldCheck, Info, Mail, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "../i18n/LanguageContext";
-import { getApiUrl } from "../utils";
 
 interface TrackingData {
   customerName: string;
@@ -77,24 +76,6 @@ interface AvailabilityData {
   days: AvailabilityDay[];
 }
 
-interface SearchResult {
-  id: number;
-  customerName: string;
-  date: string;
-  time: string;
-  quantity: number;
-  status: string;
-  priceTl: number;
-  priceUsd: number;
-  currency: string;
-  paymentStatus: string;
-  hotelName: string | null;
-  hasTransfer: boolean;
-  activityName: string;
-  orderNumber: string | null;
-  trackingToken: string | null;
-}
-
 type RequestType = 'date_time_change' | 'cancellation' | 'other' | null;
 
 export default function PublicTrackReservation() {
@@ -109,8 +90,6 @@ export default function PublicTrackReservation() {
 
   const [token, setToken] = useState(initialToken);
   const [searchToken, setSearchToken] = useState(initialToken);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeSearchQuery, setActiveSearchQuery] = useState("");
 
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestType, setRequestType] = useState<RequestType>(null);
@@ -140,11 +119,6 @@ export default function PublicTrackReservation() {
       return res.json();
     },
     enabled: !!searchToken && !!reservation && reservation.status !== 'cancelled',
-  });
-
-  const { data: searchResults, isLoading: isSearching, error: searchError } = useQuery<SearchResult[]>({
-    queryKey: [getApiUrl(`/api/website/track/search?q=${encodeURIComponent(activeSearchQuery)}`)],
-    enabled: activeSearchQuery.length >= 2,
   });
 
   const cancellationAllowed = useMemo(() => {
@@ -197,28 +171,8 @@ export default function PublicTrackReservation() {
 
   const handleTokenSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setActiveSearchQuery("");
     setSearchToken(token);
     resetRequestState();
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.length >= 2) {
-      setSearchToken("");
-      setActiveSearchQuery(searchQuery);
-      resetRequestState();
-    }
-  };
-
-  const handleSelectResult = (result: SearchResult) => {
-    if (result.trackingToken) {
-      setToken(result.trackingToken);
-      setSearchToken(result.trackingToken);
-      setActiveSearchQuery("");
-      setSearchQuery("");
-      resetRequestState();
-    }
   };
 
   const resetRequestState = () => {
@@ -317,7 +271,6 @@ export default function PublicTrackReservation() {
     return `${priceTl.toLocaleString('tr-TR')} TL`;
   };
 
-  const isSearchMode = activeSearchQuery.length >= 2 && !searchToken;
   const isLoading = isTokenLoading;
 
   return (
@@ -336,12 +289,15 @@ export default function PublicTrackReservation() {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-xl mx-auto space-y-6">
 
-          {/* Search Card */}
+          {/* Tracking Code Search */}
           <Card>
             <CardHeader>
-              <CardTitle>{tr("Rezervasyonunuzu Bulun", "Find Your Reservation")}</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="w-5 h-5" />
+                {tr("Rezervasyon Takip", "Track Reservation")}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <form onSubmit={handleTokenSearch} className="space-y-2">
                 <Label htmlFor="token" className="flex items-center gap-1.5 text-sm">
                   <Hash className="w-3.5 h-3.5" />
@@ -361,39 +317,47 @@ export default function PublicTrackReservation() {
                   </Button>
                 </div>
               </form>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">{tr("veya", "or")}</span>
-                </div>
-              </div>
-
-              <form onSubmit={handleSearch} className="space-y-2">
-                <Label htmlFor="search" className="flex items-center gap-1.5 text-sm">
-                  <User className="w-3.5 h-3.5" />
-                  {tr("Rezervasyon No veya İsim Soyisim", "Order Number or Name")}
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={tr("Örn: 5001 veya Ali Yılmaz", "e.g. 5001 or John Doe")}
-                    className="flex-1"
-                    data-testid="input-search-query"
-                  />
-                  <Button type="submit" disabled={searchQuery.length < 2 || isSearching} data-testid="button-search-query">
-                    {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">{tr("En az 2 karakter girin", "Enter at least 2 characters")}</p>
-              </form>
             </CardContent>
           </Card>
 
+          {/* How to get tracking code - info card */}
+          {!reservation && !isLoading && !tokenError && (
+            <Card className="bg-muted/30">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3 mb-4">
+                  <HelpCircle className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-sm mb-2">
+                      {tr("Takip kodunuzu nasıl alabilirsiniz?", "How to get your tracking code?")}
+                    </p>
+                    <div className="space-y-3 text-sm text-muted-foreground">
+                      <div className="flex items-start gap-2.5">
+                        <Mail className="w-4 h-4 mt-0.5 shrink-0 text-primary/70" />
+                        <p>
+                          {tr(
+                            "Rezervasyonunuz oluşturulduğunda takip linkiniz e-posta adresinize otomatik olarak gönderilir.",
+                            "Your tracking link is automatically sent to your email when your reservation is created."
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2.5">
+                        <Phone className="w-4 h-4 mt-0.5 shrink-0 text-green-600 dark:text-green-400" />
+                        <p>
+                          {tr(
+                            "Takip kodunuzu bulamıyorsanız, WhatsApp destek hattımıza yazın. Bot otomatik olarak takip linkinizi gönderecektir.",
+                            "If you can't find your tracking code, message us on WhatsApp. Our bot will automatically send you your tracking link."
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Loading */}
-          {(isLoading || isSearching) && (
+          {isLoading && (
             <Card>
               <CardContent className="py-12 text-center">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
@@ -402,69 +366,25 @@ export default function PublicTrackReservation() {
             </Card>
           )}
 
-          {/* Search Results */}
-          {isSearchMode && !isSearching && searchResults && searchResults.length === 0 && (
-            <Card className="border-destructive/50">
-              <CardContent className="py-12 text-center">
-                <XCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
-                <h3 className="text-lg font-semibold mb-2">{tr("Rezervasyon Bulunamadı", "No Reservations Found")}</h3>
-                <p className="text-muted-foreground">{tr("Aramanızla eşleşen bir rezervasyon bulunamadı.", "No reservation matching your search was found.")}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {isSearchMode && !isSearching && searchResults && searchResults.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {tr(`${searchResults.length} rezervasyon bulundu. Detayları görmek için seçin:`, `${searchResults.length} reservation(s) found. Select to view details:`)}
-              </p>
-              {searchResults.map((result) => (
-                <Card key={result.id} className="hover-elevate cursor-pointer transition-colors" onClick={() => handleSelectResult(result)} data-testid={`card-search-result-${result.id}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="font-semibold text-sm truncate">{result.activityName}</span>
-                          {getStatusBadge(result.status)}
-                        </div>
-                        <div className="flex items-center gap-3 flex-wrap text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" />{result.customerName}</span>
-                          {result.orderNumber && <span className="flex items-center gap-1"><Hash className="w-3.5 h-3.5" />{result.orderNumber}</span>}
-                          <span className="flex items-center gap-1"><CalendarIcon className="w-3.5 h-3.5" />{new Date(result.date + "T00:00:00").toLocaleDateString(lang === "tr" ? "tr-TR" : "en-US", { day: "numeric", month: "short" })}</span>
-                          <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{result.time}</span>
-                        </div>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
           {/* Token Error */}
-          {tokenError && !isLoading && !isSearchMode && (
+          {tokenError && !isLoading && (
             <Card className="border-destructive/50">
               <CardContent className="py-12 text-center">
                 <XCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
                 <h3 className="text-lg font-semibold mb-2">{tr("Rezervasyon Bulunamadı", "Reservation Not Found")}</h3>
-                <p className="text-muted-foreground">{tr("Girdiğiniz takip kodu ile eşleşen bir rezervasyon bulunamadı.", "No reservation found matching the tracking code you entered.")}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {searchError && !isSearching && isSearchMode && (
-            <Card className="border-destructive/50">
-              <CardContent className="py-12 text-center">
-                <XCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
-                <h3 className="text-lg font-semibold mb-2">{tr("Rezervasyon Bulunamadı", "No Reservations Found")}</h3>
-                <p className="text-muted-foreground">{tr("Aramanızla eşleşen bir rezervasyon bulunamadı.", "No reservation matching your search was found.")}</p>
+                <p className="text-muted-foreground mb-4">{tr("Girdiğiniz takip kodu ile eşleşen bir rezervasyon bulunamadı.", "No reservation found matching the tracking code you entered.")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {tr(
+                    "Takip kodunuzu kontrol edip tekrar deneyin. Sorun devam ederse WhatsApp destek hattımızdan yardım alabilirsiniz.",
+                    "Please check your tracking code and try again. If the issue persists, contact our WhatsApp support for help."
+                  )}
+                </p>
               </CardContent>
             </Card>
           )}
 
           {/* Reservation Details */}
-          {reservation && !isSearchMode && (
+          {reservation && (
             <>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between gap-2">
