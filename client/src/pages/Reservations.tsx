@@ -4699,7 +4699,7 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
             date,
             time,
             quantity,
-            status: "pending",
+            status: "confirmed",
             source: "manual",
             hotelName: hotelName || undefined,
             hasTransfer,
