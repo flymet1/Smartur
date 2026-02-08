@@ -4182,9 +4182,22 @@ export async function registerRoutes(
       const input = api.activities.create.input.parse(req.body);
       const item = await storage.createActivity({ ...input, tenantId });
       res.status(201).json(item);
-    } catch (err) {
-      if (err instanceof z.ZodError) res.status(400).json(err.errors);
-      else throw err;
+    } catch (err: any) {
+      console.error('Activity create error:', err);
+      let errorMessage = "Aktivite oluşturulamadı";
+      if (err?.name === 'ZodError' || err instanceof z.ZodError) {
+        const fieldErrors = err.errors?.map((e: any) => `${e.path?.join('.')}: ${e.message}`).join(', ');
+        errorMessage = `Geçersiz veri: ${fieldErrors}`;
+      } else if (err?.message) {
+        if (err.message.includes('value too long') || err.message.includes('too large')) {
+          errorMessage = "Görsel dosya boyutu çok büyük. Lütfen görseli kaldırıp daha küçük bir dosya yükleyin (max 200KB).";
+        } else if (err.message.includes('string_too_long') || err.message.includes('bytea')) {
+          errorMessage = "Görsel verisi çok büyük. Lütfen görseli kaldırıp daha küçük bir dosya yükleyin.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      res.status(400).json({ error: errorMessage });
     }
   });
 
@@ -4200,8 +4213,22 @@ export async function registerRoutes(
       const input = api.activities.update.input.parse(req.body);
       const item = await storage.updateActivity(Number(req.params.id), input);
       res.json(item);
-    } catch (err) {
-      res.status(400).json({ error: "Invalid input" });
+    } catch (err: any) {
+      console.error('Activity update error:', err);
+      let errorMessage = "Aktivite güncellenemedi";
+      if (err?.name === 'ZodError') {
+        const fieldErrors = err.errors?.map((e: any) => `${e.path?.join('.')}: ${e.message}`).join(', ');
+        errorMessage = `Geçersiz veri: ${fieldErrors}`;
+      } else if (err?.message) {
+        if (err.message.includes('value too long') || err.message.includes('too large')) {
+          errorMessage = "Görsel dosya boyutu çok büyük. Lütfen görseli kaldırıp daha küçük bir dosya yükleyin (max 200KB).";
+        } else if (err.message.includes('string_too_long') || err.message.includes('bytea')) {
+          errorMessage = "Görsel verisi çok büyük. Lütfen görseli kaldırıp daha küçük bir dosya yükleyin.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      res.status(400).json({ error: errorMessage });
     }
   });
 

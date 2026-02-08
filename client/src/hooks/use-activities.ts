@@ -24,10 +24,8 @@ export function useCreateActivity() {
         credentials: 'include',
       });
       if (!res.ok) {
-        if (res.status === 400) {
-          throw new Error("Geçersiz veri");
-        }
-        throw new Error("Aktivite oluşturulamadı");
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || (res.status === 400 ? "Geçersiz veri" : "Aktivite oluşturulamadı"));
       }
       return api.activities.create.responses[201].parse(await res.json());
     },
@@ -46,7 +44,10 @@ export function useUpdateActivity() {
         body: JSON.stringify(data),
         credentials: 'include',
       });
-      if (!res.ok) throw new Error("Aktivite güncellenemedi");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || "Aktivite güncellenemedi");
+      }
       return api.activities.update.responses[200].parse(await res.json());
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.activities.list.path] }),
