@@ -406,9 +406,10 @@ export const customerRequests = pgTable("customer_requests", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").references(() => tenants.id),
   reservationId: integer("reservation_id").references(() => reservations.id).notNull(),
-  requestType: text("request_type").notNull(), // time_change, cancellation, other
+  requestType: text("request_type").notNull(), // time_change, date_change, cancellation, other
   requestDetails: text("request_details"), // Talep detayları
   preferredTime: text("preferred_time"), // Saat değişikliği için tercih edilen saat
+  preferredDate: text("preferred_date"), // Tarih değişikliği için tercih edilen tarih
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone"),
   customerEmail: text("customer_email"),
