@@ -113,6 +113,7 @@ export default function Reservations() {
   
   const [partnerDispatchOpen, setPartnerDispatchOpen] = useState(false);
   const [partnerDispatchReservation, setPartnerDispatchReservation] = useState<Reservation | null>(null);
+  const [dispatchMode, setDispatchMode] = useState<'partner' | 'agency' | ''>('');
   const [selectedPartnerTenantId, setSelectedPartnerTenantId] = useState<string>("");
   const [partnerDispatchSelectedSlot, setPartnerDispatchSelectedSlot] = useState<{
     activityId: number;
@@ -130,6 +131,14 @@ export default function Reservations() {
   const [partnerDispatchPaymentType, setPartnerDispatchPaymentType] = useState<string>("receiver_full");
   const [partnerDispatchAmountCollected, setPartnerDispatchAmountCollected] = useState<number>(0);
   const [partnerDispatchPaymentNotes, setPartnerDispatchPaymentNotes] = useState("");
+  const [selectedAgencyDispatchId, setSelectedAgencyDispatchId] = useState<string>("");
+  const [agencyDispatchDate, setAgencyDispatchDate] = useState<string>("");
+  const [agencyDispatchTime, setAgencyDispatchTime] = useState<string>("");
+  const [agencyDispatchActivityId, setAgencyDispatchActivityId] = useState<string>("");
+  const [agencyDispatchGuests, setAgencyDispatchGuests] = useState(1);
+  const [agencyDispatchUnitPayout, setAgencyDispatchUnitPayout] = useState<number>(0);
+  const [agencyDispatchCurrency, setAgencyDispatchCurrency] = useState<string>("TRY");
+  const [agencyDispatchNotes, setAgencyDispatchNotes] = useState("");
   
   const { toast } = useToast();
 
@@ -229,6 +238,7 @@ export default function Reservations() {
       toast({ title: "Basarili", description: "Partner acentaya rezervasyon talebi gonderildi" });
       setPartnerDispatchOpen(false);
       setPartnerDispatchReservation(null);
+      setDispatchMode('');
       setSelectedPartnerTenantId("");
       setPartnerDispatchSelectedSlot(null);
       setPartnerDispatchGuests(1);
@@ -236,7 +246,50 @@ export default function Reservations() {
       setPartnerDispatchPaymentType("receiver_full");
       setPartnerDispatchAmountCollected(0);
       setPartnerDispatchPaymentNotes("");
+      setSelectedAgencyDispatchId("");
+      setAgencyDispatchDate("");
+      setAgencyDispatchTime("");
+      setAgencyDispatchActivityId("");
+      setAgencyDispatchGuests(1);
+      setAgencyDispatchUnitPayout(0);
+      setAgencyDispatchCurrency("TRY");
+      setAgencyDispatchNotes("");
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Hata", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const agencyDispatchMutation = useMutation({
+    mutationFn: async (data: {
+      agencyId: number;
+      activityId: number | null;
+      dispatchDate: string;
+      dispatchTime: string;
+      customerName: string;
+      guestCount: number;
+      unitPayoutTl: number;
+      currency: string;
+      notes: string;
+    }) => {
+      return apiRequest('POST', '/api/finance/dispatches', data);
+    },
+    onSuccess: () => {
+      toast({ title: "Basarili", description: "Acentaya gonderim kaydedildi" });
+      setPartnerDispatchOpen(false);
+      setPartnerDispatchReservation(null);
+      setDispatchMode('');
+      setSelectedAgencyDispatchId("");
+      setAgencyDispatchDate("");
+      setAgencyDispatchTime("");
+      setAgencyDispatchActivityId("");
+      setAgencyDispatchGuests(1);
+      setAgencyDispatchUnitPayout(0);
+      setAgencyDispatchCurrency("TRY");
+      setAgencyDispatchNotes("");
+      queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
     },
     onError: (error: Error) => {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
@@ -2023,10 +2076,19 @@ export default function Reservations() {
             }}
             onAddDispatch={(reservation) => {
               setPartnerDispatchReservation(reservation);
+              setDispatchMode('');
               setSelectedPartnerTenantId("");
               setPartnerDispatchSelectedSlot(null);
               setPartnerDispatchGuests(reservation.quantity || 1);
               setPartnerDispatchNotes("");
+              setSelectedAgencyDispatchId("");
+              setAgencyDispatchDate(reservation.date || "");
+              setAgencyDispatchTime(reservation.time || "");
+              setAgencyDispatchActivityId(reservation.activityId ? String(reservation.activityId) : "");
+              setAgencyDispatchGuests(reservation.quantity || 1);
+              setAgencyDispatchUnitPayout(0);
+              setAgencyDispatchCurrency("TRY");
+              setAgencyDispatchNotes("");
               setPartnerDispatchOpen(true);
             }}
             onNotifyAgency={(reservation) => {
@@ -2255,6 +2317,7 @@ export default function Reservations() {
           setPartnerDispatchOpen(open);
           if (!open) {
             setPartnerDispatchReservation(null);
+            setDispatchMode('');
             setSelectedPartnerTenantId("");
             setPartnerDispatchSelectedSlot(null);
             setPartnerDispatchGuests(1);
@@ -2262,16 +2325,24 @@ export default function Reservations() {
             setPartnerDispatchPaymentType("receiver_full");
             setPartnerDispatchAmountCollected(0);
             setPartnerDispatchPaymentNotes("");
+            setSelectedAgencyDispatchId("");
+            setAgencyDispatchDate("");
+            setAgencyDispatchTime("");
+            setAgencyDispatchActivityId("");
+            setAgencyDispatchGuests(1);
+            setAgencyDispatchUnitPayout(0);
+            setAgencyDispatchCurrency("TRY");
+            setAgencyDispatchNotes("");
           }
         }}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Handshake className="h-5 w-5 text-blue-600" />
-                Partner Acentaya Gonder
+                Acentaya Gonder
               </DialogTitle>
               <DialogDescription>
-                Partner acentanin musaitligini gorup rezervasyon gonderin
+                Rezervasyonu partner veya normal acentaya gonderin
               </DialogDescription>
             </DialogHeader>
 
@@ -2302,6 +2373,50 @@ export default function Reservations() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {!dispatchMode && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card
+                      className="cursor-pointer hover-elevate transition-all border-2 border-transparent hover:border-primary/30"
+                      onClick={() => setDispatchMode('partner')}
+                      data-testid="button-dispatch-mode-partner"
+                    >
+                      <CardContent className="p-6 text-center space-y-3">
+                        <Handshake className="h-10 w-10 mx-auto text-blue-600" />
+                        <h3 className="font-semibold text-lg">Smartur Partner Acenta</h3>
+                        <p className="text-sm text-muted-foreground">Smartur kullanan bagli partner acentalara gonder. Musaitlik takibi ve otomatik bildirim.</p>
+                        {(partnerAvailability || []).length > 0 && (
+                          <Badge variant="secondary">{(partnerAvailability || []).length} partner</Badge>
+                        )}
+                      </CardContent>
+                    </Card>
+                    <Card
+                      className="cursor-pointer hover-elevate transition-all border-2 border-transparent hover:border-primary/30"
+                      onClick={() => setDispatchMode('agency')}
+                      data-testid="button-dispatch-mode-agency"
+                    >
+                      <CardContent className="p-6 text-center space-y-3">
+                        <Building className="h-10 w-10 mx-auto text-orange-600" />
+                        <h3 className="font-semibold text-lg">Normal Acenta</h3>
+                        <p className="text-sm text-muted-foreground">Acentalar sayfasina ekli acentalara gonderim kaydi olusturun. Hesap sayfasinda goruntulenir.</p>
+                        {agencies.length > 0 && (
+                          <Badge variant="secondary">{agencies.length} acenta</Badge>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {dispatchMode === 'partner' && (
+                  <>
+                <div className="flex items-center gap-2 mb-2">
+                  <Button variant="ghost" size="sm" onClick={() => { setDispatchMode(''); setSelectedPartnerTenantId(''); setPartnerDispatchSelectedSlot(null); }} data-testid="button-back-dispatch-mode">
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Geri
+                  </Button>
+                  <Badge variant="outline" className="text-blue-600 border-blue-600">
+                    <Handshake className="h-3 w-3 mr-1" /> Smartur Partner Acenta
+                  </Badge>
+                </div>
 
                 <div className="space-y-2">
                   <Label>Partner Acenta Secin</Label>
@@ -2630,6 +2745,172 @@ export default function Reservations() {
                     Talebi Gonder
                   </Button>
                 </DialogFooter>
+                  </>
+                )}
+
+                {dispatchMode === 'agency' && (
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Button variant="ghost" size="sm" onClick={() => { setDispatchMode(''); setSelectedAgencyDispatchId(''); }} data-testid="button-back-dispatch-mode-agency">
+                        <ChevronLeft className="h-4 w-4 mr-1" /> Geri
+                      </Button>
+                      <Badge variant="outline" className="text-orange-600 border-orange-600">
+                        <Building className="h-3 w-3 mr-1" /> Normal Acenta
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Acenta Secin</Label>
+                        <Select value={selectedAgencyDispatchId} onValueChange={setSelectedAgencyDispatchId}>
+                          <SelectTrigger data-testid="select-agency-dispatch">
+                            <SelectValue placeholder="Acenta secin..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {agencies.filter(a => a.active !== false).map((agency) => (
+                              <SelectItem key={agency.id} value={agency.id.toString()}>
+                                <div className="flex items-center gap-2">
+                                  <Building className="h-4 w-4" />
+                                  {agency.name}
+                                  {agency.contactInfo && (
+                                    <span className="text-xs text-muted-foreground ml-1">({agency.contactInfo})</span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {selectedAgencyDispatchId && (
+                        <>
+                          <div className="space-y-2">
+                            <Label>Aktivite</Label>
+                            <Select value={agencyDispatchActivityId} onValueChange={setAgencyDispatchActivityId}>
+                              <SelectTrigger data-testid="select-agency-dispatch-activity">
+                                <SelectValue placeholder="Aktivite secin..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(activities || []).map((act) => (
+                                  <SelectItem key={act.id} value={act.id.toString()}>
+                                    {act.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label>Tarih</Label>
+                              <Input
+                                type="date"
+                                value={agencyDispatchDate}
+                                onChange={(e) => setAgencyDispatchDate(e.target.value)}
+                                data-testid="input-agency-dispatch-date"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Saat</Label>
+                              <Input
+                                type="time"
+                                value={agencyDispatchTime}
+                                onChange={(e) => setAgencyDispatchTime(e.target.value)}
+                                data-testid="input-agency-dispatch-time"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Kisi Sayisi</Label>
+                              <Input
+                                type="number"
+                                min={1}
+                                value={agencyDispatchGuests}
+                                onChange={(e) => setAgencyDispatchGuests(parseInt(e.target.value) || 1)}
+                                data-testid="input-agency-dispatch-guests"
+                              />
+                            </div>
+                          </div>
+
+                          <Separator />
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label>Kisi Basi Odeme</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={agencyDispatchUnitPayout}
+                                onChange={(e) => setAgencyDispatchUnitPayout(parseInt(e.target.value) || 0)}
+                                placeholder="0"
+                                data-testid="input-agency-dispatch-unit-payout"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Para Birimi</Label>
+                              <Select value={agencyDispatchCurrency} onValueChange={setAgencyDispatchCurrency}>
+                                <SelectTrigger data-testid="select-agency-dispatch-currency">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="TRY">TRY</SelectItem>
+                                  <SelectItem value="USD">USD</SelectItem>
+                                  <SelectItem value="EUR">EUR</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Toplam</Label>
+                              <div className="flex items-center h-9 px-3 border rounded-md bg-muted/50 text-sm font-medium">
+                                {(agencyDispatchGuests * agencyDispatchUnitPayout).toLocaleString('tr-TR')} {agencyDispatchCurrency}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>Not (opsiyonel)</Label>
+                            <Input
+                              value={agencyDispatchNotes}
+                              onChange={(e) => setAgencyDispatchNotes(e.target.value)}
+                              placeholder="Gonderim hakkinda not..."
+                              data-testid="input-agency-dispatch-notes"
+                            />
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setPartnerDispatchOpen(false)} data-testid="button-cancel-agency-dispatch">
+                        Iptal
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (!selectedAgencyDispatchId || !partnerDispatchReservation || !agencyDispatchDate) return;
+                          agencyDispatchMutation.mutate({
+                            agencyId: parseInt(selectedAgencyDispatchId),
+                            activityId: agencyDispatchActivityId ? parseInt(agencyDispatchActivityId) : null,
+                            dispatchDate: agencyDispatchDate,
+                            dispatchTime: agencyDispatchTime,
+                            customerName: partnerDispatchReservation.customerName,
+                            guestCount: agencyDispatchGuests,
+                            unitPayoutTl: agencyDispatchUnitPayout,
+                            currency: agencyDispatchCurrency,
+                            notes: agencyDispatchNotes.trim(),
+                          });
+                        }}
+                        disabled={!selectedAgencyDispatchId || !agencyDispatchDate || agencyDispatchMutation.isPending}
+                        data-testid="button-submit-agency-dispatch"
+                      >
+                        {agencyDispatchMutation.isPending ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-2" />
+                        )}
+                        Gonderimi Kaydet
+                      </Button>
+                    </DialogFooter>
+                  </>
+                )}
               </div>
             )}
           </DialogContent>
