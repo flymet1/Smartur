@@ -6990,6 +6990,8 @@ export async function registerRoutes(
         notes: `[Partner: ${partnerName}] ${notes || ''}`.trim(),
         requestedBy: userId,
         status: "pending",
+        sourceReservationId: sourceReservationId || null,
+        senderTenantId: requesterTenantId,
         paymentCollectionType: paymentCollectionType || 'receiver_full',
         amountCollectedBySender: amountCollectedBySender || 0,
         paymentCurrency: paymentCurrency || 'TRY',
