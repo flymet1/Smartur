@@ -2637,9 +2637,14 @@ Sky Fethiye`,
       )
     );
 
-    const reservationIncome = reservationRows.reduce((sum, r) => sum + (r.salePriceTl || 0), 0);
-    const reservationAdvance = reservationRows.reduce((sum, r) => sum + (r.advancePaymentTl || 0), 0);
-    const reservationCount = reservationRows.length;
+    const activeReservations = reservationRows.filter(r => r.status !== 'cancelled');
+    const reservationIncome = activeReservations.reduce((sum, r) => {
+      if (r.salePriceTl && r.salePriceTl > 0) return sum + r.salePriceTl;
+      if (r.priceTl && r.priceTl > 0) return sum + (r.priceTl * (r.quantity || 1));
+      return sum;
+    }, 0);
+    const reservationAdvance = activeReservations.reduce((sum, r) => sum + (r.advancePaymentTl || 0), 0);
+    const reservationCount = activeReservations.length;
 
     const manualIncome = entries.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amountTl, 0);
     const manualExpense = entries.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amountTl, 0);

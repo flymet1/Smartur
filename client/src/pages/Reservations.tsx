@@ -4929,14 +4929,20 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
                 name="activityId" 
                 required 
                 value={selectedActivityId}
-                onValueChange={setSelectedActivityId}
+                onValueChange={(val) => {
+                  setSelectedActivityId(val);
+                  const act = activities?.find(a => String(a.id) === val);
+                  if (act) {
+                    setSalePriceTl(act.price || 0);
+                  }
+                }}
               >
                 <SelectTrigger data-testid="select-activity">
                   <SelectValue placeholder="Aktivite seçin" />
                 </SelectTrigger>
                 <SelectContent>
                   {activities?.map(a => (
-                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name} - {(a.price || 0).toLocaleString('tr-TR')} TL</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
