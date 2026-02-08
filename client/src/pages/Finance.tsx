@@ -484,7 +484,7 @@ export default function Finance() {
 
   // Dispatch filter states
   const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(null);
-  const [financeTab, setFinanceTab] = useState<'dispatches' | 'payouts' | 'rates' | 'partner-customers' | 'agencies' | 'user-reports'>('dispatches');
+  const [financeTab, setFinanceTab] = useState<'dispatches' | 'payouts' | 'rates' | 'partner-customers' | 'agencies' | 'user-reports' | 'income-expense'>('dispatches');
   const [dispatchSortOrder, setDispatchSortOrder] = useState<'createdNewest' | 'createdOldest' | 'dateNewest' | 'dateOldest'>('createdNewest');
   const [payoutSortOrder, setPayoutSortOrder] = useState<'createdNewest' | 'createdOldest' | 'amountHigh' | 'amountLow'>('createdNewest');
   const [rateSortOrder, setRateSortOrder] = useState<'createdNewest' | 'createdOldest' | 'priceHigh' | 'priceLow'>('createdNewest');
@@ -734,6 +734,74 @@ export default function Finance() {
     enabled: financeTab === 'user-reports',
   });
   const [userReportSelectedUser, setUserReportSelectedUser] = useState<string | null>(null);
+
+  // Income-Expense (Gelir & Gider) tab
+  interface FinanceSummaryData {
+    totalIncome: number;
+    totalExpense: number;
+    netProfit: number;
+    reservationIncome: number;
+    manualIncome: number;
+    agencyPayoutTotal: number;
+    manualExpense: number;
+    incomeByCategory: Record<string, number>;
+    expenseByCategory: Record<string, number>;
+  }
+  const currentMonth = `${startDate.slice(0, 7)}`;
+  const { data: financeEntries = [] } = useQuery<any[]>({
+    queryKey: ['/api/finance/entries', startDate, endDate],
+    queryFn: async () => {
+      const res = await fetch(`/api/finance/entries?startDate=${startDate}&endDate=${endDate}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    enabled: financeTab === 'income-expense',
+  });
+  const { data: financeSummary } = useQuery<FinanceSummaryData>({
+    queryKey: ['/api/finance/summary', currentMonth],
+    queryFn: async () => {
+      const res = await fetch(`/api/finance/summary?month=${currentMonth}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    enabled: financeTab === 'income-expense',
+  });
+
+  const [financeEntryDialogOpen, setFinanceEntryDialogOpen] = useState(false);
+  const [financeEntryType, setFinanceEntryType] = useState<'income' | 'expense'>('income');
+  const [financeEntryCategory, setFinanceEntryCategory] = useState('');
+  const [financeEntryDescription, setFinanceEntryDescription] = useState('');
+  const [financeEntryAmount, setFinanceEntryAmount] = useState(0);
+  const [financeEntryDate, setFinanceEntryDate] = useState(new Date().toISOString().split('T')[0]);
+
+  const createFinanceEntryMutation = useMutation({
+    mutationFn: async (data: { type: string; category: string; description: string; amountTl: number; date: string }) => {
+      const res = await apiRequest('POST', '/api/finance/entries', data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/summary'] });
+      setFinanceEntryDialogOpen(false);
+      setFinanceEntryCategory('');
+      setFinanceEntryDescription('');
+      setFinanceEntryAmount(0);
+      setFinanceEntryDate(new Date().toISOString().split('T')[0]);
+      toast({ title: 'Başarılı', description: 'Kayıt eklendi.' });
+    },
+  });
+
+  const deleteFinanceEntryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest('DELETE', `/api/finance/entries/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/summary'] });
+      toast({ title: 'Silindi', description: 'Kayıt silindi.' });
+    },
+  });
 
   // Partner Mutabakat hesaplamaları
   const handlePartnerDateRangeChange = (range: 'week' | 'month' | 'custom') => {
@@ -1565,6 +1633,21 @@ export default function Finance() {
               </TooltipTrigger>
               <TooltipContent className="xl:hidden">Kullanıcı Raporları</TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={financeTab === 'income-expense' ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setFinanceTab('income-expense')}
+                  data-testid="tab-income-expense"
+                  className="w-full xl:w-auto justify-center"
+                >
+                  <Scale className="h-4 w-4 xl:mr-2" />
+                  <span className="hidden xl:inline">Gelir & Gider</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="xl:hidden">Gelir & Gider</TooltipContent>
+            </Tooltip>
           </div>
           {/* Mobile: Show current tab name */}
           <div className="xl:hidden text-sm font-medium text-muted-foreground pt-1">
@@ -1574,6 +1657,7 @@ export default function Finance() {
             {financeTab === 'partner-customers' && 'Partner Acentalar'}
             {financeTab === 'agencies' && 'Acentalar'}
             {financeTab === 'user-reports' && 'Kullanıcı Raporları'}
+            {financeTab === 'income-expense' && 'Gelir & Gider'}
           </div>
         </div>
 
@@ -3404,7 +3488,246 @@ export default function Finance() {
             })()}
           </div>
           )}
+
+          {financeTab === 'income-expense' && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold" data-testid="text-income-expense-title">Gelir & Gider Takibi</h3>
+              <Button size="sm" onClick={() => setFinanceEntryDialogOpen(true)} data-testid="button-add-finance-entry">
+                <Plus className="h-4 w-4 mr-1" /> Kayıt Ekle
+              </Button>
+            </div>
+
+            {financeSummary && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-green-500" />
+                      <span className="text-sm text-muted-foreground">Toplam Gelir</span>
+                    </div>
+                    <p className="text-2xl font-bold text-green-600" data-testid="text-total-income">{formatMoney(financeSummary.totalIncome)}</p>
+                    <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                      <div className="flex justify-between"><span>Rezervasyon Satış</span><span>{formatMoney(financeSummary.reservationIncome)}</span></div>
+                      <div className="flex justify-between"><span>Manuel Gelir</span><span>{formatMoney(financeSummary.manualIncome)}</span></div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Wallet className="h-4 w-4 text-red-500" />
+                      <span className="text-sm text-muted-foreground">Toplam Gider</span>
+                    </div>
+                    <p className="text-2xl font-bold text-red-600" data-testid="text-total-expense">{formatMoney(financeSummary.totalExpense)}</p>
+                    <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                      <div className="flex justify-between"><span>Acenta Ödemeleri</span><span>{formatMoney(financeSummary.agencyPayoutTotal)}</span></div>
+                      <div className="flex justify-between"><span>Manuel Gider</span><span>{formatMoney(financeSummary.manualExpense)}</span></div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Scale className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm text-muted-foreground">Net Kar</span>
+                    </div>
+                    <p className={`text-2xl font-bold ${financeSummary.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} data-testid="text-net-profit">
+                      {formatMoney(financeSummary.netProfit)}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {financeSummary && (Object.keys(financeSummary.incomeByCategory).length > 0 || Object.keys(financeSummary.expenseByCategory).length > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.keys(financeSummary.incomeByCategory).length > 0 && (
+                  <Card>
+                    <CardContent className="pt-4 pb-4">
+                      <h4 className="text-sm font-semibold mb-3">Gelir Kategorileri</h4>
+                      <div className="space-y-2">
+                        {Object.entries(financeSummary.incomeByCategory).map(([cat, amount]) => (
+                          <div key={cat} className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground">{cat}</span>
+                            <span className="font-medium text-green-600">{formatMoney(amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {Object.keys(financeSummary.expenseByCategory).length > 0 && (
+                  <Card>
+                    <CardContent className="pt-4 pb-4">
+                      <h4 className="text-sm font-semibold mb-3">Gider Kategorileri</h4>
+                      <div className="space-y-2">
+                        {Object.entries(financeSummary.expenseByCategory).map(([cat, amount]) => (
+                          <div key={cat} className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground">{cat}</span>
+                            <span className="font-medium text-red-600">{formatMoney(amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <h4 className="text-sm font-semibold mb-3">Manuel Kayıtlar</h4>
+                {financeEntries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">Bu dönemde manuel kayıt bulunmuyor.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left">
+                          <th className="py-2 px-3">Tarih</th>
+                          <th className="py-2 px-3">Tür</th>
+                          <th className="py-2 px-3">Kategori</th>
+                          <th className="py-2 px-3">Açıklama</th>
+                          <th className="py-2 px-3 text-right">Tutar</th>
+                          <th className="py-2 px-3 text-right">İşlem</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {financeEntries.map(entry => (
+                          <tr key={entry.id} className="border-b hover-elevate" data-testid={`row-finance-entry-${entry.id}`}>
+                            <td className="py-2 px-3">{entry.date}</td>
+                            <td className="py-2 px-3">
+                              <Badge variant={entry.type === 'income' ? 'default' : 'destructive'}>
+                                {entry.type === 'income' ? 'Gelir' : 'Gider'}
+                              </Badge>
+                            </td>
+                            <td className="py-2 px-3">{entry.category}</td>
+                            <td className="py-2 px-3">{entry.description}</td>
+                            <td className={`py-2 px-3 text-right font-medium ${entry.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                              {entry.type === 'income' ? '+' : '-'}{formatMoney(entry.amountTl || 0)}
+                            </td>
+                            <td className="py-2 px-3 text-right">
+                              <Button size="icon" variant="ghost" onClick={() => {
+                                if (confirm('Bu kaydı silmek istediğinize emin misiniz?')) {
+                                  deleteFinanceEntryMutation.mutate(entry.id);
+                                }
+                              }} data-testid={`button-delete-entry-${entry.id}`}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          )}
         </div>
+
+        {/* Gelir/Gider Kayıt Dialog */}
+        <Dialog open={financeEntryDialogOpen} onOpenChange={setFinanceEntryDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Gelir/Gider Kaydı Ekle</DialogTitle>
+              <DialogDescription>Manuel gelir veya gider kaydı oluşturun</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Tür</Label>
+                <Select value={financeEntryType} onValueChange={(v: 'income' | 'expense') => setFinanceEntryType(v)}>
+                  <SelectTrigger data-testid="select-finance-entry-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="income">Gelir</SelectItem>
+                    <SelectItem value="expense">Gider</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Kategori</Label>
+                <Select value={financeEntryCategory} onValueChange={setFinanceEntryCategory}>
+                  <SelectTrigger data-testid="select-finance-entry-category">
+                    <SelectValue placeholder="Kategori seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {financeEntryType === 'income' ? (
+                      <>
+                        <SelectItem value="Tur Satışı">Tur Satışı</SelectItem>
+                        <SelectItem value="Transfer Ücreti">Transfer Ücreti</SelectItem>
+                        <SelectItem value="Ekstra Hizmet">Ekstra Hizmet</SelectItem>
+                        <SelectItem value="Diğer Gelir">Diğer Gelir</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="Personel Gideri">Personel Gideri</SelectItem>
+                        <SelectItem value="Araç Yakıt">Araç Yakıt</SelectItem>
+                        <SelectItem value="Reklam">Reklam</SelectItem>
+                        <SelectItem value="Ofis Gideri">Ofis Gideri</SelectItem>
+                        <SelectItem value="Vergi">Vergi</SelectItem>
+                        <SelectItem value="Diğer Gider">Diğer Gider</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Açıklama</Label>
+                <Input
+                  value={financeEntryDescription}
+                  onChange={e => setFinanceEntryDescription(e.target.value)}
+                  placeholder="Kayıt açıklaması"
+                  data-testid="input-finance-entry-description"
+                />
+              </div>
+              <div>
+                <Label>Tutar (TL)</Label>
+                <Input
+                  type="number"
+                  value={financeEntryAmount || ''}
+                  onChange={e => setFinanceEntryAmount(Number(e.target.value))}
+                  placeholder="0"
+                  data-testid="input-finance-entry-amount"
+                />
+              </div>
+              <div>
+                <Label>Tarih</Label>
+                <Input
+                  type="date"
+                  value={financeEntryDate}
+                  onChange={e => setFinanceEntryDate(e.target.value)}
+                  data-testid="input-finance-entry-date"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setFinanceEntryDialogOpen(false)}>İptal</Button>
+              <Button
+                onClick={() => {
+                  if (!financeEntryCategory || !financeEntryDescription || financeEntryAmount <= 0) {
+                    toast({ title: 'Hata', description: 'Tüm alanları doldurun.', variant: 'destructive' });
+                    return;
+                  }
+                  createFinanceEntryMutation.mutate({
+                    type: financeEntryType,
+                    category: financeEntryCategory,
+                    description: financeEntryDescription,
+                    amountTl: financeEntryAmount,
+                    date: financeEntryDate,
+                  });
+                }}
+                disabled={createFinanceEntryMutation.isPending}
+                data-testid="button-save-finance-entry"
+              >
+                {createFinanceEntryMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Ödeme Dialog */}
         <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>

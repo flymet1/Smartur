@@ -4582,6 +4582,8 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
   const [hasTransfer, setHasTransfer] = useState(false);
   const [transferZone, setTransferZone] = useState("");
   const [confirmationNote, setConfirmationNote] = useState("");
+  const [salePriceTl, setSalePriceTl] = useState<number>(0);
+  const [advancePaymentTl, setAdvancePaymentTl] = useState<number>(0);
   const { data: activities } = useActivities();
   const createMutation = useCreateReservation();
   const { toast } = useToast();
@@ -4646,6 +4648,7 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
       if (reservationType === "package" && selectedPackageId && packageActivities.length > 0) {
         for (const activity of packageActivities) {
           const time = activityTimes[activity.id] || (activity as any).defaultTime || "10:00";
+          const paymentStatus = salePriceTl > 0 && advancePaymentTl >= salePriceTl ? 'paid' : advancePaymentTl > 0 ? 'partial' : 'unpaid';
           await createMutation.mutateAsync({
             activityId: activity.id,
             packageTourId: Number(selectedPackageId),
@@ -4662,6 +4665,9 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
             hasTransfer,
             transferZone: hasTransfer ? (transferZone || undefined) : undefined,
             confirmationNote: confirmationNote || undefined,
+            salePriceTl: salePriceTl || 0,
+            advancePaymentTl: advancePaymentTl || 0,
+            paymentStatus,
           });
           if (!createdActivityId) {
             createdActivityId = activity.id;
@@ -4702,6 +4708,7 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
       } else {
         const activityId = Number(formData.get("activityId"));
         const time = formData.get("time") as string;
+        const singlePaymentStatus = salePriceTl > 0 && advancePaymentTl >= salePriceTl ? 'paid' : advancePaymentTl > 0 ? 'partial' : 'unpaid';
         const createdReservation = await createMutation.mutateAsync({
           activityId,
           orderNumber,
@@ -4717,6 +4724,9 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
           hasTransfer,
           transferZone: hasTransfer ? (transferZone || undefined) : undefined,
           confirmationNote: confirmationNote || undefined,
+          salePriceTl: salePriceTl || 0,
+          advancePaymentTl: advancePaymentTl || 0,
+          paymentStatus: singlePaymentStatus,
         });
         
         if (notifyCustomer && customerPhone) {
@@ -4773,6 +4783,8 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
       setTransferZone("");
       setConfirmationNote("");
       setHasTransfer(false);
+      setSalePriceTl(0);
+      setAdvancePaymentTl(0);
     } catch (err) {
       const licenseErr = parseLicenseError(err);
       if (licenseErr.isLicenseError) {
@@ -5038,6 +5050,37 @@ function NewReservationDialog({ open: controlledOpen, onOpenChange, defaultDate 
             <div className="space-y-2">
               <Label>Kişi Sayısı</Label>
               <Input name="quantity" type="number" min="1" defaultValue="1" required data-testid="input-quantity" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Satış Fiyatı (TL)</Label>
+              <Input
+                type="number"
+                min="0"
+                value={salePriceTl || ""}
+                onChange={(e) => setSalePriceTl(Number(e.target.value) || 0)}
+                placeholder="0"
+                data-testid="input-sale-price"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Ön Ödeme (TL)</Label>
+              <Input
+                type="number"
+                min="0"
+                max={salePriceTl || undefined}
+                value={advancePaymentTl || ""}
+                onChange={(e) => setAdvancePaymentTl(Number(e.target.value) || 0)}
+                placeholder="0"
+                data-testid="input-advance-payment"
+              />
+              {salePriceTl > 0 && advancePaymentTl > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Kalan: {(salePriceTl - advancePaymentTl).toLocaleString('tr-TR')} TL
+                </p>
+              )}
             </div>
           </div>
 

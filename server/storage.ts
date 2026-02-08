@@ -181,6 +181,9 @@ import {
   blogPosts,
   type BlogPost,
   type InsertBlogPost,
+  financeEntries,
+  type FinanceEntry,
+  type InsertFinanceEntry,
 } from "@shared/schema";
 import { eq, and, gte, lte, lt, desc, sql, isNull, or, like, inArray } from "drizzle-orm";
 
@@ -394,6 +397,13 @@ export interface IStorage {
 
   // Tenant-User membership sync
   syncTenantUsersMembershipType(tenantId: number, planCode: string): Promise<void>;
+
+  // Finance Entries (Gelir/Gider)
+  getFinanceEntries(tenantId: number, startDate?: string, endDate?: string): Promise<FinanceEntry[]>;
+  createFinanceEntry(entry: InsertFinanceEntry): Promise<FinanceEntry>;
+  updateFinanceEntry(id: number, entry: Partial<InsertFinanceEntry>): Promise<FinanceEntry>;
+  deleteFinanceEntry(id: number): Promise<void>;
+  getFinanceSummary(tenantId: number, month: string): Promise<any>;
 
   // Subscription Plans
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
@@ -2587,6 +2597,88 @@ Sky Fethiye`,
         eq(appUsers.tenantId, tenantId),
         eq(appUsers.isActive, true)
       ));
+  }
+
+  async getFinanceEntries(tenantId: number, startDate?: string, endDate?: string): Promise<FinanceEntry[]> {
+    const conditions = [eq(financeEntries.tenantId, tenantId)];
+    if (startDate) conditions.push(gte(financeEntries.date, startDate));
+    if (endDate) conditions.push(lte(financeEntries.date, endDate));
+    return db.select().from(financeEntries).where(and(...conditions)).orderBy(desc(financeEntries.date));
+  }
+
+  async createFinanceEntry(entry: InsertFinanceEntry): Promise<FinanceEntry> {
+    const [created] = await db.insert(financeEntries).values(entry).returning();
+    return created;
+  }
+
+  async updateFinanceEntry(id: number, entry: Partial<InsertFinanceEntry>): Promise<FinanceEntry> {
+    const [updated] = await db.update(financeEntries).set(entry).where(eq(financeEntries.id, id)).returning();
+    return updated;
+  }
+
+  async deleteFinanceEntry(id: number): Promise<void> {
+    await db.delete(financeEntries).where(eq(financeEntries.id, id));
+  }
+
+  async getFinanceSummary(tenantId: number, month: string): Promise<any> {
+    const startDate = `${month}-01`;
+    const endMonth = parseInt(month.split('-')[1]);
+    const endYear = parseInt(month.split('-')[0]);
+    const lastDay = new Date(endYear, endMonth, 0).getDate();
+    const endDate = `${month}-${String(lastDay).padStart(2, '0')}`;
+
+    const entries = await this.getFinanceEntries(tenantId, startDate, endDate);
+    
+    const reservationRows = await db.select().from(reservations).where(
+      and(
+        eq(reservations.tenantId, tenantId),
+        gte(reservations.date, startDate),
+        lte(reservations.date, endDate)
+      )
+    );
+
+    const reservationIncome = reservationRows.reduce((sum, r) => sum + (r.salePriceTl || 0), 0);
+    const reservationAdvance = reservationRows.reduce((sum, r) => sum + (r.advancePaymentTl || 0), 0);
+    const reservationCount = reservationRows.length;
+
+    const manualIncome = entries.filter(e => e.type === 'income').reduce((sum, e) => sum + e.amountTl, 0);
+    const manualExpense = entries.filter(e => e.type === 'expense').reduce((sum, e) => sum + e.amountTl, 0);
+
+    const payoutRows = await db.select().from(agencyPayouts).where(
+      and(
+        eq(agencyPayouts.tenantId, tenantId),
+        gte(agencyPayouts.periodStart, startDate),
+        lte(agencyPayouts.periodEnd, endDate)
+      )
+    );
+    const agencyPayoutTotal = payoutRows.reduce((sum, p) => sum + (p.totalAmountTl || 0), 0);
+
+    const totalIncome = reservationIncome + manualIncome;
+    const totalExpense = manualExpense + agencyPayoutTotal;
+    const netProfit = totalIncome - totalExpense;
+
+    return {
+      month,
+      reservationIncome,
+      reservationAdvance,
+      reservationCount,
+      manualIncome,
+      manualExpense,
+      agencyPayoutTotal,
+      totalIncome,
+      totalExpense,
+      netProfit,
+      entries,
+      incomeByCategory: this.groupByCategory(entries.filter(e => e.type === 'income')),
+      expenseByCategory: this.groupByCategory(entries.filter(e => e.type === 'expense')),
+    };
+  }
+
+  private groupByCategory(entries: FinanceEntry[]): Record<string, number> {
+    return entries.reduce((acc, e) => {
+      acc[e.category] = (acc[e.category] || 0) + e.amountTl;
+      return acc;
+    }, {} as Record<string, number>);
   }
 
   async getSubscriptionPlan(id: number): Promise<SubscriptionPlan | undefined> {

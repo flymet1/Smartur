@@ -322,8 +322,10 @@ export const reservations = pgTable("reservations", {
   paymentToken: text("payment_token"), // iyzico ödeme token'ı
   paymentId: text("payment_id"), // iyzico ödeme ID'si
   paymentDate: timestamp("payment_date"), // Ödeme tarihi
-  notes: text("notes"), // Notlar (partner rezervasyonlarında "[Partner: isim]" formatı)
-  createdByUserId: integer("created_by_user_id"), // Manuel ekleyen kullanıcı ID'si
+  salePriceTl: integer("sale_price_tl").default(0),
+  advancePaymentTl: integer("advance_payment_tl").default(0),
+  notes: text("notes"),
+  createdByUserId: integer("created_by_user_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -1567,6 +1569,27 @@ export const reservationChangeRequests = pgTable("reservation_change_requests", 
 export const insertReservationChangeRequestSchema = createInsertSchema(reservationChangeRequests).omit({ id: true, createdAt: true, updatedAt: true, processedAt: true });
 export type ReservationChangeRequest = typeof reservationChangeRequests.$inferSelect;
 export type InsertReservationChangeRequest = z.infer<typeof insertReservationChangeRequestSchema>;
+
+// === FİNANS GELİR/GİDER KAYITLARI ===
+
+export const financeEntries = pgTable("finance_entries", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").references(() => tenants.id),
+  type: text("type").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  amountTl: integer("amount_tl").notNull().default(0),
+  date: text("date").notNull(),
+  method: text("method"),
+  reference: text("reference"),
+  notes: text("notes"),
+  createdByUserId: integer("created_by_user_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFinanceEntrySchema = createInsertSchema(financeEntries).omit({ id: true, createdAt: true });
+export type FinanceEntry = typeof financeEntries.$inferSelect;
+export type InsertFinanceEntry = z.infer<typeof insertFinanceEntrySchema>;
 
 // === SMARTUR PLATFORM AYARLARI ===
 

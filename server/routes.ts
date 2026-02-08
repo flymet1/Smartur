@@ -7,7 +7,7 @@ import { sql, eq, and } from "drizzle-orm";
 import { supplierDispatches, reservations, userRoles, roles, tenants, homepageSections, smarturSettings } from "@shared/schema";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema } from "@shared/schema";
+import { insertActivitySchema, insertCapacitySchema, insertReservationSchema, insertSubscriptionPlanSchema, insertSubscriptionSchema, insertSubscriptionPaymentSchema, insertFinanceEntrySchema } from "@shared/schema";
 // Gemini support removed - using only OpenAI GPT-4o
 import OpenAI from "openai";
 import crypto from "crypto";
@@ -13278,6 +13278,75 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       const overview = await storage.getFinanceOverview(startDate, endDate);
       res.json(overview);
     } catch (err) {
+      res.status(500).json({ error: "Finans özeti alınamadı" });
+    }
+  });
+
+  // Finance Entries (Gelir/Gider)
+  app.get("/api/finance/entries", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      const { startDate, endDate } = req.query;
+      const entries = await storage.getFinanceEntries(tenantId, startDate as string, endDate as string);
+      res.json(entries);
+    } catch (err) {
+      res.status(500).json({ error: "Finans kayıtları alınamadı" });
+    }
+  });
+
+  app.post("/api/finance/entries", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      const parsed = insertFinanceEntrySchema.safeParse({ ...req.body, tenantId, createdByUserId: req.session?.userId });
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Geçersiz veri", details: parsed.error.errors });
+      }
+      const entry = await storage.createFinanceEntry(parsed.data);
+      res.json(entry);
+    } catch (err) {
+      res.status(500).json({ error: "Finans kaydı oluşturulamadı" });
+    }
+  });
+
+  app.patch("/api/finance/entries/:id", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      const entries = await storage.getFinanceEntries(tenantId);
+      const existing = entries.find(e => e.id === Number(req.params.id));
+      if (!existing) return res.status(404).json({ error: "Kayıt bulunamadı" });
+      const entry = await storage.updateFinanceEntry(Number(req.params.id), req.body);
+      res.json(entry);
+    } catch (err) {
+      res.status(500).json({ error: "Finans kaydı güncellenemedi" });
+    }
+  });
+
+  app.delete("/api/finance/entries/:id", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      const entries = await storage.getFinanceEntries(tenantId);
+      const entry = entries.find(e => e.id === Number(req.params.id));
+      if (!entry) return res.status(404).json({ error: "Kayıt bulunamadı" });
+      await storage.deleteFinanceEntry(Number(req.params.id));
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: "Finans kaydı silinemedi" });
+    }
+  });
+
+  app.get("/api/finance/summary", async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) return res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
+      const month = req.query.month as string || new Date().toISOString().slice(0, 7);
+      const summary = await storage.getFinanceSummary(tenantId, month);
+      res.json(summary);
+    } catch (err) {
+      console.error("Finance summary error:", err);
       res.status(500).json({ error: "Finans özeti alınamadı" });
     }
   });
