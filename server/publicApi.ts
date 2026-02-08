@@ -947,6 +947,9 @@ export function registerPublicApiRoutes(app: Express) {
           description: activities.description,
           price: activities.price,
           priceUsd: activities.priceUsd,
+          discountPrice: activities.discountPrice,
+          discountPriceUsd: activities.discountPriceUsd,
+          discountNote: activities.discountNote,
           durationMinutes: activities.durationMinutes,
           defaultTimes: activities.defaultTimes,
           hasFreeHotelTransfer: activities.hasFreeHotelTransfer,
@@ -955,7 +958,6 @@ export function registerPublicApiRoutes(app: Express) {
           faq: activities.faq,
           imageUrl: activities.imageUrl,
           galleryImages: activities.galleryImages,
-          // Yeni tur satış alanları
           region: activities.region,
           tourLanguages: activities.tourLanguages,
           difficulty: activities.difficulty,
@@ -1217,6 +1219,8 @@ export function registerPublicApiRoutes(app: Express) {
           name: activities.name, 
           price: activities.price, 
           priceUsd: activities.priceUsd,
+          discountPrice: activities.discountPrice,
+          discountPriceUsd: activities.discountPriceUsd,
           extras: activities.extras,
           requiresDeposit: activities.requiresDeposit,
           depositType: activities.depositType,
@@ -1300,8 +1304,9 @@ export function registerPublicApiRoutes(app: Express) {
         ).join("; ");
       }
 
-      // Calculate total price
-      const basePrice = activity.price * input.quantity;
+      // Calculate total price (use discount price if available)
+      const unitPrice = activity.discountPrice ? activity.discountPrice : activity.price;
+      const basePrice = unitPrice * input.quantity;
       const totalPrice = basePrice + extrasTotal;
       
       // Calculate deposit and remaining payment

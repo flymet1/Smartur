@@ -5,7 +5,7 @@ import {
   Clock, MapPin, Users, Check, X, ChevronLeft, Calendar, Info, 
   Star, Globe, Shield, Camera, Share2, Heart, AlertCircle,
   Mountain, Zap, Award, Phone, MessageCircle, ChevronRight,
-  Plus, Minus, Loader2, CheckCircle, Package, User, Backpack, Ban
+  Plus, Minus, Loader2, CheckCircle, Package, User, Backpack, Ban, Tag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -305,6 +305,14 @@ export default function PublicActivityDetail() {
   };
 
   const calculateTotalPrice = () => {
+    const effectiveUnitPrice = activity?.discountPrice || activity?.price || 0;
+    const basePrice = effectiveUnitPrice * reservationData.quantity;
+    const extrasTotal = calculateExtrasTotal();
+    return basePrice + extrasTotal;
+  };
+
+  const calculateOriginalTotalPrice = () => {
+    if (!activity?.discountPrice) return null;
     const basePrice = (activity?.price || 0) * reservationData.quantity;
     const extrasTotal = calculateExtrasTotal();
     return basePrice + extrasTotal;
@@ -930,6 +938,14 @@ export default function PublicActivityDetail() {
 
           <div className="lg:col-span-1">
             <div className="space-y-4">
+              {activity.discountNote && (
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md p-3" data-testid="text-discount-note">
+                  <div className="flex items-start gap-2">
+                    <Tag className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{activity.discountNote}</p>
+                  </div>
+                </div>
+              )}
               <Card className="border-0 shadow-lg">
                 {reservationStep === "success" ? (
                   <CardContent className="pt-6 pb-6">
@@ -1081,11 +1097,21 @@ export default function PublicActivityDetail() {
                           {calculateTotalPrice().toLocaleString()}
                         </span>
                         <span className="text-xl">TL</span>
+                        {calculateOriginalTotalPrice() && (
+                          <span className="text-lg text-muted-foreground line-through ml-1">
+                            {calculateOriginalTotalPrice()!.toLocaleString()} TL
+                          </span>
+                        )}
                       </div>
                       {reservationData.quantity > 0 && reservationStep === "selection" && (
                         <p className="text-sm text-muted-foreground mt-1">
-                          {activity.price.toLocaleString()} TL x {reservationData.quantity} {language === "en" ? "person" : "kişi"}
+                          {(activity.discountPrice || activity.price).toLocaleString()} TL x {reservationData.quantity} {language === "en" ? "person" : "kişi"}
                           {calculateExtrasTotal() > 0 && ` + ${calculateExtrasTotal().toLocaleString()} TL ${language === "en" ? "extras" : "ekstralar"}`}
+                          {activity.discountPrice && (
+                            <span className="ml-1">
+                              (<span className="line-through">{activity.price.toLocaleString()} TL</span>)
+                            </span>
+                          )}
                         </p>
                       )}
                     </CardHeader>
@@ -1672,7 +1698,16 @@ export default function PublicActivityDetail() {
                           {formatDuration(related.durationMinutes)}
                         </div>
                         <div className="font-bold text-primary">
-                          {related.price.toLocaleString()} TL
+                          {(related as any).discountPrice ? (
+                            <>
+                              {(related as any).discountPrice.toLocaleString()} TL
+                              <span className="text-xs text-muted-foreground line-through ml-1 font-normal">
+                                {related.price.toLocaleString()} TL
+                              </span>
+                            </>
+                          ) : (
+                            <>{related.price.toLocaleString()} TL</>
+                          )}
                         </div>
                       </div>
                     </CardContent>

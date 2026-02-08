@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Clock, MapPin, Users, Check, Globe } from "lucide-react";
+import { Clock, MapPin, Users, Check, Globe, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { PublicActivity } from "../types";
@@ -68,13 +68,20 @@ export function ActivityCard({ activity, variant = "default" }: ActivityCardProp
           </div>
         )}
 
-        {activity.difficulty && (
+        {activity.discountPrice ? (
+          <div className="absolute top-3 right-3">
+            <Badge className="bg-red-500 text-white text-xs">
+              <Tag className="h-3 w-3 mr-1" />
+              {language === "en" ? "Discount" : "İndirim"}
+            </Badge>
+          </div>
+        ) : activity.difficulty ? (
           <div className="absolute top-3 right-3">
             <Badge className={`${difficultyColors[activity.difficulty]} text-xs`}>
               {difficultyLabel}
             </Badge>
           </div>
-        )}
+        ) : null}
 
         <div className="absolute bottom-3 left-3 right-3">
           <h3 className="text-white font-bold text-lg line-clamp-2 drop-shadow-lg mb-1">
@@ -128,16 +135,43 @@ export function ActivityCard({ activity, variant = "default" }: ActivityCardProp
           <div className="flex items-center justify-between gap-2 mb-3">
             <div>
               <span className="text-xs text-muted-foreground">{t.activities.from}</span>
-              <div className="font-bold text-xl text-primary">
-                {activity.price.toLocaleString()} ₺
-                <span className="text-xs font-normal text-muted-foreground ml-1">
-                  / {t.activities.person}
-                </span>
-              </div>
-              {activity.priceUsd && (
-                <span className="text-xs text-muted-foreground">
-                  ${activity.priceUsd}
-                </span>
+              {activity.discountPrice ? (
+                <>
+                  <div className="font-bold text-xl text-primary">
+                    {activity.discountPrice.toLocaleString()} ₺
+                    <span className="text-xs font-normal text-muted-foreground ml-1">
+                      / {t.activities.person}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground line-through">
+                      {activity.price.toLocaleString()} ₺
+                    </span>
+                    {activity.discountPriceUsd ? (
+                      <span className="text-xs text-muted-foreground">
+                        ${activity.discountPriceUsd}
+                      </span>
+                    ) : activity.priceUsd ? (
+                      <span className="text-xs text-muted-foreground line-through">
+                        ${activity.priceUsd}
+                      </span>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="font-bold text-xl text-primary">
+                    {activity.price.toLocaleString()} ₺
+                    <span className="text-xs font-normal text-muted-foreground ml-1">
+                      / {t.activities.person}
+                    </span>
+                  </div>
+                  {activity.priceUsd ? (
+                    <span className="text-xs text-muted-foreground">
+                      ${activity.priceUsd}
+                    </span>
+                  ) : null}
+                </>
               )}
             </div>
             {activity.hasFreeHotelTransfer && (

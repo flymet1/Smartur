@@ -152,6 +152,9 @@ export const activities = pgTable("activities", {
   description: text("description"),
   price: integer("price").notNull(), // In TL
   priceUsd: integer("price_usd").default(0), // In USD cents
+  discountPrice: integer("discount_price"), // İndirimli fiyat TL
+  discountPriceUsd: integer("discount_price_usd"), // İndirimli fiyat USD
+  discountNote: text("discount_note"), // İndirim notu (ör: "%5 nakit ödeme indirimi")
   durationMinutes: integer("duration_minutes").notNull().default(60),
   dailyFrequency: integer("daily_frequency").default(1), // 1, 3, or 5 times per day
   defaultTimes: text("default_times").default("[]"), // JSON array of time strings like ["09:00", "14:00"]

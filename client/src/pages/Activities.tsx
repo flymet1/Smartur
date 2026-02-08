@@ -225,7 +225,14 @@ function ActivityCard({ activity, onDelete }: { activity: Activity; onDelete: ()
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-muted-foreground">₺</span>
-            {activity.price}
+            {(activity as any).discountPrice ? (
+              <>
+                <span className="line-through text-muted-foreground">{activity.price}</span>
+                <span className="text-green-600 font-semibold">{(activity as any).discountPrice}</span>
+              </>
+            ) : (
+              activity.price
+            )}
           </div>
         </div>
 
@@ -284,6 +291,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   // Controlled form fields for name, price, duration
   const [name, setName] = useState(activity?.name || "");
   const [price, setPrice] = useState(activity?.price?.toString() || "");
+  const [discountPrice, setDiscountPrice] = useState((activity as any)?.discountPrice?.toString() || "");
+  const [discountPriceUsd, setDiscountPriceUsd] = useState((activity as any)?.discountPriceUsd?.toString() || "");
+  const [discountNote, setDiscountNote] = useState((activity as any)?.discountNote || "");
   const [durationMinutes, setDurationMinutes] = useState(activity?.durationMinutes?.toString() || "");
   const [description, setDescription] = useState(activity?.description || "");
   
@@ -664,6 +674,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
   const resetForm = () => {
     setName("");
     setPrice("");
+    setDiscountPrice("");
+    setDiscountPriceUsd("");
+    setDiscountNote("");
     setDurationMinutes("");
     setDescription("");
     setFrequency("1");
@@ -798,6 +811,9 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
       description: description,
       price: Number(price),
       priceUsd: priceUsd ? Number(priceUsd) : 0,
+      discountPrice: discountPrice ? Number(discountPrice) : null,
+      discountPriceUsd: discountPriceUsd ? Number(discountPriceUsd) : null,
+      discountNote: discountNote || null,
       durationMinutes: Number(durationMinutes),
       dailyFrequency: Number(frequency),
       defaultTimes: JSON.stringify(times),
@@ -997,6 +1013,44 @@ function ActivityDialog({ activity, trigger }: { activity?: Activity; trigger?: 
                       className={formErrors.durationMinutes ? "border-destructive" : ""}
                     />
                     {formErrors.durationMinutes && <p className="text-xs text-destructive">{formErrors.durationMinutes}</p>}
+                  </div>
+                </div>
+                <div className="space-y-3 border rounded-md p-3">
+                  <Label className="text-xs sm:text-sm font-medium">İndirimli Fiyat</Label>
+                  <p className="text-xs text-muted-foreground">İndirimli fiyat girilirse, normal fiyat üzeri çizili olarak gösterilir.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="discountPrice" className="text-xs sm:text-sm">İndirimli Fiyat (TL)</Label>
+                      <Input 
+                        id="discountPrice" 
+                        type="number" 
+                        value={discountPrice}
+                        onChange={(e) => setDiscountPrice(e.target.value)}
+                        placeholder="Boş bırakılırsa indirim yok"
+                        data-testid="input-discount-price"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discountPriceUsd" className="text-xs sm:text-sm">İndirimli Fiyat (USD)</Label>
+                      <Input 
+                        id="discountPriceUsd" 
+                        type="number" 
+                        value={discountPriceUsd}
+                        onChange={(e) => setDiscountPriceUsd(e.target.value)}
+                        placeholder="Boş bırakılırsa indirim yok"
+                        data-testid="input-discount-price-usd"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="discountNote" className="text-xs sm:text-sm">İndirim Notu</Label>
+                    <Input 
+                      id="discountNote" 
+                      value={discountNote}
+                      onChange={(e) => setDiscountNote(e.target.value)}
+                      placeholder="Örn: %5 nakit ödeme indirimi - Ofiste nakit ödeme yapanlara geçerlidir"
+                      data-testid="input-discount-note"
+                    />
                   </div>
                 </div>
 

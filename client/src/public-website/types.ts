@@ -4,6 +4,9 @@ export interface PublicActivity {
   description: string | null;
   price: number;
   priceUsd: number | null;
+  discountPrice: number | null;
+  discountPriceUsd: number | null;
+  discountNote: string | null;
   durationMinutes: number;
   defaultTimes: string[];
   hasFreeHotelTransfer: boolean;
