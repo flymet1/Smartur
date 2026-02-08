@@ -7091,8 +7091,8 @@ export async function registerRoutes(
         return res.status(403).json({ error: "Bu gonderimi iptal etme yetkiniz yok" });
       }
 
-      if (request.status !== 'pending') {
-        return res.status(400).json({ error: "Sadece beklemede olan gonderimler iptal edilebilir" });
+      if (request.status !== 'pending' && request.status !== 'approved') {
+        return res.status(400).json({ error: "Sadece beklemede veya onaylanmis gonderimler iptal edilebilir" });
       }
 
       await storage.updateReservationRequest(requestId, {

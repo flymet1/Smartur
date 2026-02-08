@@ -314,7 +314,9 @@ export function ReservationTable({
       };
       const config = statusConfig[activeDispatch.status || 'pending'] || statusConfig.pending;
 
-      if (activeDispatch.status === 'pending') {
+      const canCancel = activeDispatch.status === 'pending' || activeDispatch.status === 'approved';
+
+      if (canCancel) {
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
