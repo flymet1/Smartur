@@ -1590,6 +1590,7 @@ export const financeEntries = pgTable("finance_entries", {
   method: text("method"),
   reference: text("reference"),
   notes: text("notes"),
+  activityId: integer("activity_id"),
   createdByUserId: integer("created_by_user_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });

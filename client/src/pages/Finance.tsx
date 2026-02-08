@@ -731,7 +731,7 @@ export default function Finance() {
   });
   const { data: appUsers = [] } = useQuery<AppUser[]>({
     queryKey: ['/api/app-users'],
-    enabled: financeTab === 'user-reports',
+    enabled: financeTab === 'user-reports' || financeTab === 'income-expense',
   });
   const [userReportSelectedUser, setUserReportSelectedUser] = useState<string | null>(null);
 
@@ -773,9 +773,18 @@ export default function Finance() {
   const [financeEntryDescription, setFinanceEntryDescription] = useState('');
   const [financeEntryAmount, setFinanceEntryAmount] = useState(0);
   const [financeEntryDate, setFinanceEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [financeEntryActivityId, setFinanceEntryActivityId] = useState<number | null>(null);
+  const [incomeExpenseFilterUser, setIncomeExpenseFilterUser] = useState<string>('all');
+  const [incomeExpenseFilterActivity, setIncomeExpenseFilterActivity] = useState<string>('all');
+
+  const filteredFinanceEntries = financeEntries.filter(entry => {
+    if (incomeExpenseFilterUser !== 'all' && String(entry.createdByUserId) !== incomeExpenseFilterUser) return false;
+    if (incomeExpenseFilterActivity !== 'all' && String(entry.activityId) !== incomeExpenseFilterActivity) return false;
+    return true;
+  });
 
   const createFinanceEntryMutation = useMutation({
-    mutationFn: async (data: { type: string; category: string; description: string; amountTl: number; date: string }) => {
+    mutationFn: async (data: { type: string; category: string; description: string; amountTl: number; date: string; activityId?: number | null }) => {
       const res = await apiRequest('POST', '/api/finance/entries', data);
       return res.json();
     },
@@ -787,6 +796,7 @@ export default function Finance() {
       setFinanceEntryDescription('');
       setFinanceEntryAmount(0);
       setFinanceEntryDate(new Date().toISOString().split('T')[0]);
+      setFinanceEntryActivityId(null);
       toast({ title: 'Başarılı', description: 'Kayıt eklendi.' });
     },
   });
@@ -3498,6 +3508,51 @@ export default function Finance() {
               </Button>
             </div>
 
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm whitespace-nowrap">Kullanıcı:</Label>
+                <Select value={incomeExpenseFilterUser} onValueChange={setIncomeExpenseFilterUser}>
+                  <SelectTrigger className="w-[180px]" data-testid="select-filter-user">
+                    <SelectValue placeholder="Tümü" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tümü</SelectItem>
+                    {appUsers.map(u => (
+                      <SelectItem key={u.id} value={String(u.id)}>{u.name || u.username}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm whitespace-nowrap">Aktivite:</Label>
+                <Select value={incomeExpenseFilterActivity} onValueChange={setIncomeExpenseFilterActivity}>
+                  <SelectTrigger className="w-[200px]" data-testid="select-filter-activity">
+                    <SelectValue placeholder="Tümü" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tümü</SelectItem>
+                    {activities.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(incomeExpenseFilterUser !== 'all' || incomeExpenseFilterActivity !== 'all') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIncomeExpenseFilterUser('all');
+                    setIncomeExpenseFilterActivity('all');
+                  }}
+                  data-testid="button-clear-filters"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Filtreleri Temizle
+                </Button>
+              )}
+            </div>
+
             {financeSummary && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
@@ -3577,9 +3632,16 @@ export default function Finance() {
 
             <Card>
               <CardContent className="pt-4 pb-4">
-                <h4 className="text-sm font-semibold mb-3">Manuel Kayıtlar</h4>
-                {financeEntries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">Bu dönemde manuel kayıt bulunmuyor.</p>
+                <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                  <h4 className="text-sm font-semibold">Manuel Kayıtlar</h4>
+                  {(incomeExpenseFilterUser !== 'all' || incomeExpenseFilterActivity !== 'all') && (
+                    <span className="text-xs text-muted-foreground">{filteredFinanceEntries.length} / {financeEntries.length} kayıt gösteriliyor</span>
+                  )}
+                </div>
+                {filteredFinanceEntries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {financeEntries.length > 0 ? 'Seçili filtrelere uygun kayıt bulunamadı.' : 'Bu dönemde manuel kayıt bulunmuyor.'}
+                  </p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -3589,12 +3651,18 @@ export default function Finance() {
                           <th className="py-2 px-3">Tür</th>
                           <th className="py-2 px-3">Kategori</th>
                           <th className="py-2 px-3">Açıklama</th>
+                          <th className="py-2 px-3">Aktivite</th>
+                          <th className="py-2 px-3">Kullanıcı</th>
                           <th className="py-2 px-3 text-right">Tutar</th>
                           <th className="py-2 px-3 text-right">İşlem</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {financeEntries.map(entry => (
+                        {filteredFinanceEntries.map(entry => {
+                          const activityName = entry.activityId ? activities.find(a => a.id === entry.activityId)?.name : null;
+                          const userObj = entry.createdByUserId ? appUsers.find(u => u.id === entry.createdByUserId) : null;
+                          const userName = userObj ? (userObj.name || userObj.username) : null;
+                          return (
                           <tr key={entry.id} className="border-b hover-elevate" data-testid={`row-finance-entry-${entry.id}`}>
                             <td className="py-2 px-3">{entry.date}</td>
                             <td className="py-2 px-3">
@@ -3604,6 +3672,8 @@ export default function Finance() {
                             </td>
                             <td className="py-2 px-3">{entry.category}</td>
                             <td className="py-2 px-3">{entry.description}</td>
+                            <td className="py-2 px-3 text-muted-foreground">{activityName || '—'}</td>
+                            <td className="py-2 px-3 text-muted-foreground">{userName || '—'}</td>
                             <td className={`py-2 px-3 text-right font-medium ${entry.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                               {entry.type === 'income' ? '+' : '-'}{formatMoney(entry.amountTl || 0)}
                             </td>
@@ -3617,7 +3687,8 @@ export default function Finance() {
                               </Button>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -3703,6 +3774,20 @@ export default function Finance() {
                   data-testid="input-finance-entry-date"
                 />
               </div>
+              <div>
+                <Label>Aktivite (Opsiyonel)</Label>
+                <Select value={financeEntryActivityId ? String(financeEntryActivityId) : 'none'} onValueChange={v => setFinanceEntryActivityId(v === 'none' ? null : Number(v))}>
+                  <SelectTrigger data-testid="select-finance-entry-activity">
+                    <SelectValue placeholder="Aktivite seçin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aktivite yok</SelectItem>
+                    {activities.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setFinanceEntryDialogOpen(false)}>İptal</Button>
@@ -3718,6 +3803,7 @@ export default function Finance() {
                     description: financeEntryDescription,
                     amountTl: financeEntryAmount,
                     date: financeEntryDate,
+                    activityId: financeEntryActivityId,
                   });
                 }}
                 disabled={createFinanceEntryMutation.isPending}
