@@ -327,16 +327,16 @@ export default function PublicTrackReservation() {
                 <div className="flex items-start gap-3 mb-4">
                   <HelpCircle className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <div>
-                    <p className="font-medium text-sm mb-2">
-                      {tr("Takip kodunuzu nasıl alabilirsiniz?", "How to get your tracking code?")}
+                    <p className="font-medium text-sm mb-3">
+                      {tr("Takip linkinizi nasıl alabilirsiniz?", "How to get your tracking link?")}
                     </p>
                     <div className="space-y-3 text-sm text-muted-foreground">
                       <div className="flex items-start gap-2.5">
                         <Mail className="w-4 h-4 mt-0.5 shrink-0 text-primary/70" />
                         <p>
                           {tr(
-                            "Rezervasyonunuz oluşturulduğunda takip linkiniz e-posta adresinize otomatik olarak gönderilir.",
-                            "Your tracking link is automatically sent to your email when your reservation is created."
+                            "Rezervasyonunuz oluşturulduğunda takip linkiniz e-posta adresinize ve WhatsApp'a otomatik olarak gönderilir. Linke tıklayarak doğrudan rezervasyon detaylarınıza ulaşabilirsiniz.",
+                            "Your tracking link is automatically sent to your email and WhatsApp when your reservation is created. Click the link to go directly to your reservation details."
                           )}
                         </p>
                       </div>
@@ -344,8 +344,17 @@ export default function PublicTrackReservation() {
                         <Phone className="w-4 h-4 mt-0.5 shrink-0 text-green-600 dark:text-green-400" />
                         <p>
                           {tr(
-                            "Takip kodunuzu bulamıyorsanız, WhatsApp destek hattımıza yazın. Bot otomatik olarak takip linkinizi gönderecektir.",
-                            "If you can't find your tracking code, message us on WhatsApp. Our bot will automatically send you your tracking link."
+                            "Linkinizi kaybettiyseniz WhatsApp destek hattımıza yazın, takip linkinizi tekrar göndeririz.",
+                            "If you've lost your link, message us on WhatsApp and we'll resend your tracking link."
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex items-start gap-2.5">
+                        <Hash className="w-4 h-4 mt-0.5 shrink-0 text-muted-foreground" />
+                        <p>
+                          {tr(
+                            "Takip linkinizin sonundaki kod, yukarıdaki alana yapıştırılarak da kullanılabilir.",
+                            "The code at the end of your tracking link can also be pasted into the field above."
                           )}
                         </p>
                       </div>
