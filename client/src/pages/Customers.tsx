@@ -4,6 +4,15 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -18,8 +27,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { Search, Users, Phone, Mail, Ticket, TrendingUp, Calendar, ArrowUpDown } from "lucide-react";
+import { Search, Users, Phone, Mail, Ticket, TrendingUp, Calendar, ArrowUpDown, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
@@ -50,10 +71,31 @@ export default function Customers() {
   const [sortField, setSortField] = useState<SortField>("lastReservationDate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [activityFilter, setActivityFilter] = useState<string>("all");
+  const [minReservations, setMinReservations] = useState<string>("");
+  const [minSpent, setMinSpent] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
 
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
   });
+
+  const allActivities = useMemo(() => {
+    const set = new Set<string>();
+    customers.forEach(c => c.activities.forEach(a => set.add(a)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "tr"));
+  }, [customers]);
+
+  const hasActiveFilters = activityFilter !== "all" || minReservations !== "" || minSpent !== "" || dateFrom !== "" || dateTo !== "";
+
+  const clearFilters = () => {
+    setActivityFilter("all");
+    setMinReservations("");
+    setMinSpent("");
+    setDateFrom("");
+    setDateTo("");
+  };
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -75,6 +117,24 @@ export default function Customers() {
         (c.customerEmail && c.customerEmail.toLowerCase().includes(q)) ||
         c.activities.some(a => a.toLowerCase().includes(q))
       );
+    }
+
+    if (activityFilter !== "all") {
+      result = result.filter(c => c.activities.includes(activityFilter));
+    }
+    if (minReservations) {
+      const min = parseInt(minReservations);
+      if (!isNaN(min)) result = result.filter(c => c.totalReservations >= min);
+    }
+    if (minSpent) {
+      const min = parseInt(minSpent);
+      if (!isNaN(min)) result = result.filter(c => c.totalSpentTl >= min);
+    }
+    if (dateFrom) {
+      result = result.filter(c => c.lastReservationDate >= dateFrom);
+    }
+    if (dateTo) {
+      result = result.filter(c => c.firstReservationDate <= dateTo);
     }
 
     result = [...result].sort((a, b) => {
@@ -100,7 +160,7 @@ export default function Customers() {
     });
 
     return result;
-  }, [customers, search, sortField, sortDir]);
+  }, [customers, search, sortField, sortDir, activityFilter, minReservations, minSpent, dateFrom, dateTo]);
 
   const stats = useMemo(() => {
     return {
@@ -178,15 +238,121 @@ export default function Customers() {
         </Card>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Musteri ara (isim, telefon, e-posta)..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-          data-testid="input-search-customers"
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Musteri ara (isim, telefon, e-posta)..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+            data-testid="input-search-customers"
+          />
+        </div>
+
+        {/* Mobile Filters */}
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant={hasActiveFilters ? "default" : "outline"} size="icon" data-testid="button-mobile-filter">
+                <Filter className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-auto max-h-[80vh] rounded-t-xl">
+              <SheetHeader className="pb-4 border-b">
+                <SheetTitle className="flex items-center gap-2">
+                  <Filter className="h-5 w-5" />
+                  Filtreler
+                </SheetTitle>
+              </SheetHeader>
+              <div className="py-4 space-y-4 overflow-y-auto">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Aktivite</Label>
+                  <Select value={activityFilter} onValueChange={setActivityFilter}>
+                    <SelectTrigger className="w-full h-12" data-testid="select-activity-filter-mobile">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tum Aktiviteler</SelectItem>
+                      {allActivities.map(a => (
+                        <SelectItem key={a} value={a}>{a}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Tarih Araligi (Aktivite Tarihi)</Label>
+                  <div className="flex gap-2">
+                    <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-12" data-testid="input-date-from-mobile" />
+                    <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-12" data-testid="input-date-to-mobile" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Min. Rezervasyon Sayisi</Label>
+                  <Input type="number" placeholder="ornek: 2" value={minReservations} onChange={(e) => setMinReservations(e.target.value)} className="h-12" data-testid="input-min-reservations-mobile" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Min. Harcama (TL)</Label>
+                  <Input type="number" placeholder="ornek: 500" value={minSpent} onChange={(e) => setMinSpent(e.target.value)} className="h-12" data-testid="input-min-spent-mobile" />
+                </div>
+                <Button variant="outline" className="w-full h-12 mt-2" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-2" />
+                  Filtreleri Temizle
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {/* Desktop Filters */}
+        <div className="hidden md:flex items-center gap-2">
+          <Select value={activityFilter} onValueChange={setActivityFilter}>
+            <SelectTrigger className="w-auto min-w-[140px]" data-testid="select-activity-filter">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tum Aktiviteler</SelectItem>
+              {allActivities.map(a => (
+                <SelectItem key={a} value={a}>{a}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant={hasActiveFilters ? "default" : "outline"} size="sm" data-testid="button-advanced-filters">
+                <Filter className="h-4 w-4 mr-1" />
+                Filtreler
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-3" align="end">
+              <div className="space-y-3">
+                <div className="font-medium text-sm">Gelismis Filtreler</div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Tarih Araligi (Aktivite Tarihi)</Label>
+                  <div className="flex gap-2">
+                    <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8" data-testid="input-date-from" />
+                    <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8" data-testid="input-date-to" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Min. Rezervasyon Sayisi</Label>
+                  <Input type="number" placeholder="ornek: 2" value={minReservations} onChange={(e) => setMinReservations(e.target.value)} className="h-8" data-testid="input-min-reservations" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Min. Harcama (TL)</Label>
+                  <Input type="number" placeholder="ornek: 500" value={minSpent} onChange={(e) => setMinSpent(e.target.value)} className="h-8" data-testid="input-min-spent" />
+                </div>
+                <Button variant="outline" size="sm" className="w-full" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-1" />
+                  Filtreleri Temizle
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          {hasActiveFilters && (
+            <Badge variant="secondary" className="text-xs">{filtered.length} sonuc</Badge>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -195,7 +361,7 @@ export default function Customers() {
             <div className="p-8 text-center text-muted-foreground">Yukleniyor...</div>
           ) : filtered.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              {search ? "Arama kriterlerine uygun musteri bulunamadi." : "Henuz musteri kaydi yok. Rezervasyon olusturdukca musteriler burada gorunecek."}
+              {(search || hasActiveFilters) ? "Arama ve filtre kriterlerine uygun musteri bulunamadi." : "Henuz musteri kaydi yok. Rezervasyon olusturdukca musteriler burada gorunecek."}
             </div>
           ) : (
             <div className="overflow-x-auto">
