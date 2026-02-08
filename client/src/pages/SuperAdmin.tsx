@@ -479,7 +479,7 @@ function TenantManagementSection() {
                 <TableHead>Slug</TableHead>
                 <TableHead>İletişim</TableHead>
                 <TableHead>Plan</TableHead>
-                <TableHead>Üyelik Süresi</TableHead>
+                <TableHead>Üyelik Süresi / Bitiş</TableHead>
                 <TableHead>Durum</TableHead>
                 <TableHead>Kayıt Tarihi</TableHead>
                 <TableHead className="text-right">İşlemler</TableHead>
@@ -521,20 +521,42 @@ function TenantManagementSection() {
                     {(() => {
                       const adminInfo = getTenantAdminInfo(tenant.id);
                       if (!adminInfo?.membershipEndDate) {
-                        return <span className="text-muted-foreground">Sınırsız</span>;
+                        return <span className="text-muted-foreground">Süresiz</span>;
                       }
+                      const endDate = new Date(adminInfo.membershipEndDate);
+                      const endDateStr = endDate.toLocaleDateString("tr-TR");
                       const remainingDays = getRemainingDays(adminInfo.membershipEndDate);
                       if (remainingDays === null) return <span className="text-muted-foreground">-</span>;
                       if (remainingDays < 0) {
-                        return <Badge variant="destructive">{Math.abs(remainingDays)} gün geçti</Badge>;
+                        return (
+                          <div className="space-y-1">
+                            <Badge variant="destructive">{Math.abs(remainingDays)} gün geçti</Badge>
+                            <div className="text-xs text-muted-foreground">{endDateStr}</div>
+                          </div>
+                        );
                       }
                       if (remainingDays <= 7) {
-                        return <Badge variant="destructive">{remainingDays} gün kaldı</Badge>;
+                        return (
+                          <div className="space-y-1">
+                            <Badge variant="destructive">{remainingDays} gün kaldı</Badge>
+                            <div className="text-xs text-muted-foreground">{endDateStr}</div>
+                          </div>
+                        );
                       }
                       if (remainingDays <= 30) {
-                        return <Badge variant="secondary" className="bg-yellow-500 text-white">{remainingDays} gün kaldı</Badge>;
+                        return (
+                          <div className="space-y-1">
+                            <Badge variant="secondary" className="bg-yellow-500 text-white">{remainingDays} gün kaldı</Badge>
+                            <div className="text-xs text-muted-foreground">{endDateStr}</div>
+                          </div>
+                        );
                       }
-                      return <span className="text-muted-foreground">{remainingDays} gün kaldı</span>;
+                      return (
+                        <div className="space-y-1">
+                          <span className="text-sm">{remainingDays} gün kaldı</span>
+                          <div className="text-xs text-muted-foreground">{endDateStr}</div>
+                        </div>
+                      );
                     })()}
                   </TableCell>
                   <TableCell>
