@@ -65,7 +65,8 @@ import {
   ChevronDown,
   ChevronRight,
   Package,
-  Clock
+  Clock,
+  Pencil
 } from "lucide-react";
 import type { Agency, AgencyPayout, SupplierDispatch, Activity, AgencyActivityRate, SupplierDispatchItem } from "@shared/schema";
 import { format } from "date-fns";
@@ -370,6 +371,7 @@ export default function Finance() {
   const partnerLogoUrl = logoSetting?.value;
   
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
+  const [editingPayoutId, setEditingPayoutId] = useState<number | null>(null);
   const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
   const [editingDispatchId, setEditingDispatchId] = useState<number | null>(null);
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
@@ -1084,6 +1086,41 @@ export default function Finance() {
     }
   });
 
+  const updatePayoutMutation = useMutation({
+    mutationFn: async (data: typeof payoutForm & { id: number; selectedDispatchIds?: number[] }) => {
+      const { id, ...rest } = data;
+      const res = await apiRequest('PATCH', `/api/finance/payouts/${id}`, rest);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/partner-payments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches/summary'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/finance/dispatches/unpaid'] });
+      setPayoutDialogOpen(false);
+      setEditingPayoutId(null);
+      setSelectedPayoutDispatchIds(new Set());
+      setPayoutForm({
+        agencyId: 0,
+        periodStart: startDate,
+        periodEnd: endDate,
+        description: '',
+        guestCount: 0,
+        baseAmountTl: 0,
+        vatRatePct: 0,
+        method: 'cash',
+        reference: '',
+        notes: '',
+        status: 'paid'
+      });
+      toast({ title: "Ödeme güncellendi" });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Ödeme güncellenemedi", variant: "destructive" });
+    }
+  });
+
   const deletePayoutMutation = useMutation({
     mutationFn: async (id: number) => apiRequest('DELETE', `/api/finance/payouts/${id}`),
     onSuccess: () => {
@@ -1389,12 +1426,22 @@ export default function Finance() {
     }
     const vatAmount = Math.round(payoutForm.baseAmountTl * (payoutForm.vatRatePct || 0) / 100);
     const totalAmount = payoutForm.baseAmountTl + vatAmount;
-    createPayoutMutation.mutate({
-      ...payoutForm,
-      vatAmountTl: vatAmount,
-      totalAmountTl: totalAmount,
-      selectedDispatchIds: Array.from(selectedPayoutDispatchIds),
-    } as any);
+    if (editingPayoutId) {
+      updatePayoutMutation.mutate({
+        ...payoutForm,
+        id: editingPayoutId,
+        vatAmountTl: vatAmount,
+        totalAmountTl: totalAmount,
+        selectedDispatchIds: Array.from(selectedPayoutDispatchIds),
+      } as any);
+    } else {
+      createPayoutMutation.mutate({
+        ...payoutForm,
+        vatAmountTl: vatAmount,
+        totalAmountTl: totalAmount,
+        selectedDispatchIds: Array.from(selectedPayoutDispatchIds),
+      } as any);
+    }
   };
 
   const handleDispatchSubmit = () => {
@@ -2243,6 +2290,7 @@ export default function Finance() {
                     notes: '',
                     status: 'paid'
                   });
+                  setEditingPayoutId(null);
                   setPayoutDialogOpen(true);
                 }} data-testid="button-add-payout">
                   <Plus className="h-4 w-4 mr-2" />
@@ -2280,6 +2328,31 @@ export default function Finance() {
                             {payout.status === 'paid' ? 'Ödendi' : 'Beklemede'}
                           </Badge>
                           <Badge variant="outline">{payout.method === 'cash' ? 'Nakit' : payout.method === 'bank' ? 'Banka' : payout.method}</Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setEditingPayoutId(payout.id);
+                              setPayoutForm({
+                                agencyId: payout.agencyId,
+                                periodStart: payout.periodStart,
+                                periodEnd: payout.periodEnd,
+                                description: payout.description || '',
+                                guestCount: payout.guestCount || 0,
+                                baseAmountTl: payout.baseAmountTl || 0,
+                                vatRatePct: payout.vatRatePct || 0,
+                                method: payout.method || 'cash',
+                                reference: payout.reference || '',
+                                notes: payout.notes || '',
+                                status: payout.status || 'paid'
+                              });
+                              setSelectedPayoutDispatchIds(new Set());
+                              setPayoutDialogOpen(true);
+                            }}
+                            data-testid={`button-edit-payout-${payout.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -3994,11 +4067,11 @@ export default function Finance() {
         </Dialog>
 
         {/* Ödeme Dialog */}
-        <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
+        <Dialog open={payoutDialogOpen} onOpenChange={(open) => { setPayoutDialogOpen(open); if (!open) setEditingPayoutId(null); }}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Ödeme Kaydı Ekle</DialogTitle>
-              <DialogDescription>Tedarikçi firmaya yapılan ödemeyi kaydedin</DialogDescription>
+              <DialogTitle>{editingPayoutId ? 'Ödeme Kaydını Düzenle' : 'Ödeme Kaydı Ekle'}</DialogTitle>
+              <DialogDescription>{editingPayoutId ? 'Ödeme bilgilerini güncelleyin' : 'Tedarikçi firmaya yapılan ödemeyi kaydedin'}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -4200,10 +4273,10 @@ export default function Finance() {
               <Button variant="outline" onClick={() => { setPayoutDialogOpen(false); setSelectedPayoutDispatchIds(new Set()); }} data-testid="button-cancel-payout">İptal</Button>
               <Button 
                 onClick={handlePayoutSubmit}
-                disabled={createPayoutMutation.isPending}
+                disabled={createPayoutMutation.isPending || updatePayoutMutation.isPending}
                 data-testid="button-save-payout"
               >
-                Kaydet
+                {editingPayoutId ? 'Güncelle' : 'Kaydet'}
               </Button>
             </DialogFooter>
           </DialogContent>

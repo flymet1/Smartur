@@ -13521,6 +13521,57 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
     }
   });
 
+  app.patch("/api/finance/payouts/:id", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId) {
+        return res.status(401).json({ error: "Oturum bulunamadı" });
+      }
+      
+      const id = parseInt(req.params.id);
+      
+      const existingPayouts = await storage.getAgencyPayouts(tenantId);
+      const existing = existingPayouts.find(p => p.id === id);
+      if (!existing) {
+        return res.status(404).json({ error: "Ödeme kaydı bulunamadı" });
+      }
+      
+      const { agencyId, periodStart, periodEnd, description, guestCount, baseAmountTl, vatRatePct, method, reference, notes, status, selectedDispatchIds } = req.body;
+      
+      const vatAmount = Math.round((baseAmountTl || 0) * ((vatRatePct || 0) / 100));
+      const totalAmount = (baseAmountTl || 0) + vatAmount;
+      
+      const updated = await storage.updateAgencyPayout(id, {
+        agencyId,
+        periodStart,
+        periodEnd,
+        description,
+        guestCount: guestCount || 0,
+        baseAmountTl: baseAmountTl || 0,
+        vatRatePct: vatRatePct || 0,
+        vatAmountTl: vatAmount,
+        totalAmountTl: totalAmount,
+        method,
+        reference,
+        notes,
+        status: status || 'paid',
+      });
+      
+      if (selectedDispatchIds && Array.isArray(selectedDispatchIds)) {
+        try {
+          await storage.linkDispatchesToPayout(id, selectedDispatchIds, tenantId);
+        } catch (linkErr) {
+          console.error('Dispatch linking error on update:', linkErr);
+        }
+      }
+      
+      res.json(updated);
+    } catch (err) {
+      console.error('Payout update error:', err);
+      res.status(400).json({ error: "Ödeme güncellenemedi" });
+    }
+  });
+
   app.patch("/api/finance/payouts/:id/link-dispatches", requirePermission(PERMISSIONS.FINANCE_MANAGE), async (req, res) => {
     const tenantId = req.session?.tenantId;
     if (!tenantId) return res.status(401).json({ error: "Unauthorized" });
