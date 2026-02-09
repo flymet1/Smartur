@@ -3039,6 +3039,12 @@ export default function Reservations() {
                                      agencyDispatchPaymentType === 'sender_full' ? 'Biz aldik' : 'Kismi odeme'}
                                   </span>
                                 </div>
+                                {agencyDispatchPaymentType === 'receiver_full' && (
+                                  <div className="flex justify-between text-sm text-orange-600">
+                                    <span>Acenta Musteriden Alacak:</span>
+                                    <span className="font-bold">{((reservationPrice || totalAmount) - advancePayment).toLocaleString('tr-TR')} TL</span>
+                                  </div>
+                                )}
                                 {agencyDispatchPaymentType === 'sender_full' && (
                                   <>
                                     <div className="flex justify-between text-sm text-green-600">
