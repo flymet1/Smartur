@@ -13623,21 +13623,20 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       const totalPayoutTl = (guestCount || 0) * finalUnitPayoutTl;
       const salePrice = salePriceTl || totalPayoutTl;
       const advPayment = advancePaymentTl || 0;
-      const customerRemaining = salePrice - advPayment;
       
       const collectionType = paymentCollectionType || 'receiver_full';
       let computedBalanceOwed = 0;
       let collectedAmount = amountCollectedBySender || 0;
       
-      if (collectionType === 'sender_partial' && customerRemaining > 0) {
-        collectedAmount = Math.min(collectedAmount, customerRemaining);
+      if (collectionType === 'sender_partial' && salePrice > 0) {
+        collectedAmount = Math.min(collectedAmount, salePrice);
       }
       
       if (collectionType === 'sender_full') {
         computedBalanceOwed = totalPayoutTl;
       } else if (collectionType === 'sender_partial') {
-        const agencyCollectsFromCustomer = customerRemaining - collectedAmount;
-        computedBalanceOwed = Math.max(0, totalPayoutTl - agencyCollectsFromCustomer);
+        const customerStillOwes = Math.max(0, salePrice - collectedAmount);
+        computedBalanceOwed = Math.max(0, totalPayoutTl - customerStillOwes);
       } else {
         computedBalanceOwed = 0;
       }
@@ -13677,21 +13676,20 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       const totalPayoutTl = (guestCount || 0) * (unitPayoutTl || 0);
       const salePrice = salePriceTl || totalPayoutTl;
       const advPayment = advancePaymentTl || 0;
-      const customerRemaining = salePrice - advPayment;
       
       let computedBalanceOwed = 0;
       const collectionType = paymentCollectionType || 'receiver_full';
       let collectedAmount = amountCollectedBySender || 0;
       
-      if (collectionType === 'sender_partial' && customerRemaining > 0) {
-        collectedAmount = Math.min(collectedAmount, customerRemaining);
+      if (collectionType === 'sender_partial' && salePrice > 0) {
+        collectedAmount = Math.min(collectedAmount, salePrice);
       }
       
       if (collectionType === 'sender_full') {
         computedBalanceOwed = totalPayoutTl;
       } else if (collectionType === 'sender_partial') {
-        const agencyCollectsFromCustomer = customerRemaining - collectedAmount;
-        computedBalanceOwed = Math.max(0, totalPayoutTl - agencyCollectsFromCustomer);
+        const customerStillOwes = Math.max(0, salePrice - collectedAmount);
+        computedBalanceOwed = Math.max(0, totalPayoutTl - customerStillOwes);
       }
       
       const dispatch = await storage.updateSupplierDispatch(id, {
@@ -13820,20 +13818,19 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       
       const salePrice = salePriceTl || mainTotal;
       const advPayment = advancePaymentTl || 0;
-      const customerRemaining = salePrice - advPayment;
       const collectionType = paymentCollectionType || 'receiver_full';
       let computedBalanceOwed = 0;
       let collectedAmount = amountCollectedBySender || 0;
       
-      if (collectionType === 'sender_partial' && customerRemaining > 0) {
-        collectedAmount = Math.min(collectedAmount, customerRemaining);
+      if (collectionType === 'sender_partial' && salePrice > 0) {
+        collectedAmount = Math.min(collectedAmount, salePrice);
       }
       
       if (collectionType === 'sender_full') {
         computedBalanceOwed = mainTotal;
       } else if (collectionType === 'sender_partial') {
-        const agencyCollectsFromCustomer = customerRemaining - collectedAmount;
-        computedBalanceOwed = Math.max(0, mainTotal - agencyCollectsFromCustomer);
+        const customerStillOwes = Math.max(0, salePrice - collectedAmount);
+        computedBalanceOwed = Math.max(0, mainTotal - customerStillOwes);
       }
       
       const dispatch = await storage.createSupplierDispatch({
@@ -13895,20 +13892,19 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       const computePaymentFields = (agencyCost: number) => {
         const salePrice = salePriceTl || agencyCost;
         const advPayment = advancePaymentTl || 0;
-        const customerRemaining = salePrice - advPayment;
         const collectionType = paymentCollectionType || 'receiver_full';
         let computedBalanceOwed = 0;
         let collectedAmount = amountCollectedBySender || 0;
         
-        if (collectionType === 'sender_partial' && customerRemaining > 0) {
-          collectedAmount = Math.min(collectedAmount, customerRemaining);
+        if (collectionType === 'sender_partial' && salePrice > 0) {
+          collectedAmount = Math.min(collectedAmount, salePrice);
         }
         
         if (collectionType === 'sender_full') {
           computedBalanceOwed = agencyCost;
         } else if (collectionType === 'sender_partial') {
-          const agencyCollectsFromCustomer = customerRemaining - collectedAmount;
-          computedBalanceOwed = Math.max(0, agencyCost - agencyCollectsFromCustomer);
+          const customerStillOwes = Math.max(0, salePrice - collectedAmount);
+          computedBalanceOwed = Math.max(0, agencyCost - customerStillOwes);
         }
         
         return {

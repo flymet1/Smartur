@@ -1265,10 +1265,14 @@ export default function Finance() {
     setSimpleUnitPayoutStr(dispatch.unitPayoutTl ? String(dispatch.unitPayoutTl) : "");
     setSimpleCurrency(dispatch.currency === 'USD' ? 'USD' : 'TRY');
     setDispatchPaymentType(paymentType);
-    setDispatchAmountCollectedStr(amountCollected ? String(amountCollected) : "");
+    const dbAdvPayment = (dispatch as any).advancePaymentTl || 0;
+    const extraCollected = paymentType === 'sender_partial' && amountCollected > dbAdvPayment 
+      ? amountCollected - dbAdvPayment 
+      : amountCollected;
+    setDispatchAmountCollectedStr(extraCollected ? String(extraCollected) : "");
     setDispatchPaymentNotes(paymentNotesVal);
     setDispatchSalePriceTlStr((dispatch as any).salePriceTl ? String((dispatch as any).salePriceTl) : "");
-    setDispatchAdvancePaymentTlStr((dispatch as any).advancePaymentTl ? String((dispatch as any).advancePaymentTl) : "");
+    setDispatchAdvancePaymentTlStr(dbAdvPayment ? String(dbAdvPayment) : "");
     setUseLineItems(hasLineItems);
     setSelectedReservationId((dispatch as any).reservationId || null);
     setDispatchDialogOpen(true);
