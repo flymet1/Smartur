@@ -895,7 +895,6 @@ export default function Reservations() {
                           key={r.id} 
                           className="p-3 hover-elevate cursor-pointer"
                           onClick={() => {
-                            setSelectedReservation(r);
                             setShowNewReservations(false);
                           }}
                         >
@@ -1329,7 +1328,7 @@ export default function Reservations() {
                             <div 
                               key={r.id} 
                               className="flex items-center justify-between gap-2 p-2 rounded bg-muted/50 cursor-pointer hover-elevate"
-                              onClick={() => setSelectedReservation(r)}
+                              onClick={() => {}}
                             >
                               <div className="flex-1">
                                 <p className="text-sm font-medium">{r.customerName}</p>
@@ -3068,17 +3067,19 @@ export default function Reservations() {
                       <Button
                         onClick={() => {
                           if (!selectedAgencyDispatchId || !partnerDispatchReservation || !agencyDispatchDate) return;
-                          const totalAmount = agencyDispatchGuests * agencyDispatchUnitPayout;
+                          const reservationPrice = partnerDispatchReservation ? 
+                            (partnerDispatchReservation.salePriceTl || (partnerDispatchReservation.priceTl || 0) * (partnerDispatchReservation.quantity || 1)) : 0;
+                          const advPayment = partnerDispatchReservation.advancePaymentTl || 0;
+                          const agencyCost = agencyDispatchGuests * agencyDispatchUnitPayout;
+                          const customerRemaining = (reservationPrice || agencyCost) - advPayment;
                           if (agencyDispatchPaymentType === 'sender_partial' && agencyDispatchAmountCollected <= 0) {
                             toast({ title: "Hata", description: "Kismi odeme tutarini girin", variant: "destructive" });
                             return;
                           }
-                          if (agencyDispatchPaymentType === 'sender_partial' && totalAmount > 0 && agencyDispatchAmountCollected > totalAmount) {
-                            toast({ title: "Hata", description: "Alinan tutar toplam tutari asamaz", variant: "destructive" });
+                          if (agencyDispatchPaymentType === 'sender_partial' && customerRemaining > 0 && agencyDispatchAmountCollected > customerRemaining) {
+                            toast({ title: "Hata", description: "Alinan tutar musterinin kalan borcunu asamaz", variant: "destructive" });
                             return;
                           }
-                          const reservationPrice = partnerDispatchReservation ? 
-                            (partnerDispatchReservation.salePriceTl || (partnerDispatchReservation.priceTl || 0) * (partnerDispatchReservation.quantity || 1)) : 0;
                           agencyDispatchMutation.mutate({
                             agencyId: parseInt(selectedAgencyDispatchId),
                             activityId: agencyDispatchActivityId ? parseInt(agencyDispatchActivityId) : null,
@@ -3090,11 +3091,12 @@ export default function Reservations() {
                             currency: agencyDispatchCurrency,
                             notes: agencyDispatchNotes.trim(),
                             paymentCollectionType: agencyDispatchPaymentType,
-                            amountCollectedBySender: agencyDispatchPaymentType === 'sender_partial' ? agencyDispatchAmountCollected : 0,
+                            amountCollectedBySender: agencyDispatchPaymentType === 'sender_partial' ? agencyDispatchAmountCollected :
+                                                     agencyDispatchPaymentType === 'sender_full' ? (reservationPrice || agencyCost) : 0,
                             paymentNotes: agencyDispatchPaymentNotes.trim(),
                             reservationId: partnerDispatchReservation.id,
                             salePriceTl: reservationPrice,
-                            advancePaymentTl: partnerDispatchReservation.advancePaymentTl || 0,
+                            advancePaymentTl: advPayment,
                           });
                         }}
                         disabled={!selectedAgencyDispatchId || !agencyDispatchDate || agencyDispatchMutation.isPending}

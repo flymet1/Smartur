@@ -3668,14 +3668,16 @@ export default function Finance() {
                     </div>
                     <p className="text-2xl font-bold text-red-600" data-testid="text-total-expense">{formatMoney(financeSummary.totalExpense)}</p>
                     <div className="mt-2 text-xs text-muted-foreground space-y-1">
-                      <div className="flex justify-between"><span>Acenta Ödemeleri</span><span>{formatMoney(financeSummary.agencyPayoutTotal)}</span></div>
                       {(financeSummary.dispatchPayoutTotal || 0) > 0 && (
-                        <div className="flex justify-between"><span>Tedarikci Gönderim</span><span>{formatMoney(financeSummary.dispatchPayoutTotal || 0)}</span></div>
+                        <div className="flex justify-between"><span>Tedarikci Maliyet</span><span>{formatMoney(financeSummary.dispatchPayoutTotal || 0)}</span></div>
                       )}
                       {((financeSummary as any).partnerPayoutTotal || 0) > 0 && (
-                        <div className="flex justify-between"><span>Partner Gönderim</span><span>{formatMoney((financeSummary as any).partnerPayoutTotal || 0)}</span></div>
+                        <div className="flex justify-between"><span>Partner Maliyet</span><span>{formatMoney((financeSummary as any).partnerPayoutTotal || 0)}</span></div>
                       )}
                       <div className="flex justify-between"><span>Manuel Gider</span><span>{formatMoney(financeSummary.manualExpense)}</span></div>
+                      {financeSummary.agencyPayoutTotal > 0 && (
+                        <div className="flex justify-between border-t pt-1 mt-1"><span>Odenen (nakit)</span><span className="text-green-600">{formatMoney(financeSummary.agencyPayoutTotal)}</span></div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

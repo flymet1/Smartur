@@ -1814,11 +1814,10 @@ export class DatabaseStorage implements IStorage {
     for (const dispatch of filteredDispatches) {
       if (summaryMap[dispatch.agencyId]) {
         summaryMap[dispatch.agencyId].totalGuests += dispatch.guestCount || 0;
-        // Para birimine göre ayır
         if (dispatch.currency === 'USD') {
-          summaryMap[dispatch.agencyId].totalOwedUsd += dispatch.totalPayoutTl || 0;
+          summaryMap[dispatch.agencyId].totalOwedUsd += dispatch.balanceOwed || 0;
         } else {
-          summaryMap[dispatch.agencyId].totalOwedTl += dispatch.totalPayoutTl || 0;
+          summaryMap[dispatch.agencyId].totalOwedTl += dispatch.balanceOwed || 0;
         }
       }
     }
@@ -2723,7 +2722,7 @@ Sky Fethiye`,
     const partnerBalanceOwed = activePartnerTx.reduce((sum, t) => sum + (t.balanceOwed || 0), 0);
 
     const totalIncome = reservationIncome + manualIncome + dispatchSalesUnlinked;
-    const totalExpense = manualExpense + agencyPayoutTotal + dispatchPayoutTotal + partnerPayoutTotal;
+    const totalExpense = manualExpense + dispatchPayoutTotal + partnerPayoutTotal;
     const netProfit = totalIncome - totalExpense;
 
     const activityList = await db.select().from(activities).where(eq(activities.tenantId, tenantId));
