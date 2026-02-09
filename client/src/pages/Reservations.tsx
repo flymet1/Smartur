@@ -5045,12 +5045,20 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
   const [isEditing, setIsEditing] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
+  const [editPriceTl, setEditPriceTl] = useState("");
+  const [editPriceUsd, setEditPriceUsd] = useState("");
+  const [editAdvancePaymentTl, setEditAdvancePaymentTl] = useState("");
+  const [isEditingAdvance, setIsEditingAdvance] = useState(false);
   
   useEffect(() => {
     if (reservation) {
       setEditDate(reservation.date);
       setEditTime(reservation.time);
+      setEditPriceTl(String((reservation as any).salePriceTl || reservation.priceTl || 0));
+      setEditPriceUsd(String(reservation.priceUsd || 0));
+      setEditAdvancePaymentTl(String((reservation as any).advancePaymentTl || 0));
       setIsEditing(false);
+      setIsEditingAdvance(false);
     }
   }, [reservation]);
   
@@ -5058,15 +5066,18 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
   const cleanNotes = reservation ? getNotesWithoutMetadata(reservation.notes) : "";
   
   const updateMutation = useMutation({
-    mutationFn: async ({ id, date, time, oldDate, oldTime, res }: { id: number; date: string; time: string; oldDate: string; oldTime: string; res: Reservation }) => {
-      return apiRequest('PATCH', `/api/reservations/${id}`, { date, time });
+    mutationFn: async ({ id, updates, oldDate, oldTime, res }: { id: number; updates: Record<string, any>; oldDate: string; oldTime: string; res: Reservation }) => {
+      return apiRequest('PATCH', `/api/reservations/${id}`, updates);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
-      toast({ title: "Başarılı", description: "Tarih ve saat güncellendi." });
+      toast({ title: "Başarılı", description: "Rezervasyon güncellendi." });
       setIsEditing(false);
-      if (onMoveSuccess && (variables.date !== variables.oldDate || variables.time !== variables.oldTime)) {
-        onMoveSuccess(variables.res, variables.oldDate, variables.date, variables.oldTime, variables.time);
+      setIsEditingAdvance(false);
+      const newDate = variables.updates.date || variables.oldDate;
+      const newTime = variables.updates.time || variables.oldTime;
+      if (onMoveSuccess && (newDate !== variables.oldDate || newTime !== variables.oldTime)) {
+        onMoveSuccess(variables.res, variables.oldDate, newDate, variables.oldTime, newTime);
         onClose();
       }
     },
@@ -5106,10 +5117,36 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
       toast({ title: "Hata", description: "Tarih ve saat seçiniz.", variant: "destructive" });
       return;
     }
+    const priceTlVal = Number(editPriceTl) || 0;
+    const priceUsdVal = Number(editPriceUsd) || 0;
+    const updates: Record<string, any> = {
+      date: editDate,
+      time: editTime,
+      salePriceTl: priceTlVal,
+      priceUsd: priceUsdVal,
+    };
+    if (!(reservation.priceTl && reservation.priceTl > 0 && (reservation as any).salePriceTl !== reservation.priceTl)) {
+      updates.priceTl = priceTlVal;
+    }
     updateMutation.mutate({ 
       id: reservation.id, 
-      date: editDate, 
-      time: editTime,
+      updates,
+      oldDate: reservation.date,
+      oldTime: reservation.time,
+      res: reservation
+    });
+  };
+
+  const handleSaveAdvance = () => {
+    const advVal = Number(editAdvancePaymentTl) || 0;
+    const salePrice = (reservation as any).salePriceTl || reservation.priceTl || 0;
+    const paymentStatus = salePrice > 0 && advVal >= salePrice ? 'paid' : advVal > 0 ? 'partial' : 'unpaid';
+    updateMutation.mutate({
+      id: reservation.id,
+      updates: {
+        advancePaymentTl: advVal,
+        paymentStatus,
+      },
       oldDate: reservation.date,
       oldTime: reservation.time,
       res: reservation
@@ -5119,7 +5156,11 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
   const handleCancel = () => {
     setEditDate(reservation.date);
     setEditTime(reservation.time);
+    setEditPriceTl(String((reservation as any).salePriceTl || reservation.priceTl || 0));
+    setEditPriceUsd(String(reservation.priceUsd || 0));
+    setEditAdvancePaymentTl(String((reservation as any).advancePaymentTl || 0));
     setIsEditing(false);
+    setIsEditingAdvance(false);
   };
 
   return (
@@ -5224,38 +5265,68 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
                 </>
               ) : (
                 <div className="col-span-2 space-y-3 p-3 bg-muted/50 rounded-lg">
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground text-xs">Tarih</Label>
-                    <Input 
-                      type="date" 
-                      value={editDate} 
-                      onChange={(e) => setEditDate(e.target.value)}
-                      className="h-8 text-sm"
-                      data-testid="input-edit-date"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-muted-foreground text-xs">Saat</Label>
-                    {availableTimes.length > 0 ? (
-                      <Select value={editTime} onValueChange={setEditTime}>
-                        <SelectTrigger className="h-8 text-sm" data-testid="select-edit-time">
-                          <SelectValue placeholder="Saat seçin" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableTimes.map((t: string) => (
-                            <SelectItem key={t} value={t}>{t}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Tarih</Label>
                       <Input 
-                        type="time" 
-                        value={editTime} 
-                        onChange={(e) => setEditTime(e.target.value)}
+                        type="date" 
+                        value={editDate} 
+                        onChange={(e) => setEditDate(e.target.value)}
                         className="h-8 text-sm"
-                        data-testid="input-edit-time"
+                        data-testid="input-edit-date"
                       />
-                    )}
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Saat</Label>
+                      {availableTimes.length > 0 ? (
+                        <Select value={editTime} onValueChange={setEditTime}>
+                          <SelectTrigger className="h-8 text-sm" data-testid="select-edit-time">
+                            <SelectValue placeholder="Saat seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTimes.map((t: string) => (
+                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input 
+                          type="time" 
+                          value={editTime} 
+                          onChange={(e) => setEditTime(e.target.value)}
+                          className="h-8 text-sm"
+                          data-testid="input-edit-time"
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
+                      <Input 
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        value={editPriceTl}
+                        onChange={(e) => setEditPriceTl(e.target.value)}
+                        placeholder="Tutar girin"
+                        className="h-8 text-sm"
+                        data-testid="input-edit-price-tl"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
+                      <Input 
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        value={editPriceUsd}
+                        onChange={(e) => setEditPriceUsd(e.target.value)}
+                        placeholder="Tutar girin"
+                        className="h-8 text-sm"
+                        data-testid="input-edit-price-usd"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -5285,13 +5356,13 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
             )}
           </div>
 
-          {((reservation.priceTl ?? 0) > 0 || (reservation.priceUsd ?? 0) > 0) && (
+          {!isEditing && ((reservation.priceTl ?? 0) > 0 || (reservation.priceUsd ?? 0) > 0 || ((reservation as any).salePriceTl ?? 0) > 0) && (
             <div className="border-t pt-4">
               <div className="grid grid-cols-2 gap-4">
-                {(reservation.priceTl ?? 0) > 0 && (
+                {(((reservation as any).salePriceTl ?? 0) > 0 || (reservation.priceTl ?? 0) > 0) && (
                   <div>
                     <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
-                    <div className="font-medium">{(reservation.priceTl ?? 0).toLocaleString('tr-TR')} ₺</div>
+                    <div className="font-medium">{((reservation as any).salePriceTl || reservation.priceTl || 0).toLocaleString('tr-TR')} ₺</div>
                   </div>
                 )}
                 {(reservation.priceUsd ?? 0) > 0 && (
@@ -5351,37 +5422,108 @@ function ReservationDetailDialog({ reservation, activities, onClose, onMoveSucce
             </div>
           )}
 
-          {/* Ödeme Bilgileri */}
-          {metadata && (metadata.totalPrice || metadata.depositRequired || metadata.remainingPayment) && (
-            <div className="border-t pt-4 space-y-2">
-              <Label className="text-muted-foreground text-xs">Ödeme Bilgileri</Label>
-              {metadata.totalPrice && (
-                <div className="flex justify-between text-sm">
-                  <span>Toplam Tutar</span>
-                  <span className="font-bold text-primary">{metadata.totalPrice.toLocaleString('tr-TR')} ₺</span>
-                </div>
+          {/* Ödeme Bilgileri + Ön Ödeme Düzenleme */}
+          {((reservation as any).advancePaymentTl > 0 || (reservation as any).salePriceTl > 0 || (reservation.priceTl ?? 0) > 0 || metadata?.totalPrice || metadata?.depositRequired || metadata?.remainingPayment || isEditingAdvance) && (
+          <div className="border-t pt-4 space-y-2">
+            <Label className="text-muted-foreground text-xs flex items-center gap-1">
+              Ödeme Bilgileri
+              {!isEditingAdvance && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-4 w-4 p-0 ml-1"
+                  onClick={() => setIsEditingAdvance(true)}
+                  data-testid="button-edit-advance"
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
               )}
-              {metadata.depositRequired !== undefined && metadata.depositRequired > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span>Ön Ödeme (Kapora)</span>
-                  <span className="font-medium text-amber-600">{metadata.depositRequired.toLocaleString('tr-TR')} ₺</span>
+            </Label>
+            {metadata?.totalPrice && (
+              <div className="flex justify-between text-sm">
+                <span>Toplam Tutar</span>
+                <span className="font-bold text-primary">{metadata.totalPrice.toLocaleString('tr-TR')} ₺</span>
+              </div>
+            )}
+            {!isEditingAdvance ? (
+              <>
+                {((reservation as any).advancePaymentTl > 0 || (metadata?.depositRequired && metadata.depositRequired > 0)) && (
+                  <div className="flex justify-between text-sm">
+                    <span>Ön Ödeme (Kapora)</span>
+                    <span className="font-medium text-amber-600">
+                      {((reservation as any).advancePaymentTl || metadata?.depositRequired || 0).toLocaleString('tr-TR')} ₺
+                    </span>
+                  </div>
+                )}
+                {(() => {
+                  const salePrice = (reservation as any).salePriceTl || reservation.priceTl || metadata?.totalPrice || 0;
+                  const advPaid = (reservation as any).advancePaymentTl || 0;
+                  const remaining = salePrice > 0 ? Math.max(0, salePrice - advPaid) : (metadata?.remainingPayment || 0);
+                  return remaining > 0 ? (
+                    <div className="flex justify-between text-sm">
+                      <span>Kalan Ödeme</span>
+                      <span className="font-medium">{remaining.toLocaleString('tr-TR')} ₺</span>
+                    </div>
+                  ) : null;
+                })()}
+              </>
+            ) : (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground text-xs">Ön Ödeme (Kapora) ₺</Label>
+                  <Input 
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={editAdvancePaymentTl}
+                    onChange={(e) => setEditAdvancePaymentTl(e.target.value)}
+                    placeholder="Tutar girin"
+                    className="h-8 text-sm"
+                    data-testid="input-edit-advance-payment"
+                  />
+                  {(() => {
+                    const salePrice = (reservation as any).salePriceTl || reservation.priceTl || 0;
+                    const advVal = Number(editAdvancePaymentTl) || 0;
+                    return salePrice > 0 && advVal > 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        Kalan: {Math.max(0, salePrice - advVal).toLocaleString('tr-TR')} ₺
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
-              )}
-              {metadata.remainingPayment !== undefined && metadata.remainingPayment > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span>Kalan Ödeme</span>
-                  <span className="font-medium">{metadata.remainingPayment.toLocaleString('tr-TR')} ₺</span>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    onClick={handleSaveAdvance}
+                    disabled={updateMutation.isPending}
+                    data-testid="button-save-advance"
+                  >
+                    <Save className="h-4 w-4 mr-1" />
+                    Kaydet
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setEditAdvancePaymentTl(String((reservation as any).advancePaymentTl || 0));
+                      setIsEditingAdvance(false);
+                    }}
+                    disabled={updateMutation.isPending}
+                    data-testid="button-cancel-advance"
+                  >
+                    Vazgeç
+                  </Button>
                 </div>
-              )}
-              {metadata.paymentType && (
-                <div className="text-xs text-muted-foreground">
-                  {metadata.paymentType === 'full' ? 'Tam ödeme gerekli' : 
-                   metadata.paymentType === 'deposit' ? 'Ön ödeme gerekli, kalan aktivite günü alınacak' : 
-                   'Ödeme aktivite günü alınacak'}
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+            {metadata?.paymentType && (
+              <div className="text-xs text-muted-foreground">
+                {metadata.paymentType === 'full' ? 'Tam ödeme gerekli' : 
+                 metadata.paymentType === 'deposit' ? 'Ön ödeme gerekli, kalan aktivite günü alınacak' : 
+                 'Ödeme aktivite günü alınacak'}
+              </div>
+            )}
+          </div>)}
 
           {/* Katılımcılar */}
           {metadata?.participants && metadata.participants.length > 0 && (
