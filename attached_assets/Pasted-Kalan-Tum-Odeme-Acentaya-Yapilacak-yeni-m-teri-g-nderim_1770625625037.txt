@@ -1,0 +1,27 @@
+Kalan Tum Odeme Acentaya Yapilacak:
+yeni müşteri gönderimi yaparken kişi başı aktivite satış fiyatı örneğin 10.000 tl ve 2 kişi var 2x10.000 = 20.000 tl ödemeleri olacak ve 1.000 tl rezervasyon yaparken ön ödeme yapmışlar kalan ödemeleri 19.000 tl. Acentaya gönderim yaparken Kalan Tum Odeme Acentaya Yapilacak seçtiğimde acenta 17.000 tl müşteriden ödeme alacak olarak görünüyor bu yanlış. Acenta bu durumda satış fiyatı- ön ödeme = kalan ödemeyi müşteriden almalı ve benim net karım değişmemeli sadece acentadan alacağım ödeme yani acentanın bana borcu örneğin kişi başı ödemem 1500 tl ise 1500*2=3000 tl 16.000 tl olmalı. net karım ön ödeme ile birlikte 17..000 tl olmalı.  Sanırım kişi başı ödeme kısmına girilen rakam karışıklık yapıyor. Kişi başı ödeme kısmı acentaya gönderim yaparken kişi başı ödeme yapmamız gereken alan.
+
+Tamamını biz aldık seçeneğinde ise durum şöyle: 
+satış fiyatı 20.000 
+Ön ödeme 1.000 
+Kalan 19.000
+Benim karım: 19.000 olmalı
+
+Bu durumda:
+gönderim yaparken Kişi başı ödeme: 1500 yazdığımda hesaplamada sadece 3.000 yi biz aldık olarak göründüğü için hesaplamayı yanlış yapıyor. Tamamını biz aldık demek satış fiyatı 20.000 tl ise bu ödemenin tamamını biz aldık ve acentaya kişi başı ödeme yapmamız gereken rakam 1000 ise 1000*2 =2000 yani 2000 tl acentaya borcumuz var. 
+
+Kismi Odeme Aldik Durumunda ise:
+
+satış fiyatı 20.000 
+ön ödeme 1000 
+kalan 19.000 
+benim karım: 19.000
+
+Acentaya kişi başı ödeme 1000 girdiğimde aşağıdaki aldığımız tutar üstteki kişi başı ödeme kısmındaki rakamdan çekiliyor bu yanlış örnek senaryo şöyle olmalı
+satış fiyatı 20.000
+ön ödeme 1000
+kalan 19.000 
+benim karım 19.000
+
+kişi başı ödeme 1000 girersem 1 kişi ise doğal olarak satış fiyatı- acentaya ödemem net karım 19.000 
+eğer kısmı ödeme aldık seçtiğimde orayada 2000 daha yazarsam bu müşteri örneğin web siteden rezervasyon yaparken bana 1000 verdi ama sonra ofisime gelip 2000  daha bana verdi yani kalan ödemesi 17.000 bunu acenta almalı ama acentanın bana borcu aldığı fiyat eksi kişi başı ödeme fiyatı olmalı yani 17000-1000 ise 16 tl acenta bana borçlu gibi.
