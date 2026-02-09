@@ -100,18 +100,15 @@ export function ReservationTable({
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
   const [editPriceTl, setEditPriceTl] = useState("");
   const [editPriceUsd, setEditPriceUsd] = useState("");
   const [editAdvancePayment, setEditAdvancePayment] = useState("");
-  const [isEditingAdvance, setIsEditingAdvance] = useState(false);
   const [editDiscountTl, setEditDiscountTl] = useState("");
   const [editDiscountNote, setEditDiscountNote] = useState("");
-  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [editNotes, setEditNotes] = useState("");
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
   const hasSelection = selectedIds !== undefined && onToggleSelection !== undefined;
   
   const { data: activities = [] } = useQuery<Activity[]>({
@@ -197,10 +194,7 @@ export function ReservationTable({
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       toast({ title: "Basarili", description: "Rezervasyon guncellendi." });
-      setIsEditing(false);
-      setIsEditingAdvance(false);
-      setIsEditingDiscount(false);
-      setIsEditingNotes(false);
+      setIsEditMode(false);
       const res = reservations.find(r => r.id === variables.id);
       if (res && onMoveSuccess && variables.date && variables.time && (variables.date !== res.date || variables.time !== res.time)) {
         onMoveSuccess(res, res.date, variables.date, res.time, variables.time);
@@ -214,10 +208,7 @@ export function ReservationTable({
   const toggleExpand = (res: Reservation) => {
     if (expandedId === res.id) {
       setExpandedId(null);
-      setIsEditing(false);
-      setIsEditingAdvance(false);
-      setIsEditingDiscount(false);
-      setIsEditingNotes(false);
+      setIsEditMode(false);
     } else {
       setExpandedId(res.id);
       setEditDate(res.date);
@@ -229,10 +220,7 @@ export function ReservationTable({
       setEditDiscountNote((res as any).discountNote || "");
       const cleanNotes = getNotesWithoutMetadata(res.notes);
       setEditNotes(cleanNotes || "");
-      setIsEditing(false);
-      setIsEditingAdvance(false);
-      setIsEditingDiscount(false);
-      setIsEditingNotes(false);
+      setIsEditMode(false);
     }
   };
 
@@ -452,55 +440,34 @@ export function ReservationTable({
       try { return JSON.parse((activity as any).defaultTimes || "[]"); } catch { return []; }
     })() : [];
 
-    const handleSaveDatetime = () => {
+    const handleSaveAll = () => {
       if (!editDate || !editTime) {
         toast({ title: "Hata", description: "Tarih ve saat seçiniz.", variant: "destructive" });
         return;
       }
-      const updates: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number } = { id: res.id, date: editDate, time: editTime };
+      const updates: Record<string, any> = { id: res.id, date: editDate, time: editTime };
       const newPriceTl = parseFloat(editPriceTl);
       const newPriceUsd = parseFloat(editPriceUsd);
-      if (!isNaN(newPriceTl)) { 
-        updates.priceTl = newPriceTl; 
-        const existingDiscount = (res as any).discountTl || 0;
-        updates.salePriceTl = existingDiscount > 0 ? Math.max(0, newPriceTl - existingDiscount) : newPriceTl; 
-      }
-      if (!isNaN(newPriceUsd)) updates.priceUsd = newPriceUsd;
-      reservationUpdateMutation.mutate(updates);
-    };
-
-    const handleSaveAdvance = () => {
-      const advVal = Number(editAdvancePayment) || 0;
-      const basePrice = res.priceTl || 0;
-      const discount = (res as any).discountTl || 0;
-      const effectivePrice = discount > 0 ? Math.max(0, basePrice - discount) : ((res as any).salePriceTl || basePrice);
-      const paymentStatus = effectivePrice > 0 && advVal >= effectivePrice ? 'paid' : advVal > 0 ? 'partial' : 'unpaid';
-      reservationUpdateMutation.mutate({ id: res.id, advancePaymentTl: advVal, paymentStatus });
-    };
-
-    const handleSaveDiscount = () => {
-      const basePrice = res.priceTl || 0;
       const rawDiscount = Number(editDiscountTl) || 0;
-      const discVal = Math.min(Math.max(0, rawDiscount), basePrice);
-      const newSalePrice = basePrice - discVal;
-      const advance = (res as any).advancePaymentTl || 0;
-      const paymentStatus = newSalePrice > 0 && advance >= newSalePrice ? 'paid' : advance > 0 ? 'partial' : 'unpaid';
-      reservationUpdateMutation.mutate({ 
-        id: res.id, 
-        discountTl: discVal, 
-        discountNote: discVal > 0 ? (editDiscountNote || '') : '',
-        salePriceTl: newSalePrice,
-        paymentStatus
-      });
-    };
-
-    const handleSaveNotes = () => {
+      const discVal = newPriceTl > 0 ? Math.min(Math.max(0, rawDiscount), newPriceTl) : Math.max(0, rawDiscount);
+      const basePriceForCalc = !isNaN(newPriceTl) ? newPriceTl : (res.priceTl || 0);
+      const clampedDiscount = Math.min(discVal, basePriceForCalc);
+      const newSalePrice = basePriceForCalc - clampedDiscount;
+      if (!isNaN(newPriceTl)) updates.priceTl = newPriceTl;
+      if (!isNaN(newPriceUsd)) updates.priceUsd = newPriceUsd;
+      updates.discountTl = clampedDiscount;
+      updates.discountNote = clampedDiscount > 0 ? (editDiscountNote || '') : '';
+      updates.salePriceTl = newSalePrice;
+      const advVal = Number(editAdvancePayment) || 0;
+      updates.advancePaymentTl = advVal;
+      updates.paymentStatus = newSalePrice > 0 && advVal >= newSalePrice ? 'paid' : advVal > 0 ? 'partial' : 'unpaid';
       const metadataStr = res.notes ? (() => {
         const match = res.notes.match(/__METADATA__:.*$/);
         return match ? match[0] : "";
       })() : "";
       const fullNotes = editNotes ? (metadataStr ? `${editNotes}\n${metadataStr}` : editNotes) : metadataStr || "";
-      reservationUpdateMutation.mutate({ id: res.id, notes: fullNotes });
+      updates.notes = fullNotes;
+      reservationUpdateMutation.mutate(updates);
     };
 
     const handleCancelEdit = () => {
@@ -509,16 +476,62 @@ export function ReservationTable({
       setEditPriceTl(res.priceTl ? String(res.priceTl) : "");
       setEditPriceUsd(res.priceUsd ? String(res.priceUsd) : "");
       setEditAdvancePayment((res as any).advancePaymentTl ? String((res as any).advancePaymentTl) : "");
-      setIsEditing(false);
+      setEditDiscountTl((res as any).discountTl ? String((res as any).discountTl) : "");
+      setEditDiscountNote((res as any).discountNote || "");
+      setEditNotes(cleanNotes || "");
+      setIsEditMode(false);
     };
 
-    const handleCancelNotesEdit = () => {
+    const enterEditMode = () => {
+      setEditDate(res.date);
+      setEditTime(res.time);
+      setEditPriceTl(res.priceTl ? String(res.priceTl) : "");
+      setEditPriceUsd(res.priceUsd ? String(res.priceUsd) : "");
+      setEditAdvancePayment((res as any).advancePaymentTl ? String((res as any).advancePaymentTl) : "");
+      setEditDiscountTl((res as any).discountTl ? String((res as any).discountTl) : "");
+      setEditDiscountNote((res as any).discountNote || "");
       setEditNotes(cleanNotes || "");
-      setIsEditingNotes(false);
+      setIsEditMode(true);
     };
 
     return (
       <div className="p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <Label className="text-muted-foreground text-xs">Rezervasyon Detaylari</Label>
+          {!isEditMode ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={enterEditMode}
+              data-testid="button-enter-edit-mode"
+            >
+              <Pencil className="h-3 w-3 mr-1" />
+              Duzenle
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleSaveAll}
+                disabled={reservationUpdateMutation.isPending}
+                data-testid="button-save-all"
+              >
+                <Save className="h-4 w-4 mr-1" />
+                Kaydet
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelEdit}
+                disabled={reservationUpdateMutation.isPending}
+                data-testid="button-cancel-edit"
+              >
+                Vazgec
+              </Button>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <Label className="text-muted-foreground text-xs">Müşteri</Label>
@@ -598,21 +611,8 @@ export function ReservationTable({
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <Label className="text-muted-foreground text-xs flex items-center gap-1">
-              Tarih
-              {!isEditing && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-4 w-4 p-0 ml-1"
-                  onClick={() => setIsEditing(true)}
-                  data-testid="button-edit-datetime"
-                >
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              )}
-            </Label>
-            {isEditing ? (
+            <Label className="text-muted-foreground text-xs">Tarih</Label>
+            {isEditMode ? (
               <Input 
                 type="date" 
                 value={editDate} 
@@ -625,15 +625,8 @@ export function ReservationTable({
             )}
           </div>
           <div>
-            <Label className="text-muted-foreground text-xs flex items-center gap-1">
-              Saat
-              {!isEditing && (
-                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1" onClick={() => setIsEditing(true)} data-testid="button-edit-time">
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              )}
-            </Label>
-            {isEditing ? (
+            <Label className="text-muted-foreground text-xs">Saat</Label>
+            {isEditMode ? (
               availableTimes.length > 0 ? (
                 <Select value={editTime} onValueChange={setEditTime}>
                   <SelectTrigger className="h-8 text-sm" data-testid="select-edit-time">
@@ -659,15 +652,8 @@ export function ReservationTable({
             )}
           </div>
           <div>
-            <Label className="text-muted-foreground text-xs flex items-center gap-1">
-              Fiyat (TL)
-              {!isEditing && (
-                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1" onClick={() => setIsEditing(true)} data-testid="button-edit-price-tl">
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              )}
-            </Label>
-            {isEditing ? (
+            <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
+            {isEditMode ? (
               <Input 
                 type="number" 
                 value={editPriceTl} 
@@ -683,15 +669,8 @@ export function ReservationTable({
             )}
           </div>
           <div>
-            <Label className="text-muted-foreground text-xs flex items-center gap-1">
-              Fiyat (USD)
-              {!isEditing && (
-                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1" onClick={() => setIsEditing(true)} data-testid="button-edit-price-usd">
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              )}
-            </Label>
-            {isEditing ? (
+            <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
+            {isEditMode ? (
               <Input 
                 type="number" 
                 value={editPriceUsd} 
@@ -709,28 +688,6 @@ export function ReservationTable({
         </div>
 
 
-        {isEditing && (
-          <div className="flex items-center gap-2">
-            <Button 
-              size="sm" 
-              onClick={handleSaveDatetime}
-              disabled={reservationUpdateMutation.isPending}
-              data-testid="button-save-datetime"
-            >
-              <Save className="h-4 w-4 mr-1" />
-              Kaydet
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleCancelEdit}
-              disabled={reservationUpdateMutation.isPending}
-              data-testid="button-cancel-edit"
-            >
-              Vazgec
-            </Button>
-          </div>
-        )}
 
         {res.orderNumber && (
           <>
@@ -814,154 +771,44 @@ export function ReservationTable({
             <>
               <Separator />
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs flex items-center gap-1">
-                  Odeme Bilgileri
-                  {!isEditingAdvance && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-4 w-4 p-0 ml-1"
-                      onClick={() => {
-                        setEditAdvancePayment(String((res as any).advancePaymentTl || 0));
-                        setIsEditingAdvance(true);
-                      }}
-                      data-testid="button-edit-advance"
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                  )}
-                </Label>
-                {basePrice > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Liste Fiyati</span>
-                    <span className={`font-medium ${discount > 0 ? 'line-through text-muted-foreground' : 'font-bold text-primary'}`} data-testid="text-base-price">
-                      {basePrice.toLocaleString('tr-TR')} ₺
-                    </span>
-                  </div>
-                )}
-                {discount > 0 && (
+                <Label className="text-muted-foreground text-xs">Odeme Bilgileri</Label>
+                {!isEditMode ? (
                   <>
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-1">
-                        Indirim
-                        {!isEditingDiscount && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-4 w-4 p-0"
-                            onClick={() => {
-                              setEditDiscountTl(String(discount));
-                              setEditDiscountNote(discountNoteVal);
-                              setIsEditingDiscount(true);
-                            }}
-                            data-testid="button-edit-discount"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </span>
-                      <span className="font-medium text-green-600 dark:text-green-400" data-testid="text-discount-amount">
-                        -{discount.toLocaleString('tr-TR')} ₺
-                      </span>
-                    </div>
-                    {discountNoteVal && (
-                      <div className="text-xs text-muted-foreground pl-2" data-testid="text-discount-note">
-                        {discountNoteVal}
+                    {basePrice > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span>Liste Fiyati</span>
+                        <span className={`font-medium ${discount > 0 ? 'line-through text-muted-foreground' : 'font-bold text-primary'}`} data-testid="text-base-price">
+                          {basePrice.toLocaleString('tr-TR')} ₺
+                        </span>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm">
-                      <span>Indirimli Fiyat</span>
-                      <span className="font-bold text-primary" data-testid="text-total-price">
-                        {finalPrice.toLocaleString('tr-TR')} ₺
-                      </span>
-                    </div>
-                  </>
-                )}
-                {discount <= 0 && totalToShow > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="flex items-center gap-1">
-                      Toplam Tutar
-                      {!isEditingDiscount && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-4 w-4 p-0"
-                          onClick={() => {
-                            setEditDiscountTl("");
-                            setEditDiscountNote("");
-                            setIsEditingDiscount(true);
-                          }}
-                          data-testid="button-add-discount"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </span>
-                    <span className="font-bold text-primary" data-testid="text-total-price">{totalToShow.toLocaleString('tr-TR')} ₺</span>
-                  </div>
-                )}
-                {isEditingDiscount && (
-                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground text-xs">Indirim Tutari (₺)</Label>
-                      <Input 
-                        type="number"
-                        inputMode="numeric"
-                        min="0"
-                        value={editDiscountTl}
-                        onChange={(e) => setEditDiscountTl(e.target.value)}
-                        placeholder="Indirim tutari girin"
-                        className="h-8 text-sm"
-                        data-testid="input-edit-discount-tl"
-                      />
-                      {(() => {
-                        const dv = Number(editDiscountTl) || 0;
-                        return basePrice > 0 && dv > 0 ? (
-                          <p className="text-xs text-muted-foreground">
-                            Indirimli fiyat: {Math.max(0, basePrice - dv).toLocaleString('tr-TR')} ₺
-                          </p>
-                        ) : null;
-                      })()}
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground text-xs">Indirim Notu</Label>
-                      <Input 
-                        type="text"
-                        value={editDiscountNote}
-                        onChange={(e) => setEditDiscountNote(e.target.value)}
-                        placeholder="Orn: Erken rezervasyon indirimi"
-                        className="h-8 text-sm"
-                        data-testid="input-edit-discount-note"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
-                        onClick={handleSaveDiscount}
-                        disabled={reservationUpdateMutation.isPending}
-                        data-testid="button-save-discount"
-                      >
-                        <Save className="h-4 w-4 mr-1" />
-                        Kaydet
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => {
-                          setEditDiscountTl(String((res as any).discountTl || 0));
-                          setEditDiscountNote((res as any).discountNote || "");
-                          setIsEditingDiscount(false);
-                        }}
-                        disabled={reservationUpdateMutation.isPending}
-                        data-testid="button-cancel-discount"
-                      >
-                        Vazgec
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {!isEditingAdvance ? (
-                  <>
+                    {discount > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span>Indirim</span>
+                          <span className="font-medium text-green-600 dark:text-green-400" data-testid="text-discount-amount">
+                            -{discount.toLocaleString('tr-TR')} ₺
+                          </span>
+                        </div>
+                        {discountNoteVal && (
+                          <div className="text-xs text-muted-foreground pl-2" data-testid="text-discount-note">
+                            {discountNoteVal}
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm">
+                          <span>Indirimli Fiyat</span>
+                          <span className="font-bold text-primary" data-testid="text-total-price">
+                            {finalPrice.toLocaleString('tr-TR')} ₺
+                          </span>
+                        </div>
+                      </>
+                    )}
+                    {discount <= 0 && totalToShow > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span>Toplam Tutar</span>
+                        <span className="font-bold text-primary" data-testid="text-total-price">{totalToShow.toLocaleString('tr-TR')} ₺</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span>On Odeme (Kapora)</span>
                       <span className="font-medium text-amber-600" data-testid="text-deposit-info">
@@ -976,7 +823,43 @@ export function ReservationTable({
                     </div>
                   </>
                 ) : (
-                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground text-xs">Indirim (₺)</Label>
+                        <Input 
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          value={editDiscountTl}
+                          onChange={(e) => setEditDiscountTl(e.target.value)}
+                          placeholder="Indirim tutari"
+                          className="h-8 text-sm"
+                          data-testid="input-edit-discount-tl"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground text-xs">Indirim Notu</Label>
+                        <Input 
+                          type="text"
+                          value={editDiscountNote}
+                          onChange={(e) => setEditDiscountNote(e.target.value)}
+                          placeholder="Orn: Erken rez."
+                          className="h-8 text-sm"
+                          data-testid="input-edit-discount-note"
+                        />
+                      </div>
+                    </div>
+                    {(() => {
+                      const bp = parseFloat(editPriceTl) || basePrice;
+                      const dv = Number(editDiscountTl) || 0;
+                      const fp = Math.max(0, bp - Math.min(dv, bp));
+                      return bp > 0 && dv > 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          Indirimli fiyat: {fp.toLocaleString('tr-TR')} ₺
+                        </p>
+                      ) : null;
+                    })()}
                     <div className="space-y-1">
                       <Label className="text-muted-foreground text-xs">On Odeme (Kapora) ₺</Label>
                       <Input 
@@ -990,37 +873,16 @@ export function ReservationTable({
                         data-testid="input-edit-advance-payment"
                       />
                       {(() => {
-                        const sp = finalPrice > 0 ? finalPrice : (res.priceTl || 0);
+                        const bp = parseFloat(editPriceTl) || basePrice;
+                        const dv = Number(editDiscountTl) || 0;
+                        const fp = Math.max(0, bp - Math.min(dv, bp));
                         const av = Number(editAdvancePayment) || 0;
-                        return sp > 0 && av > 0 ? (
+                        return fp > 0 && av > 0 ? (
                           <p className="text-xs text-muted-foreground">
-                            Kalan: {Math.max(0, sp - av).toLocaleString('tr-TR')} ₺
+                            Kalan: {Math.max(0, fp - av).toLocaleString('tr-TR')} ₺
                           </p>
                         ) : null;
                       })()}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
-                        onClick={handleSaveAdvance}
-                        disabled={reservationUpdateMutation.isPending}
-                        data-testid="button-save-advance"
-                      >
-                        <Save className="h-4 w-4 mr-1" />
-                        Kaydet
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => {
-                          setEditAdvancePayment(String((res as any).advancePaymentTl || 0));
-                          setIsEditingAdvance(false);
-                        }}
-                        disabled={reservationUpdateMutation.isPending}
-                        data-testid="button-cancel-advance"
-                      >
-                        Vazgec
-                      </Button>
                     </div>
                   </div>
                 )}
@@ -1055,53 +917,18 @@ export function ReservationTable({
 
         <Separator />
         <div>
-          <Label className="text-muted-foreground text-xs flex items-center gap-1">
-            Notlar
-            {!isEditingNotes && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-4 w-4 p-0 ml-1"
-                onClick={() => setIsEditingNotes(true)}
-                data-testid="button-edit-notes"
-              >
-                <Pencil className="h-3 w-3" />
-              </Button>
-            )}
-          </Label>
-          {isEditingNotes ? (
-            <div className="space-y-2">
-              <textarea 
-                value={editNotes} 
-                onChange={(e) => setEditNotes(e.target.value)}
-                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="Not ekleyin..."
-                data-testid="textarea-edit-notes"
-              />
-              <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={handleSaveNotes}
-                  disabled={reservationUpdateMutation.isPending}
-                  data-testid="button-save-notes"
-                >
-                  <Save className="h-4 w-4 mr-1" />
-                  Kaydet
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleCancelNotesEdit}
-                  disabled={reservationUpdateMutation.isPending}
-                  data-testid="button-cancel-notes"
-                >
-                  Vazgec
-                </Button>
-              </div>
-            </div>
+          <Label className="text-muted-foreground text-xs">Notlar</Label>
+          {isEditMode ? (
+            <textarea 
+              value={editNotes} 
+              onChange={(e) => setEditNotes(e.target.value)}
+              className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-y focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mt-1"
+              placeholder="Not ekleyin..."
+              data-testid="textarea-edit-notes"
+            />
           ) : (
             <div className="font-medium text-sm whitespace-pre-wrap" data-testid="text-notes">
-              {cleanNotes || <span className="text-muted-foreground italic">Not yok - kalem ikonuna tiklayarak ekleyebilirsiniz</span>}
+              {cleanNotes || <span className="text-muted-foreground italic">Not yok</span>}
             </div>
           )}
         </div>
