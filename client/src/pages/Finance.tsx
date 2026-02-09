@@ -3995,7 +3995,7 @@ export default function Finance() {
 
         {/* Ödeme Dialog */}
         <Dialog open={payoutDialogOpen} onOpenChange={setPayoutDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Ödeme Kaydı Ekle</DialogTitle>
               <DialogDescription>Tedarikçi firmaya yapılan ödemeyi kaydedin</DialogDescription>
