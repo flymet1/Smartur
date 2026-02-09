@@ -7268,7 +7268,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Oturum bulunamadi" });
       }
       
-      const { activityId, date, time, customerName, customerPhone, guests, notes, paymentCollectionType, amountCollectedBySender, paymentCurrency, paymentNotes, sourceReservationId } = req.body;
+      const { activityId, date, time, customerName, customerPhone, customerEmail, guests, notes, hotelName, hasTransfer, transferZone, selectedExtras, paymentCollectionType, amountCollectedBySender, paymentCurrency, paymentNotes, sourceReservationId } = req.body;
       
       if (!activityId || !date || !time || !customerName || !customerPhone) {
         return res.status(400).json({ error: "Eksik parametreler" });
@@ -7356,11 +7356,40 @@ export async function registerRoutes(
         const requester = userId ? await storage.getAppUser(userId) : null;
         const partnerName = requester?.companyName || requester?.name || 'Partner Acenta';
         
+        const descParts = [
+          `Partner acenta yeni rezervasyon talebi olusturdu.`,
+          ``,
+          `Partner: ${partnerName}`,
+          `Aktivite: ${activity.name}`,
+          `Tarih: ${date}`,
+          `Saat: ${time}`,
+          `Musteri: ${customerName}`,
+          `Telefon: ${customerPhone}`,
+          `Kisi Sayisi: ${guests || 1}`,
+        ];
+        if (customerEmail) descParts.push(`E-posta: ${customerEmail}`);
+        if (hotelName) descParts.push(`Otel: ${hotelName}`);
+        if (hasTransfer) {
+          let tInfo = `Transfer: Evet`;
+          if (transferZone) tInfo += ` (${transferZone})`;
+          descParts.push(tInfo);
+        }
+        if (selectedExtras) {
+          try {
+            const extras = JSON.parse(selectedExtras);
+            if (Array.isArray(extras) && extras.length > 0) {
+              const extraNames = extras.map((e: any) => e.name || e).filter(Boolean);
+              if (extraNames.length > 0) descParts.push(`Ekstralar: ${extraNames.join(', ')}`);
+            }
+          } catch {}
+        }
+        if (notes) descParts.push(`Not: ${notes}`);
+        
         await storage.createSupportRequest({
           tenantId: ownerTenantId,
           type: "reservation_request",
           title: `Partner Rezervasyon Talebi: ${customerName}`,
-          description: `Partner acenta yeni rezervasyon talebi olusturdu.\n\nPartner: ${partnerName}\nAktivite: ${activity.name}\nTarih: ${date}\nSaat: ${time}\nMusteri: ${customerName}\nTelefon: ${customerPhone}\nKisi Sayisi: ${guests || 1}\n${notes ? `Not: ${notes}` : ""}`,
+          description: descParts.join('\n'),
           priority: "medium",
           metadata: JSON.stringify({ reservationRequestId: request.id, isPartnerRequest: true })
         });

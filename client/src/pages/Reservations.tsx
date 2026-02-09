@@ -246,8 +246,13 @@ export default function Reservations() {
       time: string;
       customerName: string;
       customerPhone: string;
+      customerEmail?: string;
       guests: number;
       notes: string;
+      hotelName?: string;
+      hasTransfer?: boolean;
+      transferZone?: string;
+      selectedExtras?: string;
       sourceReservationId: number;
       paymentCollectionType: string;
       amountCollectedBySender: number;
@@ -2868,15 +2873,42 @@ export default function Reservations() {
                   <Button
                     onClick={() => {
                       if (!partnerDispatchSelectedSlot || !partnerDispatchReservation) return;
+                      const r = partnerDispatchReservation;
+                      const detailParts: string[] = [];
+                      if (partnerDispatchNotes) detailParts.push(partnerDispatchNotes);
+                      if (r.hotelName) detailParts.push(`Otel: ${r.hotelName}`);
+                      if (r.hasTransfer) {
+                        let transferText = 'Transfer: Evet';
+                        if (r.transferZone) transferText += ` (${r.transferZone})`;
+                        detailParts.push(transferText);
+                      }
+                      if (r.customerEmail) detailParts.push(`E-posta: ${r.customerEmail}`);
+                      if (r.selectedExtras) {
+                        try {
+                          const extras = JSON.parse(r.selectedExtras);
+                          if (Array.isArray(extras) && extras.length > 0) {
+                            const extraNames = extras.map((e: any) => e.name || e).filter(Boolean);
+                            if (extraNames.length > 0) detailParts.push(`Ekstralar: ${extraNames.join(', ')}`);
+                          }
+                        } catch {}
+                      }
+                      if (r.notes) detailParts.push(`Rez. Notu: ${r.notes}`);
+                      if (r.confirmationNote) detailParts.push(`Onay Notu: ${r.confirmationNote}`);
+                      
                       partnerDispatchMutation.mutate({
                         activityId: partnerDispatchSelectedSlot.activityId,
                         date: partnerDispatchSelectedSlot.date,
                         time: partnerDispatchSelectedSlot.time,
-                        customerName: partnerDispatchReservation.customerName,
-                        customerPhone: partnerDispatchReservation.customerPhone,
+                        customerName: r.customerName,
+                        customerPhone: r.customerPhone,
+                        customerEmail: r.customerEmail || '',
                         guests: partnerDispatchGuests,
-                        notes: partnerDispatchNotes,
-                        sourceReservationId: partnerDispatchReservation.id,
+                        notes: detailParts.join('\n'),
+                        hotelName: r.hotelName || '',
+                        hasTransfer: r.hasTransfer || false,
+                        transferZone: r.transferZone || '',
+                        selectedExtras: r.selectedExtras || '[]',
+                        sourceReservationId: r.id,
                         paymentCollectionType: partnerDispatchPaymentType,
                         amountCollectedBySender: partnerDispatchPaymentType === 'sender_partial' ? partnerDispatchAmountCollected : 0,
                         paymentCurrency: partnerDispatchSelectedSlot.partnerCurrency || 'TRY',
