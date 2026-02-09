@@ -5377,14 +5377,16 @@ export async function registerRoutes(
         return res.status(400).json({ error: "Bu rezervasyon partner acentaya gönderilmiş durumda. Düzenleme yapabilmek için önce gönderimi iptal etmeniz gerekir." });
       }
 
+      const isWebReservation = reservation.source === 'web' || reservation.source === 'woocommerce';
+
       const updates: Record<string, any> = {};
       if (date !== undefined) updates.date = date;
       if (time !== undefined) updates.time = time;
-      if (quantity !== undefined) updates.quantity = Math.max(1, Number(quantity));
-      if (priceTl !== undefined) updates.priceTl = Number(priceTl);
-      if (priceUsd !== undefined) updates.priceUsd = Number(priceUsd);
-      if (salePriceTl !== undefined) updates.salePriceTl = Number(salePriceTl);
-      if (advancePaymentTl !== undefined) updates.advancePaymentTl = Number(advancePaymentTl);
+      if (quantity !== undefined && !isWebReservation) updates.quantity = Math.max(1, Number(quantity));
+      if (priceTl !== undefined && !isWebReservation) updates.priceTl = Number(priceTl);
+      if (priceUsd !== undefined && !isWebReservation) updates.priceUsd = Number(priceUsd);
+      if (salePriceTl !== undefined && !isWebReservation) updates.salePriceTl = Number(salePriceTl);
+      if (advancePaymentTl !== undefined && !isWebReservation) updates.advancePaymentTl = Number(advancePaymentTl);
       if (paymentStatus !== undefined) updates.paymentStatus = paymentStatus;
       if (discountTl !== undefined) updates.discountTl = Number(discountTl);
       if (discountType !== undefined) updates.discountType = discountType;

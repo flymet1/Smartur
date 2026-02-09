@@ -604,7 +604,11 @@ export function ReservationTable({
                   onChange={(e) => handleQuantityChange(e.target.value)}
                   className="h-8 text-sm"
                   data-testid="input-edit-quantity"
+                  disabled={res.source === 'web' || res.source === 'woocommerce'}
                 />
+                {(res.source === 'web' || res.source === 'woocommerce') && (
+                  <p className="text-xs text-destructive">Web rezervasyonlarinda degistirilemez</p>
+                )}
                 {perPersonTlRef > 0 ? (
                   <p className="text-xs text-muted-foreground">
                     Kişi başı: {Math.round(perPersonTlRef).toLocaleString('tr-TR')} ₺
@@ -709,14 +713,20 @@ export function ReservationTable({
           <div>
             <Label className="text-muted-foreground text-xs">Fiyat (TL)</Label>
             {isEditMode ? (
-              <Input 
-                type="number" 
-                value={editPriceTl} 
-                onChange={(e) => setEditPriceTl(e.target.value)}
-                className="h-8 text-sm"
-                placeholder="Tutar girin"
-                data-testid="input-edit-price-tl"
-              />
+              <div className="space-y-1">
+                <Input 
+                  type="number" 
+                  value={editPriceTl} 
+                  onChange={(e) => setEditPriceTl(e.target.value)}
+                  className="h-8 text-sm"
+                  placeholder="Tutar girin"
+                  data-testid="input-edit-price-tl"
+                  disabled={res.source === 'web' || res.source === 'woocommerce'}
+                />
+                {(res.source === 'web' || res.source === 'woocommerce') && (
+                  <p className="text-xs text-destructive">Web rezervasyonlarinda degistirilemez</p>
+                )}
+              </div>
             ) : (
               <div className="font-medium" data-testid="text-price-tl">
                 {(res.priceTl ?? 0) > 0 ? `${(res.priceTl ?? 0).toLocaleString('tr-TR')} ₺` : '-'}
@@ -726,14 +736,20 @@ export function ReservationTable({
           <div>
             <Label className="text-muted-foreground text-xs">Fiyat (USD)</Label>
             {isEditMode ? (
-              <Input 
-                type="number" 
-                value={editPriceUsd} 
-                onChange={(e) => setEditPriceUsd(e.target.value)}
-                className="h-8 text-sm"
-                placeholder="Tutar girin"
-                data-testid="input-edit-price-usd"
-              />
+              <div className="space-y-1">
+                <Input 
+                  type="number" 
+                  value={editPriceUsd} 
+                  onChange={(e) => setEditPriceUsd(e.target.value)}
+                  className="h-8 text-sm"
+                  placeholder="Tutar girin"
+                  data-testid="input-edit-price-usd"
+                  disabled={res.source === 'web' || res.source === 'woocommerce'}
+                />
+                {(res.source === 'web' || res.source === 'woocommerce') && (
+                  <p className="text-xs text-destructive">Web rezervasyonlarinda degistirilemez</p>
+                )}
+              </div>
             ) : (
               <div className="font-medium" data-testid="text-price-usd">
                 {(res.priceUsd ?? 0) > 0 ? `$${res.priceUsd}` : '-'}
@@ -926,7 +942,11 @@ export function ReservationTable({
                         placeholder="Tutar girin"
                         className="h-8 text-sm"
                         data-testid="input-edit-advance-payment"
+                        disabled={res.source === 'web' || res.source === 'woocommerce'}
                       />
+                      {(res.source === 'web' || res.source === 'woocommerce') && (
+                        <p className="text-xs text-destructive">Web rezervasyonlarinda degistirilemez</p>
+                      )}
                       {(() => {
                         const bp = parseFloat(editPriceTl) || basePrice;
                         const dv = Number(editDiscountTl) || 0;
