@@ -5358,7 +5358,7 @@ export async function registerRoutes(
   // General reservation update (date, time, etc.)
   app.patch("/api/reservations/:id", requirePermission(PERMISSIONS.RESERVATIONS_EDIT), async (req, res) => {
     const id = parseInt(req.params.id);
-    const { date, time, priceTl, priceUsd, salePriceTl, advancePaymentTl, paymentStatus, discountTl, discountType, discountNote, notes } = req.body;
+    const { date, time, quantity, priceTl, priceUsd, salePriceTl, advancePaymentTl, paymentStatus, discountTl, discountType, discountNote, notes } = req.body;
     
     try {
       const tenantId = req.session?.tenantId;
@@ -5371,6 +5371,7 @@ export async function registerRoutes(
       const updates: Record<string, any> = {};
       if (date !== undefined) updates.date = date;
       if (time !== undefined) updates.time = time;
+      if (quantity !== undefined) updates.quantity = Math.max(1, Number(quantity));
       if (priceTl !== undefined) updates.priceTl = Number(priceTl);
       if (priceUsd !== undefined) updates.priceUsd = Number(priceUsd);
       if (salePriceTl !== undefined) updates.salePriceTl = Number(salePriceTl);

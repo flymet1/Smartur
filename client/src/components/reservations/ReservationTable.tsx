@@ -106,6 +106,7 @@ export function ReservationTable({
   const [editPriceTl, setEditPriceTl] = useState("");
   const [editPriceUsd, setEditPriceUsd] = useState("");
   const [editAdvancePayment, setEditAdvancePayment] = useState("");
+  const [editQuantity, setEditQuantity] = useState("");
   const [editDiscountTl, setEditDiscountTl] = useState("");
   const [editDiscountNote, setEditDiscountNote] = useState("");
   const [editNotes, setEditNotes] = useState("");
@@ -188,7 +189,7 @@ export function ReservationTable({
   });
 
   const reservationUpdateMutation = useMutation({
-    mutationFn: async ({ id, ...data }: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number; paymentStatus?: string; discountTl?: number; discountNote?: string; notes?: string }) => {
+    mutationFn: async ({ id, ...data }: { id: number; date?: string; time?: string; quantity?: number; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number; paymentStatus?: string; discountTl?: number; discountNote?: string; notes?: string }) => {
       return apiRequest('PATCH', `/api/reservations/${id}`, data);
     },
     onSuccess: (_, variables) => {
@@ -213,6 +214,7 @@ export function ReservationTable({
       setExpandedId(res.id);
       setEditDate(res.date);
       setEditTime(res.time);
+      setEditQuantity(String(res.quantity || 1));
       setEditPriceTl(res.priceTl ? String(res.priceTl) : "");
       setEditPriceUsd(res.priceUsd ? String(res.priceUsd) : "");
       setEditAdvancePayment((res as any).advancePaymentTl ? String((res as any).advancePaymentTl) : "");
@@ -440,12 +442,35 @@ export function ReservationTable({
       try { return JSON.parse((activity as any).defaultTimes || "[]"); } catch { return []; }
     })() : [];
 
+    const perPersonTlRef = (() => {
+      const origQty = res.quantity || 1;
+      const origPrice = res.priceTl || 0;
+      return origQty > 0 ? origPrice / origQty : 0;
+    })();
+    const perPersonUsdRef = (() => {
+      const origQty = res.quantity || 1;
+      const origPrice = res.priceUsd || 0;
+      return origQty > 0 ? origPrice / origQty : 0;
+    })();
+
+    const handleQuantityChange = (newQty: string) => {
+      const qty = Math.max(1, parseInt(newQty) || 1);
+      setEditQuantity(String(qty));
+      if (perPersonTlRef > 0) {
+        setEditPriceTl(String(Math.round(perPersonTlRef * qty)));
+      }
+      if (perPersonUsdRef > 0) {
+        setEditPriceUsd(String(Math.round(perPersonUsdRef * qty * 100) / 100));
+      }
+    };
+
     const handleSaveAll = () => {
       if (!editDate || !editTime) {
         toast({ title: "Hata", description: "Tarih ve saat seçiniz.", variant: "destructive" });
         return;
       }
-      const updates: Record<string, any> = { id: res.id, date: editDate, time: editTime };
+      const newQuantity = Math.max(1, parseInt(editQuantity) || 1);
+      const updates: Record<string, any> = { id: res.id, date: editDate, time: editTime, quantity: newQuantity };
       const newPriceTl = parseFloat(editPriceTl);
       const newPriceUsd = parseFloat(editPriceUsd);
       const rawDiscount = Number(editDiscountTl) || 0;
@@ -473,6 +498,7 @@ export function ReservationTable({
     const handleCancelEdit = () => {
       setEditDate(res.date);
       setEditTime(res.time);
+      setEditQuantity(String(res.quantity || 1));
       setEditPriceTl(res.priceTl ? String(res.priceTl) : "");
       setEditPriceUsd(res.priceUsd ? String(res.priceUsd) : "");
       setEditAdvancePayment((res as any).advancePaymentTl ? String((res as any).advancePaymentTl) : "");
@@ -485,6 +511,7 @@ export function ReservationTable({
     const enterEditMode = () => {
       setEditDate(res.date);
       setEditTime(res.time);
+      setEditQuantity(String(res.quantity || 1));
       setEditPriceTl(res.priceTl ? String(res.priceTl) : "");
       setEditPriceUsd(res.priceUsd ? String(res.priceUsd) : "");
       setEditAdvancePayment((res as any).advancePaymentTl ? String((res as any).advancePaymentTl) : "");
@@ -558,7 +585,26 @@ export function ReservationTable({
           </div>
           <div>
             <Label className="text-muted-foreground text-xs">Kişi Sayısı</Label>
-            <div className="font-medium" data-testid="text-quantity">{res.quantity} kişi</div>
+            {isEditMode ? (
+              <div className="space-y-1">
+                <Input 
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  value={editQuantity}
+                  onChange={(e) => handleQuantityChange(e.target.value)}
+                  className="h-8 text-sm"
+                  data-testid="input-edit-quantity"
+                />
+                {perPersonTlRef > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Kişi başı: {Math.round(perPersonTlRef).toLocaleString('tr-TR')} ₺
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <div className="font-medium" data-testid="text-quantity">{res.quantity} kişi</div>
+            )}
           </div>
         </div>
 
