@@ -334,6 +334,7 @@ export const reservations = pgTable("reservations", {
   discountTl: integer("discount_tl").default(0),
   discountType: text("discount_type").default("fixed"),
   discountNote: text("discount_note"),
+  editHistory: text("edit_history").default("[]"),
   notes: text("notes"),
   createdByUserId: integer("created_by_user_id"),
   createdAt: timestamp("created_at").defaultNow(),
