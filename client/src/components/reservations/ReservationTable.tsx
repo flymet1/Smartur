@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2, Clock, AlertTriangle, History } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2, Clock, AlertTriangle, History, Plus, Trash2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -110,6 +110,9 @@ export function ReservationTable({
   const [editDiscountTl, setEditDiscountTl] = useState("");
   const [editDiscountNote, setEditDiscountNote] = useState("");
   const [editNotes, setEditNotes] = useState("");
+  const [editHotelName, setEditHotelName] = useState("");
+  const [editHasTransfer, setEditHasTransfer] = useState(false);
+  const [editExtras, setEditExtras] = useState<Array<{ name: string; priceTl: number; quantity?: number }>>([]);
   const hasSelection = selectedIds !== undefined && onToggleSelection !== undefined;
   
   const { data: activities = [] } = useQuery<Activity[]>({
@@ -492,6 +495,9 @@ export function ReservationTable({
       })() : "";
       const fullNotes = editNotes ? (metadataStr ? `${editNotes}\n${metadataStr}` : editNotes) : metadataStr || "";
       updates.notes = fullNotes;
+      updates.hotelName = editHotelName || "";
+      updates.hasTransfer = editHasTransfer;
+      updates.selectedExtras = JSON.stringify(editExtras);
       reservationUpdateMutation.mutate(updates);
     };
 
@@ -505,6 +511,12 @@ export function ReservationTable({
       setEditDiscountTl((res as any).discountTl ? String((res as any).discountTl) : "");
       setEditDiscountNote((res as any).discountNote || "");
       setEditNotes(cleanNotes || "");
+      setEditHotelName(res.hotelName || "");
+      setEditHasTransfer(res.hasTransfer || false);
+      try {
+        const parsed = JSON.parse((res as any).selectedExtras || "[]");
+        setEditExtras(Array.isArray(parsed) ? parsed : []);
+      } catch { setEditExtras([]); }
       setIsEditMode(false);
     };
 
@@ -527,6 +539,12 @@ export function ReservationTable({
       setEditDiscountTl((res as any).discountTl ? String((res as any).discountTl) : "");
       setEditDiscountNote((res as any).discountNote || "");
       setEditNotes(cleanNotes || "");
+      setEditHotelName(res.hotelName || "");
+      setEditHasTransfer(res.hasTransfer || false);
+      try {
+        const parsed = JSON.parse((res as any).selectedExtras || "[]");
+        setEditExtras(Array.isArray(parsed) ? parsed : []);
+      } catch { setEditExtras([]); }
       setIsEditMode(true);
     };
 
@@ -770,47 +788,138 @@ export function ReservationTable({
           </>
         )}
 
-        {(res.hotelName || res.hasTransfer) && (
-          <>
-            <Separator />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {res.hotelName && (
-                <div>
-                  <Label className="text-muted-foreground text-xs">Otel</Label>
-                  <div className="font-medium">{res.hotelName}</div>
-                </div>
-              )}
-              {res.hasTransfer && (
-                <div>
-                  <Label className="text-muted-foreground text-xs">Transfer Bölgesi</Label>
-                  <div className="font-medium">{(res as any).transferZone || "Belirtilmedi"}</div>
-                </div>
-              )}
-            </div>
-            {res.hasTransfer && (
-              <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                <Check className="h-3 w-3" />
-                Otel transferi talep edildi
+        <Separator />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <Label className="text-muted-foreground text-xs">Otel Adi</Label>
+            {isEditMode ? (
+              <Input
+                value={editHotelName}
+                onChange={(e) => setEditHotelName(e.target.value)}
+                className="h-8 text-sm"
+                placeholder="Otel adi girin"
+                data-testid="input-edit-hotel-name"
+              />
+            ) : (
+              <div className="font-medium" data-testid="text-hotel-name">{res.hotelName || "-"}</div>
+            )}
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Otel Transferi</Label>
+            {isEditMode ? (
+              <div className="flex items-center gap-2 mt-1">
+                <Checkbox
+                  checked={editHasTransfer}
+                  onCheckedChange={(checked) => setEditHasTransfer(!!checked)}
+                  data-testid="checkbox-edit-has-transfer"
+                />
+                <span className="text-sm">{editHasTransfer ? "Evet" : "Hayir"}</span>
+              </div>
+            ) : (
+              <div className="font-medium" data-testid="text-has-transfer">
+                {res.hasTransfer ? (
+                  <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <Check className="h-3 w-3" /> Evet
+                  </span>
+                ) : "Hayir"}
               </div>
             )}
-          </>
-        )}
+          </div>
+          {!isEditMode && (res as any).transferZone && (
+            <div>
+              <Label className="text-muted-foreground text-xs">Transfer Bolgesi</Label>
+              <div className="font-medium">{(res as any).transferZone}</div>
+            </div>
+          )}
+        </div>
 
-        {(() => {
-          let dbExtras: Array<{ name: string; quantity?: number; priceTl: number }> = [];
-          try {
-            const parsed = JSON.parse((res as any).selectedExtras || "[]");
-            if (Array.isArray(parsed) && parsed.length > 0) dbExtras = parsed;
-          } catch {}
-          const metaExtras = metadata?.extras || [];
-          const extras = dbExtras.length > 0 ? dbExtras : metaExtras;
-          if (extras.length === 0) return null;
-          return (
-            <>
-              <Separator />
-              <div>
-                <Label className="text-muted-foreground text-xs">Ekstralar</Label>
-                <div className="space-y-1 mt-1">
+        <Separator />
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-muted-foreground text-xs">Ekstralar</Label>
+            {isEditMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditExtras([...editExtras, { name: "", priceTl: 0, quantity: 1 }])}
+                data-testid="button-add-extra"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Ekstra Ekle
+              </Button>
+            )}
+          </div>
+          {isEditMode ? (
+            <div className="space-y-2">
+              {editExtras.length === 0 && (
+                <p className="text-xs text-muted-foreground">Henuz ekstra eklenmedi</p>
+              )}
+              {editExtras.map((extra, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Input
+                    value={extra.name}
+                    onChange={(e) => {
+                      const updated = [...editExtras];
+                      updated[idx] = { ...updated[idx], name: e.target.value };
+                      setEditExtras(updated);
+                    }}
+                    className="h-8 text-sm flex-1"
+                    placeholder="Ekstra adi"
+                    data-testid={`input-extra-name-${idx}`}
+                  />
+                  <Input
+                    type="number"
+                    min="1"
+                    value={extra.quantity ?? 1}
+                    onChange={(e) => {
+                      const updated = [...editExtras];
+                      updated[idx] = { ...updated[idx], quantity: Math.max(1, Number(e.target.value) || 1) };
+                      setEditExtras(updated);
+                    }}
+                    className="h-8 text-sm w-16"
+                    placeholder="Adet"
+                    data-testid={`input-extra-quantity-${idx}`}
+                  />
+                  <Input
+                    type="number"
+                    value={extra.priceTl || ""}
+                    onChange={(e) => {
+                      const updated = [...editExtras];
+                      updated[idx] = { ...updated[idx], priceTl: Number(e.target.value) || 0 };
+                      setEditExtras(updated);
+                    }}
+                    className="h-8 text-sm w-24"
+                    placeholder="Fiyat ₺"
+                    data-testid={`input-extra-price-${idx}`}
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setEditExtras(editExtras.filter((_, i) => i !== idx))}
+                    data-testid={`button-remove-extra-${idx}`}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+              {editExtras.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Toplam ekstra: {editExtras.reduce((sum, e) => sum + ((e.priceTl || 0) * (e.quantity ?? 1)), 0).toLocaleString('tr-TR')} ₺
+                </p>
+              )}
+            </div>
+          ) : (
+            (() => {
+              let dbExtras: Array<{ name: string; quantity?: number; priceTl: number }> = [];
+              try {
+                const parsed = JSON.parse((res as any).selectedExtras || "[]");
+                if (Array.isArray(parsed) && parsed.length > 0) dbExtras = parsed;
+              } catch {}
+              const metaExtras = metadata?.extras || [];
+              const extras = dbExtras.length > 0 ? dbExtras : metaExtras;
+              if (extras.length === 0) return <p className="text-xs text-muted-foreground">Ekstra yok</p>;
+              return (
+                <div className="space-y-1">
                   {extras.map((extra, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span>{extra.name}{(extra.quantity ?? 1) > 1 ? ` x${extra.quantity}` : ''}</span>
@@ -818,10 +927,10 @@ export function ReservationTable({
                     </div>
                   ))}
                 </div>
-              </div>
-            </>
-          );
-        })()}
+              );
+            })()
+          )}
+        </div>
 
         {(() => {
           const basePrice = res.priceTl || 0;

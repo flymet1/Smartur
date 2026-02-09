@@ -5358,7 +5358,7 @@ export async function registerRoutes(
   // General reservation update (date, time, etc.)
   app.patch("/api/reservations/:id", requirePermission(PERMISSIONS.RESERVATIONS_EDIT), async (req, res) => {
     const id = parseInt(req.params.id);
-    const { date, time, quantity, priceTl, priceUsd, salePriceTl, advancePaymentTl, paymentStatus, discountTl, discountType, discountNote, notes } = req.body;
+    const { date, time, quantity, priceTl, priceUsd, salePriceTl, advancePaymentTl, paymentStatus, discountTl, discountType, discountNote, notes, hotelName, hasTransfer, selectedExtras } = req.body;
     
     try {
       const tenantId = req.session?.tenantId;
@@ -5392,6 +5392,9 @@ export async function registerRoutes(
       if (discountType !== undefined) updates.discountType = discountType;
       if (discountNote !== undefined) updates.discountNote = discountNote;
       if (notes !== undefined) updates.notes = notes;
+      if (hotelName !== undefined) updates.hotelName = hotelName;
+      if (hasTransfer !== undefined) updates.hasTransfer = !!hasTransfer;
+      if (selectedExtras !== undefined) updates.selectedExtras = typeof selectedExtras === 'string' ? selectedExtras : JSON.stringify(selectedExtras);
       
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ error: "Güncellenecek alan belirtilmedi" });
@@ -5401,7 +5404,8 @@ export async function registerRoutes(
         date: "Tarih", time: "Saat", quantity: "Kişi Sayısı",
         priceTl: "Fiyat (TL)", priceUsd: "Fiyat (USD)", salePriceTl: "Satış Fiyatı",
         advancePaymentTl: "Ön Ödeme", paymentStatus: "Ödeme Durumu",
-        discountTl: "İndirim", discountNote: "İndirim Notu"
+        discountTl: "İndirim", discountNote: "İndirim Notu",
+        hotelName: "Otel Adı", hasTransfer: "Otel Transferi", selectedExtras: "Ekstralar"
       };
       const paymentStatusLabels: Record<string, string> = {
         unpaid: "Ödenmedi", partial: "Kısmi", paid: "Ödendi"
