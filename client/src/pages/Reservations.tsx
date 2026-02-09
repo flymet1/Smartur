@@ -2948,7 +2948,12 @@ export default function Reservations() {
                             </RadioGroup>
 
                             {agencyDispatchPaymentType === 'sender_partial' && (() => {
-                              const totalAmount = agencyDispatchGuests * agencyDispatchUnitPayout;
+                              const agencyCostVal = agencyDispatchGuests * agencyDispatchUnitPayout;
+                              const resPriceVal = partnerDispatchReservation ? 
+                                (partnerDispatchReservation.salePriceTl || (partnerDispatchReservation.priceTl || 0) * (partnerDispatchReservation.quantity || 1)) : 0;
+                              const advVal = partnerDispatchReservation?.advancePaymentTl || 0;
+                              const custRemaining = Math.max(0, (resPriceVal || agencyCostVal) - advVal);
+                              const maxCollectable = custRemaining > 0 ? custRemaining : (agencyCostVal > 0 ? agencyCostVal : undefined);
                               return (
                                 <div className="space-y-2 pl-6 border-l-2 border-primary/30">
                                   <Label>Aldigimiz Tutar ({agencyDispatchCurrency})</Label>
@@ -2956,13 +2961,13 @@ export default function Reservations() {
                                     type="number"
                                     inputMode="numeric"
                                     min={0}
-                                    max={totalAmount > 0 ? totalAmount : undefined}
+                                    max={maxCollectable}
                                     value={agencyDispatchAmountCollectedStr}
                                     onChange={(e) => {
                                       const val = e.target.value;
                                       const num = val === "" ? 0 : Number(val) || 0;
-                                      if (totalAmount > 0 && num > totalAmount) {
-                                        setAgencyDispatchAmountCollectedStr(String(totalAmount));
+                                      if (maxCollectable && num > maxCollectable) {
+                                        setAgencyDispatchAmountCollectedStr(String(maxCollectable));
                                       } else {
                                         setAgencyDispatchAmountCollectedStr(val);
                                       }
@@ -2970,11 +2975,11 @@ export default function Reservations() {
                                     placeholder="Tutar girin"
                                     data-testid="input-agency-dispatch-amount-collected"
                                   />
-                                  {totalAmount > 0 && (
+                                  {custRemaining > 0 && (
                                     <p className="text-xs text-muted-foreground">
-                                      Toplam: {totalAmount.toLocaleString('tr-TR')} {agencyDispatchCurrency}
+                                      Musteri Kalan: {custRemaining.toLocaleString('tr-TR')} {agencyDispatchCurrency}
                                       {agencyDispatchAmountCollected > 0 && (
-                                        <> | Kalan: {(totalAmount - agencyDispatchAmountCollected).toLocaleString('tr-TR')} {agencyDispatchCurrency}</>
+                                        <> | Henuz Alinmayan: {(custRemaining - agencyDispatchAmountCollected).toLocaleString('tr-TR')} {agencyDispatchCurrency}</>
                                       )}
                                     </p>
                                   )}
@@ -3027,23 +3032,40 @@ export default function Reservations() {
                                   </span>
                                 </div>
                                 {agencyDispatchPaymentType === 'sender_full' && (
-                                  <div className="flex justify-between text-sm text-green-600">
-                                    <span>Alinan:</span>
-                                    <span className="font-bold">{totalAmount.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
-                                  </div>
-                                )}
-                                {agencyDispatchPaymentType === 'sender_partial' && agencyDispatchAmountCollected > 0 && (
                                   <>
                                     <div className="flex justify-between text-sm text-green-600">
-                                      <span>Alinan:</span>
-                                      <span className="font-bold">{agencyDispatchAmountCollected.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                      <span>Alinan (Satis Fiyati):</span>
+                                      <span className="font-bold">{reservationPrice > 0 ? reservationPrice.toLocaleString('tr-TR') : totalAmount.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
                                     </div>
-                                    <div className="flex justify-between text-sm text-orange-600">
-                                      <span>Kalan (Acenta alacak):</span>
-                                      <span className="font-bold">{(totalAmount - agencyDispatchAmountCollected).toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                    <div className="flex justify-between text-sm text-red-600">
+                                      <span>Acentaya Borcumuz:</span>
+                                      <span className="font-bold">{totalAmount.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
                                     </div>
                                   </>
                                 )}
+                                {agencyDispatchPaymentType === 'sender_partial' && agencyDispatchAmountCollected > 0 && (() => {
+                                  const custRem = Math.max(0, (reservationPrice || totalAmount) - advancePayment);
+                                  const agencyCollects = custRem - agencyDispatchAmountCollected;
+                                  const weOwe = Math.max(0, totalAmount - agencyCollects);
+                                  return (
+                                    <>
+                                      <div className="flex justify-between text-sm text-green-600">
+                                        <span>Alinan:</span>
+                                        <span className="font-bold">{agencyDispatchAmountCollected.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                      </div>
+                                      <div className="flex justify-between text-sm text-orange-600">
+                                        <span>Acenta Musteriden Alacak:</span>
+                                        <span className="font-bold">{Math.max(0, agencyCollects).toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                      </div>
+                                      {weOwe > 0 && (
+                                        <div className="flex justify-between text-sm text-red-600">
+                                          <span>Acentaya Borcumuz:</span>
+                                          <span className="font-bold">{weOwe.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                                 {profit > 0 && (
                                   <>
                                     <Separator className="my-1" />
