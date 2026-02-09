@@ -5385,6 +5385,57 @@ export async function registerRoutes(
       if (Object.keys(updates).length === 0) {
         return res.status(400).json({ error: "Güncellenecek alan belirtilmedi" });
       }
+
+      const fieldLabels: Record<string, string> = {
+        date: "Tarih", time: "Saat", quantity: "Kişi Sayısı",
+        priceTl: "Fiyat (TL)", priceUsd: "Fiyat (USD)", salePriceTl: "Satış Fiyatı",
+        advancePaymentTl: "Ön Ödeme", paymentStatus: "Ödeme Durumu",
+        discountTl: "İndirim", discountNote: "İndirim Notu"
+      };
+      const paymentStatusLabels: Record<string, string> = {
+        unpaid: "Ödenmedi", partial: "Kısmi", paid: "Ödendi"
+      };
+      const changes: Array<{ field: string; label: string; from: any; to: any }> = [];
+      for (const key of Object.keys(updates)) {
+        if (key === 'notes' || key === 'discountType') continue;
+        const oldVal = (reservation as any)[key];
+        const newVal = updates[key];
+        if (String(oldVal ?? '') !== String(newVal ?? '')) {
+          let fromDisplay = oldVal ?? '-';
+          let toDisplay = newVal ?? '-';
+          if (key === 'paymentStatus') {
+            fromDisplay = paymentStatusLabels[String(fromDisplay)] || fromDisplay;
+            toDisplay = paymentStatusLabels[String(toDisplay)] || toDisplay;
+          }
+          if (['priceTl', 'priceUsd', 'salePriceTl', 'advancePaymentTl', 'discountTl'].includes(key)) {
+            const suffix = key.includes('Usd') ? ' $' : ' ₺';
+            fromDisplay = oldVal != null ? `${Number(oldVal).toLocaleString('tr-TR')}${suffix}` : '-';
+            toDisplay = newVal != null ? `${Number(newVal).toLocaleString('tr-TR')}${suffix}` : '-';
+          }
+          if (key === 'quantity') {
+            fromDisplay = `${oldVal ?? 0} kişi`;
+            toDisplay = `${newVal} kişi`;
+          }
+          changes.push({
+            field: key,
+            label: fieldLabels[key] || key,
+            from: fromDisplay,
+            to: toDisplay
+          });
+        }
+      }
+
+      if (changes.length > 0) {
+        let existingHistory: any[] = [];
+        try {
+          existingHistory = JSON.parse((reservation as any).editHistory || '[]');
+        } catch { existingHistory = []; }
+        existingHistory.push({
+          timestamp: new Date().toISOString(),
+          changes
+        });
+        updates.editHistory = JSON.stringify(existingHistory);
+      }
       
       const updated = await storage.updateReservation(id, updates);
       res.json(updated);
@@ -5425,6 +5476,26 @@ export async function registerRoutes(
     }
     
     try {
+      const tenantId = req.session?.tenantId;
+      const allRes = await storage.getReservations(tenantId);
+      const reservation = allRes.find(r => r.id === id);
+      
+      if (reservation && reservation.status !== status) {
+        const statusLabels: Record<string, string> = { pending: "Beklemede", confirmed: "Onaylı", cancelled: "İptal" };
+        let existingHistory: any[] = [];
+        try { existingHistory = JSON.parse((reservation as any).editHistory || '[]'); } catch {}
+        existingHistory.push({
+          timestamp: new Date().toISOString(),
+          changes: [{
+            field: 'status',
+            label: 'Durum',
+            from: statusLabels[reservation.status || 'pending'] || reservation.status,
+            to: statusLabels[status] || status
+          }]
+        });
+        await storage.updateReservation(id, { editHistory: JSON.stringify(existingHistory) } as any);
+      }
+      
       const updated = await storage.updateReservationStatus(id, status);
       res.json(updated);
     } catch (error) {

@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 import type { Reservation, Activity, PackageTour } from "@shared/schema";
-import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2, Clock, AlertTriangle } from "lucide-react";
+import { MessageSquare, Globe, User, Package, ChevronDown, ChevronRight, Link2, Copy, Check, MoreHorizontal, Bus, Hotel, Star, StickyNote, Handshake, Send, CheckCircle, XCircle, ArrowRightLeft, Phone, Pencil, Save, MessageCircle, Share2, Clock, AlertTriangle, History } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -978,6 +978,44 @@ export function ReservationTable({
             </div>
           )}
         </div>
+
+        {(() => {
+          let editHistory: Array<{ timestamp: string; changes: Array<{ field: string; label: string; from: any; to: any }> }> = [];
+          try {
+            editHistory = JSON.parse((res as any).editHistory || '[]');
+          } catch {}
+          if (editHistory.length === 0) return null;
+          return (
+            <>
+              <Separator />
+              <div>
+                <Label className="text-muted-foreground text-xs flex items-center gap-1" data-testid="label-edit-history">
+                  <History className="h-3 w-3" />
+                  Değişiklik Geçmişi ({editHistory.length})
+                </Label>
+                <div className="space-y-2 mt-2 max-h-48 overflow-y-auto" data-testid="list-edit-history">
+                  {editHistory.slice().reverse().map((entry, idx) => (
+                    <div key={idx} className="text-sm border rounded-md p-2 bg-muted/30" data-testid={`card-edit-history-${idx}`}>
+                      <div className="text-xs text-muted-foreground mb-1" data-testid={`text-edit-history-date-${idx}`}>
+                        {format(new Date(entry.timestamp), "d MMMM yyyy HH:mm", { locale: tr })}
+                      </div>
+                      <div className="space-y-0.5">
+                        {entry.changes.map((c, cIdx) => (
+                          <div key={cIdx} className="flex items-center gap-1 text-xs flex-wrap" data-testid={`text-edit-change-${idx}-${cIdx}`}>
+                            <span className="font-medium">{c.label}:</span>
+                            <span className="line-through text-muted-foreground">{String(c.from)}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <span className="text-foreground font-medium">{String(c.to)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {res.source === 'manual' && (res as any).createdByUserName && (
           <>
