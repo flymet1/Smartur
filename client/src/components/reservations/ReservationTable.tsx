@@ -106,6 +106,7 @@ export function ReservationTable({
   const [editPriceTl, setEditPriceTl] = useState("");
   const [editPriceUsd, setEditPriceUsd] = useState("");
   const [editAdvancePayment, setEditAdvancePayment] = useState("");
+  const [isEditingAdvance, setIsEditingAdvance] = useState(false);
   const [editNotes, setEditNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const hasSelection = selectedIds !== undefined && onToggleSelection !== undefined;
@@ -187,13 +188,14 @@ export function ReservationTable({
   });
 
   const reservationUpdateMutation = useMutation({
-    mutationFn: async ({ id, ...data }: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number; notes?: string }) => {
+    mutationFn: async ({ id, ...data }: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number; paymentStatus?: string; notes?: string }) => {
       return apiRequest('PATCH', `/api/reservations/${id}`, data);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/reservations'] });
       toast({ title: "Basarili", description: "Rezervasyon guncellendi." });
       setIsEditing(false);
+      setIsEditingAdvance(false);
       setIsEditingNotes(false);
       const res = reservations.find(r => r.id === variables.id);
       if (res && onMoveSuccess && variables.date && variables.time && (variables.date !== res.date || variables.time !== res.time)) {
@@ -209,6 +211,7 @@ export function ReservationTable({
     if (expandedId === res.id) {
       setExpandedId(null);
       setIsEditing(false);
+      setIsEditingAdvance(false);
       setIsEditingNotes(false);
     } else {
       setExpandedId(res.id);
@@ -220,6 +223,7 @@ export function ReservationTable({
       const cleanNotes = getNotesWithoutMetadata(res.notes);
       setEditNotes(cleanNotes || "");
       setIsEditing(false);
+      setIsEditingAdvance(false);
       setIsEditingNotes(false);
     }
   };
@@ -445,14 +449,19 @@ export function ReservationTable({
         toast({ title: "Hata", description: "Tarih ve saat seçiniz.", variant: "destructive" });
         return;
       }
-      const updates: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number } = { id: res.id, date: editDate, time: editTime };
+      const updates: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number } = { id: res.id, date: editDate, time: editTime };
       const newPriceTl = parseFloat(editPriceTl);
       const newPriceUsd = parseFloat(editPriceUsd);
-      const newAdvance = parseFloat(editAdvancePayment);
       if (!isNaN(newPriceTl)) { updates.priceTl = newPriceTl; updates.salePriceTl = newPriceTl; }
       if (!isNaN(newPriceUsd)) updates.priceUsd = newPriceUsd;
-      if (!isNaN(newAdvance)) updates.advancePaymentTl = newAdvance;
       reservationUpdateMutation.mutate(updates);
+    };
+
+    const handleSaveAdvance = () => {
+      const advVal = Number(editAdvancePayment) || 0;
+      const salePrice = (res as any).salePriceTl || res.priceTl || 0;
+      const paymentStatus = salePrice > 0 && advVal >= salePrice ? 'paid' : advVal > 0 ? 'partial' : 'unpaid';
+      reservationUpdateMutation.mutate({ id: res.id, advancePaymentTl: advVal, paymentStatus });
     };
 
     const handleSaveNotes = () => {
@@ -669,45 +678,6 @@ export function ReservationTable({
           </div>
         </div>
 
-        {isEditing && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-muted-foreground text-xs">On Odeme (Kapora) ₺</Label>
-              <Input 
-                type="number" 
-                value={editAdvancePayment} 
-                onChange={(e) => setEditAdvancePayment(e.target.value)}
-                className="h-8 text-sm"
-                placeholder="Tutar girin"
-                data-testid="input-edit-advance-payment"
-              />
-            </div>
-          </div>
-        )}
-
-        {!isEditing && (res as any).advancePaymentTl > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-muted-foreground text-xs flex items-center gap-1">
-                On Odeme (Kapora)
-                <Button variant="ghost" size="icon" className="h-4 w-4 p-0 ml-1" onClick={() => setIsEditing(true)} data-testid="button-edit-advance">
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              </Label>
-              <div className="font-medium text-amber-600" data-testid="text-advance-payment">
-                {((res as any).advancePaymentTl || 0).toLocaleString('tr-TR')} ₺
-              </div>
-            </div>
-            {((res as any).salePriceTl ?? res.priceTl ?? 0) > 0 && (
-              <div>
-                <Label className="text-muted-foreground text-xs">Kalan Odeme</Label>
-                <div className="font-medium" data-testid="text-remaining-payment">
-                  {(((res as any).salePriceTl ?? res.priceTl ?? 0) - ((res as any).advancePaymentTl || 0)).toLocaleString('tr-TR')} ₺
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {isEditing && (
           <div className="flex items-center gap-2">
@@ -810,25 +780,93 @@ export function ReservationTable({
             <>
               <Separator />
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs">Odeme Bilgileri</Label>
+                <Label className="text-muted-foreground text-xs flex items-center gap-1">
+                  Odeme Bilgileri
+                  {!isEditingAdvance && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-4 w-4 p-0 ml-1"
+                      onClick={() => {
+                        setEditAdvancePayment(String((res as any).advancePaymentTl || 0));
+                        setIsEditingAdvance(true);
+                      }}
+                      data-testid="button-edit-advance"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  )}
+                </Label>
                 {totalToShow > 0 && (
                   <div className="flex justify-between text-sm">
                     <span>Toplam Tutar</span>
                     <span className="font-bold text-primary" data-testid="text-total-price">{totalToShow.toLocaleString('tr-TR')} ₺</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm">
-                  <span>On Odeme (Kapora)</span>
-                  <span className="font-medium text-amber-600" data-testid="text-deposit-info">
-                    {depositToShow > 0 ? `${depositToShow.toLocaleString('tr-TR')} ₺` : '0 ₺'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Kalan Odeme</span>
-                  <span className={`font-medium ${remainingToShow > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} data-testid="text-remaining-info">
-                    {remainingToShow > 0 ? `${remainingToShow.toLocaleString('tr-TR')} ₺` : '0 ₺'}
-                  </span>
-                </div>
+                {!isEditingAdvance ? (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span>On Odeme (Kapora)</span>
+                      <span className="font-medium text-amber-600" data-testid="text-deposit-info">
+                        {depositToShow > 0 ? `${depositToShow.toLocaleString('tr-TR')} ₺` : '0 ₺'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Kalan Odeme</span>
+                      <span className={`font-medium ${remainingToShow > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`} data-testid="text-remaining-info">
+                        {remainingToShow > 0 ? `${remainingToShow.toLocaleString('tr-TR')} ₺` : '0 ₺'}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">On Odeme (Kapora) ₺</Label>
+                      <Input 
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        value={editAdvancePayment}
+                        onChange={(e) => setEditAdvancePayment(e.target.value)}
+                        placeholder="Tutar girin"
+                        className="h-8 text-sm"
+                        data-testid="input-edit-advance-payment"
+                      />
+                      {(() => {
+                        const sp = (res as any).salePriceTl || res.priceTl || 0;
+                        const av = Number(editAdvancePayment) || 0;
+                        return sp > 0 && av > 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            Kalan: {Math.max(0, sp - av).toLocaleString('tr-TR')} ₺
+                          </p>
+                        ) : null;
+                      })()}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={handleSaveAdvance}
+                        disabled={reservationUpdateMutation.isPending}
+                        data-testid="button-save-advance"
+                      >
+                        <Save className="h-4 w-4 mr-1" />
+                        Kaydet
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          setEditAdvancePayment(String((res as any).advancePaymentTl || 0));
+                          setIsEditingAdvance(false);
+                        }}
+                        disabled={reservationUpdateMutation.isPending}
+                        data-testid="button-cancel-advance"
+                      >
+                        Vazgec
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {metadata?.paymentType && (
                   <div className="text-xs text-muted-foreground">
                     {metadata.paymentType === 'full' ? 'Tam odeme gerekli' : 
