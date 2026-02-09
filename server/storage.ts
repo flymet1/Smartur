@@ -2766,19 +2766,21 @@ Sky Fethiye`,
     const tenantMap: Record<number, string> = {};
     tenantList.forEach(t => { tenantMap[t.id] = t.companyName || `Tenant #${t.id}`; });
 
-    const agencyBalanceMap: Record<string, { totalPayout: number; collected: number; balanceOwed: number; dispatchCount: number }> = {};
+    const agencyBalanceMap: Record<string, { totalPayout: number; collected: number; balanceOwed: number; dispatchCount: number; totalSalePrice: number; totalAdvancePayment: number }> = {};
     dispatchRows.forEach(d => {
       const agName = d.agencyId ? (agencyMap[d.agencyId] || `Acenta #${d.agencyId}`) : 'Bilinmiyor';
-      if (!agencyBalanceMap[agName]) agencyBalanceMap[agName] = { totalPayout: 0, collected: 0, balanceOwed: 0, dispatchCount: 0 };
+      if (!agencyBalanceMap[agName]) agencyBalanceMap[agName] = { totalPayout: 0, collected: 0, balanceOwed: 0, dispatchCount: 0, totalSalePrice: 0, totalAdvancePayment: 0 };
       agencyBalanceMap[agName].totalPayout += (d.totalPayoutTl || 0);
       agencyBalanceMap[agName].collected += (d.amountCollectedBySender || 0);
       agencyBalanceMap[agName].balanceOwed += (d.balanceOwed || 0);
       agencyBalanceMap[agName].dispatchCount += 1;
+      agencyBalanceMap[agName].totalSalePrice += (d.salePriceTl || 0);
+      agencyBalanceMap[agName].totalAdvancePayment += (d.advancePaymentTl || 0);
     });
 
     activePartnerTx.forEach(t => {
       const partnerName = `Partner: ${tenantMap[t.receiverTenantId] || `#${t.receiverTenantId}`}`;
-      if (!agencyBalanceMap[partnerName]) agencyBalanceMap[partnerName] = { totalPayout: 0, collected: 0, balanceOwed: 0, dispatchCount: 0 };
+      if (!agencyBalanceMap[partnerName]) agencyBalanceMap[partnerName] = { totalPayout: 0, collected: 0, balanceOwed: 0, dispatchCount: 0, totalSalePrice: 0, totalAdvancePayment: 0 };
       agencyBalanceMap[partnerName].totalPayout += (t.totalPrice || 0);
       agencyBalanceMap[partnerName].collected += (t.amountCollectedBySender || 0);
       agencyBalanceMap[partnerName].balanceOwed += (t.balanceOwed || 0);

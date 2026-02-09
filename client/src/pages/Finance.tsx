@@ -446,6 +446,7 @@ export default function Finance() {
     agencyId: number | null;
     salePriceTl: number;
     priceTl: number;
+    advancePaymentTl: number;
     currency: string;
     status: string;
     hasDispatch: boolean;
@@ -475,6 +476,8 @@ export default function Finance() {
   const [dispatchPaymentNotes, setDispatchPaymentNotes] = useState("");
   const [dispatchSalePriceTlStr, setDispatchSalePriceTlStr] = useState("");
   const dispatchSalePriceTl = dispatchSalePriceTlStr === "" ? 0 : Number(dispatchSalePriceTlStr) || 0;
+  const [dispatchAdvancePaymentTlStr, setDispatchAdvancePaymentTlStr] = useState("");
+  const dispatchAdvancePaymentTl = dispatchAdvancePaymentTlStr === "" ? 0 : Number(dispatchAdvancePaymentTlStr) || 0;
   const [rateForm, setRateForm] = useState({
     agencyId: 0,
     activityId: 0,
@@ -760,7 +763,7 @@ export default function Finance() {
     dispatchBalanceOwed?: number;
     dispatchProfit?: number;
     activityProfitMap?: Record<string, { income: number; payout: number; profit: number }>;
-    agencyBalanceMap?: Record<string, { totalPayout: number; collected: number; balanceOwed: number; dispatchCount: number }>;
+    agencyBalanceMap?: Record<string, { totalPayout: number; collected: number; balanceOwed: number; dispatchCount: number; totalSalePrice?: number; totalAdvancePayment?: number }>;
   }
   const currentMonth = `${startDate.slice(0, 7)}`;
   const { data: financeEntries = [] } = useQuery<any[]>({
@@ -1175,6 +1178,7 @@ export default function Finance() {
     setDispatchAmountCollectedStr("");
     setDispatchPaymentNotes('');
     setDispatchSalePriceTlStr("");
+    setDispatchAdvancePaymentTlStr("");
     setUseLineItems(false);
     setEditingDispatchId(null);
     setSelectedReservationId(null);
@@ -1264,6 +1268,7 @@ export default function Finance() {
     setDispatchAmountCollectedStr(amountCollected ? String(amountCollected) : "");
     setDispatchPaymentNotes(paymentNotesVal);
     setDispatchSalePriceTlStr((dispatch as any).salePriceTl ? String((dispatch as any).salePriceTl) : "");
+    setDispatchAdvancePaymentTlStr((dispatch as any).advancePaymentTl ? String((dispatch as any).advancePaymentTl) : "");
     setUseLineItems(hasLineItems);
     setSelectedReservationId((dispatch as any).reservationId || null);
     setDispatchDialogOpen(true);
@@ -1418,17 +1423,20 @@ export default function Finance() {
         toast({ title: "Hata", description: "Kismi odeme tutarini girin", variant: "destructive" });
         return;
       }
-      if (dispatchTotal > 0 && dispatchAmountCollected > dispatchTotal) {
-        toast({ title: "Hata", description: "Alinan tutar toplam tutari asamaz", variant: "destructive" });
+      const maxAmount = (dispatchSalePriceTl || dispatchTotal) - (dispatchAdvancePaymentTl || 0);
+      if (maxAmount > 0 && dispatchAmountCollected > maxAmount) {
+        toast({ title: "Hata", description: "Alinan tutar musterinin kalan borcunu asamaz", variant: "destructive" });
         return;
       }
     }
     
     const paymentFields = {
       paymentCollectionType: dispatchPaymentType,
-      amountCollectedBySender: dispatchPaymentType === 'sender_partial' ? dispatchAmountCollected : 0,
+      amountCollectedBySender: dispatchPaymentType === 'sender_partial' ? dispatchAmountCollected : 
+                               dispatchPaymentType === 'sender_full' ? (dispatchSalePriceTl || dispatchTotal) : 0,
       paymentNotes: dispatchPaymentNotes.trim(),
       salePriceTl: dispatchSalePriceTl || 0,
+      advancePaymentTl: dispatchAdvancePaymentTl || 0,
     };
     
     const cleanNotes = dispatchForm.notes || '';
@@ -2066,13 +2074,27 @@ export default function Finance() {
                                 }
                               }
                               
-                              if (!pct || pct === 'receiver_full') return null;
+                              const dSalePrice = (dispatch as any).salePriceTl || 0;
+                              const dAdvance = (dispatch as any).advancePaymentTl || 0;
+                              const agencyCost = dispatch.totalPayoutTl || 0;
+                              
+                              if (!pct || pct === 'receiver_full') {
+                                if (dSalePrice > 0 && agencyCost > 0) {
+                                  return (
+                                    <Badge variant="outline" className="text-xs">
+                                      <Wallet className="h-3 w-3 mr-1" />
+                                      Tedarikci alacak: {(dSalePrice - dAdvance).toLocaleString('tr-TR')} TL
+                                    </Badge>
+                                  );
+                                }
+                                return null;
+                              }
                               
                               return (
                                 <Badge variant="outline" className="text-xs">
                                   <Wallet className="h-3 w-3 mr-1" />
-                                  {pct === 'sender_full' ? 'Biz aldik' :
-                                   pct === 'sender_partial' ? `Kismi: ${collected.toLocaleString('tr-TR')} ${cur}` :
+                                  {pct === 'sender_full' ? `Biz aldik: ${(dSalePrice || agencyCost).toLocaleString('tr-TR')} TL` :
+                                   pct === 'sender_partial' ? `Kismi: ${collected.toLocaleString('tr-TR')} ${cur}${dAdvance > 0 ? ` + ${dAdvance.toLocaleString('tr-TR')} on odeme` : ''}` :
                                    'Tedarikci alacak'}
                                 </Badge>
                               );
@@ -4276,6 +4298,7 @@ export default function Finance() {
                         setDispatchForm(f => ({ ...f, customerName: '', customerPhone: '', activityId: 0, dispatchDate: new Date().toISOString().split('T')[0] }));
                         setSimpleGuestCount(1);
                         setDispatchSalePriceTlStr("");
+                        setDispatchAdvancePaymentTlStr("");
                       }
                       setReservationSearchQuery(e.target.value);
                       setShowReservationDropdown(true);
@@ -4296,6 +4319,7 @@ export default function Finance() {
                         setDispatchForm(f => ({ ...f, customerName: '', customerPhone: '', activityId: 0, dispatchDate: new Date().toISOString().split('T')[0] }));
                         setSimpleGuestCount(1);
                         setDispatchSalePriceTlStr("");
+                        setDispatchAdvancePaymentTlStr("");
                       }}
                       data-testid="button-clear-reservation"
                     >
@@ -4345,6 +4369,7 @@ export default function Finance() {
                               setSimpleGuestCount(r.quantity || 1);
                               const salePrice = r.salePriceTl > 0 ? r.salePriceTl : (r.priceTl * (r.quantity || 1));
                               setDispatchSalePriceTlStr(salePrice > 0 ? String(salePrice) : "");
+                              setDispatchAdvancePaymentTlStr(r.advancePaymentTl > 0 ? String(r.advancePaymentTl) : "");
                             }}
                             data-testid={`suggestion-reservation-${r.id}`}
                           >
@@ -4605,7 +4630,24 @@ export default function Finance() {
                 />
                 {dispatchSalePriceTl > 0 && simpleGuestCount > 0 && simpleUnitPayout > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Kar: {(dispatchSalePriceTl - (simpleGuestCount * simpleUnitPayout)).toLocaleString('tr-TR')} TL
+                    Tedarikci Maliyeti: {(simpleGuestCount * simpleUnitPayout).toLocaleString('tr-TR')} TL | Kar: {(dispatchSalePriceTl - (simpleGuestCount * simpleUnitPayout)).toLocaleString('tr-TR')} TL
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Alinan On Odeme (TL)</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Ornegin 500"
+                  value={dispatchAdvancePaymentTlStr}
+                  onChange={(e) => setDispatchAdvancePaymentTlStr(e.target.value.replace(/[^0-9.]/g, ''))}
+                  data-testid="input-dispatch-advance-payment"
+                />
+                {dispatchAdvancePaymentTl > 0 && dispatchSalePriceTl > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Kalan: {(dispatchSalePriceTl - dispatchAdvancePaymentTl).toLocaleString('tr-TR')} TL
                   </p>
                 )}
               </div>
@@ -4647,7 +4689,7 @@ export default function Finance() {
                 </RadioGroup>
                 
                 {dispatchPaymentType === 'sender_partial' && (() => {
-                  let partialTotal = 0;
+                  let agencyCost = 0;
                   let partialCurrencyLabel = 'TL';
                   if (useLineItems) {
                     let tl = 0, usd = 0;
@@ -4655,25 +4697,28 @@ export default function Finance() {
                       const t = item.quantity * item.unitAmount;
                       if (item.currency === 'USD') usd += t; else tl += t;
                     });
-                    partialTotal = tl > 0 ? tl : usd;
+                    agencyCost = tl > 0 ? tl : usd;
                     partialCurrencyLabel = tl > 0 ? 'TL' : 'USD';
                   } else {
-                    partialTotal = simpleGuestCount * simpleUnitPayout;
+                    agencyCost = simpleGuestCount * simpleUnitPayout;
                     partialCurrencyLabel = simpleCurrency === 'USD' ? 'USD' : 'TL';
                   }
+                  const customerTotal = dispatchSalePriceTl || agencyCost;
+                  const advPay = dispatchAdvancePaymentTl || 0;
+                  const maxCollectable = customerTotal - advPay;
                   return (
                     <div className="space-y-2 pl-6 border-l-2 border-primary/30">
-                      <Label>Aldigimiz Tutar ({partialCurrencyLabel})</Label>
+                      <Label>Aldigimiz Tutar (on odeme haric) ({partialCurrencyLabel})</Label>
                       <Input
                         type="number"
                         min={0}
-                        max={partialTotal > 0 ? partialTotal : undefined}
+                        max={maxCollectable > 0 ? maxCollectable : undefined}
                         value={dispatchAmountCollectedStr}
                         onChange={(e) => {
                           const val = e.target.value;
                           const num = val === "" ? 0 : Number(val) || 0;
-                          if (partialTotal > 0 && num > partialTotal) {
-                            setDispatchAmountCollectedStr(String(partialTotal));
+                          if (maxCollectable > 0 && num > maxCollectable) {
+                            setDispatchAmountCollectedStr(String(maxCollectable));
                           } else {
                             setDispatchAmountCollectedStr(val);
                           }
@@ -4681,11 +4726,12 @@ export default function Finance() {
                         placeholder="Ornegin: 500"
                         data-testid="input-dispatch-amount-collected"
                       />
-                      {partialTotal > 0 && (
+                      {customerTotal > 0 && (
                         <p className="text-xs text-muted-foreground">
-                          Toplam: {partialTotal.toLocaleString('tr-TR')} {partialCurrencyLabel}
+                          Musteri toplam: {customerTotal.toLocaleString('tr-TR')} TL
+                          {advPay > 0 && <> | On odeme: {advPay.toLocaleString('tr-TR')} TL</>}
                           {dispatchAmountCollected > 0 && (
-                            <> | Kalan: {(partialTotal - dispatchAmountCollected).toLocaleString('tr-TR')} {partialCurrencyLabel}</>
+                            <> | Tedarikci alacak: {(maxCollectable - dispatchAmountCollected).toLocaleString('tr-TR')} {partialCurrencyLabel}</>
                           )}
                         </p>
                       )}
@@ -4706,17 +4752,17 @@ export default function Finance() {
 
               {/* Toplam Özeti */}
               {(() => {
-                let totalTl = 0;
-                let totalUsd = 0;
+                let agencyCostTl = 0;
+                let agencyCostUsd = 0;
                 let guestCount = 0;
                 
                 if (useLineItems) {
                   dispatchForm.items.forEach(item => {
                     const itemTotal = item.quantity * item.unitAmount;
                     if (item.currency === 'USD') {
-                      totalUsd += itemTotal;
+                      agencyCostUsd += itemTotal;
                     } else {
-                      totalTl += itemTotal;
+                      agencyCostTl += itemTotal;
                     }
                     if (item.itemType === 'base' || item.itemType === 'observer') {
                       guestCount += item.quantity;
@@ -4726,31 +4772,41 @@ export default function Finance() {
                   guestCount = simpleGuestCount;
                   const total = simpleGuestCount * simpleUnitPayout;
                   if (simpleCurrency === 'USD') {
-                    totalUsd = total;
+                    agencyCostUsd = total;
                   } else {
-                    totalTl = total;
+                    agencyCostTl = total;
                   }
                 }
                 
-                const totalAmount = totalTl > 0 ? totalTl : totalUsd;
-                const currencyLabel = totalTl > 0 ? 'TL' : 'USD';
+                const agencyCost = agencyCostTl > 0 ? agencyCostTl : agencyCostUsd;
+                const currencyLabel = agencyCostTl > 0 ? 'TL' : 'USD';
+                const salePrice = dispatchSalePriceTl || agencyCost;
+                const advancePayment = dispatchAdvancePaymentTl || 0;
+                const customerRemaining = salePrice - advancePayment;
+                const profit = salePrice - agencyCost;
                 
-                return (totalTl > 0 || totalUsd > 0) ? (
+                return (agencyCost > 0 || dispatchSalePriceTl > 0) ? (
                   <div className="p-3 bg-muted rounded-lg space-y-1">
                     <div className="flex justify-between text-sm">
                       <span>Misafir Sayisi:</span>
                       <span className="font-medium">{guestCount}</span>
                     </div>
-                    {totalTl > 0 && (
+                    {dispatchSalePriceTl > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span>Toplam (TL):</span>
-                        <span className="font-bold text-orange-600">{formatMoney(totalTl)}</span>
+                        <span>Satis Fiyati:</span>
+                        <span className="font-bold">{dispatchSalePriceTl.toLocaleString('tr-TR')} TL</span>
                       </div>
                     )}
-                    {totalUsd > 0 && (
+                    {agencyCost > 0 && (
                       <div className="flex justify-between text-sm">
-                        <span>Toplam (USD):</span>
-                        <span className="font-bold text-green-600">${totalUsd.toLocaleString('en-US')}</span>
+                        <span>Tedarikci Maliyeti:</span>
+                        <span className="font-medium text-orange-600">{agencyCost.toLocaleString('tr-TR')} {currencyLabel}</span>
+                      </div>
+                    )}
+                    {advancePayment > 0 && (
+                      <div className="flex justify-between text-sm text-blue-600">
+                        <span>Alinan On Odeme:</span>
+                        <span className="font-medium">{advancePayment.toLocaleString('tr-TR')} TL</span>
                       </div>
                     )}
                     <Separator className="my-1" />
@@ -4761,21 +4817,62 @@ export default function Finance() {
                          dispatchPaymentType === 'sender_full' ? 'Biz aldik' : 'Kismi odeme'}
                       </span>
                     </div>
-                    {dispatchPaymentType === 'sender_full' && (
-                      <div className="flex justify-between text-sm text-green-600">
-                        <span>Alinan:</span>
-                        <span className="font-bold">{totalTl > 0 ? formatMoney(totalTl) : `$${totalUsd.toLocaleString('en-US')}`}</span>
-                      </div>
+                    
+                    {dispatchPaymentType === 'receiver_full' && (
+                      <>
+                        <div className="flex justify-between text-sm text-orange-600">
+                          <span>Tedarikci musteriden alacak:</span>
+                          <span className="font-bold">{customerRemaining.toLocaleString('tr-TR')} TL</span>
+                        </div>
+                        {agencyCost > 0 && customerRemaining > agencyCost && (
+                          <div className="flex justify-between text-sm text-green-600">
+                            <span>Tedarikci bize odeyecek:</span>
+                            <span className="font-bold">{(customerRemaining - agencyCost).toLocaleString('tr-TR')} TL</span>
+                          </div>
+                        )}
+                      </>
                     )}
-                    {dispatchPaymentType === 'sender_partial' && dispatchAmountCollected > 0 && (
+                    
+                    {dispatchPaymentType === 'sender_full' && (
                       <>
                         <div className="flex justify-between text-sm text-green-600">
-                          <span>Alinan:</span>
-                          <span className="font-bold">{dispatchAmountCollected.toLocaleString('tr-TR')} {currencyLabel}</span>
+                          <span>Biz aldik (toplam):</span>
+                          <span className="font-bold">{salePrice.toLocaleString('tr-TR')} TL</span>
+                        </div>
+                        {agencyCost > 0 && (
+                          <div className="flex justify-between text-sm text-orange-600">
+                            <span>Tedarikciye borcumuz:</span>
+                            <span className="font-bold">{agencyCost.toLocaleString('tr-TR')} {currencyLabel}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {dispatchPaymentType === 'sender_partial' && (
+                      <>
+                        {dispatchAmountCollected > 0 && (
+                          <div className="flex justify-between text-sm text-green-600">
+                            <span>Kismi alinan:</span>
+                            <span className="font-bold">{dispatchAmountCollected.toLocaleString('tr-TR')} {currencyLabel}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>Bizde toplam:</span>
+                          <span className="font-bold">{(advancePayment + dispatchAmountCollected).toLocaleString('tr-TR')} TL</span>
                         </div>
                         <div className="flex justify-between text-sm text-orange-600">
-                          <span>Kalan (Tedarikci alacak):</span>
-                          <span className="font-bold">{(totalAmount - dispatchAmountCollected).toLocaleString('tr-TR')} {currencyLabel}</span>
+                          <span>Tedarikci musteriden alacak:</span>
+                          <span className="font-bold">{(customerRemaining - dispatchAmountCollected).toLocaleString('tr-TR')} TL</span>
+                        </div>
+                      </>
+                    )}
+                    
+                    {dispatchSalePriceTl > 0 && agencyCost > 0 && (
+                      <>
+                        <Separator className="my-1" />
+                        <div className="flex justify-between text-sm font-bold">
+                          <span>Net Kar:</span>
+                          <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>{profit.toLocaleString('tr-TR')} TL</span>
                         </div>
                       </>
                     )}

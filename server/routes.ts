@@ -5186,6 +5186,7 @@ export async function registerRoutes(
           agencyId: r.agencyId,
           salePriceTl: r.salePriceTl || 0,
           priceTl: r.priceTl || 0,
+          advancePaymentTl: r.advancePaymentTl || 0,
           currency: r.currency || 'TRY',
           status: r.status,
           hasDispatch: dispatchedReservationIds.has(r.id),
@@ -13620,19 +13621,23 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       }
       
       const totalPayoutTl = (guestCount || 0) * finalUnitPayoutTl;
+      const salePrice = salePriceTl || totalPayoutTl;
+      const advPayment = advancePaymentTl || 0;
+      const customerRemaining = salePrice - advPayment;
       
       const collectionType = paymentCollectionType || 'receiver_full';
       let computedBalanceOwed = 0;
       let collectedAmount = amountCollectedBySender || 0;
       
-      if (collectionType === 'sender_partial' && totalPayoutTl > 0) {
-        collectedAmount = Math.min(collectedAmount, totalPayoutTl);
+      if (collectionType === 'sender_partial' && customerRemaining > 0) {
+        collectedAmount = Math.min(collectedAmount, customerRemaining);
       }
       
       if (collectionType === 'sender_full') {
         computedBalanceOwed = totalPayoutTl;
       } else if (collectionType === 'sender_partial') {
-        computedBalanceOwed = collectedAmount;
+        const agencyCollectsFromCustomer = customerRemaining - collectedAmount;
+        computedBalanceOwed = Math.max(0, totalPayoutTl - agencyCollectsFromCustomer);
       } else {
         computedBalanceOwed = 0;
       }
@@ -13668,21 +13673,25 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
   app.patch("/api/finance/dispatches/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { guestCount, unitPayoutTl, paymentCollectionType, amountCollectedBySender, ...rest } = req.body;
+      const { guestCount, unitPayoutTl, paymentCollectionType, amountCollectedBySender, salePriceTl, advancePaymentTl, ...rest } = req.body;
       const totalPayoutTl = (guestCount || 0) * (unitPayoutTl || 0);
+      const salePrice = salePriceTl || totalPayoutTl;
+      const advPayment = advancePaymentTl || 0;
+      const customerRemaining = salePrice - advPayment;
       
       let computedBalanceOwed = 0;
       const collectionType = paymentCollectionType || 'receiver_full';
       let collectedAmount = amountCollectedBySender || 0;
       
-      if (collectionType === 'sender_partial' && totalPayoutTl > 0) {
-        collectedAmount = Math.min(collectedAmount, totalPayoutTl);
+      if (collectionType === 'sender_partial' && customerRemaining > 0) {
+        collectedAmount = Math.min(collectedAmount, customerRemaining);
       }
       
       if (collectionType === 'sender_full') {
         computedBalanceOwed = totalPayoutTl;
       } else if (collectionType === 'sender_partial') {
-        computedBalanceOwed = collectedAmount;
+        const agencyCollectsFromCustomer = customerRemaining - collectedAmount;
+        computedBalanceOwed = Math.max(0, totalPayoutTl - agencyCollectsFromCustomer);
       }
       
       const dispatch = await storage.updateSupplierDispatch(id, {
@@ -13693,6 +13702,8 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         paymentCollectionType: collectionType,
         amountCollectedBySender: collectedAmount,
         balanceOwed: computedBalanceOwed,
+        salePriceTl: salePriceTl || 0,
+        advancePaymentTl: advPayment,
       });
       res.json(dispatch);
     } catch (err) {
@@ -13779,7 +13790,8 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
   app.post("/api/finance/dispatches-with-items", async (req, res) => {
     try {
       const tenantId = req.session?.tenantId;
-      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, notes, items } = req.body;
+      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, notes, items,
+        paymentCollectionType, amountCollectedBySender, paymentNotes, reservationId, salePriceTl, advancePaymentTl } = req.body;
       
       if (!agencyId || !dispatchDate) {
         return res.status(400).json({ error: "agencyId ve dispatchDate zorunlu" });
@@ -13798,17 +13810,32 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         } else {
           totalPayoutTl += itemTotal;
         }
-        // base ve observer tipindeki kalemler misafir sayısına eklenir
         if (item.itemType === 'base' || item.itemType === 'observer') {
           totalGuestCount += item.quantity || 1;
         }
       }
       
-      // Ana para birimi: TL varsa TL, yoksa USD
       const mainCurrency = totalPayoutTl > 0 ? 'TRY' : 'USD';
       const mainTotal = mainCurrency === 'TRY' ? totalPayoutTl : totalPayoutUsd;
       
-      // Dispatch oluştur
+      const salePrice = salePriceTl || mainTotal;
+      const advPayment = advancePaymentTl || 0;
+      const customerRemaining = salePrice - advPayment;
+      const collectionType = paymentCollectionType || 'receiver_full';
+      let computedBalanceOwed = 0;
+      let collectedAmount = amountCollectedBySender || 0;
+      
+      if (collectionType === 'sender_partial' && customerRemaining > 0) {
+        collectedAmount = Math.min(collectedAmount, customerRemaining);
+      }
+      
+      if (collectionType === 'sender_full') {
+        computedBalanceOwed = mainTotal;
+      } else if (collectionType === 'sender_partial') {
+        const agencyCollectsFromCustomer = customerRemaining - collectedAmount;
+        computedBalanceOwed = Math.max(0, mainTotal - agencyCollectsFromCustomer);
+      }
+      
       const dispatch = await storage.createSupplierDispatch({
         tenantId,
         agencyId,
@@ -13820,7 +13847,14 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         unitPayoutTl: totalGuestCount > 0 ? Math.round(mainTotal / totalGuestCount) : 0,
         totalPayoutTl: mainTotal,
         currency: mainCurrency,
-        notes
+        notes,
+        paymentCollectionType: collectionType,
+        amountCollectedBySender: collectedAmount,
+        balanceOwed: computedBalanceOwed,
+        paymentNotes: paymentNotes || null,
+        reservationId: reservationId || null,
+        salePriceTl: salePriceTl || 0,
+        advancePaymentTl: advPayment,
       });
       
       // Kalemleri oluştur
@@ -13850,11 +13884,42 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
   app.patch("/api/finance/dispatches-with-items/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, notes, items, guestCount: simpleGuestCount, unitPayoutTl: simpleUnitPayout, currency: simpleCurrency } = req.body;
+      const { agencyId, activityId, dispatchDate, dispatchTime, customerName, notes, items, 
+        guestCount: simpleGuestCount, unitPayoutTl: simpleUnitPayout, currency: simpleCurrency,
+        paymentCollectionType, amountCollectedBySender, paymentNotes, salePriceTl, advancePaymentTl } = req.body;
       
       const itemsArray = items || [];
       
       await storage.deleteDispatchItemsByDispatchId(id);
+      
+      const computePaymentFields = (agencyCost: number) => {
+        const salePrice = salePriceTl || agencyCost;
+        const advPayment = advancePaymentTl || 0;
+        const customerRemaining = salePrice - advPayment;
+        const collectionType = paymentCollectionType || 'receiver_full';
+        let computedBalanceOwed = 0;
+        let collectedAmount = amountCollectedBySender || 0;
+        
+        if (collectionType === 'sender_partial' && customerRemaining > 0) {
+          collectedAmount = Math.min(collectedAmount, customerRemaining);
+        }
+        
+        if (collectionType === 'sender_full') {
+          computedBalanceOwed = agencyCost;
+        } else if (collectionType === 'sender_partial') {
+          const agencyCollectsFromCustomer = customerRemaining - collectedAmount;
+          computedBalanceOwed = Math.max(0, agencyCost - agencyCollectsFromCustomer);
+        }
+        
+        return {
+          paymentCollectionType: collectionType,
+          amountCollectedBySender: collectedAmount,
+          balanceOwed: computedBalanceOwed,
+          paymentNotes: paymentNotes || null,
+          salePriceTl: salePriceTl || 0,
+          advancePaymentTl: advPayment,
+        };
+      };
       
       if (itemsArray.length > 0) {
         let totalGuestCount = 0;
@@ -13875,6 +13940,7 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
         
         const mainCurrency = totalPayoutTl > 0 ? 'TRY' : 'USD';
         const mainTotal = mainCurrency === 'TRY' ? totalPayoutTl : totalPayoutUsd;
+        const paymentFields = computePaymentFields(mainTotal);
         
         const dispatch = await storage.updateSupplierDispatch(id, {
           agencyId,
@@ -13886,7 +13952,8 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
           unitPayoutTl: totalGuestCount > 0 ? Math.round(mainTotal / totalGuestCount) : 0,
           totalPayoutTl: mainTotal,
           currency: mainCurrency,
-          notes
+          notes,
+          ...paymentFields,
         });
         
         const createdItems = [];
@@ -13909,6 +13976,9 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
       } else {
         const gc = simpleGuestCount || 0;
         const up = simpleUnitPayout || 0;
+        const agencyCost = gc * up;
+        const paymentFields = computePaymentFields(agencyCost);
+        
         const dispatch = await storage.updateSupplierDispatch(id, {
           agencyId,
           activityId,
@@ -13917,9 +13987,10 @@ Sorularınız için bizimle iletişime geçebilirsiniz.`;
           customerName,
           guestCount: gc,
           unitPayoutTl: up,
-          totalPayoutTl: gc * up,
+          totalPayoutTl: agencyCost,
           currency: simpleCurrency || 'TRY',
-          notes
+          notes,
+          ...paymentFields,
         });
         res.json({ dispatch, items: [] });
       }
