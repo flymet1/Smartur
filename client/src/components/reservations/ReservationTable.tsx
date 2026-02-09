@@ -509,6 +509,15 @@ export function ReservationTable({
     };
 
     const enterEditMode = () => {
+      const activeDispatch = getActiveDispatch(res.id);
+      if (activeDispatch) {
+        toast({
+          title: "Düzenleme Yapılamaz",
+          description: "Bu rezervasyon partner acentaya gönderilmiş durumda. Düzenleme yapabilmek için önce gönderimi iptal etmeniz gerekir.",
+          variant: "destructive",
+        });
+        return;
+      }
       setEditDate(res.date);
       setEditTime(res.time);
       setEditQuantity(String(res.quantity || 1));

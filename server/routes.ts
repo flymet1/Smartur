@@ -5368,6 +5368,15 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Rezervasyon bulunamadı" });
       }
       
+      const partnerDispatches = await storage.getReservationRequests(tenantId);
+      const hasActivePartnerDispatch = partnerDispatches.some(
+        d => d.sourceReservationId === id && 
+        (d.status === 'pending' || d.status === 'approved' || d.status === 'converted')
+      );
+      if (hasActivePartnerDispatch) {
+        return res.status(400).json({ error: "Bu rezervasyon partner acentaya gönderilmiş durumda. Düzenleme yapabilmek için önce gönderimi iptal etmeniz gerekir." });
+      }
+
       const updates: Record<string, any> = {};
       if (date !== undefined) updates.date = date;
       if (time !== undefined) updates.time = time;
