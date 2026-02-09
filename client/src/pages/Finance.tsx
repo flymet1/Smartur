@@ -1430,10 +1430,14 @@ export default function Finance() {
       }
     }
     
+    const totalCollectedBySender = dispatchPaymentType === 'sender_partial' 
+      ? (dispatchAdvancePaymentTl || 0) + dispatchAmountCollected 
+      : dispatchPaymentType === 'sender_full' 
+        ? (dispatchSalePriceTl || dispatchTotal) 
+        : 0;
     const paymentFields = {
       paymentCollectionType: dispatchPaymentType,
-      amountCollectedBySender: dispatchPaymentType === 'sender_partial' ? dispatchAmountCollected : 
-                               dispatchPaymentType === 'sender_full' ? (dispatchSalePriceTl || dispatchTotal) : 0,
+      amountCollectedBySender: totalCollectedBySender,
       paymentNotes: dispatchPaymentNotes.trim(),
       salePriceTl: dispatchSalePriceTl || 0,
       advancePaymentTl: dispatchAdvancePaymentTl || 0,

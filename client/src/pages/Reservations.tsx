@@ -2952,34 +2952,42 @@ export default function Reservations() {
                               const resPriceVal = partnerDispatchReservation ? 
                                 (partnerDispatchReservation.salePriceTl || (partnerDispatchReservation.priceTl || 0) * (partnerDispatchReservation.quantity || 1)) : 0;
                               const advVal = partnerDispatchReservation?.advancePaymentTl || 0;
-                              const custRemaining = Math.max(0, (resPriceVal || agencyCostVal) - advVal);
-                              const maxCollectable = custRemaining > 0 ? custRemaining : (agencyCostVal > 0 ? agencyCostVal : undefined);
+                              const salePrice = resPriceVal || agencyCostVal;
+                              const remainingAfterDeposit = Math.max(0, salePrice - advVal);
+                              const maxExtraCollectable = remainingAfterDeposit > 0 ? remainingAfterDeposit : undefined;
+                              const totalWeCollected = advVal + agencyDispatchAmountCollected;
                               return (
                                 <div className="space-y-2 pl-6 border-l-2 border-primary/30">
-                                  <Label>Aldigimiz Tutar ({agencyDispatchCurrency})</Label>
+                                  {advVal > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Depozito zaten alindi: <span className="font-semibold text-green-600">{advVal.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                    </p>
+                                  )}
+                                  <Label>Depozito Disinda Ek Alinan Tutar ({agencyDispatchCurrency})</Label>
                                   <Input
                                     type="number"
                                     inputMode="numeric"
                                     min={0}
-                                    max={maxCollectable}
+                                    max={maxExtraCollectable}
                                     value={agencyDispatchAmountCollectedStr}
                                     onChange={(e) => {
                                       const val = e.target.value;
                                       const num = val === "" ? 0 : Number(val) || 0;
-                                      if (maxCollectable && num > maxCollectable) {
-                                        setAgencyDispatchAmountCollectedStr(String(maxCollectable));
+                                      if (maxExtraCollectable && num > maxExtraCollectable) {
+                                        setAgencyDispatchAmountCollectedStr(String(maxExtraCollectable));
                                       } else {
                                         setAgencyDispatchAmountCollectedStr(val);
                                       }
                                     }}
-                                    placeholder="Tutar girin"
+                                    placeholder="Ekstra alinan tutari girin"
                                     data-testid="input-agency-dispatch-amount-collected"
                                   />
-                                  {custRemaining > 0 && (
+                                  {totalWeCollected > 0 && (
                                     <p className="text-xs text-muted-foreground">
-                                      Musteri Kalan: {custRemaining.toLocaleString('tr-TR')} {agencyDispatchCurrency}
-                                      {agencyDispatchAmountCollected > 0 && (
-                                        <> | Henuz Alinmayan: {(custRemaining - agencyDispatchAmountCollected).toLocaleString('tr-TR')} {agencyDispatchCurrency}</>
+                                      Toplam Aldigimiz: <span className="font-semibold">{totalWeCollected.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                      {advVal > 0 && <> (Depozito {advVal.toLocaleString('tr-TR')} + Ek {agencyDispatchAmountCollected.toLocaleString('tr-TR')})</>}
+                                      {remainingAfterDeposit > 0 && agencyDispatchAmountCollected > 0 && (
+                                        <> | Musteri Kalan: {(remainingAfterDeposit - agencyDispatchAmountCollected).toLocaleString('tr-TR')} {agencyDispatchCurrency}</>
                                       )}
                                     </p>
                                   )}
@@ -3043,20 +3051,34 @@ export default function Reservations() {
                                     </div>
                                   </>
                                 )}
-                                {agencyDispatchPaymentType === 'sender_partial' && agencyDispatchAmountCollected > 0 && (() => {
-                                  const custRem = Math.max(0, (reservationPrice || totalAmount) - advancePayment);
-                                  const agencyCollects = custRem - agencyDispatchAmountCollected;
-                                  const weOwe = Math.max(0, totalAmount - agencyCollects);
-                                  return (
+                                {agencyDispatchPaymentType === 'sender_partial' && (() => {
+                                  const totalWeCollected = advancePayment + agencyDispatchAmountCollected;
+                                  const custRem = Math.max(0, (reservationPrice || totalAmount) - totalWeCollected);
+                                  const weOwe = Math.max(0, totalAmount - custRem);
+                                  return totalWeCollected > 0 ? (
                                     <>
-                                      <div className="flex justify-between text-sm text-green-600">
-                                        <span>Alinan:</span>
-                                        <span className="font-bold">{agencyDispatchAmountCollected.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                      {advancePayment > 0 && (
+                                        <div className="flex justify-between text-sm text-green-600">
+                                          <span>Depozito:</span>
+                                          <span className="font-bold">{advancePayment.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                        </div>
+                                      )}
+                                      {agencyDispatchAmountCollected > 0 && (
+                                        <div className="flex justify-between text-sm text-green-600">
+                                          <span>Ek Alinan:</span>
+                                          <span className="font-bold">{agencyDispatchAmountCollected.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex justify-between text-sm text-green-700 font-semibold">
+                                        <span>Toplam Aldigimiz:</span>
+                                        <span className="font-bold">{totalWeCollected.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
                                       </div>
-                                      <div className="flex justify-between text-sm text-orange-600">
-                                        <span>Acenta Musteriden Alacak:</span>
-                                        <span className="font-bold">{Math.max(0, agencyCollects).toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
-                                      </div>
+                                      {custRem > 0 && (
+                                        <div className="flex justify-between text-sm text-orange-600">
+                                          <span>Acenta Musteriden Alacak:</span>
+                                          <span className="font-bold">{custRem.toLocaleString('tr-TR')} {agencyDispatchCurrency}</span>
+                                        </div>
+                                      )}
                                       {weOwe > 0 && (
                                         <div className="flex justify-between text-sm text-red-600">
                                           <span>Acentaya Borcumuz:</span>
@@ -3064,7 +3086,7 @@ export default function Reservations() {
                                         </div>
                                       )}
                                     </>
-                                  );
+                                  ) : null;
                                 })()}
                                 {profit > 0 && (
                                   <>
@@ -3093,15 +3115,21 @@ export default function Reservations() {
                             (partnerDispatchReservation.salePriceTl || (partnerDispatchReservation.priceTl || 0) * (partnerDispatchReservation.quantity || 1)) : 0;
                           const advPayment = partnerDispatchReservation.advancePaymentTl || 0;
                           const agencyCost = agencyDispatchGuests * agencyDispatchUnitPayout;
-                          const customerRemaining = (reservationPrice || agencyCost) - advPayment;
+                          const salePrice = reservationPrice || agencyCost;
+                          const remainingAfterDeposit = Math.max(0, salePrice - advPayment);
                           if (agencyDispatchPaymentType === 'sender_partial' && agencyDispatchAmountCollected <= 0) {
-                            toast({ title: "Hata", description: "Kismi odeme tutarini girin", variant: "destructive" });
+                            toast({ title: "Hata", description: "Depozito disinda ek alinan tutari girin", variant: "destructive" });
                             return;
                           }
-                          if (agencyDispatchPaymentType === 'sender_partial' && customerRemaining > 0 && agencyDispatchAmountCollected > customerRemaining) {
-                            toast({ title: "Hata", description: "Alinan tutar musterinin kalan borcunu asamaz", variant: "destructive" });
+                          if (agencyDispatchPaymentType === 'sender_partial' && remainingAfterDeposit > 0 && agencyDispatchAmountCollected > remainingAfterDeposit) {
+                            toast({ title: "Hata", description: "Ek alinan tutar, depozito sonrasi kalan tutari asamaz", variant: "destructive" });
                             return;
                           }
+                          const totalCollectedBySender = agencyDispatchPaymentType === 'sender_partial' 
+                            ? advPayment + agencyDispatchAmountCollected 
+                            : agencyDispatchPaymentType === 'sender_full' 
+                              ? salePrice 
+                              : 0;
                           agencyDispatchMutation.mutate({
                             agencyId: parseInt(selectedAgencyDispatchId),
                             activityId: agencyDispatchActivityId ? parseInt(agencyDispatchActivityId) : null,
@@ -3113,8 +3141,7 @@ export default function Reservations() {
                             currency: agencyDispatchCurrency,
                             notes: agencyDispatchNotes.trim(),
                             paymentCollectionType: agencyDispatchPaymentType,
-                            amountCollectedBySender: agencyDispatchPaymentType === 'sender_partial' ? agencyDispatchAmountCollected :
-                                                     agencyDispatchPaymentType === 'sender_full' ? (reservationPrice || agencyCost) : 0,
+                            amountCollectedBySender: totalCollectedBySender,
                             paymentNotes: agencyDispatchPaymentNotes.trim(),
                             reservationId: partnerDispatchReservation.id,
                             salePriceTl: reservationPrice,
