@@ -107,6 +107,9 @@ export function ReservationTable({
   const [editPriceUsd, setEditPriceUsd] = useState("");
   const [editAdvancePayment, setEditAdvancePayment] = useState("");
   const [isEditingAdvance, setIsEditingAdvance] = useState(false);
+  const [editDiscountTl, setEditDiscountTl] = useState("");
+  const [editDiscountNote, setEditDiscountNote] = useState("");
+  const [isEditingDiscount, setIsEditingDiscount] = useState(false);
   const [editNotes, setEditNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const hasSelection = selectedIds !== undefined && onToggleSelection !== undefined;
@@ -188,7 +191,7 @@ export function ReservationTable({
   });
 
   const reservationUpdateMutation = useMutation({
-    mutationFn: async ({ id, ...data }: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number; paymentStatus?: string; notes?: string }) => {
+    mutationFn: async ({ id, ...data }: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number; advancePaymentTl?: number; paymentStatus?: string; discountTl?: number; discountNote?: string; notes?: string }) => {
       return apiRequest('PATCH', `/api/reservations/${id}`, data);
     },
     onSuccess: (_, variables) => {
@@ -196,6 +199,7 @@ export function ReservationTable({
       toast({ title: "Basarili", description: "Rezervasyon guncellendi." });
       setIsEditing(false);
       setIsEditingAdvance(false);
+      setIsEditingDiscount(false);
       setIsEditingNotes(false);
       const res = reservations.find(r => r.id === variables.id);
       if (res && onMoveSuccess && variables.date && variables.time && (variables.date !== res.date || variables.time !== res.time)) {
@@ -212,6 +216,7 @@ export function ReservationTable({
       setExpandedId(null);
       setIsEditing(false);
       setIsEditingAdvance(false);
+      setIsEditingDiscount(false);
       setIsEditingNotes(false);
     } else {
       setExpandedId(res.id);
@@ -220,10 +225,13 @@ export function ReservationTable({
       setEditPriceTl(res.priceTl ? String(res.priceTl) : "");
       setEditPriceUsd(res.priceUsd ? String(res.priceUsd) : "");
       setEditAdvancePayment((res as any).advancePaymentTl ? String((res as any).advancePaymentTl) : "");
+      setEditDiscountTl((res as any).discountTl ? String((res as any).discountTl) : "");
+      setEditDiscountNote((res as any).discountNote || "");
       const cleanNotes = getNotesWithoutMetadata(res.notes);
       setEditNotes(cleanNotes || "");
       setIsEditing(false);
       setIsEditingAdvance(false);
+      setIsEditingDiscount(false);
       setIsEditingNotes(false);
     }
   };
@@ -452,16 +460,38 @@ export function ReservationTable({
       const updates: { id: number; date?: string; time?: string; priceTl?: number; priceUsd?: number; salePriceTl?: number } = { id: res.id, date: editDate, time: editTime };
       const newPriceTl = parseFloat(editPriceTl);
       const newPriceUsd = parseFloat(editPriceUsd);
-      if (!isNaN(newPriceTl)) { updates.priceTl = newPriceTl; updates.salePriceTl = newPriceTl; }
+      if (!isNaN(newPriceTl)) { 
+        updates.priceTl = newPriceTl; 
+        const existingDiscount = (res as any).discountTl || 0;
+        updates.salePriceTl = existingDiscount > 0 ? Math.max(0, newPriceTl - existingDiscount) : newPriceTl; 
+      }
       if (!isNaN(newPriceUsd)) updates.priceUsd = newPriceUsd;
       reservationUpdateMutation.mutate(updates);
     };
 
     const handleSaveAdvance = () => {
       const advVal = Number(editAdvancePayment) || 0;
-      const salePrice = (res as any).salePriceTl || res.priceTl || 0;
-      const paymentStatus = salePrice > 0 && advVal >= salePrice ? 'paid' : advVal > 0 ? 'partial' : 'unpaid';
+      const basePrice = res.priceTl || 0;
+      const discount = (res as any).discountTl || 0;
+      const effectivePrice = discount > 0 ? Math.max(0, basePrice - discount) : ((res as any).salePriceTl || basePrice);
+      const paymentStatus = effectivePrice > 0 && advVal >= effectivePrice ? 'paid' : advVal > 0 ? 'partial' : 'unpaid';
       reservationUpdateMutation.mutate({ id: res.id, advancePaymentTl: advVal, paymentStatus });
+    };
+
+    const handleSaveDiscount = () => {
+      const basePrice = res.priceTl || 0;
+      const rawDiscount = Number(editDiscountTl) || 0;
+      const discVal = Math.min(Math.max(0, rawDiscount), basePrice);
+      const newSalePrice = basePrice - discVal;
+      const advance = (res as any).advancePaymentTl || 0;
+      const paymentStatus = newSalePrice > 0 && advance >= newSalePrice ? 'paid' : advance > 0 ? 'partial' : 'unpaid';
+      reservationUpdateMutation.mutate({ 
+        id: res.id, 
+        discountTl: discVal, 
+        discountNote: discVal > 0 ? (editDiscountNote || '') : '',
+        salePriceTl: newSalePrice,
+        paymentStatus
+      });
     };
 
     const handleSaveNotes = () => {
@@ -766,16 +796,20 @@ export function ReservationTable({
         })()}
 
         {(() => {
-          const salePrice = (res as any).salePriceTl || res.priceTl || 0;
+          const basePrice = res.priceTl || 0;
+          const discount = (res as any).discountTl || 0;
+          const discountNoteVal = (res as any).discountNote || '';
+          const salePrice = (res as any).salePriceTl || basePrice;
           const advance = (res as any).advancePaymentTl || 0;
-          const remaining = salePrice > 0 ? salePrice - advance : 0;
+          const finalPrice = discount > 0 ? Math.max(0, basePrice - discount) : salePrice;
+          const remaining = finalPrice > 0 ? finalPrice - advance : 0;
           const metaTotal = metadata?.totalPrice ?? 0;
           const metaDeposit = metadata?.depositRequired ?? 0;
           const metaRemaining = metadata?.remainingPayment ?? 0;
-          const totalToShow = salePrice > 0 ? salePrice : metaTotal;
+          const totalToShow = finalPrice > 0 ? finalPrice : metaTotal;
           const depositToShow = advance > 0 ? advance : metaDeposit;
           const remainingToShow = remaining > 0 ? remaining : metaRemaining;
-          if (totalToShow <= 0 && depositToShow <= 0) return null;
+          if (totalToShow <= 0 && depositToShow <= 0 && discount <= 0) return null;
           return (
             <>
               <Separator />
@@ -797,10 +831,133 @@ export function ReservationTable({
                     </Button>
                   )}
                 </Label>
-                {totalToShow > 0 && (
+                {basePrice > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span>Toplam Tutar</span>
+                    <span>Liste Fiyati</span>
+                    <span className={`font-medium ${discount > 0 ? 'line-through text-muted-foreground' : 'font-bold text-primary'}`} data-testid="text-base-price">
+                      {basePrice.toLocaleString('tr-TR')} ₺
+                    </span>
+                  </div>
+                )}
+                {discount > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="flex items-center gap-1">
+                        Indirim
+                        {!isEditingDiscount && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-4 w-4 p-0"
+                            onClick={() => {
+                              setEditDiscountTl(String(discount));
+                              setEditDiscountNote(discountNoteVal);
+                              setIsEditingDiscount(true);
+                            }}
+                            data-testid="button-edit-discount"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </span>
+                      <span className="font-medium text-green-600 dark:text-green-400" data-testid="text-discount-amount">
+                        -{discount.toLocaleString('tr-TR')} ₺
+                      </span>
+                    </div>
+                    {discountNoteVal && (
+                      <div className="text-xs text-muted-foreground pl-2" data-testid="text-discount-note">
+                        {discountNoteVal}
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span>Indirimli Fiyat</span>
+                      <span className="font-bold text-primary" data-testid="text-total-price">
+                        {finalPrice.toLocaleString('tr-TR')} ₺
+                      </span>
+                    </div>
+                  </>
+                )}
+                {discount <= 0 && totalToShow > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="flex items-center gap-1">
+                      Toplam Tutar
+                      {!isEditingDiscount && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-4 w-4 p-0"
+                          onClick={() => {
+                            setEditDiscountTl("");
+                            setEditDiscountNote("");
+                            setIsEditingDiscount(true);
+                          }}
+                          data-testid="button-add-discount"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </span>
                     <span className="font-bold text-primary" data-testid="text-total-price">{totalToShow.toLocaleString('tr-TR')} ₺</span>
+                  </div>
+                )}
+                {isEditingDiscount && (
+                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Indirim Tutari (₺)</Label>
+                      <Input 
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        value={editDiscountTl}
+                        onChange={(e) => setEditDiscountTl(e.target.value)}
+                        placeholder="Indirim tutari girin"
+                        className="h-8 text-sm"
+                        data-testid="input-edit-discount-tl"
+                      />
+                      {(() => {
+                        const dv = Number(editDiscountTl) || 0;
+                        return basePrice > 0 && dv > 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            Indirimli fiyat: {Math.max(0, basePrice - dv).toLocaleString('tr-TR')} ₺
+                          </p>
+                        ) : null;
+                      })()}
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground text-xs">Indirim Notu</Label>
+                      <Input 
+                        type="text"
+                        value={editDiscountNote}
+                        onChange={(e) => setEditDiscountNote(e.target.value)}
+                        placeholder="Orn: Erken rezervasyon indirimi"
+                        className="h-8 text-sm"
+                        data-testid="input-edit-discount-note"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={handleSaveDiscount}
+                        disabled={reservationUpdateMutation.isPending}
+                        data-testid="button-save-discount"
+                      >
+                        <Save className="h-4 w-4 mr-1" />
+                        Kaydet
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          setEditDiscountTl(String((res as any).discountTl || 0));
+                          setEditDiscountNote((res as any).discountNote || "");
+                          setIsEditingDiscount(false);
+                        }}
+                        disabled={reservationUpdateMutation.isPending}
+                        data-testid="button-cancel-discount"
+                      >
+                        Vazgec
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {!isEditingAdvance ? (
@@ -833,7 +990,7 @@ export function ReservationTable({
                         data-testid="input-edit-advance-payment"
                       />
                       {(() => {
-                        const sp = (res as any).salePriceTl || res.priceTl || 0;
+                        const sp = finalPrice > 0 ? finalPrice : (res.priceTl || 0);
                         const av = Number(editAdvancePayment) || 0;
                         return sp > 0 && av > 0 ? (
                           <p className="text-xs text-muted-foreground">

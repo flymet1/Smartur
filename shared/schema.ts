@@ -331,6 +331,9 @@ export const reservations = pgTable("reservations", {
   paymentDate: timestamp("payment_date"), // Ödeme tarihi
   salePriceTl: integer("sale_price_tl").default(0),
   advancePaymentTl: integer("advance_payment_tl").default(0),
+  discountTl: integer("discount_tl").default(0),
+  discountType: text("discount_type").default("fixed"),
+  discountNote: text("discount_note"),
   notes: text("notes"),
   createdByUserId: integer("created_by_user_id"),
   createdAt: timestamp("created_at").defaultNow(),
