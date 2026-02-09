@@ -3125,32 +3125,81 @@ export default function Finance() {
                                     </span>
                                   </div>
                                 </div>
-                                {tx.paymentCollectionType && (
-                                  <div className="pt-2 border-t mt-2 space-y-1">
-                                    <div className="text-xs text-muted-foreground">
-                                      <span className="font-medium">Ödeme Tipi:</span>{' '}
-                                      {tx.paymentCollectionType === 'receiver_full' 
-                                        ? 'Alıcı tam tahsil edecek' 
-                                        : tx.paymentCollectionType === 'sender_full'
-                                        ? 'Gönderen tam tahsil etti'
-                                        : tx.paymentCollectionType === 'sender_partial'
-                                        ? 'Gönderen kısmi tahsil etti'
-                                        : tx.paymentCollectionType}
+                                {tx.paymentCollectionType && (() => {
+                                  const pct = tx.paymentCollectionType;
+                                  const totalAmt = tx.totalAmount || 0;
+                                  const collectedBySender = tx.amountCollectedBySender || 0;
+                                  const dueToReceiver = tx.amountDueToReceiver !== undefined ? tx.amountDueToReceiver : (totalAmt - collectedBySender);
+                                  const balance = tx.balanceOwed !== undefined ? tx.balanceOwed : 0;
+                                  
+                                  return (
+                                    <div className="pt-2 border-t mt-2 space-y-2">
+                                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                                        <Wallet className="h-3 w-3" />
+                                        Ödeme Özeti
+                                      </div>
+                                      <div className="bg-background/60 rounded-md p-3 space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Toplam Tutar:</span>
+                                          <span className="font-medium">{currencySymbol}{totalAmt.toLocaleString('tr-TR')}{currencySuffix}</span>
+                                        </div>
+                                        <Separator className="my-1" />
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Ödeme Durumu:</span>
+                                          <span className="font-medium">
+                                            {pct === 'receiver_full' ? 'Alıcı Tam Tahsil' : 
+                                             pct === 'sender_full' ? 'Gönderen Tam Tahsil' : 'Kısmi Tahsilat'}
+                                          </span>
+                                        </div>
+                                        
+                                        {pct === 'receiver_full' && (
+                                          <div className="flex justify-between text-orange-600">
+                                            <span>{isSender ? 'Alıcı müşteriden alacak:' : 'Müşteriden alacağınız:'}</span>
+                                            <span className="font-bold">{currencySymbol}{totalAmt.toLocaleString('tr-TR')}{currencySuffix}</span>
+                                          </div>
+                                        )}
+                                        
+                                        {pct === 'sender_full' && (
+                                          <>
+                                            <div className="flex justify-between text-green-600">
+                                              <span>{isSender ? 'Bizim tahsil ettiğimiz:' : 'Gönderenin tahsil ettiği:'}</span>
+                                              <span className="font-bold">{currencySymbol}{(collectedBySender > 0 ? collectedBySender : totalAmt).toLocaleString('tr-TR')}{currencySuffix}</span>
+                                            </div>
+                                            {balance > 0 && (
+                                              <div className={`flex justify-between ${isSender ? 'text-red-600' : 'text-green-600'}`}>
+                                                <span>{isSender ? 'Alıcıya borcumuz:' : 'Gönderenden alacağınız:'}</span>
+                                                <span className="font-bold">{currencySymbol}{balance.toLocaleString('tr-TR')}{currencySuffix}</span>
+                                              </div>
+                                            )}
+                                          </>
+                                        )}
+                                        
+                                        {pct === 'sender_partial' && (
+                                          <>
+                                            {collectedBySender > 0 && (
+                                              <div className="flex justify-between text-green-600">
+                                                <span>{isSender ? 'Bizim tahsil ettiğimiz:' : 'Gönderenin tahsil ettiği:'}</span>
+                                                <span className="font-bold">{currencySymbol}{collectedBySender.toLocaleString('tr-TR')}{currencySuffix}</span>
+                                              </div>
+                                            )}
+                                            {dueToReceiver > 0 && (
+                                              <div className="flex justify-between text-orange-600">
+                                                <span>{isSender ? 'Alıcı müşteriden alacak:' : 'Müşteriden alacağınız:'}</span>
+                                                <span className="font-bold">{currencySymbol}{dueToReceiver.toLocaleString('tr-TR')}{currencySuffix}</span>
+                                              </div>
+                                            )}
+                                            {balance > 0 && (
+                                              <div className={`flex justify-between ${isSender ? 'text-red-600' : 'text-green-600'}`}>
+                                                <span>{isSender ? 'Alıcıya borcumuz:' : 'Gönderenden alacağınız:'}</span>
+                                                <span className="font-bold">{currencySymbol}{balance.toLocaleString('tr-TR')}{currencySuffix}</span>
+                                              </div>
+                                            )}
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
-                                    {tx.amountCollectedBySender !== undefined && tx.amountCollectedBySender > 0 && (
-                                      <div className="text-xs text-muted-foreground">
-                                        <span className="font-medium">Gönderenin Tahsil Ettiği:</span>{' '}
-                                        {currencySymbol}{tx.amountCollectedBySender.toLocaleString('tr-TR')}{currencySuffix}
-                                      </div>
-                                    )}
-                                    {tx.balanceOwed !== undefined && tx.balanceOwed > 0 && (
-                                      <div className={`text-xs ${isSender ? 'text-red-600' : 'text-green-600'}`}>
-                                        <span className="font-medium">{isSender ? 'Borcunuz:' : 'Alacağınız:'}</span>{' '}
-                                        {currencySymbol}{tx.balanceOwed.toLocaleString('tr-TR')}{currencySuffix}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                                  );
+                                })()}
                                 
                                 {/* Silme İşlemleri */}
                                 <div className="pt-3 border-t mt-3">
