@@ -2740,6 +2740,110 @@ export default function Reservations() {
                               />
                             </div>
                           </div>
+
+                          {(() => {
+                            const unitPrice = partnerDispatchSelectedSlot?.partnerUnitPrice || 0;
+                            const totalAmount = unitPrice * partnerDispatchGuests;
+                            const currency = partnerDispatchSelectedSlot?.partnerCurrency || 'TRY';
+                            const currencyLabel = currency === 'USD' ? 'USD' : currency === 'EUR' ? 'EUR' : 'TL';
+                            const reservationPrice = partnerDispatchReservation ? 
+                              (partnerDispatchReservation.salePriceTl || (partnerDispatchReservation.priceTl || 0) * (partnerDispatchReservation.quantity || 1)) : 0;
+                            const advancePayment = partnerDispatchReservation?.advancePaymentTl || 0;
+                            const profit = reservationPrice > 0 && totalAmount > 0 ? reservationPrice - totalAmount : 0;
+                            
+                            return totalAmount > 0 ? (
+                              <div className="p-3 bg-muted rounded-lg space-y-1">
+                                {reservationPrice > 0 && (
+                                  <div className="flex justify-between text-sm">
+                                    <span>Satis Fiyati:</span>
+                                    <span className="font-medium">{reservationPrice.toLocaleString('tr-TR')} TL</span>
+                                  </div>
+                                )}
+                                {advancePayment > 0 && (
+                                  <div className="flex justify-between text-sm">
+                                    <span>On Odeme (Alinan):</span>
+                                    <span className="font-medium text-green-600">{advancePayment.toLocaleString('tr-TR')} TL</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between text-sm">
+                                  <span>Partner Maliyeti:</span>
+                                  <span className="font-bold text-orange-600">{totalAmount.toLocaleString('tr-TR')} {currencyLabel}</span>
+                                </div>
+                                <Separator className="my-1" />
+                                <div className="flex justify-between text-sm">
+                                  <span>Odeme Durumu:</span>
+                                  <span className="font-medium">
+                                    {partnerDispatchPaymentType === 'receiver_full' ? 'Partner alacak' : 
+                                     partnerDispatchPaymentType === 'sender_full' ? 'Biz aldik' : 'Kismi odeme'}
+                                  </span>
+                                </div>
+                                {partnerDispatchPaymentType === 'receiver_full' && (
+                                  <div className="flex justify-between text-sm text-orange-600">
+                                    <span>Partner Musteriden Alacak:</span>
+                                    <span className="font-bold">{((reservationPrice || totalAmount) - advancePayment).toLocaleString('tr-TR')} {currencyLabel}</span>
+                                  </div>
+                                )}
+                                {partnerDispatchPaymentType === 'sender_full' && (
+                                  <>
+                                    <div className="flex justify-between text-sm text-green-600">
+                                      <span>Alinan (Satis Fiyati):</span>
+                                      <span className="font-bold">{reservationPrice > 0 ? reservationPrice.toLocaleString('tr-TR') : totalAmount.toLocaleString('tr-TR')} {currencyLabel}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-red-600">
+                                      <span>Partnere Borcumuz:</span>
+                                      <span className="font-bold">{totalAmount.toLocaleString('tr-TR')} {currencyLabel}</span>
+                                    </div>
+                                  </>
+                                )}
+                                {partnerDispatchPaymentType === 'sender_partial' && (() => {
+                                  const totalWeCollected = advancePayment + partnerDispatchAmountCollected;
+                                  const custRem = Math.max(0, (reservationPrice || totalAmount) - totalWeCollected);
+                                  const weOwe = Math.max(0, totalAmount - custRem);
+                                  return totalWeCollected > 0 ? (
+                                    <>
+                                      {advancePayment > 0 && (
+                                        <div className="flex justify-between text-sm text-green-600">
+                                          <span>Depozito:</span>
+                                          <span className="font-bold">{advancePayment.toLocaleString('tr-TR')} {currencyLabel}</span>
+                                        </div>
+                                      )}
+                                      {partnerDispatchAmountCollected > 0 && (
+                                        <div className="flex justify-between text-sm text-green-600">
+                                          <span>Ek Alinan:</span>
+                                          <span className="font-bold">{partnerDispatchAmountCollected.toLocaleString('tr-TR')} {currencyLabel}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex justify-between text-sm text-green-700 font-semibold">
+                                        <span>Toplam Aldigimiz:</span>
+                                        <span className="font-bold">{totalWeCollected.toLocaleString('tr-TR')} {currencyLabel}</span>
+                                      </div>
+                                      {custRem > 0 && (
+                                        <div className="flex justify-between text-sm text-orange-600">
+                                          <span>Partner Musteriden Alacak:</span>
+                                          <span className="font-bold">{custRem.toLocaleString('tr-TR')} {currencyLabel}</span>
+                                        </div>
+                                      )}
+                                      {weOwe > 0 && (
+                                        <div className="flex justify-between text-sm text-red-600">
+                                          <span>Partnere Borcumuz:</span>
+                                          <span className="font-bold">{weOwe.toLocaleString('tr-TR')} {currencyLabel}</span>
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : null;
+                                })()}
+                                {profit > 0 && (
+                                  <>
+                                    <Separator className="my-1" />
+                                    <div className="flex justify-between text-sm text-green-700 font-semibold">
+                                      <span>Tahmini Kar:</span>
+                                      <span>{profit.toLocaleString('tr-TR')} TL</span>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            ) : null;
+                          })()}
                         </>
                       )}
                     </div>
